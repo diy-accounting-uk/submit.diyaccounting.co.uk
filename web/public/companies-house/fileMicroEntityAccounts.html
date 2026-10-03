@@ -322,10 +322,46 @@
             <input type="date" id="directorDateApproved" name="directorDateApproved" required />
           </div>
 
+          <h3>Dormant company</h3>
+          <div class="form-group">
+            <input type="checkbox" id="dormant" name="dormant" aria-describedby="dormant-hint" />
+            <label for="dormant" style="display: inline; font-weight: normal">The company was dormant throughout the period</label>
+            <p id="dormant-hint" class="hint">
+              Under the Companies Act 2006 a company is dormant when it had no significant accounting transaction in the period. Filing fees
+              to Companies House and shares allotted on incorporation do not count as significant. Its profit and loss account must end the
+              period where it began.
+            </p>
+          </div>
+          <div id="dormantFields" style="display: none">
+            <div class="form-group">
+              <label for="dormantTradingStatus">Trading history</label>
+              <select id="dormantTradingStatus" name="dormantTradingStatus">
+                <option value="neverTraded">The company has never traded</option>
+                <option value="noLongerTrading">The company traded in the past and no longer trades</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="shareClass">Share class</label>
+              <select id="shareClass" name="shareClass">
+                <option value="ordinaryShares">Ordinary</option>
+                <option value="preferenceShares">Preference</option>
+                <option value="deferredShares">Deferred</option>
+                <option value="otherShares">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="nominalValue">Nominal value of each share, in pounds</label>
+              <input type="text" id="nominalValue" name="nominalValue" inputmode="decimal" aria-describedby="nominalValue-hint" />
+              <p id="nominalValue-hint" class="hint">
+                For example, 1 or 0.01. The called up share capital divided by this is the number of shares.
+              </p>
+            </div>
+          </div>
+
           <h3>Statements</h3>
           <div class="form-group">
             <input type="checkbox" id="statementSection477Exemption" name="statementSection477Exemption" />
-            <label for="statementSection477Exemption" style="display: inline; font-weight: normal">
+            <label for="statementSection477Exemption" id="statementSection477ExemptionLabel" style="display: inline; font-weight: normal">
               The company is entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small companies.
             </label>
           </div>
@@ -496,8 +532,31 @@
         }
       }
 
+      const SECTION_477_STATEMENT_TEXT = document.getElementById("statementSection477ExemptionLabel").textContent.trim();
+      const SECTION_480_STATEMENT_TEXT =
+        "The company is entitled to exemption from audit under section 480 of the Companies Act 2006 relating to dormant companies.";
+
+      function toggleDormantFields() {
+        const dormant = document.getElementById("dormant").checked;
+        document.getElementById("dormantFields").style.display = dormant ? "block" : "none";
+        document.getElementById("statementSection477ExemptionLabel").textContent = dormant
+          ? SECTION_480_STATEMENT_TEXT
+          : SECTION_477_STATEMENT_TEXT;
+      }
+
+      function dormantPayload() {
+        if (!document.getElementById("dormant").checked) return {};
+        return {
+          dormant: true,
+          dormantTradingStatus: document.getElementById("dormantTradingStatus").value,
+          shareClass: document.getElementById("shareClass").value,
+          nominalValue: Number(document.getElementById("nominalValue").value),
+        };
+      }
+
       function buildAccountsPayload() {
         return {
+          ...dormantPayload(),
           companyNumber: company.companyNumber,
           companyName: company.companyName,
           periodStart: document.getElementById("periodStart").value,
@@ -625,6 +684,7 @@
         company = null;
         document.getElementById("companyForm").reset();
         document.getElementById("accountsForm").reset();
+        toggleDormantFields();
         document.getElementById("rejections").style.display = "none";
         document.getElementById("startAgainBtn").style.display = "none";
         hideStatus();
@@ -634,6 +694,7 @@
       document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
       document.getElementById("accountsForm").addEventListener("submit", handleAccountsFormSubmit);
       document.getElementById("accountsForm").addEventListener("input", refreshYearTotals);
+      document.getElementById("dormant").addEventListener("change", toggleDormantFields);
       document.getElementById("backToFormBtn").addEventListener("click", () => showView("formView"));
       document.getElementById("submitFilingBtn").addEventListener("click", handleSubmitFiling);
       document.getElementById("startAgainBtn").addEventListener("click", startAgain);

@@ -62,7 +62,8 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 }));
 
 const mockBuildMicroEntityAccounts = vi.fn();
-vi.mock("@app/services/microEntityAccountsIxbrl.js", () => ({
+vi.mock("@app/services/microEntityAccountsIxbrl.js", async (importOriginal) => ({
+  ...(await importOriginal()),
   buildMicroEntityAccounts: (...args) => mockBuildMicroEntityAccounts(...args),
 }));
 
@@ -106,6 +107,22 @@ function buildAccountsBody(overrides = {}) {
     },
     ...overrides,
   };
+}
+
+function buildDormantBody(overrides = {}) {
+  const body = buildAccountsBody({
+    dormant: true,
+    dormantTradingStatus: "noLongerTrading",
+    shareClass: "ordinaryShares",
+    nominalValue: 1,
+    ...overrides,
+  });
+  body.balanceSheet.currentYear.profitAndLossAccount = body.balanceSheet.priorYear.profitAndLossAccount;
+  body.balanceSheet.currentYear.capitalAndReserves = body.balanceSheet.priorYear.capitalAndReserves;
+  body.balanceSheet.currentYear.fixedAssets = body.balanceSheet.priorYear.fixedAssets;
+  body.balanceSheet.currentYear.currentAssets = body.balanceSheet.priorYear.currentAssets;
+  body.balanceSheet.currentYear.creditorsWithinOneYear = body.balanceSheet.priorYear.creditorsWithinOneYear;
+  return body;
 }
 
 function buildEvent({ body = buildAccountsBody(), headers = {}, authorizer, method = "POST" } = {}) {
@@ -177,6 +194,55 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
     expect(response.statusCode).toBe(400);
     const responseBody = parseResponseBody(response);
     expect(responseBody.message).toContain("microEntityProvisions");
+  });
+
+  describe("dormant filings", () => {
+    test("passes the dormant flag, trading status, share class and nominal value to the generator", async () => {
+      const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body: buildDormantBody() }));
+      expect(response.statusCode).toBe(200);
+      const [input] = mockBuildMicroEntityAccounts.mock.calls[0];
+      expect(input).toMatchObject({
+        dormant: true,
+        dormantTradingStatus: "noLongerTrading",
+        shareClass: "ordinaryShares",
+        nominalValue: 1,
+      });
+    });
+
+    test("leaves the dormant fields off a filing that does not tick dormant", async () => {
+      await companiesHouseAccountsPreviewPostHandler(buildEvent());
+      const [input] = mockBuildMicroEntityAccounts.mock.calls[0];
+      expect(input.dormant).toBeUndefined();
+      expect(input.shareClass).toBeUndefined();
+    });
+
+    test("rejects a dormant filing whose profit and loss account moved in the period", async () => {
+      const body = buildDormantBody();
+      body.balanceSheet.currentYear.profitAndLossAccount += 50;
+      body.balanceSheet.currentYear.capitalAndReserves += 50;
+      body.balanceSheet.currentYear.currentAssets += 50;
+      const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(parseResponseBody(response).message).toContain("dormant company cannot report a profit or loss");
+      expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
+    });
+
+    test("rejects a dormant filing with no share class, trading status or nominal value", async () => {
+      const response = await companiesHouseAccountsPreviewPostHandler(
+        buildEvent({ body: buildDormantBody({ shareClass: undefined, dormantTradingStatus: undefined, nominalValue: undefined }) }),
+      );
+      expect(response.statusCode).toBe(400);
+      const message = parseResponseBody(response).message;
+      expect(message).toContain("shareClass");
+      expect(message).toContain("dormantTradingStatus");
+      expect(message).toContain("nominalValue");
+    });
+
+    test("rejects a nominal value that does not divide the called up share capital into whole shares", async () => {
+      const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body: buildDormantBody({ nominalValue: 30 }) }));
+      expect(response.statusCode).toBe(400);
+      expect(parseResponseBody(response).message).toContain("whole number of shares");
+    });
   });
 
   test("returns 401 when the Cognito bearer token is missing", async () => {

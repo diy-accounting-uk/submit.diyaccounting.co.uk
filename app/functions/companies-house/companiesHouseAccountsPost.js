@@ -22,7 +22,12 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
 import { isValidIsoDate } from "../../lib/hmrcValidation.js";
-import { buildMicroEntityAccounts } from "../../services/microEntityAccountsIxbrl.js";
+import {
+  buildMicroEntityAccounts,
+  DORMANT_TRADING_STATUSES,
+  SHARE_CLASSES,
+  sharesIssuedFor,
+} from "../../services/microEntityAccountsIxbrl.js";
 import {
   buildAccountsSubmission,
   allocateSubmissionNumber,
@@ -78,6 +83,10 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     averageEmployees,
     director,
     statementsAccepted,
+    dormant,
+    dormantTradingStatus,
+    shareClass,
+    nominalValue,
   } = parsedBody;
 
   // A client-scoped request resolves its company number from the client row instead, so the
@@ -136,6 +145,12 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     errorMessages.push("Invalid or missing director.dateApproved - must be YYYY-MM-DD");
   }
 
+  const isDormant = dormant === true;
+  const numericNominalValue = Number(nominalValue);
+  if (isDormant) {
+    validateDormantFiling({ currentYear, priorYear, dormantTradingStatus, shareClass, numericNominalValue, errorMessages });
+  }
+
   const statements = {
     section477Exemption: statementsAccepted?.section477Exemption === true,
     membersNotRequiredAudit: statementsAccepted?.membersNotRequiredAudit === true,
@@ -160,7 +175,34 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     directorName,
     dateOfApproval: dateApproved,
     statementsAccepted: statements,
+    ...(isDormant ? { dormant: true, dormantTradingStatus, shareClass, nominalValue: numericNominalValue } : {}),
   };
+}
+
+// A dormant company had no significant accounting transaction in the period, so its profit and
+// loss reserve and its capital and reserves end the period where they began.
+function validateDormantFiling({ currentYear, priorYear, dormantTradingStatus, shareClass, numericNominalValue, errorMessages }) {
+  if (!DORMANT_TRADING_STATUSES.includes(dormantTradingStatus)) {
+    errorMessages.push(`Invalid or missing dormantTradingStatus - must be one of ${DORMANT_TRADING_STATUSES.join(", ")}`);
+  }
+  if (!SHARE_CLASSES.includes(shareClass)) {
+    errorMessages.push(`Invalid or missing shareClass - must be one of ${SHARE_CLASSES.join(", ")}`);
+  }
+  if (!Number.isFinite(numericNominalValue) || numericNominalValue <= 0) {
+    errorMessages.push("Invalid or missing nominalValue - must be a number above zero");
+  } else if (
+    Number.isFinite(currentYear.calledUpShareCapital) &&
+    sharesIssuedFor(currentYear.calledUpShareCapital, numericNominalValue) === null
+  ) {
+    errorMessages.push("balanceSheet.currentYear.calledUpShareCapital is not a whole number of shares at the nominal value");
+  }
+  if (
+    Number.isFinite(currentYear.profitAndLossAccount) &&
+    Number.isFinite(priorYear.profitAndLossAccount) &&
+    currentYear.profitAndLossAccount !== priorYear.profitAndLossAccount
+  ) {
+    errorMessages.push("A dormant company cannot report a profit or loss: profitAndLossAccount must equal the prior year");
+  }
 }
 
 function extractAndValidateBalanceSheetYear(yearValues, yearLabel, errorMessages) {

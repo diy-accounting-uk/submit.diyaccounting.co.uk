@@ -15,6 +15,7 @@ import {
   FIXTURE_COMPANY_AUTHENTICATION_CODE,
 } from "@app/http-simulator/scenarios/confirmation-statement.js";
 import { resetPscVerificationStatementFilings } from "@app/http-simulator/scenarios/psc-verification-statement.js";
+import { buildMicroEntityAccounts } from "@app/services/microEntityAccountsIxbrl.js";
 import { parseXmlDocument, firstElementText, allElements } from "@app/lib/xmlDom.js";
 
 function md5Lowercase(value) {
@@ -30,6 +31,7 @@ function accountsEnvelope({
   authValue = VALID_AUTH_VALUE,
   submissionNumber = "AAA001",
   companyNumber = "02706061",
+  documentData = "PGh0bWw+PC9odG1sPg==",
 } = {}) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope">
@@ -67,7 +69,7 @@ function accountsEnvelope({
       <Form>
       </Form>
       <Document>
-        <Data>PGh0bWw+PC9odG1sPg==</Data>
+        <Data>${documentData}</Data>
         <Date>2026-06-30</Date>
         <Filename>Accounts.xml</Filename>
         <ContentType>application/xml</ContentType>
@@ -320,6 +322,59 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
     expect(firstElementText(document, "Qualifier")).toBe("acknowledgement");
     expect(firstElementText(document, "GatewayTimestamp")).toBeTruthy();
     expect(allElements(document, "GovTalkErrors")).toHaveLength(0);
+  });
+
+  test("acknowledges a dormant company's accounts and polls them to ACCEPT", async () => {
+    const dormantDocument = buildMicroEntityAccounts({
+      companyNumber: "02706061",
+      companyName: "TEST DORMANT LIMITED",
+      periodStart: "2025-07-01",
+      periodEnd: "2026-06-30",
+      dormant: true,
+      dormantTradingStatus: "neverTraded",
+      shareClass: "ordinaryShares",
+      nominalValue: 1,
+      averageNumberOfEmployees: 0,
+      directorName: "Jo Smith",
+      dateOfApproval: "2026-09-01",
+      balanceSheet: {
+        current: {
+          fixedAssets: 0,
+          currentAssets: 100,
+          creditorsWithinOneYear: 0,
+          creditorsAfterOneYear: 0,
+          calledUpShareCapital: 100,
+          profitAndLossAccount: 0,
+          capitalAndReserves: 100,
+        },
+        prior: {
+          fixedAssets: 0,
+          currentAssets: 100,
+          creditorsWithinOneYear: 0,
+          creditorsAfterOneYear: 0,
+          calledUpShareCapital: 100,
+          profitAndLossAccount: 0,
+          capitalAndReserves: 100,
+        },
+      },
+    });
+    const documentData = Buffer.from(dormantDocument, "utf8").toString("base64");
+
+    const submitted = await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(accountsEnvelope({ submissionNumber: "DORM01", documentData }));
+    expect(firstElementText(parseXmlDocument(submitted.text), "Qualifier")).toBe("acknowledgement");
+
+    await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(statusEnvelope({ submissionNumber: "DORM01" }));
+    const accepted = await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(statusEnvelope({ submissionNumber: "DORM01" }));
+    expect(firstElementText(parseXmlDocument(accepted.text), "StatusCode")).toBe("ACCEPT");
   });
 
   test("rejects an unknown SenderID with a 502 authorisation failure", async () => {

@@ -58,6 +58,10 @@ export const CONCEPTS = {
     prefix: "direp",
     name: "StatementThatCompanyEntitledToExemptionFromAuditUnderSection477CompaniesAct2006RelatingToSmallCompanies",
   },
+  statementAuditExemptionSection480: {
+    prefix: "direp",
+    name: "StatementThatCompanyEntitledToExemptionFromAuditUnderSection480CompaniesAct2006RelatingToDormantCompanies",
+  },
   statementMembersNotRequiredAudit: { prefix: "direp", name: "StatementThatMembersHaveNotRequiredCompanyToObtainAnAudit" },
   statementDirectorsResponsibilities: { prefix: "direp", name: "StatementThatDirectorsAcknowledgeTheirResponsibilitiesUnderCompaniesAct" },
   statementMicroEntityProvisions: {
@@ -73,6 +77,8 @@ export const CONCEPTS = {
   netAssetsLiabilities: { prefix: "core", name: "NetAssetsLiabilities" },
   equity: { prefix: "core", name: "Equity" },
   averageNumberEmployeesDuringPeriod: { prefix: "core", name: "AverageNumberEmployeesDuringPeriod" },
+  numberSharesIssuedFullyPaid: { prefix: "core", name: "NumberSharesIssuedFullyPaid" },
+  nominalValueAllottedShareCapital: { prefix: "core", name: "NominalValueAllottedShareCapital" },
 };
 
 const MANDATORY_CONCEPT_KEYS = [
@@ -97,7 +103,13 @@ const STATEMENT_KEYS = [
   "statementMicroEntityProvisions",
 ];
 
+const DORMANT_STATEMENT_KEYS = STATEMENT_KEYS.map((key) =>
+  key === "statementAuditExemptionSection477" ? "statementAuditExemptionSection480" : key,
+);
+
 const DIMENSIONS = {
+  entityTradingStatus: { prefix: "bus", name: "EntityTradingStatusDimension" },
+  entityShareClasses: { prefix: "bus", name: "EntityShareClassesDimension" },
   accountingStandards: { prefix: "bus", name: "AccountingStandardsDimension" },
   accountsStatus: { prefix: "bus", name: "AccountsStatusDimension" },
   accountsType: { prefix: "bus", name: "AccountsTypeDimension" },
@@ -110,12 +122,20 @@ const MEMBERS = {
   auditExemptNoAccountantsReport: { prefix: "bus", name: "AuditExempt-NoAccountantsReport" },
   fullAccounts: { prefix: "bus", name: "FullAccounts" },
   shareCapital: { prefix: "core", name: "ShareCapital" },
+  neverTraded: { prefix: "bus", name: "EntityHasNeverTraded" },
+  noLongerTrading: { prefix: "bus", name: "EntityNoLongerTradingButTradedInPast" },
+  ordinaryShares: { prefix: "bus", name: "OrdinaryShareClass1" },
+  preferenceShares: { prefix: "bus", name: "PreferenceShareClass1" },
+  deferredShares: { prefix: "bus", name: "DeferredShareClass1" },
+  otherShares: { prefix: "bus", name: "OtherShareClass1" },
   retainedEarningsAccumulatedLosses: { prefix: "core", name: "RetainedEarningsAccumulatedLosses" },
   withinOneYear: { prefix: "core", name: "WithinOneYear" },
   afterOneYear: { prefix: "core", name: "AfterOneYear" },
 };
 
 const STATEMENT_TEXT = {
+  statementAuditExemptionSection480:
+    "The company is entitled to exemption from audit under section 480 of the Companies Act 2006 relating to dormant companies.",
   statementAuditExemptionSection477:
     "The company is entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small companies.",
   statementMembersNotRequiredAudit:
@@ -187,11 +207,34 @@ export function formatMonetary(value) {
   return String(Math.round(Math.abs(value)));
 }
 
+export const DORMANT_TRADING_STATUSES = ["neverTraded", "noLongerTrading"];
+export const SHARE_CLASSES = ["ordinaryShares", "preferenceShares", "deferredShares", "otherShares"];
+
+const SHARE_CLASS_LABEL = {
+  ordinaryShares: "ordinary",
+  preferenceShares: "preference",
+  deferredShares: "deferred",
+  otherShares: "other",
+};
+
 /**
- * Render one of the four fixed-wording audit-exemption / micro-entity statements as a tagged
+ * The number of shares a fully paid share capital figure represents at a nominal value, or null
+ * when the capital is not a whole number of shares.
+ * @param {number} calledUpShareCapital
+ * @param {number} nominalValue
+ * @returns {number|null}
+ */
+export function sharesIssuedFor(calledUpShareCapital, nominalValue) {
+  if (!Number.isFinite(nominalValue) || nominalValue <= 0 || !Number.isFinite(calledUpShareCapital)) return null;
+  const shares = Math.round((calledUpShareCapital / nominalValue) * 1e6) / 1e6;
+  return Number.isInteger(shares) ? shares : null;
+}
+
+/**
+ * Render one of the fixed-wording audit-exemption / micro-entity statements as a tagged
  * ix:nonNumeric fact. The wording is fixed (the page never lets a user edit it), matching the
  * phrase checks Companies House runs on each statement.
- * @param {"statementAuditExemptionSection477"|"statementMembersNotRequiredAudit"|"statementDirectorsResponsibilities"|"statementMicroEntityProvisions"} key
+ * @param {"statementAuditExemptionSection477"|"statementAuditExemptionSection480"|"statementMembersNotRequiredAudit"|"statementDirectorsResponsibilities"|"statementMicroEntityProvisions"} key
  * @param {string} contextRef
  * @returns {string}
  */
@@ -295,7 +338,11 @@ function assembleBalanceSheetFacts({ contextRef, entityIdentifierXml, periodXml,
  * @param {string} input.periodStart - ISO date
  * @param {string} input.periodEnd - ISO date
  * @param {string} [input.priorBalanceSheetDate] - ISO date; defaults to the day before periodStart
- * @param {boolean} [input.dormant]
+ * @param {boolean} [input.dormant] - section 480 statement and a trading status member replace the
+ *   section 477 statement and the default trading status
+ * @param {"neverTraded"|"noLongerTrading"} [input.dormantTradingStatus] - required when dormant
+ * @param {"ordinaryShares"|"preferenceShares"|"deferredShares"|"otherShares"} [input.shareClass] - required when dormant
+ * @param {number} [input.nominalValue] - pounds per share; required when dormant
  * @param {number} input.averageNumberOfEmployees
  * @param {string} input.directorName
  * @param {string} input.dateOfApproval - ISO date
@@ -337,9 +384,20 @@ export function buildMicroEntityAccounts(input) {
   facts.push(
     `<ix:nonNumeric name="${qname(CONCEPTS.endDateForPeriodCoveredByReport)}" contextRef="${refs.currentInstant}">${input.periodEnd}</ix:nonNumeric>`,
   );
-  // EntityTradingStatus is reported at its default member (trading) with no dimension: a
-  // dimension at its default value must not be reported.
-  facts.push(renderFixedFact("entityTradingStatus", refs.current));
+  if (input.dormant) {
+    const tradingStatusContextId = buildDimensionedContext({
+      additionalContexts,
+      entityIdentifierXml,
+      periodXml: periodXml[refs.current],
+      dimensionXml: dimensionMemberXml(DIMENSIONS.entityTradingStatus, MEMBERS[input.dormantTradingStatus]),
+      id: `${refs.current}-trading-status`,
+    });
+    facts.push(renderFixedFact("entityTradingStatus", tradingStatusContextId));
+  } else {
+    // EntityTradingStatus is reported at its default member (trading) with no dimension: a
+    // dimension at its default value must not be reported.
+    facts.push(renderFixedFact("entityTradingStatus", refs.current));
+  }
 
   const accountsStatusContextId = buildDimensionedContext({
     additionalContexts,
@@ -368,7 +426,7 @@ export function buildMicroEntityAccounts(input) {
   });
   facts.push(renderFixedFact("accountingStandardsApplied", accountingStandardsContextId));
 
-  for (const statementKey of STATEMENT_KEYS) {
+  for (const statementKey of input.dormant ? DORMANT_STATEMENT_KEYS : STATEMENT_KEYS) {
     facts.push(renderStatement(statementKey, refs.current));
   }
 
@@ -400,6 +458,23 @@ export function buildMicroEntityAccounts(input) {
     );
   }
 
+  let shareNoteHtml = "";
+  if (input.dormant) {
+    const sharesIssued = sharesIssuedFor(input.balanceSheet.current.calledUpShareCapital, input.nominalValue);
+    const shareClassContextId = buildDimensionedContext({
+      additionalContexts,
+      entityIdentifierXml,
+      periodXml: periodXml[refs.currentInstant],
+      dimensionXml: dimensionMemberXml(DIMENSIONS.entityShareClasses, MEMBERS[input.shareClass]),
+      id: `${refs.currentInstant}-share-class`,
+    });
+    facts.push(
+      `<ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassContextId}" unitRef="shares" decimals="0">${sharesIssued}</ix:nonFraction>`,
+      `<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction>`,
+    );
+    shareNoteHtml = `<p>Share capital: ${sharesIssued} ${SHARE_CLASS_LABEL[input.shareClass]} shares of £${input.nominalValue} each, allotted and fully paid</p>\n`;
+  }
+
   const namespaceAttributes = Object.entries(NAMESPACES)
     .map(([prefix, uri]) => `xmlns:${prefix}="${uri}"`)
     .join(" ");
@@ -414,13 +489,14 @@ export function buildMicroEntityAccounts(input) {
 ${contextsXml}${additionalContexts.join("")}
 <xbrli:unit id="GBP"><xbrli:measure>iso4217:GBP</xbrli:measure></xbrli:unit>
 <xbrli:unit id="pure"><xbrli:measure>pure</xbrli:measure></xbrli:unit>
+<xbrli:unit id="shares"><xbrli:measure>xbrli:shares</xbrli:measure></xbrli:unit>
 </ix:resources>
 </ix:header>
 <h1>${escapeXmlText(input.companyName)}</h1>
 <p>Company number ${escapeXmlText(input.companyNumber)}</p>
 <p>Annual accounts for the period from ${input.periodStart} to ${input.periodEnd}</p>
 <p>Approved on behalf of the board on ${input.dateOfApproval} by ${escapeXmlText(input.directorName)}</p>
-${facts.join("\n")}
+${shareNoteHtml}${facts.join("\n")}
 </body>
 </html>
 `;
@@ -442,4 +518,4 @@ export function loadFrcTaxonomyConcepts() {
   return cachedConceptList;
 }
 
-export { MANDATORY_CONCEPT_KEYS, STATEMENT_KEYS };
+export { MANDATORY_CONCEPT_KEYS, STATEMENT_KEYS, DORMANT_STATEMENT_KEYS };
