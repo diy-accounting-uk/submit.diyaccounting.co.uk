@@ -219,6 +219,64 @@ async function doSelect(page, step, ctx) {
   return { waitMs: 0, rect };
 }
 
+const MIME_TYPES = {
+  ".csv": "text/csv",
+  ".json": "application/json",
+  ".txt": "text/plain",
+  ".pdf": "application/pdf",
+  ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  ".xls": "application/vnd.ms-excel",
+};
+
+// Finds the file input a drop target stands for: the target itself, the control of a label, or a
+// descendant. Returns null when the target has no file input, so the caller dispatches a drop.
+async function fileInputFor(page, locator) {
+  const isFileInput = await locator.evaluate((el) => el instanceof HTMLInputElement && el.type === "file");
+  if (isFileInput) return locator;
+  const labelledId = await locator.evaluate((el) =>
+    el instanceof HTMLLabelElement && el.control instanceof HTMLInputElement && el.control.type === "file" ? el.control.id : null,
+  );
+  if (labelledId) return page.locator(`[id="${labelledId}"]`);
+  const nested = locator.locator('input[type="file"]');
+  if ((await nested.count()) > 0) return nested.first();
+  return null;
+}
+
+async function doDropFile(page, step, ctx) {
+  const filePath = path.resolve(process.cwd(), step.file);
+  if (!fs.existsSync(filePath)) {
+    throw new SceneStepError(`scene "${ctx.sceneId}" step ${ctx.stepIndex} (dropFile): file not found: ${step.file}`, {
+      sceneId: ctx.sceneId,
+      stepIndex: ctx.stepIndex,
+      target: step.target,
+    });
+  }
+  const buffer = fs.readFileSync(filePath);
+  const name = step.name || path.basename(filePath);
+  const mimeType = MIME_TYPES[path.extname(name).toLowerCase()] || "application/octet-stream";
+  const locator = await requireLocator(page, step, ctx);
+  const rect = await pointAndReturnRect(page, locator, ctx.onTargetRect);
+  await overlay.highlight(page, rect, 400);
+  const input = await fileInputFor(page, locator);
+  if (input) {
+    await input.setInputFiles({ name, mimeType, buffer });
+  } else {
+    const dataTransfer = await page.evaluateHandle(
+      ({ base64, name, mimeType }) => {
+        const bytes = Uint8Array.from(atob(base64), (char) => char.charCodeAt(0));
+        const transfer = new DataTransfer();
+        transfer.items.add(new File([bytes], name, { type: mimeType }));
+        return transfer;
+      },
+      { base64: buffer.toString("base64"), name, mimeType },
+    );
+    for (const type of ["dragenter", "dragover", "drop"]) {
+      await locator.dispatchEvent(type, { dataTransfer });
+    }
+  }
+  return { waitMs: 0, rect };
+}
+
 // HMRC's sandbox answers "no data found" for a VAT read unless the request carries a
 // Gov-Test-Scenario header naming the sample data to return. The pages carry a select for it
 // inside the developer section, which a recording never shows, so the value is set on the
@@ -551,6 +609,7 @@ const HANDLERS = {
   press: doPress,
   tab: doTab,
   select: doSelect,
+  dropFile: doDropFile,
   testScenario: doTestScenario,
   scroll: doScroll,
   highlight: doHighlight,

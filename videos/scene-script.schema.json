@@ -309,6 +309,25 @@
           }
         },
         {
+          "if": { "properties": { "action": { "const": "dropFile" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "target", "file"],
+            "description": "Drops a file from disk onto a drop target. Sets the file on the <input type=\"file\"> inside or associated with the target (the target itself, a label's control, or a descendant); when the target has no file input, dispatches drag and drop events carrying the file.",
+            "properties": {
+              "action": {},
+              "target": { "$ref": "#/definitions/target" },
+              "file": { "type": "string", "minLength": 1, "description": "Path to the file, relative to the repository root." },
+              "name": { "type": "string", "minLength": 1, "description": "File name the page sees. Defaults to the file's own name." },
+              "caption": { "type": "string" },
+              "headline": { "type": "string", "minLength": 1 },
+              "keyWord": { "type": "string", "minLength": 1 },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
           "if": { "properties": { "action": { "const": "scroll" } } },
           "then": {
             "additionalProperties": false,

@@ -76,6 +76,23 @@ describe("testScenario steps", () => {
   });
 });
 
+describe("dropFile steps", () => {
+  const withStep = (step) => baseScript({ scenes: [{ id: "upload", chapter: "Upload", steps: [{ action: "goto", url: "/" }, step] }] });
+
+  test("accepts a target and a repo-relative file, with an optional name", () => {
+    expect(() => validateScript(withStep({ action: "dropFile", target: "#drop", file: "videos/fixtures/a.csv" }))).not.toThrow();
+    expect(() =>
+      validateScript(withStep({ action: "dropFile", target: "#drop", file: "videos/fixtures/a.csv", name: "a.csv" })),
+    ).not.toThrow();
+  });
+
+  test("rejects a step with no file, an empty file or an empty name", () => {
+    expect(() => validateScript(withStep({ action: "dropFile", target: "#drop" }))).toThrow(/file/);
+    expect(() => validateScript(withStep({ action: "dropFile", target: "#drop", file: "" }))).toThrow(/steps\[1\]\.file/);
+    expect(() => validateScript(withStep({ action: "dropFile", target: "#drop", file: "a.csv", name: "" }))).toThrow(/steps\[1\]\.name/);
+  });
+});
+
 describe("every scene script in the repo", () => {
   const names = fs
     .readdirSync(videosDir)

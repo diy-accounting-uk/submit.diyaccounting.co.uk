@@ -31,6 +31,7 @@ const STEP_GROUP = {
   press: 2,
   tab: 2,
   select: 2,
+  dropFile: 2,
   testScenario: null,
   scroll: 3,
   highlight: 2,

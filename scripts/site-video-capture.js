@@ -175,6 +175,8 @@ function describeStep(step, waitMs, values, now) {
       return "moves focus with Tab";
     case "select":
       return `selects "${step.value}" in ${describeTarget(step.target)}`;
+    case "dropFile":
+      return `drops ${step.name || path.basename(step.file)} onto ${describeTarget(step.target)}`;
     case "scroll":
       return step.target ? `scrolls to ${describeTarget(step.target)}` : `scrolls to the ${step.to}`;
     case "highlight":
@@ -240,7 +242,18 @@ const ALWAYS_NAVIGATING_ACTIONS = new Set([
 // pointAndReturnRect) — the only ones that can hand a headline its target's actual box through
 // ctx.onTargetRect. Every other action's headline, if it has one, places against no target at
 // all (headlinePlacement.js's "default" anchor).
-const TARGET_RECT_ACTIONS = new Set(["click", "point", "type", "fill", "select", "highlight", "sheetCell", "sheetType", "sheetPoint"]);
+const TARGET_RECT_ACTIONS = new Set([
+  "click",
+  "point",
+  "type",
+  "fill",
+  "select",
+  "dropFile",
+  "highlight",
+  "sheetCell",
+  "sheetType",
+  "sheetPoint",
+]);
 
 // The ordered list of (text, sceneId) pairs the scene loop's three resolveCaptionHold call
 // sites will ask Polly for: a "caption" action step names its own text; any other step with a
