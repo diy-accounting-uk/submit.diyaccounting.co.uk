@@ -154,7 +154,7 @@ const VAT_RETURN_BOX_FIELDS = [
  * client-not-authorised). Returns {receipt, hmrcResponse, hmrcResponseBody, periodKey, receiptId}
  * — the filed receipt sits under `receipt` (also duplicated at `hmrcResponseBody`), `periodKey` is
  * the obligation period this route resolved from periodStart/periodEnd, and `receiptId` is the
- * name get_vat_receipt takes.
+ * receipt's file name without its .json suffix (get_vat_receipt takes `${receiptId}.json`).
  * @param {Object} _session
  * @param {{vatNumber?: string, clientId?: string, periodStart: string, periodEnd: string,
  *   hmrcAccessToken: string, vatDueSales: number, vatDueAcquisitions: number,

@@ -16,7 +16,8 @@
   },
   "scripts": {
     "test": "vitest run",
-    "start": "node bin/diya-submit-mcp.js"
+    "start": "node bin/diya-submit-mcp.js",
+    "test:system": "vitest run --config vitest.system.config.js"
   },
   "dependencies": {
     "@diy-accounting-uk/diya-gl": "1.2.17",
