@@ -316,11 +316,21 @@ jobs:
           fi
           echo "Only NEXT.md changed (or nothing did)."
 
+      - name: Generate a token for diya-agent
+        if: inputs.write-back == 'true' && steps.run.outcome == 'success'
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+
+      # Commits through the GitHub API as the app, so GitHub signs the commit and
+      # verify-commit-signatures.yml sees a verified one.
       - name: Push the board update
         if: inputs.write-back == 'true' && steps.run.outcome == 'success'
         id: push-board
         env:
-          GH_TOKEN: ${{ secrets.AGENT_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           if git diff --quiet "${{ steps.before.outputs.sha }}" HEAD && git diff --quiet; then
@@ -330,7 +340,14 @@ jobs:
             exit 0
           fi
           npx prettier --check NEXT.md
-          git push origin HEAD:"${{ github.event.repository.default_branch }}"
+          if [ "$(git rev-parse HEAD)" != "${{ steps.before.outputs.sha }}" ]; then
+            git log -1 --format=%B > /tmp/commit-message.txt
+          else
+            printf 'Board: update NEXT.md\n' > /tmp/commit-message.txt
+          fi
+          scripts/github-api-commit.sh --repo "${{ github.repository }}" \
+            --branch "${{ github.event.repository.default_branch }}" \
+            --base-sha "${{ steps.before.outputs.sha }}" --message-file /tmp/commit-message.txt
           echo "Pushed $(git rev-parse --short HEAD) to ${{ github.event.repository.default_branch }}." >> "$GITHUB_STEP_SUMMARY"
           echo "pushed=true" | tee -a "$GITHUB_OUTPUT"
 

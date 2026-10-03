@@ -176,29 +176,33 @@ jobs:
           echo "Updated pom.xml version to ${{ needs.calculate-version.outputs.new-version }}"
           grep -A1 '<artifactId>web</artifactId>' pom.xml
 
+      - name: Generate a token for diya-agent
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+
+      # Commits through the GitHub API as the app, so GitHub signs the commit and
+      # verify-commit-signatures.yml sees a verified one.
       - name: Commit version changes
         id: commit
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          NEW_VERSION: ${{ needs.calculate-version.outputs.new-version }}
         run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-
+          set -euo pipefail
           git add package.json package-lock.json pom.xml
 
           if git diff --staged --quiet; then
             echo "No version changes to commit"
             echo "commit_sha=${{ github.sha }}" >> $GITHUB_OUTPUT
           else
-            git commit -m "$(cat <<'EOF'
-          chore: release v${{ needs.calculate-version.outputs.new-version }}
-
-          - Update package.json version to ${{ needs.calculate-version.outputs.new-version }}
-          - Update pom.xml version to ${{ needs.calculate-version.outputs.new-version }}
-
-          Co-Authored-By: github-actions[bot] <github-actions[bot]@users.noreply.github.com>
-          EOF
-          )"
-            git push
-            echo "commit_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
+            printf 'chore: release v%s\n\n- Update package.json version to %s\n- Update pom.xml version to %s\n' \
+              "$NEW_VERSION" "$NEW_VERSION" "$NEW_VERSION" > /tmp/commit-message.txt
+            scripts/github-api-commit.sh --repo "${{ github.repository }}" --branch "${{ github.ref_name }}" \
+              --base-sha "$(git rev-parse HEAD)" --message-file /tmp/commit-message.txt | tee /tmp/api-commit.log
+            echo "commit_sha=$(sed -n 's/^commit-oid=//p' /tmp/api-commit.log)" >> $GITHUB_OUTPUT
           fi
 
   # ============================================================================
