@@ -3,10 +3,10 @@
 
 # PLAN: ITSA production approval and the software finder listing
 
-The build is done and proven in the sandbox (`PLAN_ITSA_PHASE_2.md`). This plan carries what
+The build is done and proven in the sandbox; its plan is archived at `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md`. This plan carries what
 stands between that build and real customers: HMRC's production access for Income Tax (MTD), the
 software finder listing, and the three things that follow the approval. It took these items from
-`PLAN_ITSA_PHASE_2.md` (the recognition track and T10), `NEXT.md` (O11, B10) and `BACKLOG.md`
+`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` (the recognition track and T10), `NEXT.md` (O11, B10) and `BACKLOG.md`
 (rows 10 and 11) on 2026-10-03.
 
 ## Operator assertions (verbatim)
@@ -38,7 +38,7 @@ The seven items as listed on 2026-10-03, before HMRC's letter was read:
 >    "Search: MTD VAT" campaign (keywords and copy in the parent of 8816f93c, PR #414) and applies
 >    with `npm run ads:sync -- --apply` on your yes.
 
-Earlier assertions this plan inherits from `PLAN_ITSA_PHASE_2.md`:
+Earlier assertions this plan inherits from `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md`:
 
 > ITSA build, phase 2: annual summaries, final declaration, then the ITSA recognition
 > application and finder listing.
@@ -277,7 +277,7 @@ waited on is IA6. Backlog row 11 (ITSA phase 2 and the recognition application) 
 
 ## The application, as the phase-2 plan designed it
 
-Moved from `PLAN_ITSA_PHASE_2.md` on 2026-10-03; the 2027-28 process may change the steps, and
+Moved from `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` on 2026-10-03; the 2027-28 process may change the steps, and
 IA6's rewrite checks each against HMRC's update.
 
 HMRC recognises three product shapes. Ours is a **full end-to-end product**, built in two
@@ -358,7 +358,7 @@ dates and thresholds are in `_developers/hmrc/ITSA_SPIKE.md`. Closed: nothing is
 the send it waited on is IA6.
 
 **Source**: Issues #16, #20; `../private.diyaccounting.co.uk/strategy/STRATEGY.md`;
-`PLAN_ITSA_PHASE_2.md`. **Effort**: L. **Value**: Revenue. The strategic bet. Voluntary sign-up is
+`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md`. **Effort**: L. **Value**: Revenue. The strategic bet. Voluntary sign-up is
 open now and HMRC auto-enrolment starts September 2026.
 
 ### 11. ITSA phase 2 and the recognition application
@@ -368,13 +368,13 @@ and finder listing. The build and the recognition pack are on main; evidence for
 `../private.diyaccounting.co.uk/hmrc/itsa/evidence/README.md`. Remaining: IA1 to IA10 above. One
 application covers recognition and production credentials. Closes with IA7.
 
-**Source**: `PLAN_ITSA_PHASE_2.md` T10. **Effort**: L. **Value**: Revenue. The recognition lead
+**Source**: `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` T10. **Effort**: L. **Value**: Revenue. The recognition lead
 time is HMRC's; being ready when the 2027-28 window opens is the only control we have over April
 2027.
 
 ### 17d. Walkthrough video test-data review
 
-Moved from `BACKLOG.md` Tier 3 and `PLAN_ITSA_PHASE_2.md` on 2026-10-03; the work is IA11.
+Moved from `BACKLOG.md` Tier 3 and `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` on 2026-10-03; the work is IA11.
 
 **Source**: Operator, 2026-09-15. **Effort**: S. **Value**: Revenue. The recordings are the product's shop window and, since the 2026-10-03 note to SDST, part of the application's evidence; a result on screen and shorter runs make them worth watching.
 
@@ -383,7 +383,7 @@ Moved from `BACKLOG.md` Tier 3 and `PLAN_ITSA_PHASE_2.md` on 2026-10-03; the wor
 - HMRC, "MTD ITSA APIs – Update on Production Access Arrangements", 2026-09-30, quoted above.
 - Making Tax Digital for Income Tax end-to-end service guide, "How to integrate with HMRC APIs":
   <https://developer.service.hmrc.gov.uk/guides/income-tax-mtd-end-to-end-service-guide/documentation/how-to-integrate.html>
-- `PLAN_ITSA_PHASE_2.md` (the build, its decisions D3 and D9, and its verification list).
+- `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md` (the build, its decisions D3 and D9, and its verification list).
 - `../private.diyaccounting.co.uk/hmrc/itsa/` (the checklist, the questionnaires, the drafts, the
   evidence pack and the sandbox runs).
 - Mail mirror: VitalTax, 2022-07-12 (`mail/antony@diyaccounting.co.uk/2022/7/12/181f1ff873a650bf.eml`)

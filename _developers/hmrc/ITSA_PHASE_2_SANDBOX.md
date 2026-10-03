@@ -159,7 +159,7 @@ run filed against them since. Delete the checkpoint file to force a fresh wipe-a
 
 ## Assumptions taken from the plan's open questions
 
-`PLAN_ITSA_PHASE_2.md`'s "Open questions" names five open points. Three affect what this script
+`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md`'s "Open questions" names five open points. Three affect what this script
 does:
 
 - **Q3, which approval stage to apply for.** The plan assumes in-year first. This script exists
@@ -222,7 +222,7 @@ both fixed:
   through the test-support API. Sending `Gov-Test-Scenario: STATEFUL` on both calls fixes it:
   Business Details then answers the real `businessId` and `tradingName`, and ITSA status answers
   the real tax year and `"MTD Mandated"`. `STATEFUL` is documented for Business Details in
-  `_developers/hmrc/ITSA_SPIKE.md` and for ITSA status in `PLAN_ITSA_PHASE_2.md`'s ITSA status
+  `_developers/hmrc/ITSA_SPIKE.md` and for ITSA status in `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ITSA_PHASE_2.md`'s ITSA status
   section; neither the runbook's table nor the script had been sending it.
 - `GET .../obligations/details/{nino}/income-and-expenditure` answered
   `404 NO_OBLIGATIONS_FOUND` for the real `businessId`, with or without a `Gov-Test-Scenario`
