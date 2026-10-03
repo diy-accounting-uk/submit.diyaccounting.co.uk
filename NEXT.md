@@ -45,8 +45,6 @@ step.
 
 ## Machine-ask
 
-- [ ] **O75. Send the licence-change email.** The draft is committed (private a687b05). The operator says go and sends `../private.diyaccounting.co.uk/hmrc/correspondence/DRAFT_EMAIL_LICENCE_CHANGE.md` from antony@diyaccounting.co.uk to `SDSTeam@hmrc.gov.uk`; the session then adds the send date and recipient to `../private.diyaccounting.co.uk/hmrc/vat/HMRC_MTD_API_APPROVAL_SUBMISSION.md` and `../private.diyaccounting.co.uk/hmrc/correspondence/HMRC_PRODUCTION_CREDENTIALS_EMAIL.md`. **Source**: BACKLOG 75. **Owner**: Operator (the send), Claude Code (the annotation). **Model**: Haiku. **Size**: 0 files in this repository.
-
 ## Human-driven
 
 - [ ] **OBING1. Open a Microsoft Advertising account.** Edge's default search engine is Bing, and Google Search cannot target a browser, so Bing is the route to the Windows and Edge customer (`../private.diyaccounting.co.uk/PLAN_PAID_GOOGLE_SEARCH.md` §7c, experiment E7). Steps: (1) sign up at https://ads.microsoft.com as DIY Accounting Limited (Microsoft now accepts sign-up with the Google account antony@diyaccounting.co.uk); (2) business details as Google Ads: company number 06846849, 37 Sutherland Avenue, Leeds, LS8 1BY, D-U-N-S 211569182; (3) add a payment method and complete any advertiser verification it asks for; (4) create no campaign; write the Microsoft Advertising account number into BING1. **Source**: operator, 2026-09-30. **Owner**: Operator. **Model**: none. **Size**: 0 files.

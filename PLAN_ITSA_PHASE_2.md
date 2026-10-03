@@ -1671,12 +1671,6 @@ Ask SDST to update DIY Accounting Submit's entry on HMRC's software-choices list
 
 **Source**: Issue #19; `PLAN_ITSA_PHASE_2.md` 32a. **Effort**: S. **Value**: Revenue, minor. The listing is where HMRC sends people looking for software. Operator.
 
-### 75. Tell SDST the licence changed
-
-Tell HMRC's SDS team the licence changed. One email from antony@diyaccounting.co.uk to `SDSTeam@hmrc.gov.uk`, three facts: the MTD approval submission and the production-credentials email described the service as AGPL open source; the licence is now PolyForm Internal Use 1.0.0 with an additional grant for accountants and bookkeepers, and the service stays free to use; the change is live in production. `Gov-Vendor-License-IDs` behaviour is unchanged. Then annotate `../private.diyaccounting.co.uk/hmrc/vat/HMRC_MTD_API_APPROVAL_SUBMISSION.md` and `../private.diyaccounting.co.uk/hmrc/correspondence/HMRC_PRODUCTION_CREDENTIALS_EMAIL.md` with the date and recipient. Kept apart from row 32a's listing request. Claude Code drafts, the operator says go before the send (runbook task E).
-
-**Source**: `PLAN_ITSA_PHASE_2.md` 75; `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Effort**: S. **Value**: Trust. HMRC's record of the product should match what it is. Haiku.
-
 ## Sources
 
 - `PLAN_ITSA_APPROVAL.md` (rows 10 and 11, the application and the sends).
