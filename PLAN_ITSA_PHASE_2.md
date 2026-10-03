@@ -1665,12 +1665,6 @@ test support API, and its vendor-state checkpoints reset the user between runs.
 
 Each stays a row in `BACKLOG.md` (its tier and value); the brief lives here.
 
-### 17d. Walkthrough video test-data review
-
-Review the eight walkthrough videos for test-data improvements (HMRC's sandbox answered "No liabilities/payments/penalties found" for the three VAT read pages, so those show the search and not a result), de-duplicate the day-pass and HMRC-authorisation scenes that every recording repeats, and compress the full recordings; re-record what changes with `site-video-capture` and republish. All eight are public on the channel.
-
-**Source**: Operator, 2026-09-15; `PLAN_ITSA_PHASE_2.md` 17d. **Effort**: S. **Value**: Revenue. The recordings are the product's shop window; a result on screen and shorter runs make them worth watching.
-
 ### 32a. Software-choices listing update
 
 Ask SDST to update DIY Accounting Submit's entry on HMRC's software-choices listing so it shows viewing liabilities, payments and penalties as well as obligations and returns. Optional: the production credentials already cover the whole VAT (MTD) API, so this is a listing edit, not an approval. One email from antony@diyaccounting.co.uk to `SDSTeam@hmrc.gov.uk`, separate from row 75's.

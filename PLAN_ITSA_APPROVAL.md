@@ -227,6 +227,8 @@ section is their board.
   until 2027-28. Write the answer here; (a) becomes a spreadsheets row. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
 
+- [ ] **IA11. The walkthrough videos as evidence (BACKLOG 17d).** The note to SDST pointed HMRC at the published ITSA recordings, so they are part of the application's evidence. Review the eight walkthrough videos for test-data improvements (HMRC's sandbox answered "No liabilities/payments/penalties found" for the three VAT read pages, so those show the search and not a result), de-duplicate the day-pass and HMRC-authorisation scenes that every recording repeats, and compress the full recordings; re-record what changes with the `site-video-capture` skill and republish with `video-publish`. All eight are public on the channel. **Owner**: Claude Code. **Model**: Sonnet. **Size**: the scene scripts under `videos/` and `web/public/videos/publish.json`.
+
 ### Blocked on HMRC's early-2027 update
 
 Each waits on HMRC publishing the 2027-28 timing, criteria and process. When that arrives, a
@@ -267,6 +269,7 @@ IA2 ──► HMRC's early-2027 update ──► IA5 ──► IA6 ──► IA7
                                                └──► IA9
 IA3 ──► IA6
 IA4 (independent; (a) opens a spreadsheets row)
+IA11 ──► IA6 (the recordings are cited in the application)
 ```
 
 Backlog row 10 (ITSA phase 1) is closed: its build is on main and proven, and the send it
@@ -368,6 +371,12 @@ application covers recognition and production credentials. Closes with IA7.
 **Source**: `PLAN_ITSA_PHASE_2.md` T10. **Effort**: L. **Value**: Revenue. The recognition lead
 time is HMRC's; being ready when the 2027-28 window opens is the only control we have over April
 2027.
+
+### 17d. Walkthrough video test-data review
+
+Moved from `BACKLOG.md` Tier 3 and `PLAN_ITSA_PHASE_2.md` on 2026-10-03; the work is IA11.
+
+**Source**: Operator, 2026-09-15. **Effort**: S. **Value**: Revenue. The recordings are the product's shop window and, since the 2026-10-03 note to SDST, part of the application's evidence; a result on screen and shorter runs make them worth watching.
 
 ## Sources
 
