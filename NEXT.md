@@ -40,8 +40,6 @@ step.
 
 ## In flight
 
-- [ ] **DGL7. A `diya-gl view <file>` command.** In flight: merged to spreadsheets main as 53ea480c6 (PR #152); main's deploy 37112047765 is running and `../spreadsheets.diyaccounting.co.uk/.github/workflows/publish-diya-gl.yml` publishes diya-gl 1.2.43 after it, watched. `npx -y -p @diy-accounting-uk/diya-gl diya-gl view <file>` opens a downloaded book (diya-gl zip, JSON or workbook) in a local browser on 127.0.0.1, fetching the pages from https://diya-gl.co.uk on first use and caching them under `os.tmpdir()/diya-gl-view/<version>/<host>/`; none ship in the Apache-2.0 tarball (operator, 2026-10-03). Remaining once 1.2.43 is on npm (`npm view @diy-accounting-uk/diya-gl version`): tell `~/.claude/inboxes/chat-with-diya-gl.md` the command is published, and the demo's take-it-home block links it. **Source**: inbox from chat-with-diya-gl, 2026-10-02. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
-
 ## Machine-only
 
 
