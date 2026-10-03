@@ -70,7 +70,7 @@ flowchart LR
     CSA3 --> CSA4[CS-A4 evidence to the XML team]
     CSA4 --> CS11b[CS-11b]
     CS11b --> CSP1[CS-P1]
-    Design[design row: not yet written] --> Row34e[34e]
+    Design[B34h design row] --> Row34e[34e]
     Design --> Row34f[34f]
     Design --> Row34g[34g]
 ```
@@ -83,9 +83,8 @@ flowchart LR
 - CS-A4: blocked by CS-A3
 - CS-11b: blocked by CS-A4
 - CS-P1: blocked by CS-11b (it adds a second payment path to the journey CS-11b launches)
-- 34e, 34f, 34g: blocked by a design row that still needs writing. BACKLOG.md cites "NEXT.md
-  B34.8" as the row that designs them; that label is closed against unrelated work (lifting the
-  company-lookup page to prod) and is not on `NEXT.md`, so the design row does not exist yet.
+- 34e, 34f, 34g: blocked by the design row B34h on `NEXT.md` (Opus), which writes their design
+  under Horizons; 34g also follows 34e's envelope.
 
 ## Operator dates
 

@@ -840,6 +840,14 @@ Prove the three agent workflows by dispatch, in order. All three are on main, `w
 
 **Source**: `.github/workflows/agentic-lib-*.yml`; run 34716604299; moved off NEXT.md 2026-09-16. **Effort**: M. **Value**: Autonomy. Three built agent paths that have never earned a trigger; the first hand-run already found the credential wiring defect. Sonnet.
 
+## Operator-held renewals
+
+### 48. The local development certificate
+
+**Due the week of 2026-11-29.** Manual `certbot renew`: run `aws sso login --sso-session diyaccounting` first, then the command in `_developers/SETUP.md`; check with `certbot certificates`. The weekly launchd renew agent is wired, but both AWS profiles it needs are SSO-backed and cannot refresh unattended, so the renewal is an operator session every ninety days until the agent gets a credential that refreshes on its own (a Route 53 scoped IAM user for `certbot-dns-route53`, or the certificate issued inside a workflow and fetched). Runbook task P in `../private.diyaccounting.co.uk/operator/NEXT_OPERATOR_RUNBOOK.md`.
+
+**Source**: BACKLOG 48, moved here 2026-10-03. **Effort**: S. **Value**: Hygiene. The local dev certificate lapses without it; date-gated, operator session needed.
+
 ## Sources
 
 - `../private.diyaccounting.co.uk/strategy/STRATEGY.md` (the aim, and W4's autonomous-operations workstream), `BACKLOG.md` rows 23, 30,
