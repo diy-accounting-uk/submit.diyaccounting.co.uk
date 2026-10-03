@@ -128,6 +128,7 @@
           <div id="businessProfitAndLossTable"></div>
 
           <p id="calculationIdDisplay" class="hint"></p>
+          <div id="hmrcAssistCheck"></div>
           <div id="continueToFinalDeclaration" class="button-group" style="display: none">
             <a
               href="finalDeclaration.html"
@@ -163,10 +164,33 @@
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../widgets/hmrc-assist-messages.js"></script>
     <script src="../../lib/money-format.js"></script>
     <script src="../../lib/hmrc-field-table.js"></script>
     <script>
+      // The calculation on screen, which HMRC Assist reports on; null until one is displayed
+      let hmrcAssistDraft = null;
+      let hmrcAssist = null;
+
+      function describeHmrcAssistDraft() {
+        if (!hmrcAssistDraft) return { applicable: false, ready: false };
+        const { nino, taxYear, calculationId } = hmrcAssistDraft;
+        return {
+          applicable: true,
+          ready: true,
+          key: calculationId,
+          requestBody: { nino, taxYear, calculationId },
+          acknowledgeIdentity: { nino },
+        };
+      }
+
       function initializePage() {
+        hmrcAssist = window.hmrcAssistMessages.mount({
+          kind: "itsa",
+          container: document.getElementById("hmrcAssistCheck"),
+          describeDraft: describeHmrcAssistDraft,
+          unavailableText: "HMRC Assist feedback is unavailable at the moment. You can still continue to your final declaration.",
+        });
         const hmrcAccount = sessionStorage.getItem("hmrcAccount");
         if (hmrcAccount === "synthetic") {
           const syntheticIndicator = document.getElementById("syntheticIndicator");
@@ -209,6 +233,10 @@
           warnings: calculation?.messages?.warnings || [],
           errors: calculation?.messages?.errors || [],
         };
+
+        const calculationId = calculation?.metadata?.calculationId;
+        hmrcAssistDraft = calc && calculationId ? { nino, taxYear, calculationId } : null;
+        hmrcAssist.reset();
 
         if (calc) {
           figures.style.display = "block";

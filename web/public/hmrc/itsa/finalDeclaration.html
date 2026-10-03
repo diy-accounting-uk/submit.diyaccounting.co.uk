@@ -147,6 +147,9 @@
               and prosecution if I give false information.
             </label>
           </div>
+          <p id="hmrcAssistUnacknowledged" class="hint" hidden>
+            HMRC Assist feedback was shown for this calculation and HMRC has not yet confirmed it was received. You can still submit.
+          </p>
           <div id="submissionCost" class="submission-cost"></div>
           <button type="button" id="submitDeclarationBtn" class="btn" disabled>Submit final declaration</button>
         </div>
@@ -188,6 +191,7 @@
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/submission-cost.js"></script>
+    <script src="../../widgets/hmrc-assist-messages.js"></script>
     <script src="../../lib/money-format.js"></script>
     <script src="../../lib/hmrc-field-table.js"></script>
     <script>
@@ -294,6 +298,10 @@
         );
 
         document.getElementById("calculationIdDisplay").textContent = `Calculation ID: ${calculation.metadata?.calculationId || "-"}`;
+        document.getElementById("hmrcAssistUnacknowledged").hidden = !window.hmrcAssistMessages.unacknowledgedFor(
+          "itsa",
+          calculation.metadata?.calculationId,
+        );
 
         // The final declaration only ever confirms an intent-to-finalise calculation - anything
         // else (an in-year estimate, say) is refused here rather than sent to HMRC. Prefer the

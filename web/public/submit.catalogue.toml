@@ -341,7 +341,7 @@ metered = true
 # The catch-all API regex stays on this activity so every ITSA API call is gated to
 # resident/resident-pro regardless of which page-level activity governs the calling page.
 paths = ["hmrc/itsa/dashboard.html", "hmrc/itsa/selfEmploymentPeriod.html", "hmrc/itsa/selfEmploymentPeriodAmend.html", "hmrc/itsa/ukPropertyPeriod.html", "hmrc/itsa/ukPropertyPeriodAmend.html", "hmrc/itsa/finalDeclaration.html", "^/api/v1/hmrc/itsa.*"]
-hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
+hmrcScopesRequired = ["write:self-assessment", "read:self-assessment", "read:self-assessment-assist", "write:self-assessment-assist"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 # self-employed-read: the free ITSA reads — business details, obligations, and the
@@ -370,7 +370,7 @@ bundles = ["resident", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/itsa/taxCalculation.html"]
-hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
+hmrcScopesRequired = ["write:self-assessment", "read:self-assessment", "read:self-assessment-assist", "write:self-assessment-assist"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 # self-employed-year-end: the writes that finish or correct a self-employment tax year
