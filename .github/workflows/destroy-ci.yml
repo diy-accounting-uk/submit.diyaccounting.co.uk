@@ -30,6 +30,11 @@ on:
         description: 'Minimum age in hours a swept set must reach (default 8); 0 lets a sweep reach the slot-claim check on a set a run is deploying now'
         required: false
         default: ''
+      force-last-known-good:
+        type: boolean
+        description: 'Destroy the named deployment even when /submit/ci/last-known-good-deployment names it, then set that parameter to None (named dispatch only)'
+        required: false
+        default: false
   workflow_call:
     inputs:
       deployment-name:
@@ -91,6 +96,8 @@ jobs:
       - name: "inputs.deployment-name=[${{ inputs.deployment-name }}]"
         run: ":"
       - name: "inputs.sweep-for-stacks=[${{ inputs.sweep-for-stacks }}]"
+        run: ":"
+      - name: "inputs.force-last-known-good=[${{ inputs.force-last-known-good }}]"
         run: ":"
       - name: Normalise Params
         id: normalise
@@ -770,6 +777,7 @@ jobs:
           DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
           CI_APEX_DOMAIN: ${{ needs.names.outputs.apex-domain }}
           IS_DELETE_EVENT: ${{ github.event_name == 'delete' }}
+          FORCE_LAST_KNOWN_GOOD: ${{ github.event_name == 'workflow_dispatch' && inputs.force-last-known-good == true && needs.params.outputs.isSweeping != 'true' && needs.params.outputs.deployment-name != '' }}
         run: |
           set -euo pipefail
           if ! [[ "$DEPLOYMENT" =~ ^ci-[a-zA-Z0-9-]+$ ]] \
@@ -819,6 +827,12 @@ jobs:
           if [ "$IS_DELETE_EVENT" = "true" ]; then
             echo "[$DEPLOYMENT] stays: $REASON, but the branch that held its slot is deleted; releasing the slot record instead of destroying it"
             echo "keep-live-set=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          if [ "$FORCE_LAST_KNOWN_GOOD" = "true" ] && [ "$REASON" = "it is the last known good deployment" ]; then
+            echo "[$DEPLOYMENT] is the last known good deployment; destroying it because force-last-known-good is set"
+            echo "forced-last-known-good=true" >> "$GITHUB_OUTPUT"
             exit 0
           fi
 
@@ -1136,6 +1150,33 @@ jobs:
                 || echo "Failed to delete ${LOG_GROUP} in ${REGION}"
             done
           done
+
+      # A forced destroy of the last known good set leaves the pointer naming a deleted set.
+      # ObservabilityStack reads the parameter as a template parameter, so it is set to the
+      # sentinel "None" rather than deleted, as the sweep job does.
+      - name: Set last-known-good pointer to "None" after a forced destroy
+        if: ${{ !cancelled() && steps.refuse.outputs.forced-last-known-good == 'true' && steps.confirm-stacks.outcome == 'success' && steps.hold-slot.outputs.held != 'false' }}
+        shell: bash
+        env:
+          DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
+        run: |
+          set -euo pipefail
+          PARAMETER_NAME="/submit/ci/last-known-good-deployment"
+          CURRENT=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          if [ "$CURRENT" != "$DEPLOYMENT" ]; then
+            echo "$PARAMETER_NAME names [$CURRENT], not [$DEPLOYMENT]; leaving it"
+            exit 0
+          fi
+          for REGION in eu-west-2 us-east-1; do
+            REMAINING=$(aws cloudformation describe-stacks --region "$REGION" \
+              --query "Stacks[?starts_with(StackName, '${DEPLOYMENT}-')].StackName" --output text)
+            if [ -n "$REMAINING" ] && [ "$REMAINING" != "None" ]; then
+              echo "::error::Stacks still present for ${DEPLOYMENT} in ${REGION}: ${REMAINING}"
+              exit 1
+            fi
+          done
+          aws ssm put-parameter --name "$PARAMETER_NAME" --type String --value "None" --overwrite
+          echo "$DEPLOYMENT destroyed under force; set $PARAMETER_NAME to None" >> "$GITHUB_STEP_SUMMARY"
 
       # A slot's stacks come and go on every claim; its registrations with HMRC, Companies
       # House and Cognito do not. Only the claim record is released here -
