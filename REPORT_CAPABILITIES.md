@@ -272,11 +272,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure: use when Google Cloud or GA4 infrastructure must be planned or applied from its declared state.
     - [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning: use when a local or CI run needs a fresh Cognito test user and credentials.
     - [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials: use when a local deploy or debug session needs the diya-management SSO profile in the shell.
-    - [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts) Bootstrap the CDK toolkit across accounts: use when a fresh AWS account, or every account, needs the CDK toolkit stack with cross-account trust relationships.
-    - [OPS-99](#ops-99-bootstrap-the-aws-organization-structure) Bootstrap the AWS Organization structure: use when the AWS Organization's organizational units need verifying or creating after the organization itself exists.
-    - [OPS-100](#ops-100-create-or-invite-aws-member-accounts) Create or invite AWS member accounts: use when a new member account must be created, invited, moved between OUs, or its status checked.
-    - [OPS-101](#ops-101-set-up-github-oidc-deployment-roles) Set up GitHub OIDC deployment roles: use when a GitHub Actions deployment role and its OIDC identity provider need creating for an environment.
-    - [OPS-102](#ops-102-verify-the-multi-account-aws-setup) Verify the multi-account AWS setup: use when the multi-account structure needs confirming complete: OIDC roles, backup roles and organizational units.
     - [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK: use when a fresh AWS account needs its CDK bootstrap stacks, OIDC provider and deployment roles created.
   - [Shared runtime libraries](#shared-runtime-libraries-ops)
     - [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs) Mask and redact sensitive data from logs: use when text or an object bound for a log line or shared output may carry PII or secret values.
@@ -287,7 +282,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-86](#ops-86-provide-structured-pii-redacting-logging) Provide structured PII-redacting logging: use when a Lambda or script needs structured JSON logging to CloudWatch with PII stripped before it is written.
     - [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers) Process SQS message batches in Lambda workers: use when an SQS-triggered Lambda must handle each record's failure independently instead of failing the whole batch.
   - [Backup and disaster recovery](#backup-and-disaster-recovery-ops)
-    - [OPS-104](#ops-104-set-up-cross-account-backup-iam-roles) Set up cross-account backup IAM roles: use when a backup vault and its cross-account permissions need creating so source accounts can back up into it.
     - [OPS-105](#ops-105-copy-production-data-to-backup-for-migration) Copy production data to backup for migration: use when production DynamoDB tables need copying into the backup account ahead of an account migration.
     - [OPS-106](#ops-106-replicate-secrets-across-aws-accounts) Replicate secrets across AWS accounts: use when Secrets Manager entries must be copied from one AWS account to another during a migration.
     - [OPS-107](#ops-107-list-production-secrets-manager-entries) List production Secrets Manager entries: use when an inventory of an account's Secrets Manager entries and KMS keys is needed before copying secrets.
@@ -2013,9 +2007,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online) Record a real spreadsheet workbook in Collabora Online · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links · [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents) Dispatch agentic-lib board, backlog and PR agents
-- [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts) Bootstrap the CDK toolkit across accounts · [OPS-99](#ops-99-bootstrap-the-aws-organization-structure) Bootstrap the AWS Organization structure · [OPS-100](#ops-100-create-or-invite-aws-member-accounts) Create or invite AWS member accounts · [OPS-101](#ops-101-set-up-github-oidc-deployment-roles) Set up GitHub OIDC deployment roles · [OPS-102](#ops-102-verify-the-multi-account-aws-setup) Verify the multi-account AWS setup · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
+- [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
 - [Shared runtime libraries](#shared-runtime-libraries-ops): [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs) Mask and redact sensitive data from logs · [OPS-82](#ops-82-provide-a-shared-dynamodb-client) Provide a shared DynamoDB client · [OPS-83](#ops-83-emit-cloudwatch-emf-metrics) Emit CloudWatch EMF metrics · [OPS-84](#ops-84-validate-required-environment-variables-at-startup) Validate required environment variables at startup · [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens) Obtain and use GitHub App API tokens · [OPS-86](#ops-86-provide-structured-pii-redacting-logging) Provide structured PII-redacting logging · [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers) Process SQS message batches in Lambda workers
-- [Backup and disaster recovery](#backup-and-disaster-recovery-ops): [OPS-104](#ops-104-set-up-cross-account-backup-iam-roles) Set up cross-account backup IAM roles · [OPS-105](#ops-105-copy-production-data-to-backup-for-migration) Copy production data to backup for migration · [OPS-106](#ops-106-replicate-secrets-across-aws-accounts) Replicate secrets across AWS accounts · [OPS-107](#ops-107-list-production-secrets-manager-entries) List production Secrets Manager entries · [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records) Backfill TTL on existing DynamoDB records · [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account) Disaster-recovery restore into a new prod account · [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident) Force logout all users during a security incident
+- [Backup and disaster recovery](#backup-and-disaster-recovery-ops): [OPS-105](#ops-105-copy-production-data-to-backup-for-migration) Copy production data to backup for migration · [OPS-106](#ops-106-replicate-secrets-across-aws-accounts) Replicate secrets across AWS accounts · [OPS-107](#ops-107-list-production-secrets-manager-entries) List production Secrets Manager entries · [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records) Backfill TTL on existing DynamoDB records · [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account) Disaster-recovery restore into a new prod account · [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident) Force logout all users during a security incident
 - [CDK infrastructure stacks](#cdk-infrastructure-stacks-ops): [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans) Provision cross-account backup vaults and plans · [OPS-112](#ops-112-provision-the-api-gateway-stack) Provision the API Gateway stack · [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack) Provision the DynamoDB and S3 data stack · [OPS-114](#ops-114-provision-ecr-image-repositories) Provision ECR image repositories · [OPS-115](#ops-115-provision-the-edgecloudfront-stack) Provision the Edge/CloudFront stack · [OPS-116](#ops-116-provision-the-holding-page-stack) Provision the holding-page stack · [OPS-117](#ops-117-provision-the-observability-stack) Provision the Observability stack · [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1) Provision the Observability stack in us-east-1 · [OPS-119](#ops-119-provision-the-ops-stack) Provision the Ops stack · [OPS-120](#ops-120-provision-the-publish-stack) Provision the Publish stack · [OPS-121](#ops-121-provision-the-security-baseline-stack) Provision the Security Baseline stack · [OPS-122](#ops-122-provision-the-security-detection-stack) Provision the Security Detection stack
 - [CDK shared constructs and naming](#cdk-shared-constructs-and-naming-ops): [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account) Wire CDK application entrypoints per account · [OPS-124](#ops-124-define-shared-lambda-cdk-constructs) Define shared Lambda CDK constructs · [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently) Name and tag CDK resources consistently · [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code) Provide config-composition helpers for CDK code · [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource) Upsert Route53 alias records via custom resource · [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering) Generate S3 lifecycle rules for storage tiering · [OPS-129](#ops-129-configure-lambdacdk-application-logging) Configure Lambda/CDK application logging · [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle) Track runtime and dependency lifecycle
 <!-- /generated:area OPS -->
@@ -3037,11 +3031,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure
 - [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning
 - [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials
-- [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts) Bootstrap the CDK toolkit across accounts
-- [OPS-99](#ops-99-bootstrap-the-aws-organization-structure) Bootstrap the AWS Organization structure
-- [OPS-100](#ops-100-create-or-invite-aws-member-accounts) Create or invite AWS member accounts
-- [OPS-101](#ops-101-set-up-github-oidc-deployment-roles) Set up GitHub OIDC deployment roles
-- [OPS-102](#ops-102-verify-the-multi-account-aws-setup) Verify the multi-account AWS setup
 - [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
 <!-- /generated:group environment-and-accounts-ops -->
 
@@ -3137,56 +3126,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** sso profile, diya-management, local aws credentials, unset iam session, aws sso login
 - **Related:** OPS-07
 
-#### OPS-98 Bootstrap the CDK toolkit across accounts
-
-- **Use when:** a fresh AWS account, or every account, needs the CDK toolkit stack with cross-account trust relationships.
-- **Does:** bootstrap-cdk.sh bootstraps the CDK toolkit stack in one account, or every account when given all, with cross-account trust relationships to a nominated trust account.
-- **Run:** `./bootstrap-cdk.sh <account-id> [trust-account-id]`; `./bootstrap-cdk.sh all`
-- **Entry:** `infra/aws-accounts/bootstrap-cdk.sh`
-- **Files:** infra/aws-accounts/bootstrap-cdk.sh
-- **Keywords:** cdk bootstrap, toolkit stack, cross-account trust, aws account setup
-- **Related:** OPS-99, OPS-103
-
-#### OPS-99 Bootstrap the AWS Organization structure
-
-- **Use when:** the AWS Organization's organizational units need verifying or creating after the organization itself exists.
-- **Does:** bootstrap-organization.sh verifies the AWS Organization's structure, creates organizational units, and documents the current state. It assumes the organization itself was already created in the console.
-- **Run:** `./bootstrap-organization.sh`
-- **Entry:** `infra/aws-accounts/bootstrap-organization.sh`
-- **Files:** infra/aws-accounts/bootstrap-organization.sh
-- **Keywords:** aws organization, organizational units, ou setup, account structure
-- **Related:** OPS-100
-
-#### OPS-100 Create or invite AWS member accounts
-
-- **Use when:** a new member account must be created, invited, moved between OUs, or its status checked.
-- **Does:** create-member-account.sh creates or invites a member account into the organization, moves it between OUs, and reports status, via create, invite, move and status subcommands.
-- **Run:** `./create-member-account.sh create <account-name> <email> <ou-name>`; `./create-member-account.sh invite <account-id>`; `./create-member-account.sh move <account-id> <ou-name>`; `./create-member-account.sh status`
-- **Entry:** `infra/aws-accounts/create-member-account.sh`
-- **Files:** infra/aws-accounts/create-member-account.sh
-- **Keywords:** member account, invite account, move ou, organization account, account status
-- **Related:** OPS-99
-
-#### OPS-101 Set up GitHub OIDC deployment roles
-
-- **Use when:** a GitHub Actions deployment role and its OIDC identity provider need creating for an environment.
-- **Does:** setup-oidc-roles.sh creates the OIDC identity provider and the GitHub Actions deployment role for one environment and account pair.
-- **Run:** `./setup-oidc-roles.sh <environment-name> <account-id>`
-- **Entry:** `infra/aws-accounts/setup-oidc-roles.sh`
-- **Files:** infra/aws-accounts/setup-oidc-roles.sh
-- **Keywords:** oidc, github actions role, deployment role, identity provider, account setup
-- **Related:** OPS-102
-
-#### OPS-102 Verify the multi-account AWS setup
-
-- **Use when:** the multi-account structure needs confirming complete: OIDC roles, backup roles and organizational units.
-- **Does:** verify-setup.sh runs a battery of checks confirming the multi-account structure, including OIDC roles, backup roles and organization units, is complete and functional.
-- **Run:** `./verify-setup.sh [--verbose]`
-- **Entry:** `infra/aws-accounts/verify-setup.sh`
-- **Files:** infra/aws-accounts/verify-setup.sh
-- **Keywords:** verify setup, multi-account check, oidc roles, backup roles, organization check
-- **Related:** OPS-101, OPS-104
-
 #### OPS-103 Bootstrap a new AWS account for CDK
 
 - **Use when:** a fresh AWS account needs its CDK bootstrap stacks, OIDC provider and deployment roles created.
@@ -3195,7 +3134,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `scripts/aws-accounts/bootstrap-account.sh`
 - **Files:** scripts/aws-accounts/bootstrap-account.sh
 - **Keywords:** bootstrap account, cdk prerequisites, oidc provider, deployment role, new account
-- **Related:** OPS-98
 
 ### Shared runtime libraries (OPS)
 
@@ -3279,7 +3217,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ### Backup and disaster recovery (OPS)
 
 <!-- generated:group backup-and-disaster-recovery-ops -->
-- [OPS-104](#ops-104-set-up-cross-account-backup-iam-roles) Set up cross-account backup IAM roles
 - [OPS-105](#ops-105-copy-production-data-to-backup-for-migration) Copy production data to backup for migration
 - [OPS-106](#ops-106-replicate-secrets-across-aws-accounts) Replicate secrets across AWS accounts
 - [OPS-107](#ops-107-list-production-secrets-manager-entries) List production Secrets Manager entries
@@ -3287,16 +3224,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account) Disaster-recovery restore into a new prod account
 - [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident) Force logout all users during a security incident
 <!-- /generated:group backup-and-disaster-recovery-ops -->
-
-#### OPS-104 Set up cross-account backup IAM roles
-
-- **Use when:** a backup vault and its cross-account permissions need creating so source accounts can back up into it.
-- **Does:** setup-backup-roles.sh creates the backup vault in the backup account and configures the cross-account IAM permissions that let source accounts back up into it.
-- **Run:** `./setup-backup-roles.sh <backup-account-id> <source-account-ids...>`
-- **Entry:** `infra/aws-accounts/setup-backup-roles.sh`
-- **Files:** infra/aws-accounts/setup-backup-roles.sh
-- **Keywords:** backup vault, cross-account iam, backup roles, source accounts
-- **Related:** OPS-111, OPS-109
 
 #### OPS-105 Copy production data to backup for migration
 
@@ -3345,7 +3272,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `scripts/dr-restore-from-backup-account.sh`; `scripts/aws-accounts/restore-tables-from-backup.sh`
 - **Files:** scripts/dr-restore-from-backup-account.sh, scripts/aws-accounts/restore-tables-from-backup.sh
 - **Keywords:** disaster recovery, dr drill, restore prod, backup vault, cross-account restore, scan and batch-write
-- **Related:** OPS-104, OPS-105
+- **Related:** OPS-105
 
 #### OPS-110 Force logout all users during a security incident
 
@@ -3381,7 +3308,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/BackupStack.java`; `infra/main/java/co/uk/diyaccounting/submit/stacks/CrossAccountBackupVaultStack.java`; `infra/main/java/co/uk/diyaccounting/submit/SubmitBackupAccount.java`
 - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/BackupStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/CrossAccountBackupVaultStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/BackupAccountAccessStack.java, infra/test/java/co/uk/diyaccounting/submit/BackupStackCdkResourceTest.java, infra/main/java/co/uk/diyaccounting/submit/SubmitBackupAccount.java, infra/test/java/co/uk/diyaccounting/submit/SubmitBackupAccountCdkResourceTest.java, .github/workflows/setup-backup-account.yml, scripts/setup-s3-replication.sh, cdk-typescript/scripts/diff-templates.mjs
 - **Keywords:** backup vault, backup plan, cross-account backup, restore permissions, sns notification, backup account
-- **Related:** OPS-104, OPS-109
+- **Related:** OPS-109
 
 #### OPS-112 Provision the API Gateway stack
 
@@ -5299,7 +5226,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `../spreadsheets.diyaccounting.co.uk/scripts/generate-knowledge-base-toml.cjs`; `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/kb-search.js`
 - **Files:** ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/knowledge-base.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/knowledge-base.toml, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/all-articles.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/references.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/community.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/recently-updated.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/articles, ../spreadsheets.diyaccounting.co.uk/scripts/generate-knowledge-base-toml.cjs, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/kb-search.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/knowledge-base-page.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/references-page.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/community-page.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/recently-updated-page.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/docs-download.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/lightbox.js
 - **Keywords:** knowledge base, articles, kb-search, community page, references page, recently-updated, fuzzy search
-- **Related:**
+- **Related:** 
 
 #### SS-24 Compile the redirect engine
 
@@ -5480,7 +5407,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `../spreadsheets.diyaccounting.co.uk/.github/workflows/identity-guard.yml`
 - **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/identity-guard.yml, ../spreadsheets.diyaccounting.co.uk/.github/allowed-commit-identities.yml, ../spreadsheets.diyaccounting.co.uk/scripts/check-commit-identities.sh
 - **Keywords:** identity guard, commit author, allow-list, allowed-commit-identities
-- **Related:**
+- **Related:** 
 
 #### SS-40 Run CodeQL scanning
 
@@ -5726,10 +5653,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - account migration: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - account policies: [BILL-31](#bill-31-configure-stripe-account-policies)
 - account separation: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
-- account setup: [OPS-101](#ops-101-set-up-github-oidc-deployment-roles)
 - account stack: [BILL-36](#bill-36-cdk-account-stack)
-- account status: [OPS-100](#ops-100-create-or-invite-aws-member-accounts)
-- account structure: [OPS-99](#ops-99-bootstrap-the-aws-organization-structure)
 - accounting year-end: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - accounts filing: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - accounts staging: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
@@ -5823,7 +5747,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - assert: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - assert configuration: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
 - asset groups: [DATA-33](#data-33-read-the-google-ads-account-inventory)
-- assume role: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - async request: [SITE-09](#site-09-track-and-poll-async-api-requests), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - async request state: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state)
 - athena link: [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
@@ -5853,14 +5776,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - auto-tagging: [DATA-32](#data-32-sync-the-google-ads-account)
 - autosave: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - availability sli: [DATA-31](#data-31-sql-views-dora-and-operations)
-- aws account setup: [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts)
 - aws budgets: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - aws config recorder: [OPS-121](#ops-121-provision-the-security-baseline-stack)
-- aws organization: [OPS-99](#ops-99-bootstrap-the-aws-organization-structure)
 - aws sdk: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - aws security credentials supplier: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
 - aws sso: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
-- aws sts assume-role: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
+- aws sso login: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - aws-jwt-verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - awscustomresource: [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
 - axe: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard), [SS-45](#ss-45-run-compliance-checks)
@@ -5873,9 +5794,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - backup health: [OPS-48](#ops-48-verify-backup-health-daily)
 - backup migration: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
 - backup plan: [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
-- backup roles: [OPS-102](#ops-102-verify-the-multi-account-aws-setup), [OPS-104](#ops-104-set-up-cross-account-backup-iam-roles)
 - backup salt: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
-- backup vault: [OPS-48](#ops-48-verify-backup-health-daily), [OPS-104](#ops-104-set-up-cross-account-backup-iam-roles), [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account), [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
+- backup vault: [OPS-48](#ops-48-verify-backup-health-daily), [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account), [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
 - balance sheet: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - balance transactions: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake), [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - bank line: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
@@ -6008,7 +5928,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - catalogue.toml: [SS-09](#ss-09-build-package-zips-and-the-catalogue), [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - cdk: [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [BILL-36](#bill-36-cdk-account-stack), [BILL-37](#bill-37-cdk-billing-app-stack), [BILL-38](#bill-38-cdk-billing-webhook-stack), [BILL-39](#bill-39-cdk-diya-gl-stack)
 - cdk application logging: [OPS-129](#ops-129-configure-lambdacdk-application-logging)
-- cdk bootstrap: [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts)
 - cdk config: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - cdk custom resource: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - cdk deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
@@ -6214,10 +6133,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cross-account copy: [OPS-48](#ops-48-verify-backup-health-daily)
 - cross-account copyobject: [DATA-08](#data-08-copy-the-aws-focus-cost-export)
 - cross-account hold: [OPS-64](#ops-64-runbook-information-security-operations)
-- cross-account iam: [OPS-104](#ops-104-set-up-cross-account-backup-iam-roles)
 - cross-account restore: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
 - cross-account secrets: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts)
-- cross-account trust: [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts)
 - cross-client move: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
 - cross-domain linker: [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - cross-domain session: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
@@ -6306,7 +6223,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - deployment lookup: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions)
 - deployment name: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - deployment name tag: [DATA-30](#data-30-sql-views-cost)
-- deployment role: [OPS-101](#ops-101-set-up-github-oidc-deployment-roles), [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
+- deployment role: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
 - deployment safety conventions: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - deployment slug: [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows)
 - deployment sweep: [OPS-119](#ops-119-provision-the-ops-stack)
@@ -6351,6 +6268,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - diya-gl zip: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
 - diya-gl-cert: [SS-37](#ss-37-request-acm-certificates)
 - diya-gl-mcp: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
+- diya-management: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - diya-submit-mcp: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - diya_gl_base_url: [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
 - diya_gl_snapshot: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
@@ -6597,7 +6515,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ghcr image: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - git-common-dir: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - github actions: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
-- github actions role: [OPS-101](#ops-101-set-up-github-oidc-deployment-roles)
 - github actions runs: [DATA-07](#data-07-pull-github-operator-effort-data)
 - github api: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
 - github app: [SITE-05](#site-05-submit-support-tickets)
@@ -6737,7 +6654,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - identity base url: [CH-09](#ch-09-query-and-submit-document-transactions)
 - identity guard: [OPS-28](#ops-28-enforce-commit-identity-allowlist), [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - identity pool: [SS-34](#ss-34-configure-cloudwatch-rum)
-- identity provider: [OPS-101](#ops-101-set-up-github-oidc-deployment-roles)
 - identity-sandbox: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - identity.toml: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
 - import from clicks: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
@@ -6765,7 +6681,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - interest: [SITE-03](#site-03-capture-feedback-interest)
 - investigation: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
 - invitation: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
-- invite account: [OPS-100](#ops-100-create-or-invite-aws-member-accounts)
 - invite_client: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - invoice import: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - invoice.paid: [BILL-28](#bill-28-process-stripe-webhook-events)
@@ -6928,7 +6843,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mcp.html: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - measured figures: [DEV-37](#dev-37-write-the-session-report), [SS-56](#ss-56-write-the-session-report)
 - measurement id: [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events)
-- member account: [OPS-100](#ops-100-create-or-invite-aws-member-accounts)
 - merge gates: [SS-51](#ss-51-merge-every-pr-that-is-ready)
 - merge preview: [DEV-33](#dev-33-preview-what-auto-merge-would-do)
 - merge state: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
@@ -6963,7 +6877,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - monthly feedback email: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - monthly record: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - move book: [BILL-15](#bill-15-move-a-book-to-a-client)
-- move ou: [OPS-100](#ops-100-create-or-invite-aws-member-accounts)
 - move_book_to_client: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - movebooktoclient: [BILL-15](#bill-15-move-a-book-to-a-client)
 - mtd calendar: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
@@ -6976,7 +6889,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mtd-income-tax: [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user)
 - mtd-it: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access)
 - mtd-vat: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user)
-- multi-account check: [OPS-102](#ops-102-verify-the-multi-account-aws-setup)
 - my passes: [BILL-09](#bill-09-list-a-users-issued-passes)
 - naming convention: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - national insurance: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
@@ -7035,10 +6947,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - oembed: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
 - offline: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - offline conversions: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
-- oidc: [OPS-101](#ops-101-set-up-github-oidc-deployment-roles)
 - oidc exchange: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - oidc provider: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
-- oidc roles: [OPS-102](#ops-102-verify-the-multi-account-aws-setup)
 - oidc trust: [OPS-60](#ops-60-guide-github-repository-configuration)
 - old logs: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - on-demand backup: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
@@ -7071,13 +6981,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ops notifications: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram)
 - ops stack: [OPS-119](#ops-119-provision-the-ops-stack)
 - org policy: [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
-- organization account: [OPS-100](#ops-100-create-or-invite-aws-member-accounts)
-- organization check: [OPS-102](#ops-102-verify-the-multi-account-aws-setup)
-- organizational units: [OPS-99](#ops-99-bootstrap-the-aws-organization-structure)
 - origin access control: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - origin label: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
 - originfor tag: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions), [OPS-116](#ops-116-provision-the-holding-page-stack)
-- ou setup: [OPS-99](#ops-99-bootstrap-the-aws-organization-structure)
 - outbound call: [CH-10](#ch-10-fetch-http-with-a-timeout)
 - output value: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - outside cdk: [OPS-32](#ops-32-detect-cloudformation-drift)
@@ -7542,7 +7448,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - software composition: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - sole trader: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
 - sonnet escalation: [OPS-18](#ops-18-run-alarm-and-support-triage)
-- source accounts: [OPS-104](#ops-104-set-up-cross-account-backup-iam-roles)
 - source-derived: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - sourced facts: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - spdx: [DEV-20](#dev-20-check-spdx-licence-headers)
@@ -7559,6 +7464,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - spreadsheetsstack: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - sqs: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - ssm parameter: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows), [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
+- sso profile: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - sso window: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
 - stack: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
 - stack job: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
@@ -7615,7 +7521,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - submission failure: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - submissions daily: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - submit vat: [HMRC-01](#hmrc-01-submit-a-vat-return)
-- diya-management: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - submit.bundle.js: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - submit.env: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries), [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
 - submit.js: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)
@@ -7714,7 +7619,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - token refresh retry: [SITE-09](#site-09-track-and-poll-async-api-requests)
 - toml parser: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - tool registry: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
-- toolkit stack: [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts)
 - totp: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - traceparent: [SITE-17](#site-17-trace-and-secure-client-requests)
 - trackevent: [SS-33](#ss-33-send-diya-gl-ga4-events)
@@ -7814,7 +7718,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - verify ingestion jobs: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - verify pipeline: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - verify roundtrip: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
-- verify setup: [OPS-102](#ops-102-verify-the-multi-account-aws-setup)
 - verify stability: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
 - verify transition: [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition)
 - version roll: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
