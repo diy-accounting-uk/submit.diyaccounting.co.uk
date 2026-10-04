@@ -271,7 +271,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user: use when a fresh HMRC MTD sandbox test user is needed for VAT or Income Tax testing.
     - [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure: use when Google Cloud or GA4 infrastructure must be planned or applied from its declared state.
     - [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning: use when a local or CI run needs a fresh Cognito test user and credentials.
-    - [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials: use when a local deploy or debug session needs submit-deployment-role credentials in the shell.
+    - [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials: use when a local deploy or debug session needs the diya-management SSO profile in the shell.
     - [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts) Bootstrap the CDK toolkit across accounts: use when a fresh AWS account, or every account, needs the CDK toolkit stack with cross-account trust relationships.
     - [OPS-99](#ops-99-bootstrap-the-aws-organization-structure) Bootstrap the AWS Organization structure: use when the AWS Organization's organizational units need verifying or creating after the organization itself exists.
     - [OPS-100](#ops-100-create-or-invite-aws-member-accounts) Create or invite AWS member accounts: use when a new member account must be created, invited, moved between OUs, or its status checked.
@@ -3129,12 +3129,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### OPS-69 Assume and clear local AWS deployment credentials
 
-- **Use when:** a local deploy or debug session needs submit-deployment-role credentials in the shell.
-- **Does:** aws-assume-submit-deployment-role.sh assumes the submit-deployment-role into the current shell's AWS_* variables, for local deploy or debug work. aws-unset-iam-session.sh clears them again afterwards.
-- **Run:** `. ./scripts/aws-assume-submit-deployment-role.sh`; `./scripts/aws-unset-iam-session.sh`
-- **Entry:** `scripts/aws-assume-submit-deployment-role.sh`
-- **Files:** scripts/aws-assume-submit-deployment-role.sh, scripts/aws-unset-iam-session.sh
-- **Keywords:** assume role, submit-deployment-role, local aws credentials, unset iam session, aws sts assume-role
+- **Use when:** a local deploy or debug session needs the diya-management SSO profile in the shell.
+- **Does:** aws-use-submit-profile.sh points the current shell at the diya-management SSO profile (checking the session and printing the identity), for local deploy or debug work. aws-unset-iam-session.sh clears any exported AWS_* credentials afterwards.
+- **Run:** `. ./scripts/aws-use-submit-profile.sh`; `./scripts/aws-unset-iam-session.sh`
+- **Entry:** `scripts/aws-use-submit-profile.sh`
+- **Files:** scripts/aws-use-submit-profile.sh, scripts/aws-unset-iam-session.sh
+- **Keywords:** sso profile, diya-management, local aws credentials, unset iam session, aws sso login
 - **Related:** OPS-07
 
 #### OPS-98 Bootstrap the CDK toolkit across accounts
@@ -7615,7 +7615,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - submission failure: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - submissions daily: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - submit vat: [HMRC-01](#hmrc-01-submit-a-vat-return)
-- submit-deployment-role: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
+- diya-management: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - submit.bundle.js: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - submit.env: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries), [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
 - submit.js: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)
