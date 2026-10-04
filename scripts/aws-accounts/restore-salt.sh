@@ -69,7 +69,7 @@ while [[ $# -gt 0 ]]; do
       echo ""
       echo "Required:"
       echo "  --source-profile <profile>  AWS CLI profile for source account (887764105431)"
-      echo "  --target-profile <profile>  AWS CLI profile for target account (new submit-prod)"
+      echo "  --target-profile <profile>  AWS CLI profile for target account (new diya-submit-prod)"
       echo ""
       echo "Options:"
       echo "  --env <name>       Environment name (default: prod)"
@@ -80,7 +80,7 @@ while [[ $# -gt 0 ]]; do
       echo "instructions if cross-account KMS access is needed."
       echo ""
       echo "Example:"
-      echo "  $0 --source-profile management --target-profile submit-prod --env prod"
+      echo "  $0 --source-profile diya-management --target-profile diya-submit-prod --env prod"
       exit 0
       ;;
     *)

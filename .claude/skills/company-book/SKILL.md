@@ -21,7 +21,7 @@ Paths are from the workspace root, `/Users/antony/projects/diy-accounting-limite
 |---|---|---|
 | Bank statements (NatWest current `600947-80597386`, savings `600947-80634672`) | `drive/DIY Accounting Limited/finance/<yyyy-yyyy> accounts/bank/` | CSV and PDF per month, the bank's own file names. The operator puts them here. Read-only mirror |
 | PayPal statements | `drive/…/finance/<yyyy-yyyy> accounts/paypal/` | `<yyyy-mm> PayPal - transactions.PDF` and `statement.PDF` per month |
-| Stripe | `staging/<yyyy-yyyy>/stripe/` | `<date>-stripe-balance-transactions.json` and `-stripe-payouts.json`, written by `scripts/finance/stripe-stage.js --month YYYY-MM` (`AWS_PROFILE=submit-prod`) |
+| Stripe | `staging/<yyyy-yyyy>/stripe/` | `<date>-stripe-balance-transactions.json` and `-stripe-payouts.json`, written by `scripts/finance/stripe-stage.js --month YYYY-MM` (`AWS_PROFILE=diya-submit-prod`) |
 | Prior year's completed workbooks (the control) | `drive/…/finance/<prior year> accounts/` | `Financialaccounts.xlsx`, `Currentaccount.xlsx`, `Cashaccount.xlsx`, `Purchases.xlsx`, `Sales.xlsx` and others |
 | Supplier mail | `mail/antony@diyaccounting.co.uk/<yyyy>/<m>/<d>/*.eml` | Invoices and payment schedules, often as PDF attachments |
 | The book | `staging/<yyyy-yyyy>/book/` | `book.toml`, `lines.jsonl`, `VERIFICATION.md`, `book-diya-gl.zip`. Private; never commit it |

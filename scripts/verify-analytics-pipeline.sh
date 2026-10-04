@@ -11,8 +11,8 @@
 #
 # Usage: scripts/verify-analytics-pipeline.sh [environment-name]
 #
-#   AWS_PROFILE=submit-ci scripts/verify-analytics-pipeline.sh ci
-#   AWS_PROFILE=submit-prod scripts/verify-analytics-pipeline.sh prod
+#   AWS_PROFILE=diya-submit-ci scripts/verify-analytics-pipeline.sh ci
+#   AWS_PROFILE=diya-submit-prod scripts/verify-analytics-pipeline.sh prod
 
 set -euo pipefail
 

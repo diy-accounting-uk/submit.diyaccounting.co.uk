@@ -13,7 +13,7 @@
 #
 # Usage:
 #   ./scripts/aws-accounts/restore-tables-from-backup.sh \
-#     --source-profile management --target-profile submit-prod [--env prod] [--dry-run]
+#     --source-profile diya-management --target-profile diya-submit-prod [--env prod] [--dry-run]
 #
 # Prerequisites:
 #   - AWS CLI v2 configured with SSO profiles (aws sso login --sso-session diyaccounting)
@@ -82,8 +82,8 @@ while [[ $# -gt 0 ]]; do
       echo "Target tables must already exist (created by DataStack deployment)."
       echo ""
       echo "Required:"
-      echo "  --source-profile <profile>  AWS CLI profile for source account (e.g., management)"
-      echo "  --target-profile <profile>  AWS CLI profile for target account (e.g., submit-prod)"
+      echo "  --source-profile <profile>  AWS CLI profile for source account (e.g., diya-management)"
+      echo "  --target-profile <profile>  AWS CLI profile for target account (e.g., diya-submit-prod)"
       echo ""
       echo "Options:"
       echo "  --env <name>    Environment name (default: prod)"
@@ -101,8 +101,8 @@ while [[ $# -gt 0 ]]; do
       echo "  {env}-env-*-async-requests (5 tables)    Ephemeral correlation data"
       echo ""
       echo "Example:"
-      echo "  $0 --source-profile management --target-profile submit-prod"
-      echo "  $0 --source-profile management --target-profile submit-prod --dry-run"
+      echo "  $0 --source-profile diya-management --target-profile diya-submit-prod"
+      echo "  $0 --source-profile diya-management --target-profile diya-submit-prod --dry-run"
       exit 0
       ;;
     *)

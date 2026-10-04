@@ -50,8 +50,8 @@ while true; do
     fi
 
     # Try to get the slot parameter
-    if aws --profile submit-ci ssm get-parameter --name "/submit/ci/slots/$set" 2>/dev/null | grep -q '"Value"'; then
-      current_run=$(aws --profile submit-ci ssm get-parameter --name "/submit/ci/slots/$set" --query 'Parameter.Value' --output text)
+    if aws --profile diya-submit-ci ssm get-parameter --name "/submit/ci/slots/$set" 2>/dev/null | grep -q '"Value"'; then
+      current_run=$(aws --profile diya-submit-ci ssm get-parameter --name "/submit/ci/slots/$set" --query 'Parameter.Value' --output text)
 
       # Check if this is the last-known-good deployment - skip it
       if [[ "$current_run" == "/submit/ci/last-known-good-deployment" ]]; then
@@ -61,7 +61,7 @@ while true; do
       # Check if the run is still in flight by checking its status
       if gh run view "$current_run" --json status --jq '.status' 2>/dev/null | grep -q "in_progress"; then
         # Check if the stacks for this set are standing
-        stack_count=$(aws --profile submit-ci cloudformation list-stacks \
+        stack_count=$(aws --profile diya-submit-ci cloudformation list-stacks \
           --query "StackSummaries[?StackStatus!='DELETE_COMPLETE' && contains(StackName, '$set-app-')] | length(@)" \
           --output text)
 

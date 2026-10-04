@@ -8,8 +8,8 @@
 #
 # Usage: scripts/verify-waf-false-positives.sh [environment-name] [minutes]
 #
-#   AWS_PROFILE=submit-ci scripts/verify-waf-false-positives.sh ci 30
-#   AWS_PROFILE=submit-prod scripts/verify-waf-false-positives.sh prod
+#   AWS_PROFILE=diya-submit-ci scripts/verify-waf-false-positives.sh ci 30
+#   AWS_PROFILE=diya-submit-prod scripts/verify-waf-false-positives.sh prod
 
 set -euo pipefail
 

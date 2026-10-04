@@ -17,7 +17,7 @@ from the account and live code from `infra/google/ads/` — never guess a number
 Run the performance report for the account's campaigns, ad groups and keywords:
 
 ```bash
-export AWS_PROFILE=submit-prod
+export AWS_PROFILE=diya-submit-prod
 npm run ads:report
 ```
 

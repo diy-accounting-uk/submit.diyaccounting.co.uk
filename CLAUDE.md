@@ -455,15 +455,15 @@ See `PLAN_ACCOUNT_SEPARATION.md` for the full migration plan.
 
 **Read-only AWS operations are always permitted.** You may always query AWS resources (describe, get, list, logs, etc.) without asking for permission. This includes CloudFormation stack status, Lambda configuration, CloudWatch logs, DynamoDB scans, CloudFront distributions, and any other read-only API calls needed for investigation and debugging.
 
-Before dispatching a wave of sub-agents that read AWS, run `aws --profile submit-ci sts get-caller-identity` and ask the user to log in up front if needed, rather than waiting for the first agent to fail with `UnauthorizedSSOTokenError`.
+Before dispatching a wave of sub-agents that read AWS, run `aws --profile diya-submit-ci sts get-caller-identity` and ask the user to log in up front if needed, rather than waiting for the first agent to fail with `UnauthorizedSSOTokenError`.
 
 Use SSO profiles to access any account. Login once, then use `--profile` on each command:
 
 ```bash
 aws sso login --sso-session diyaccounting
-aws --profile submit-ci cloudformation describe-stacks --stack-name ci-env-IdentityStack
-aws --profile submit-prod dynamodb scan --table-name prod-env-bundles
-aws --profile management route53 list-hosted-zones
+aws --profile diya-submit-ci cloudformation describe-stacks --stack-name ci-env-IdentityStack
+aws --profile diya-submit-prod dynamodb scan --table-name prod-env-bundles
+aws --profile diya-management route53 list-hosted-zones
 ```
 
 **SSO profiles** (configured in `~/.aws/config`):
@@ -481,7 +481,7 @@ SSO credentials last ~8-12 hours across all profiles. When an AWS command fails 
 
 **For scripts that need AWS env vars** (e.g., Cognito test scripts), export the profile:
 ```bash
-export AWS_PROFILE=submit-ci
+export AWS_PROFILE=diya-submit-ci
 npm run test:enableCognitoNative
 ```
 
@@ -508,7 +508,7 @@ For faster iteration than pushing commits and waiting for GitHub Actions (`probe
 
 **1. Set the AWS profile for the target environment:**
 ```bash
-export AWS_PROFILE=submit-ci    # or submit-prod
+export AWS_PROFILE=diya-submit-ci    # or submit-prod
 ```
 
 **2. Enable Cognito native auth and refresh the test user:**
@@ -718,9 +718,9 @@ Use SSO profiles to access any account. Login once, then use `--profile` on each
 
 ```bash
 aws sso login --sso-session diyaccounting
-aws --profile submit-ci cloudformation describe-stacks --stack-name ci-env-IdentityStack
-aws --profile management route53 list-hosted-zones
-aws --profile gateway cloudfront list-distributions
+aws --profile diya-submit-ci cloudformation describe-stacks --stack-name ci-env-IdentityStack
+aws --profile diya-management route53 list-hosted-zones
+aws --profile diya-gateway cloudfront list-distributions
 ```
 
 SSO credentials last ~8-12 hours. When an AWS command fails with `UnauthorizedSSOTokenError`, ask the user to run `aws sso login --sso-session diyaccounting`.

@@ -10,8 +10,8 @@
 # after a pull to pick up the new day.
 #
 # Usage:
-#   AWS_PROFILE=submit-ci scripts/analytics-pull.sh ci
-#   AWS_PROFILE=submit-prod scripts/analytics-pull.sh prod
+#   AWS_PROFILE=diya-submit-ci scripts/analytics-pull.sh ci
+#   AWS_PROFILE=diya-submit-prod scripts/analytics-pull.sh prod
 set -euo pipefail
 
 ENV_NAME="${1:-ci}"

@@ -50,7 +50,7 @@ VAT videos (2026-09-06). Anything else that looks like a test artefact stops the
 Needed only if Secrets Manager has no `prod/submit/youtube/oauth_client`. Check first:
 
 ```bash
-aws --profile submit-prod secretsmanager describe-secret --secret-id prod/submit/youtube/oauth_client --query Name --output text
+aws --profile diya-submit-prod secretsmanager describe-secret --secret-id prod/submit/youtube/oauth_client --query Name --output text
 ```
 
 If it is missing, walk the operator through this, exactly. Google Cloud console,
@@ -134,7 +134,7 @@ under the video on the site shows nothing until this is done.
 Then check the site embeds every public video:
 
 ```bash
-AWS_PROFILE=submit-prod npm run video:embed-check
+AWS_PROFILE=diya-submit-prod npm run video:embed-check
 ```
 
 Run it after every publish and again after the deploy that ships a new `publish.json`. It lists

@@ -37,7 +37,7 @@ active` line carrying a `https://claude.ai/code/session_…` URL means the sessi
    session is connected, print `/rc` once for the operator; it is their command, not the session's.
    The `/config` toggle "Enable Remote Control for all sessions" (user settings; a `true` in a
    project's `.claude/settings.local.json` is ignored) connects every new session on its own.
-2. **SSO.** `aws --profile submit-ci sts get-caller-identity`. If it fails, print
+2. **SSO.** `aws --profile diya-submit-ci sts get-caller-identity`. If it fails, print
    `aws sso login --sso-session diyaccounting` and wait; the window it opens (8 to 12 hours) is the
    budget every wave is sized to. Note the login time; read every AWS fact a cycle needs while the
    token is fresh, and when a render finds it expired, say so on the prod line and print the login
@@ -63,7 +63,7 @@ are not startable; leave them.
 ### 2. Wave
 
 Before a push that starts a branch deploy, read the ci slots:
-`aws --profile submit-ci ssm get-parameters-by-path --path /submit/ci/slots`. An absent parameter
+`aws --profile diya-submit-ci ssm get-parameters-by-path --path /submit/ci/slots`. An absent parameter
 is a free slot; a parameter naming a running `deploy.yml` run holds its slot. Hold the push while
 every slot is held; `main` deploys to prod and takes no ci slot.
 
@@ -92,7 +92,7 @@ every slot is held; `main` deploys to prod and takes no ci slot.
   carries the called-workflow checklist: inherited `github.event_name`, permissions the callers
   must grant, `--repo` on `gh` with no checkout, grep the siblings for the same defect. A brief
   that adds or changes an Athena view names the ci type proof: `SELECT * FROM (<view sql>) LIMIT 0`
-  via `aws --profile submit-ci athena start-query-execution` (workgroup `ci-env-analytics`, database
+  via `aws --profile diya-submit-ci athena start-query-execution` (workgroup `ci-env-analytics`, database
   `ci_env_analytics`; prod's are `prod-env-analytics` and `prod_env_analytics`), column types read
   back from `get-query-results` ResultSetMetadata, read-only. A brief
   that dispatches a workflow names the exact inputs (`destroy-ci.yml` needs

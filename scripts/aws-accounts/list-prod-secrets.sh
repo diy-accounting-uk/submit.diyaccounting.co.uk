@@ -12,7 +12,7 @@
 #   ./scripts/aws-accounts/list-prod-secrets.sh --profile <profile> [--env <environment>]
 #
 # Arguments:
-#   --profile    - AWS CLI SSO profile for the account (e.g., management)
+#   --profile    - AWS CLI SSO profile for the account (e.g., diya-management)
 #   --env        - Environment name filter (default: prod). Use "all" to list everything.
 #
 # Prerequisites:
@@ -50,7 +50,7 @@ while [[ $# -gt 0 ]]; do
       echo "Does NOT print secret values — only names, descriptions, tags, and access dates."
       echo ""
       echo "Required:"
-      echo "  --profile <profile>  AWS CLI SSO profile for the account (e.g., management)"
+      echo "  --profile <profile>  AWS CLI SSO profile for the account (e.g., diya-management)"
       echo ""
       echo "Options:"
       echo "  --env <name>  Environment name filter (default: prod). Use 'all' to list everything."
@@ -61,7 +61,7 @@ while [[ $# -gt 0 ]]; do
       echo "  aws sso login --sso-session diyaccounting"
       echo ""
       echo "Example:"
-      echo "  $0 --profile management --env prod"
+      echo "  $0 --profile diya-management --env prod"
       exit 0
       ;;
     *)

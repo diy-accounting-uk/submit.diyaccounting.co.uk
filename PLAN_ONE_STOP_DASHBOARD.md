@@ -663,7 +663,7 @@ board, so this loss is acceptable. The job keeps the other rule itself: it refus
   operator's `open_book` call, or `GET /api/v1/books` with their token):
 
   ```
-  aws --profile submit-prod s3 ls s3://prod-env-diya-gl-972912397388/users/ --recursive | tee /tmp/diya-gl-keys.txt | grep '<bookId>/metadata.json'
+  aws --profile diya-submit-prod s3 ls s3://prod-env-diya-gl-972912397388/users/ --recursive | tee /tmp/diya-gl-keys.txt | grep '<bookId>/metadata.json'
   ```
 
   The path segment after `users/` is `COMPANY_BOOK_OWNER_PREFIX`. Then set the variables:

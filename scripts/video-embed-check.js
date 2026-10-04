@@ -8,7 +8,7 @@
 // that every publish.json group has an area page, and that YouTube's oEmbed answers 200 for
 // every embedded video.
 //
-// Usage: AWS_PROFILE=submit-prod node scripts/video-embed-check.js [--base <url>]
+// Usage: AWS_PROFILE=diya-submit-prod node scripts/video-embed-check.js [--base <url>]
 
 import { fileURLToPath } from "url";
 import { obtainAccessToken, resolveQuotaProject } from "./youtube-upload.js";

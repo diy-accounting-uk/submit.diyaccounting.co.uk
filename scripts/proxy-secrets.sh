@@ -11,7 +11,7 @@
 
 set -euo pipefail
 
-PROFILE="${AWS_PROFILE:-submit-ci}"
+PROFILE="${AWS_PROFILE:-diya-submit-ci}"
 REGION="eu-west-2"
 
 if ! aws --profile "$PROFILE" sts get-caller-identity >/dev/null 2>&1; then

@@ -23,7 +23,7 @@
 // 12th, so a first run before the 10th that finds nothing yet is normal and raises no alert;
 // a second run past the 10th that still finds nothing is itself the alert.
 //
-// Publishing the alert needs a live `submit-prod` SSO session (AWS_PROFILE=submit-prod):
+// Publishing the alert needs a live `submit-prod` SSO session (AWS_PROFILE=diya-submit-prod):
 // EventBridge's PutEvents call fails silently under launchd once the SSO token expires,
 // because that profile cannot refresh itself unattended. This script exits non-zero when the
 // publish fails (see the ACTIVITY_BUS_NAME / EventBridge failure paths in main()) and the

@@ -18,7 +18,7 @@ run-name: "Setup backup account ${{ inputs.backup-account-id }}"
 # once by hand with the SSO profile:
 #
 #   aws sso login --sso-session diyaccounting
-#   export AWS_PROFILE=submit-backup
+#   export AWS_PROFILE=diya-submit-backup
 #   export CDK_DEFAULT_ACCOUNT=914216784828
 #   export CDK_DEFAULT_REGION=eu-west-2
 #   npx cdk bootstrap aws://914216784828/eu-west-2

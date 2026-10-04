@@ -63,7 +63,7 @@ Most workflows take the environment from an input or a computed `github-environm
 | `ROOT_DEPLOY_ROLE_ARN` | same five workflows |
 | `ROOT_HOSTED_ZONE_ID` | `deploy.yml`, `promote-ci-apex.yml`, `request-holding-cert.yml` |
 
-Recreate: role ARNs with `aws --profile management iam get-role --role-name root-github-actions-role --query Role.Arn --output text` (and `root-deployment-role`); zone id with `aws --profile management route53 list-hosted-zones-by-name --dns-name diyaccounting.co.uk --query 'HostedZones[0].Id' --output text` with `/hostedzone/` removed. The org also holds `GATEWAY_*` and `SPREADSHEETS_*` role ARNs for the sibling repositories.
+Recreate: role ARNs with `aws --profile diya-management iam get-role --role-name root-github-actions-role --query Role.Arn --output text` (and `root-deployment-role`); zone id with `aws --profile diya-management route53 list-hosted-zones-by-name --dns-name diyaccounting.co.uk --query 'HostedZones[0].Id' --output text` with `/hostedzone/` removed. The org also holds `GATEWAY_*` and `SPREADSHEETS_*` role ARNs for the sibling repositories.
 
 ### Repository level
 

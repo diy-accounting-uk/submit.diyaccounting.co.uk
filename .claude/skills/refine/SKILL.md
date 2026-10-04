@@ -92,7 +92,7 @@ have to discover to finish. Then put that in the brief. The checks that paid for
   `activity_events`), asks for an `EXPLAIN` against ci to verify the plan, and states the projected
   scan size and estimated cost.
   A new or changed view is also run on ci as `SELECT * FROM (<view sql>) LIMIT 0`
-  (`aws --profile submit-ci athena start-query-execution`, workgroup `ci-env-analytics`, database
+  (`aws --profile diya-submit-ci athena start-query-execution`, workgroup `ci-env-analytics`, database
   `ci_env_analytics`; prod's are `prod-env-analytics` and `prod_env_analytics`), and its column types
   are read back from `get-query-results` ResultSetMetadata; the brief names that proof.
 - **A new view, table or stack resource raises the counts in the environment tests that assert

@@ -3,7 +3,7 @@
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
 # Set TTL on all existing records in a DynamoDB table
-# Usage: ./scripts/aws-accounts/set-ttl-on-existing-records.sh --profile submit-prod --table prod-env-hmrc-api-requests --ttl-days 1 [--dry-run]
+# Usage: ./scripts/aws-accounts/set-ttl-on-existing-records.sh --profile diya-submit-prod --table prod-env-hmrc-api-requests --ttl-days 1 [--dry-run]
 #
 # This script:
 # 1. Scans all items in the table
@@ -11,7 +11,7 @@
 # 3. Updates 'ttl_datestamp' to the corresponding ISO date string
 #
 # Then separately enable TTL on the table:
-#   aws --profile submit-prod dynamodb update-time-to-live --table-name prod-env-hmrc-api-requests --time-to-live-specification 'Enabled=true,AttributeName=ttl'
+#   aws --profile diya-submit-prod dynamodb update-time-to-live --table-name prod-env-hmrc-api-requests --time-to-live-specification 'Enabled=true,AttributeName=ttl'
 
 set -euo pipefail
 

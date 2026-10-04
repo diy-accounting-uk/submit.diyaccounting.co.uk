@@ -45,7 +45,7 @@ diagnostic.
 
 ## Prerequisites
 
-- An AWS SSO session for the `submit-ci` profile: `aws sso login --sso-session diyaccounting`.
+- An AWS SSO session for the `diya-submit-ci` profile: `aws sso login --sso-session diyaccounting`.
 - `.env.proxy` at the repo root, with `HMRC_SANDBOX_BASE_URI`, `HMRC_SANDBOX_CLIENT_ID` and
   `DIY_SUBMIT_BASE_URL` set (already there for the proxy variant).
 - Playwright's browsers installed: `npm run playwright:install`.

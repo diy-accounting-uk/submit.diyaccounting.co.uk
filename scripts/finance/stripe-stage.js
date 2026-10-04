@@ -12,7 +12,7 @@
  * an environment variable. This is a read-only listing; nothing here writes to Stripe.
  *
  * Usage:
- *   AWS_PROFILE=submit-prod node scripts/finance/stripe-stage.js --month 2026-03
+ *   AWS_PROFILE=diya-submit-prod node scripts/finance/stripe-stage.js --month 2026-03
  *
  * Writes, under ../staging/<year-end>/stripe/ (the year-end picked from the month's last day):
  *   <yyyy-mm-dd>-stripe-balance-transactions.json

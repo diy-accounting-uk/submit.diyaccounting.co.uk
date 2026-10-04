@@ -17,9 +17,9 @@
 # the same way and are copied only.
 #
 # Usage:
-#   AWS_PROFILE=submit-ci  scripts/analytics-dt-relayout.sh --env ci   --dry-run
-#   AWS_PROFILE=submit-ci  scripts/analytics-dt-relayout.sh --env ci   [--before 2026-09-01]
-#   AWS_PROFILE=submit-prod scripts/analytics-dt-relayout.sh --env prod [--before 2026-09-01]
+#   AWS_PROFILE=diya-submit-ci  scripts/analytics-dt-relayout.sh --env ci   --dry-run
+#   AWS_PROFILE=diya-submit-ci  scripts/analytics-dt-relayout.sh --env ci   [--before 2026-09-01]
+#   AWS_PROFILE=diya-submit-prod scripts/analytics-dt-relayout.sh --env prod [--before 2026-09-01]
 set -euo pipefail
 
 USAGE="Usage: $0 --env ci|prod [--dry-run] [--before YYYY-MM-DD]"

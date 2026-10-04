@@ -18,11 +18,11 @@
 #
 # Usage: scripts/gcp-as-sso.sh [--profile <aws-profile>] <command> [args...]
 #   scripts/gcp-as-sso.sh node scripts/some-read-only-bigquery-script.js
-#   scripts/gcp-as-sso.sh --profile submit-ci node scripts/some-read-only-bigquery-script.js
+#   scripts/gcp-as-sso.sh --profile diya-submit-ci node scripts/some-read-only-bigquery-script.js
 
 set -euo pipefail
 
-profile="submit-prod"
+profile="diya-submit-prod"
 
 while [ $# -gt 0 ]; do
   case "$1" in

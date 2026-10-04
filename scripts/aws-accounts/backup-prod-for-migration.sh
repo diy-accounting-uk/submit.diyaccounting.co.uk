@@ -11,7 +11,7 @@
 #   ./scripts/aws-accounts/backup-prod-for-migration.sh --profile <profile> [--env <environment>]
 #
 # Arguments:
-#   --profile    - AWS CLI SSO profile for the source account (e.g., management)
+#   --profile    - AWS CLI SSO profile for the source account (e.g., diya-management)
 #   --env        - Environment name (default: prod). Used to find tables like {env}-env-*
 #
 # Prerequisites:
@@ -47,7 +47,7 @@ while [[ $# -gt 0 ]]; do
       echo "Creates on-demand DynamoDB backups and exports salt metadata for account migration."
       echo ""
       echo "Required:"
-      echo "  --profile <profile>  AWS CLI SSO profile for the source account (e.g., management)"
+      echo "  --profile <profile>  AWS CLI SSO profile for the source account (e.g., diya-management)"
       echo ""
       echo "Options:"
       echo "  --env <name>  Environment name (default: prod)"
@@ -63,7 +63,7 @@ while [[ $# -gt 0 ]]; do
       echo "  aws sso login --sso-session diyaccounting"
       echo ""
       echo "Example:"
-      echo "  $0 --profile management --env prod"
+      echo "  $0 --profile diya-management --env prod"
       exit 0
       ;;
     *)

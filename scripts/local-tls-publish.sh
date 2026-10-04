@@ -10,7 +10,7 @@
 
 set -euo pipefail
 
-aws --profile submit-ci secretsmanager put-secret-value \
+aws --profile diya-submit-ci secretsmanager put-secret-value \
   --secret-id ci/submit/local-tls/certificate \
   --region eu-west-2 \
   --secret-string "$(jq -n \

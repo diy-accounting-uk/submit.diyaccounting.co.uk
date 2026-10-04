@@ -29,8 +29,8 @@ for p in submit-ci submit-prod; do
     --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE DELETE_FAILED \
     --query "StackSummaries[?contains(StackName,'-app-')].[StackName,StackStatus,CreationTime]" --output text
 done
-aws --profile submit-ci  ssm get-parameter --name /submit/ci/last-known-good-deployment   --query Parameter.Value --output text
-aws --profile submit-prod ssm get-parameter --name /submit/prod/last-known-good-deployment --query Parameter.Value --output text
+aws --profile diya-submit-ci  ssm get-parameter --name /submit/ci/last-known-good-deployment   --query Parameter.Value --output text
+aws --profile diya-submit-prod ssm get-parameter --name /submit/prod/last-known-good-deployment --query Parameter.Value --output text
 ```
 
 Group by deployment name (the part before `-app-`). A ci set is stale when it is past its

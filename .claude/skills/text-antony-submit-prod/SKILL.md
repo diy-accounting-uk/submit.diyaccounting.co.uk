@@ -26,7 +26,7 @@ Invoking this skill is the operator's go for the send. A send the session decide
 ## Send
 
 ```bash
-export AWS_PROFILE=submit-prod AWS_REGION=eu-west-2
+export AWS_PROFILE=diya-submit-prod AWS_REGION=eu-west-2
 number=$(aws ssm get-parameter --name /submit/prod/operator-sms-number --with-decryption \
   --query Parameter.Value --output text)
 aws pinpoint-sms-voice-v2 send-text-message --destination-phone-number "$number" \

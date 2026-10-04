@@ -88,8 +88,8 @@ while [[ $# -gt 0 ]]; do
       echo "  {env}/submit/user-sub-hash-salt"
       echo ""
       echo "Example:"
-      echo "  $0 --source-profile management --target-profile submit-prod --env prod --dry-run"
-      echo "  $0 --source-profile management --target-profile submit-prod --env prod --execute"
+      echo "  $0 --source-profile diya-management --target-profile diya-submit-prod --env prod --dry-run"
+      echo "  $0 --source-profile diya-management --target-profile diya-submit-prod --env prod --execute"
       exit 0
       ;;
     *)

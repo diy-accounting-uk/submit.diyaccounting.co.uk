@@ -196,7 +196,7 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
 - **What it owns and what it must not touch**, with the reason. Where another agent in the same
   wave is nearby, name it.
 - **For a brief that adds or changes an Athena view, name the ci type proof.** Run
-  `SELECT * FROM (<view sql>) LIMIT 0` with `aws --profile submit-ci athena start-query-execution`
+  `SELECT * FROM (<view sql>) LIMIT 0` with `aws --profile diya-submit-ci athena start-query-execution`
   (workgroup `ci-env-analytics`, database `ci_env_analytics`; prod's are `prod-env-analytics` and
   `prod_env_analytics`) and read the column types back from `get-query-results` ResultSetMetadata,
   read-only. `AthenaViewColumnTypesTest` catches the time-zone family before a deploy; the run
@@ -289,7 +289,7 @@ someone counts the rows. Split on the row boundary, filter by row key, and rejoi
 
 **Push once per wave, not once per workstream.** Gather what has landed and push it together.
 
-Before the push, read the ci slot parameters: `aws --profile submit-ci ssm get-parameters-by-path --path /submit/ci/slots`.
+Before the push, read the ci slot parameters: `aws --profile diya-submit-ci ssm get-parameters-by-path --path /submit/ci/slots`.
 An absent parameter is a free slot; hold the push while every slot is claimed by a running deploy.
 `main` deploys to prod and takes no ci slot.
 

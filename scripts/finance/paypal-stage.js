@@ -16,7 +16,7 @@
  * secret id, rather than falling back to anything.
  *
  * Usage:
- *   AWS_PROFILE=submit-prod node scripts/finance/paypal-stage.js --month 2026-03
+ *   AWS_PROFILE=diya-submit-prod node scripts/finance/paypal-stage.js --month 2026-03
  *
  * Writes:
  *   ../staging/<year-end>/paypal/<yyyy-mm-dd>-paypal-transactions.json

@@ -51,7 +51,7 @@ AWS_PROFILE=certbot-local certbot renew \
 ```
 - Register the deploy-hook once, so an actual renewal publishes the new cert to Secrets Manager
   for CI (certbot runs every script in that directory after a real renewal; the script uses the
-  `submit-ci` profile):
+  `diya-submit-ci` profile):
 ```bash
 ln -s "$PWD/scripts/local-tls-publish.sh" \
   "$HOME/.local/share/diyaccounting-local-tls/config/renewal-hooks/deploy/local-tls-publish.sh"
@@ -151,7 +151,7 @@ ENVIRONMENT_NAME=myprod npm run cdk:synth-application
 - Publishing the alert needs AWS credentials for the environment whose Telegram chat should hear
   about it, and that environment's activity bus name:
 ```bash
-AWS_PROFILE=submit-prod ACTIVITY_BUS_NAME=prod-activity-bus node scripts/fraud-header-email-check.js
+AWS_PROFILE=diya-submit-prod ACTIVITY_BUS_NAME=prod-activity-bus node scripts/fraud-header-email-check.js
 ```
 - `--dry-run` prints the decision and the would-be activity event without writing the result
   record or publishing anything — use it to check what the script would do:

@@ -8,7 +8,7 @@ description: From a prod-env-hmrc-submission-failure alarm (or its [ALARM] issue
 
 # vat-submission-failure-alarm-user-lookup
 
-Everything here is read-only AWS through the `submit-prod` SSO profile
+Everything here is read-only AWS through the `diya-submit-prod` SSO profile
 (`aws sso login --sso-session diyaccounting` first). The customer tables are keyed by
 `hashedSub`, and a `Scan` on any of them is exactly what the
 `prod-env-dynamodb-customer-table-scan` detector counts, so this skill only ever runs `Query`
@@ -54,7 +54,7 @@ back.
 Query, never scan, `prod-env-hmrc-api-requests` by the hashed sub:
 
 ```
-aws --profile submit-prod dynamodb query --table-name prod-env-hmrc-api-requests \
+aws --profile diya-submit-prod dynamodb query --table-name prod-env-hmrc-api-requests \
   --key-condition-expression "hashedSub = :h" \
   --expression-attribute-values '{":h":{"S":"<hashed_sub>"}}' --output json
 ```
@@ -69,7 +69,7 @@ customer's device lives: `Gov-Client-Public-IP`, `Gov-Client-Timezone`,
 ## 4. The account: Cognito by sub
 
 ```
-aws --profile submit-prod cognito-idp list-users --user-pool-id eu-west-2_Geo7Efbet \
+aws --profile diya-submit-prod cognito-idp list-users --user-pool-id eu-west-2_Geo7Efbet \
   --filter 'sub = "<sub>"' \
   --query "Users[].[Username,UserStatus,UserCreateDate,Attributes[?Name=='email'].Value | [0],Attributes[?Name=='identities'].Value | [0]]" \
   --output text
@@ -82,7 +82,7 @@ was a first visit.
 ## 5. Entitlement: bundles by hashed sub
 
 ```
-aws --profile submit-prod dynamodb query --table-name prod-env-bundles \
+aws --profile diya-submit-prod dynamodb query --table-name prod-env-bundles \
   --key-condition-expression "hashedSub = :h" \
   --expression-attribute-values '{":h":{"S":"<hashed_sub>"}}'
 ```

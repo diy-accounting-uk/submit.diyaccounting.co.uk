@@ -32,7 +32,7 @@ House's sandbox is iterated against the local proxy variant first (`npm run star
 
 - **ci**: the operator authorised these writes when this skill's trigger applies
   (2026-09-27). Target the set the failing branch deployed (its slot in
-  `aws --profile submit-ci ssm get-parameters-by-path --path /submit/ci/slots`), never the live
+  `aws --profile diya-submit-ci ssm get-parameters-by-path --path /submit/ci/slots`), never the live
   ci apex another branch is testing on, unless the apex is that set.
 - **prod**: only when the operator says so in the current conversation, naming prod. Never
   inferred from a ci success.
@@ -49,11 +49,11 @@ gh pr ready <n> --undo
 
 | Change | Command | Time |
 |---|---|---|
-| Lambda code and web assets | `AWS_PROFILE=submit-ci npm run deploy:app-ci -- --deployment <ci-setN>` | 3 to 5 min |
-| Web assets only | `AWS_PROFILE=submit-ci npm run deploy:app-ci -- --deployment <ci-setN> --skip-docker --skip-lambdas` | 1 to 2 min |
-| Lambda code only | `AWS_PROFILE=submit-ci npm run deploy:app-ci -- --deployment <ci-setN> --skip-web` | 3 min |
+| Lambda code and web assets | `AWS_PROFILE=diya-submit-ci npm run deploy:app-ci -- --deployment <ci-setN>` | 3 to 5 min |
+| Web assets only | `AWS_PROFILE=diya-submit-ci npm run deploy:app-ci -- --deployment <ci-setN> --skip-docker --skip-lambdas` | 1 to 2 min |
+| Lambda code only | `AWS_PROFILE=diya-submit-ci npm run deploy:app-ci -- --deployment <ci-setN> --skip-web` | 3 min |
 | One CDK stack (IAM, env vars, routes, a new Lambda, a table) | `gh workflow run deploy-cdk-stack.yml --ref <branch> -f stackName=<ci-setN>-app-<Stack> -f environment-name=ci -f deployment-name=<ci-setN>` | 5 to 15 min |
-| prod, on instruction | `AWS_PROFILE=submit-prod npm run deploy:app-prod -- --deployment <prod-set>` | 3 to 5 min |
+| prod, on instruction | `AWS_PROFILE=diya-submit-prod npm run deploy:app-prod -- --deployment <prod-set>` | 3 to 5 min |
 
 `scripts/deploy-app.js` builds the ARM64 Lambda image and pushes it to ECR in eu-west-2 and
 us-east-1, updates every function and its `pc` alias, syncs `web/public` with the generated

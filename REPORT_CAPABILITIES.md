@@ -2589,7 +2589,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** the weekly security-review issue needs a review, or a review must run on demand.
 - **Does:** security-review.yml opens a security-review issue every Monday, then runs a Sonnet agent over the checked-out commit, read-only, against prompts/security-review.md. The full report, with file, line and exploit path per finding, goes to the prod analytics lake under private/security-review/. The issue gets counts by severity and the areas checked, built by scripts/security-review-triage-output.mjs from a fixed vocabulary. With nothing above Low the issue closes.
-- **Run:** `gh workflow run security-review.yml`; `gh workflow run security-review.yml -f issue_number=<n>` for an existing issue; read a report with `aws --profile submit-prod s3 cp s3://prod-env-analytics-lake-972912397388/private/security-review/dt=<date>/<run>-<attempt>.md -`
+- **Run:** `gh workflow run security-review.yml`; `gh workflow run security-review.yml -f issue_number=<n>` for an existing issue; read a report with `aws --profile diya-submit-prod s3 cp s3://prod-env-analytics-lake-972912397388/private/security-review/dt=<date>/<run>-<attempt>.md -`
 - **Entry:** `.github/workflows/security-review.yml`
 - **Files:** .github/workflows/security-review.yml, prompts/security-review.md, prompts/security-review-triage.md, scripts/security-review-triage-output.mjs, app/unit-tests/scripts/securityReviewTriageOutput.test.js
 - **Keywords:** security review, security triage, OWASP, private report, weekly review, security-review.yml
@@ -2922,7 +2922,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** a video was published, replaced or deleted, or a new `publish.json` shipped, and every public channel video must still play from a page linked off videos.html.
 - **Does:** video-embed-check.js lists the YouTube channel's public uploads, loads the site's videos.html with Playwright, follows its area-page links and collects the embedded video ids. It fails, one line per problem, when a public channel video or a live publish.json video is embedded nowhere, a publish.json group has no linked area page, or oEmbed does not answer 200 for an embedded id.
-- **Run:** `AWS_PROFILE=submit-prod npm run video:embed-check`; `AWS_PROFILE=submit-prod npm run video:embed-check -- --base <url>`
+- **Run:** `AWS_PROFILE=diya-submit-prod npm run video:embed-check`; `AWS_PROFILE=diya-submit-prod npm run video:embed-check -- --base <url>`
 - **Entry:** `scripts/video-embed-check.js`
 - **Files:** scripts/video-embed-check.js, app/unit-tests/scripts/videoEmbedCheck.test.js, scripts/youtube-upload.js, web/public/videos.html
 - **Keywords:** video embed check, embedded videos, oembed, public videos, area pages, channel uploads, videos.html
@@ -4222,7 +4222,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** a read-only Google Cloud or BigQuery script must run from a local session with no service-account key on disk.
 - **Does:** gcp-as-sso.sh runs a command with the AWS SSO session's credentials, from `aws configure export-credentials`, exported only into that child process, plus GOOGLE_APPLICATION_CREDENTIALS pointing at the matching committed external-account config. identity.toml's submit-prod provider accepts the operator's AWSReservedSSO_AdministratorAccess role alongside the analytics Lambdas' roles.
-- **Run:** `scripts/gcp-as-sso.sh node scripts/<read-only-script>.js`; `scripts/gcp-as-sso.sh --profile submit-ci node scripts/<script>.js`
+- **Run:** `scripts/gcp-as-sso.sh node scripts/<read-only-script>.js`; `scripts/gcp-as-sso.sh --profile diya-submit-ci node scripts/<script>.js`
 - **Entry:** `scripts/gcp-as-sso.sh:`
 - **Files:** scripts/gcp-as-sso.sh, infra/google/gcp/identity.toml, infra/google/gcp/credentials/aws-prod.json
 - **Keywords:** aws sso, no key file, google application credentials, workload identity federation, local session, bigquery
@@ -4241,7 +4241,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** one month's PayPal transactions must be pulled and staged for reconciliation.
 - **Does:** paypal-stage.js pulls one month's PayPal Transaction Search API results, as raw objects. It keeps transaction_status and writes results to the workspace's staging tree. It reads its OAuth client id and secret from Secrets Manager only, never an environment variable.
-- **Run:** `AWS_PROFILE=submit-prod node scripts/finance/paypal-stage.js --month 2026-03`
+- **Run:** `AWS_PROFILE=diya-submit-prod node scripts/finance/paypal-stage.js --month 2026-03`
 - **Entry:** `scripts/finance/paypal-stage.js:`
 - **Files:** scripts/finance/paypal-stage.js, app/unit-tests/scripts/finance/paypalStage.test.js
 - **Keywords:** paypal transaction search, accounts staging, reconciliation, secrets manager oauth, transaction_status
@@ -4251,7 +4251,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** one month's Stripe balance transactions and payouts must be pulled and staged for accounts reconciliation.
 - **Does:** stripe-stage.js pulls one month's Stripe balance transactions and payouts. It keeps gross, fee and net separate, nothing netted, and writes them to the staging tree. It reads the live secret key from stripe.toml's Secrets Manager entry.
-- **Run:** `AWS_PROFILE=submit-prod node scripts/finance/stripe-stage.js --month 2026-03`
+- **Run:** `AWS_PROFILE=diya-submit-prod node scripts/finance/stripe-stage.js --month 2026-03`
 - **Entry:** `scripts/finance/stripe-stage.js:`
 - **Files:** scripts/finance/stripe-stage.js, app/unit-tests/scripts/finance/stripeStage.test.js
 - **Keywords:** stripe balance transactions, stripe payouts, accounts staging, gross fee net, stripe.toml secret
@@ -4978,7 +4978,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-42 Look up a VAT submission-failure alarm's customer
 
 - **Use when:** the operator asks who a submission-failure alarm was or whether the customer needs a reply.
-- **Does:** vat-submission-failure-alarm-user-lookup finds the customer behind a failed VAT submission, what HMRC answered, and whether they wrote to support. Every AWS call is read-only through the submit-prod SSO profile. It runs only Query, never Scan, against customer tables keyed by hashedSub.
+- **Does:** vat-submission-failure-alarm-user-lookup finds the customer behind a failed VAT submission, what HMRC answered, and whether they wrote to support. Every AWS call is read-only through the diya-submit-prod SSO profile. It runs only Query, never Scan, against customer tables keyed by hashedSub.
 - **Run:** `/vat-submission-failure-alarm-user-lookup`
 - **Entry:** `.claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md`
 - **Files:** .claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md
