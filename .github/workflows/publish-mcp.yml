@@ -1,0 +1,143 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# .github/workflows/publish-mcp.yml
+#
+# Publishes the submission MCP on a tag named diya-submit-mcp-v<version>: the npm package
+# @diy-accounting-uk/diya-submit and the image ghcr.io/diy-accounting-uk/diya-submit-mcp.
+# The tag's version must equal mcp/package.json's version.
+
+name: publish-mcp
+concurrency: publish-mcp
+run-name: 'publish-mcp [${{ github.ref_name }}]'
+
+on:
+  push:
+    tags:
+      - 'diya-submit-mcp-v*'
+
+permissions:
+  contents: read
+
+env:
+  NODE_VERSION: '24'
+  IMAGE_NAME: ghcr.io/diy-accounting-uk/diya-submit-mcp
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Require the tag to name the package version
+        id: version
+        run: |
+          PACKAGE_VERSION=$(node -p "require('./mcp/package.json').version")
+          TAG_VERSION="${GITHUB_REF_NAME#diya-submit-mcp-v}"
+          if [ "${PACKAGE_VERSION}" != "${TAG_VERSION}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} names ${TAG_VERSION} but mcp/package.json is ${PACKAGE_VERSION}"
+            exit 1
+          fi
+          echo "version=${PACKAGE_VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            mcp/package-lock.json
+
+      - run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        working-directory: mcp
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      # The accounts derivation test renders through app/services, which resolves its own
+      # dependencies from the repository root.
+      - run: timeout 120 npm ci --prefer-offline --ignore-scripts || { sleep 30; timeout 180 npm ci --ignore-scripts; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      - run: npx vitest run
+        working-directory: mcp
+
+  publish-npm:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Require NPM_TOKEN
+        run: |
+          if [ -z "${NODE_AUTH_TOKEN}" ]; then
+            echo "::error::NPM_TOKEN is not set. Store an npm automation token that can publish @diy-accounting-uk/diya-submit with: gh secret set NPM_TOKEN --repo diy-accounting-uk/submit.diyaccounting.co.uk"
+            exit 1
+          fi
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Stage the package away from the repository's app/ directory
+        run: node mcp/scripts/stage-package.js "${RUNNER_TEMP}/diya-submit-mcp"
+
+      - run: npm publish --provenance --access public
+        working-directory: ${{ runner.temp }}/diya-submit-mcp
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  publish-image:
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Stage the package away from the repository's app/ directory
+        run: node mcp/scripts/stage-package.js "${RUNNER_TEMP}/diya-submit-mcp"
+
+      - name: Log in to GHCR
+        run: echo "${GITHUB_TOKEN}" | docker login ghcr.io -u "${GITHUB_ACTOR}" --password-stdin
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build the image
+        run: docker build --tag "${IMAGE_NAME}:${VERSION}" --tag "${IMAGE_NAME}:latest" "${RUNNER_TEMP}/diya-submit-mcp"
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
+
+      - name: Smoke test the image answers an MCP initialize request
+        run: |
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"smoke","version":"0"}}}' \
+            | timeout 30 docker run -i --rm "${IMAGE_NAME}:${VERSION}" > smoke.out &
+          for _ in $(seq 1 30); do
+            if grep -q '"serverInfo"' smoke.out 2>/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat smoke.out
+          echo "::error::The image did not answer initialize"
+          exit 1
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
+
+      - name: Push the image
+        run: |
+          docker push "${IMAGE_NAME}:${VERSION}"
+          docker push "${IMAGE_NAME}:latest"
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
