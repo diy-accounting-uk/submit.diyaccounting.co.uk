@@ -214,6 +214,14 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "hmrcAssistBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/hmrcAssist.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 600_000,
+    },
+    {
       name: "vatSchemesBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/vatSchemes.behaviour.test.js"],

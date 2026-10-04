@@ -80,6 +80,10 @@ export const SKIPPABLE_JOBS = [
   { id: "behaviour-test-simulator-compliance", description: "End-to-end compliance-page behaviour, simulator." },
   { id: "behaviour-test-simulator-vat-validation", description: "VAT return field validation behaviour, simulator." },
   { id: "behaviour-test-simulator-vat-schemes", description: "VAT scheme selection behaviour, simulator." },
+  {
+    id: "behaviour-test-simulator-hmrc-assist",
+    description: "HMRC Assist feedback on a VAT return and an Income Tax calculation, simulator.",
+  },
   { id: "behaviour-test-simulator-auth", description: "Sign-in and authentication journeys, simulator." },
   { id: "behaviour-test-simulator-bundle", description: "Bundle purchase and entitlement behaviour, simulator." },
   { id: "behaviour-test-simulator-help", description: "Help pages behaviour, simulator." },
