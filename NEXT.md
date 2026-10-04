@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-2304157** (PR #469, deploy 37160188970, 2026-10-04).
-**ci**: `ci-set1` (last-known-good, 10 stacks, created 17:40 UTC 2026-10-02).
+**ci**: `ci-set1` (last-known-good, 11 stacks, created 17:40 UTC 2026-10-02).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
