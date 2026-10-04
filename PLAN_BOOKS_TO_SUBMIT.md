@@ -254,7 +254,8 @@ confirm brand verification. They replace LP-24a's steps 1 to 4.
    (`gcloud projects list`, 2026-09-29). BS5 lands there and runs ahead of this plan as its own
    board row, because the Drive store is independent of filing from diya-gl.
 2. **`drive.file` across two sites.** Expected: a file created under one client in a project is
-   visible to another client in the same project. To prove in BS9 before BS6 relies on it.
+   visible to another client in the same project. BS9a proves the diya-gl half on ci;
+   BS6's first step proves the cross-client half, since Submit's Picker is what BS6 builds.
 3. **Brand verification.** Google asks every external production app to pass brand
    verification (homepage, privacy policy, verified domains, branding). `diya-gl.co.uk` as a
    JavaScript origin likely needs to be an authorised, verified domain on the consent screen.
