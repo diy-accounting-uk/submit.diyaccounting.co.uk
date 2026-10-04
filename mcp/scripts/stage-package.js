@@ -3,20 +3,19 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // stage-package.js -- builds the directory the npm package and the Docker image are made from.
-// The server's tools import two modules from the repository's app/services (the micro-entity
-// accounts balance-sheet mapping and the PayPal transaction adapter). Outside the repository
-// that path does not exist, so the staged copy carries each imported module under lib/vendored/
-// and points the import at it. Usage: node scripts/stage-package.js <output directory>
+// The server's tools import modules from the repository's app/ tree. Outside the repository that
+// path does not exist, so the staged copy carries each imported module, and every module those
+// import in turn, under lib/vendored/app/ and points the tools' imports at it. Usage: node scripts/stage-package.js <output directory>
 
 import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
-import { dirname, join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PACKAGE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const REPOSITORY_DIR = resolve(PACKAGE_DIR, "..");
+const APP_DIR = join(REPOSITORY_DIR, "app");
 const COPIED_ENTRIES = ["bin", "lib", "package.json", "package-lock.json", "README.md", "Dockerfile", ".dockerignore"];
-const APP_SERVICE_IMPORT = /(["'])((?:\.\.\/)+app\/services\/([A-Za-z0-9_-]+\.js))\1/g;
-const RELATIVE_IMPORT = /\bfrom\s+["']\.{1,2}\//;
+const IMPORT_SPECIFIER = /(\bfrom\s+|\bimport\s+)(["'])([^"']+)\2/g;
 
 function javascriptFilesUnder(directory) {
   return readdirSync(directory).flatMap((name) => {
@@ -26,11 +25,21 @@ function javascriptFilesUnder(directory) {
   });
 }
 
+function packageNameOf(specifier) {
+  const parts = specifier.split("/");
+  return specifier.startsWith("@") ? parts.slice(0, 2).join("/") : parts[0];
+}
+
+function isInside(directory, path) {
+  return path === directory || path.startsWith(directory + sep);
+}
+
 /**
- * Copies the publishable parts of the package into outputDirectory and vendors the app/services
- * modules its lib imports.
+ * Copies the publishable parts of the package into outputDirectory and vendors every module of the
+ * repository's app/ tree that the package's lib reaches through relative imports, keeping the
+ * relative layout under lib/vendored/app/.
  * @param {string} outputDirectory
- * @returns {string[]} the vendored module file names
+ * @returns {string[]} the vendored module paths relative to the repository's app/ directory
  */
 export function stagePackage(outputDirectory) {
   const output = resolve(outputDirectory);
@@ -38,28 +47,54 @@ export function stagePackage(outputDirectory) {
   mkdirSync(output, { recursive: true });
   for (const entry of COPIED_ENTRIES) cpSync(join(PACKAGE_DIR, entry), join(output, entry), { recursive: true });
 
-  const vendoredDirectory = join(output, "lib", "vendored");
+  const declared = new Set(Object.keys(JSON.parse(readFileSync(join(PACKAGE_DIR, "package.json"), "utf8")).dependencies ?? {}));
+  const vendoredAppDirectory = join(output, "lib", "vendored", "app");
   const vendored = new Set();
-  for (const file of javascriptFilesUnder(join(output, "lib"))) {
-    const source = readFileSync(file, "utf8");
-    const rewritten = source.replace(APP_SERVICE_IMPORT, (_match, quote, _specifier, moduleName) => {
-      const original = join(REPOSITORY_DIR, "app", "services", moduleName);
-      if (!existsSync(original)) throw new Error(`${file} imports app/services/${moduleName}, which does not exist`);
-      if (!vendored.has(moduleName)) {
-        const text = readFileSync(original, "utf8");
-        if (RELATIVE_IMPORT.test(text))
-          throw new Error(`app/services/${moduleName} imports a relative module, so it cannot be vendored alone`);
-        mkdirSync(vendoredDirectory, { recursive: true });
-        writeFileSync(join(vendoredDirectory, moduleName), text);
-        vendored.add(moduleName);
+
+  function requireDeclared(specifier, file) {
+    const name = packageNameOf(specifier);
+    if (!name.startsWith("node:") && !declared.has(name))
+      throw new Error(`${file} imports ${name}, which is not declared in mcp/package.json dependencies`);
+  }
+
+  function vendor(original) {
+    if (vendored.has(original)) return;
+    if (!existsSync(original)) throw new Error(`${original} does not exist`);
+    vendored.add(original);
+    const target = join(vendoredAppDirectory, relative(APP_DIR, original));
+    const text = readFileSync(original, "utf8");
+    mkdirSync(dirname(target), { recursive: true });
+    writeFileSync(target, text);
+    for (const match of text.matchAll(IMPORT_SPECIFIER)) {
+      const specifier = match[3];
+      if (!specifier.startsWith(".")) {
+        requireDeclared(specifier, original);
+        continue;
       }
-      const target = relative(dirname(file), join(vendoredDirectory, moduleName));
-      const specifier = target.startsWith(".") ? target : "./" + target;
-      return quote + specifier + quote;
+      const imported = resolve(dirname(original), specifier);
+      if (!isInside(APP_DIR, imported))
+        throw new Error(`${original} imports ${specifier}, which is outside the app/ directory and cannot be vendored`);
+      vendor(imported);
+    }
+  }
+
+  for (const file of javascriptFilesUnder(join(output, "lib"))) {
+    if (isInside(vendoredAppDirectory, file)) continue;
+    const original = join(PACKAGE_DIR, relative(output, file));
+    const source = readFileSync(file, "utf8");
+    const rewritten = source.replace(IMPORT_SPECIFIER, (whole, lead, quote, specifier) => {
+      if (!specifier.startsWith(".")) return whole;
+      const imported = resolve(dirname(original), specifier);
+      if (isInside(PACKAGE_DIR, imported)) return whole;
+      if (!isInside(APP_DIR, imported))
+        throw new Error(`${original} imports ${specifier}, which is outside both mcp/ and the app/ directory`);
+      vendor(imported);
+      const target = relative(dirname(file), join(vendoredAppDirectory, relative(APP_DIR, imported)));
+      return lead + quote + (target.startsWith(".") ? target : "./" + target) + quote;
     });
     if (rewritten !== source) writeFileSync(file, rewritten);
   }
-  return [...vendored].sort();
+  return [...vendored].map((path) => relative(APP_DIR, path)).sort();
 }
 
 if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

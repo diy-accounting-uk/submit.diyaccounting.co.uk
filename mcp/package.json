@@ -35,6 +35,7 @@
   "dependencies": {
     "@diy-accounting-uk/diya-gl": "1.2.44",
     "@modelcontextprotocol/sdk": "1.30.0",
+    "happy-dom": "20.9.0",
     "zod": "^3.25.0"
   },
   "devDependencies": {
