@@ -1457,6 +1457,20 @@
         }
       }
 
+      function paragraph(...parts) {
+        const element = document.createElement("p");
+        for (const part of parts) {
+          if (typeof part === "string") {
+            element.append(part);
+          } else {
+            const strong = document.createElement("strong");
+            strong.textContent = String(part.strong);
+            element.append(strong);
+          }
+        }
+        return element;
+      }
+
       function renderRejections(rejections) {
         const container = document.getElementById("rejections");
         if (!rejections || rejections.length === 0) {
@@ -1464,7 +1478,7 @@
           return;
         }
         container.style.display = "block";
-        container.innerHTML = rejections.map((entry) => `<p>${entry.rejectCode}: ${entry.description}</p>`).join("\n");
+        container.replaceChildren(...rejections.map((entry) => paragraph(`${entry.rejectCode}: ${entry.description}`)));
       }
 
       async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
@@ -1473,8 +1487,11 @@
           if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
             return result;
           }
-          document.getElementById("filingResult").innerHTML =
-            `<p>Submission <strong>${submissionNumber}</strong> is <strong>${result.statusCode}</strong>. Checking again...</p>`;
+          document
+            .getElementById("filingResult")
+            .replaceChildren(
+              paragraph("Submission ", { strong: submissionNumber }, " is ", { strong: result.statusCode }, ". Checking again..."),
+            );
           await new Promise((resolve) => setTimeout(resolve, 500));
         }
         return window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
@@ -1494,13 +1511,21 @@
           const govTestScenario = document.getElementById("govTestScenario").value.trim();
           const govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
           const submission = await window.submitMicroEntityAccounts(accounts, govTestScenarioHeaders);
-          document.getElementById("filingResult").innerHTML =
-            `<p>Submission <strong>${submission.submissionNumber}</strong> accepted by the gateway at ${submission.gatewayTimestamp}. Waiting for Companies House...</p>`;
+          document
+            .getElementById("filingResult")
+            .replaceChildren(
+              paragraph(
+                "Submission ",
+                { strong: submission.submissionNumber },
+                ` accepted by the gateway at ${submission.gatewayTimestamp}. Waiting for Companies House...`,
+              ),
+            );
           showView("resultView");
 
           const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
-          document.getElementById("filingResult").innerHTML =
-            `<p>Submission <strong>${outcome.submissionNumber}</strong> was <strong>${outcome.statusCode}</strong>.</p>`;
+          document
+            .getElementById("filingResult")
+            .replaceChildren(paragraph("Submission ", { strong: outcome.submissionNumber }, " was ", { strong: outcome.statusCode }, "."));
           renderRejections(outcome.rejections);
           document.getElementById("startAgainBtn").style.display = "inline-block";
         } catch (error) {
