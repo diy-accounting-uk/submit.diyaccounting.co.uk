@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-ff255de** (PR #471, deploy 37203332082, 2026-10-04).
-**ci**: `ci-set1` (last-known-good, 11 stacks, created 17:40 UTC 2026-10-02).
+**ci**: no live set (ci-set1 destroyed by forced run 37213050856; `/submit/ci/last-known-good-deployment` is None until the next branch deploy).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -38,9 +38,7 @@ step.
 
 ## In flight
 
-- [ ] **DC1. `destroy-ci.yml` can destroy the ci last-known-good set on a forced named dispatch.** The `force-last-known-good` dispatch input is on main (86bd8170d, pushed by the operator; its CodeQL push run cancelled on the operator's word). In flight: `gh workflow run destroy-ci.yml -f deployment-name=ci-set1 -f sweep-for-stacks=false -f force-last-known-good=true` is run 37213050856. Remainder: confirm ci-set1's stacks are gone and `/submit/ci/last-known-good-deployment` reads None, then set the ci line to no live set. **Source**: operator, 2026-10-04. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
-
-- [ ] **SSO1. Local AWS scripts use the `diya-management` SSO profile.** Asked by chat-with-diya-gl (inbox, 2026-10-04): the operator removes the `default` static keys and the `submit-deployment-role` profile from `~/.aws`, whose role refuses the SSO admin role. In flight: PR #472 (`claude/ops-sso-profile`, 02a3bc4ab, worktree `.claude/worktrees/ops-sso-profile`) renames the script to `scripts/aws-use-submit-profile.sh` and updates the five scripts, `CLAUDE.md`, `REPORT_CAPABILITIES.md` and `_developers/SETUP.md`; its test and CodeQL push runs are going. Main's 2e5c01f04 renamed the other profiles with the `diya-` prefix; PR #472 is mergeable over it. After merge: tell chat-with-diya-gl the change is made. **Source**: inbox. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~9 files.
+- [ ] **SSO1. Local AWS scripts on the `diya-management` SSO profile; `infra/aws-accounts` purged; test logs as artifacts.** In flight: PR #472 (`claude/ops-sso-profile`, 30f7caf9c, worktree `.claude/worktrees/ops-sso-profile`). Three commits: the assume-role script becomes `scripts/aws-use-submit-profile.sh` on `diya-management` (asked by chat-with-diya-gl); `infra/aws-accounts/` and its capability entries OPS-98 to OPS-102 and OPS-104 are purged (its scripts named profiles that no longer exist; `scripts/aws-accounts/bootstrap-account.sh` and `CrossAccountBackupVaultStack` replace them), with the capability index regenerated (the stale index was the earlier `test` failure); `test.yml`'s `npm test` and `npm unit test` write their output to an artifact and print the last 29000 lines. Its branch deploy is cancelled on the operator's word; its `test` run is the proof. After merge: tell chat-with-diya-gl the change is made. **Source**: inbox and operator, 2026-10-04. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~22 files.
 
 ## Machine-only
 
