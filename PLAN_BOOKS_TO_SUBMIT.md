@@ -4,7 +4,7 @@
 # PLAN: From books to Submit
 
 Approved 2026-09-26 and boarded 2026-10-03: BS1 to BS14 are rows on `NEXT.md`; BS5 landed (PR
-#419, the client id recorded in PR #425); BS10 landed (spreadsheets PR #153); BS11 and BS12 landed (PR #469).
+#419, the client id recorded in PR #425); BS10 landed (spreadsheets PR #153); BS11 and BS12 landed (PR #469); BS1 and BS2 landed (PR #471).
 
 A customer's books reach a Submit filing in two ways. The activity page reads a file the
 customer drops, picks from disk or picks from their own Google Drive, and fills the form. Or a

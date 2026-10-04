@@ -91,8 +91,8 @@ The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarde
 - CS-11b: blocked by CS-A4
 - CS-P1: blocked by CS-11b (it adds a second payment path to the journey CS-11b launches)
 - B34f: blocked by B34h; its terminal-state proof by B34.6c
-- B34e: blocked by B34f (shared builder and Lambdas); its terminal-state proof by B34.6c
-- B34g1: blocked by B34e (the CT600 carries B34e's full accounts); its ETS proof by O34g
+- B34e: on main (PR #471), with B34e2's validator fix; its terminal-state proof waits on B34.6c
+- B34g1: ready (B34e's full accounts are on main); its ETS proof waits on O34g
 - B34g2: blocked by B34g1 and O34g
 
 ## Operator dates
@@ -482,8 +482,7 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 | CS-13b | The PSC verification statement's cases in the harness, run by its weekly workflow, pinned once a poll returns a terminal status | ~2 | Sonnet | B34.6c (Companies House IT) | Blocked |
 | CS-P1 | Filing under a customer's own presenter: the page option, storing no credentials, the credit-account explanation, skipping the Stripe checkout at the existing fee gate | ~5 | Sonnet | CS-11b | Blocked |
 | B34f | Dormant company accounts on the micro-entity page and builder, per the B34h design | ~9 | Sonnet | B34h; B34.6c for the terminal proof | Blocked |
-| B34e | FRS 102 section 1A accounts: shared iXBRL writer, new builder, page and activity, per the B34h design | ~16 | Sonnet | B34f; B34.6c for the terminal proof | Blocked |
-| B34g1 | HMRC Transaction Engine envelope, IRmark, CT600 XML and computations iXBRL, per the B34h design | ~12 | Opus | B34e; O34g for the ETS proof | Blocked |
+| B34g1 | HMRC Transaction Engine envelope, IRmark, CT600 XML and computations iXBRL, per the B34h design | ~12 | Opus | O34g for the ETS proof only | Ready |
 | B34g2 | The CT600 filing journey: Lambdas, page, activity, receipts, per the B34h design | ~14 | Sonnet | B34g1, O34g | Blocked |
 
 
