@@ -212,6 +212,22 @@ export function isEligibleRef(ref) {
   return ref !== "refs/heads/main";
 }
 
+// A built or generated file (a bundled library, a lockfile) can carry a diff larger than the
+// model's prompt allows, and the job then fails with "Prompt is too long". Each file's diff over
+// maxCharactersPerFile characters is replaced by its header and a one-line note; the file stays
+// in the changed-files list, so the model still knows it changed.
+export function limitDiff(diff, maxCharactersPerFile = 60000) {
+  if (!diff) return diff;
+  return diff
+    .split(/(?=^diff --git )/m)
+    .map((section) => {
+      if (section.length <= maxCharactersPerFile) return section;
+      const header = section.split("\n")[0];
+      return `${header}\n(diff of ${section.length} characters omitted: over ${maxCharactersPerFile} characters)\n`;
+    })
+    .join("");
+}
+
 export function buildPrompt({ context, diff, changedFiles, jobs = SKIPPABLE_JOBS }) {
   const jobList = jobs.map((job) => `- ${job.id}: ${job.description}`).join("\n");
   const changedFilesList =
@@ -379,7 +395,7 @@ function resolveCatalogue(name) {
 
 function runPrompt(opts) {
   const context = readJson(opts.context, {});
-  const diff = opts.diff && fs.existsSync(opts.diff) ? fs.readFileSync(opts.diff, "utf8") : "";
+  const diff = limitDiff(opts.diff && fs.existsSync(opts.diff) ? fs.readFileSync(opts.diff, "utf8") : "");
   const changedFiles =
     opts["changed-files"] && fs.existsSync(opts["changed-files"])
       ? fs
