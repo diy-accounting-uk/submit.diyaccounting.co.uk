@@ -38,8 +38,7 @@ step.
 
 ## In flight
 
-**COOL-DOWN is on since 2026-10-04T10:55:19Z.** No new board rows except a degradation. Agents commit
-and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+**Spreadsheets COOL-DOWN is on since 2026-10-04T10:55:19Z** (the spreadsheets rows only: BS10b, DG1 to DG8, CQ-59). Lifted only by the operator in their own words to the spreadsheets session.
 
 - [ ] **BS10b. The spreadsheets deploy writes the Picker key into cloud-config.js (PLAN_BOOKS_TO_SUBMIT BS10).** `web/diya-gl.co.uk/public/cloud-config.js` carries `googlePickerApiKey: ""`; a build step in `../spreadsheets.diyaccounting.co.uk/.github/workflows/deploy.yml`, after `scripts/build-donate-page.mjs`'s pattern (an environment-named script that writes a config file), fills it from `vars.GOOGLE_DRIVE_PICKER_API_KEY`, failing loudly when the variable is unset, with a unit test over the writer. **Source**: `PLAN_BOOKS_TO_SUBMIT.md` BS10. `GOOGLE_DRIVE_PICKER_API_KEY` is set in both repositories (2026-10-04). On the batch as 4cf00b524. In flight on `claude/nebula-mcp` (spreadsheets, worktree `../.worktrees/spreadsheets/nebula`, PR #154; held unmerged under cool-down). **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files in `../spreadsheets.diyaccounting.co.uk`.
 
