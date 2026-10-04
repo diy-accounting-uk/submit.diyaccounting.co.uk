@@ -4,23 +4,24 @@
 
 /**
  *
- * Post a generated micro-entity accounts iXBRL file to Companies House's public XBRL validator
+ * Post generated micro-entity and small-company accounts iXBRL file to Companies House's public XBRL validator
  * and print the result. Reaches the network, so this runs on demand only, never as part of the
  * test suite.
  *
  * Usage:
  *   node scripts/validate-accounts-ixbrl.js <path-to-ixbrl-file>
- *   node scripts/validate-accounts-ixbrl.js            - validates a small built-in sample
+ *   node scripts/validate-accounts-ixbrl.js            - validates built-in micro, small full and small filleted samples
  *
  * The validator (https://test-validator.companieshouse.gov.uk/xbrl_validate) has no JSON API: it
  * is a session-cookie-backed upload flow (POST the file, poll progress, fetch an HTML result
  * page), so this script drives that flow directly rather than calling a documented endpoint.
  */
 
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import { basename, join } from "node:path";
 import { tmpdir } from "node:os";
 import { buildMicroEntityAccounts } from "../app/services/microEntityAccountsIxbrl.js";
+import { buildSmallCompanyAccounts } from "../app/services/smallCompanyAccountsIxbrl.js";
 
 const VALIDATOR_BASE_URI = "https://test-validator.companieshouse.gov.uk";
 
@@ -50,6 +51,89 @@ const SAMPLE_INPUT = {
       calledUpShareCapital: 100,
       profitAndLossAccount: 7900,
       capitalAndReserves: 8000,
+    },
+  },
+};
+
+const SMALL_COMPANY_SAMPLE_INPUT = {
+  companyNumber: "02706061",
+  companyName: "TEST SMALL LIMITED",
+  periodStart: "2025-07-01",
+  periodEnd: "2026-06-30",
+  averageNumberOfEmployees: 4,
+  principalActivity: "Software consultancy",
+  accountingPolicies: "The accounts are prepared under the historical cost convention. Depreciation is 25% a year on computer equipment.",
+  directors: ["Jo Smith", "Alex Jones"],
+  directorName: "Jo Smith",
+  dateOfApproval: "2026-09-01",
+  balanceSheet: {
+    current: {
+      fixedAssets: 10000,
+      stocks: 500,
+      debtors: 2500,
+      cashAtBank: 2000,
+      tradeCreditors: 1000,
+      corporationTax: 1500,
+      otherCreditors: 500,
+      creditorsAfterOneYear: 2000,
+      calledUpShareCapital: 100,
+      profitAndLossAccount: 9900,
+      capitalAndReserves: 10000,
+    },
+    prior: {
+      fixedAssets: 8000,
+      stocks: 400,
+      debtors: 2000,
+      cashAtBank: 1600,
+      tradeCreditors: 900,
+      corporationTax: 1000,
+      otherCreditors: 600,
+      creditorsAfterOneYear: 1500,
+      calledUpShareCapital: 100,
+      profitAndLossAccount: 7900,
+      capitalAndReserves: 8000,
+    },
+  },
+  profitAndLoss: {
+    current: {
+      turnover: 50000,
+      costOfSales: 20000,
+      grossProfit: 30000,
+      administrativeExpenses: 25000,
+      operatingProfit: 5000,
+      interestReceivable: 100,
+      profitBeforeTax: 5100,
+      tax: 1000,
+      profit: 4100,
+    },
+    prior: {
+      turnover: 40000,
+      costOfSales: 16000,
+      grossProfit: 24000,
+      administrativeExpenses: 21000,
+      operatingProfit: 3000,
+      interestReceivable: 0,
+      profitBeforeTax: 3000,
+      tax: 600,
+      profit: 2400,
+    },
+  },
+  fixedAssetNote: {
+    landBuildings: {
+      costAtStart: 6000,
+      additions: 0,
+      disposals: 0,
+      depreciationAtStart: 0,
+      depreciationCharge: 0,
+      depreciationOnDisposals: 0,
+    },
+    computerEquipment: {
+      costAtStart: 5000,
+      additions: 1000,
+      disposals: 0,
+      depreciationAtStart: 1500,
+      depreciationCharge: 500,
+      depreciationOnDisposals: 0,
     },
   },
 };
@@ -149,7 +233,7 @@ async function validate(filePath) {
 
   if (isValid) {
     console.log("RESULT: valid");
-    return;
+    return true;
   }
   if (isFailure) {
     console.log("RESULT: not valid");
@@ -157,23 +241,35 @@ async function validate(filePath) {
     for (const reason of reasons) {
       console.log(`  - ${reason}`);
     }
-    return;
+    return false;
   }
   console.log("RESULT: could not determine pass/fail from the result page; raw HTML follows");
   console.log(resultHtml);
+  return false;
 }
 
 async function main() {
   const filePathArg = process.argv[2];
   if (filePathArg) {
-    await validate(filePathArg);
+    process.exitCode = (await validate(filePathArg)) ? 0 : 1;
     return;
   }
-  const { writeFileSync } = await import("node:fs");
-  const sampleXhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
-  const samplePath = join(tmpdir(), "sample-accounts-ixbrl.html");
-  writeFileSync(samplePath, sampleXhtml);
-  await validate(samplePath);
+  const samples = [
+    ["micro", buildMicroEntityAccounts(SAMPLE_INPUT)],
+    ["small-full", buildSmallCompanyAccounts(SMALL_COMPANY_SAMPLE_INPUT)],
+    ["small-filleted", buildSmallCompanyAccounts({ ...SMALL_COMPANY_SAMPLE_INPUT, filleted: true })],
+  ];
+  const verdicts = [];
+  for (const [label, xhtml] of samples) {
+    const samplePath = join(tmpdir(), `sample-${label}-accounts-ixbrl.html`);
+    writeFileSync(samplePath, xhtml);
+    console.log(`=== ${label} ===`);
+    verdicts.push([label, await validate(samplePath)]);
+  }
+  for (const [label, isValid] of verdicts) {
+    console.log(`VERDICT ${label}: ${isValid ? "valid" : "not valid"}`);
+  }
+  process.exitCode = verdicts.every(([, isValid]) => isValid) ? 0 : 1;
 }
 
 main().catch((error) => {

@@ -138,7 +138,7 @@ export const DIMENSIONS = {
 export const MEMBERS = {
   microEntities: { prefix: "bus", name: "Micro-entities" },
   frs102: { prefix: "bus", name: "FRS102" },
-  smallEntities: { prefix: "bus", name: "SmallEntities" },
+  smallCompaniesRegimeForAccounts: { prefix: "bus", name: "SmallCompaniesRegimeForAccounts" },
   auditExemptNoAccountantsReport: { prefix: "bus", name: "AuditExempt-NoAccountantsReport" },
   fullAccounts: { prefix: "bus", name: "FullAccounts" },
   shareCapital: { prefix: "core", name: "ShareCapital" },

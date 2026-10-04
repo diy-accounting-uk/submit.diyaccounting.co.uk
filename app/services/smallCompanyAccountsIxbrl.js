@@ -361,7 +361,7 @@ export function buildSmallCompanyAccounts(input) {
     ["accountsStatusAuditedOrUnaudited", DIMENSIONS.accountsStatus, MEMBERS.auditExemptNoAccountantsReport, "accounts-status"],
     ["accountsType", DIMENSIONS.accountsType, MEMBERS.fullAccounts, "accounts-type"],
     ["accountingStandardsApplied", DIMENSIONS.accountingStandards, MEMBERS.frs102, "accounting-standards"],
-    ["applicableLegislation", DIMENSIONS.applicableLegislation, MEMBERS.smallEntities, "applicable-legislation"],
+    ["applicableLegislation", DIMENSIONS.applicableLegislation, MEMBERS.smallCompaniesRegimeForAccounts, "applicable-legislation"],
   ]) {
     const contextRef = buildDimensionedContext({
       additionalContexts,

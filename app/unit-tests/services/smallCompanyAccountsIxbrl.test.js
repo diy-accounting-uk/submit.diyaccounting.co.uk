@@ -149,10 +149,10 @@ describe("services/smallCompanyAccountsIxbrl", () => {
       }
     });
 
-    test("reports FRS 102 as the accounting standard, small entities as the legislation and full accounts", () => {
+    test("reports FRS 102 as the accounting standard, the small companies regime as the legislation and full accounts", () => {
       const dimensions = dimensionNames(xhtml);
       expect(dimensions).toContainEqual({ dimension: "bus:AccountingStandardsDimension", member: "bus:FRS102" });
-      expect(dimensions).toContainEqual({ dimension: "bus:ApplicableLegislationDimension", member: "bus:SmallEntities" });
+      expect(dimensions).toContainEqual({ dimension: "bus:ApplicableLegislationDimension", member: "bus:SmallCompaniesRegimeForAccounts" });
       expect(dimensions).toContainEqual({ dimension: "bus:AccountsTypeDimension", member: "bus:FullAccounts" });
     });
 
