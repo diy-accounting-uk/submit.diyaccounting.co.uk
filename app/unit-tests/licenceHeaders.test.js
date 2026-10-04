@@ -48,6 +48,7 @@ const EXCLUDED_FILES = new Set([
   "mvnw",
   "mvnw.cmd",
   "web/public/lib/qrcode.min.js",
+  "web/public/lib/books-bundle.js",
 ]);
 
 function isExcluded(path) {
