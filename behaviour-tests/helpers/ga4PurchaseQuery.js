@@ -65,30 +65,47 @@ export function exportedTransactionWindow({ nowMs, lookbackDays, exportFirstWhol
 }
 
 /**
- * Finds a Stripe test-mode subscription of `customerEmail`'s created inside the window (see
- * exportedTransactionWindow). Every ci run of payment.behaviour.test.js creates and later
- * cancels one such subscription for its lane user and fires a purchase carrying its id, so this
- * stands in for a persisted "last run's transaction id" without adding new storage. Other lanes'
- * subscriptions fire no purchase, hence the customer filter.
+ * Picks the newest subscription that came from the same user pool as the current run's
+ * subscription (same `hashedSub` metadata). Stripe test mode is shared by the ci and prod
+ * lanes, which use the same synthetic email, but only a ci run fires a GA4 purchase, so the
+ * email cannot tell them apart and the user-pool hash can.
  *
- * @param {{createdAfterMs: number, createdBeforeMs: number, customerEmail: string}} window
+ * @param {Array<{id: string, created: number, metadata?: Record<string, string>}>} subscriptions newest first
+ * @param {{hashedSub: string}} criteria
+ * @returns {{id: string, createdMs: number}|null}
+ */
+export function selectPriorPurchaseSubscription(subscriptions, { hashedSub }) {
+  const match = subscriptions.find((subscription) => subscription.metadata?.hashedSub === hashedSub);
+  return match ? { id: match.id, createdMs: match.created * 1000 } : null;
+}
+
+/**
+ * Finds a Stripe test-mode subscription created inside the window (see exportedTransactionWindow)
+ * by the same user pool as `currentSubscriptionId`. Every ci run of payment.behaviour.test.js
+ * creates and later cancels one such subscription and fires a purchase carrying its id, so this
+ * stands in for a persisted "last run's transaction id" without adding new storage. Prod probes
+ * and other lanes fire no purchase, hence the user-pool match.
+ *
+ * @param {{createdAfterMs: number, createdBeforeMs: number, currentSubscriptionId: string}} window
  * @returns {Promise<{id: string, createdMs: number}|null>}
  */
-export async function findPastStripeSubscription({ createdAfterMs, createdBeforeMs, customerEmail }) {
+export async function findPastStripeSubscription({ createdAfterMs, createdBeforeMs, currentSubscriptionId }) {
   if (createdBeforeMs <= createdAfterMs) return null;
   const stripe = await getStripeClient({ test: true });
+  const current = await stripe.subscriptions.retrieve(currentSubscriptionId);
+  const hashedSub = current.metadata?.hashedSub;
+  if (!hashedSub) {
+    throw new Error(`Stripe subscription ${currentSubscriptionId} has no hashedSub metadata`);
+  }
   const subscriptions = await stripe.subscriptions.list({
     status: "all",
     created: {
       gte: Math.floor(createdAfterMs / 1000),
       lt: Math.floor(createdBeforeMs / 1000),
     },
-    expand: ["data.customer"],
     limit: 100,
   });
-  const wanted = String(customerEmail).toLowerCase();
-  const match = subscriptions.data.find((subscription) => subscription.customer?.email?.toLowerCase() === wanted);
-  return match ? { id: match.id, createdMs: match.created * 1000 } : null;
+  return selectPriorPurchaseSubscription(subscriptions.data, { hashedSub });
 }
 
 /**

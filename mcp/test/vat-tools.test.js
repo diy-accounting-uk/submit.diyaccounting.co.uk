@@ -11,10 +11,11 @@ import { fileURLToPath } from "node:url";
 import { beforeAll, describe, expect, it } from "vitest";
 
 import { calculatedResultsFor } from "@diy-accounting-uk/diya-gl/dist/app/bin/export.js";
+import { interfaceRows, isoFromSerial } from "@diy-accounting-uk/diya-gl/dist/app/lib/derivations/vat-return.js";
 import { loadTaxDataForBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 
 import { createSession, openBook } from "../lib/book-tools.js";
-import { deriveVatReturn, interfaceRows, isoFromSerial } from "../lib/vat-tools.js";
+import { deriveVatReturn } from "../lib/vat-tools.js";
 import { TOOLS } from "../lib/server.js";
 
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures");

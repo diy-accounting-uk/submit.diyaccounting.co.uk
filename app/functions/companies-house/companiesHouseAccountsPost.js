@@ -28,6 +28,8 @@ import {
   SHARE_CLASSES,
   sharesIssuedFor,
 } from "../../services/microEntityAccountsIxbrl.js";
+import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
+import { extractAndValidateSmallCompany } from "../../services/smallCompanyAccountsRequest.js";
 import {
   buildAccountsSubmission,
   allocateSubmissionNumber,
@@ -69,6 +71,11 @@ export function apiEndpoint(app) {
 }
 /* v8 ignore stop */
 
+// The iXBRL document for a validated request: the regime the request named picks the builder.
+export function buildAccountsIxbrl(accounts) {
+  return accounts.regime === "small-company" ? buildSmallCompanyAccounts(accounts) : buildMicroEntityAccounts(accounts);
+}
+
 // Extracts and validates the accounts filing request. Shared with the preview Lambda, which
 // never needs the company authentication code because it never reaches the gateway.
 export function extractAndValidateAccountsParameters(event, errorMessages, { requireCompanyAuthCode = true, clientId } = {}) {
@@ -87,6 +94,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     dormantTradingStatus,
     shareClass,
     nominalValue,
+    smallCompany,
   } = parsedBody;
 
   // A client-scoped request resolves its company number from the client row instead, so the
@@ -120,11 +128,20 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     errorMessages.push("Invalid or missing periodEnd - must be YYYY-MM-DD");
   }
 
-  const currentYear = extractAndValidateBalanceSheetYear(balanceSheet?.currentYear, "currentYear", errorMessages);
-  const priorYear = extractAndValidateBalanceSheetYear(balanceSheet?.priorYear, "priorYear", errorMessages);
+  const isSmallCompany = smallCompany !== undefined && smallCompany !== null;
+  if (isSmallCompany && dormant === true) {
+    errorMessages.push("A dormant company files micro-entity accounts: dormant cannot be combined with smallCompany");
+  }
 
-  validateBalanceSheetAddsUp(currentYear, "currentYear", errorMessages);
-  validateBalanceSheetAddsUp(priorYear, "priorYear", errorMessages);
+  let currentYear;
+  let priorYear;
+  if (!isSmallCompany) {
+    currentYear = extractAndValidateBalanceSheetYear(balanceSheet?.currentYear, "currentYear", errorMessages);
+    priorYear = extractAndValidateBalanceSheetYear(balanceSheet?.priorYear, "priorYear", errorMessages);
+
+    validateBalanceSheetAddsUp(currentYear, "currentYear", errorMessages);
+    validateBalanceSheetAddsUp(priorYear, "priorYear", errorMessages);
+  }
 
   const numericAverageEmployees = Number(averageEmployees);
   if (
@@ -143,6 +160,22 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   const dateApproved = director?.dateApproved;
   if (!dateApproved || !isValidIsoDate(dateApproved)) {
     errorMessages.push("Invalid or missing director.dateApproved - must be YYYY-MM-DD");
+  }
+
+  if (isSmallCompany) {
+    const small = extractAndValidateSmallCompany(smallCompany, statementsAccepted, errorMessages);
+    return {
+      regime: "small-company",
+      companyNumber: normalisedCompanyNumber,
+      companyName: trimmedCompanyName,
+      ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
+      periodStart,
+      periodEnd,
+      averageNumberOfEmployees: numericAverageEmployees,
+      directorName,
+      dateOfApproval: dateApproved,
+      ...small,
+    };
   }
 
   const isDormant = dormant === true;
@@ -164,6 +197,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   }
 
   return {
+    regime: "micro-entity",
     companyNumber: normalisedCompanyNumber,
     companyName: trimmedCompanyName,
     ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
@@ -313,7 +347,7 @@ export async function ingestHandler(event) {
 
   let submissionNumber;
   try {
-    const ixbrl = buildMicroEntityAccounts(accounts);
+    const ixbrl = buildAccountsIxbrl(accounts);
     submissionNumber = await allocateSubmissionNumber();
     const { presenterId, presenterCode } = await resolvePresenterCredentials();
 

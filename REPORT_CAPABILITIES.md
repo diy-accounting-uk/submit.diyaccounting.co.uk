@@ -1384,11 +1384,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### CH-08 File micro-entity accounts to Companies House
 
 - **Use when:** a small company must submit its FRS 105 micro-entity accounts to the XML Gateway.
-- **Does:** companiesHouseAccountsPost.js builds the XML submission via buildAccountsSubmissionRequest, submits it via postToGateway, and stores the async request in DynamoDB. companiesHouseAccountsGet.js polls that stored request for the filing's status.
+- **Does:** companiesHouseAccountsPost.js builds the XML submission via buildAccountsSubmissionRequest, submits it via postToGateway, and stores the async request in DynamoDB. companiesHouseAccountsGet.js polls that stored request for the filing's status. A request carrying a smallCompany section files FRS 102 section 1A small company accounts instead (buildSmallCompanyAccounts: profit and loss account, balance sheet sub-lines, fixed asset note, directors' report, optional prior-year comparatives, optional section 444 filleted copy) through the same two Lambdas and the fileSmallCompanyAccounts.html page; derive_small_company_accounts reads its figures from a Company book.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/companies-house/companiesHouseAccountsPost.js:ingestHandler`; `app/functions/companies-house/companiesHouseAccountsGet.js:ingestHandler`
-- **Files:** app/functions/companies-house/companiesHouseAccountsPost.js, app/functions/companies-house/companiesHouseAccountsGet.js, app/unit-tests/functions/companiesHouseAccountsPost.test.js, app/unit-tests/functions/companiesHouseAccountsGet.test.js, app/services/microEntityAccountsIxbrl.js, app/unit-tests/services/microEntityAccountsIxbrl.test.js, app/services/companiesHouseXmlGateway.js, app/unit-tests/services/companiesHouseXmlGateway.test.js, web/public/companies-house/fileMicroEntityAccounts.html, web/public/lib/services/companies-house-filing-service.js, behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-filing-steps.js, app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js, app/system-tests/companiesHouseFilingSimulator.system.test.js, app/system-tests/companiesHouseSimulator.system.test.js, PLAN_COMPANIES_HOUSE.md
-- **Keywords:** companies house, micro-entity accounts, ixbrl, xml gateway, govtalk, async request, dynamodb, filing, presenter credential
+- **Files:** app/functions/companies-house/companiesHouseAccountsPost.js, app/functions/companies-house/companiesHouseAccountsGet.js, app/unit-tests/functions/companiesHouseAccountsPost.test.js, app/unit-tests/functions/companiesHouseAccountsGet.test.js, app/services/microEntityAccountsIxbrl.js, app/unit-tests/services/microEntityAccountsIxbrl.test.js, app/services/accountsIxbrlCommon.js, app/services/smallCompanyAccountsIxbrl.js, app/services/smallCompanyAccountsRequest.js, app/services/smallCompanyAccounts.js, app/unit-tests/services/smallCompanyAccountsIxbrl.test.js, web/public/companies-house/fileSmallCompanyAccounts.html, app/services/companiesHouseXmlGateway.js, app/unit-tests/services/companiesHouseXmlGateway.test.js, web/public/companies-house/fileMicroEntityAccounts.html, web/public/lib/services/companies-house-filing-service.js, behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-filing-steps.js, app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js, app/system-tests/companiesHouseFilingSimulator.system.test.js, app/system-tests/companiesHouseSimulator.system.test.js, PLAN_COMPANIES_HOUSE.md
+- **Keywords:** companies house, micro-entity accounts, small company accounts, FRS 102, section 1A, filleted accounts, ixbrl, xml gateway, govtalk, async request, dynamodb, filing, presenter credential
 - **Related:** CH-07, CH-09, CH-11, CH-12, CH-13
 
 ### Filing infrastructure (CH)
@@ -1452,7 +1452,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Use when:** the FRS 102/105 taxonomy fixture needs refreshing, or a generated iXBRL document needs checking against Companies House's validator.
 - **Does:** generate-frc-taxonomy-concepts.js fetches the FRS 102 entry-point schema from the FRC taxonomy site and writes the flat concept-name list to fixtures/frc-taxonomy/frs-102-2026-concepts.json. loadFrcTaxonomyConcepts loads and caches that list for the iXBRL generator to check every emitted concept against. validate-accounts-ixbrl.js posts a generated micro-entity iXBRL document to Companies House's public XBRL test validator over the network.
 - **Run:** `node scripts/generate-frc-taxonomy-concepts.js`; `npm run validate:accounts-ixbrl`; `node scripts/validate-accounts-ixbrl.js <path-to-ixbrl-file>`
-- **Entry:** `scripts/generate-frc-taxonomy-concepts.js:main`; `scripts/validate-accounts-ixbrl.js:main`; `app/services/microEntityAccountsIxbrl.js:loadFrcTaxonomyConcepts`
+- **Entry:** `scripts/generate-frc-taxonomy-concepts.js:main`; `scripts/validate-accounts-ixbrl.js:main`; `app/services/accountsIxbrlCommon.js:loadFrcTaxonomyConcepts`
 - **Files:** scripts/generate-frc-taxonomy-concepts.js, scripts/validate-accounts-ixbrl.js
 - **Keywords:** frc taxonomy, frs 102, frs 105, ixbrl, concepts fixture, xbrl validator, companies house, taxonomy schema
 - **Related:** CH-08, CH-07
@@ -6514,6 +6514,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - filing base url: [CH-09](#ch-09-query-and-submit-document-transactions)
 - filing callback: [CH-01](#ch-01-exchange-a-companies-house-oauth-token)
 - filing periods: [HMRC-03](#hmrc-03-retrieve-vat-obligations)
+- filleted accounts: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - final declaration: [HMRC-10](#hmrc-10-retrieve-itsa-obligations), [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - final declaration obligation: [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations)
 - finance import: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
@@ -6544,7 +6545,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - fresh checkout: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - fresh project bootstrap: [DATA-40](#data-40-enable-required-google-cloud-apis)
 - frontend bundle: [BILL-43](#bill-43-build-the-frontend-test-bundle)
-- frs 102: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
+- frs 102: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - frs 105: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - full deploy: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
 - full tax year: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
@@ -7465,6 +7466,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - secrets manager: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
 - secrets manager inventory: [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - secrets manager oauth: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
+- section 1a: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - section 6.6: [OPS-64](#ops-64-runbook-information-security-operations)
 - security baseline: [OPS-121](#ops-121-provision-the-security-baseline-stack)
 - security detection: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
@@ -7532,6 +7534,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - skip_libreoffice: [SS-42](#ss-42-route-tests-by-blast-radius)
 - slot pool: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - slow the flow: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
+- small company accounts: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - smoke test: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - sns: [SITE-03](#site-03-capture-feedback-interest), [OPS-72](#ops-72-forward-bedrock-budget-alerts)
 - sns findings topic: [OPS-117](#ops-117-provision-the-observability-stack)

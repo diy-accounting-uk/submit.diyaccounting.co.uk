@@ -25,6 +25,7 @@ const PAGES = [
   "hmrc/itsa/adjustments.html",
   "hmrc/itsa/ukPropertyAdjustments.html",
   "companies-house/fileMicroEntityAccounts.html",
+  "companies-house/fileSmallCompanyAccounts.html",
   "companies-house/fileConfirmationStatement.html",
 ];
 

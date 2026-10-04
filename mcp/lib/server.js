@@ -16,7 +16,7 @@ import { z } from "zod";
 import { createSession, openBook, saveBook, SAVE_FORMATS } from "./book-tools.js";
 import { signIn, signOut } from "./auth.js";
 import { writeFinancePackage } from "./finance/package-writer.js";
-import { deriveMicroEntityAccounts } from "./accounts-tools.js";
+import { deriveMicroEntityAccounts, deriveSmallCompanyAccounts } from "./accounts-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
 import { registerItsaTools } from "./itsa-tools.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
@@ -246,6 +246,17 @@ export const TOOLS = {
       "first director and the employee count. Refuses a book whose published or opening balance sheet does not balance.",
     inputSchema: {},
     handler: deriveMicroEntityAccounts,
+  },
+  derive_small_company_accounts: {
+    description:
+      "The figures a small company's FRS 102 section 1A accounts filing takes, from the session's loaded book: the " +
+      "full profit and loss account and the balance sheet sub-lines for the current year from the engine's published " +
+      "statements, the prior-year balance sheet from the opening balance, the tangible fixed asset note by class, the " +
+      "period dates, the company number and name, the directors and the employee count, in whole pounds with every " +
+      "subtotal holding. The book publishes no prior-year profit and loss account, so none is returned. Refuses a book " +
+      "whose published or opening balance sheet does not balance.",
+    inputSchema: {},
+    handler: deriveSmallCompanyAccounts,
   },
   list_vat_obligations: {
     description:

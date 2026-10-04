@@ -80,6 +80,10 @@ export const SKIPPABLE_JOBS = [
   { id: "behaviour-test-simulator-compliance", description: "End-to-end compliance-page behaviour, simulator." },
   { id: "behaviour-test-simulator-vat-validation", description: "VAT return field validation behaviour, simulator." },
   { id: "behaviour-test-simulator-vat-schemes", description: "VAT scheme selection behaviour, simulator." },
+  {
+    id: "behaviour-test-simulator-hmrc-assist",
+    description: "HMRC Assist feedback on a VAT return and an Income Tax calculation, simulator.",
+  },
   { id: "behaviour-test-simulator-auth", description: "Sign-in and authentication journeys, simulator." },
   { id: "behaviour-test-simulator-bundle", description: "Bundle purchase and entitlement behaviour, simulator." },
   { id: "behaviour-test-simulator-help", description: "Help pages behaviour, simulator." },
@@ -206,6 +210,22 @@ export const JOB_ID_CATALOGUES = {
 // that always runs everything - so this job never advises anything there.
 export function isEligibleRef(ref) {
   return ref !== "refs/heads/main";
+}
+
+// A built or generated file (a bundled library, a lockfile) can carry a diff larger than the
+// model's prompt allows, and the job then fails with "Prompt is too long". Each file's diff over
+// maxCharactersPerFile characters is replaced by its header and a one-line note; the file stays
+// in the changed-files list, so the model still knows it changed.
+export function limitDiff(diff, maxCharactersPerFile = 60000) {
+  if (!diff) return diff;
+  return diff
+    .split(/(?=^diff --git )/m)
+    .map((section) => {
+      if (section.length <= maxCharactersPerFile) return section;
+      const header = section.split("\n")[0];
+      return `${header}\n(diff of ${section.length} characters omitted: over ${maxCharactersPerFile} characters)\n`;
+    })
+    .join("");
 }
 
 export function buildPrompt({ context, diff, changedFiles, jobs = SKIPPABLE_JOBS }) {
@@ -375,7 +395,7 @@ function resolveCatalogue(name) {
 
 function runPrompt(opts) {
   const context = readJson(opts.context, {});
-  const diff = opts.diff && fs.existsSync(opts.diff) ? fs.readFileSync(opts.diff, "utf8") : "";
+  const diff = limitDiff(opts.diff && fs.existsSync(opts.diff) ? fs.readFileSync(opts.diff, "utf8") : "");
   const changedFiles =
     opts["changed-files"] && fs.existsSync(opts["changed-files"])
       ? fs

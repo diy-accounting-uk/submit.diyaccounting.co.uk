@@ -117,7 +117,7 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [], Count: 0 };
+        return { Items: [{ bundleId: "resident", subscriptionStatus: "active" }], Count: 1 };
       }
       return {};
     });

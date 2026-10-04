@@ -26,3 +26,4 @@ web/public/docs/api/
 web/public/docs/hmrc-form-field-standards/
 infra/aws-accounts/trust-policies/github-actions-trust.json
 web/public/lib/diya-gl/
+web/public/lib/books-bundle.js

@@ -187,6 +187,7 @@ export default [
       "web/public/lib/diya-gl/",
       // Vendored minified library
       "web/public/lib/qrcode.min.js",
+      "web/public/lib/books-bundle.js",
       // Generated bundle (built from web/public/submit.js)
       "web/public/submit.bundle.js",
     ],

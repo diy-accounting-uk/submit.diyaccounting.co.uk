@@ -172,6 +172,19 @@ describe("productCatalogHelper", () => {
     expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "default")).toBe(false);
   });
 
+  it("file-small-company-accounts is granted like file-micro-entity-accounts, costs one token, and shares the accounts API routes", () => {
+    const catalog = parseCatalog(tomlText);
+    const small = catalog.activities.find((a) => a.id === "file-small-company-accounts");
+    const micro = catalog.activities.find((a) => a.id === "file-micro-entity-accounts");
+    expect(bundlesForActivity(catalog, "file-small-company-accounts")).toEqual(bundlesForActivity(catalog, "file-micro-entity-accounts"));
+    expect(small.tokenCost).toBe(micro.tokenCost);
+    expect(small.metered).toBe(true);
+    expect(small.environments).toEqual(micro.environments);
+    expect(small.paths).toContain("companies-house/fileSmallCompanyAccounts.html");
+    expect(small.paths).toContain("^/api/v1/companies-house/accounts.*");
+    expect(micro.paths).not.toContain("companies-house/fileSmallCompanyAccounts.html");
+  });
+
   it("file-confirmation-statement activity should be granted by resident and resident-pro, ci only", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "file-confirmation-statement");

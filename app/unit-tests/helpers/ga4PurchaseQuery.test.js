@@ -4,7 +4,11 @@
 // app/unit-tests/helpers/ga4PurchaseQuery.test.js
 
 import { describe, test, expect } from "vitest";
-import { exportedTransactionWindow, dailyExportLagMs } from "../../../behaviour-tests/helpers/ga4PurchaseQuery.js";
+import {
+  exportedTransactionWindow,
+  dailyExportLagMs,
+  selectPriorPurchaseSubscription,
+} from "../../../behaviour-tests/helpers/ga4PurchaseQuery.js";
 
 const hour = 60 * 60 * 1000;
 const day = 24 * hour;
@@ -64,5 +68,22 @@ describe("exportedTransactionWindow", () => {
       expect(nowMs - createdBeforeMs).toBeGreaterThanOrEqual(dailyExportLagMs);
       expect(nowMs - createdBeforeMs).toBeLessThan(dailyExportLagMs + day);
     }
+  });
+});
+
+describe("selectPriorPurchaseSubscription", () => {
+  const subscriptions = [
+    { id: "sub_prod_newest", created: 300, metadata: { hashedSub: "prod-pool" } },
+    { id: "sub_ci_newer", created: 200, metadata: { hashedSub: "ci-pool" } },
+    { id: "sub_no_metadata", created: 150 },
+    { id: "sub_ci_older", created: 100, metadata: { hashedSub: "ci-pool" } },
+  ];
+
+  test("skips subscriptions from another user pool even when newer", () => {
+    expect(selectPriorPurchaseSubscription(subscriptions, { hashedSub: "ci-pool" })).toEqual({ id: "sub_ci_newer", createdMs: 200_000 });
+  });
+
+  test("returns null when no subscription is from the user pool", () => {
+    expect(selectPriorPurchaseSubscription(subscriptions, { hashedSub: "other-pool" })).toBeNull();
   });
 });

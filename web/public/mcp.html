@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="The diya-gl MCP server is available now. The submission MCP for VAT and Companies House filings is coming soon."
+      content="Two MCP servers: diya-gl for reading and editing a book, and the submission MCP for filing VAT returns and Companies House accounts, from npm or Docker."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/mcp.html" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -98,11 +98,6 @@
         color: #1e7e34;
       }
 
-      .mcp-status-coming-soon {
-        background: #f8f9fa;
-        color: #666;
-      }
-
       .mcp-intro pre {
         background: #f8f9fa;
         border-radius: 6px;
@@ -137,7 +132,7 @@
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>MCP Server</h1>
-      <p class="subtitle">Available now, and coming soon</p>
+      <p class="subtitle">Read and edit a book, and file from it</p>
     </header>
 
     <main id="mainContent">
@@ -153,8 +148,7 @@
           </p>
           <p>
             Two MCP servers exist for DIY Accounting's own tools: the diya-gl MCP server for reading and editing a book, available now, and
-            the submission MCP for filing VAT returns and Companies House accounts, coming soon. You can use every VAT feature through the
-            web app, or call the REST API directly, whichever MCP server you use.
+            the submission MCP for filing VAT returns and Companies House accounts. Every filing they make is one the web app can make too.
           </p>
         </div>
 
@@ -185,30 +179,79 @@
         </div>
 
         <div class="mcp-intro">
-          <span class="mcp-status mcp-status-coming-soon">Coming soon</span>
+          <span class="mcp-status mcp-status-available">Available now</span>
           <h2>The submission MCP</h2>
           <p>
-            The submission MCP will take a customer's book and file the two submissions this service makes: the VAT return to HMRC and the
+            The submission MCP takes a customer's book and files the two submissions this service makes: the VAT return to HMRC and the
             micro-entity accounts to Companies House. It works out the figures a filing needs, shows them for confirmation, and only then
-            sends the filing.
+            sends the filing. It also works out the Self Employment quarterly update and annual submission figures for Income Tax (MTD).
           </p>
-          <p>It will do:</p>
-          <ul>
-            <li>Open a book from a file or from the DIYA cloud, and save it back.</li>
-            <li>List a business's open and fulfilled VAT obligations.</li>
-            <li>Work out the nine VAT return boxes for a period, and show which lines fed each box.</li>
-            <li>File a confirmed VAT return with HMRC, and fetch the stored receipt.</li>
-            <li>Work out the seven micro-entity accounts figures for the current and prior year.</li>
-            <li>Preview the filing before it is sent, and check it against the public accounts validator.</li>
-            <li>File confirmed accounts with Companies House, and check on the filing's outcome.</li>
-          </ul>
-          <p>It will run on three surfaces:</p>
-          <ul>
-            <li>The npm package, used from the command line or as a local web page.</li>
-            <li>The same package as a Docker image, for anyone who does not want to install Node.</li>
-            <li>A hosted version, reachable from a chat client such as Claude Desktop, signed in with the same account as the web app.</li>
-          </ul>
-          <p>The full plan is in <code>PLAN_SUBMISSION_MCP.md</code>.</p>
+          <h3>Run it from npm</h3>
+          <p>It needs Node.js 24 or later. Run it without installing:</p>
+          <pre><code>npx @diy-accounting-uk/diya-submit</code></pre>
+          <h3>Run it from Docker</h3>
+          <p>The image runs the same server over stdin and stdout, so a client starts it with <code>docker run -i</code>:</p>
+          <pre><code>docker run -i --rm ghcr.io/diy-accounting-uk/diya-submit-mcp</code></pre>
+          <h3>Connect a client</h3>
+          <p>
+            Add the server to an MCP client such as Claude Desktop or Claude Code. For the npm package the client's configuration entry is:
+          </p>
+          <pre><code>{
+  "mcpServers": {
+    "diya-submit": {
+      "command": "npx",
+      "args": ["-y", "@diy-accounting-uk/diya-submit"],
+      "env": {
+        "DIYA_SUBMIT_BASE_URL": "https://submit.diyaccounting.co.uk",
+        "DIYA_SUBMIT_AUTH_DOMAIN": "&lt;the sign-in domain&gt;",
+        "DIYA_SUBMIT_MCP_CLIENT_ID": "&lt;the MCP client id&gt;"
+      }
+    }
+  }
+}</code></pre>
+          <p>
+            For the Docker image, set <code>"command": "docker"</code> and
+            <code
+              >"args": ["run", "-i", "--rm", "-e", "DIYA_SUBMIT_BASE_URL", "-e", "DIYA_SUBMIT_AUTH_DOMAIN", "-e",
+              "DIYA_SUBMIT_MCP_CLIENT_ID", "ghcr.io/diy-accounting-uk/diya-submit-mcp"]</code
+            >
+            with the same <code>env</code> block.
+          </p>
+          <h3>Sign in</h3>
+          <p>
+            Ask the client to run <code>sign_in</code>. It opens the same sign-in page the web app uses, catches the answer on a local
+            address, and keeps a refresh token in <code>~/.config/diya-submit/credentials.json</code> readable only by you. Run
+            <code>sign_out</code> to revoke it. HMRC's own grant stays a browser step, and a Companies House authentication code is passed
+            on the one call that files and is not stored. In the Docker image the credentials file lives inside the container, so mount a
+            volume at <code>/home/node/.config/diya-submit</code> to keep the sign-in between runs.
+          </p>
+          <h3>Tools</h3>
+          <dl>
+            <dt><code>open_book</code>, <code>save_book</code></dt>
+            <dd>Open a book from a file or from the DIYA cloud, and save it back in any of the four formats.</dd>
+            <dt><code>list_vat_obligations</code></dt>
+            <dd>The open and fulfilled VAT obligations HMRC holds for a business.</dd>
+            <dt><code>derive_vat_return</code></dt>
+            <dd>The nine VAT return boxes for a period, with the lines that fed each box.</dd>
+            <dt><code>submit_vat_return</code>, <code>get_vat_receipt</code></dt>
+            <dd>File a confirmed VAT return with HMRC, and fetch the stored receipt.</dd>
+            <dt><code>derive_micro_entity_accounts</code></dt>
+            <dd>The seven micro-entity balance sheet figures for the current and prior year.</dd>
+            <dt>
+              <code>preview_micro_entity_accounts</code>, <code>submit_micro_entity_accounts</code>, <code>poll_accounts_submission</code>
+            </dt>
+            <dd>Preview the filing, file confirmed accounts with Companies House, and check the filing's outcome.</dd>
+            <dt><code>derive_itsa_quarterly_update</code>, <code>derive_itsa_annual_submission</code></dt>
+            <dd>The Self Employment figures for one quarter and for the year, from a self-employed book.</dd>
+          </dl>
+          <p>
+            A submit tool takes the figures the derive tool returned, never a book, so you see and approve the figures before anything
+            reaches HMRC or Companies House.
+          </p>
+          <p>
+            A hosted version, reachable from a chat client without installing anything, is in development. It will use the same account as
+            the web app.
+          </p>
         </div>
 
         <div class="mcp-links">

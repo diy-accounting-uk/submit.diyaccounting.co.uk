@@ -428,7 +428,7 @@ name = "Company Lookup (Companies House)"
 display = "on-entitlement"
 bundles = ["default"]
 metered = false
-paths = ["companies-house/companySearch.html", "^/api/v1/companies-house.*"]
+paths = ["companies-house/companySearch.html", "^/api/v1/companies-house/search$", "^/api/v1/companies-house/company/[^/]+$"]
 environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
@@ -458,7 +458,17 @@ display = "on-entitlement"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
 metered = true
-paths = ["companies-house/fileMicroEntityAccounts.html", "^/api/v1/companies-house/accounts.*"]
+paths = ["companies-house/fileMicroEntityAccounts.html", "^/api/v1/companies-house/accounts.*", "^/api/v1/companies-house/company/[^/]+$"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "file-small-company-accounts"
+name = "File Small Company Accounts (Companies House)"
+display = "on-entitlement"
+bundles = ["resident", "resident-pro"]
+tokenCost = 1
+metered = true
+paths = ["companies-house/fileSmallCompanyAccounts.html", "^/api/v1/companies-house/accounts.*", "^/api/v1/companies-house/company/[^/]+$"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
@@ -468,7 +478,7 @@ display = "on-entitlement"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
 metered = true
-paths = ["companies-house/fileConfirmationStatement.html", "^/api/v1/companies-house/confirmation-statement.*", "^/api/v1/companies-house/company/[^/]+/(officers|persons-with-significant-control|filing-data)$"]
+paths = ["companies-house/fileConfirmationStatement.html", "^/api/v1/companies-house/confirmation-statement.*", "^/api/v1/companies-house/company/[^/]+/(officers|persons-with-significant-control|filing-data)$", "^/api/v1/companies-house/company/[^/]+$"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 # prices

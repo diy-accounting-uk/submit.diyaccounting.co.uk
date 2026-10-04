@@ -453,10 +453,12 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       lookbackDays,
       exportFirstWholeDayStartMs: await exportFirstWholeDayStartMs({ projectId, datasetId }),
     });
-    const priorSubscription = window ? await findPastStripeSubscription({ ...window, customerEmail: testAuthUsername }) : null;
+    const priorSubscription = window
+      ? await findPastStripeSubscription({ ...window, currentSubscriptionId: webhookActivation.stripeSubscriptionId })
+      : null;
     if (!priorSubscription) {
       console.log(
-        "No prior subscription of this lane created on a UTC day whose daily export has landed and that the query window covers — skipping the BigQuery assertion",
+        "No prior ci subscription of this user pool created on a UTC day whose daily export has landed and that the query window covers — skipping the BigQuery assertion",
       );
       return;
     }

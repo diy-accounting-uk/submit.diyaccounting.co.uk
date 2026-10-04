@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // behaviour-tests/steps/behaviour-companies-house-accounts-steps.js
-// Steps for the micro-entity accounts filing journey. No Companies House OAuth token round trip:
+// Steps for the micro-entity and small company accounts filing journeys. No Companies House OAuth token round trip:
 // the filing goes through the XML Gateway with the operator's presenter credentials, so this
 // steps file only needs the Cognito sign-in already covered by behaviour-login-steps.js.
 
@@ -112,5 +112,81 @@ export async function verifyFilingRejected(page, expectedRejectCode, screenshotP
     await expect(page.locator("#filingResult")).toContainText("REJECT", { timeout: 30000 });
     await expect(page.locator("#rejections")).toContainText(expectedRejectCode);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-rejected.png` });
+  });
+}
+
+export async function goToFileSmallCompanyAccounts(page, screenshotPath = defaultScreenshotPath) {
+  const activityButtonText = "File Small Company Accounts (Companies House)";
+  await test.step(`The user navigates to ${activityButtonText} and sees the company lookup form`, async () => {
+    await page.waitForTimeout(500);
+    await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting File Small Company Accounts", {
+      screenshotPath,
+      timeout: 60000,
+    });
+    await page.waitForLoadState("networkidle");
+    await expect(page.locator("#companyForm")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-company-form.png` });
+  });
+}
+
+const SMALL_COMPANY_INPUT_FIELDS = {
+  profitAndLoss: ["turnover", "costOfSales", "administrativeExpenses", "interestReceivable", "tax"],
+  balanceSheet: [
+    "fixedAssets",
+    "stocks",
+    "debtors",
+    "cashAtBank",
+    "tradeCreditors",
+    "corporationTax",
+    "otherCreditors",
+    "creditorsAfterOneYear",
+    "calledUpShareCapital",
+    "profitAndLossAccount",
+  ],
+};
+
+function upperFirst(text) {
+  return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+async function fillSmallCompanyYear(page, prefix, year) {
+  for (const field of SMALL_COMPANY_INPUT_FIELDS.profitAndLoss) {
+    await loggedFill(page, `#${prefix}${upperFirst(field)}`, String(year.profitAndLoss[field]), `${prefix} ${field}`);
+  }
+  for (const field of SMALL_COMPANY_INPUT_FIELDS.balanceSheet) {
+    await loggedFill(page, `#${prefix}${upperFirst(field)}`, String(year.balanceSheet[field]), `${prefix} ${field}`);
+  }
+}
+
+export async function fillInSmallCompanyAccountsForm(page, accounts, { filleted = false } = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user fills in the small company accounts (${filleted ? "filleted" : "full"} copy)`, async () => {
+    await loggedFill(page, "#periodStart", accounts.periodStart, "Period start");
+    await loggedFill(page, "#periodEnd", accounts.periodEnd, "Period end");
+    if (filleted) await page.check("#copyFilleted");
+    await fillSmallCompanyYear(page, "current", accounts.currentYear);
+    if (accounts.priorYear) {
+      await page.check("#includeComparatives");
+      await fillSmallCompanyYear(page, "prior", accounts.priorYear);
+    }
+    await loggedFill(page, "#principalActivity", accounts.principalActivity, "Principal activity");
+    await loggedFill(page, "#accountingPolicies", accounts.accountingPolicies, "Accounting policies");
+    await loggedFill(page, "#averageEmployees", String(accounts.averageEmployees), "Average employees");
+    await loggedFill(page, "#directors", accounts.directors.join("\n"), "Directors");
+    await loggedFill(page, "#directorName", accounts.directors[0], "Director name");
+    await loggedFill(page, "#directorDateApproved", accounts.dateApproved, "Date approved");
+    await page.check("#statementSection477Exemption");
+    await page.check("#statementMembersNotRequiredAudit");
+    await page.check("#statementDirectorsResponsibilities");
+    await page.check("#statementSmallCompaniesRegime");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accounts-form-filled.png` });
+  });
+}
+
+export async function verifyPreviewContains(page, expectedTexts, unexpectedTexts = [], screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the preview carry the expected accounts content", async () => {
+    const preview = await page.locator("#previewIxbrl").textContent();
+    for (const text of expectedTexts) expect(preview).toContain(text);
+    for (const text of unexpectedTexts) expect(preview).not.toContain(text);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-preview-checked.png` });
   });
 }

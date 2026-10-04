@@ -9,6 +9,7 @@ import {
   isEligibleRef,
   decideForContext,
   buildPrompt,
+  limitDiff,
   SKIPPABLE_JOB_IDS,
   SKIPPABLE_JOBS,
 } from "../../../scripts/ci/select-jobs.mjs";
@@ -170,5 +171,27 @@ describe("buildPrompt", () => {
   test("says so when there is no diff, rather than implying nothing changed", () => {
     const prompt = buildPrompt({ context: {}, diff: "", changedFiles: [] });
     expect(prompt).toContain("no diff available");
+  });
+});
+
+describe("limitDiff", () => {
+  const smallFile = "diff --git a/app/a.js b/app/a.js\n--- a/app/a.js\n+++ b/app/a.js\n@@ -1 +1 @@\n-x\n+y\n";
+  const bigBody = Array.from({ length: 50 }, (_, i) => `+line ${i}`).join("\n");
+  const bigFile = `diff --git a/web/public/lib/big.js b/web/public/lib/big.js\n--- /dev/null\n+++ b/web/public/lib/big.js\n${bigBody}\n`;
+
+  test("keeps a file diff under the limit as it is", () => {
+    expect(limitDiff(smallFile, 200)).toBe(smallFile);
+  });
+
+  test("replaces a file diff over the character limit with its header and a note, keeping the other files", () => {
+    const limited = limitDiff(smallFile + bigFile, 200);
+    expect(limited).toContain(smallFile);
+    expect(limited).toContain("diff --git a/web/public/lib/big.js b/web/public/lib/big.js");
+    expect(limited).toMatch(/diff of \d+ characters omitted: over 200 characters/);
+    expect(limited).not.toContain("+line 30");
+  });
+
+  test("returns an empty diff unchanged", () => {
+    expect(limitDiff("")).toBe("");
   });
 });

@@ -1,0 +1,7 @@
+node_modules
+test
+vitest.config.js
+vitest.system.config.js
+README.md
+Dockerfile
+.dockerignore

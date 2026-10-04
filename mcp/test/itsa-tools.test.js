@@ -9,13 +9,9 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeEach, describe, expect, test } from "vitest";
 
 import { createSession, openBook } from "../lib/book-tools.js";
-import {
-  annualFieldSlotsForTaxYear,
-  deriveItsaAnnualSubmission,
-  deriveItsaQuarterlyUpdate,
-  quarterlyFieldSlots,
-  writePath,
-} from "../lib/itsa-tools.js";
+import { annualFieldSlotsForTaxYear, quarterlyFieldSlots } from "@diy-accounting-uk/diya-gl/dist/app/lib/derivations/itsa.js";
+
+import { deriveItsaAnnualSubmission, deriveItsaQuarterlyUpdate } from "../lib/itsa-tools.js";
 
 const FIXTURES = fileURLToPath(new URL("./fixtures/", import.meta.url));
 const SE_VAT = join(FIXTURES, "brickwork-pro-se-vat");
@@ -59,7 +55,7 @@ describe("the field slots", () => {
   });
 
   test("an unknown tax year is refused", () => {
-    expect(() => annualFieldSlotsForTaxYear("2019-20")).toThrow(/no api.years entry/);
+    expect(() => annualFieldSlotsForTaxYear("2019-20")).toThrow(/api.years carries no entry/);
   });
 });
 
@@ -202,30 +198,5 @@ describe("derive_itsa_annual_submission", () => {
     const ltd = createSession();
     await openBook(ltd, { path: LTD });
     await expect(deriveItsaAnnualSubmission(ltd)).rejects.toThrow(/"ltd" book/);
-  });
-});
-
-describe("writePath", () => {
-  test("creates the objects between a dotted path and sets the leaf", () => {
-    const target = {};
-    writePath(target, "adjustments.basisAdjustment", 12.5);
-    expect(target).toEqual({ adjustments: { basisAdjustment: 12.5 } });
-  });
-
-  test("refuses a part that would reach the prototype chain", () => {
-    const target = {};
-    for (const path of ["__proto__.polluted", "adjustments.constructor.prototype.x", "prototype.x"]) {
-      expect(() => writePath(target, path, 1)).toThrow(/is not a field/);
-    }
-    expect({}.polluted).toBeUndefined();
-    expect(target).toEqual({});
-  });
-
-  test("refuses a leaf part that would reach the prototype chain", () => {
-    const target = {};
-    for (const path of ["adjustments.__proto__", "adjustments.constructor", "adjustments.prototype"]) {
-      expect(() => writePath(target, path, 1)).toThrow(/is not a field/);
-    }
-    expect({}.polluted).toBeUndefined();
   });
 });

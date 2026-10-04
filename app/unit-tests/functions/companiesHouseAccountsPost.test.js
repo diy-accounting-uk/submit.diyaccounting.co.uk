@@ -141,6 +141,53 @@ function buildDormantBody(overrides = {}) {
   return body;
 }
 
+function buildSmallCompanyBody(overrides = {}, smallOverrides = {}) {
+  return buildAccountsBody({
+    balanceSheet: undefined,
+    statementsAccepted: {
+      section477Exemption: true,
+      membersNotRequiredAudit: true,
+      directorsResponsibilities: true,
+      smallCompaniesRegime: true,
+    },
+    smallCompany: {
+      principalActivity: "Software consultancy",
+      accountingPolicies: "Historical cost convention.",
+      directors: ["Jo Director"],
+      balanceSheet: {
+        currentYear: {
+          fixedAssets: 1000,
+          stocks: 500,
+          debtors: 2500,
+          cashAtBank: 2000,
+          tradeCreditors: 1000,
+          corporationTax: 700,
+          otherCreditors: 300,
+          creditorsAfterOneYear: 0,
+          calledUpShareCapital: 100,
+          profitAndLossAccount: 3900,
+          capitalAndReserves: 4000,
+        },
+      },
+      profitAndLoss: {
+        currentYear: {
+          turnover: 20000,
+          costOfSales: 5000,
+          grossProfit: 15000,
+          administrativeExpenses: 12000,
+          operatingProfit: 3000,
+          interestReceivable: 0,
+          profitBeforeTax: 3000,
+          tax: 600,
+          profit: 2400,
+        },
+      },
+      ...smallOverrides,
+    },
+    ...overrides,
+  });
+}
+
 function buildEvent({ body = buildAccountsBody(), headers = {}, authorizer, method = "POST" } = {}) {
   const options = {
     method,
@@ -168,7 +215,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [], Count: 0 };
+        return { Items: [{ bundleId: "resident", subscriptionStatus: "active" }], Count: 1 };
       }
       return {};
     });
@@ -412,7 +459,7 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
   test("uses the body companyNumber as before when no clientId is given", async () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
-      if (cmd instanceof lib.QueryCommand) return { Items: [], Count: 0 };
+      if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId: "resident", subscriptionStatus: "active" }], Count: 1 };
       return {};
     });
 
@@ -421,5 +468,102 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
     expect(response.statusCode).toBe(201);
     const [generatorInput] = mockBuildMicroEntityAccounts.mock.calls[0];
     expect(generatorInput.companyNumber).toBe("00000001");
+  });
+
+  describe("small company filings", () => {
+    test("builds the small company document and submits it, never calling the micro-entity builder", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
+      expect(response.statusCode).toBe(201);
+      expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
+      const [submissionArgs] = mockBuildAccountsSubmission.mock.calls[0];
+      expect(submissionArgs.ixbrl).toContain('name="core:TurnoverRevenue"');
+      expect(submissionArgs.ixbrl).toContain("subject to the small companies regime");
+      expect(submissionArgs.ixbrl).toContain('name="bus:DescriptionPrincipalActivities"');
+      expect(submissionArgs.companyNumber).toBe("00000001");
+    });
+
+    test("filleting writes the section 444(5A) statement and drops the profit and loss account", async () => {
+      const body = buildSmallCompanyBody({}, { filleted: true });
+      body.smallCompany.balanceSheet = buildSmallCompanyBody().smallCompany.balanceSheet;
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(201);
+      const [submissionArgs] = mockBuildAccountsSubmission.mock.calls[0];
+      expect(submissionArgs.ixbrl).toContain("section 444(5A)");
+      expect(submissionArgs.ixbrl).not.toContain('name="core:TurnoverRevenue"');
+      expect(submissionArgs.ixbrl).not.toContain('name="bus:DescriptionPrincipalActivities"');
+    });
+
+    test("filing is full accounts when filleted is not given", async () => {
+      await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody() }));
+      const [submissionArgs] = mockBuildAccountsSubmission.mock.calls[0];
+      expect(submissionArgs.ixbrl).not.toContain("section 444(5A)");
+    });
+
+    test("comparatives render when supplied", async () => {
+      const body = buildSmallCompanyBody();
+      body.smallCompany.balanceSheet.priorYear = { ...body.smallCompany.balanceSheet.currentYear };
+      body.smallCompany.profitAndLoss.priorYear = { ...body.smallCompany.profitAndLoss.currentYear };
+      await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      const [submissionArgs] = mockBuildAccountsSubmission.mock.calls[0];
+      expect(submissionArgs.ixbrl).toContain('contextRef="y2024"');
+      expect(submissionArgs.ixbrl).toContain('contextRef="e2024"');
+    });
+
+    test("rejects a balance sheet whose capital and reserves differ from net assets", async () => {
+      const body = buildSmallCompanyBody();
+      body.smallCompany.balanceSheet.currentYear.capitalAndReserves = 1;
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("rejects a profit and loss account that does not add up", async () => {
+      const body = buildSmallCompanyBody();
+      body.smallCompany.profitAndLoss.currentYear.profit = 1;
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(parseResponseBody(response).message).toContain("profit must equal profitBeforeTax less tax");
+    });
+
+    test("rejects a fixed asset note whose net book value differs from fixed assets", async () => {
+      const body = buildSmallCompanyBody({}, {});
+      body.smallCompany.fixedAssetNote = {
+        computerEquipment: {
+          costAtStart: 500,
+          additions: 0,
+          disposals: 0,
+          depreciationAtStart: 0,
+          depreciationCharge: 0,
+          depreciationOnDisposals: 0,
+        },
+      };
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(parseResponseBody(response).message).toContain("fixedAssetNote net book value");
+    });
+
+    test("rejects a missing principal activity, no directors and an unaccepted regime statement", async () => {
+      const body = buildSmallCompanyBody();
+      body.smallCompany.principalActivity = "";
+      body.smallCompany.directors = [];
+      body.statementsAccepted.smallCompaniesRegime = false;
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      const message = parseResponseBody(response).message;
+      expect(message).toContain("smallCompany.principalActivity");
+      expect(message).toContain("smallCompany.directors");
+      expect(message).toContain("smallCompaniesRegime");
+    });
+
+    test("rejects a dormant flag combined with a small company filing", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody({ dormant: true }) }));
+      expect(response.statusCode).toBe(400);
+      expect(parseResponseBody(response).message).toContain("dormant cannot be combined with smallCompany");
+    });
+
+    test("a micro-entity filing still goes through the micro-entity builder", async () => {
+      await companiesHouseAccountsPostHandler(buildEvent());
+      expect(mockBuildMicroEntityAccounts).toHaveBeenCalledTimes(1);
+    });
   });
 });

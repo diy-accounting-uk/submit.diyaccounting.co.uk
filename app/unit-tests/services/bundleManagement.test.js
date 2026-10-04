@@ -371,6 +371,114 @@ describe("bundleEnforcement.js", () => {
       });
     });
 
+    describe("activities that share an accounts API route", () => {
+      const accountsPaths = [
+        "/api/v1/companies-house/accounts",
+        "/api/v1/companies-house/accounts/preview",
+        "/api/v1/companies-house/accounts/00001A",
+      ];
+
+      test.each(accountsPaths)(
+        "%s matches the micro-entity and small company activities, so any one of their bundles opens it",
+        async (urlPath) => {
+          process.env.ENVIRONMENT_NAME = "ci";
+          const token = makeJWT("accounts-filer");
+          const authorizerContext = {
+            "sub": "accounts-filer",
+            "cognito:username": "test",
+            "email": "test@test.submit.diyaccunting.co.uk",
+            "scope": "read write",
+          };
+          getUserBundles.mockResolvedValue([{ bundleId: "resident", expiry: new Date().toISOString() }]);
+
+          const { bundleIds } = await enforceBundles(buildEvent(token, authorizerContext, urlPath));
+
+          expect(bundleIds).toContain("resident");
+        },
+      );
+
+      test("an environment the small company activity does not list refuses the shared route", async () => {
+        process.env.ENVIRONMENT_NAME = "prod";
+        const token = makeJWT("accounts-filer-prod");
+        const authorizerContext = {
+          "sub": "accounts-filer-prod",
+          "cognito:username": "test",
+          "email": "test@test.submit.diyaccunting.co.uk",
+          "scope": "read write",
+        };
+        getUserBundles.mockResolvedValue([{ bundleId: "resident", expiry: new Date().toISOString() }]);
+
+        await expect(enforceBundles(buildEvent(token, authorizerContext, "/api/v1/companies-house/accounts"))).rejects.toMatchObject({
+          name: "BundleEntitlementError",
+          details: { code: "ACTIVITY_ENVIRONMENT_RESTRICTED" },
+        });
+      });
+    });
+
+    describe("Companies House routes for a caller holding only the automatic default bundle", () => {
+      const filingRoutes = [
+        "/api/v1/companies-house/accounts",
+        "/api/v1/companies-house/accounts/preview",
+        "/api/v1/companies-house/accounts/00001A",
+        "/api/v1/companies-house/confirmation-statement",
+        "/api/v1/companies-house/confirmation-statement/preview",
+        "/api/v1/companies-house/confirmation-statement/00001A",
+        "/api/v1/companies-house/company/00000006/officers",
+        "/api/v1/companies-house/company/00000006/persons-with-significant-control",
+        "/api/v1/companies-house/company/00000006/filing-data",
+        "/api/v1/companies-house/psc-verification-statement",
+        "/api/v1/companies-house/psc-verification-statement/00001A",
+      ];
+      const lookupRoutes = [
+        "/api/v1/companies-house/search",
+        "/api/v1/companies-house/company/00000006",
+        "/companies-house/companySearch.html",
+      ];
+      const defaultBundleRoutes = [
+        "/api/v1/companies-house/transaction",
+        "/api/v1/companies-house/transaction/abc123",
+        "/api/v1/companies-house/transaction/abc123/registered-office-address",
+        "/api/v1/companies-house/transaction/abc123/registered-email-address",
+        "/api/v1/companies-house/company/00000006/registered-office-address",
+        "/api/v1/companies-house/company/00000006/registered-email-address/eligibility",
+        "/api/v1/companies-house/token",
+      ];
+
+      function defaultOnlyEvent(urlPath) {
+        process.env.ENVIRONMENT_NAME = "ci";
+        const token = makeJWT("default-only");
+        const authorizerContext = {
+          "sub": "default-only",
+          "cognito:username": "test",
+          "email": "default-only@test.submit.diyaccunting.co.uk",
+          "scope": "read write",
+        };
+        getUserBundles.mockResolvedValue([]);
+        return buildEvent(token, authorizerContext, urlPath);
+      }
+
+      test.each(filingRoutes)("%s is refused", async (urlPath) => {
+        await expect(enforceBundles(defaultOnlyEvent(urlPath))).rejects.toMatchObject({
+          name: "BundleEntitlementError",
+          details: { code: "BUNDLE_FORBIDDEN" },
+        });
+      });
+
+      test.each([...lookupRoutes, ...defaultBundleRoutes])("%s is allowed", async (urlPath) => {
+        await expect(enforceBundles(defaultOnlyEvent(urlPath))).resolves.toBeDefined();
+      });
+
+      test.each([
+        "/api/v1/companies-house/company/00000006",
+        "/api/v1/companies-house/company/00000006/officers",
+        "/api/v1/companies-house/company/00000006/persons-with-significant-control",
+      ])("%s is allowed for a resident filer", async (urlPath) => {
+        const event = defaultOnlyEvent(urlPath);
+        getUserBundles.mockResolvedValue([{ bundleId: "resident", expiry: new Date().toISOString() }]);
+        await expect(enforceBundles(event)).resolves.toBeDefined();
+      });
+    });
+
     test("should extract user info from authorizer context", async () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const authorizerContext = {
