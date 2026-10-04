@@ -15,6 +15,48 @@
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
     <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
+    <style>
+      .assist-messages-section {
+        margin-bottom: 2em;
+        padding: 1em;
+        background-color: #f3f2f1;
+        border-left: 4px solid #0b0c0c;
+      }
+      .assist-messages-section h4 {
+        margin-top: 0;
+        margin-bottom: 1em;
+        font-weight: bold;
+      }
+      .assist-messages-list {
+        list-style-position: outside;
+        padding-left: 1.5em;
+      }
+      .assist-message {
+        margin-bottom: 1.5em;
+        line-height: 1.5;
+      }
+      .assist-message strong {
+        display: block;
+        margin-bottom: 0.5em;
+      }
+      .assist-message-body {
+        margin: 0.5em 0;
+      }
+      .assist-message-links {
+        margin-top: 0.5em;
+      }
+      .assist-message-link {
+        display: inline-block;
+        margin-right: 1em;
+        color: #0b0c0c;
+        text-decoration: underline;
+      }
+      .assist-message-path {
+        margin-top: 0.5em;
+        font-size: 0.9em;
+        color: #505a5f;
+      }
+    </style>
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -57,6 +99,7 @@
 
       <div id="receiptDisplay" class="receipt-display" style="display: none">
         <h3>Receipt Details</h3>
+        <div id="assistMessages"></div>
         <div id="receiptContent"></div>
       </div>
     </main>
@@ -227,12 +270,95 @@
         return entries;
       }
 
+      function isHttpUrl(value) {
+        try {
+          const protocol = new URL(value).protocol;
+          return protocol === "https:" || protocol === "http:";
+        } catch {
+          return false;
+        }
+      }
+
+      function displayAssistMessages(container, messages, acknowledgedAt) {
+        container.replaceChildren();
+        if (!messages) return;
+        const section = document.createElement("section");
+        section.className = "assist-messages-section";
+
+        const heading = document.createElement("h4");
+        heading.textContent = "HMRC feedback";
+        section.appendChild(heading);
+
+        const status = document.createElement("p");
+        status.className = "assist-acknowledgement";
+        status.textContent = acknowledgedAt
+          ? `Acknowledged to HMRC on ${new Date(acknowledgedAt).toLocaleString("en-GB")}`
+          : "Not acknowledged to HMRC";
+        section.appendChild(status);
+
+        const messagesList = document.createElement("ol");
+        messagesList.className = "assist-messages-list";
+
+        for (const message of messages) {
+          const li = document.createElement("li");
+          li.className = "assist-message";
+
+          const title = document.createElement("strong");
+          title.textContent = message.title;
+          li.appendChild(title);
+
+          const body = document.createElement("p");
+          body.className = "assist-message-body";
+          body.textContent = message.body;
+          li.appendChild(body);
+
+          if (message.links && Array.isArray(message.links) && message.links.length > 0) {
+            const linksSection = document.createElement("div");
+            linksSection.className = "assist-message-links";
+            for (const link of message.links.filter((candidate) => isHttpUrl(candidate.url))) {
+              const a = document.createElement("a");
+              a.href = link.url;
+              a.target = "_blank";
+              a.rel = "noopener noreferrer";
+              a.className = "assist-message-link";
+              a.textContent = link.title;
+              linksSection.appendChild(a);
+            }
+            li.appendChild(linksSection);
+          }
+
+          if (message.path) {
+            const pathDiv = document.createElement("div");
+            pathDiv.className = "assist-message-path";
+            const pathLabel = document.createElement("em");
+            pathLabel.textContent = `Related to: ${message.path}`;
+            pathDiv.appendChild(pathLabel);
+            li.appendChild(pathDiv);
+          }
+
+          messagesList.appendChild(li);
+        }
+
+        section.appendChild(messagesList);
+        container.appendChild(section);
+      }
+
       function displayReceiptTable(data, name) {
         const receiptDisplay = document.getElementById("receiptDisplay");
         const receiptContent = document.getElementById("receiptContent");
 
+        const isAssistReport = data && (data.kind === "vat-assist-report" || data.kind === "itsa-assist-report");
+        const hasMessages = isAssistReport && Array.isArray(data.messages) && data.messages.length > 0;
+        displayAssistMessages(document.getElementById("assistMessages"), hasMessages ? data.messages : null, data?.acknowledgedAt);
+
+        let dataToDisplay = data;
+        if (isAssistReport) {
+          const { messages, ...rest } = data;
+          dataToDisplay = rest;
+        }
+
         const vatBoxes = Object.fromEntries(HmrcFieldTable.VAT_RETURN_BOXES.map((box) => [box.field, box]));
-        const dataRows = receiptRows(data).map((entry) => {
+        const dataRows = receiptRows(dataToDisplay).map((entry) => {
           const isAmount = typeof entry.value === "number" && Number.isFinite(entry.value);
           const box = vatBoxes[entry.field];
           const row = { ...entry, kind: isAmount ? "money" : "text" };
