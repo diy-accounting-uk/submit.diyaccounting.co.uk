@@ -6,16 +6,12 @@
 import { describe, test, expect } from "vitest";
 import {
   buildMicroEntityAccounts,
-  buildContexts,
-  formatMonetary,
-  renderStatement,
-  loadFrcTaxonomyConcepts,
   MANDATORY_CONCEPT_KEYS,
   STATEMENT_KEYS,
   DORMANT_STATEMENT_KEYS,
-  CONCEPTS,
   sharesIssuedFor,
 } from "@app/services/microEntityAccountsIxbrl.js";
+import { buildContexts, formatMonetary, renderStatement, loadFrcTaxonomyConcepts, CONCEPTS } from "@app/services/accountsIxbrlCommon.js";
 import { parseXmlDocument } from "@app/lib/xmlDom.js";
 
 const SAMPLE_INPUT = {

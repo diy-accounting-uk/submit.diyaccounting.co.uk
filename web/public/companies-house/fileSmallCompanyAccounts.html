@@ -1,0 +1,1546 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>File Small Company Accounts - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
+      <h1>File small company accounts</h1>
+      <p class="subtitle">File a small company's FRS 102 section 1A annual accounts with Companies House</p>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div id="companyView" class="form-container">
+        <h2>Which company?</h2>
+        <form id="companyForm">
+          <div class="form-group">
+            <label for="companyNumber">Company number</label>
+            <p id="companyNumber-hint" class="hint">
+              The 8-character company number, for example 00000001. Not sure of the number?
+              <a href="companySearch.html">Search Companies House</a> for it first.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              required
+              value=""
+              placeholder="e.g., 00000001"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="companyLookupBtn" class="btn">Look up company</button>
+        </form>
+      </div>
+
+      <!-- Accounts form view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2>Small company accounts</h2>
+        <p>
+          Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). This is not the company you meant?
+          <a href="#" id="changeCompanyLink">Change company</a>.
+        </p>
+        <form id="accountsForm">
+          <h3>Period</h3>
+          <div class="form-group">
+            <label for="periodStart">Period start</label>
+            <input type="date" id="periodStart" name="periodStart" required />
+          </div>
+          <div class="form-group">
+            <label for="periodEnd">Period end</label>
+            <input type="date" id="periodEnd" name="periodEnd" required />
+          </div>
+
+          <h3>What Companies House receives</h3>
+          <div class="form-group">
+            <input type="radio" id="copyFull" name="copy" value="full" checked />
+            <label for="copyFull" style="display: inline; font-weight: normal">
+              Full accounts: the profit and loss account, the balance sheet, the notes and the directors' report
+            </label>
+          </div>
+          <div class="form-group">
+            <input type="radio" id="copyFilleted" name="copy" value="filleted" aria-describedby="copyFilleted-hint" />
+            <label for="copyFilleted" style="display: inline; font-weight: normal">
+              Filleted accounts: the balance sheet and the notes, with the profit and loss account and the directors' report left out
+            </label>
+            <p id="copyFilleted-hint" class="hint">
+              Section 444 of the Companies Act 2006 lets a small company deliver accounts without its profit and loss account. The company's
+              members still receive the full accounts.
+            </p>
+          </div>
+
+          <h3>Current year</h3>
+          <h4>Profit and loss account</h4>
+          <div class="form-group">
+            <label for="currentTurnover">Turnover</label>
+            <p id="currentTurnover-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentTurnover"
+                name="currentTurnover"
+                required
+                aria-describedby="currentTurnover-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="currentCostOfSales">Cost of sales</label>
+            <p id="currentCostOfSales-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentCostOfSales"
+                name="currentCostOfSales"
+                required
+                aria-describedby="currentCostOfSales-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="currentAdministrativeExpenses">Administrative expenses</label>
+            <p id="currentAdministrativeExpenses-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentAdministrativeExpenses"
+                name="currentAdministrativeExpenses"
+                required
+                aria-describedby="currentAdministrativeExpenses-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="currentInterestReceivable">Interest receivable and similar income</label>
+            <p id="currentInterestReceivable-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentInterestReceivable"
+                name="currentInterestReceivable"
+                value="0"
+                aria-describedby="currentInterestReceivable-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="currentTax">Tax on profit on ordinary activities</label>
+            <p id="currentTax-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentTax"
+                name="currentTax"
+                value="0"
+                aria-describedby="currentTax-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <p id="currentProfitAndLossTotals" class="hint"></p>
+          <h4>Balance sheet</h4>
+          <div class="form-group">
+            <label for="currentFixedAssets">Fixed assets</label>
+            <p id="currentFixedAssets-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentFixedAssets"
+                name="currentFixedAssets"
+                required
+                aria-describedby="currentFixedAssets-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="currentStocks">Stocks</label>
+            <p id="currentStocks-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentStocks"
+                name="currentStocks"
+                required
+                aria-describedby="currentStocks-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="currentDebtors">Debtors</label>
+            <p id="currentDebtors-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentDebtors"
+                name="currentDebtors"
+                required
+                aria-describedby="currentDebtors-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="currentCashAtBank">Cash at bank and in hand</label>
+            <p id="currentCashAtBank-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentCashAtBank"
+                name="currentCashAtBank"
+                required
+                aria-describedby="currentCashAtBank-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="currentTradeCreditors">Trade creditors (due within one year)</label>
+            <p id="currentTradeCreditors-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentTradeCreditors"
+                name="currentTradeCreditors"
+                required
+                aria-describedby="currentTradeCreditors-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="currentCorporationTax">Corporation tax (due within one year)</label>
+            <p id="currentCorporationTax-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentCorporationTax"
+                name="currentCorporationTax"
+                required
+                aria-describedby="currentCorporationTax-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="currentOtherCreditors">Other creditors (due within one year)</label>
+            <p id="currentOtherCreditors-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentOtherCreditors"
+                name="currentOtherCreditors"
+                required
+                aria-describedby="currentOtherCreditors-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="currentCreditorsAfterOneYear">Creditors: amounts falling due after more than one year</label>
+            <p id="currentCreditorsAfterOneYear-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentCreditorsAfterOneYear"
+                name="currentCreditorsAfterOneYear"
+                required
+                value="0"
+                aria-describedby="currentCreditorsAfterOneYear-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="currentCalledUpShareCapital">Called up share capital</label>
+            <p id="currentCalledUpShareCapital-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentCalledUpShareCapital"
+                name="currentCalledUpShareCapital"
+                required
+                aria-describedby="currentCalledUpShareCapital-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="currentProfitAndLossAccount">Profit and loss account reserve</label>
+            <p id="currentProfitAndLossAccount-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentProfitAndLossAccount"
+                name="currentProfitAndLossAccount"
+                required
+                aria-describedby="currentProfitAndLossAccount-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
+          </div>
+          <p id="currentBalanceSheetTotals" class="hint"></p>
+
+          <div class="form-group">
+            <input type="checkbox" id="includeComparatives" name="includeComparatives" aria-describedby="includeComparatives-hint" />
+            <label for="includeComparatives" style="display: inline; font-weight: normal">Include prior-year comparatives</label>
+            <p id="includeComparatives-hint" class="hint">
+              Fill in the prior year only when you have its figures. Nothing is filled in for you, and a prior year left out is left out of
+              the accounts.
+            </p>
+          </div>
+          <div id="comparativeFields" style="display: none">
+            <h3>Prior year</h3>
+            <h4>Profit and loss account</h4>
+            <div class="form-group">
+              <label for="priorTurnover">Turnover</label>
+              <p id="priorTurnover-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorTurnover"
+                  name="priorTurnover"
+                  aria-describedby="priorTurnover-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="priorCostOfSales">Cost of sales</label>
+              <p id="priorCostOfSales-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorCostOfSales"
+                  name="priorCostOfSales"
+                  aria-describedby="priorCostOfSales-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="priorAdministrativeExpenses">Administrative expenses</label>
+              <p id="priorAdministrativeExpenses-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorAdministrativeExpenses"
+                  name="priorAdministrativeExpenses"
+                  aria-describedby="priorAdministrativeExpenses-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="priorInterestReceivable">Interest receivable and similar income</label>
+              <p id="priorInterestReceivable-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorInterestReceivable"
+                  name="priorInterestReceivable"
+                  value="0"
+                  aria-describedby="priorInterestReceivable-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="priorTax">Tax on profit on ordinary activities</label>
+              <p id="priorTax-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorTax"
+                  name="priorTax"
+                  value="0"
+                  aria-describedby="priorTax-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <p id="priorProfitAndLossTotals" class="hint"></p>
+            <h4>Balance sheet</h4>
+            <div class="form-group">
+              <label for="priorFixedAssets">Fixed assets</label>
+              <p id="priorFixedAssets-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorFixedAssets"
+                  name="priorFixedAssets"
+                  aria-describedby="priorFixedAssets-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="priorStocks">Stocks</label>
+              <p id="priorStocks-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorStocks"
+                  name="priorStocks"
+                  aria-describedby="priorStocks-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="priorDebtors">Debtors</label>
+              <p id="priorDebtors-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorDebtors"
+                  name="priorDebtors"
+                  aria-describedby="priorDebtors-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="priorCashAtBank">Cash at bank and in hand</label>
+              <p id="priorCashAtBank-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorCashAtBank"
+                  name="priorCashAtBank"
+                  aria-describedby="priorCashAtBank-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="priorTradeCreditors">Trade creditors (due within one year)</label>
+              <p id="priorTradeCreditors-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorTradeCreditors"
+                  name="priorTradeCreditors"
+                  aria-describedby="priorTradeCreditors-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="priorCorporationTax">Corporation tax (due within one year)</label>
+              <p id="priorCorporationTax-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorCorporationTax"
+                  name="priorCorporationTax"
+                  aria-describedby="priorCorporationTax-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="priorOtherCreditors">Other creditors (due within one year)</label>
+              <p id="priorOtherCreditors-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorOtherCreditors"
+                  name="priorOtherCreditors"
+                  aria-describedby="priorOtherCreditors-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="priorCreditorsAfterOneYear">Creditors: amounts falling due after more than one year</label>
+              <p id="priorCreditorsAfterOneYear-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorCreditorsAfterOneYear"
+                  name="priorCreditorsAfterOneYear"
+                  value="0"
+                  aria-describedby="priorCreditorsAfterOneYear-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="priorCalledUpShareCapital">Called up share capital</label>
+              <p id="priorCalledUpShareCapital-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorCalledUpShareCapital"
+                  name="priorCalledUpShareCapital"
+                  aria-describedby="priorCalledUpShareCapital-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="priorProfitAndLossAccount">Profit and loss account reserve</label>
+              <p id="priorProfitAndLossAccount-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="priorProfitAndLossAccount"
+                  name="priorProfitAndLossAccount"
+                  aria-describedby="priorProfitAndLossAccount-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <p id="priorBalanceSheetTotals" class="hint"></p>
+          </div>
+
+          <h3>Tangible fixed assets note</h3>
+          <div class="form-group">
+            <input type="checkbox" id="includeFixedAssetNote" name="includeFixedAssetNote" aria-describedby="includeFixedAssetNote-hint" />
+            <label for="includeFixedAssetNote" style="display: inline; font-weight: normal">Include the tangible fixed assets note</label>
+            <p id="includeFixedAssetNote-hint" class="hint">
+              Leave an asset class at 0 to leave it out. The classes' net book value must equal the fixed assets above.
+            </p>
+          </div>
+          <div id="fixedAssetNoteFields" style="display: none">
+            <h4>Land and buildings</h4>
+            <div class="form-group">
+              <label for="noteLandBuildingsCostAtStart">Cost at the start of the period</label>
+              <p id="noteLandBuildingsCostAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteLandBuildingsCostAtStart"
+                  name="noteLandBuildingsCostAtStart"
+                  value="0"
+                  aria-describedby="noteLandBuildingsCostAtStart-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteLandBuildingsAdditions">Additions</label>
+              <p id="noteLandBuildingsAdditions-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteLandBuildingsAdditions"
+                  name="noteLandBuildingsAdditions"
+                  value="0"
+                  aria-describedby="noteLandBuildingsAdditions-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteLandBuildingsDisposals">Disposals (cost)</label>
+              <p id="noteLandBuildingsDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteLandBuildingsDisposals"
+                  name="noteLandBuildingsDisposals"
+                  value="0"
+                  aria-describedby="noteLandBuildingsDisposals-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteLandBuildingsDepreciationAtStart">Depreciation at the start of the period</label>
+              <p id="noteLandBuildingsDepreciationAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteLandBuildingsDepreciationAtStart"
+                  name="noteLandBuildingsDepreciationAtStart"
+                  value="0"
+                  aria-describedby="noteLandBuildingsDepreciationAtStart-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteLandBuildingsDepreciationCharge">Depreciation charge for the period</label>
+              <p id="noteLandBuildingsDepreciationCharge-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteLandBuildingsDepreciationCharge"
+                  name="noteLandBuildingsDepreciationCharge"
+                  value="0"
+                  aria-describedby="noteLandBuildingsDepreciationCharge-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteLandBuildingsDepreciationOnDisposals">Depreciation on disposals</label>
+              <p id="noteLandBuildingsDepreciationOnDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteLandBuildingsDepreciationOnDisposals"
+                  name="noteLandBuildingsDepreciationOnDisposals"
+                  value="0"
+                  aria-describedby="noteLandBuildingsDepreciationOnDisposals-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <h4>Plant and machinery</h4>
+            <div class="form-group">
+              <label for="notePlantMachineryCostAtStart">Cost at the start of the period</label>
+              <p id="notePlantMachineryCostAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="notePlantMachineryCostAtStart"
+                  name="notePlantMachineryCostAtStart"
+                  value="0"
+                  aria-describedby="notePlantMachineryCostAtStart-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="notePlantMachineryAdditions">Additions</label>
+              <p id="notePlantMachineryAdditions-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="notePlantMachineryAdditions"
+                  name="notePlantMachineryAdditions"
+                  value="0"
+                  aria-describedby="notePlantMachineryAdditions-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="notePlantMachineryDisposals">Disposals (cost)</label>
+              <p id="notePlantMachineryDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="notePlantMachineryDisposals"
+                  name="notePlantMachineryDisposals"
+                  value="0"
+                  aria-describedby="notePlantMachineryDisposals-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="notePlantMachineryDepreciationAtStart">Depreciation at the start of the period</label>
+              <p id="notePlantMachineryDepreciationAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="notePlantMachineryDepreciationAtStart"
+                  name="notePlantMachineryDepreciationAtStart"
+                  value="0"
+                  aria-describedby="notePlantMachineryDepreciationAtStart-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="notePlantMachineryDepreciationCharge">Depreciation charge for the period</label>
+              <p id="notePlantMachineryDepreciationCharge-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="notePlantMachineryDepreciationCharge"
+                  name="notePlantMachineryDepreciationCharge"
+                  value="0"
+                  aria-describedby="notePlantMachineryDepreciationCharge-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="notePlantMachineryDepreciationOnDisposals">Depreciation on disposals</label>
+              <p id="notePlantMachineryDepreciationOnDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="notePlantMachineryDepreciationOnDisposals"
+                  name="notePlantMachineryDepreciationOnDisposals"
+                  value="0"
+                  aria-describedby="notePlantMachineryDepreciationOnDisposals-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <h4>Fixtures and fittings</h4>
+            <div class="form-group">
+              <label for="noteFurnitureFittingsCostAtStart">Cost at the start of the period</label>
+              <p id="noteFurnitureFittingsCostAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteFurnitureFittingsCostAtStart"
+                  name="noteFurnitureFittingsCostAtStart"
+                  value="0"
+                  aria-describedby="noteFurnitureFittingsCostAtStart-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteFurnitureFittingsAdditions">Additions</label>
+              <p id="noteFurnitureFittingsAdditions-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteFurnitureFittingsAdditions"
+                  name="noteFurnitureFittingsAdditions"
+                  value="0"
+                  aria-describedby="noteFurnitureFittingsAdditions-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteFurnitureFittingsDisposals">Disposals (cost)</label>
+              <p id="noteFurnitureFittingsDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteFurnitureFittingsDisposals"
+                  name="noteFurnitureFittingsDisposals"
+                  value="0"
+                  aria-describedby="noteFurnitureFittingsDisposals-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteFurnitureFittingsDepreciationAtStart">Depreciation at the start of the period</label>
+              <p id="noteFurnitureFittingsDepreciationAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteFurnitureFittingsDepreciationAtStart"
+                  name="noteFurnitureFittingsDepreciationAtStart"
+                  value="0"
+                  aria-describedby="noteFurnitureFittingsDepreciationAtStart-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteFurnitureFittingsDepreciationCharge">Depreciation charge for the period</label>
+              <p id="noteFurnitureFittingsDepreciationCharge-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteFurnitureFittingsDepreciationCharge"
+                  name="noteFurnitureFittingsDepreciationCharge"
+                  value="0"
+                  aria-describedby="noteFurnitureFittingsDepreciationCharge-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteFurnitureFittingsDepreciationOnDisposals">Depreciation on disposals</label>
+              <p id="noteFurnitureFittingsDepreciationOnDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteFurnitureFittingsDepreciationOnDisposals"
+                  name="noteFurnitureFittingsDepreciationOnDisposals"
+                  value="0"
+                  aria-describedby="noteFurnitureFittingsDepreciationOnDisposals-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <h4>Computer equipment</h4>
+            <div class="form-group">
+              <label for="noteComputerEquipmentCostAtStart">Cost at the start of the period</label>
+              <p id="noteComputerEquipmentCostAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteComputerEquipmentCostAtStart"
+                  name="noteComputerEquipmentCostAtStart"
+                  value="0"
+                  aria-describedby="noteComputerEquipmentCostAtStart-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteComputerEquipmentAdditions">Additions</label>
+              <p id="noteComputerEquipmentAdditions-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteComputerEquipmentAdditions"
+                  name="noteComputerEquipmentAdditions"
+                  value="0"
+                  aria-describedby="noteComputerEquipmentAdditions-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteComputerEquipmentDisposals">Disposals (cost)</label>
+              <p id="noteComputerEquipmentDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteComputerEquipmentDisposals"
+                  name="noteComputerEquipmentDisposals"
+                  value="0"
+                  aria-describedby="noteComputerEquipmentDisposals-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteComputerEquipmentDepreciationAtStart">Depreciation at the start of the period</label>
+              <p id="noteComputerEquipmentDepreciationAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteComputerEquipmentDepreciationAtStart"
+                  name="noteComputerEquipmentDepreciationAtStart"
+                  value="0"
+                  aria-describedby="noteComputerEquipmentDepreciationAtStart-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteComputerEquipmentDepreciationCharge">Depreciation charge for the period</label>
+              <p id="noteComputerEquipmentDepreciationCharge-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteComputerEquipmentDepreciationCharge"
+                  name="noteComputerEquipmentDepreciationCharge"
+                  value="0"
+                  aria-describedby="noteComputerEquipmentDepreciationCharge-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteComputerEquipmentDepreciationOnDisposals">Depreciation on disposals</label>
+              <p id="noteComputerEquipmentDepreciationOnDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteComputerEquipmentDepreciationOnDisposals"
+                  name="noteComputerEquipmentDepreciationOnDisposals"
+                  value="0"
+                  aria-describedby="noteComputerEquipmentDepreciationOnDisposals-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <h4>Motor vehicles</h4>
+            <div class="form-group">
+              <label for="noteMotorVehiclesCostAtStart">Cost at the start of the period</label>
+              <p id="noteMotorVehiclesCostAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteMotorVehiclesCostAtStart"
+                  name="noteMotorVehiclesCostAtStart"
+                  value="0"
+                  aria-describedby="noteMotorVehiclesCostAtStart-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteMotorVehiclesAdditions">Additions</label>
+              <p id="noteMotorVehiclesAdditions-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteMotorVehiclesAdditions"
+                  name="noteMotorVehiclesAdditions"
+                  value="0"
+                  aria-describedby="noteMotorVehiclesAdditions-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteMotorVehiclesDisposals">Disposals (cost)</label>
+              <p id="noteMotorVehiclesDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteMotorVehiclesDisposals"
+                  name="noteMotorVehiclesDisposals"
+                  value="0"
+                  aria-describedby="noteMotorVehiclesDisposals-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteMotorVehiclesDepreciationAtStart">Depreciation at the start of the period</label>
+              <p id="noteMotorVehiclesDepreciationAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteMotorVehiclesDepreciationAtStart"
+                  name="noteMotorVehiclesDepreciationAtStart"
+                  value="0"
+                  aria-describedby="noteMotorVehiclesDepreciationAtStart-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteMotorVehiclesDepreciationCharge">Depreciation charge for the period</label>
+              <p id="noteMotorVehiclesDepreciationCharge-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteMotorVehiclesDepreciationCharge"
+                  name="noteMotorVehiclesDepreciationCharge"
+                  value="0"
+                  aria-describedby="noteMotorVehiclesDepreciationCharge-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="noteMotorVehiclesDepreciationOnDisposals">Depreciation on disposals</label>
+              <p id="noteMotorVehiclesDepreciationOnDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="noteMotorVehiclesDepreciationOnDisposals"
+                  name="noteMotorVehiclesDepreciationOnDisposals"
+                  value="0"
+                  aria-describedby="noteMotorVehiclesDepreciationOnDisposals-money-hint"
+                  inputmode="decimal"
+                  data-money="whole-pounds"
+                />
+              </div>
+            </div>
+            <p id="fixedAssetNoteTotals" class="hint"></p>
+          </div>
+
+          <h3>Directors and activity</h3>
+          <div class="form-group">
+            <label for="principalActivity">Principal activity</label>
+            <input type="text" id="principalActivity" name="principalActivity" required />
+          </div>
+          <div class="form-group">
+            <label for="accountingPolicies">Accounting policies</label>
+            <textarea id="accountingPolicies" name="accountingPolicies" rows="4" required></textarea>
+          </div>
+          <div class="form-group">
+            <label for="averageEmployees">Average number of employees during the period</label>
+            <input type="number" id="averageEmployees" name="averageEmployees" required step="1" min="0" />
+          </div>
+          <div class="form-group">
+            <label for="directors">Directors who held office during the period</label>
+            <p id="directors-hint" class="hint">One name on each line.</p>
+            <textarea id="directors" name="directors" rows="3" required aria-describedby="directors-hint"></textarea>
+          </div>
+          <div class="form-group">
+            <label for="directorName">Director approving the accounts</label>
+            <input type="text" id="directorName" name="directorName" required />
+          </div>
+          <div class="form-group">
+            <label for="directorDateApproved">Date approved</label>
+            <input type="date" id="directorDateApproved" name="directorDateApproved" required />
+          </div>
+
+          <h3>Statements</h3>
+          <div class="form-group">
+            <input type="checkbox" id="statementSection477Exemption" name="statementSection477Exemption" />
+            <label for="statementSection477Exemption" style="display: inline; font-weight: normal">
+              The company is entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small companies.
+            </label>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="statementMembersNotRequiredAudit" name="statementMembersNotRequiredAudit" />
+            <label for="statementMembersNotRequiredAudit" style="display: inline; font-weight: normal">
+              The members have not required the company to obtain an audit for the year in question.
+            </label>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="statementDirectorsResponsibilities" name="statementDirectorsResponsibilities" />
+            <label for="statementDirectorsResponsibilities" style="display: inline; font-weight: normal">
+              The directors acknowledge their responsibilities for complying with the requirements of the Companies Act 2006 with respect to
+              accounting records and the preparation of accounts.
+            </label>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="statementSmallCompaniesRegime" name="statementSmallCompaniesRegime" />
+            <label for="statementSmallCompaniesRegime" style="display: inline; font-weight: normal">
+              These accounts have been prepared in accordance with the provisions applicable to companies subject to the small companies
+              regime.
+            </label>
+          </div>
+
+          <button type="submit" id="previewBtn" class="btn">Preview accounts</button>
+        </form>
+      </div>
+
+      <!-- Preview view -->
+      <div id="previewView" class="results-container" style="display: none">
+        <h2>Preview</h2>
+        <p>This is the iXBRL that will be filed. Nothing has been submitted to Companies House yet.</p>
+        <pre id="previewIxbrl" class="ixbrl-preview"></pre>
+        <div class="form-group">
+          <label for="companyAuthCode">Company authentication code</label>
+          <p id="companyAuthCode-hint" class="hint">
+            The 6 to 8 character code Companies House issued for this company. Not stored - used only for this filing.
+          </p>
+          <input
+            type="text"
+            id="companyAuthCode"
+            name="companyAuthCode"
+            required
+            minlength="6"
+            maxlength="8"
+            aria-describedby="companyAuthCode-hint"
+            spellcheck="false"
+          />
+        </div>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button type="button" id="backToFormBtn" class="secondary-button">Back</button>
+          <button type="button" id="submitFilingBtn" class="btn">Submit to Companies House</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2>Filing result</h2>
+        <div id="filingResult"></div>
+        <div id="rejections" style="display: none"></div>
+        <div class="button-group">
+          <button type="button" id="startAgainBtn" class="secondary-button" style="display: none">Start a new filing</button>
+        </div>
+      </div>
+    </main>
+
+    <footer data-footer="activity"></footer>
+
+    <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/env-loader.js"></script>
+    <script src="../lib/auth-url-builder.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../lib/money-input.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script>
+      // File small company accounts: companyView -> formView -> previewView -> resultView. No
+      // Companies House OAuth token: the filing goes through the XML Gateway with the operator's
+      // presenter credentials, so only the Cognito id token is needed to reach the API.
+
+      const PROFIT_AND_LOSS_INPUT_FIELDS = ["turnover", "costOfSales", "administrativeExpenses", "interestReceivable", "tax"];
+      const BALANCE_SHEET_INPUT_FIELDS = [
+        "fixedAssets",
+        "stocks",
+        "debtors",
+        "cashAtBank",
+        "tradeCreditors",
+        "corporationTax",
+        "otherCreditors",
+        "creditorsAfterOneYear",
+        "calledUpShareCapital",
+        "profitAndLossAccount",
+      ];
+      const FIXED_ASSET_CLASSES = ["landBuildings", "plantMachinery", "furnitureFittings", "computerEquipment", "motorVehicles"];
+      const FIXED_ASSET_FIELDS = [
+        "costAtStart",
+        "additions",
+        "disposals",
+        "depreciationAtStart",
+        "depreciationCharge",
+        "depreciationOnDisposals",
+      ];
+
+      let company = null;
+
+      function views() {
+        return {
+          companyView: document.getElementById("companyView"),
+          formView: document.getElementById("formView"),
+          previewView: document.getElementById("previewView"),
+          resultView: document.getElementById("resultView"),
+        };
+      }
+
+      function showView(name) {
+        const all = views();
+        Object.keys(all).forEach((key) => {
+          all[key].style.display = key === name ? "block" : "none";
+        });
+      }
+
+      function upperFirst(text) {
+        return text.charAt(0).toUpperCase() + text.slice(1);
+      }
+
+      function readPounds(inputId) {
+        return window.parseMoneyInput(document.getElementById(inputId).value, { wholePounds: true }) ?? 0;
+      }
+
+      function readProfitAndLoss(prefix) {
+        const figures = {};
+        PROFIT_AND_LOSS_INPUT_FIELDS.forEach((field) => {
+          figures[field] = readPounds(prefix + upperFirst(field));
+        });
+        figures.grossProfit = figures.turnover - figures.costOfSales;
+        figures.operatingProfit = figures.grossProfit - figures.administrativeExpenses;
+        figures.profitBeforeTax = figures.operatingProfit + figures.interestReceivable;
+        figures.profit = figures.profitBeforeTax - figures.tax;
+        return figures;
+      }
+
+      function readBalanceSheet(prefix) {
+        const figures = {};
+        BALANCE_SHEET_INPUT_FIELDS.forEach((field) => {
+          figures[field] = readPounds(prefix + upperFirst(field));
+        });
+        figures.capitalAndReserves = figures.calledUpShareCapital + figures.profitAndLossAccount;
+        return figures;
+      }
+
+      function netAssetsOf(figures) {
+        return (
+          figures.fixedAssets +
+          figures.stocks +
+          figures.debtors +
+          figures.cashAtBank -
+          figures.tradeCreditors -
+          figures.corporationTax -
+          figures.otherCreditors -
+          figures.creditorsAfterOneYear
+        );
+      }
+
+      function readFixedAssetNote() {
+        if (!document.getElementById("includeFixedAssetNote").checked) return undefined;
+        const note = {};
+        FIXED_ASSET_CLASSES.forEach((className) => {
+          const figures = {};
+          FIXED_ASSET_FIELDS.forEach((field) => {
+            figures[field] = readPounds("note" + upperFirst(className) + upperFirst(field));
+          });
+          if (Object.values(figures).some((value) => value !== 0)) note[className] = figures;
+        });
+        return note;
+      }
+
+      function netBookValueOf(note) {
+        return Object.values(note).reduce(
+          (total, figures) =>
+            total +
+            (figures.costAtStart + figures.additions - figures.disposals) -
+            (figures.depreciationAtStart + figures.depreciationCharge - figures.depreciationOnDisposals),
+          0,
+        );
+      }
+
+      function comparativesIncluded() {
+        return document.getElementById("includeComparatives").checked;
+      }
+
+      function renderTotals() {
+        ["current", "prior"].forEach((prefix) => {
+          if (prefix === "prior" && !comparativesIncluded()) return;
+          const profitAndLoss = readProfitAndLoss(prefix);
+          document.getElementById(prefix + "ProfitAndLossTotals").textContent =
+            `Gross profit: ${profitAndLoss.grossProfit}. Operating profit: ${profitAndLoss.operatingProfit}. ` +
+            `Profit before tax: ${profitAndLoss.profitBeforeTax}. Profit for the year: ${profitAndLoss.profit}.`;
+          const balanceSheet = readBalanceSheet(prefix);
+          const netAssets = netAssetsOf(balanceSheet);
+          document.getElementById(prefix + "BalanceSheetTotals").textContent = `Net assets: ${netAssets}. ${
+            netAssets === balanceSheet.capitalAndReserves
+              ? "Matches share capital plus the profit and loss reserve."
+              : `Does not match share capital plus the profit and loss reserve (${balanceSheet.capitalAndReserves}) - correct this before previewing.`
+          }`;
+        });
+        const note = readFixedAssetNote();
+        if (note) {
+          const netBookValue = netBookValueOf(note);
+          const fixedAssets = readPounds("currentFixedAssets");
+          document.getElementById("fixedAssetNoteTotals").textContent = `Net book value: ${netBookValue}. ${
+            netBookValue === fixedAssets
+              ? "Matches fixed assets."
+              : `Does not match fixed assets (${fixedAssets}) - correct this before previewing.`
+          }`;
+        }
+      }
+
+      function toggleSections() {
+        document.getElementById("comparativeFields").style.display = comparativesIncluded() ? "block" : "none";
+        document.getElementById("fixedAssetNoteFields").style.display = document.getElementById("includeFixedAssetNote").checked
+          ? "block"
+          : "none";
+        renderTotals();
+      }
+
+      async function handleCompanySubmit(event) {
+        event.preventDefault();
+        const companyNumber = window.normaliseCompanyNumber(document.getElementById("companyNumber").value);
+        if (!companyNumber) {
+          showStatus("Please enter a company number.", "error");
+          return;
+        }
+
+        showLoading();
+        hideStatus();
+        try {
+          const profile = await window.getCompanyProfile(companyNumber);
+          company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+          document.getElementById("formCompanyName").textContent = company.companyName;
+          document.getElementById("formCompanyNumber").textContent = company.companyNumber;
+          showView("formView");
+        } catch (error) {
+          console.error("Failed to look up the company:", error);
+          showStatus(error.message || "Failed to look up the company.", "error");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function buildAccountsPayload() {
+        const includeComparatives = comparativesIncluded();
+        const fixedAssetNote = readFixedAssetNote();
+        return {
+          companyNumber: company.companyNumber,
+          companyName: company.companyName,
+          periodStart: document.getElementById("periodStart").value,
+          periodEnd: document.getElementById("periodEnd").value,
+          averageEmployees: Number(document.getElementById("averageEmployees").value),
+          director: {
+            name: document.getElementById("directorName").value.trim(),
+            dateApproved: document.getElementById("directorDateApproved").value,
+          },
+          statementsAccepted: {
+            section477Exemption: document.getElementById("statementSection477Exemption").checked,
+            membersNotRequiredAudit: document.getElementById("statementMembersNotRequiredAudit").checked,
+            directorsResponsibilities: document.getElementById("statementDirectorsResponsibilities").checked,
+            smallCompaniesRegime: document.getElementById("statementSmallCompaniesRegime").checked,
+          },
+          smallCompany: {
+            filleted: document.getElementById("copyFilleted").checked,
+            principalActivity: document.getElementById("principalActivity").value.trim(),
+            accountingPolicies: document.getElementById("accountingPolicies").value.trim(),
+            directors: document
+              .getElementById("directors")
+              .value.split("\n")
+              .map((name) => name.trim())
+              .filter((name) => name),
+            balanceSheet: {
+              currentYear: readBalanceSheet("current"),
+              ...(includeComparatives ? { priorYear: readBalanceSheet("prior") } : {}),
+            },
+            profitAndLoss: {
+              currentYear: readProfitAndLoss("current"),
+              ...(includeComparatives ? { priorYear: readProfitAndLoss("prior") } : {}),
+            },
+            ...(fixedAssetNote ? { fixedAssetNote } : {}),
+          },
+        };
+      }
+
+      function formProblem() {
+        const moneyProblem = window.moneyInputProblem();
+        if (moneyProblem) return moneyProblem;
+        const years = comparativesIncluded() ? ["current", "prior"] : ["current"];
+        for (const prefix of years) {
+          const balanceSheet = readBalanceSheet(prefix);
+          if (netAssetsOf(balanceSheet) !== balanceSheet.capitalAndReserves) {
+            return "Net assets must equal share capital plus the profit and loss reserve for every year before previewing.";
+          }
+        }
+        const note = readFixedAssetNote();
+        if (note && netBookValueOf(note) !== readPounds("currentFixedAssets")) {
+          return "The tangible fixed assets note's net book value must equal the fixed assets before previewing.";
+        }
+        const accepted = [
+          "statementSection477Exemption",
+          "statementMembersNotRequiredAudit",
+          "statementDirectorsResponsibilities",
+          "statementSmallCompaniesRegime",
+        ].every((id) => document.getElementById(id).checked);
+        if (!accepted) return "All four statements must be accepted before previewing.";
+        return null;
+      }
+
+      async function handleAccountsFormSubmit(event) {
+        event.preventDefault();
+        const problem = formProblem();
+        if (problem) {
+          showStatus(problem, "error");
+          return;
+        }
+
+        showLoading();
+        hideStatus();
+        try {
+          const preview = await window.previewMicroEntityAccounts(buildAccountsPayload());
+          document.getElementById("previewIxbrl").textContent = preview.ixbrl;
+          showView("previewView");
+        } catch (error) {
+          console.error("Failed to render the accounts preview:", error);
+          showStatus(error.message || "Failed to render the accounts preview.", "error");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function renderRejections(rejections) {
+        const container = document.getElementById("rejections");
+        if (!rejections || rejections.length === 0) {
+          container.style.display = "none";
+          return;
+        }
+        container.style.display = "block";
+        container.innerHTML = rejections.map((entry) => `<p>${entry.rejectCode}: ${entry.description}</p>`).join("\n");
+      }
+
+      async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
+        for (let attempt = 0; attempt < 20; attempt++) {
+          const result = await window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
+          if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
+            return result;
+          }
+          document.getElementById("filingResult").innerHTML =
+            `<p>Submission <strong>${submissionNumber}</strong> is <strong>${result.statusCode}</strong>. Checking again...</p>`;
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+        return window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
+      }
+
+      async function handleSubmitFiling() {
+        const companyAuthCode = document.getElementById("companyAuthCode").value.trim();
+        if (companyAuthCode.length < 6 || companyAuthCode.length > 8) {
+          showStatus("Enter the 6 to 8 character company authentication code.", "error");
+          return;
+        }
+
+        showLoading();
+        hideStatus();
+        try {
+          const accounts = { ...buildAccountsPayload(), companyAuthCode };
+          const govTestScenario = document.getElementById("govTestScenario").value.trim();
+          const govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
+          const submission = await window.submitMicroEntityAccounts(accounts, govTestScenarioHeaders);
+          document.getElementById("filingResult").innerHTML =
+            `<p>Submission <strong>${submission.submissionNumber}</strong> accepted by the gateway at ${submission.gatewayTimestamp}. Waiting for Companies House...</p>`;
+          showView("resultView");
+
+          const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
+          document.getElementById("filingResult").innerHTML =
+            `<p>Submission <strong>${outcome.submissionNumber}</strong> was <strong>${outcome.statusCode}</strong>.</p>`;
+          renderRejections(outcome.rejections);
+          document.getElementById("startAgainBtn").style.display = "inline-block";
+        } catch (error) {
+          console.error("Companies House accounts filing failed:", error);
+          showStatus(error.message || "Failed to file the accounts with Companies House.", "error");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function updateGovTestScenarioVisibility() {
+        const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+        document.getElementById("govTestScenarioGroup").style.display = developerModeEnabled ? "block" : "none";
+      }
+      updateGovTestScenarioVisibility();
+      window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibility);
+
+      function startAgain() {
+        company = null;
+        document.getElementById("companyForm").reset();
+        document.getElementById("accountsForm").reset();
+        toggleSections();
+        document.getElementById("rejections").style.display = "none";
+        document.getElementById("startAgainBtn").style.display = "none";
+        hideStatus();
+        showView("companyView");
+      }
+
+      document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
+      document.getElementById("accountsForm").addEventListener("submit", handleAccountsFormSubmit);
+      document.getElementById("accountsForm").addEventListener("input", renderTotals);
+      document.getElementById("includeComparatives").addEventListener("change", toggleSections);
+      document.getElementById("includeFixedAssetNote").addEventListener("change", toggleSections);
+      document.getElementById("backToFormBtn").addEventListener("click", () => showView("formView"));
+      document.getElementById("submitFilingBtn").addEventListener("click", handleSubmitFiling);
+      document.getElementById("startAgainBtn").addEventListener("click", startAgain);
+      document.getElementById("changeCompanyLink").addEventListener("click", (event) => {
+        event.preventDefault();
+        showView("companyView");
+      });
+    </script>
+  </body>
+</html>

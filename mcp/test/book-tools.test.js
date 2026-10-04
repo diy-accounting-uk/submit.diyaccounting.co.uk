@@ -122,6 +122,7 @@ describe("the server", () => {
       "add_client",
       "client_authorisation_status",
       "derive_micro_entity_accounts",
+      "derive_small_company_accounts",
       "derive_vat_return",
       "get_confirmation_statement_data",
       "get_vat_receipt",

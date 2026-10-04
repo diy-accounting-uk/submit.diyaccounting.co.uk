@@ -14,3 +14,5 @@ export {
   profitAndLossFromPublishedAccount,
   deriveMicroEntityAccounts,
 } from "../../app/services/microEntityAccounts.js";
+
+export { deriveSmallCompanyAccounts } from "../../app/services/smallCompanyAccounts.js";

@@ -125,6 +125,53 @@ function buildDormantBody(overrides = {}) {
   return body;
 }
 
+function buildSmallCompanyBody(overrides = {}, smallOverrides = {}) {
+  return buildAccountsBody({
+    balanceSheet: undefined,
+    statementsAccepted: {
+      section477Exemption: true,
+      membersNotRequiredAudit: true,
+      directorsResponsibilities: true,
+      smallCompaniesRegime: true,
+    },
+    smallCompany: {
+      principalActivity: "Software consultancy",
+      accountingPolicies: "Historical cost convention.",
+      directors: ["Jo Director"],
+      balanceSheet: {
+        currentYear: {
+          fixedAssets: 1000,
+          stocks: 500,
+          debtors: 2500,
+          cashAtBank: 2000,
+          tradeCreditors: 1000,
+          corporationTax: 700,
+          otherCreditors: 300,
+          creditorsAfterOneYear: 0,
+          calledUpShareCapital: 100,
+          profitAndLossAccount: 3900,
+          capitalAndReserves: 4000,
+        },
+      },
+      profitAndLoss: {
+        currentYear: {
+          turnover: 20000,
+          costOfSales: 5000,
+          grossProfit: 15000,
+          administrativeExpenses: 12000,
+          operatingProfit: 3000,
+          interestReceivable: 0,
+          profitBeforeTax: 3000,
+          tax: 600,
+          profit: 2400,
+        },
+      },
+      ...smallOverrides,
+    },
+    ...overrides,
+  });
+}
+
 function buildEvent({ body = buildAccountsBody(), headers = {}, authorizer, method = "POST" } = {}) {
   const options = {
     method,
@@ -242,6 +289,34 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
       const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body: buildDormantBody({ nominalValue: 30 }) }));
       expect(response.statusCode).toBe(400);
       expect(parseResponseBody(response).message).toContain("whole number of shares");
+    });
+  });
+
+  describe("small company filings", () => {
+    test("returns the small company iXBRL without the micro-entity builder or a company authentication code", async () => {
+      const body = buildSmallCompanyBody();
+      delete body.companyAuthCode;
+      const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(200);
+      const ixbrl = parseResponseBody(response).ixbrl;
+      expect(ixbrl).toContain('name="core:ProfitLoss"');
+      expect(ixbrl).toContain("Software consultancy");
+      expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
+    });
+
+    test("filleted previews carry the section 444(5A) statement and no profit and loss account", async () => {
+      const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body: buildSmallCompanyBody({}, { filleted: true }) }));
+      const ixbrl = parseResponseBody(response).ixbrl;
+      expect(ixbrl).toContain("section 444(5A)");
+      expect(ixbrl).not.toContain('name="core:ProfitLoss"');
+    });
+
+    test("rejects figures that do not hold together", async () => {
+      const body = buildSmallCompanyBody();
+      body.smallCompany.profitAndLoss.currentYear.grossProfit = 1;
+      const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+      expect(parseResponseBody(response).message).toContain("grossProfit must equal turnover less costOfSales");
     });
   });
 

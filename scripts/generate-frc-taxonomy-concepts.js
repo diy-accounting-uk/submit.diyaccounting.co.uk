@@ -6,7 +6,7 @@
  *
  * One-off script: fetch the FRS 102 entry point the Companies House accounts TIS points micro-
  * entity filings at, and the schema modules it pulls in, then write out the flat list of element
- * names the iXBRL generator (app/services/microEntityAccountsIxbrl.js) checks every concept it
+ * names the iXBRL generator (app/services/accountsIxbrlCommon.js) checks every concept it
  * emits against.
  *
  * Usage:

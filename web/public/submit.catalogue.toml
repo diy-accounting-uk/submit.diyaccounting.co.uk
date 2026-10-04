@@ -462,6 +462,16 @@ paths = ["companies-house/fileMicroEntityAccounts.html", "^/api/v1/companies-hou
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
+id = "file-small-company-accounts"
+name = "File Small Company Accounts (Companies House)"
+display = "on-entitlement"
+bundles = ["resident", "resident-pro"]
+tokenCost = 1
+metered = true
+paths = ["companies-house/fileSmallCompanyAccounts.html", "^/api/v1/companies-house/accounts.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "file-confirmation-statement"
 name = "File Confirmation Statement (Companies House)"
 display = "on-entitlement"

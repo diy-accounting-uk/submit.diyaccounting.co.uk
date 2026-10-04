@@ -7,79 +7,21 @@
 // filings at. Hand-built templating: the output is a single XHTML file, so a string template
 // with escaping is simpler than a general XBRL-authoring library.
 
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
 import { escapeXmlText } from "../lib/xmlDom.js";
-
-const FRS_102_ENTRY_POINT = "https://xbrl.frc.org.uk/FRS-102/2026-01-01/FRS-102-2026-01-01.xsd";
-
-// Namespace identifiers, not fetched URLs: they are compared as exact strings against the FRC
-// taxonomy schema (see fixtures/frc-taxonomy/frs-102-2026-concepts.json), which defines them as
-// http, and a validator rejects a document whose namespace doesn't match byte for byte.
-const NAMESPACES = {
-  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
-  bus: "http://xbrl.frc.org.uk/cd/2026-01-01/business",
-  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
-  core: "http://xbrl.frc.org.uk/fr/2026-01-01/core",
-  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
-  direp: "http://xbrl.frc.org.uk/reports/2026-01-01/direp",
-};
-
-// Resolved from the FRS 102 entry point by scripts/generate-frc-taxonomy-concepts.js (see
-// fixtures/frc-taxonomy/frs-102-2026-concepts.json), not guessed from the accounts TIS prose. The
-// TIS names UKCompaniesHouseRegisteredNumber .. AccountingStandardsApplied by their concept names
-// directly; the balance sheet figures and AccountsTypeFullOrAbbreviated are not named in the TIS,
-// so their entries below are resolved substitutes:
-// - "AccountsTypeFullOrAbbreviated" does not exist in the taxonomy. The real concept is
-//   AccountsType, dimensioned by AccountsTypeDimension; abbreviated accounts were abolished in
-//   2016, so every filing reports the FullAccounts member.
-// - The balance sheet lines (fixed assets, current assets, creditors, called up share capital,
-//   profit and loss account, capital and reserves) are core:FixedAssets, core:CurrentAssets,
-//   core:Creditors (dimensioned by MaturitiesOrExpirationPeriodsDimension for the within/after
-//   one year split) and core:Equity (dimensioned by EquityClassesDimension for the share capital
-//   and profit and loss account components; the total capital and reserves figure is core:Equity
-//   at its default, undimensioned member).
-export const CONCEPTS = {
-  companiesHouseRegisteredNumber: { prefix: "bus", name: "UKCompaniesHouseRegisteredNumber" },
-  entityCurrentLegalOrRegisteredName: { prefix: "bus", name: "EntityCurrentLegalOrRegisteredName" },
-  balanceSheetDate: { prefix: "bus", name: "BalanceSheetDate" },
-  dateAuthorisationFinancialStatementsForIssue: { prefix: "core", name: "DateAuthorisationFinancialStatementsForIssue" },
-  directorSigningFinancialStatements: { prefix: "core", name: "DirectorSigningFinancialStatements" },
-  entityDormantTruefalse: { prefix: "bus", name: "EntityDormantTruefalse" },
-  startDateForPeriodCoveredByReport: { prefix: "bus", name: "StartDateForPeriodCoveredByReport" },
-  endDateForPeriodCoveredByReport: { prefix: "bus", name: "EndDateForPeriodCoveredByReport" },
-  entityTradingStatus: { prefix: "bus", name: "EntityTradingStatus" },
-  accountsStatusAuditedOrUnaudited: { prefix: "bus", name: "AccountsStatusAuditedOrUnaudited" },
-  accountsType: { prefix: "bus", name: "AccountsType" },
-  accountingStandardsApplied: { prefix: "bus", name: "AccountingStandardsApplied" },
-
-  statementAuditExemptionSection477: {
-    prefix: "direp",
-    name: "StatementThatCompanyEntitledToExemptionFromAuditUnderSection477CompaniesAct2006RelatingToSmallCompanies",
-  },
-  statementAuditExemptionSection480: {
-    prefix: "direp",
-    name: "StatementThatCompanyEntitledToExemptionFromAuditUnderSection480CompaniesAct2006RelatingToDormantCompanies",
-  },
-  statementMembersNotRequiredAudit: { prefix: "direp", name: "StatementThatMembersHaveNotRequiredCompanyToObtainAnAudit" },
-  statementDirectorsResponsibilities: { prefix: "direp", name: "StatementThatDirectorsAcknowledgeTheirResponsibilitiesUnderCompaniesAct" },
-  statementMicroEntityProvisions: {
-    prefix: "direp",
-    name: "StatementThatAccountsHaveBeenPreparedInAccordanceWithProvisionsSmallCompaniesRegime",
-  },
-
-  fixedAssets: { prefix: "core", name: "FixedAssets" },
-  currentAssets: { prefix: "core", name: "CurrentAssets" },
-  netCurrentAssetsLiabilities: { prefix: "core", name: "NetCurrentAssetsLiabilities" },
-  totalAssetsLessCurrentLiabilities: { prefix: "core", name: "TotalAssetsLessCurrentLiabilities" },
-  creditors: { prefix: "core", name: "Creditors" },
-  netAssetsLiabilities: { prefix: "core", name: "NetAssetsLiabilities" },
-  equity: { prefix: "core", name: "Equity" },
-  averageNumberEmployeesDuringPeriod: { prefix: "core", name: "AverageNumberEmployeesDuringPeriod" },
-  numberSharesIssuedFullyPaid: { prefix: "core", name: "NumberSharesIssuedFullyPaid" },
-  nominalValueAllottedShareCapital: { prefix: "core", name: "NominalValueAllottedShareCapital" },
-};
+import {
+  CONCEPTS,
+  DIMENSIONS,
+  MEMBERS,
+  qname,
+  buildContexts,
+  formatMonetary,
+  renderStatement,
+  renderFixedFact,
+  dimensionMemberXml,
+  buildDimensionedContext,
+  assembleBalanceSheetFacts,
+  renderAccountsDocument,
+} from "./accountsIxbrlCommon.js";
 
 const MANDATORY_CONCEPT_KEYS = [
   "companiesHouseRegisteredNumber",
@@ -107,106 +49,6 @@ const DORMANT_STATEMENT_KEYS = STATEMENT_KEYS.map((key) =>
   key === "statementAuditExemptionSection477" ? "statementAuditExemptionSection480" : key,
 );
 
-const DIMENSIONS = {
-  entityTradingStatus: { prefix: "bus", name: "EntityTradingStatusDimension" },
-  entityShareClasses: { prefix: "bus", name: "EntityShareClassesDimension" },
-  accountingStandards: { prefix: "bus", name: "AccountingStandardsDimension" },
-  accountsStatus: { prefix: "bus", name: "AccountsStatusDimension" },
-  accountsType: { prefix: "bus", name: "AccountsTypeDimension" },
-  equityClasses: { prefix: "core", name: "EquityClassesDimension" },
-  maturities: { prefix: "core", name: "MaturitiesOrExpirationPeriodsDimension" },
-};
-
-const MEMBERS = {
-  microEntities: { prefix: "bus", name: "Micro-entities" },
-  auditExemptNoAccountantsReport: { prefix: "bus", name: "AuditExempt-NoAccountantsReport" },
-  fullAccounts: { prefix: "bus", name: "FullAccounts" },
-  shareCapital: { prefix: "core", name: "ShareCapital" },
-  neverTraded: { prefix: "bus", name: "EntityHasNeverTraded" },
-  noLongerTrading: { prefix: "bus", name: "EntityNoLongerTradingButTradedInPast" },
-  ordinaryShares: { prefix: "bus", name: "OrdinaryShareClass1" },
-  preferenceShares: { prefix: "bus", name: "PreferenceShareClass1" },
-  deferredShares: { prefix: "bus", name: "DeferredShareClass1" },
-  otherShares: { prefix: "bus", name: "OtherShareClass1" },
-  retainedEarningsAccumulatedLosses: { prefix: "core", name: "RetainedEarningsAccumulatedLosses" },
-  withinOneYear: { prefix: "core", name: "WithinOneYear" },
-  afterOneYear: { prefix: "core", name: "AfterOneYear" },
-};
-
-const STATEMENT_TEXT = {
-  statementAuditExemptionSection480:
-    "The company is entitled to exemption from audit under section 480 of the Companies Act 2006 relating to dormant companies.",
-  statementAuditExemptionSection477:
-    "The company is entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small companies.",
-  statementMembersNotRequiredAudit:
-    "The members have not required the company to obtain an audit in accordance with section 476 of the Companies Act 2006.",
-  statementDirectorsResponsibilities:
-    "The directors acknowledge their responsibilities for complying with the requirements of the Companies Act 2006 with respect to accounting records and the preparation of accounts.",
-  statementMicroEntityProvisions:
-    "These accounts have been prepared in accordance with the provisions applicable to companies subject to the micro-entities regime.",
-};
-
-function qname(concept) {
-  return `${concept.prefix}:${concept.name}`;
-}
-
-function previousDay(isoDate) {
-  const date = new Date(`${isoDate}T00:00:00Z`);
-  date.setUTCDate(date.getUTCDate() - 1);
-  return date.toISOString().slice(0, 10);
-}
-
-/**
- * Build the xbrli contexts an accounts document needs: one duration context for the current
- * period, one instant context for the current balance sheet date (period end), one instant
- * context for the period start (StartDateForPeriodCoveredByReport is itself an instant-typed
- * fact), one instant context for the approval date, and, when prior year figures are supplied, a
- * matching prior-year instant context.
- *
- * @param {object} input - the same input buildMicroEntityAccounts receives
- * @returns {{xml: string, refs: {current: string, currentInstant: string, periodStartInstant: string, priorInstant?: string}, periodXml: Record<string,string>}}
- */
-export function buildContexts(input) {
-  const currentYear = input.periodEnd.slice(0, 4);
-  const refs = {
-    current: `y${currentYear}`,
-    currentInstant: `e${currentYear}`,
-    periodStartInstant: `p${currentYear}`,
-  };
-
-  const entityIdentifierXml = `<xbrli:identifier scheme="http://www.companieshouse.gov.uk/">${escapeXmlText(input.companyNumber)}</xbrli:identifier>`;
-
-  const periodXml = {
-    [refs.current]: `<xbrli:period><xbrli:startDate>${input.periodStart}</xbrli:startDate><xbrli:endDate>${input.periodEnd}</xbrli:endDate></xbrli:period>`,
-    [refs.currentInstant]: `<xbrli:period><xbrli:instant>${input.periodEnd}</xbrli:instant></xbrli:period>`,
-    [refs.periodStartInstant]: `<xbrli:period><xbrli:instant>${input.periodStart}</xbrli:instant></xbrli:period>`,
-  };
-
-  if (input.balanceSheet.prior) {
-    const priorBalanceSheetDate = input.priorBalanceSheetDate || previousDay(input.periodStart);
-    const priorYear = priorBalanceSheetDate.slice(0, 4);
-    refs.priorInstant = `e${priorYear}`;
-    periodXml[refs.priorInstant] = `<xbrli:period><xbrli:instant>${priorBalanceSheetDate}</xbrli:instant></xbrli:period>`;
-  }
-
-  const contextsXml = Object.entries(periodXml)
-    .map(([id, period]) => `<xbrli:context id="${id}"><xbrli:entity>${entityIdentifierXml}</xbrli:entity>${period}</xbrli:context>`)
-    .join("");
-
-  return { xml: contextsXml, refs, entityIdentifierXml, periodXml };
-}
-
-/**
- * Format a monetary value as whole pounds, matching decimals="0". Returns the absolute value;
- * callers add sign="-" to the ix:nonFraction tag when the underlying figure is negative, per the
- * XBRL convention of reporting magnitudes against the concept's declared balance direction.
- * @param {number} value
- * @returns {string}
- */
-export function formatMonetary(value) {
-  return String(Math.round(Math.abs(value)));
-}
-
 export const DORMANT_TRADING_STATUSES = ["neverTraded", "noLongerTrading"];
 export const SHARE_CLASSES = ["ordinaryShares", "preferenceShares", "deferredShares", "otherShares"];
 
@@ -228,105 +70,6 @@ export function sharesIssuedFor(calledUpShareCapital, nominalValue) {
   if (!Number.isFinite(nominalValue) || nominalValue <= 0 || !Number.isFinite(calledUpShareCapital)) return null;
   const shares = Math.round((calledUpShareCapital / nominalValue) * 1e6) / 1e6;
   return Number.isInteger(shares) ? shares : null;
-}
-
-/**
- * Render one of the fixed-wording audit-exemption / micro-entity statements as a tagged
- * ix:nonNumeric fact. The wording is fixed (the page never lets a user edit it), matching the
- * phrase checks Companies House runs on each statement.
- * @param {"statementAuditExemptionSection477"|"statementAuditExemptionSection480"|"statementMembersNotRequiredAudit"|"statementDirectorsResponsibilities"|"statementMicroEntityProvisions"} key
- * @param {string} contextRef
- * @returns {string}
- */
-export function renderStatement(key, contextRef) {
-  const concept = CONCEPTS[key];
-  const text = STATEMENT_TEXT[key];
-  return `<ix:nonNumeric name="${qname(concept)}" contextRef="${contextRef}">${escapeXmlText(text)}</ix:nonNumeric>`;
-}
-
-function renderFixedFact(conceptKey, contextRef) {
-  return `<ix:nonNumeric name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}"></ix:nonNumeric>`;
-}
-
-function renderMonetaryFact(conceptKey, contextRef, unitRef, value) {
-  const signAttribute = value < 0 ? ' sign="-"' : "";
-  return `<ix:nonFraction name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}" unitRef="${unitRef}" decimals="0"${signAttribute}>${formatMonetary(value)}</ix:nonFraction>`;
-}
-
-function dimensionMemberXml(dimension, member) {
-  return `<xbrldi:explicitMember dimension="${qname(dimension)}">${qname(member)}</xbrldi:explicitMember>`;
-}
-
-// A dimensionally-qualified fact needs its own context (an XBRL context is identified by its
-// full period + entity + dimensional segment, not by period alone). Builds one such context on
-// top of an existing base context's period, and appends it to additionalContexts.
-function buildDimensionedContext({ additionalContexts, entityIdentifierXml, periodXml, dimensionXml, id }) {
-  additionalContexts.push(
-    `<xbrli:context id="${id}"><xbrli:entity>${entityIdentifierXml}<xbrli:segment>${dimensionXml}</xbrli:segment></xbrli:entity>${periodXml}</xbrli:context>`,
-  );
-  return id;
-}
-
-function assembleBalanceSheetFacts({ contextRef, entityIdentifierXml, periodXml, additionalContexts, unitRef, figures }) {
-  const facts = [];
-
-  facts.push(renderMonetaryFact("fixedAssets", contextRef, unitRef, figures.fixedAssets));
-  facts.push(renderMonetaryFact("currentAssets", contextRef, unitRef, figures.currentAssets));
-
-  const netCurrentAssets = figures.currentAssets - figures.creditorsWithinOneYear;
-  const totalAssetsLessCurrentLiabilities = figures.fixedAssets + netCurrentAssets;
-  const netAssets = totalAssetsLessCurrentLiabilities - figures.creditorsAfterOneYear;
-
-  if (Math.round(netAssets) !== Math.round(figures.capitalAndReserves)) {
-    throw new Error(
-      `Capital and reserves (${figures.capitalAndReserves}) does not equal net assets (${netAssets}) for context ${contextRef}`,
-    );
-  }
-
-  facts.push(renderMonetaryFact("netCurrentAssetsLiabilities", contextRef, unitRef, netCurrentAssets));
-  facts.push(renderMonetaryFact("totalAssetsLessCurrentLiabilities", contextRef, unitRef, totalAssetsLessCurrentLiabilities));
-
-  const withinOneYearContextId = buildDimensionedContext({
-    additionalContexts,
-    entityIdentifierXml,
-    periodXml,
-    dimensionXml: dimensionMemberXml(DIMENSIONS.maturities, MEMBERS.withinOneYear),
-    id: `${contextRef}-within-one-year`,
-  });
-  facts.push(renderMonetaryFact("creditors", withinOneYearContextId, unitRef, figures.creditorsWithinOneYear));
-
-  const afterOneYearContextId = buildDimensionedContext({
-    additionalContexts,
-    entityIdentifierXml,
-    periodXml,
-    dimensionXml: dimensionMemberXml(DIMENSIONS.maturities, MEMBERS.afterOneYear),
-    id: `${contextRef}-after-one-year`,
-  });
-  facts.push(renderMonetaryFact("creditors", afterOneYearContextId, unitRef, figures.creditorsAfterOneYear));
-
-  facts.push(renderMonetaryFact("netAssetsLiabilities", contextRef, unitRef, netAssets));
-
-  const shareCapitalContextId = buildDimensionedContext({
-    additionalContexts,
-    entityIdentifierXml,
-    periodXml,
-    dimensionXml: dimensionMemberXml(DIMENSIONS.equityClasses, MEMBERS.shareCapital),
-    id: `${contextRef}-share-capital`,
-  });
-  facts.push(renderMonetaryFact("equity", shareCapitalContextId, unitRef, figures.calledUpShareCapital));
-
-  const profitAndLossContextId = buildDimensionedContext({
-    additionalContexts,
-    entityIdentifierXml,
-    periodXml,
-    dimensionXml: dimensionMemberXml(DIMENSIONS.equityClasses, MEMBERS.retainedEarningsAccumulatedLosses),
-    id: `${contextRef}-profit-and-loss-account`,
-  });
-  facts.push(renderMonetaryFact("equity", profitAndLossContextId, unitRef, figures.profitAndLossAccount));
-
-  facts.push(renderMonetaryFact("equity", contextRef, unitRef, figures.capitalAndReserves));
-
-  return facts.join("");
 }
 
 /**
@@ -475,47 +218,13 @@ export function buildMicroEntityAccounts(input) {
     shareNoteHtml = `<p>Share capital: ${sharesIssued} ${SHARE_CLASS_LABEL[input.shareClass]} shares of £${input.nominalValue} each, allotted and fully paid</p>\n`;
   }
 
-  const namespaceAttributes = Object.entries(NAMESPACES)
-    .map(([prefix, uri]) => `xmlns:${prefix}="${uri}"`)
-    .join(" ");
-
-  return `<?xml version="1.0"?>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL" xmlns:xbrli="http://www.xbrl.org/2003/instance" xmlns:xbrldi="http://xbrl.org/2006/xbrldi" xmlns:link="http://www.xbrl.org/2003/linkbase" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:iso4217="http://www.xbrl.org/2003/iso4217" ${namespaceAttributes}>
-<head><title>${escapeXmlText(input.companyName)} - annual accounts</title></head>
-<body>
-<ix:header>
-<ix:references><link:schemaRef xlink:type="simple" xlink:href="${FRS_102_ENTRY_POINT}"/></ix:references>
-<ix:resources>
-${contextsXml}${additionalContexts.join("")}
-<xbrli:unit id="GBP"><xbrli:measure>iso4217:GBP</xbrli:measure></xbrli:unit>
-<xbrli:unit id="pure"><xbrli:measure>pure</xbrli:measure></xbrli:unit>
-<xbrli:unit id="shares"><xbrli:measure>xbrli:shares</xbrli:measure></xbrli:unit>
-</ix:resources>
-</ix:header>
-<h1>${escapeXmlText(input.companyName)}</h1>
+  const bodyHtml = `<h1>${escapeXmlText(input.companyName)}</h1>
 <p>Company number ${escapeXmlText(input.companyNumber)}</p>
 <p>Annual accounts for the period from ${input.periodStart} to ${input.periodEnd}</p>
 <p>Approved on behalf of the board on ${input.dateOfApproval} by ${escapeXmlText(input.directorName)}</p>
-${shareNoteHtml}${facts.join("\n")}
-</body>
-</html>
-`;
-}
+${shareNoteHtml}${facts.join("\n")}`;
 
-let cachedConceptList;
-
-/**
- * The checked-in list of concept qualified names the FRS 102 entry point declares, produced by
- * scripts/generate-frc-taxonomy-concepts.js. Cached across calls within one process.
- * @returns {string[]}
- */
-export function loadFrcTaxonomyConcepts() {
-  if (!cachedConceptList) {
-    const fixturePath = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "fixtures", "frc-taxonomy", "frs-102-2026-concepts.json");
-    const data = JSON.parse(readFileSync(fixturePath, "utf8"));
-    cachedConceptList = data.concepts;
-  }
-  return cachedConceptList;
+  return renderAccountsDocument({ companyName: input.companyName, contextsXml: `${contextsXml}${additionalContexts.join("")}`, bodyHtml });
 }
 
 export { MANDATORY_CONCEPT_KEYS, STATEMENT_KEYS, DORMANT_STATEMENT_KEYS };

@@ -11,8 +11,7 @@ import { extractRequest, buildValidationError, http200OkResponse } from "../../l
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
-import { buildMicroEntityAccounts } from "../../services/microEntityAccountsIxbrl.js";
-import { extractAndValidateAccountsParameters } from "./companiesHouseAccountsPost.js";
+import { extractAndValidateAccountsParameters, buildAccountsIxbrl } from "./companiesHouseAccountsPost.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
@@ -57,9 +56,9 @@ export async function ingestHandler(event) {
 
   let ixbrl;
   try {
-    ixbrl = buildMicroEntityAccounts(accounts);
+    ixbrl = buildAccountsIxbrl(accounts);
   } catch (error) {
-    logger.error({ message: "Failed to render micro-entity accounts iXBRL", error: error.message, stack: error.stack });
+    logger.error({ message: "Failed to render accounts iXBRL", error: error.message, stack: error.stack });
     throw error;
   }
 

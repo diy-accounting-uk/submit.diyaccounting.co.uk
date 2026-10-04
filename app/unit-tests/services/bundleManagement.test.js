@@ -371,6 +371,50 @@ describe("bundleEnforcement.js", () => {
       });
     });
 
+    describe("activities that share an accounts API route", () => {
+      const accountsPaths = [
+        "/api/v1/companies-house/accounts",
+        "/api/v1/companies-house/accounts/preview",
+        "/api/v1/companies-house/accounts/00001A",
+      ];
+
+      test.each(accountsPaths)(
+        "%s matches the lookup, micro-entity and small company activities, so any one of their bundles opens it",
+        async (urlPath) => {
+          process.env.ENVIRONMENT_NAME = "ci";
+          const token = makeJWT("accounts-filer");
+          const authorizerContext = {
+            "sub": "accounts-filer",
+            "cognito:username": "test",
+            "email": "test@test.submit.diyaccunting.co.uk",
+            "scope": "read write",
+          };
+          getUserBundles.mockResolvedValue([{ bundleId: "resident", expiry: new Date().toISOString() }]);
+
+          const { bundleIds } = await enforceBundles(buildEvent(token, authorizerContext, urlPath));
+
+          expect(bundleIds).toContain("resident");
+        },
+      );
+
+      test("an environment the small company activity does not list refuses the shared route", async () => {
+        process.env.ENVIRONMENT_NAME = "prod";
+        const token = makeJWT("accounts-filer-prod");
+        const authorizerContext = {
+          "sub": "accounts-filer-prod",
+          "cognito:username": "test",
+          "email": "test@test.submit.diyaccunting.co.uk",
+          "scope": "read write",
+        };
+        getUserBundles.mockResolvedValue([{ bundleId: "resident", expiry: new Date().toISOString() }]);
+
+        await expect(enforceBundles(buildEvent(token, authorizerContext, "/api/v1/companies-house/accounts"))).rejects.toMatchObject({
+          name: "BundleEntitlementError",
+          details: { code: "ACTIVITY_ENVIRONMENT_RESTRICTED" },
+        });
+      });
+    });
+
     test("should extract user info from authorizer context", async () => {
       process.env.HMRC_BASE_URI = "https://test-api.service.hmrc.gov.uk";
       const authorizerContext = {

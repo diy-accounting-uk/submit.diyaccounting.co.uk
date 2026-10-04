@@ -24,6 +24,9 @@ import {
 import { ensureBundlePresent, goToBundlesPage } from "../steps/behaviour-bundle-steps.js";
 import {
   goToFileMicroEntityAccounts,
+  goToFileSmallCompanyAccounts,
+  fillInSmallCompanyAccountsForm,
+  verifyPreviewContains,
   enterCompanyNumberAndLookUp,
   verifyCompanyLookedUp,
   fillInAccountsForm,
@@ -92,6 +95,50 @@ function buildAccounts() {
     },
     averageEmployees: 2,
     director: { name: "Jo Director", dateApproved: "2026-01-15" },
+  };
+}
+
+function buildSmallCompanyAccounts({ withComparatives = false } = {}) {
+  const currentYear = {
+    profitAndLoss: { turnover: 20000, costOfSales: 5000, administrativeExpenses: 12000, interestReceivable: 0, tax: 600 },
+    balanceSheet: {
+      fixedAssets: 1000,
+      stocks: 500,
+      debtors: 2500,
+      cashAtBank: 2000,
+      tradeCreditors: 1000,
+      corporationTax: 700,
+      otherCreditors: 300,
+      creditorsAfterOneYear: 0,
+      calledUpShareCapital: 100,
+      profitAndLossAccount: 3900,
+    },
+  };
+  const priorYear = {
+    profitAndLoss: { turnover: 15000, costOfSales: 4000, administrativeExpenses: 10000, interestReceivable: 0, tax: 200 },
+    balanceSheet: {
+      fixedAssets: 900,
+      stocks: 400,
+      debtors: 1500,
+      cashAtBank: 1600,
+      tradeCreditors: 900,
+      corporationTax: 500,
+      otherCreditors: 100,
+      creditorsAfterOneYear: 0,
+      calledUpShareCapital: 100,
+      profitAndLossAccount: 2800,
+    },
+  };
+  return {
+    periodStart: "2025-01-01",
+    periodEnd: "2025-12-31",
+    currentYear,
+    ...(withComparatives ? { priorYear } : {}),
+    principalActivity: "Software consultancy",
+    accountingPolicies: "The accounts are prepared under the historical cost convention.",
+    averageEmployees: 2,
+    directors: ["Jo Director", "Alex Jones"],
+    dateApproved: "2026-01-15",
   };
 }
 
@@ -198,6 +245,63 @@ test("Click through: file micro-entity accounts shows the reject reason Companie
   await setGovTestScenario(page, "ACCOUNTS_REJECTED", screenshotPath);
   await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
   await verifyFilingRejected(page, "1", screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+async function signInWithResidentBundle(page, testUrl) {
+  await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
+  await clickLogIn(page, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
+  await verifyLoggedInStatus(page, screenshotPath);
+  await consentToDataCollection(page, screenshotPath);
+  await goToBundlesPage(page, screenshotPath);
+  if (isSyntheticMode()) {
+    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+  }
+  await goToHomePage(page, screenshotPath);
+}
+
+test("Click through: file small company accounts in full with comparatives and see the filing accepted", async ({ page }, testInfo) => {
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+
+  await signInWithResidentBundle(page, baseUrl);
+  await goToFileSmallCompanyAccounts(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await fillInSmallCompanyAccountsForm(page, buildSmallCompanyAccounts({ withComparatives: true }), {}, screenshotPath);
+  await previewAccounts(page, screenshotPath);
+  await verifyPreviewContains(
+    page,
+    ["core:TurnoverRevenue", "Profit and loss account", "Directors' report", 'contextRef="y2024"'],
+    ["section 444(5A)"],
+    screenshotPath,
+  );
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyFilingAccepted(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file filleted small company accounts and see the filing accepted", async ({ page }, testInfo) => {
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+
+  await signInWithResidentBundle(page, baseUrl);
+  await goToFileSmallCompanyAccounts(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await fillInSmallCompanyAccountsForm(page, buildSmallCompanyAccounts(), { filleted: true }, screenshotPath);
+  await previewAccounts(page, screenshotPath);
+  await verifyPreviewContains(
+    page,
+    ["section 444(5A)", "core:NetAssetsLiabilities"],
+    ["core:TurnoverRevenue", "Directors' report"],
+    screenshotPath,
+  );
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyFilingAccepted(page, screenshotPath);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });
