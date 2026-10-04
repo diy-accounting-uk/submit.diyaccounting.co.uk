@@ -9,7 +9,7 @@ Changes in `../spreadsheets.diyaccounting.co.uk`, asked for through the spreadsh
 `app/lib/mcp/server.js`, shipped as `diya-gl/bin/diya-gl-mcp.js` in the npm package. Agents read
 the published version's tool list, so each tool's `description` names the questions it answers.
 
-Status: DG1 to DG4 open.
+Status: DG1 to DG4 in flight on spreadsheets `claude/nebula-mcp`; DG4b open.
 
 ## Operator assertions (verbatim)
 
@@ -67,7 +67,19 @@ Two ways to fix it:
 - (b) Write fresh cached values: recalculate in LibreOffice at generate time and copy the
   results into `<v>`. Previews show figures; the generate step depends on LibreOffice.
 
-Start with (a) unless the operator chooses (b). Link caches in multi-file packages are filled from
-the calculator's figures already and stay. Proof: a test that converts the generated Apr27 BST
+Option (a) breaks the readers of a freshly generated package: `app/lib/anchors/run.js` and the
+overtype detector read the cached values (`se-anchors.test.js`, `overtype-sidecar.test.js`). DG4
+builds (b) on the generate path: each generated workbook is recalculated in LibreOffice and the
+computed values are written into the original XML's `<v>`, nothing else changed.
+Proof: a test that converts the generated Apr27 BST
 workbook with `soffice --convert-to csv` and finds "TOTAL 2026-27" and Apr-26; the same over one
 SE and one Ltd package; `npm test`.
+
+### DG4b. Saved books open with current figures in LibreOffice
+
+`app/lib/product-workbook.js` (`saveWorkbook`, `saveWorkbookFiles`: the diya-gl pages and the MCP's
+`save_workbook`) runs without LibreOffice, so DG4's recalculation does not reach it, and a saved
+book opened in LibreOffice still shows the template's year in its date-driven cells. The writer
+knows the period: write the date-driven cells' cached values from the book's period (the P&L
+header and month cells per product, found from the template XML), so the import-after-save round
+trip (`bst-workbook-roundtrip.test.js`) and the same-bytes tests keep passing.
