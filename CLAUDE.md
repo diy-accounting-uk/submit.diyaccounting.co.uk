@@ -315,8 +315,8 @@ The `fast-deploy` skill says when to use this and how to hand back to the pipeli
 For rapid iteration on `./app` code or `./web/public` assets without full CDK deploy (~15-25 min), use the lean deploy script which directly updates Lambda images and S3 assets (~3-5 min):
 
 ```bash
-# Assume role first
-. ./scripts/aws-assume-submit-deployment-role.sh
+# Select the SSO profile first (aws sso login --sso-session diyaccounting)
+. ./scripts/aws-use-submit-profile.sh
 
 # Full lean deploy to last-known-good CI deployment
 npm run deploy:app-ci
@@ -485,9 +485,9 @@ export AWS_PROFILE=diya-submit-ci
 npm run test:enableCognitoNative
 ```
 
-**Legacy assume-role scripts** (still work for submit-prod in 887764105431):
-- `scripts/aws-assume-submit-deployment-role.sh` — sources env vars into the current shell
-- When using these, combine with the aws command in a single Bash call (env vars don't persist between calls)
+**Management-account profile** (`diya-management`, account 887764105431):
+- `. ./scripts/aws-use-submit-profile.sh` — exports `AWS_PROFILE=diya-management` and the region into the current shell
+- Combine it with the aws command in a single Bash call (env vars don't persist between calls)
 
 **Stack naming patterns:**
 - Environment stacks: `{env}-env-{StackName}` (e.g., `ci-env-IdentityStack`, `prod-env-DataStack`)

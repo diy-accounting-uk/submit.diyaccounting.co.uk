@@ -11,8 +11,8 @@
 //          node scripts/generate-pass.js day-guest-pass prod --max-uses 5 --validity-period P30D
 //          node scripts/generate-pass.js                  (defaults: day-guest-test-pass, ci)
 //
-// Prerequisites: AWS credentials must be assumed first:
-//   . ./scripts/aws-assume-submit-deployment-role.sh
+// Prerequisites: AWS SSO profile must be selected first:
+//   . ./scripts/aws-use-submit-profile.sh
 //
 // Pass types (from submit.passes.toml):
 //   day-guest-test-pass    - Day guest synthetic access (1 day, 1 use, testPass: true)
@@ -84,7 +84,7 @@ Options:
   --help, -h              Show this help
 
 Prerequisites:
-  . ./scripts/aws-assume-submit-deployment-role.sh`);
+  . ./scripts/aws-use-submit-profile.sh`);
 }
 
 async function main() {
@@ -93,7 +93,7 @@ async function main() {
   // Check AWS credentials
   if (!process.env.AWS_ACCESS_KEY_ID && !process.env.AWS_PROFILE) {
     console.error("ERROR: No AWS credentials found.");
-    console.error("Run: . ./scripts/aws-assume-submit-deployment-role.sh");
+    console.error("Run: . ./scripts/aws-use-submit-profile.sh");
     process.exit(1);
   }
 

@@ -14,8 +14,8 @@
 #
 # Usage: scripts/force-logout-all-users.sh <env>
 #
-# Prerequisites: AWS credentials already assumed for the target account, e.g.
-#   . ./scripts/aws-assume-submit-deployment-role.sh
+# Prerequisites: AWS SSO profile already selected, e.g.
+#   . ./scripts/aws-use-submit-profile.sh
 
 set -euo pipefail
 

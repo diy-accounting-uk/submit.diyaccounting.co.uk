@@ -730,74 +730,15 @@ An example of the Deployment role being assumed in a GitHub Actions Workflow:
       - run: aws sts get-caller-identity
 ```
 
-## Deployment role trust relationships
+## Local AWS access
 
-For this example, user `antony-local-user` has the following
-trust policy so that they can assume the role: `submit-deployment-role`:
-```json
-{
-	"Version": "2012-10-17",
-	"Statement": [
-		{
-			"Sid": "Statement1",
-			"Effect": "Allow",
-			"Action": ["sts:AssumeRole", "sts:TagSession"],
-			"Resource": ["arn:aws:iam::887764105431:role/submit-deployment-role"]
-		}
-	]
-}
-```
-
-Assume the deployment role from the command line starting as `antony-local-user`:
+Local scripts use the `diya-management` SSO profile (AdministratorAccess in account 887764105431):
 ```bash
-
-ROLE_ARN="arn:aws:iam::887764105431:role/submit-deployment-role"
-SESSION_NAME="submit-deployment-session-local"
-ASSUME_ROLE_OUTPUT=$(aws sts assume-role --role-arn "$ROLE_ARN" --role-session-name "$SESSION_NAME" --output json)
-if [ $? -ne 0 ]; then
-  echo "Error: Failed to assume role."
-  exit 1
-fi
-export AWS_ACCESS_KEY_ID=$(echo "$ASSUME_ROLE_OUTPUT" | jq -r '.Credentials.AccessKeyId')
-export AWS_SECRET_ACCESS_KEY=$(echo "$ASSUME_ROLE_OUTPUT" | jq -r '.Credentials.SecretAccessKey')
-export AWS_SESSION_TOKEN=$(echo "$ASSUME_ROLE_OUTPUT" | jq -r '.Credentials.SessionToken')
-EXPIRATION=$(echo "$ASSUME_ROLE_OUTPUT" | jq -r '.Credentials.Expiration')
-echo "Assumed role successfully. Credentials valid until: $EXPIRATION"
-```
-Output:
-```log
-Assumed role successfully. Credentials valid until: 2025-03-25T02:27:18+00:00
+aws sso login --sso-session diyaccounting
+. ./scripts/aws-use-submit-profile.sh
 ```
 
-Check the session:
-```bash
-
-aws sts get-caller-identity
-```
-
-Output:
-```json
-{
-  "UserId": "AROA45MW5HDLYEIKWFG6F:submit-deployment-session-local",
-  "Account": "887764105431",
-  "Arn": "arn:aws:sts::887764105431:assumed-role/submit-deployment-role/submit-deployment-session-local"
-}
-```
-
-Check the permissions of the role:
-```bash
-
-aws iam list-role-policies \
-  --role-name submit-deployment-role
-```
-Output (the policy we created above):
-```json
-{
-  "PolicyNames": [
-    "submit-deployment-permissions-policy"
-  ]
-}
-```
+The script exports `AWS_PROFILE=diya-management` and `AWS_REGION=eu-west-2`, then prints the identity.
 
 ## Deployment from local to AWS
 
@@ -805,24 +746,13 @@ Output (the policy we created above):
 
 You'll need to have run `npx cdk bootstrap` to set up the environment for the CDK. This is a one-time setup per AWS account and region.
 
-Assume deployment role:
+Select the SSO profile:
 ```bash
 
-. ./scripts/aws-assume-submit-deployment-role.sh
+. ./scripts/aws-use-submit-profile.sh
 ```
 
-Output:
-```log
-Assumed arn:aws:iam::541134664601:role/submit-deployment-role successfully, expires: 2025-05-14T02:19:16+00:00. Identity is now:
-{
-"UserId": "AROAX37RDWOMSMQUIZOI4:agentic-lib-deployment-session-local",
-"Account": "541134664601",
-"Arn": "arn:aws:sts::541134664601:assumed-role/submit-deployment-role/agentic-lib-deployment-session-local"
-}
-```~/projects/submit.diyaccounting.co.uk %
-```
-
-The role `submit-deployment-role` has sufficient permissions to bootstrap the CDK environment and deploy the stack.
+The profile has sufficient permissions to bootstrap the CDK environment and deploy the stack.
 ```bash
 
 npx cdk bootstrap aws://887764105431/eu-west-2
@@ -903,22 +833,12 @@ Maven build output:
 [INFO] ------------------------------------------------------------------------
 ```
 
-Assume deployment role:
+Select the SSO profile:
 ```bash
 
-. ./scripts/aws-assume-submit-deployment-role.sh
+. ./scripts/aws-use-submit-profile.sh
 ```
 
-Output:
-```log
-Assumed arn:aws:iam::541134664601:role/submit-deployment-role successfully, expires: 2025-05-14T02:19:16+00:00. Identity is now:
-{
-"UserId": "AROAX37RDWOMSMQUIZOI4:agentic-lib-deployment-session-local",
-"Account": "541134664601",
-"Arn": "arn:aws:sts::541134664601:assumed-role/submit-deployment-role/agentic-lib-deployment-session-local"
-}
-~/projects/submit.diyaccounting.co.uk %
-```
 
 Synthesise the CDK:
 ```bash

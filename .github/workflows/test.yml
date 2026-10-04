@@ -670,7 +670,25 @@ jobs:
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
 
-      - run: npm test
+      # The full output overflows the job log's display limit, so it goes to a file kept as
+      # an artifact and the console shows its last 29000 lines, where vitest's summary is.
+      - name: Run npm test
+        shell: bash
+        run: |
+          set +e
+          npm test > npm-test.log 2>&1
+          status=$?
+          tail -n 29000 npm-test.log
+          exit $status
+
+      - name: Save the npm test log
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: npm-test-log-${{ github.run_id }}
+          path: npm-test.log
+          if-no-files-found: warn
+          retention-days: 14
 
   npm-unit-test:
     if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-unit-test') }}
@@ -696,7 +714,25 @@ jobs:
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
 
-      - run: npm run test:coverage
+      # The full output overflows the job log's display limit, so it goes to a file kept as
+      # an artifact and the console shows its last 29000 lines, where vitest's summary is.
+      - name: Run npm run test:coverage
+        shell: bash
+        run: |
+          set +e
+          npm run test:coverage > npm-unit-test.log 2>&1
+          status=$?
+          tail -n 29000 npm-unit-test.log
+          exit $status
+
+      - name: Save the npm run test:coverage log
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: npm-unit-test-log-${{ github.run_id }}
+          path: npm-unit-test.log
+          if-no-files-found: warn
+          retention-days: 14
 
   npm-mcp-test:
     if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-mcp-test') }}

@@ -8,8 +8,8 @@
 // Usage: node scripts/enable-cognito-native-test.js [environment-name]
 // Example: node scripts/enable-cognito-native-test.js ci
 //
-// Prerequisites: AWS credentials must be assumed first:
-//   . ./scripts/aws-assume-submit-deployment-role.sh
+// Prerequisites: AWS SSO profile must be selected first:
+//   . ./scripts/aws-use-submit-profile.sh
 //
 // This script:
 //   1. Enables COGNITO on the Hosted UI (toggle-cognito-native-auth.js enable)
@@ -30,7 +30,7 @@ async function main() {
   // Check AWS credentials
   if (!process.env.AWS_ACCESS_KEY_ID && !process.env.AWS_PROFILE) {
     console.error("ERROR: No AWS credentials found.");
-    console.error("Run: . ./scripts/aws-assume-submit-deployment-role.sh");
+    console.error("Run: . ./scripts/aws-use-submit-profile.sh");
     process.exit(1);
   }
 

@@ -413,8 +413,7 @@ One composite action, `.github/actions/put-lake-row/action.yml`, with inputs `bu
 `{env}-env-analytics-lake-<account>`, is an input the caller resolves from the `names` job.
 
 Credentials are the two-hop OIDC every job already uses: `vars.SUBMIT_ACTIONS_ROLE_ARN`
-(`github-actions-role`), then `vars.SUBMIT_DEPLOY_ROLE_ARN` (`github-deploy-role`), both created
-by `infra/aws-accounts/setup-oidc-roles.sh`. `github-deploy-role` carries `AdministratorAccess`
+(`github-actions-role`), then `vars.SUBMIT_DEPLOY_ROLE_ARN` (`github-deploy-role`). `github-deploy-role` carries `AdministratorAccess`
 and the lake bucket policy denies only non-TLS traffic, so this writes with no policy change. If
 that role is scoped down later, keep `s3:PutObject` on
 `arn:aws:s3:::{env}-env-analytics-lake-*/curated/dora/*` and `.../curated/probe/*`.
