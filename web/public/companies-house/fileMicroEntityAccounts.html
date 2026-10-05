@@ -19,6 +19,23 @@
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="../lib/analytics.js"></script>
+    <style>
+      .accounts-preview-frame {
+        display: block;
+        width: 100%;
+        height: 32em;
+        border: 1px solid #dee2e6;
+        border-radius: 4px;
+        background: #fff;
+        margin-bottom: 1em;
+      }
+      .developer-only-section {
+        display: none;
+      }
+      body.developer-mode .developer-only-section {
+        display: block;
+      }
+    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
@@ -351,7 +368,10 @@
             </div>
             <div class="form-group">
               <label for="nominalValue">Nominal value of each share, in pounds</label>
-              <input type="text" id="nominalValue" name="nominalValue" inputmode="decimal" aria-describedby="nominalValue-hint" />
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input type="text" id="nominalValue" name="nominalValue" inputmode="decimal" aria-describedby="nominalValue-hint" />
+              </div>
               <p id="nominalValue-hint" class="hint">
                 For example, 1 or 0.01. The called up share capital divided by this is the number of shares.
               </p>
@@ -393,8 +413,9 @@
       <!-- Preview view -->
       <div id="previewView" class="results-container" style="display: none">
         <h2>Preview</h2>
-        <p>This is the iXBRL that will be filed. Nothing has been submitted to Companies House yet.</p>
-        <pre id="previewIxbrl" class="ixbrl-preview"></pre>
+        <p>These are the accounts as they will be filed. Nothing has been submitted to Companies House yet.</p>
+        <iframe id="previewRendered" class="accounts-preview-frame" title="Accounts preview" sandbox=""></iframe>
+        <pre id="previewIxbrl" class="ixbrl-preview developer-only-section"></pre>
         <div class="form-group">
           <label for="companyAuthCode">Company authentication code</label>
           <p id="companyAuthCode-hint" class="hint">
@@ -610,6 +631,7 @@
           const accounts = buildAccountsPayload();
           const preview = await window.previewMicroEntityAccounts(accounts);
           document.getElementById("previewIxbrl").textContent = preview.ixbrl;
+          document.getElementById("previewRendered").srcdoc = preview.ixbrl;
           showView("previewView");
         } catch (error) {
           console.error("Failed to render the accounts preview:", error);
@@ -651,24 +673,37 @@
 
         showLoading();
         hideStatus();
+        let submission;
+        let govTestScenarioHeaders;
         try {
           const accounts = { ...buildAccountsPayload(), companyAuthCode };
           const govTestScenario = document.getElementById("govTestScenario").value.trim();
-          const govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
-          const submission = await window.submitMicroEntityAccounts(accounts, govTestScenarioHeaders);
-          document.getElementById("filingResult").innerHTML =
-            `<p>Submission <strong>${submission.submissionNumber}</strong> accepted by the gateway at ${submission.gatewayTimestamp}. Waiting for Companies House...</p>`;
-          showView("resultView");
-
-          const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
-          document.getElementById("filingResult").innerHTML =
-            `<p>Submission <strong>${outcome.submissionNumber}</strong> was <strong>${outcome.statusCode}</strong>.</p>`;
-          renderRejections(outcome.rejections);
-          document.getElementById("startAgainBtn").style.display = "inline-block";
+          govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
+          submission = await window.submitMicroEntityAccounts(accounts, govTestScenarioHeaders);
         } catch (error) {
           console.error("Companies House accounts filing failed:", error);
           showStatus(error.message || "Failed to file the accounts with Companies House.", "error");
+          hideLoading();
+          return;
+        }
+
+        document.getElementById("filingResult").innerHTML =
+          `<p>Submission <strong>${submission.submissionNumber}</strong> accepted by the gateway at ${submission.gatewayTimestamp}. Waiting for Companies House...</p>`;
+        showView("resultView");
+        try {
+          const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
+          const accepted = outcome.statusCode === "ACCEPT";
+          document.getElementById("filingResult").innerHTML =
+            `<p><strong>Companies House ${accepted ? "accepted" : "rejected"} the accounts.</strong></p>` +
+            `<p class="hint">Status: ${outcome.statusCode}. Submission number ${outcome.submissionNumber}.</p>`;
+          renderRejections(outcome.rejections);
+        } catch (error) {
+          console.error("Companies House accounts status check failed:", error);
+          document.getElementById("filingResult").innerHTML =
+            `<p><strong>Your accounts were submitted. Companies House has not confirmed the outcome yet.</strong></p>` +
+            `<p class="hint">Submission number ${submission.submissionNumber}. The status check failed: ${error.message || "unknown error"}.</p>`;
         } finally {
+          document.getElementById("startAgainBtn").style.display = "inline-block";
           hideLoading();
         }
       }
