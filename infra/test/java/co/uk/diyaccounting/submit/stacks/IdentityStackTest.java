@@ -303,10 +303,47 @@ class IdentityStackTest {
                 Match.objectLike(Map.of(
                         "ClientName",
                         Match.stringLikeRegexp(".*-mcp-client$"),
-                        "CallbackURLs",
-                        Match.arrayEquals(expectedUrls),
                         "LogoutURLs",
                         Match.arrayEquals(expectedUrls))));
+        for (var url : expectedUrls) {
+            template.hasResourceProperties(
+                    "AWS::Cognito::UserPoolClient",
+                    Match.objectLike(Map.of(
+                            "ClientName",
+                            Match.stringLikeRegexp(".*-mcp-client$"),
+                            "CallbackURLs",
+                            Match.arrayWith(List.of(url)))));
+        }
+    }
+
+    @Test
+    void mcpClientCallbackUrlsIncludeTheHostedOauthCallbackOnEveryAuthHost() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        for (var host : List.of("ci-submit.example.com", "ci-set1.submit.example.com", "ci-set2.submit.example.com")) {
+            template.hasResourceProperties(
+                    "AWS::Cognito::UserPoolClient",
+                    Match.objectLike(Map.of(
+                            "ClientName",
+                            Match.stringLikeRegexp(".*-mcp-client$"),
+                            "CallbackURLs",
+                            Match.arrayWith(List.of("https://" + host + "/mcp/oauth/callback")))));
+        }
+    }
+
+    @Test
+    void mcpClientRotatesRefreshTokens() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        template.hasResourceProperties(
+                "AWS::Cognito::UserPoolClient",
+                Match.objectLike(Map.of(
+                        "ClientName",
+                        Match.stringLikeRegexp(".*-mcp-client$"),
+                        "RefreshTokenRotation",
+                        Map.of("Feature", "ENABLED", "RetryGracePeriodSeconds", 30))));
     }
 
     @Test

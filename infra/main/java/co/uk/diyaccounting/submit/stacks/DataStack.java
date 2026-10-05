@@ -85,6 +85,7 @@ public class DataStack extends Stack {
     public ITable practiceClientsTable;
     public ITable securityStateTable;
     public ITable alarmIssueLockTable;
+    public ITable mcpSessionsTable;
     public Key saltEncryptionKey;
 
     // Stream view type shared by every streamed table. NEW_AND_OLD_IMAGES rather than NEW_IMAGE
@@ -1000,6 +1001,21 @@ public class DataStack extends Stack {
                 "ttl");
         infof("Ensured alarm-issue lock DynamoDB table with name %s", props.sharedNames().alarmIssueLockTableName);
 
+        // Hosted MCP sessions: one item per Mcp-Session-Id holding the owner's hashedSub and the
+        // open cloud book pointer. PK-only; items expire 24 hours after their last write.
+        this.mcpSessionsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-McpSessionsTable",
+                props.sharedNames().mcpSessionsTableName,
+                "sessionId",
+                null);
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-McpSessionsTTL",
+                props.sharedNames().mcpSessionsTableName,
+                "ttl");
+        infof("Ensured MCP sessions DynamoDB table with name %s", props.sharedNames().mcpSessionsTableName);
+
         // DIYA-GL bucket: one zip-in-S3 store per environment for the paid diya-gl storage tier.
         // Versioned so AWS Backup for S3 can cover it and a bad metadata write has a prior version;
         // noncurrent versions expire after 30 days rather than being kept forever.
@@ -1376,6 +1392,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "SecurityStateTableArn", this.securityStateTable.getTableArn());
         cfnOutput(this, "AlarmIssueLockTableName", this.alarmIssueLockTable.getTableName());
         cfnOutput(this, "AlarmIssueLockTableArn", this.alarmIssueLockTable.getTableArn());
+        cfnOutput(this, "McpSessionsTableName", this.mcpSessionsTable.getTableName());
+        cfnOutput(this, "McpSessionsTableArn", this.mcpSessionsTable.getTableArn());
         cfnOutput(this, "DiyaGlBucketName", this.diyaGlBucket.getBucketName());
 
         // KMS key for encrypting salt backup stored in DynamoDB (Path 3 recovery).

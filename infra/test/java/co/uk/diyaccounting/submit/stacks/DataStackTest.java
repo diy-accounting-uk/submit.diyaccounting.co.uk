@@ -214,6 +214,7 @@ class DataStackTest {
             dataStack.practiceClientsTable.getTableName(),
             dataStack.securityStateTable.getTableName(),
             dataStack.alarmIssueLockTable.getTableName(),
+            dataStack.mcpSessionsTable.getTableName(),
         };
 
         template.resourceCountIs("Custom::EnsurePitr", tableNames.length);
