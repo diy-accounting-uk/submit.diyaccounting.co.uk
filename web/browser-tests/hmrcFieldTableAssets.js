@@ -50,6 +50,11 @@ export function expectCleanFigures(expect, text) {
 }
 
 // The real error summary and inline message module.
+// The real self-employment-expenses.js, for the self-employment period form.
+export function serveSelfEmploymentExpenses(page) {
+  return serveFile(page, "**/lib/self-employment-expenses.js", "lib/self-employment-expenses.js", "application/javascript");
+}
+
 export function serveFormErrors(page) {
   return serveFile(page, "**/lib/form-errors.js", "lib/form-errors.js", "application/javascript");
 }

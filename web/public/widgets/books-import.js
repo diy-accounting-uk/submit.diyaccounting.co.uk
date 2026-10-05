@@ -131,18 +131,36 @@
     return `Filled the nine boxes from ${fileName} for the period ${derived.periodStart} to ${derived.periodEnd}. Check them, then submit.`;
   }
 
-  const QUARTERLY_FIELD_EXPENSES = ["costOfGoods", "otherExpenses"];
-
   function figuresTheFormLacks(period) {
+    const itemisedIds = window.selfEmploymentExpenses.ITEMISED_FIELDS.map((field) => field.id);
     const lacking = [];
     Object.entries(period.periodExpenses || {}).forEach(([name, value]) => {
-      if (!QUARTERLY_FIELD_EXPENSES.includes(name) && typeof value === "number" && value !== 0)
-        lacking.push(`${name} ${poundsText(value)}`);
+      if (!itemisedIds.includes(name) && typeof value === "number" && value !== 0) lacking.push(`${name} ${poundsText(value)}`);
     });
     Object.entries(period.periodDisallowableExpenses || {}).forEach(([name, value]) => {
       if (typeof value === "number" && value !== 0) lacking.push(`${name} (disallowable) ${poundsText(value)}`);
     });
     return lacking;
+  }
+
+  // Every itemised expense field takes the book's figure, or its starting value when the book
+  // has none, and the total-expenses field is cleared because HMRC takes one or the other.
+  function fillExpenseFields(periodExpenses) {
+    const { ITEMISED_FIELDS, CONSOLIDATED_FIELD } = window.selfEmploymentExpenses;
+    let filled = 0;
+    setField(CONSOLIDATED_FIELD, "");
+    ITEMISED_FIELDS.forEach(({ id }) => {
+      const figure = periodExpenses?.[id];
+      const alwaysSent = id === "costOfGoods" || id === "otherExpenses";
+      if (typeof figure === "number") {
+        setField(id, figureText(figure));
+        filled += 1;
+      } else {
+        setField(id, alwaysSent ? "0" : "");
+        if (alwaysSent) filled += 1;
+      }
+    });
+    return filled;
   }
 
   async function fillItsaQuarterly({ bundle, source, fileName }) {
@@ -166,11 +184,10 @@
     if (!fieldValue("periodStartDate")) setField("periodStartDate", period.periodDates.periodStartDate);
     setField("turnover", figureText(period.periodIncome?.turnover ?? 0));
     setField("otherIncome", figureText(period.periodIncome?.other ?? 0));
-    setField("costOfGoods", figureText(period.periodExpenses?.costOfGoods ?? 0));
-    setField("otherExpenses", figureText(period.periodExpenses?.otherExpenses ?? 0));
+    const filledExpenses = fillExpenseFields(period.periodExpenses);
     const lacking = figuresTheFormLacks(period);
     const lackingText = lacking.length ? ` The form has no field for these figures from the book: ${namedList(lacking)}.` : "";
-    return `Filled 4 figures from ${fileName} for the period ending ${periodEnd}. Check them, then submit.${lackingText}`;
+    return `Filled ${2 + filledExpenses} figures from ${fileName} for the period ending ${periodEnd}. Check them, then submit.${lackingText}`;
   }
 
   // The derived-figures file is derive_itsa_annual_submission's answer: { taxYear, allowances,

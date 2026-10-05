@@ -176,7 +176,7 @@ test.describe("books import on the VAT return page", () => {
 });
 
 test.describe("books import on the ITSA quarterly update page", () => {
-  test("fills the period summary for the period end on the form and names the expenses the form has no field for", async ({ page }) => {
+  test("fills the period summary, itemised expenses included, for the period end on the form", async ({ page }) => {
     await openPage(page, QUARTERLY_URL);
     await page.locator("#taxYear").fill("2025-26");
     await page.locator("#periodEndDate").fill("2025-07-05");
@@ -184,15 +184,53 @@ test.describe("books import on the ITSA quarterly update page", () => {
     await chooseFile(page, "brickwork-se.diya-gl.zip", await zippedBook("brickwork-pro-se-vat"));
 
     await expect(page.locator("#booksImportStatus")).toContainText(
-      "Filled 4 figures from brickwork-se.diya-gl.zip for the period ending 2025-07-05.",
+      "Filled 16 figures from brickwork-se.diya-gl.zip for the period ending 2025-07-05.",
     );
-    await expect(page.locator("#booksImportStatus")).toContainText("The form has no field for these figures from the book:");
-    await expect(page.locator("#booksImportStatus")).toContainText("adminCosts £360");
+    await expect(page.locator("#booksImportStatus")).toContainText(
+      "The form has no field for these figures from the book: depreciationDisallowable (disallowable) £300.",
+    );
+    await expect(page.locator("#booksImportStatus")).not.toContainText("adminCosts");
+    await expect(page.locator("#depreciation")).toHaveValue("300");
+    await expect(page.locator("#adminCosts")).toHaveValue("360");
+    await expect(page.locator("#consolidatedExpenses")).toHaveValue("");
     await expect(page.locator("#turnover")).toHaveValue("28050");
     await expect(page.locator("#otherIncome")).toHaveValue("0");
     await expect(page.locator("#costOfGoods")).toHaveValue("6825");
     await expect(page.locator("#otherExpenses")).toHaveValue("1800");
     await expect(page.locator("#periodStartDate")).toHaveValue("2025-04-06");
+  });
+
+  test("the period body carries the itemised expenses, or the total alone, never both", async ({ page }) => {
+    await openPage(page, QUARTERLY_URL);
+    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#periodEndDate").fill("2025-07-05");
+    await chooseFile(page, "brickwork-se.diya-gl.zip", await zippedBook("brickwork-pro-se-vat"));
+    await expect(page.locator("#adminCosts")).toHaveValue("360");
+
+    const itemised = await page.evaluate(() =>
+      readPeriodData(Object.fromEntries([...document.querySelectorAll("input")].map((i) => [i.id, i.value]))),
+    );
+    expect(itemised.periodExpenses).toMatchObject({ costOfGoods: 6825, adminCosts: 360, depreciation: 300, otherExpenses: 1800 });
+    expect(itemised.periodExpenses).not.toHaveProperty("consolidatedExpenses");
+
+    const problem = await page.evaluate(() => {
+      document.getElementById("consolidatedExpenses").value = "9000";
+      try {
+        readPeriodData(Object.fromEntries([...document.querySelectorAll("input")].map((i) => [i.id, i.value])));
+        return null;
+      } catch (error) {
+        return error.message;
+      }
+    });
+    expect(problem).toContain("not both");
+
+    await page.evaluate(() => {
+      window.selfEmploymentExpenses.ITEMISED_FIELDS.forEach(({ id }) => (document.getElementById(id).value = "0"));
+    });
+    const total = await page.evaluate(() =>
+      readPeriodData(Object.fromEntries([...document.querySelectorAll("input")].map((i) => [i.id, i.value]))),
+    );
+    expect(total.periodExpenses).toEqual({ consolidatedExpenses: 9000 });
   });
 
   test("a period end the book does not carry names the period ends the book covers and fills nothing", async ({ page }) => {

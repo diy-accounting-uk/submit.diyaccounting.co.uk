@@ -140,39 +140,7 @@
               </div>
             </div>
 
-            <div class="form-group">
-              <label for="costOfGoods">Cost of goods</label>
-              <p id="costOfGoods-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="costOfGoods"
-                  name="costOfGoods"
-                  value="0"
-                  aria-describedby="costOfGoods-money-hint"
-                  inputmode="decimal"
-                  data-money="pounds-and-pence"
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="otherExpenses">Other expenses</label>
-              <p id="otherExpenses-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="otherExpenses"
-                  name="otherExpenses"
-                  value="0"
-                  aria-describedby="otherExpenses-money-hint"
-                  inputmode="decimal"
-                  data-money="pounds-and-pence"
-                />
-              </div>
-            </div>
+            <div id="expenseFields"></div>
 
             <!-- Developer Test Scenario Section -->
             <div id="developerSection" class="form-group" style="display: none">
@@ -241,6 +209,10 @@
     <script src="../../lib/form-errors.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../lib/itsaSubmissionModel.js"></script>
+    <script src="../../lib/self-employment-expenses.js"></script>
+    <script>
+      window.selfEmploymentExpenses.mountFields(document.getElementById("expenseFields"));
+    </script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
@@ -277,7 +249,7 @@
           : "HMRC identifies this quarter by its start and end date.";
 
         cumulativeMoneyNote.style.display = isCumulative ? "block" : "none";
-        ["turnover", "otherIncome", "costOfGoods", "otherExpenses"].forEach((fieldId) => {
+        ["turnover", "otherIncome", ...window.selfEmploymentExpenses.EXPENSE_IDS].forEach((fieldId) => {
           const label = document.querySelector(`label[for="${fieldId}"]`);
           if (!label) return;
           const baseText = label.dataset.baseLabel || label.textContent;
@@ -412,8 +384,9 @@
         const expenses = periodSummary?.periodExpenses || {};
         if (income.turnover !== undefined) document.getElementById("turnover").value = income.turnover;
         if (income.other !== undefined) document.getElementById("otherIncome").value = income.other;
-        if (expenses.costOfGoods !== undefined) document.getElementById("costOfGoods").value = expenses.costOfGoods;
-        if (expenses.otherExpenses !== undefined) document.getElementById("otherExpenses").value = expenses.otherExpenses;
+        window.selfEmploymentExpenses.EXPENSE_IDS.forEach((id) => {
+          if (expenses[id] !== undefined) document.getElementById(id).value = expenses[id];
+        });
         showStatus("Loaded your current year-to-date total from HMRC. Edit the figures below to the new total.", "info");
       }
 
@@ -502,6 +475,8 @@
       }
 
       function readPeriodData(source) {
+        const expenses = window.selfEmploymentExpenses.buildPeriodExpenses((id) => source[id], window.parseMoneyInput);
+        if (expenses.problem) throw new Error(expenses.problem);
         return {
           nino: (source.nino || "").replace(/\s+/g, "").toUpperCase(),
           businessId: (source.businessId || "").trim(),
@@ -512,10 +487,7 @@
             turnover: window.parseMoneyInput(source.turnover) ?? 0,
             other: window.parseMoneyInput(source.otherIncome) ?? 0,
           },
-          periodExpenses: {
-            costOfGoods: window.parseMoneyInput(source.costOfGoods) ?? 0,
-            otherExpenses: window.parseMoneyInput(source.otherExpenses) ?? 0,
-          },
+          periodExpenses: expenses.periodExpenses,
           periodDisallowableExpenses: {},
         };
       }
@@ -620,17 +592,22 @@
         if (window.formErrors.reportMoneyProblems()) return;
 
         const formData = new FormData(event.target);
-        const periodData = readPeriodData({
-          nino: formData.get("nino").replace(/\s+/g, "").toUpperCase(),
-          businessId: formData.get("businessId"),
-          taxYear: formData.get("taxYear"),
-          periodStartDate: formData.get("periodStartDate"),
-          periodEndDate: formData.get("periodEndDate"),
-          turnover: formData.get("turnover"),
-          otherIncome: formData.get("otherIncome"),
-          costOfGoods: formData.get("costOfGoods"),
-          otherExpenses: formData.get("otherExpenses"),
-        });
+        let periodData;
+        try {
+          periodData = readPeriodData({
+            nino: formData.get("nino").replace(/\s+/g, "").toUpperCase(),
+            businessId: formData.get("businessId"),
+            taxYear: formData.get("taxYear"),
+            periodStartDate: formData.get("periodStartDate"),
+            periodEndDate: formData.get("periodEndDate"),
+            turnover: formData.get("turnover"),
+            otherIncome: formData.get("otherIncome"),
+            ...Object.fromEntries(window.selfEmploymentExpenses.EXPENSE_IDS.map((id) => [id, formData.get(id)])),
+          });
+        } catch (error) {
+          showStatus(error.message, "error");
+          return;
+        }
         const testScenario = formData.get("testScenario");
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
