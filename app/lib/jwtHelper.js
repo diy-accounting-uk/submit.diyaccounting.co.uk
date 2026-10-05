@@ -15,7 +15,7 @@ export function decodeJwtNoVerify(token) {
     const payloadRaw = parts[1].replace(/-/g, "+").replace(/_/g, "/");
     const json = Buffer.from(payloadRaw, "base64").toString("utf8");
     const payload = JSON.parse(json);
-    logger.info({ message: "Decoded JWT payload", payload });
+    logger.info({ message: "Decoded JWT payload", claimNames: Object.keys(payload ?? {}) });
     return payload;
   } catch (error) {
     logger.warn({ message: "JWT decode failed", error });

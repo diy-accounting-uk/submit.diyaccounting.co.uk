@@ -105,6 +105,8 @@
         border-left: 2px solid var(--color-brand-primary);
       }
 
+      #reinvestmentTable th:nth-child(2),
+      #reinvestmentTable td:nth-child(2),
       #companyProfitAndLossTable th:nth-child(2),
       #companyProfitAndLossTable td:nth-child(2),
       #companyBalanceSheetTable th:nth-child(2),
@@ -166,6 +168,20 @@
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
       <p id="snapshotMeta"></p>
+
+      <section id="reinvestmentPanel" class="objective" hidden>
+        <h2>Reinvestment</h2>
+        <p class="subtitle">The budget is the reinvestment fraction of trailing 30-day income</p>
+        <table class="observations" id="reinvestmentTable">
+          <thead>
+            <tr>
+              <th>Figure</th>
+              <th>Value</th>
+            </tr>
+          </thead>
+          <tbody id="reinvestmentBody"></tbody>
+        </table>
+      </section>
 
       <section id="companyAccountsPanel" class="objective" hidden>
         <h2>Company accounts</h2>
@@ -500,6 +516,34 @@
         COMPANY_BALANCE_SHEET_ROWS.forEach(([id, label]) => bsBody.appendChild(renderCompanyAccountsRow(observationsById, id, label)));
       }
 
+      function renderReinvestment(snapshot) {
+        const panel = document.getElementById("reinvestmentPanel");
+        const reinvestment = snapshot.reinvestment;
+        if (!reinvestment) {
+          panel.hidden = true;
+          return;
+        }
+        panel.hidden = false;
+        const rows = [
+          ["reinvestment-fraction", "Reinvestment fraction", formatValue("ratio", reinvestment.fraction)],
+          ["trailing-30-income", "Trailing 30-day income", formatValue("gbp", reinvestment.trailing30IncomeGbp)],
+          ["reinvestment-budget", "Budget", formatValue("gbp", reinvestment.budgetGbp)],
+        ];
+        const body = document.getElementById("reinvestmentBody");
+        body.innerHTML = "";
+        rows.forEach(([id, label, text]) => {
+          const row = document.createElement("tr");
+          row.dataset.figureId = id;
+          const labelCell = document.createElement("td");
+          labelCell.textContent = label;
+          const valueCell = document.createElement("td");
+          valueCell.textContent = text;
+          row.appendChild(labelCell);
+          row.appendChild(valueCell);
+          body.appendChild(row);
+        });
+      }
+
       function activityCountCell(observation, key, unavailableTitle) {
         const cell = document.createElement("td");
         const value = observation && observation[key] && observation[key].value;
@@ -693,6 +737,7 @@
         try {
           const snapshot = await fetchJson("/api/v1/operator/snapshot");
           renderSnapshot(snapshot);
+          renderReinvestment(snapshot);
           renderCompanyAccounts(snapshot);
           renderActivities(snapshot);
           renderVisitors(snapshot);

@@ -308,6 +308,28 @@ async function doTestScenario(page, step, ctx) {
   return { waitMs: 0, rect: null };
 }
 
+// The synthetic-obligations option sits in the developer section, which a recording never shows.
+// The box is ticked on the hidden element directly, so the form submits it with the rest and no
+// developer panel reaches the frame. A target the page does not have fails the step.
+async function doCheckHidden(page, step, ctx) {
+  const outcome = await page.evaluate((selector) => {
+    const box = document.querySelector(selector);
+    if (!box) return "missing";
+    box.checked = true;
+    box.dispatchEvent(new Event("change", { bubbles: true }));
+    return "set";
+  }, step.target);
+  if (outcome !== "set") {
+    await writeFailureStill(page, ctx);
+    throw new SceneStepError(`scene "${ctx.sceneId}" step ${ctx.stepIndex} (checkHidden): "${step.target}" is not on the page`, {
+      sceneId: ctx.sceneId,
+      stepIndex: ctx.stepIndex,
+      target: step.target,
+    });
+  }
+  return { waitMs: 0, rect: null };
+}
+
 async function doScroll(page, step, ctx) {
   let targetY;
   if (step.target) {
@@ -611,6 +633,7 @@ const HANDLERS = {
   select: doSelect,
   dropFile: doDropFile,
   testScenario: doTestScenario,
+  checkHidden: doCheckHidden,
   scroll: doScroll,
   highlight: doHighlight,
   await: doAwait,

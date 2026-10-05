@@ -177,6 +177,8 @@ function describeStep(step, waitMs, values, now) {
       return `selects "${step.value}" in ${describeTarget(step.target)}`;
     case "dropFile":
       return `drops ${step.name || path.basename(step.file)} onto ${describeTarget(step.target)}`;
+    case "checkHidden":
+      return `ticks ${describeTarget(step.target)}`;
     case "scroll":
       return step.target ? `scrolls to ${describeTarget(step.target)}` : `scrolls to the ${step.to}`;
     case "highlight":
@@ -673,9 +675,9 @@ async function main() {
         const description = describeStep(step, waitMs, values, now);
         // An off-camera step names nothing a viewer sees: it never reaches the transcript, so it
         // never has to describe itself in words a reader would notice weren't on screen.
-        // A testScenario step sets a form value the viewer never sees, so the transcript has
-        // nothing to say about it.
-        if (!offCamera && step.action !== "testScenario")
+        // A testScenario or checkHidden step sets a form value the viewer never sees, so the
+        // transcript has nothing to say about it.
+        if (!offCamera && step.action !== "testScenario" && step.action !== "checkHidden")
           entries.push({ caption: captionTextForStep(step), description, note: step.note || null });
 
         const compression = WAIT_CAPABLE_ACTIONS.has(step.action) ? compressionFor(waitMs, unscaledPacing) : null;

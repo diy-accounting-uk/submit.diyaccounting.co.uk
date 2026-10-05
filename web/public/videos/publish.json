@@ -2598,6 +2598,38 @@
       ]
     },
     {
+      "id": "vat-from-books",
+      "group": "vat",
+      "publish": true,
+      "pipelineVersion": 10,
+      "sourceRun": null,
+      "sourceArtifact": "video-vat-from-books-ci",
+      "videoFile": "target/videos/video-vat-from-books-ci/vat-from-books.mp4",
+      "captionFile": "target/videos/video-vat-from-books-ci/vat-from-books.vtt",
+      "title": "DIY Accounting Submit: fill a VAT return from a book (sandbox example)",
+      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video drops a diya-gl book on the VAT return form instead of typing the figures, checks the nine boxes it fills, submits the return to HMRC's test service and shows the receipt. This is a sandbox recording against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "diya-gl"],
+      "categoryId": "27",
+      "videoId": null,
+      "walkthrough": []
+    },
+    {
+      "id": "itsa-quarterly-from-books",
+      "group": "itsa",
+      "publish": true,
+      "pipelineVersion": 10,
+      "sourceRun": null,
+      "sourceArtifact": "video-itsa-quarterly-from-books-ci",
+      "videoFile": "target/videos/video-itsa-quarterly-from-books-ci/itsa-quarterly-from-books.mp4",
+      "captionFile": "target/videos/video-itsa-quarterly-from-books-ci/itsa-quarterly-from-books.vtt",
+      "title": "DIY Accounting Submit: fill a quarterly update from a book (coming soon - sandbox example)",
+      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video drops a diya-gl book on the quarterly update form instead of typing the figures, checks the quarter's figures it fills, and submits the update to HMRC's test service. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA", "diya-gl"],
+      "categoryId": "27",
+      "videoId": null,
+      "walkthrough": []
+    },
+    {
       "id": "itsa-carry-back-adjustments",
       "group": "itsa",
       "publish": true,

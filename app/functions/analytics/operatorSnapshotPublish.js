@@ -32,6 +32,9 @@ const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotP
 // fastWindowView (see handler()'s mode branch).
 const FAST_WINDOW_OBJECTIVE_IDS = ["activity-started-and-completed", "conversion-to-submission"];
 
+// The share of trailing 30-day income the operator dashboard offers as the paid-traffic budget.
+export const REINVESTMENT_FRACTION = 0.2;
+
 // The four donation Payment Links' bundle ids (infra/stripe/stripe.toml). v_revenue_daily
 // labels each Stripe charge with its bundle id; PayPal donations are separate rows.
 const STRIPE_DONATION_PRODUCT_FILTER = "product IN ('donation-10', 'donation-20', 'donation-45', 'donation-custom')";
@@ -876,6 +879,21 @@ export function toObservationWindows(row) {
 const nullObservationWindows = { last30: { value: null, trend: null }, last90: { value: null, trend: null } };
 
 /**
+ * The reinvestment loop's figures: trailing 30-day income (the revenue-gbp observation's
+ * last30 window) and the budget that income gives at REINVESTMENT_FRACTION. Both are null
+ * while the revenue query has no figure, so the page shows no budget rather than a false zero.
+ *
+ * @param {Array<{id: string, observations: Array<object>}>} objectives
+ * @returns {{fraction: number, trailing30IncomeGbp: number|null, budgetGbp: number|null}}
+ */
+export function buildReinvestment(objectives) {
+  const revenue = objectives.flatMap((objective) => objective.observations).find((observation) => observation.id === "revenue-gbp");
+  const trailing30IncomeGbp = revenue?.last30?.value ?? null;
+  const budgetGbp = trailing30IncomeGbp === null ? null : trailing30IncomeGbp * REINVESTMENT_FRACTION;
+  return { fraction: REINVESTMENT_FRACTION, trailing30IncomeGbp, budgetGbp };
+}
+
+/**
  * Runs every observation's query and assembles the snapshot document, organised by objective.
  *
  * A single observation's Athena query failing (e.g. a Glue table that does not exist) answers
@@ -973,6 +991,7 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
     generatedAt: new Date().toISOString(),
     environment: context.envName,
     objectives,
+    ...(fastWindowOnly ? {} : { reinvestment: buildReinvestment(objectives) }),
     failedObservationCount,
   };
 }

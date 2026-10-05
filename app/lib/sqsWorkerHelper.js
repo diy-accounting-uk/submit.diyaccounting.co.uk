@@ -87,7 +87,12 @@ export async function processSqsRecords(
       correlationId = body.correlationId;
 
       if (!userId || !requestId) {
-        logger.error({ message: "SQS Message missing userId or requestId", recordId: record.messageId, body });
+        logger.error({
+          message: "SQS Message missing userId or requestId",
+          recordId: record.messageId,
+          hasUserId: Boolean(userId),
+          hasRequestId: Boolean(requestId),
+        });
         continue;
       }
 

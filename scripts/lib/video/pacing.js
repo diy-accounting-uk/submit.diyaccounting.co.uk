@@ -20,7 +20,7 @@ const GROUP_PAUSE_KEY = {
 // the group 2 residual, and so do the journey actions (login, consent, ensureBundle,
 // hmrcAuthorise, companiesHouseAuthorise), which spend most of their time waiting on a backend
 // or an identity provider.
-// Actions with no group of their own (caption, hold, still, testScenario) return null: their timing is either
+// Actions with no group of their own (caption, hold, still, testScenario, checkHidden) return null: their timing is either
 // explicit (hold's ms) or carried by the caption/still write itself.
 const STEP_GROUP = {
   goto: 3,
@@ -33,6 +33,7 @@ const STEP_GROUP = {
   select: 2,
   dropFile: 2,
   testScenario: null,
+  checkHidden: null,
   scroll: 3,
   highlight: 2,
   sheetPrepare: null,

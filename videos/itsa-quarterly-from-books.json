@@ -1,0 +1,310 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "itsa-quarterly-from-books",
+  "title": "Fill a quarterly update from a book",
+  "description": "A signed-in walk through Making Tax Digital for Income Tax's quarterly update filled from a diya-gl book: drop the book on the form, check the quarter's figures it fills, and submit the update to HMRC's test service.",
+  "auth": "user",
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/hmrc/itsa/selfEmploymentPeriod.html"
+  ],
+  "hmrcServices": ["mtd-vat", "mtd-income-tax"],
+  "environments": ["ci"],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+  "pacing": {
+    "perCharMs": 80,
+    "betweenActionsMs": 500,
+    "aroundMotionMs": 500,
+    "minResidualMs": 120,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 16,
+    "minMs": 1200,
+    "fadeMs": 200,
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
+  },
+  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "finalHoldMs": 2500,
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "This is a sandbox preview against HMRC's test service, not a live filing.",
+          "headline": "A sandbox preview",
+          "keyWord": "sandbox"
+        },
+        {
+          "action": "point",
+          "target": {
+            "role": "heading",
+            "name": "DIY Accounting Submit"
+          },
+          "dwellMs": 300
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps a whole year's filings in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
+        },
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
+      ]
+    },
+    {
+      "id": "subscription",
+      "chapter": "Resident",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          },
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Resident",
+          "testPass": true,
+          "caption": "Resident opens the Self Assessment activities.",
+          "headline": "Unlock Self Assessment",
+          "keyWord": "Self"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ]
+    },
+    {
+      "id": "quarter-form",
+      "chapter": "Choose the quarter",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/selfEmploymentPeriod.html",
+          "waitFor": "#itsaSelfEmploymentPeriodForm",
+          "caption": "This is the form a quarterly update is filed on.",
+          "headline": "The quarterly form",
+          "keyWord": "quarterly"
+        },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true,
+          "caption": "Type the National Insurance number.",
+          "headline": "Enter your NI number",
+          "keyWord": "National"
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XBIS00000000001",
+          "caption": "Then the business the update is for.",
+          "headline": "Choose the business",
+          "keyWord": "business"
+        },
+        {
+          "action": "fill",
+          "target": "#periodEndDate",
+          "value": "2025-10-05",
+          "caption": "Choose the date the quarter ends.",
+          "headline": "Choose the quarter end",
+          "keyWord": "ends"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ]
+    },
+    {
+      "id": "import-book",
+      "chapter": "Fill from a book",
+      "still": true,
+      "steps": [
+        {
+          "action": "dropFile",
+          "target": "#booksImportDrop",
+          "file": "videos/books/brickwork-pro-se-vat.json",
+          "caption": "Drop your diya-gl book on the form.",
+          "headline": "Drop your book",
+          "keyWord": "book"
+        },
+        {
+          "action": "await",
+          "until": "#booksImportStatus:has-text('figures from brickwork-pro-se-vat.json')",
+          "label": "Reading the book",
+          "timeoutMs": 30000,
+          "caption": "The quarter's figures fill from the book.",
+          "headline": "The figures fill",
+          "keyWord": "fill"
+        },
+        {
+          "action": "scroll",
+          "target": "#turnover"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        },
+        {
+          "action": "point",
+          "target": "#taxYear",
+          "dwellMs": 500,
+          "caption": "The tax year and quarter start come from the book.",
+          "headline": "Tax year from the book",
+          "keyWord": "tax"
+        },
+        {
+          "action": "point",
+          "target": "#turnover",
+          "dwellMs": 500,
+          "caption": "Turnover is the quarter's sales.",
+          "headline": "Turnover from the book",
+          "keyWord": "Turnover"
+        },
+        {
+          "action": "point",
+          "target": "#costOfGoods",
+          "dwellMs": 500,
+          "caption": "Costs come from the book's expense accounts.",
+          "headline": "Costs from the book",
+          "keyWord": "Costs"
+        },
+        {
+          "action": "point",
+          "target": "#otherExpenses",
+          "dwellMs": 500,
+          "caption": "Check every figure before you submit.",
+          "headline": "Check the figures",
+          "keyWord": "Check"
+        },
+        {
+          "action": "hold",
+          "ms": 800
+        },
+        {
+          "action": "still",
+          "name": "quarterly-from-books-filled"
+        }
+      ]
+    },
+    {
+      "id": "submit",
+      "chapter": "Submit to HMRC",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#submitBtn",
+          "caption": "Submitting sends you to HMRC to grant access.",
+          "headline": "Submit the update",
+          "keyWord": "Submit"
+        },
+        {
+          "action": "hmrcAuthorise",
+          "timeoutMs": 60000,
+          "caption": "Sign in to HMRC and say yes.",
+          "headline": "Grant HMRC access",
+          "keyWord": "HMRC"
+        },
+        {
+          "action": "await",
+          "until": "#selfEmploymentPeriodResults",
+          "label": "Filing the quarter",
+          "timeoutMs": 60000,
+          "caption": "HMRC accepts the quarterly update.",
+          "headline": "HMRC accepts it",
+          "keyWord": "accepts"
+        },
+        {
+          "action": "scroll",
+          "target": "#selfEmploymentPeriodResults"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        },
+        {
+          "action": "point",
+          "target": "#selfEmploymentPeriodResults h3",
+          "dwellMs": 600,
+          "caption": "The result is your record that it went through.",
+          "headline": "Keep the result",
+          "keyWord": "result"
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "quarterly-from-books-result"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        }
+      ]
+    }
+  ]
+}
