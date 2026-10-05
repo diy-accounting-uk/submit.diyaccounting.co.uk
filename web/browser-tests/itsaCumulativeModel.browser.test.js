@@ -47,6 +47,11 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
   // page's own origin resolution path in this harness), so load the real submission-model
   // helper directly into the page for these tests.
   await page.addScriptTag({ path: path.join(process.cwd(), "web/public/lib/itsaSubmissionModel.js") });
+  await page.addScriptTag({ path: path.join(process.cwd(), "web/public/lib/self-employment-expenses.js") });
+  await page.evaluate(() => {
+    const container = document.getElementById("expenseFields");
+    if (container) window.selfEmploymentExpenses.mountFields(container);
+  });
 
   await delay(200);
 }

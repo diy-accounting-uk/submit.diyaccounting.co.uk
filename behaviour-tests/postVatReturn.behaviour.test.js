@@ -36,6 +36,7 @@ import {
   initHmrcAuth,
   submitHmrcAuth,
 } from "./steps/behaviour-hmrc-steps.js";
+import { allowSyntheticObligationsOnForm, dropBookOnForm, writeFixtureBookFile } from "./steps/behaviour-books-import-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
   assertConsistentHashedSub,
@@ -267,9 +268,6 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     const repoRoot = path.resolve(process.cwd());
     const outputDir = testInfo.outputPath("");
     saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
-    process.env.TEST_HMRC_USERNAME = currentTestUsername;
-    process.env.TEST_HMRC_PASSWORD = currentTestPassword;
-    process.env.TEST_HMRC_VAT_NUMBER = testVatNumber;
   }
 
   // HOME + LOGIN + BUNDLES
@@ -561,4 +559,65 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "Submit VAT POST test", { filterByUserSub: userSub });
     expect(hashedSubs.length).toBeGreaterThan(0);
   }
+});
+
+test("Click through: Submit a VAT return filled from a dropped book", async ({ page }, testInfo) => {
+  addOnPageLogging(page);
+  const outputDir = testInfo.outputPath("");
+
+  let testUsername = hmrcTestUsername;
+  let testPassword = hmrcTestPassword;
+  let testVatNumber = hmrcTestVatNumber;
+  if (!testUsername) {
+    const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
+    const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
+    if (!hmrcClientId || !hmrcClientSecret) {
+      throw new Error("HMRC_SANDBOX_CLIENT_ID/SECRET (or HMRC_CLIENT_ID/SECRET) required to create test users");
+    }
+    const testUser = await createHmrcTestUser(hmrcClientId, hmrcClientSecret, { serviceNames: ["mtd-vat"] });
+    testUsername = testUser.userId;
+    testPassword = testUser.password;
+    testVatNumber = testUser.vrn;
+    saveHmrcTestUserToFiles(testUser, outputDir, path.resolve(process.cwd()));
+  }
+
+  const bookFile = writeFixtureBookFile("brickwork-pro-ltd-vat", outputDir);
+
+  await goToHomePageExpectNotLoggedIn(page, baseUrl, screenshotPath);
+  await clickLogIn(page, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
+  await verifyLoggedInStatus(page, screenshotPath);
+  await consentToDataCollection(page, screenshotPath);
+  await goToBundlesPage(page, screenshotPath);
+  await ensureBundlePresent(page, "Day pass", screenshotPath, { testPass: true });
+  await goToHomePageUsingMainNav(page, screenshotPath);
+
+  await initSubmitVat(page, screenshotPath);
+  await page.locator("#vatNumber").fill(testVatNumber);
+  await page.locator("#periodEnd").fill("2025-09-30");
+  await dropBookOnForm(
+    page,
+    bookFile,
+    "Filled the nine boxes from brickwork-pro-ltd-vat.json for the period 2025-07-01 to 2025-09-30",
+    screenshotPath,
+  );
+
+  await expect(page.locator("#vatDueSales")).toHaveValue("5580");
+  await expect(page.locator("#vatReclaimedCurrPeriod")).toHaveValue("5364");
+  await expect(page.locator("#totalValueSalesExVAT")).toHaveValue("27900");
+  await expect(page.locator("#totalValuePurchasesExVAT")).toHaveValue("26820");
+  await expect(page.locator("#periodStart")).toHaveValue("2025-07-01");
+  await page.locator("#declaration").check();
+  await allowSyntheticObligationsOnForm(page);
+
+  await submitFormVat(page, screenshotPath);
+  await acceptCookiesHmrc(page, screenshotPath);
+  await goToHmrcAuth(page, screenshotPath);
+  await initHmrcAuth(page, screenshotPath);
+  await fillInHmrcAuth(page, testUsername, testPassword, screenshotPath);
+  await submitHmrcAuth(page, screenshotPath);
+  await grantPermissionHmrcAuth(page, screenshotPath);
+
+  await completeVat(page, baseUrl, null, screenshotPath);
+  await verifyVatSubmission(page, null, screenshotPath);
 });

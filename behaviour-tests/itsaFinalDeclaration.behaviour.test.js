@@ -201,10 +201,6 @@ test("Click through: Trigger a calculation and file an ITSA Final Declaration wi
 
     const repoRoot = path.resolve(process.cwd());
     saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
-
-    process.env.TEST_HMRC_USERNAME = testUsername;
-    process.env.TEST_HMRC_PASSWORD = testPassword;
-    process.env.TEST_HMRC_NINO = testNino;
   }
 
   /* ****** */

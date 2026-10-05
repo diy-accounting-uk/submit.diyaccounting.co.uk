@@ -618,6 +618,7 @@
             populateEditForm(result);
             document.getElementById("loadCriteriaForm").style.display = "none";
             document.getElementById("annualEditForm").style.display = "block";
+            window.booksImport.applyPendingHandoff();
             hideStatus();
             sessionStorage.removeItem("pendingAnnualLoadRequest");
           } else if (pendingSave) {
@@ -712,6 +713,7 @@
               populateEditForm(result);
               document.getElementById("loadCriteriaForm").style.display = "none";
               document.getElementById("annualEditForm").style.display = "block";
+              window.booksImport.applyPendingHandoff();
               hideStatus();
             } catch (error) {
               showStatus(`Failed to load the annual submission: ${error.message}`, "error");

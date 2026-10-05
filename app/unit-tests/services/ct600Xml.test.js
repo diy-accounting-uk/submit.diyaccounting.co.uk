@@ -80,27 +80,27 @@ describe("deriveCt600Boxes for a Company book in the marginal relief band", () =
       30: "2025-04-01",
       35: "2026-03-31",
       145: 341283,
-      155: 124080,
-      165: 124080,
+      155: 123480,
+      165: 123480,
       170: 340,
-      235: 124420,
-      300: 124420,
-      315: 124420,
+      235: 123820,
+      300: 123820,
+      315: 123820,
       326: 0,
       329: "yes",
       330: 2025,
-      335: 124420,
+      335: 123820,
       340: 25,
-      345: 31105,
-      430: 31105,
-      435: 1883.7,
-      440: 29221.3,
-      475: 29221.3,
-      510: 29221.3,
+      345: 30955,
+      430: 30955,
+      435: 1892.7,
+      440: 29062.3,
+      475: 29062.3,
+      510: 29062.3,
       515: 64.51,
-      525: 29156.79,
-      528: 29156.79,
-      600: 29156.79,
+      525: 28997.79,
+      528: 28997.79,
+      600: 28997.79,
       690: 52500,
       705: 11500,
       975: "Carol Smith",
@@ -124,14 +124,14 @@ describe("deriveCt600Boxes for a Company book in the marginal relief band", () =
   test("takes tax already paid off the amount outstanding", () => {
     const { boxes } = deriveCt600Boxes({ results, company: { ...COMPANY, taxAlreadyPaid: 10000 } });
     expect(boxes[595]).toBe(10000);
-    expect(boxes[600]).toBeCloseTo(19156.79, 2);
+    expect(boxes[600]).toBeCloseTo(18997.79, 2);
   });
 });
 
 describe("deriveCt600Boxes for other shapes of book", () => {
   test("charges the small profits rate and claims it in box 329 below the lower limit", () => {
     const small = withResults({ CorporationTax: { K22: 30000, K24: 0, K28: 30000, K35: 5700, K37: 0 }, CT600: { Z72: 0 } });
-    small["PubP&L"].F49 = small["PubP&L"].F49 - 124080.3916666666 + 30000 - 339.51;
+    small["PubP&L"].F49 = small["PubP&L"].F49 - 123480.3916666666 + 30000 - 339.51;
     const { boxes } = deriveCt600Boxes({ results: small, company: COMPANY });
     expect(boxes[315]).toBe(30000);
     expect(boxes[340]).toBe(19);
@@ -148,11 +148,11 @@ describe("deriveCt600Boxes for other shapes of book", () => {
       Admin: { P6: 19, R6: 25, S6: 0.015, T6: 50000, U6: 250000, P7: 19, R7: 25, S7: 0.015, T7: 50000, U7: 250000 },
     });
     const { boxes } = deriveCt600Boxes({ results: straddling, company: COMPANY });
-    const firstShare = Math.round((124420 * 90) / 365);
+    const firstShare = Math.round((123820 * 90) / 365);
     expect(boxes[330]).toBe(2024);
     expect(boxes[335]).toBe(firstShare);
     expect(boxes[380]).toBe(2025);
-    expect(boxes[385]).toBe(124420 - firstShare);
+    expect(boxes[385]).toBe(123820 - firstShare);
     expect(boxes[335] + boxes[385]).toBe(boxes[315]);
     expect(boxes[327]).toBe(0);
     expect(boxes[328]).toBe(0);

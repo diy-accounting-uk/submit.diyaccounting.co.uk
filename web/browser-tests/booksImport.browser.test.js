@@ -12,6 +12,10 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import JSZip from "jszip";
+import { readBookSource } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
+import { PRODUCTS } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
+import { savePackageZip } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
+import { deriveItsaQuarterlyUpdate, deriveVatReturn } from "@diy-accounting-uk/diya-gl";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -176,7 +180,7 @@ test.describe("books import on the VAT return page", () => {
 });
 
 test.describe("books import on the ITSA quarterly update page", () => {
-  test("fills the period summary for the period end on the form and names the expenses the form has no field for", async ({ page }) => {
+  test("fills the period summary, itemised expenses included, for the period end on the form", async ({ page }) => {
     await openPage(page, QUARTERLY_URL);
     await page.locator("#taxYear").fill("2025-26");
     await page.locator("#periodEndDate").fill("2025-07-05");
@@ -184,15 +188,69 @@ test.describe("books import on the ITSA quarterly update page", () => {
     await chooseFile(page, "brickwork-se.diya-gl.zip", await zippedBook("brickwork-pro-se-vat"));
 
     await expect(page.locator("#booksImportStatus")).toContainText(
-      "Filled 4 figures from brickwork-se.diya-gl.zip for the period ending 2025-07-05.",
+      "Filled 17 figures from brickwork-se.diya-gl.zip for the period ending 2025-07-05.",
     );
-    await expect(page.locator("#booksImportStatus")).toContainText("The form has no field for these figures from the book:");
-    await expect(page.locator("#booksImportStatus")).toContainText("adminCosts £360");
+    await expect(page.locator("#booksImportStatus")).not.toContainText("The form has no field");
+    await expect(page.locator("#booksImportStatus")).not.toContainText("Disallowable");
+    await expect(page.locator("#booksImportStatus")).not.toContainText("adminCosts");
+    await expect(page.locator("#depreciationDisallowable")).toHaveValue("300");
+    await expect(page.locator("#adminCostsDisallowable")).toHaveValue("");
+    await expect(page.locator("#depreciation")).toHaveValue("300");
+    await expect(page.locator("#adminCosts")).toHaveValue("360");
+    await expect(page.locator("#consolidatedExpenses")).toHaveValue("");
     await expect(page.locator("#turnover")).toHaveValue("28050");
     await expect(page.locator("#otherIncome")).toHaveValue("0");
     await expect(page.locator("#costOfGoods")).toHaveValue("6825");
     await expect(page.locator("#otherExpenses")).toHaveValue("1800");
     await expect(page.locator("#periodStartDate")).toHaveValue("2025-04-06");
+  });
+
+  test("the period body carries the itemised expenses, or the total alone, never both", async ({ page }) => {
+    await openPage(page, QUARTERLY_URL);
+    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#periodEndDate").fill("2025-07-05");
+    await chooseFile(page, "brickwork-se.diya-gl.zip", await zippedBook("brickwork-pro-se-vat"));
+    await expect(page.locator("#adminCosts")).toHaveValue("360");
+
+    const itemised = await page.evaluate(() =>
+      readPeriodData(Object.fromEntries([...document.querySelectorAll("input")].map((i) => [i.id, i.value]))),
+    );
+    expect(itemised.periodExpenses).toMatchObject({ costOfGoods: 6825, adminCosts: 360, depreciation: 300, otherExpenses: 1800 });
+    expect(itemised.periodExpenses).not.toHaveProperty("consolidatedExpenses");
+    expect(itemised.periodDisallowableExpenses).toEqual({ depreciationDisallowable: 300 });
+
+    const problem = await page.evaluate(() => {
+      document.getElementById("consolidatedExpenses").value = "9000";
+      try {
+        readPeriodData(Object.fromEntries([...document.querySelectorAll("input")].map((i) => [i.id, i.value])));
+        return null;
+      } catch (error) {
+        return error.message;
+      }
+    });
+    expect(problem).toContain("not both");
+
+    await page.evaluate(() => {
+      window.selfEmploymentExpenses.ITEMISED_FIELDS.forEach(({ id }) => (document.getElementById(id).value = "0"));
+    });
+    const disallowableProblem = await page.evaluate(() => {
+      try {
+        readPeriodData(Object.fromEntries([...document.querySelectorAll("input")].map((i) => [i.id, i.value])));
+        return null;
+      } catch (error) {
+        return error.message;
+      }
+    });
+    expect(disallowableProblem).toContain("disallowable expenses go with the itemised expenses");
+
+    await page.evaluate(() => {
+      window.selfEmploymentExpenses.DISALLOWABLE_IDS.forEach((id) => (document.getElementById(id).value = ""));
+    });
+    const total = await page.evaluate(() =>
+      readPeriodData(Object.fromEntries([...document.querySelectorAll("input")].map((i) => [i.id, i.value]))),
+    );
+    expect(total.periodExpenses).toEqual({ consolidatedExpenses: 9000 });
+    expect(total.periodDisallowableExpenses).toEqual({});
   });
 
   test("a period end the book does not carry names the period ends the book covers and fills nothing", async ({ page }) => {
@@ -260,5 +318,242 @@ test.describe("books import on the ITSA annual submission page", () => {
 
     await expect(page.locator("#booksImportStatus")).toContainText("Could not import company.diya-gl.zip:");
     await expect(page.locator("#annualInvestmentAllowance")).toHaveValue("0");
+  });
+});
+
+const VAT_BOX_IDS = [
+  "vatDueSales",
+  "vatDueAcquisitions",
+  "vatReclaimedCurrPeriod",
+  "totalValueSalesExVAT",
+  "totalValuePurchasesExVAT",
+  "totalValueGoodsSuppliedExVAT",
+  "totalAcquisitionsExVAT",
+];
+
+async function readInTestProcess(fileName, bytes) {
+  return readBookSource(new Uint8Array(bytes), fileName, { products: PRODUCTS });
+}
+
+async function expectVatBoxesEqualDerivation(page, source, periodEnd) {
+  const derived = await deriveVatReturn(source.book, source.lines, { periodEnd });
+  for (const id of VAT_BOX_IDS) await expect(page.locator(`#${id}`)).toHaveValue(String(derived.hmrc[id]));
+  await expect(page.locator("#periodStart")).toHaveValue(derived.periodStart);
+}
+
+test.describe("books import fills equal the derivations run on the same book", () => {
+  test("a diya-gl zip fills the VAT boxes the derivation answers", async ({ page }) => {
+    const bytes = await zippedBook("brickwork-pro-ltd-vat");
+    const source = await readInTestProcess("brickwork.diya-gl.zip", bytes);
+    await openPage(page, VAT_URL);
+    await page.locator("#periodEnd").fill("2026-03-31");
+
+    await chooseFile(page, "brickwork.diya-gl.zip", bytes);
+
+    await expect(page.locator("#booksImportStatus")).toContainText("Filled the nine boxes");
+    await expectVatBoxesEqualDerivation(page, source, "2026-03-31");
+  });
+
+  test("a complete package zip fills the VAT boxes the derivation answers", async ({ page }) => {
+    test.setTimeout(180000);
+    const source = await readInTestProcess("brickwork.diya-gl.zip", await zippedBook("brickwork-pro-ltd-vat"));
+    const { zip, filename } = await savePackageZip(source.book, source.lines, {});
+    const packageSource = await readInTestProcess(filename, Buffer.from(zip));
+    expect(packageSource.kind).toBe("package-set");
+    await openPage(page, VAT_URL);
+    await page.locator("#periodEnd").fill("2026-03-31");
+
+    await chooseFile(page, filename, Buffer.from(zip));
+
+    await expect(page.locator("#booksImportStatus")).toContainText(`Filled the nine boxes from ${filename}`, { timeout: 120000 });
+    await expectVatBoxesEqualDerivation(page, packageSource, "2026-03-31");
+  });
+
+  test("a diya-gl zip fills the quarterly period summary the derivation answers", async ({ page }) => {
+    const bytes = await zippedBook("brickwork-pro-se-vat");
+    const source = await readInTestProcess("brickwork-se.diya-gl.zip", bytes);
+    const derived = await deriveItsaQuarterlyUpdate(source.book, source.lines, {});
+    const period = derived.periods.find((candidate) => candidate.periodDates.periodEndDate === "2025-07-05");
+    await openPage(page, QUARTERLY_URL);
+    await page.locator("#taxYear").fill(derived.taxYear);
+    await page.locator("#periodEndDate").fill("2025-07-05");
+
+    await chooseFile(page, "brickwork-se.diya-gl.zip", bytes);
+
+    await expect(page.locator("#booksImportStatus")).toContainText("Filled");
+    await expect(page.locator("#turnover")).toHaveValue(String(period.periodIncome.turnover));
+    await expect(page.locator("#otherIncome")).toHaveValue(String(period.periodIncome.other ?? 0));
+    for (const [name, figure] of Object.entries(period.periodExpenses)) {
+      await expect(page.locator(`#${name}`)).toHaveValue(String(figure));
+    }
+    await expect(page.locator("#periodStartDate")).toHaveValue(period.periodDates.periodStartDate);
+  });
+
+  test("an .xlsx workbook of a taxi book is read in the browser, fills nothing and says the ITSA derivations take self-employed books", async ({
+    page,
+  }) => {
+    const workbook = fs.readFileSync(path.join(process.cwd(), "videos/fixtures/diya-gl-taxi-driver.xlsx"));
+    const source = await readInTestProcess("taxi-driver.xlsx", workbook);
+    expect(source.product).toBe("taxi");
+    await openPage(page, QUARTERLY_URL);
+    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#periodEndDate").fill("2025-07-05");
+
+    await chooseFile(page, "taxi-driver.xlsx", workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+    await expect(page.locator("#booksImportStatus")).toHaveText(
+      'Could not import taxi-driver.xlsx: The book is a "taxi" book; the ITSA derivations read a self-employed (se) book.',
+    );
+    await expect(page.locator("#turnover")).toHaveValue("0");
+  });
+});
+
+const PACKAGE_VERSION = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "node_modules/@diy-accounting-uk/diya-gl/package.json"), "utf8"),
+).version;
+
+function toFragment(handoff) {
+  return "#books=" + Buffer.from(typeof handoff === "string" ? handoff : JSON.stringify(handoff), "utf8").toString("base64url");
+}
+
+async function vatHandoffFor(directory, periodEnd) {
+  const source = await readInTestProcess("book.diya-gl.zip", await zippedBook(directory));
+  const derived = await deriveVatReturn(source.book, source.lines, { periodEnd });
+  const figures = Object.fromEntries(VAT_BOX_IDS.map((id) => [id, derived.hmrc[id]]));
+  return {
+    derived,
+    handoff: {
+      kind: "vat",
+      sourceFileName: "brickwork.diya-gl.zip",
+      packageVersion: PACKAGE_VERSION,
+      period: { periodStart: derived.periodStart, periodEnd: derived.periodEnd },
+      figures,
+    },
+  };
+}
+
+async function quarterlyHandoffFor(directory, periodEnd) {
+  const source = await readInTestProcess("book.diya-gl.zip", await zippedBook(directory));
+  const derived = await deriveItsaQuarterlyUpdate(source.book, source.lines, {});
+  const period = derived.periods.find((candidate) => candidate.periodDates.periodEndDate === periodEnd);
+  return {
+    period,
+    handoff: {
+      kind: "itsa-quarterly",
+      sourceFileName: "brickwork-se.diya-gl.zip",
+      packageVersion: PACKAGE_VERSION,
+      period: { taxYear: derived.taxYear, ...period.periodDates },
+      figures: {
+        periodIncome: period.periodIncome,
+        periodExpenses: period.periodExpenses,
+        periodDisallowableExpenses: period.periodDisallowableExpenses,
+      },
+    },
+  };
+}
+
+// The address bar keeps no fragment after the first load, so a fragment on arrival marks the
+// load that happens before sign-in: that load has no sign-in token.
+async function arriveSignedOutWhenFragmentPresent(page) {
+  await page.addInitScript(() => {
+    if (location.hash.startsWith("#books=")) localStorage.removeItem("cognitoIdToken");
+  });
+}
+
+test.describe("figures sent from a DIYA-GL page in the URL fragment", () => {
+  test("the VAT figures wait through sign-in, fill after it, and leave neither fragment nor stored copy", async ({ page }) => {
+    const { derived, handoff } = await vatHandoffFor("brickwork-pro-ltd-vat", "2026-03-31");
+    await serveRealSite(page);
+    await arriveSignedOutWhenFragmentPresent(page);
+
+    await page.goto(VAT_URL + toFragment(handoff), { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#booksImportStatus")).toContainText("Sign in and the figures from brickwork.diya-gl.zip fill this form.");
+    expect(await page.evaluate(() => location.hash)).toBe("");
+    expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).not.toBeNull();
+    expect(await page.evaluate(() => sessionStorage.getItem("postLoginRedirect"))).toBe("/hmrc/vat/submitVat.html");
+    await expect(page.locator("#vatDueSales")).toHaveValue("");
+
+    await page.goto(VAT_URL, { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("#booksImportStatus")).toContainText(
+      `Filled the nine boxes from brickwork.diya-gl.zip for the period ${derived.periodStart} to ${derived.periodEnd}.`,
+    );
+    for (const id of VAT_BOX_IDS) await expect(page.locator(`#${id}`)).toHaveValue(String(derived.hmrc[id]));
+    await expect(page.locator("#periodStart")).toHaveValue(derived.periodStart);
+    await expect(page.locator("#periodEnd")).toHaveValue(derived.periodEnd);
+    expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).toBeNull();
+    expect(await page.evaluate(() => location.hash)).toBe("");
+  });
+
+  test("a signed-in customer has the quarterly figures filled on arrival and a reload does not fill again", async ({ page }) => {
+    const { period, handoff } = await quarterlyHandoffFor("brickwork-pro-se-vat", "2025-07-05");
+    await serveRealSite(page);
+
+    await page.goto(QUARTERLY_URL + toFragment(handoff), { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("#booksImportStatus")).toContainText("from brickwork-se.diya-gl.zip for the period ending 2025-07-05.");
+    await expect(page.locator("#taxYear")).toHaveValue(handoff.period.taxYear);
+    await expect(page.locator("#periodStartDate")).toHaveValue(period.periodDates.periodStartDate);
+    await expect(page.locator("#periodEndDate")).toHaveValue("2025-07-05");
+    await expect(page.locator("#turnover")).toHaveValue(String(period.periodIncome.turnover));
+    for (const [name, figure] of Object.entries(period.periodExpenses)) {
+      await expect(page.locator(`#${name}`)).toHaveValue(String(figure));
+    }
+    expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).toBeNull();
+    expect(await page.evaluate(() => location.hash)).toBe("");
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator("#booksImportStatus")).toHaveText("");
+    await expect(page.locator("#turnover")).toHaveValue("0");
+  });
+
+  test("a fragment carrying a figure that is not a number is refused and nothing fills", async ({ page }) => {
+    const { handoff } = await vatHandoffFor("brickwork-pro-ltd-vat", "2026-03-31");
+    handoff.figures.vatDueSales = "5760; drop table";
+    await serveRealSite(page);
+
+    await page.goto(VAT_URL + toFragment(handoff), { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("#booksImportStatus")).toContainText(
+      "The figures sent from your books could not be used: the VAT figures vatDueSales is not a number. Nothing filled.",
+    );
+    await expect(page.locator("#vatDueSales")).toHaveValue("");
+    expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).toBeNull();
+  });
+
+  test("a fragment that is not valid base64url is refused and cleared", async ({ page }) => {
+    await serveRealSite(page);
+
+    await page.goto(VAT_URL + "#books=not%20encoded!", { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("#booksImportStatus")).toContainText("The figures sent from your books could not be used:");
+    expect(await page.evaluate(() => location.hash)).toBe("");
+    expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).toBeNull();
+  });
+
+  test("annual figures wait for the loaded tax year, then fill", async ({ page }) => {
+    const handoff = {
+      kind: "itsa-annual",
+      sourceFileName: "brickwork-se.diya-gl.zip",
+      packageVersion: PACKAGE_VERSION,
+      period: { taxYear: "2025-26" },
+      figures: { allowances: { annualInvestmentAllowance: 12000 }, adjustments: {} },
+    };
+    await serveRealSite(page);
+
+    await page.goto(ANNUAL_URL + toFragment(handoff), { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#booksImportStatus")).toContainText("Load the annual submission for 2025-26");
+    expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).not.toBeNull();
+
+    await page.evaluate(() => {
+      loadedTaxYear = "2025-26";
+      document.getElementById("loadCriteriaForm").style.display = "none";
+      document.getElementById("annualEditForm").style.display = "block";
+      window.booksImport.applyPendingHandoff();
+    });
+
+    await expect(page.locator("#booksImportStatus")).toContainText("Imported 1 figure from brickwork-se.diya-gl.zip for 2025-26.");
+    await expect(page.locator("#annualInvestmentAllowance")).toHaveValue("12000");
+    expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).toBeNull();
   });
 });

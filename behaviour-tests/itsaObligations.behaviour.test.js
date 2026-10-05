@@ -218,10 +218,6 @@ test("Click through: View ITSA Obligations from HMRC", async ({ page }, testInfo
     const repoRoot = path.resolve(process.cwd());
     saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
 
-    process.env.TEST_HMRC_USERNAME = testUsername;
-    process.env.TEST_HMRC_PASSWORD = testPassword;
-    process.env.TEST_HMRC_NINO = testNino;
-
     console.log("[HMRC Test User] Updated environment variables with generated credentials");
   }
 

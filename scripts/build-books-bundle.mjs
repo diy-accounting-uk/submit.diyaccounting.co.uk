@@ -50,8 +50,14 @@ const EMBEDDED_RESOURCE_FILES = [
   { file: resolve(PACKAGE_DIR, "dist", "app", "data", "hmrc", "sa103-mtd-mapping.json"), key: "data/hmrc/sa103-mtd-mapping.json" },
 ];
 
+// The taxi workbook reader parses its template's meta.toml before the
+// overtype baseline needs it. The bundle carries no templates (the overtype
+// sidecar is stubbed out), so the read is answered with an empty document
+// instead of a fetch from the template site, which the page's CSP refuses.
+const EMPTY_TEMPLATE_META = { "templates/taxi/meta.toml": "" };
+
 function embeddedResources() {
-  const table = {};
+  const table = { ...EMPTY_TEMPLATE_META };
   for (const { dir, prefix, pattern } of EMBEDDED_RESOURCE_DIRS) {
     for (const name of readdirSync(dir)
       .filter((entry) => pattern.test(entry))
@@ -137,6 +143,28 @@ function nodeAbsentPlugin(resources) {
   };
 }
 
+// Overtype detection compares an uploaded workbook's formulas to the product
+// templates, which are not part of the published package and are too large to
+// ship in the bundle. The filing derivations never read its result.
+const OVERTYPE_SIDECAR_STUB_SOURCE = `export const BST_TEMPLATE_PATH = "";
+export async function overtypedCells() { return {}; }`;
+
+function overtypeSidecarAbsentPlugin() {
+  return {
+    name: "overtype-sidecar-absent",
+    setup(pluginBuild) {
+      pluginBuild.onResolve({ filter: /overtype-sidecar\.js$/ }, (args) => ({
+        path: args.path,
+        namespace: "overtype-sidecar-absent",
+      }));
+      pluginBuild.onLoad({ filter: /.*/, namespace: "overtype-sidecar-absent" }, () => ({
+        contents: OVERTYPE_SIDECAR_STUB_SOURCE,
+        loader: "js",
+      }));
+    },
+  };
+}
+
 function ajvAbsentPlugin(generatedSource) {
   const stubbed = new Set(["ajv/dist/2020.js", "ajv-formats", "ajv/dist/standalone/index.js"]);
   const stubSources = {
@@ -206,7 +234,7 @@ async function main() {
     sourcemap: false,
     legalComments: "eof",
     banner: { js: LICENCE_COMMENT },
-    plugins: [nodeAbsentPlugin(embeddedResources()), ajvAbsentPlugin(generatedSource)],
+    plugins: [nodeAbsentPlugin(embeddedResources()), overtypeSidecarAbsentPlugin(), ajvAbsentPlugin(generatedSource)],
     metafile: true,
     define: { "process.env.NODE_ENV": '"production"' },
   });

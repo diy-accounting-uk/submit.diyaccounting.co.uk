@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveMoneyInput, serveFormErrors } from "./hmrcFieldTableAssets.js";
+import { serveMoneyInput, serveFormErrors, serveSelfEmploymentExpenses } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -58,6 +58,7 @@ async function openPage(page, fileName) {
   });
   await serveMoneyInput(page);
   await serveFormErrors(page);
+  await serveSelfEmploymentExpenses(page);
   const url = `http://localhost:3000/hmrc/itsa/${fileName}`;
   const html = fs.readFileSync(path.join(process.cwd(), "web/public/hmrc/itsa", fileName), "utf-8");
   await page.route(url, async (route) => {
