@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-57ade3e** (PR #479, deploy 37356817098, 2026-10-05). PR #480 (146d5b2cf) is not on prod: its deploy 37364055214 failed with every job cancelled unstarted during the GitHub Actions outage (open since 19:11 UTC); re-run it with `gh run rerun 37364055214` once Actions is operational.
+**Prod runs deployment prod-57ade3e** (PR #479, deploy 37356817098, 2026-10-05). PR #480 (146d5b2cf) is not on prod yet: its deploy 37364055214 lost every job to the GitHub Actions outage, and the operator re-ran its failed jobs at about 21:40 UTC.
 **ci**: `ci-set2` live (PR #480's branch deploy, created 2026-10-05 18:44 UTC), self-destructs about 22:44 UTC; `ci-set1` is being deleted by destroy-ci run 37356822373.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -41,9 +41,9 @@ step.
 **COOL-DOWN is on since 2026-10-05T18:05:30Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
-- [ ] **BS8. On spreadsheets branch `claude/books-bs8-sender` (6cabeb2cd, 65b6b0727, d8589f739; the engine now exports the three derivations and `PROVENANCE_DATA`; the pre-push router GREEN), spreadsheets PR #158; remaining: CI, merge on the operator's word, the diya-gl release it publishes, then Submit adopts it. Journey B sender on the diya-gl page (PLAN_BOOKS_TO_SUBMIT decision 3).** `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/shell.js` menu item, period choice, derive, open Submit with the figures in the URL fragment (a new `submit-handoff.js`; product manifests name the activity); the derivations it calls are in the package since 1.2.44. A spreadsheets PR. **Source**: `PLAN_BOOKS_TO_SUBMIT.md` BS8. **Owner**: Claude Code, the submit session. **Model**: Sonnet. **Size**: ~4 files in `../spreadsheets.diyaccounting.co.uk`.
-
 ## Machine-only
+
+- [ ] **BS8. Adopt the diya-gl release that carries the Journey B sender (PLAN_BOOKS_TO_SUBMIT decision 3).** Spreadsheets PR #158 merged as f18282c36 (2026-10-05 21:37 UTC); its `deploy.yml` run publishes `@diy-accounting-uk/diya-gl` after 1.2.48. Remaining: once `npm view @diy-accounting-uk/diya-gl version` shows the new version, pin it in `package.json` and `mcp/package.json` with both locks, run `npm run bundle:books` and `npm run build:rates-page`, and run `web/browser-tests/booksImport.browser.test.js`, as DG48 did for 1.2.48. **Source**: `PLAN_BOOKS_TO_SUBMIT.md` BS8. **Owner**: Claude Code. **Model**: Haiku. **Size**: 6 files.
 
 - [ ] **B55. The board workflow finds merged rows but writes nothing (degradation).** On main since PR #479 (57ade3e37): `prompts/board-ci.md` settles in-flight rows with `git ls-remote --heads origin` and `gh pr list --state all --head`. Proof run 37356860284 (`agentic-lib-board.yml`, `write-back=true`, 2026-10-05) found DG48, B55 and UX1d on merged PR #479 and wrote in its result "Proceeding with NEXT.md update", then ended its turn without an edit, so "Push the board update" said "The board was already true. Nothing committed, nothing pushed." Two allowed-tool gaps in the same run: `Bash(aws cloudformation list-stacks:*)` and `Bash(aws ssm get-parameter:*)` do not match the `aws --profile diya-submit-ci …` form the prompt uses, so every ci read was refused (the job's permission_denials), and `gh run view` is not allowed. Fix in `.github/workflows/agentic-lib-board.yml` and `prompts/board-ci.md`: make the edit to `NEXT.md` a step the prompt orders before the report (the report is the last output, after the edit), add the `aws --profile *` read forms and `gh run view` to `--allowedTools`; then the same dispatch while a merged row is still listed in flight; the push step must say "Pushed <sha> to main". **Source**: proof run 37356860284. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 2 files. Unblocks B54.
 
