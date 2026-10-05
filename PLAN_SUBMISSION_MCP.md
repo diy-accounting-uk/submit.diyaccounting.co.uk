@@ -594,7 +594,7 @@ and 4 can run at once.
 | 4 | Sessions table and identity changes | `IdentityStack.java`, `DataStack.java`, `SubmitSharedNames.java` (table name, secret SSM name), `IdentityStackTest.java`, `DataStackTest.java` (5) | Sonnet |
 | 5 | MCP Lambda handler and session repository (after 3) | `app/functions/mcp/mcpHttp.js`, `app/data/dynamoDbMcpSessionRepository.js`, `app/unit-tests/functions/mcpHttp.test.js` (3) | Sonnet |
 | 6 | Express parity, environment files, system test (after 2 and 5) | `app/bin/server.js`, `.env.proxy`, `.env.simulator`, `.env.test`, `mock-oauth2-config.json`, `app/system-tests/mcpHosted.system.test.js` (6) | Sonnet |
-| 7 | McpStack, wiring and image (after 4 and 5) | `McpStack.java`, `SubmitSharedNames.java`, `SubmitApplication.java`, `McpStackTest.java`, `Dockerfile` (5) | Sonnet |
+| 7 | McpStack, wiring and image (after 4 and 5); also the facade blob-key secret and its name in `SubmitSharedNames.java`, which step 4 left out | `McpStack.java`, `SubmitSharedNames.java`, `SubmitApplication.java`, `McpStackTest.java`, `Dockerfile` (5) | Sonnet |
 | 8 | Edge and workflows (after 7) | `EdgeStack.java`, `EdgeStackTest.java`, `.github/workflows/deploy.yml`, `destroy-ci.yml`, `destroy-prod.yml`, `stack-drift.yml`, `scripts/ci/select-jobs.mjs`, `REPORT_CAPABILITIES.md` (8) | Sonnet |
 | 9 | Behaviour test and the public page (after a ci deploy of 8) | `behaviour-tests/mcpHosted.behaviour.test.js`, `playwright.config.js`, `package.json`, `scripts/toggle-cognito-native-auth.js`, `web/public/mcp.html`, `mcp/README.md` (6) | Sonnet |
 
