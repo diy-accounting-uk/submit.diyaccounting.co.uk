@@ -276,7 +276,7 @@ test.describe("walkthrough under a video", () => {
     await expect(twistie.locator("summary")).toHaveText(/Walkthrough: 3 steps/);
     await twistie.locator("summary").click();
     await expect(twistie.locator(".walkthrough-thumb")).toHaveCount(3);
-    await expect(twistie.locator(".walkthrough-thumb img").first()).toHaveAttribute("alt", SCENES[0].caption);
+    await expect(twistie.locator(".walkthrough-thumb img").first()).toHaveAttribute("alt", "");
     await expect(twistie.locator(".walkthrough-headline").first()).toHaveText(SCENES[0].headline);
   });
 
@@ -295,8 +295,8 @@ test.describe("walkthrough under a video", () => {
     await thumb.click();
     const overlay = page.locator("dialog.walkthrough-overlay");
     await expect(overlay).toBeVisible();
-    await expect(overlay.locator("h3")).toHaveText(SCENES[1].headline);
-    await expect(overlay.locator("img")).toHaveAttribute("alt", SCENES[1].caption);
+    await expect(overlay.locator("h2")).toHaveText(SCENES[1].headline);
+    await expect(overlay.locator("img")).toHaveAttribute("alt", "");
     await expect(overlay.locator("img")).toHaveAttribute("src", SCENES[1].full);
     await expect(overlay.locator(".walkthrough-close")).toBeFocused();
     await page.keyboard.press("Escape");
@@ -312,12 +312,12 @@ test.describe("walkthrough under a video", () => {
     const overlay = page.locator("dialog.walkthrough-overlay");
     await expect(overlay.locator(".walkthrough-previous")).toBeDisabled();
     await page.keyboard.press("ArrowRight");
-    await expect(overlay.locator("h3")).toHaveText(SCENES[1].headline);
+    await expect(overlay.locator("h2")).toHaveText(SCENES[1].headline);
     await overlay.locator(".walkthrough-next").click();
-    await expect(overlay.locator("h3")).toHaveText(SCENES[2].headline);
+    await expect(overlay.locator("h2")).toHaveText(SCENES[2].headline);
     await expect(overlay.locator(".walkthrough-next")).toBeDisabled();
     await page.keyboard.press("ArrowLeft");
-    await expect(overlay.locator("h3")).toHaveText(SCENES[1].headline);
+    await expect(overlay.locator("h2")).toHaveText(SCENES[1].headline);
   });
 
   test("sharing without the share sheet copies the scene text and both links and says Copied", async ({ page, context }) => {
@@ -361,7 +361,7 @@ test.describe("walkthrough under a video", () => {
     await expect(page.locator(`section#${WITH_WALKTHROUGH.id} details.walkthrough`)).toHaveAttribute("open", "");
     const overlay = page.locator("dialog.walkthrough-overlay");
     await expect(overlay).toBeVisible();
-    await expect(overlay.locator("h3")).toHaveText(SCENES[2].headline);
+    await expect(overlay.locator("h2")).toHaveText(SCENES[2].headline);
   });
 
   test("a scene hash on the index for a video not featured there redirects to its area page and opens the scene", async ({ page }) => {
@@ -369,7 +369,7 @@ test.describe("walkthrough under a video", () => {
     expect(FEATURED_IDS).not.toContain(WITH_WALKTHROUGH.id);
     await page.goto(`http://localhost:3000/videos.html#${WITH_WALKTHROUGH.id}-two`, { waitUntil: "domcontentloaded" });
     await page.waitForURL(`**/${AREA_PAGES[WALKTHROUGH_GROUP]}#${WITH_WALKTHROUGH.id}-two`);
-    await expect(page.locator("dialog.walkthrough-overlay h3")).toHaveText(SCENES[1].headline);
+    await expect(page.locator("dialog.walkthrough-overlay h2")).toHaveText(SCENES[1].headline);
   });
 });
 

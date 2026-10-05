@@ -60,7 +60,7 @@ function sceneItem(video, scene) {
   open.setAttribute("aria-label", `View full size: ${scene.headline}`);
   const image = document.createElement("img");
   image.src = scene.thumb;
-  image.alt = scene.caption;
+  image.alt = "";
   image.loading = "lazy";
   image.width = 480;
   image.height = 270;
@@ -108,7 +108,8 @@ function overlayElement() {
 
   const image = document.createElement("img");
   image.className = "walkthrough-overlay-image";
-  const heading = el("h3", "walkthrough-overlay-heading");
+  image.alt = "";
+  const heading = el("h2", "walkthrough-overlay-heading");
   heading.id = "walkthroughOverlayHeading";
   const caption = el("p", "walkthrough-overlay-caption");
 
@@ -177,7 +178,6 @@ export function wireWalkthrough(container, videosById, siteUrlFor) {
     const scene = video.walkthrough[index];
     current = { video, index };
     parts.image.src = scene.full;
-    parts.image.alt = scene.caption;
     parts.heading.textContent = scene.headline;
     parts.caption.textContent = scene.caption;
     parts.position.textContent = `${video.title}: step ${index + 1} of ${video.walkthrough.length}`;

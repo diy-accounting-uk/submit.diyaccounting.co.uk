@@ -146,11 +146,13 @@ function sectionElement(video) {
   link.className = "video-link";
   link.href = areaLinkHref(video);
   link.textContent = "Link to this video";
+  link.setAttribute("aria-label", `Link to this video: ${video.title}`);
   const button = document.createElement("button");
   button.type = "button";
   button.className = "btn btn-small copy-link";
   button.dataset.target = video.id;
   button.textContent = "Copy link";
+  button.setAttribute("aria-label", `Copy link: ${video.title}`);
   const copied = document.createElement("span");
   copied.className = "copied";
   copied.hidden = true;
