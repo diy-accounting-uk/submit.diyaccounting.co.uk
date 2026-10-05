@@ -12,6 +12,10 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import JSZip from "jszip";
+import { readBookSource } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
+import { PRODUCTS } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
+import { savePackageZip } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
+import { deriveItsaQuarterlyUpdate, deriveVatReturn } from "@diy-accounting-uk/diya-gl";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -298,5 +302,90 @@ test.describe("books import on the ITSA annual submission page", () => {
 
     await expect(page.locator("#booksImportStatus")).toContainText("Could not import company.diya-gl.zip:");
     await expect(page.locator("#annualInvestmentAllowance")).toHaveValue("0");
+  });
+});
+
+const VAT_BOX_IDS = [
+  "vatDueSales",
+  "vatDueAcquisitions",
+  "vatReclaimedCurrPeriod",
+  "totalValueSalesExVAT",
+  "totalValuePurchasesExVAT",
+  "totalValueGoodsSuppliedExVAT",
+  "totalAcquisitionsExVAT",
+];
+
+async function readInTestProcess(fileName, bytes) {
+  return readBookSource(new Uint8Array(bytes), fileName, { products: PRODUCTS });
+}
+
+async function expectVatBoxesEqualDerivation(page, source, periodEnd) {
+  const derived = await deriveVatReturn(source.book, source.lines, { periodEnd });
+  for (const id of VAT_BOX_IDS) await expect(page.locator(`#${id}`)).toHaveValue(String(derived.hmrc[id]));
+  await expect(page.locator("#periodStart")).toHaveValue(derived.periodStart);
+}
+
+test.describe("books import fills equal the derivations run on the same book", () => {
+  test("a diya-gl zip fills the VAT boxes the derivation answers", async ({ page }) => {
+    const bytes = await zippedBook("brickwork-pro-ltd-vat");
+    const source = await readInTestProcess("brickwork.diya-gl.zip", bytes);
+    await openPage(page, VAT_URL);
+    await page.locator("#periodEnd").fill("2026-03-31");
+
+    await chooseFile(page, "brickwork.diya-gl.zip", bytes);
+
+    await expect(page.locator("#booksImportStatus")).toContainText("Filled the nine boxes");
+    await expectVatBoxesEqualDerivation(page, source, "2026-03-31");
+  });
+
+  test("a complete package zip fills the VAT boxes the derivation answers", async ({ page }) => {
+    test.setTimeout(180000);
+    const source = await readInTestProcess("brickwork.diya-gl.zip", await zippedBook("brickwork-pro-ltd-vat"));
+    const { zip, filename } = await savePackageZip(source.book, source.lines, {});
+    const packageSource = await readInTestProcess(filename, Buffer.from(zip));
+    expect(packageSource.kind).toBe("package-set");
+    await openPage(page, VAT_URL);
+    await page.locator("#periodEnd").fill("2026-03-31");
+
+    await chooseFile(page, filename, Buffer.from(zip));
+
+    await expect(page.locator("#booksImportStatus")).toContainText(`Filled the nine boxes from ${filename}`, { timeout: 120000 });
+    await expectVatBoxesEqualDerivation(page, packageSource, "2026-03-31");
+  });
+
+  test("a diya-gl zip fills the quarterly period summary the derivation answers", async ({ page }) => {
+    const bytes = await zippedBook("brickwork-pro-se-vat");
+    const source = await readInTestProcess("brickwork-se.diya-gl.zip", bytes);
+    const derived = await deriveItsaQuarterlyUpdate(source.book, source.lines, {});
+    const period = derived.periods.find((candidate) => candidate.periodDates.periodEndDate === "2025-07-05");
+    await openPage(page, QUARTERLY_URL);
+    await page.locator("#taxYear").fill(derived.taxYear);
+    await page.locator("#periodEndDate").fill("2025-07-05");
+
+    await chooseFile(page, "brickwork-se.diya-gl.zip", bytes);
+
+    await expect(page.locator("#booksImportStatus")).toContainText("Filled");
+    await expect(page.locator("#turnover")).toHaveValue(String(period.periodIncome.turnover));
+    await expect(page.locator("#otherIncome")).toHaveValue(String(period.periodIncome.other ?? 0));
+    for (const [name, figure] of Object.entries(period.periodExpenses)) {
+      await expect(page.locator(`#${name}`)).toHaveValue(String(figure));
+    }
+    await expect(page.locator("#periodStartDate")).toHaveValue(period.periodDates.periodStartDate);
+  });
+
+  test("an .xlsx workbook of a book the filing derivations do not answer fills nothing and says it could not import it", async ({
+    page,
+  }) => {
+    const workbook = fs.readFileSync(path.join(process.cwd(), "videos/fixtures/diya-gl-taxi-driver.xlsx"));
+    const source = await readInTestProcess("taxi-driver.xlsx", workbook);
+    expect(source.product).toBe("taxi");
+    await openPage(page, QUARTERLY_URL);
+    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#periodEndDate").fill("2025-07-05");
+
+    await chooseFile(page, "taxi-driver.xlsx", workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+    await expect(page.locator("#booksImportStatus")).toContainText("Could not import taxi-driver.xlsx:");
+    await expect(page.locator("#turnover")).toHaveValue("0");
   });
 });
