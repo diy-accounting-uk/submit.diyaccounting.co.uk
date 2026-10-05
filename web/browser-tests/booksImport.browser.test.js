@@ -188,12 +188,13 @@ test.describe("books import on the ITSA quarterly update page", () => {
     await chooseFile(page, "brickwork-se.diya-gl.zip", await zippedBook("brickwork-pro-se-vat"));
 
     await expect(page.locator("#booksImportStatus")).toContainText(
-      "Filled 16 figures from brickwork-se.diya-gl.zip for the period ending 2025-07-05.",
+      "Filled 17 figures from brickwork-se.diya-gl.zip for the period ending 2025-07-05.",
     );
-    await expect(page.locator("#booksImportStatus")).toContainText(
-      "The form has no field for these figures from the book: depreciationDisallowable (disallowable) £300.",
-    );
+    await expect(page.locator("#booksImportStatus")).not.toContainText("The form has no field");
+    await expect(page.locator("#booksImportStatus")).not.toContainText("Disallowable");
     await expect(page.locator("#booksImportStatus")).not.toContainText("adminCosts");
+    await expect(page.locator("#depreciationDisallowable")).toHaveValue("300");
+    await expect(page.locator("#adminCostsDisallowable")).toHaveValue("");
     await expect(page.locator("#depreciation")).toHaveValue("300");
     await expect(page.locator("#adminCosts")).toHaveValue("360");
     await expect(page.locator("#consolidatedExpenses")).toHaveValue("");
@@ -216,6 +217,7 @@ test.describe("books import on the ITSA quarterly update page", () => {
     );
     expect(itemised.periodExpenses).toMatchObject({ costOfGoods: 6825, adminCosts: 360, depreciation: 300, otherExpenses: 1800 });
     expect(itemised.periodExpenses).not.toHaveProperty("consolidatedExpenses");
+    expect(itemised.periodDisallowableExpenses).toEqual({ depreciationDisallowable: 300 });
 
     const problem = await page.evaluate(() => {
       document.getElementById("consolidatedExpenses").value = "9000";
@@ -231,10 +233,24 @@ test.describe("books import on the ITSA quarterly update page", () => {
     await page.evaluate(() => {
       window.selfEmploymentExpenses.ITEMISED_FIELDS.forEach(({ id }) => (document.getElementById(id).value = "0"));
     });
+    const disallowableProblem = await page.evaluate(() => {
+      try {
+        readPeriodData(Object.fromEntries([...document.querySelectorAll("input")].map((i) => [i.id, i.value])));
+        return null;
+      } catch (error) {
+        return error.message;
+      }
+    });
+    expect(disallowableProblem).toContain("disallowable expenses go with the itemised expenses");
+
+    await page.evaluate(() => {
+      window.selfEmploymentExpenses.DISALLOWABLE_IDS.forEach((id) => (document.getElementById(id).value = ""));
+    });
     const total = await page.evaluate(() =>
       readPeriodData(Object.fromEntries([...document.querySelectorAll("input")].map((i) => [i.id, i.value]))),
     );
     expect(total.periodExpenses).toEqual({ consolidatedExpenses: 9000 });
+    expect(total.periodDisallowableExpenses).toEqual({});
   });
 
   test("a period end the book does not carry names the period ends the book covers and fills nothing", async ({ page }) => {

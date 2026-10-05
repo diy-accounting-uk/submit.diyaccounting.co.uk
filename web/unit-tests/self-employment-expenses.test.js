@@ -54,4 +54,35 @@ describe("self-employment-expenses", () => {
     expect(result.problem).toMatch(/not both/);
     expect(result.periodExpenses).toBeUndefined();
   });
+
+  it("names the fifteen disallowable expenses of HMRC's period summary", () => {
+    expect(expenses.DISALLOWABLE_IDS).toEqual(expenses.ITEMISED_FIELDS.map((field) => `${field.id}Disallowable`));
+    expect(expenses.DISALLOWABLE_IDS).toHaveLength(15);
+    expect(expenses.DISALLOWABLE_IDS).toContain("interestOnBankOtherLoansDisallowable");
+    expect(expenses.DISALLOWABLE_IDS).toContain("depreciationDisallowable");
+  });
+
+  it("sends only the disallowable figures the customer filled, beside the itemised expenses", () => {
+    const result = expenses.buildPeriodExpenses(
+      readFrom({ adminCosts: "360", adminCostsDisallowable: "60.5", depreciationDisallowable: "0" }),
+      parse,
+    );
+    expect(result.periodDisallowableExpenses).toEqual({ adminCostsDisallowable: 60.5, depreciationDisallowable: 0 });
+  });
+
+  it("sends an empty disallowable breakdown when none is filled", () => {
+    expect(expenses.buildPeriodExpenses(readFrom({ adminCosts: "360" }), parse).periodDisallowableExpenses).toEqual({});
+  });
+
+  it("refuses a disallowable figure beside the total expenses", () => {
+    const result = expenses.buildPeriodExpenses(readFrom({ consolidatedExpenses: "9000", adminCostsDisallowable: "5" }), parse);
+    expect(result.problem).toMatch(/disallowable expenses go with the itemised expenses/);
+    expect(result.periodExpenses).toBeUndefined();
+  });
+
+  it("sends the total with no disallowable figures when a disallowable field holds zero", () => {
+    const result = expenses.buildPeriodExpenses(readFrom({ consolidatedExpenses: "9000", adminCostsDisallowable: "0" }), parse);
+    expect(result.periodExpenses).toEqual({ consolidatedExpenses: 9000 });
+    expect(result.periodDisallowableExpenses).toEqual({});
+  });
 });

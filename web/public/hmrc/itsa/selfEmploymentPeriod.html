@@ -249,7 +249,12 @@
           : "HMRC identifies this quarter by its start and end date.";
 
         cumulativeMoneyNote.style.display = isCumulative ? "block" : "none";
-        ["turnover", "otherIncome", ...window.selfEmploymentExpenses.EXPENSE_IDS].forEach((fieldId) => {
+        [
+          "turnover",
+          "otherIncome",
+          ...window.selfEmploymentExpenses.EXPENSE_IDS,
+          ...window.selfEmploymentExpenses.DISALLOWABLE_IDS,
+        ].forEach((fieldId) => {
           const label = document.querySelector(`label[for="${fieldId}"]`);
           if (!label) return;
           const baseText = label.dataset.baseLabel || label.textContent;
@@ -382,10 +387,14 @@
       function applyCurrentTotal(periodSummary) {
         const income = periodSummary?.periodIncome || {};
         const expenses = periodSummary?.periodExpenses || {};
+        const disallowable = periodSummary?.periodDisallowableExpenses || {};
         if (income.turnover !== undefined) document.getElementById("turnover").value = income.turnover;
         if (income.other !== undefined) document.getElementById("otherIncome").value = income.other;
         window.selfEmploymentExpenses.EXPENSE_IDS.forEach((id) => {
           if (expenses[id] !== undefined) document.getElementById(id).value = expenses[id];
+        });
+        window.selfEmploymentExpenses.DISALLOWABLE_IDS.forEach((id) => {
+          if (disallowable[id] !== undefined) document.getElementById(id).value = disallowable[id];
         });
         showStatus("Loaded your current year-to-date total from HMRC. Edit the figures below to the new total.", "info");
       }
@@ -488,7 +497,7 @@
             other: window.parseMoneyInput(source.otherIncome) ?? 0,
           },
           periodExpenses: expenses.periodExpenses,
-          periodDisallowableExpenses: {},
+          periodDisallowableExpenses: expenses.periodDisallowableExpenses,
         };
       }
 
@@ -602,7 +611,12 @@
             periodEndDate: formData.get("periodEndDate"),
             turnover: formData.get("turnover"),
             otherIncome: formData.get("otherIncome"),
-            ...Object.fromEntries(window.selfEmploymentExpenses.EXPENSE_IDS.map((id) => [id, formData.get(id)])),
+            ...Object.fromEntries(
+              [...window.selfEmploymentExpenses.EXPENSE_IDS, ...window.selfEmploymentExpenses.DISALLOWABLE_IDS].map((id) => [
+                id,
+                formData.get(id),
+              ]),
+            ),
           });
         } catch (error) {
           showStatus(error.message, "error");
