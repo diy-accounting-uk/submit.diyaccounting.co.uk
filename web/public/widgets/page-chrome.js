@@ -119,7 +119,7 @@
       'tests/index.html">tests</a>' +
       '<a id="apiDocsLink" style="display: inline" target="_blank" href="' +
       rootPrefix +
-      'docs/api/index.html"> api </a>';
+      'docs/api/index.html">api</a>';
 
     const legalLinks = showLegal
       ? '<a href="' +
