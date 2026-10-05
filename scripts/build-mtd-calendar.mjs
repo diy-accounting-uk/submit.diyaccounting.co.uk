@@ -193,7 +193,7 @@ export function renderCalendarHtml(sources) {
     </header>
 
     <main id="mainContent">
-      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
       <div class="form-container">
         <h2>Dates</h2>

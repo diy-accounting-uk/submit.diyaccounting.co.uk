@@ -73,6 +73,31 @@ test.describe("Client Status Message Stacking", () => {
     // await expect(messages.nth(0)).toHaveText("Error message");
   });
 
+  test("should replace the earlier message of the same request and keep other requests", async ({ page }) => {
+    await page.evaluate(() => {
+      window.showStatus("Still processing...", "info", { requestId: "req-1" });
+      window.showStatus("Other request", "info", { requestId: "req-2" });
+      window.showStatus("Still processing...", "info", { requestId: "req-1" });
+      window.showStatus("Done", "success", { requestId: "req-1" });
+    });
+    const messages = page.locator("#statusMessagesContainer .status-message");
+    await expect(messages).toHaveCount(2);
+    await expect(messages.nth(0).locator(".status-message-content")).toHaveText("Other request");
+    await expect(messages.nth(1).locator(".status-message-content")).toHaveText("Done");
+  });
+
+  test("should announce errors with role alert on the error element only", async ({ page }) => {
+    await page.evaluate(() => {
+      window.showStatus("Working", "info", { requestId: "req-1" });
+      window.showStatus("Failed", "error", { requestId: "req-1" });
+    });
+    await expect(page.locator("#statusMessagesContainer")).toHaveAttribute("role", "status");
+    const messages = page.locator("#statusMessagesContainer .status-message");
+    await expect(messages).toHaveCount(1);
+    await expect(messages.nth(0)).toHaveAttribute("role", "alert");
+    await expect(messages.nth(0).locator(".status-message-content")).toHaveText("Failed");
+  });
+
   test("should clear all messages with hideStatus", async ({ page }) => {
     await page.evaluate(() => {
       window.showStatus("Message 1", "info");
