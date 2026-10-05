@@ -1,0 +1,35 @@
+<?xml version='1.0' encoding='UTF-8'?><GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope"><EnvelopeVersion>2.0</EnvelopeVersion><Header><MessageDetails><Class>HMRC-CT-CT600</Class><Qualifier>response</Qualifier><Function>submit</Function><CorrelationID></CorrelationID><ResponseEndPoint></ResponseEndPoint><Transformation>XML</Transformation><GatewayTimestamp></GatewayTimestamp></MessageDetails></Header><GovTalkDetails><Keys></Keys></GovTalkDetails><Body><SuccessResponse xmlns="http://www.inlandrevenue.gov.uk/SuccessResponse"><IRmarkReceipt><dsig:Signature xmlns:dsig="http://www.w3.org/2000/09/xmldsig#"><dsig:SignedInfo><dsig:CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"></dsig:CanonicalizationMethod><dsig:SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"></dsig:SignatureMethod><dsig:Reference><dsig:Transforms><dsig:Transform Algorithm="http://www.w3.org/TR/1999/REC-xpath-19991116"><dsig:XPath>(count(ancestor-or-self::node()|/gti:GovTalkMessage/gti:Body)=count(ancestor-or-self::node())) and (count(ancestor-or-self::node()|/gti:GovTalkMessage/gti:Body/*[name()='IRenvelope']/*[name()='IRheader']/*[name()='IRmark'])!=count(ancestor-or-self::node()))</dsig:XPath></dsig:Transform><dsig:Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315#WithComments"></dsig:Transform></dsig:Transforms><dsig:DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"></dsig:DigestMethod><dsig:DigestValue>OTW/9P+256EDczPrs074XCfpQXE=</dsig:DigestValue></dsig:Reference></dsig:SignedInfo><dsig:SignatureValue>X+GjKF6ycHibG9HwF8zkgRy63/i1IqpHdyXJUJHscpCVn8aalPvv/IPp9sLyyUBfzt5fIQkbKZx9
+w4cviOvqtdI2NrxxpUIj/IXPPWWoTrVfADTGv9rPwYKt5HKTEFTLWYaJTx00EyNHEHAMk9KXGZDs
+1zXHpW1MtXfPKBCNRlVuFQnOiajxUdhZYxZnzcxnOJg/gIBJqVXu6f8ZZYu4opeTHg5t44m2miR0
+Gtyfh1wdT/QFwSauafwqJDNxP+H3pTeksvA41A78DaG27xuTy2hDKDCWWMEGulMutY3vBd3a0RCd
+sirMVw/BEsm5cXqntiYcYp0AP4lnGMsWmHuHXQ==</dsig:SignatureValue><dsig:KeyInfo><dsig:X509Data><dsig:X509Certificate>MIIGyDCCBbCgAwIBAgIQCR+xR1wzr3/rUiocqg/FrzANBgkqhkiG9w0BAQsFADBZMQswCQYDVQQG
+EwJVUzEVMBMGA1UEChMMRGlnaUNlcnQgSW5jMTMwMQYDVQQDEypEaWdpQ2VydCBHbG9iYWwgRzIg
+VExTIFJTQSBTSEEyNTYgMjAyMCBDQTEwHhcNMjYwODEyMDAwMDAwWhcNMjcwMjI2MjM1OTU5WjBe
+MQswCQYDVQQGEwJHQjEPMA0GA1UEBxMGTG9uZG9uMR8wHQYDVQQKExZITSBSZXZlbnVlIGFuZCBD
+dXN0b21zMR0wGwYDVQQDExRpcmE3NDgzNy5obXJjLmdvdi51azCCASIwDQYJKoZIhvcNAQEBBQAD
+ggEPADCCAQoCggEBALoH9VQWpOpQo/42qFlOoZxkamBBnKPI3jkDzpElhNmQRWqQA7xjvB/h5Hxi
+L4IIWvKWX/JCg+ylN3XnSSuF6C99xIhnpnbP1wDNt9kmvh1utTjJ7VfK2+6cMOeOJc6hf4EPBLs2
+trkz3ysjwPzyBzEm2YkwGgKGpKmw/rUPL1Tu0aQUcBm/NQPnpe+GQ+2ESCYML2YmtOVlg2sWH8aq
+TMal0YTbshQ7T9tT31XoTJwmh8MH4mSK0ZXCVep44ZRzOfxwLKnZNwc+5R/HMWNX0ocWSv18/UeY
+jSg5tYN/59rT+aoNiMBxgwVLKFYNcz5qBvu4+A/WktMkuNecBr0x1qUCAwEAAaOCA4UwggOBMB8G
+A1UdIwQYMBaAFHSFgMBmx9833s+9KTeqAx2+7c0XMB0GA1UdDgQWBBSsDjLJzZf6YGvibXcNewBk
+3cPSLDAfBgNVHREEGDAWghRpcmE3NDgzNy5obXJjLmdvdi51azA+BgNVHSAENzA1MDMGBmeBDAEC
+AjApMCcGCCsGAQUFBwIBFhtodHRwOi8vd3d3LmRpZ2ljZXJ0LmNvbS9DUFMwDgYDVR0PAQH/BAQD
+AgWgMBMGA1UdJQQMMAoGCCsGAQUFBwMBMIGfBgNVHR8EgZcwgZQwSKBGoESGQmh0dHA6Ly9jcmwz
+LmRpZ2ljZXJ0LmNvbS9EaWdpQ2VydEdsb2JhbEcyVExTUlNBU0hBMjU2MjAyMENBMS0xLmNybDBI
+oEagRIZCaHR0cDovL2NybDQuZGlnaWNlcnQuY29tL0RpZ2lDZXJ0R2xvYmFsRzJUTFNSU0FTSEEy
+NTYyMDIwQ0ExLTEuY3JsMIGHBggrBgEFBQcBAQR7MHkwJAYIKwYBBQUHMAGGGGh0dHA6Ly9vY3Nw
+LmRpZ2ljZXJ0LmNvbTBRBggrBgEFBQcwAoZFaHR0cDovL2NhY2VydHMuZGlnaWNlcnQuY29tL0Rp
+Z2lDZXJ0R2xvYmFsRzJUTFNSU0FTSEEyNTYyMDIwQ0ExLTEuY3J0MAwGA1UdEwEB/wQCMAAwggF9
+BgorBgEEAdZ5AgQCBIIBbQSCAWkBZwB2AExj3JjlnB2riPYeij3ero+rRKM3e1+blMP7oZz8wb4m
+AAABn/ZnnNUAAAQDAEcwRQIhAKVvJm558FYVIRHtZua0eXiwaJjOO4lopdWg0Y5NzOzqAiAlRdI0
+G2rJFyYJcwq2fKTrfdTRhaw5TYLwxrLbpPa1KQB2ANbVjanQF1Pzakqgx1dJAq/rx9ws04zZ92TI
+DIkZHp8CAAABn/ZnnSoAAAQDAEcwRQIgPMpkuAoYCS/q3oFkQf3X/Dk1Lekc6YcgEuSvHufw8oEC
+IQCoBOiOCllIHa85QJ/KPlqq4VxLoDU9r8jED4DBzgFfSQB1AByfaCzp+vBFaVD4G5aKh93bMhDY
+TObIsuOCUkrEz1mfAAABn/ZnnWoAAAQDAEYwRAIgUoT0gnMEoj4SSP4ee0OU2eIgPciI7Il6KJDp
+tpPCTqQCIACLVAOHuA49+qLjlEtdtQ6zlLqjK1LW55ftvyFP8/kzMA0GCSqGSIb3DQEBCwUAA4IB
+AQAfC3VCWmSX4kPYhA93RlWcO8ltZ+k9XSH4pb2JEaelZu/Fy2nYKq0SDJrKohJDjfHLcGKmbDwG
+Mq7OqSJy81mn1t4COl5EtlnJkfd+9p3UlPtMRpJPP2czNei+wCnph287DFpXzToIu5jpoCJyz8ri
+bwEPf+dVv+UdlavF5m2WLnrHkgsx5Nr5jfjTqzjJldD0X6wQzFXU5gElaYzFm9P5y02WxeaP9eR/
+GJjNgHr7FM91YQSMv5zO6FRp3mTTpbK0qcN/zWlgKzOKYb9z/FsPLhtNHVHtNhO/jN1454K3JnAx
+rZ6OWJMxH1vLD59jrZHbZEU+1Mc8LnxD4hnlbYDl</dsig:X509Certificate></dsig:X509Data></dsig:KeyInfo></dsig:Signature><Message code="0000">HMRC has received the HMRC-CT-CT600 document ref: 8596148860 at 02.39 on 05/10/2026. The associated IRmark was: HE2375H7W3T2CA3TGPV3GTXYLQT6SQLR. We strongly recommend that you keep this receipt electronically, and we advise that you also keep your submission electronically for your records. They are evidence of the information that you submitted to HMRC.</Message></IRmarkReceipt><Message code="077001">Thank you for your submission</Message><AcceptedTime>2026-10-05T02:39:23.297</AcceptedTime></SuccessResponse></Body></GovTalkMessage>

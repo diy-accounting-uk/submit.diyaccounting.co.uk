@@ -352,7 +352,7 @@ fact writer.
 
 B34g1 detail. HMRC takes iXBRL only inside the CT600 XML (`EncodedInlineXBRLDocument`, base64, as
 HMRC recommends), posted to the Transaction Engine. The GovTalk envelope differs from Companies
-House's: `EnvelopeVersion` 2.0, `Class` `HMRC-CT-CT600`, `Function` `submit`, `Role` `Principal`,
+House's: `EnvelopeVersion` 2.0, `Class` `HMRC-CT-CT600`, `Function` `submit`, `Role` `principal`,
 `Keys/Key Type="UTR"`, `ChannelRouting/Channel/URI` the 4-digit vendor ID, and an IRmark in
 `IRheader`. The body is `IRenvelope` in `http://www.govtalk.gov.uk/taxation/CT/5`, form CT600
 (2026) Version 3, RIM artefacts V1.994 (2025-10-10), the version `ct600-v3.toml` records. The
@@ -360,11 +360,52 @@ accounts iXBRL is B34e's full document (HMRC needs the P&L, which the micro and 
 omit), built from the same figures as the Companies House copy, so one balance sheet serves both.
 The computations iXBRL follows HMRC's computations format v1.1 (sections 1 and 2:
 accounts adjustments and capital allowances); taxable profit, losses and the tax rows sit in the
-CT600 boxes until HMRC publishes further sections. Test endpoints, from HMRC's CT XBRL technical
-pack 2.0: TPVS `https://www.tpvs.hmrc.gov.uk/HMRC/CT600` validates the payload with no
-credentials; ETS `https://test-transaction-engine.tax.service.gov.uk/submission` takes the full
-envelope with `GatewayTest` 1 and the SDS team's credentials. The test service answers a wrong
-IRmark with error 2021 and still validates the iXBRL; live stops at it.
+CT600 boxes until HMRC publishes further sections.
+
+The answers B34g1 builds to, from HMRC's published specifications (read 2026-10-05):
+
+| Question | Answer | Source |
+|---|---|---|
+| Accounts taxonomy | FRC 2026 is accepted for periods starting on or after 1 April 2015, end date to be advised, so B34e's FRS 102 2026-01-01 document goes in unchanged | gov.uk "Taxonomies accepted by HMRC" (updated 17 April 2026) |
+| Computations taxonomy | CT computational 2025: entry point `http://www.hmrc.gov.uk/schemas/ct/comp/2025-01-01/ct-comp-2025.xsd`, namespace `http://www.hmrc.gov.uk/schemas/ct/comp/2025-01-01`; periods starting on or after 1 April 2015, end date to be advised (CT 2024 stops at periods ending 31 March 2026) | same page; CT2025-v1.0.0 taxonomy package |
+| Computations mandatory items | `CompanyName`, `TaxReference`, `StartOfPeriodCoveredByReturn`, `EndOfPeriodCoveredByReturn`, `PeriodOfAccountStartDate`, `PeriodOfAccountEndDate`, `CompanyIsAPartnerInAFirm`, on a context with `BusinessTypeDimension` `Company`; trading lines on a context with `BusinessTypeDimension` `Trade`, a typed `BusinessNameDimension` and `TerritoryDimension` `UK` (the closed hypercubes have no default for either) | taxonomy definition linkbase |
+| Cross-document checks | CT600 `RegistrationNumber` equals the accounts' `UKCompaniesHouseRegisteredNumber` (1606); CT600 `Reference` and `PeriodCovered/To` equal the computations' `TaxReference` and `EndOfPeriodCoveredByReturn` (1607); the accounts period overlaps the return period (7782) | CT online service validation rules v1.17a |
+| Live and test URLs | Live `https://transaction-engine.tax.service.gov.uk/submission`; ETS `https://test-transaction-engine.tax.service.gov.uk/submission`, polls to `/poll` | Transaction Engine Document Submission Protocol v2.0; "How to use the test service" v1.4a |
+| Poll | Submit answers an acknowledgement with `CorrelationID` and `ResponseEndPoint PollInterval`; poll that end point no sooner than `PollInterval` seconds with `Qualifier` `poll` and the `CorrelationID`; on the final response send `Function` `delete` with the same `CorrelationID`. `TransactionID` is upper-case hex, at most 32 characters. `GatewayTest` is 1 only on ETS. Test in live uses `Class` `HMRC-CT-CT600-TIL` | Document Submission Protocol |
+| IRmark | Take `Body`, give it every namespace declaration of `GovTalkMessage`, remove the `IRmark` element and keep the text around it, canonicalise with C14N 1.0 (inclusive, no comments), SHA-1, base64 into `IRmark Type="generic"`; base32 is the printable form. HMRC's worked example (`irmarkexample-submission.xml`, IRmark `RPfWtxHeCZRcwfitnIJmK9xc4OQ=`) is the unit test. A wrong IRmark is error 2021, a missing one 2022 | IRmark step-by-step guide v2.0; generic IRmark specification v1.2 |
+| Size | 25MB per message, attachments included (1614) | validation rules |
+| TPVS | Open with no credentials at `https://www.tpvs.hmrc.gov.uk/HMRC/CT600`; validates the body (schema, business rules, iXBRL, IRmark) and not the GovTalk header | "How to use the test service" v1.4a; a malformed post answered a GovTalk error on 2026-10-05 |
+| Next RIM | V1.995 (25 September 2026) awaits implementation in the test services and live; V1.994 is what they run | gov.uk CT600 RIM artefacts page |
+
+The boxes B34g1 fills (`app/services/ct600Xml.js`), and the books it refuses. Typed on the page:
+1, 2, 3, 4 (0, none of the listed types), 975, 985, and 595 when tax was paid before filing. From
+the book: 30, 35, 145, 155, 160, 165, 170, 235, 300, 315, 326 (or 327 and 328 when the period
+straddles 1 April), 329, 330, 335, 340, 345, 380, 385, 390, 395, 430, 435, 440, 475, 510, 515, 525,
+528, 600, 620, and the capital allowance boxes 690 (annual investment allowance,
+`CorporationTax!I15`) and 705 (main pool writing down and balancing allowances, `I16` + `I17` + a
+positive `I18`) with 710 for a balancing charge (a negative `I18`). Fixed: 80A, and the
+computations box ("this period"). Box 155 is the computations' adjusted profit
+(`app/services/ctComputationsIxbrl.js`), so the two documents agree to the pound. The builder works
+335 to 345, 385 to 395 and 435 from box 315 by HMRC's rules 9198, 9204 and 9213 (diya-gl's
+`apportionCorporationTax` for the relief), and refuses a book whose working sheet (`K22`, `K35`)
+disagrees with the result by more than £5. It refuses: a book with no `CT600` sheet (not a Company
+book); a company type other than 0; a period over 12 months or starting before 1 April 2015; a
+trading loss (box 780 has no diya-gl cell); net non-trading loan debits; tax paid beyond the
+charge (the repayment boxes). `ct600-v3.toml` names the spreadsheets rows T2, T7 and T8 for the
+remaining cells.
+
+TPVS accepts the whole payload: `node scripts/hmrc-tpvs-ct600.js` builds the CT600, the
+computations and B34e's full accounts from `fixtures/diya-gl/precision-code-ltd` (marginal relief
+band, capital allowances, bank interest, income tax deducted), posts it, and exits 0 on HMRC's
+success receipt; a tampered IRmark draws 2021. A burst of posts can draw an Akamai 403 page; a
+retry a minute later passes.
+
+What B34g2 picks up from B34g1: an HMRC twin of `redactPresenterCredentials` (the request carries
+the password in clear); the poll loop over `buildPollRequest` honouring `pollIntervalSeconds`, then
+`buildDeleteRequest`; the receipt (`irmarkReceipt`, the base32 IRmark in `successMessage`) stored
+with the filing; the page's question for a director's loan account overdrawn at the year end
+(CT600A has no diya-gl reading); and the losses (780) and qualifying expenditure (775) boxes once
+diya-gl gives them cells.
 
 B34g2 detail. The customer's Government Gateway user ID and password for a company enrolled for
 Corporation Tax go in `IDAuthentication`, typed per filing, sent once, never stored or logged, as
@@ -414,7 +455,7 @@ links to it.
 |---|---|---|
 | B34f | test service submit acknowledged; poll to a terminal state | terminal state: B34.6c |
 | B34e | as B34f, full and filleted | terminal state: B34.6c |
-| B34g1 | TPVS pass; ETS acknowledged and polled | ETS: O34g |
+| B34g1 | ETS acknowledged, polled and deleted | O34g |
 | B34g2 | simulator journey; one ETS filing from the page | O34g |
 
 Every build proves its iXBRL against the concepts fixture and the public validator the micro
@@ -456,19 +497,13 @@ tags. B34g1 can reach TPVS before O34g; its ETS proof waits on O34g.
 | 3 | Filleted copy at Companies House: offered, and the default? | operator | B34e |
 | 4 | Dormant rules in the accounts TIS (P&L facts, trading status) | Companies House accounts TIS, XML forum | B34f |
 | 5 | One live package reference for every accounts regime? | XML team, with O34c | launch |
-| 6 | HMRC accepts FRS 102 2026-01-01 and which computations taxonomy | gov.uk "Taxonomies accepted by HMRC" | B34g1 |
-| 7 | Live Transaction Engine URL, poll and IRmark rules | Document Submission Protocol, IRmark spec | B34g1 |
-| 8 | TPVS still open to developers | SDST, "How to use the test services" | B34g1 |
 | 9 | CT recognition criteria for the software list | SDST | B34g2 launch |
 | 10 | Agent filing for `resident-pro` practices | HMRC CT technical pack | B34g2 |
-| 11 | The 245 CT600 boxes with no diya-gl cell | spreadsheets repository, `ct600-v3.toml` | B34g1 |
 | 12 | Share class and nominal value in the book | spreadsheets Companysecretary register | B34f |
 | 13 | Token charge for a paired filing: 2 tokens or 1 | operator | B34g2 |
 
 Row 2: `ltd.js` sets the prior-year P&L cells to 0, and FRS 102 1A needs comparatives. Row 3:
-the default proposed is full accounts at Companies House, with filleting as an option. Row 11:
-`ct600-v3.toml` names the spreadsheets rows T2, T7 and T8 for the remaining cells; B34g1 covers
-the boxes a small trading company fills and refuses a book that needs any other. Row 13: the
+the default proposed is full accounts at Companies House, with filleting as an option. Row 13: the
 default proposed is one token per filing sent, 2 for a pair.
 
 ## Tasks
@@ -482,8 +517,8 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 | CS-13b | The PSC verification statement's cases in the harness, run by its weekly workflow, pinned once a poll returns a terminal status | ~2 | Sonnet | B34.6c (Companies House IT) | Blocked |
 | CS-P1 | Filing under a customer's own presenter: the page option, storing no credentials, the credit-account explanation, skipping the Stripe checkout at the existing fee gate | ~5 | Sonnet | CS-11b | Blocked |
 | B34f | Dormant company accounts on the micro-entity page and builder, per the B34h design | ~9 | Sonnet | B34h; B34.6c for the terminal proof | Blocked |
-| B34g1 | HMRC Transaction Engine envelope, IRmark, CT600 XML and computations iXBRL, per the B34h design | ~12 | Opus | O34g for the ETS proof only | Ready |
-| B34g2 | The CT600 filing journey: Lambdas, page, activity, receipts, per the B34h design | ~14 | Sonnet | B34g1, O34g | Blocked |
+| B34g1 | The ETS proof: the TPVS-proven return through `buildCt600SubmissionRequest` with the SDST test credentials and vendor ID, polled and deleted | ~1 | Sonnet | O34g | Blocked |
+| B34g2 | The CT600 filing journey: Lambdas, page, activity, receipts, per the B34h design | ~14 | Sonnet | O34g | Blocked |
 
 
 ## Task detail
