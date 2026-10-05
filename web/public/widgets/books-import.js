@@ -17,6 +17,18 @@
 //
 // The reader and the three derivations load from lib/books-bundle.js on the first file, not on
 // page load.
+//
+// A DIYA-GL page can also send figures it derived itself. They arrive in the URL fragment as
+// "#books=<base64url JSON>"; lib/auth-url-builder.js keeps the decoded text in sessionStorage
+// through sign-in, and mounting the card fills the form from it and drops the stored copy. The JSON:
+//   { kind, sourceFileName, packageVersion, period, figures }
+//   kind "vat"             period { periodStart, periodEnd }
+//                          figures { vatDueSales, vatDueAcquisitions, vatReclaimedCurrPeriod,
+//                                    totalValueSalesExVAT, totalValuePurchasesExVAT,
+//                                    totalValueGoodsSuppliedExVAT, totalAcquisitionsExVAT }
+//   kind "itsa-quarterly"  period { taxYear, periodStartDate, periodEndDate }
+//                          figures { periodIncome, periodExpenses, periodDisallowableExpenses }
+//   kind "itsa-annual"     period { taxYear }, figures { allowances, adjustments }
 
 (function () {
   "use strict";
@@ -26,6 +38,7 @@
   const MAX_UNMAPPED_SHOWN = 12;
 
   let bundlePromise = null;
+  let mountedCard = null;
 
   function loadBundle() {
     if (!bundlePromise) {
@@ -182,6 +195,10 @@
     }
     if (!formTaxYear) setField("taxYear", derived.taxYear);
     if (!fieldValue("periodStartDate")) setField("periodStartDate", period.periodDates.periodStartDate);
+    return applyQuarterlyFigures(period, fileName, periodEnd);
+  }
+
+  function applyQuarterlyFigures(period, fileName, periodEnd) {
     setField("turnover", figureText(period.periodIncome?.turnover ?? 0));
     setField("otherIncome", figureText(period.periodIncome?.other ?? 0));
     const filledExpenses = fillExpenseFields(period.periodExpenses);
@@ -228,10 +245,141 @@
     return applyAnnualFigures(figures, fileName, hooks);
   }
 
+  const HANDOFF_KEY = "booksHandoff";
+  const MAX_HANDOFF_TEXT = 200;
+  const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+  const TAX_YEAR = /^\d{4}-\d{2}$/;
+  const FIGURE_NAME = /^[A-Za-z][A-Za-z0-9]*$/;
+
+  class HandoffProblem extends Error {}
+
+  function isPlainObject(value) {
+    return value !== null && typeof value === "object" && !Array.isArray(value);
+  }
+
+  function requireText(value, label) {
+    if (typeof value !== "string" || value.length === 0 || value.length > MAX_HANDOFF_TEXT) {
+      throw new HandoffProblem(`${label} is missing or not text`);
+    }
+    return value;
+  }
+
+  function requireDate(value, label) {
+    const text = requireText(value, label);
+    if (!ISO_DATE.test(text) || Number.isNaN(Date.parse(text))) throw new HandoffProblem(`${label} is not a date`);
+    return text;
+  }
+
+  function requireTaxYear(value, label) {
+    const text = requireText(value, label);
+    if (!TAX_YEAR.test(text)) throw new HandoffProblem(`${label} is not a tax year like 2025-26`);
+    return text;
+  }
+
+  // Copies the numbers of a figures object. isKnownName decides which names the form can take.
+  function requireFigures(value, label, isKnownName) {
+    if (!isPlainObject(value)) throw new HandoffProblem(`${label} is missing`);
+    const copy = {};
+    Object.entries(value).forEach(([name, figure]) => {
+      if (!isKnownName(name)) throw new HandoffProblem(`${label} names ${JSON.stringify(name.slice(0, 40))}, which the form does not have`);
+      if (typeof figure !== "number" || !Number.isFinite(figure)) throw new HandoffProblem(`${label} ${name} is not a number`);
+      copy[name] = figure;
+    });
+    return copy;
+  }
+
+  function parseVatHandoff(period, figures) {
+    const periodStart = requireDate(period.periodStart, "the period start");
+    const periodEnd = requireDate(period.periodEnd, "the period end");
+    const boxes = requireFigures(figures, "the VAT figures", (name) => VAT_BOX_FIELDS.includes(name));
+    VAT_BOX_FIELDS.forEach((name) => {
+      if (!(name in boxes)) throw new HandoffProblem(`the VAT figures carry no ${name}`);
+    });
+    return { period: { periodStart, periodEnd }, figures: boxes };
+  }
+
+  function parseQuarterlyHandoff(period, figures) {
+    const { ITEMISED_FIELDS } = window.selfEmploymentExpenses;
+    const itemisedIds = ITEMISED_FIELDS.map((field) => field.id);
+    if (!isPlainObject(figures)) throw new HandoffProblem("the quarterly figures are missing");
+    return {
+      period: {
+        taxYear: requireTaxYear(period.taxYear, "the tax year"),
+        periodStartDate: requireDate(period.periodStartDate, "the period start date"),
+        periodEndDate: requireDate(period.periodEndDate, "the period end date"),
+      },
+      figures: {
+        periodIncome: requireFigures(figures.periodIncome, "the income figures", (name) => name === "turnover" || name === "other"),
+        periodExpenses: requireFigures(figures.periodExpenses, "the expense figures", (name) => itemisedIds.includes(name)),
+        periodDisallowableExpenses: requireFigures(figures.periodDisallowableExpenses ?? {}, "the disallowable expense figures", (name) =>
+          /^[a-z][A-Za-z]*Disallowable$/.test(name),
+        ),
+      },
+    };
+  }
+
+  function parseAnnualHandoff(period, figures) {
+    if (!isPlainObject(figures)) throw new HandoffProblem("the annual figures are missing");
+    return {
+      period: { taxYear: requireTaxYear(period.taxYear, "the tax year") },
+      figures: {
+        allowances: requireFigures(figures.allowances ?? {}, "the allowances", (name) => FIGURE_NAME.test(name)),
+        adjustments: requireFigures(figures.adjustments ?? {}, "the adjustments", (name) => FIGURE_NAME.test(name)),
+      },
+    };
+  }
+
+  const HANDOFF_PARSERS = { "vat": parseVatHandoff, "itsa-quarterly": parseQuarterlyHandoff, "itsa-annual": parseAnnualHandoff };
+
+  // The figures a DIYA-GL page sent, validated: known kind, dates and tax years in their forms,
+  // only numbers, only names the form has. Throws a HandoffProblem naming the first fault.
+  function parseHandoff(text) {
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      throw new HandoffProblem("the figures are not JSON");
+    }
+    if (!isPlainObject(parsed)) throw new HandoffProblem("the figures are not an object");
+    const parser = HANDOFF_PARSERS[parsed.kind];
+    if (!parser)
+      throw new HandoffProblem(`the kind of filing ${JSON.stringify(String(parsed.kind).slice(0, 40))} is not one this site fills`);
+    if (!isPlainObject(parsed.period)) throw new HandoffProblem("the period is missing");
+    return {
+      kind: parsed.kind,
+      sourceFileName: requireText(parsed.sourceFileName, "the source file name"),
+      packageVersion: requireText(parsed.packageVersion, "the package version"),
+      ...parser(parsed.period, parsed.figures),
+    };
+  }
+
+  function applyVatHandoff(handoff) {
+    VAT_BOX_FIELDS.forEach((id) => setField(id, figureText(handoff.figures[id])));
+    setField("periodStart", handoff.period.periodStart);
+    setField("periodEnd", handoff.period.periodEnd);
+    return `Filled the nine boxes from ${handoff.sourceFileName} for the period ${handoff.period.periodStart} to ${handoff.period.periodEnd}. Check them, then submit.`;
+  }
+
+  function applyQuarterlyHandoff(handoff) {
+    const { taxYear, periodStartDate, periodEndDate } = handoff.period;
+    setField("taxYear", taxYear);
+    setField("periodStartDate", periodStartDate);
+    setField("periodEndDate", periodEndDate);
+    return applyQuarterlyFigures(handoff.figures, handoff.sourceFileName, periodEndDate);
+  }
+
+  function applyAnnualHandoff(handoff, hooks) {
+    const formTaxYear = hooks.taxYear();
+    if (formTaxYear !== handoff.period.taxYear) {
+      throw new Refusal(`${handoff.sourceFileName} is for ${handoff.period.taxYear}; this form is for ${formTaxYear}. Nothing imported.`);
+    }
+    return applyAnnualFigures({ taxYear: handoff.period.taxYear, ...handoff.figures }, handoff.sourceFileName, hooks);
+  }
+
   const FILLERS = {
-    "vat": { fill: fillVat, watched: ["periodStart", "periodEnd"] },
-    "itsa-quarterly": { fill: fillItsaQuarterly, watched: ["taxYear", "periodEndDate"] },
-    "itsa-annual": { fill: fillItsaAnnual, watched: [] },
+    "vat": { fill: fillVat, applyHandoff: applyVatHandoff, watched: ["periodStart", "periodEnd"] },
+    "itsa-quarterly": { fill: fillItsaQuarterly, applyHandoff: applyQuarterlyHandoff, watched: ["taxYear", "periodEndDate"] },
+    "itsa-annual": { fill: fillItsaAnnual, applyHandoff: applyAnnualHandoff, watched: [] },
   };
 
   function element(tag, attributes = {}, text = "") {
@@ -340,6 +488,43 @@
       }
     }
 
+    // Figures a DIYA-GL page sent: kept through sign-in in sessionStorage, filled once the
+    // customer is signed in, and dropped from storage once used or refused.
+    function applyPendingHandoff() {
+      const stored = sessionStorage.getItem(HANDOFF_KEY);
+      if (!stored) return;
+      let handoff;
+      try {
+        const keptFragment = JSON.parse(stored);
+        if (keptFragment.problem) throw new HandoffProblem(keptFragment.problem);
+        handoff = parseHandoff(keptFragment.text);
+      } catch (error) {
+        if (!(error instanceof HandoffProblem)) throw error;
+        sessionStorage.removeItem(HANDOFF_KEY);
+        say(`The figures sent from your books could not be used: ${error.message}. Nothing filled.`);
+        return;
+      }
+      if (handoff.kind !== kind) return;
+      if (!localStorage.getItem("cognitoIdToken")) {
+        say(`Sign in and the figures from ${handoff.sourceFileName} fill this form.`);
+        return;
+      }
+      if (kind === "itsa-annual" && !options.taxYear()) {
+        say(`Load the annual submission for ${handoff.period.taxYear} and the figures from ${handoff.sourceFileName} fill the form.`);
+        return;
+      }
+      try {
+        say(filler.applyHandoff(handoff, options));
+      } catch (error) {
+        if (!(error instanceof Refusal)) throw error;
+        say(error.message);
+      } finally {
+        sessionStorage.removeItem(HANDOFF_KEY);
+      }
+    }
+    mountedCard = { applyPendingHandoff };
+    applyPendingHandoff();
+
     chooseButton.addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", () => handleFile(fileInput.files && fileInput.files[0]));
     ["dragenter", "dragover"].forEach((name) =>
@@ -364,5 +549,10 @@
     });
   }
 
-  window.booksImport = { mount };
+  // The annual page calls this once its tax year has loaded, so figures that waited fill then.
+  function applyPendingHandoff() {
+    if (mountedCard) mountedCard.applyPendingHandoff();
+  }
+
+  window.booksImport = { mount, parseHandoff, applyPendingHandoff };
 })();
