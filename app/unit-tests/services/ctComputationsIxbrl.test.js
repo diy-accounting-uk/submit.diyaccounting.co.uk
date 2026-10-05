@@ -21,14 +21,14 @@ import { parseXmlDocument } from "@app/lib/xmlDom.js";
 const BOOK_DIRECTORY = join(process.cwd(), "fixtures", "diya-gl", "precision-code-ltd");
 
 const LINES = {
-  profitLossPerAccounts: 171888,
+  profitLossPerAccounts: 171288,
   nonTradingLoanRelationshipCredits: 340,
   depreciation: 13740,
   amortisation: 2500,
   entertaining: 292,
   totalCapitalAllowances: 64000,
-  adjustedProfitBeforeCapitalAllowances: 188080,
-  adjustedProfit: 124080,
+  adjustedProfitBeforeCapitalAllowances: 187480,
+  adjustedProfit: 123480,
 };
 
 const INPUT = {
@@ -97,10 +97,10 @@ describe("buildCtComputations", () => {
     expect(byName["ct-comp:PeriodOfAccountStartDate"].value).toBe("2025-04-01");
     expect(byName["ct-comp:PeriodOfAccountEndDate"].value).toBe("2026-03-31");
     expect(byName["ct-comp:CompanyIsAPartnerInAFirm"]).toMatchObject({ value: "false", contextRef: "companyPeriod" });
-    expect(byName["ct-comp:ProfitLossPerAccounts"]).toMatchObject({ value: "171888", contextRef: "tradePeriod" });
+    expect(byName["ct-comp:ProfitLossPerAccounts"]).toMatchObject({ value: "171288", contextRef: "tradePeriod" });
     expect(byName["ct-comp:AdjustmentsNon-tradingLoanRelationshipCreditsPerAccounts"].value).toBe("340");
     expect(byName["ct-comp:TotalCapitalAllowances"].value).toBe("64000");
-    expect(byName["ct-comp:AdjustedProfitForThePeriod"]).toMatchObject({ value: "124080", contextRef: "tradePeriod" });
+    expect(byName["ct-comp:AdjustedProfitForThePeriod"]).toMatchObject({ value: "123480", contextRef: "tradePeriod" });
 
     const company = contextXml(xml, "companyInstant");
     expect(company).toContain('<xbrli:identifier scheme="http://www.companieshouse.gov.uk/">12345678</xbrli:identifier>');
