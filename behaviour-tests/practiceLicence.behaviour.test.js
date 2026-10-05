@@ -46,6 +46,7 @@ import {
 import { addClient, clientAuthorisationStatus, inviteClient } from "../mcp/lib/practice-tools.js";
 import { runForClients } from "../mcp/lib/batch-tools.js";
 import { callSubmitApi } from "../mcp/lib/submit-tools.js";
+import { createSession } from "../mcp/lib/book-tools.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -209,7 +210,7 @@ test("A practice adds two clients and submits a VAT return for each through run_
       accessTokenExpiresAt: tokenExpiresAt,
     }),
   );
-  const session = {};
+  const session = createSession();
 
   // A throwaway client, invited once so the invite endpoint records the practice's ARN. Its own
   // invitation is left pending (the simulator never accepts one), so it is archived immediately
@@ -222,7 +223,7 @@ test("A practice adds two clients and submits a VAT return for each through run_
     hmrcAccessToken,
     arn: practiceArn,
   });
-  await callSubmitApi(`/api/v1/practice/clients/${encodeURIComponent(bootstrapClient.client.clientId)}`, { method: "DELETE" });
+  await callSubmitApi(session, `/api/v1/practice/clients/${encodeURIComponent(bootstrapClient.client.clientId)}`, { method: "DELETE" });
 
   const clientA = await addClient(session, { displayName: "Practice Client A", vrn: PRE_AUTHORISED_VRN });
   const clientB = await addClient(session, { displayName: "Practice Client B", vrn: PRE_AUTHORISED_VRN });
@@ -273,7 +274,7 @@ test("A practice adds two clients and submits a VAT return for each through run_
   /*  EACH CLIENT'S RECEIPT SHOWS UP ON THAT CLIENT'S OWN RECEIPT LIST  */
   /* ****************************************************************** */
   for (const row of result.rows) {
-    const receiptsForClient = await callSubmitApi(`/api/v1/hmrc/receipt?clientId=${encodeURIComponent(row.clientId)}`);
+    const receiptsForClient = await callSubmitApi(session, `/api/v1/hmrc/receipt?clientId=${encodeURIComponent(row.clientId)}`);
     const receiptIds = receiptsForClient.receipts.map((receipt) => receipt.receiptId);
     expect(receiptIds).toContain(row.result.receiptId);
   }
