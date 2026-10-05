@@ -101,6 +101,11 @@
       }
     },
     "suppress": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "consentAnswer": {
+      "type": "string",
+      "enum": ["granted", "declined"],
+      "description": "The site's cookie-consent answer, stored in the browser before any page loads, so the banner never appears in a frame. Absent: the banner shows until a consent step answers it."
+    },
     "finalHoldMs": { "type": "number", "minimum": 0 },
     "hmrcServices": {
       "type": "array",
