@@ -433,9 +433,7 @@
       // HMRC answers one entry per business, each carrying its own obligationDetails - so the
       // page groups by business, with a heading naming the type and business ID above each
       // business's own table, rather than one flat table a mixed customer has to sort out for
-      // themselves. Every row still carries the type and business ID too (D2's own words),
-      // because a row copied out of context - a screenshot, a support ticket - should still say
-      // which business it belongs to.
+      // themselves.
       function displayObligations(obligations) {
         const tableContainer = document.getElementById("obligationsTable");
 
@@ -452,13 +450,11 @@
               .map(
                 (detail) => `
                   <tr>
-                    <td>${escapeHtml(business.typeOfBusiness)}</td>
-                    <td>${escapeHtml(business.businessId)}</td>
-                    <td>${escapeHtml(detail.periodStartDate)}</td>
-                    <td>${escapeHtml(detail.periodEndDate)}</td>
-                    <td>${escapeHtml(detail.dueDate)}</td>
-                    <td>${escapeHtml(detail.status)}</td>
-                    <td>${escapeHtml(detail.receivedDate || "-")}</td>
+                    <td class="date-column">${escapeHtml(detail.periodStartDate)}</td>
+                    <td class="date-column">${escapeHtml(detail.periodEndDate)}</td>
+                    <td class="date-column">${escapeHtml(detail.dueDate)}</td>
+                    <td><span class="${detail.status === "fulfilled" ? "status-fulfilled" : "status-open"}">${escapeHtml(detail.status)}</span></td>
+                    <td class="date-column">${escapeHtml(detail.receivedDate || "-")}</td>
                   </tr>
                 `,
               )
@@ -469,8 +465,6 @@
               <table class="results-table">
                 <thead>
                   <tr>
-                    <th>Business type</th>
-                    <th>Business ID</th>
                     <th>Period start</th>
                     <th>Period end</th>
                     <th>Due date</th>

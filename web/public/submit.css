@@ -1531,6 +1531,10 @@ a.external-link:hover::after {
   font-weight: 600;
 }
 
+.results-table .date-column {
+  white-space: nowrap;
+}
+
 .no-data {
   text-align: center;
   padding: 2em;

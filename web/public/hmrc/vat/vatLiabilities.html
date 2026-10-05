@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -501,8 +502,8 @@
               <tr>
                 <th>Period</th>
                 <th>Type</th>
-                <th>Original Amount</th>
-                <th>Outstanding Amount</th>
+                <th class="money-column">Original Amount</th>
+                <th class="money-column">Outstanding Amount</th>
                 <th>Due Date</th>
               </tr>
             </thead>
@@ -523,9 +524,9 @@
             <tr>
               <td><strong>${escapeHtml(periodDisplay)}</strong></td>
               <td>${typeDisplay}</td>
-              <td>${escapeHtml(originalAmountDisplay)}</td>
-              <td>${escapeHtml(outstandingAmountDisplay)}</td>
-              <td>${escapeHtml(dueDateDisplay)}</td>
+              <td class="money-column">${escapeHtml(originalAmountDisplay)}</td>
+              <td class="money-column">${escapeHtml(outstandingAmountDisplay)}</td>
+              <td class="date-column">${escapeHtml(dueDateDisplay)}</td>
             </tr>
           `;
         });

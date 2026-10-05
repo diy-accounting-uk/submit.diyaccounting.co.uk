@@ -330,6 +330,15 @@
         return value === undefined || value === null || value === "" ? "-" : escapeHtml(value);
       }
 
+      function slugLabel(slug) {
+        const words = String(slug).replace(/-/g, " ");
+        return words.charAt(0).toUpperCase() + words.slice(1);
+      }
+
+      function slugOrDash(slug) {
+        return slug === undefined || slug === null || slug === "" ? "-" : escapeHtml(slugLabel(slug));
+      }
+
       function officerDisplayName(officer) {
         if (officer.type === "corporate") {
           return officer.corporateName || officer.name || "";
@@ -343,7 +352,7 @@
           .filter((officer) => !officer.resignedOn)
           .map(
             (officer) =>
-              `<tr><td>${escapeHtml(officerDisplayName(officer))}</td><td>${textOrDash(officer.officerRole)}</td><td>${textOrDash(
+              `<tr><td>${escapeHtml(officerDisplayName(officer))}</td><td>${slugOrDash(officer.officerRole)}</td><td>${textOrDash(
                 officer.appointedOn,
               )}</td><td>${officer.identityVerificationDetails ? "Verified" : "Not verified"}</td></tr>`,
           )
@@ -356,7 +365,7 @@
           .filter((psc) => !psc.ceasedOn)
           .map(
             (psc) =>
-              `<tr><td>${textOrDash(psc.name)}</td><td>${textOrDash((psc.naturesOfControl || []).join(", "))}</td><td>${textOrDash(
+              `<tr><td>${textOrDash(psc.name)}</td><td>${textOrDash((psc.naturesOfControl || []).map(slugLabel).join(", "))}</td><td>${textOrDash(
                 psc.notifiedOn,
               )}</td></tr>`,
           )
