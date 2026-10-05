@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-db37a67** (PR #476, deploy 37288325894, 2026-10-05); deploy 37317486193 of PR #477 (`prod-11bf562`) is creating its stacks, after which prod-db37a67 is the spare.
+**Prod runs deployment prod-11bf562** (PR #477, deploy 37317486193, 2026-10-05); prod-db37a67 is the spare until `destroy-prod.yml` removes it.
 **ci**: `ci-set1` live (batch `claude/saffron-books`, created 2026-10-05 04:47 UTC), ci last-known-good since 13:29 UTC and so protected 12 hours; the first self-destruct cycle that can remove it is 04:31 UTC 2026-10-06.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
