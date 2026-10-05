@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod: PR #475 merged as f854460c, deploying.** (PR #471, deploy 37203332082, 2026-10-04).
+**Prod: `prod-f854460` live** (PR #475, f854460c, deployed 2026-10-05). Spare set `prod-ff255de` (17 stacks, created 2026-10-04 12:53-13:11 UTC) costs $35.28/month.
 **ci**: no live set (ci-set1 destroyed by forced run 37213050856; `/submit/ci/last-known-good-deployment` is None until the next branch deploy).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
