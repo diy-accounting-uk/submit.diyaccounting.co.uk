@@ -399,6 +399,7 @@
     <script type="module" src="../../submit.js"></script>
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/carried-identifiers.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../lib/vat-period-choice.js"></script>
@@ -1065,6 +1066,7 @@
         const periodKey = urlParams.get("periodKey");
         const periodStart = urlParams.get("periodStart");
         const periodEnd = urlParams.get("periodEnd");
+        window.CarriedIdentifiers.bind("vrn", document.getElementById("vatNumber"));
         const hmrcAccount = sessionStorage.getItem("hmrcAccount");
 
         // If URL params provide complete period data, clear any stale submission_data

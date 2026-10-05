@@ -264,6 +264,12 @@
     sessionStorage.removeItem("pendingPass");
     sessionStorage.removeItem("postLoginRedirect");
     sessionStorage.removeItem("passValidation");
+    sessionStorage.removeItem("carriedVrn");
+    sessionStorage.removeItem("carriedNino");
+    sessionStorage.removeItem("carriedBusinessId");
+    sessionStorage.removeItem("carriedTaxYear");
+    sessionStorage.removeItem("carriedPeriodStart");
+    sessionStorage.removeItem("carriedPeriodEnd");
 
     // Redirect to Cognito logout endpoint to invalidate session. window.envReady is
     // undefined on a page that never loaded env-loader.js, and rejects when /submit.env

@@ -12,6 +12,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   serveMoneyInput,
   serveFormErrors,
+  serveCarriedIdentifiers,
   serveHmrcFieldTableAssets,
   serveSiteStyles,
   screenshotPath,
@@ -57,6 +58,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     await serveHmrcFieldTableAssets(page);
     await serveMoneyInput(page);
     await serveFormErrors(page);
+    await serveCarriedIdentifiers(page);
 
     await page.goto("http://localhost:3000/hmrc/itsa/adjustments.html", { waitUntil: "domcontentloaded" });
     await delay(200);

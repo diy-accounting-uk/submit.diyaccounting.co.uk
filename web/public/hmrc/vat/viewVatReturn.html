@@ -139,6 +139,7 @@
     <script type="module" src="../../submit.js"></script>
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/carried-identifiers.js"></script>
     <script src="../../lib/money-format.js"></script>
     <script src="../../lib/hmrc-field-table.js"></script>
     <script src="../../lib/toml-parser.js"></script>
@@ -636,6 +637,9 @@
       });
 
       // Input validation for VAT registration number
+      window.CarriedIdentifiers.bind("vrn", document.getElementById("vrn"));
+      window.CarriedIdentifiers.bind("periodStart", document.getElementById("periodStart"));
+      window.CarriedIdentifiers.bind("periodEnd", document.getElementById("periodEnd"));
       document.getElementById("vrn").addEventListener("input", function (e) {
         // Only allow digits
         e.target.value = e.target.value.replace(/\D/g, "");

@@ -41,6 +41,20 @@ Prod's live deployment (`/submit/prod/last-known-good-deployment`): `${PROD_LIVE
 Treat an empty block above as "unverified: the prod-deployment-facts job produced nothing" rather
 than as prod having no stacks.
 
+## Settle every in-flight row against origin before judging the file
+
+A row's prose is a claim, not evidence. For each row under `## In flight` that names a branch or a
+pull request, check it this run:
+
+1. `git ls-remote --heads origin <branch>`. No output means the branch is gone from origin.
+2. `gh pr list --state all --head <branch> --json number,state,mergedAt` (and `gh pr view <n>
+   --json state,mergedAt` for a named PR). `MERGED` means the row's change is on `main`.
+
+A branch that is gone from origin, or whose pull request is `MERGED`, means the row's batch landed:
+the row leaves `## In flight` (its remainder, if any, moves to the section its class dictates;
+otherwise the row is deleted). Do not report a row as in flight with a branch that `git ls-remote`
+does not list. A row whose branch and open pull request still exist stays.
+
 ## The render is the product
 
 Write all five parts into your output in full. That output becomes the job summary, and for a run

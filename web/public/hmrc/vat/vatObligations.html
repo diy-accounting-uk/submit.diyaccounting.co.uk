@@ -180,6 +180,7 @@
     <script type="module" src="../../submit.js"></script>
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/carried-identifiers.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -651,6 +652,7 @@
       });
 
       // Input validation
+      window.CarriedIdentifiers.bind("vrn", document.getElementById("vrn"));
       document.getElementById("vrn").addEventListener("input", function (e) {
         // Only allow digits
         e.target.value = e.target.value.replace(/\D/g, "");

@@ -69,8 +69,8 @@
 
             <div class="form-group">
               <label for="taxYear">Tax year</label>
-              <p id="taxYear-hint" class="hint">The tax year this period falls in, format YYYY-YY, for example 2024-25.</p>
-              <input type="text" id="taxYear" name="taxYear" required maxlength="7" aria-describedby="taxYear-hint" />
+              <p id="taxYear-hint" class="hint">The tax year this period falls in.</p>
+              <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
             </div>
 
             <div id="loadCurrentTotalGroup" class="form-group" style="display: none">
@@ -204,6 +204,13 @@
     <script type="module" src="../../submit.js"></script>
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/carried-identifiers.js"></script>
+    <script>
+      window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
+      window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
+      window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
+      window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
+    </script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/money-input.js"></script>
     <script src="../../lib/form-errors.js"></script>

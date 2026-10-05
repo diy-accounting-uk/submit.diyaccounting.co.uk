@@ -65,7 +65,7 @@
           <div class="form-group">
             <label for="taxYear">Tax year the claim decreases</label>
             <p id="taxYear-hint" class="hint">The earlier tax year the carry-back claim reduces the liability for.</p>
-            <input type="text" id="taxYear" name="taxYear" required maxlength="7" aria-describedby="taxYear-hint" />
+            <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
           </div>
 
           <!-- Developer Test Scenario Section -->
@@ -192,6 +192,12 @@
     <script type="module" src="../../submit.js"></script>
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/carried-identifiers.js"></script>
+    <script>
+      window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
+      window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
+      window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
+    </script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/money-input.js"></script>
     <script src="../../lib/form-errors.js"></script>

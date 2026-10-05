@@ -86,6 +86,8 @@ by it says so in its `Status` (`unblocks CS-9`).
   yet on `main` (here or in a sibling repository), or a run the row waits on in progress (a
   deploy, a capture, a drill). A row whose change is on `main` and waits only for a passive
   event (a scheduled run, the next nightly) is `ready` with that remainder, not in flight.
+  A branch absent from `git ls-remote --heads origin`, or whose pull request `gh pr list --state all
+  --head <branch>` reports `MERGED`, is merged: the row is not in flight whatever its prose says.
 - `Where`: for an in-flight row, the branch, the pull request and any running run, in that
   order (`claude/vat-view-entitlement, PR #202, deploy 34784881334`); for any other row `—`.
   Read from `git worktree list`, `gh pr list` and `gh run list`, never from the row's prose.

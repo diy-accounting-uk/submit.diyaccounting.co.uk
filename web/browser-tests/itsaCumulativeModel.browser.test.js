@@ -11,6 +11,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { serveCarriedIdentifiers } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -27,6 +28,8 @@ async function loadPage(page, html, url) {
       await route.continue();
     }
   });
+
+  await serveCarriedIdentifiers(page);
 
   const modifiedHtml = html.replace("<head>", `<head><base href="${new URL(".", url)}">`).replace(
     "<body>",
@@ -66,7 +69,7 @@ test.describe("ITSA cumulative model - self-employment period", () => {
   test("labels the money fields as quarterly figures for a dated tax year", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/selfEmploymentPeriod.html");
 
-    await page.locator("#taxYear").fill("2024-25");
+    await page.locator("#taxYear").selectOption("2024-25");
     await page.locator("#taxYear").dispatchEvent("input");
 
     await expect(page.locator('label[for="turnover"]')).toHaveText("Turnover");
@@ -77,7 +80,7 @@ test.describe("ITSA cumulative model - self-employment period", () => {
   test("labels the money fields as year-to-date totals for a cumulative tax year", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/selfEmploymentPeriod.html");
 
-    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#taxYear").selectOption("2025-26");
     await page.locator("#taxYear").dispatchEvent("input");
 
     await expect(page.locator('label[for="turnover"]')).toHaveText("Turnover (year to date)");
@@ -97,7 +100,7 @@ test.describe("ITSA cumulative model - self-employment amend", () => {
   test("requires a period ID for a dated tax year", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/selfEmploymentPeriodAmend.html");
 
-    await page.locator("#taxYear").fill("2023-24");
+    await page.locator("#taxYear").selectOption("2023-24");
     await page.locator("#taxYear").dispatchEvent("input");
 
     await expect(page.locator("#periodIdGroup")).toBeVisible();
@@ -107,7 +110,7 @@ test.describe("ITSA cumulative model - self-employment amend", () => {
   test("hides the period ID field for a cumulative tax year", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/selfEmploymentPeriodAmend.html");
 
-    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#taxYear").selectOption("2025-26");
     await page.locator("#taxYear").dispatchEvent("input");
 
     await expect(page.locator("#periodIdGroup")).toBeHidden();
@@ -126,7 +129,7 @@ test.describe("ITSA cumulative model - self-employment periods list", () => {
   test("keeps the list button for a dated tax year", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/selfEmploymentPeriods.html");
 
-    await page.locator("#taxYear").fill("2023-24");
+    await page.locator("#taxYear").selectOption("2023-24");
     await page.locator("#taxYear").dispatchEvent("input");
 
     await expect(page.locator("#retrieveBtn")).toHaveText("List period summaries");
@@ -136,7 +139,7 @@ test.describe("ITSA cumulative model - self-employment periods list", () => {
   test("switches to the current-total button for a cumulative tax year", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/selfEmploymentPeriods.html");
 
-    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#taxYear").selectOption("2025-26");
     await page.locator("#taxYear").dispatchEvent("input");
 
     await expect(page.locator("#retrieveBtn")).toHaveText("Show current total");
@@ -154,7 +157,7 @@ test.describe("ITSA cumulative model - self-employment period view", () => {
   test("requires a period ID for a dated tax year", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/selfEmploymentPeriodView.html");
 
-    await page.locator("#taxYear").fill("2023-24");
+    await page.locator("#taxYear").selectOption("2023-24");
     await page.locator("#taxYear").dispatchEvent("input");
 
     await expect(page.locator("#periodIdGroup")).toBeVisible();
@@ -163,7 +166,7 @@ test.describe("ITSA cumulative model - self-employment period view", () => {
   test("hides the period ID field for a cumulative tax year", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/selfEmploymentPeriodView.html");
 
-    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#taxYear").selectOption("2025-26");
     await page.locator("#taxYear").dispatchEvent("input");
 
     await expect(page.locator("#periodIdGroup")).toBeHidden();
@@ -181,7 +184,7 @@ test.describe("ITSA cumulative model - UK property period", () => {
   test("keeps the property type choice for a dated tax year", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/ukPropertyPeriod.html");
 
-    await page.locator("#taxYear").fill("2024-25");
+    await page.locator("#taxYear").selectOption("2024-25");
     await page.locator("#taxYear").dispatchEvent("input");
 
     await expect(page.locator("#propertyTypeGroup")).toBeVisible();
@@ -191,7 +194,7 @@ test.describe("ITSA cumulative model - UK property period", () => {
   test("drops the property type choice and reads as a running total for a cumulative tax year", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/ukPropertyPeriod.html");
 
-    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#taxYear").selectOption("2025-26");
     await page.locator("#taxYear").dispatchEvent("input");
 
     await expect(page.locator("#propertyTypeGroup")).toBeHidden();
@@ -211,7 +214,7 @@ test.describe("ITSA cumulative model - UK property amend", () => {
   test("hides the submission ID field for a cumulative tax year", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/ukPropertyPeriodAmend.html");
 
-    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#taxYear").selectOption("2025-26");
     await page.locator("#taxYear").dispatchEvent("input");
 
     await expect(page.locator("#submissionIdGroup")).toBeHidden();
@@ -229,7 +232,7 @@ test.describe("ITSA cumulative model - UK property period view", () => {
   test("hides the submission ID field for a cumulative tax year", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/ukPropertyPeriodView.html");
 
-    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#taxYear").selectOption("2025-26");
     await page.locator("#taxYear").dispatchEvent("input");
 
     await expect(page.locator("#submissionIdGroup")).toBeHidden();
@@ -247,7 +250,7 @@ test.describe("ITSA cumulative model - UK property periods list", () => {
   test("switches to the current-total button for a cumulative tax year", async ({ page }) => {
     await loadPage(page, html, "http://localhost:3000/hmrc/itsa/ukPropertyPeriods.html");
 
-    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#taxYear").selectOption("2025-26");
     await page.locator("#taxYear").dispatchEvent("input");
 
     await expect(page.locator("#retrieveBtn")).toHaveText("Show current total");
