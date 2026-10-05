@@ -227,9 +227,6 @@ test("Click through: View VAT payments from HMRC", async ({ page }, testInfo) =>
     saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
 
     // Update environment variables for this test run
-    process.env.TEST_HMRC_USERNAME = testUsername;
-    process.env.TEST_HMRC_PASSWORD = testPassword;
-    process.env.TEST_HMRC_VAT_NUMBER = testVatNumber;
 
     console.log("[HMRC Test User] Updated environment variables with generated credentials");
   }

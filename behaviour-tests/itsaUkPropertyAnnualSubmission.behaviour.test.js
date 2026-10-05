@@ -225,10 +225,6 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
 
     const repoRoot = path.resolve(process.cwd());
     saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
-
-    process.env.TEST_HMRC_USERNAME = testUsername;
-    process.env.TEST_HMRC_PASSWORD = testPassword;
-    process.env.TEST_HMRC_NINO = testNino;
   }
 
   /* ****** */

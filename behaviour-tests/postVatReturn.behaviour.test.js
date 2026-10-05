@@ -267,9 +267,6 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
     const repoRoot = path.resolve(process.cwd());
     const outputDir = testInfo.outputPath("");
     saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
-    process.env.TEST_HMRC_USERNAME = currentTestUsername;
-    process.env.TEST_HMRC_PASSWORD = currentTestPassword;
-    process.env.TEST_HMRC_VAT_NUMBER = testVatNumber;
   }
 
   // HOME + LOGIN + BUNDLES

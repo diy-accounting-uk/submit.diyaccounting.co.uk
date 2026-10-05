@@ -218,10 +218,6 @@ test("Click through: Load and save ITSA Losses and Claims with HMRC", async ({ p
 
     const repoRoot = path.resolve(process.cwd());
     saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
-
-    process.env.TEST_HMRC_USERNAME = testUsername;
-    process.env.TEST_HMRC_PASSWORD = testPassword;
-    process.env.TEST_HMRC_NINO = testNino;
   }
 
   /* ****** */

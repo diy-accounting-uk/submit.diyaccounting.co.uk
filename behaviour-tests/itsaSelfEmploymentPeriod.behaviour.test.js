@@ -230,10 +230,6 @@ test("Click through: File an ITSA Quarterly Update with HMRC", async ({ page }, 
 
     const repoRoot = path.resolve(process.cwd());
     saveHmrcTestUserToFiles(testUser, outputDir, repoRoot);
-
-    process.env.TEST_HMRC_USERNAME = testUsername;
-    process.env.TEST_HMRC_PASSWORD = testPassword;
-    process.env.TEST_HMRC_NINO = testNino;
   }
 
   /* ****** */
