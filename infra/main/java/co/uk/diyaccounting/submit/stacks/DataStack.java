@@ -1010,10 +1010,7 @@ public class DataStack extends Stack {
                 "sessionId",
                 null);
         ensureTimeToLive(
-                this,
-                props.resourceNamePrefix() + "-McpSessionsTTL",
-                props.sharedNames().mcpSessionsTableName,
-                "ttl");
+                this, props.resourceNamePrefix() + "-McpSessionsTTL", props.sharedNames().mcpSessionsTableName, "ttl");
         infof("Ensured MCP sessions DynamoDB table with name %s", props.sharedNames().mcpSessionsTableName);
 
         // DIYA-GL bucket: one zip-in-S3 store per environment for the paid diya-gl storage tier.

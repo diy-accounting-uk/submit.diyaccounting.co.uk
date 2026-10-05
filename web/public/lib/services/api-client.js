@@ -75,7 +75,7 @@ export async function executeAsyncRequestPolling(res, input, init, currentHeader
     currentHeaders.set("x-request-id", requestId);
   }
 
-  const statusRequestId = requestId || `async-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const statusRequestId = requestId || `async-${crypto.randomUUID()}`;
   let pollCount = 0;
   const startTime = Date.now();
 
