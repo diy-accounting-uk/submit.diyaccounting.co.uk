@@ -26,6 +26,38 @@
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="./lib/analytics.js"></script>
     <script src="./lib/session-beacon.js"></script>
+    <style>
+      .btn.btn-outline {
+        background-color: #fff;
+        color: var(--color-brand-primary);
+        border: 1px solid var(--color-brand-primary);
+      }
+      .btn.btn-outline:hover {
+        background-color: #eef3fb;
+      }
+      .btn.btn-danger-outline {
+        background-color: #fff;
+        color: #b02a37;
+        border: 1px solid #b02a37;
+      }
+      .btn.btn-danger-outline:hover {
+        background-color: #fbeaec;
+      }
+      .btn.bundle-row-btn {
+        font-size: 0.8em;
+        padding: 0.15em 0.75em;
+        min-width: unset;
+        width: auto;
+        min-height: 44px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .bundle-row-name {
+        flex: 1 1 12em;
+        min-width: 0;
+      }
+    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
@@ -380,13 +412,13 @@
           if (existingSub) {
             return `
             <div class="service-item" style="text-align:left">
-              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-manage-subscription="true" style="background-color: #17a2b8;">Manage Subscription \u2014 ${rawName}</button>
+              <button type="button" class="btn btn-outline service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-manage-subscription="true">Manage Subscription \u2014 ${rawName}</button>
               <p style="font-size:0.85em; color:#155724; margin:0.5em 0 0;">Active subscription</p>
             </div>`;
           }
           return `
           <div class="service-item" style="text-align:left">
-            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true" style="background-color: #6f42c1;">Subscribe \u00a39.99/mo \u2014 ${rawName}</button>
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true">Subscribe \u00a39.99/mo \u2014 ${rawName}</button>
             <p style="font-size:0.85em; color:#383d41; margin:0.5em 0 0;">Monthly subscription via Stripe</p>
           </div>`;
         }
@@ -405,7 +437,7 @@
           if (existingSub) {
             return `
             <div class="service-item" style="text-align:left">
-              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-manage-subscription="true" style="background-color: #17a2b8;">Manage Subscription \u2014 ${rawName}</button>
+              <button type="button" class="btn btn-outline service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-manage-subscription="true">Manage Subscription \u2014 ${rawName}</button>
               <p style="font-size:0.85em; color:#155724; margin:0.5em 0 0;">Active subscription</p>
             </div>`;
           }
@@ -418,7 +450,7 @@
             const monthly = prices.find((p) => p !== annual && p.interval === "month") || prices.find((p) => p !== annual);
             return `
             <div class="service-item" style="text-align:left">
-              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true" data-interval="annual" style="background-color: #6f42c1;">Subscribe ${formatGbp(annual.amount / 100)}/yr \u2014 ${rawName}</button>
+              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true" data-interval="annual">Subscribe ${formatGbp(annual.amount / 100)}/yr \u2014 ${rawName}</button>
               ${
                 monthly
                   ? `<p style="font-size:0.85em; margin:0.5em 0 0;"><button type="button" class="btn-link" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true" data-interval="monthly" style="background:none;border:none;padding:0;color:#2c5aa0;text-decoration:underline;cursor:pointer;">or ${formatGbp(monthly.amount / 100)}/month</button></p>`
@@ -428,9 +460,11 @@
             </div>`;
           }
 
+          const singlePriceLabel =
+            prices.length === 1 ? ` ${formatGbp(prices[0].amount / 100)}/${prices[0].interval === "year" ? "yr" : "mo"}` : "";
           return `
           <div class="service-item" style="text-align:left">
-            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true" style="background-color: #6f42c1;">Subscribe \u2014 ${rawName}</button>
+            <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true">Subscribe${singlePriceLabel} \u2014 ${rawName}</button>
             <p style="font-size:0.85em; color:#383d41; margin:0.5em 0 0;">${b.description || "Monthly subscription via Stripe"}</p>
           </div>`;
         }
@@ -757,8 +791,7 @@
             // Show Manage Subscription button if bundle has an active subscription
             const hasSubscription = fullData?.stripeSubscriptionId;
             const manageBtn = hasSubscription
-              ? `<button type="button" class="btn" data-manage-subscription="true" data-bundle-id="${bundleId}"
-                  style="background-color: #17a2b8; border-color: #17a2b8; color: white; font-size: 0.8em; padding: 0.15em 0.75em; min-width: unset; width:auto; min-height: 44px; display:inline-flex; align-items:center; justify-content:center;">
+              ? `<button type="button" class="btn btn-outline bundle-row-btn" data-manage-subscription="true" data-bundle-id="${bundleId}">
                     Manage Subscription
                 </button>`
               : "";
@@ -766,10 +799,9 @@
             return `
             <div class="service-item" style="text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;">
               <span style="display:flex; align-items:center; flex-wrap:wrap; gap:0.75em">
-                <span style="min-width:0">${displayName}</span>
+                <span class="bundle-row-name">${displayName}</span>
                 ${manageBtn}
-                <button type="button" class="btn" data-remove-bundle-id="${bundleId}"
-                  style="background-color: #dc3545; border-color: #dc3545; color: white; font-size: 0.8em; padding: 0.15em 0.75em; min-width: unset; width:auto; min-height: 44px; display:inline-flex; align-items:center; justify-content:center;">
+                <button type="button" class="btn btn-danger-outline bundle-row-btn" data-remove-bundle-id="${bundleId}">
                     Remove
                 </button>
               </span>
