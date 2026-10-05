@@ -10,14 +10,14 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
 import { buildFileReportDocument } from "@diy-accounting-uk/diya-gl/dist/app/bin/export.js";
 import { canonicalLinesJsonl } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-canonical.js";
 import { productOf } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import { productModule } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 
-import { createSession, openBook, saveBook, SAVE_FORMATS } from "../lib/book-tools.js";
+import { createSession, openBook, restoreCloudBook, saveBook, SAVE_FORMATS } from "../lib/book-tools.js";
 import { createServer, TOOLS } from "../lib/server.js";
 
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures");
@@ -147,5 +147,44 @@ describe("the server", () => {
     expect(SAVE_FORMATS).toEqual(["diya-gl-dir", "diya-gl-zip", "json", "xlsx", "zip"]);
     const server = createServer();
     expect(server).toBeDefined();
+  });
+});
+
+describe("cloud books over the session's credentials", () => {
+  afterEach(() => {
+    delete process.env.DIYA_SUBMIT_BASE_URL;
+    vi.unstubAllGlobals();
+  });
+
+  it("restores a saved cloud book into a fresh session, sending the session's bearer both ways", async () => {
+    process.env.DIYA_SUBMIT_BASE_URL = "https://submit.diyaccounting.co.uk/";
+    const credentials = { accessToken: async () => "request-bearer", idToken: async () => null };
+    const original = createSession({ credentials });
+    await openBook(original, { path: join(FIXTURES, EXAMPLES[0].dir) });
+
+    let storedZipBase64;
+    const mockFetch = vi.fn(async (url, init) => {
+      if (init?.method === "PUT") {
+        storedZipBase64 = JSON.parse(init.body).zipBase64;
+        return { ok: true, status: 200, json: async () => ({ metadata: { latestETag: "etag-1" } }) };
+      }
+      return { ok: true, status: 200, json: async () => ({ zipBase64: storedZipBase64, metadata: { latestETag: "etag-1" } }) };
+    });
+    vi.stubGlobal("fetch", mockFetch);
+    await saveBook(original, { cloud: true, bookId: "book-1" });
+
+    const restored = createSession({ credentials });
+    const summary = await restoreCloudBook(restored, { bookId: "book-1", clientId: null, etag: "etag-1" });
+
+    expect(summary.lineCount).toBe(EXAMPLES[0].lineCount);
+    expect(restored.cloud).toEqual({ bookId: "book-1", clientId: null, etag: "etag-1" });
+    for (const [, init] of mockFetch.mock.calls) expect(init.headers.Authorization).toBe("Bearer request-bearer");
+  });
+
+  it("starts a session with the stored credentials and an unbounded poll budget by default", () => {
+    const session = createSession();
+    expect(typeof session.credentials.accessToken).toBe("function");
+    expect(typeof session.credentials.idToken).toBe("function");
+    expect(session.pollBudgetMs).toBeNull();
   });
 });

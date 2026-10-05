@@ -11,13 +11,13 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../lib/auth.js", () => ({
-  accessToken: vi.fn().mockResolvedValue("practice-access-token"),
-  idToken: vi.fn().mockResolvedValue("practice-id-token"),
-}));
-
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "../lib/batch-tools.js";
+import { createSession } from "../lib/book-tools.js";
 import { TOOLS } from "../lib/server.js";
+
+const session = createSession({
+  credentials: { accessToken: async () => "practice-access-token", idToken: async () => "practice-id-token" },
+});
 
 function jsonResponse(status, body) {
   return { ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) };
@@ -51,7 +51,7 @@ describe("run_for_clients", () => {
       .mockResolvedValueOnce(jsonResponse(200, GET_VAT_RECEIPT_RESPONSE));
     vi.stubGlobal("fetch", mockFetch);
 
-    const result = await runForClients({}, { tool: "get_vat_receipt", args: { name: "receipt.json" } });
+    const result = await runForClients(session, { tool: "get_vat_receipt", args: { name: "receipt.json" } });
 
     expect(result.tool).toBe("get_vat_receipt");
     expect(result.rows).toEqual([
@@ -83,7 +83,7 @@ describe("run_for_clients", () => {
       .mockResolvedValueOnce(jsonResponse(200, GET_VAT_RECEIPT_RESPONSE));
     vi.stubGlobal("fetch", mockFetch);
 
-    await runForClients({}, { tool: "get_vat_receipt", args: { name: "receipt.json", clientId: "some-other-client" } });
+    await runForClients(session, { tool: "get_vat_receipt", args: { name: "receipt.json", clientId: "some-other-client" } });
 
     expect(mockFetch.mock.calls[1][0]).toBe(
       `https://submit.diyaccounting.co.uk/api/v1/hmrc/receipt/receipt.json?clientId=${CLIENT_A.clientId}`,
@@ -94,7 +94,7 @@ describe("run_for_clients", () => {
     const mockFetch = vi.fn();
     vi.stubGlobal("fetch", mockFetch);
 
-    await expect(runForClients({}, { tool: "add_client", args: {} })).rejects.toThrow("add_client");
+    await expect(runForClients(session, { tool: "add_client", args: {} })).rejects.toThrow("add_client");
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
@@ -102,7 +102,9 @@ describe("run_for_clients", () => {
     const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(500, { message: "Internal server error" }));
     vi.stubGlobal("fetch", mockFetch);
 
-    await expect(runForClients({}, { tool: "get_vat_receipt", args: { name: "receipt.json" } })).rejects.toThrow("Internal server error");
+    await expect(runForClients(session, { tool: "get_vat_receipt", args: { name: "receipt.json" } })).rejects.toThrow(
+      "Internal server error",
+    );
   });
 
   it("lists exactly the client-scoped tools", () => {

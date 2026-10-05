@@ -11,11 +11,6 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("../lib/auth.js", () => ({
-  accessToken: vi.fn().mockResolvedValue("session-access-token"),
-  idToken: vi.fn().mockResolvedValue("session-id-token"),
-}));
-
 import {
   listVatObligations,
   submitVatReturn,
@@ -28,7 +23,12 @@ import {
   submitConfirmationStatement,
   pollConfirmationStatement,
 } from "../lib/submit-tools.js";
+import { createSession } from "../lib/book-tools.js";
 import { TOOLS } from "../lib/server.js";
+
+const session = createSession({
+  credentials: { accessToken: async () => "session-access-token", idToken: async () => "session-id-token" },
+});
 
 const VRN = "983238295";
 const HMRC_ACCESS_TOKEN = "hmrc-access-token";
@@ -117,7 +117,7 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await listVatObligations({}, { vrn: VRN, status: "O", hmrcAccessToken: HMRC_ACCESS_TOKEN });
+      const result = await listVatObligations(session, { vrn: VRN, status: "O", hmrcAccessToken: HMRC_ACCESS_TOKEN });
 
       expect(result).toEqual(LIST_VAT_OBLIGATIONS_RESPONSE);
       const [url, init] = mockFetch.mock.calls[0];
@@ -132,17 +132,14 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { obligations: [] }));
       vi.stubGlobal("fetch", mockFetch);
 
-      await listVatObligations(
-        {},
-        {
-          vrn: VRN,
-          from: "2025-01-01",
-          to: "2025-12-31",
-          hmrcAccessToken: HMRC_ACCESS_TOKEN,
-          hmrcAccount: "synthetic",
-          govTestScenario: "QUARTERLY_ONE_MET",
-        },
-      );
+      await listVatObligations(session, {
+        vrn: VRN,
+        from: "2025-01-01",
+        to: "2025-12-31",
+        hmrcAccessToken: HMRC_ACCESS_TOKEN,
+        hmrcAccount: "synthetic",
+        govTestScenario: "QUARTERLY_ONE_MET",
+      });
 
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe(
@@ -152,18 +149,18 @@ describe("submit-tools", () => {
     });
 
     it("requires vrn, or clientId", async () => {
-      await expect(listVatObligations({}, { hmrcAccessToken: HMRC_ACCESS_TOKEN })).rejects.toThrow("vrn");
+      await expect(listVatObligations(session, { hmrcAccessToken: HMRC_ACCESS_TOKEN })).rejects.toThrow("vrn");
     });
 
     it("requires hmrcAccessToken", async () => {
-      await expect(listVatObligations({}, { vrn: VRN })).rejects.toThrow("hmrcAccessToken");
+      await expect(listVatObligations(session, { vrn: VRN })).rejects.toThrow("hmrcAccessToken");
     });
 
     it("resolves the VRN from a practice client's row instead of vrn, when clientId is given", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await listVatObligations({}, { clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV", hmrcAccessToken: HMRC_ACCESS_TOKEN });
+      const result = await listVatObligations(session, { clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV", hmrcAccessToken: HMRC_ACCESS_TOKEN });
 
       expect(result).toEqual(LIST_VAT_OBLIGATIONS_RESPONSE);
       const [url] = mockFetch.mock.calls[0];
@@ -173,7 +170,7 @@ describe("submit-tools", () => {
     it("throws the API's own message on a non-ok response", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(400, { message: "Invalid VAT registration number format" }));
       vi.stubGlobal("fetch", mockFetch);
-      await expect(listVatObligations({}, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN })).rejects.toThrow(
+      await expect(listVatObligations(session, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN })).rejects.toThrow(
         "Invalid VAT registration number format",
       );
     });
@@ -186,7 +183,7 @@ describe("submit-tools", () => {
         .mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const promise = listVatObligations({}, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN });
+      const promise = listVatObligations(session, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN });
       await vi.runAllTimersAsync();
       const result = await promise;
 
@@ -197,12 +194,40 @@ describe("submit-tools", () => {
       expect(secondInit.headers["x-initial-request"]).toBeUndefined();
     });
 
+    it("omits X-Id-Token when the session credentials answer no id token", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+      const hostedSession = createSession({
+        credentials: { accessToken: async () => "request-bearer", idToken: async () => null },
+      });
+
+      await listVatObligations(hostedSession, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN });
+
+      const [, init] = mockFetch.mock.calls[0];
+      expect(init.headers["X-Authorization"]).toBe("Bearer request-bearer");
+      expect(init.headers["X-Id-Token"]).toBeUndefined();
+    });
+
+    it("stops polling inside the session's pollBudgetMs, naming the poll URL", async () => {
+      vi.useFakeTimers();
+      const mockFetch = vi.fn().mockResolvedValue(acceptedResponse());
+      vi.stubGlobal("fetch", mockFetch);
+      const budgeted = createSession({ credentials: session.credentials, pollBudgetMs: 20_000 });
+
+      const promise = listVatObligations(budgeted, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN });
+      const assertion = expect(promise).rejects.toThrow(`Timed out after 20000 ms waiting for ${ASYNC_ACCEPTED.headers.Location}`);
+      await vi.runAllTimersAsync();
+      await assertion;
+
+      expect(mockFetch.mock.calls.length).toBeLessThan(10);
+    });
+
     it("throws with the poll URL after the poll never leaves 202", async () => {
       vi.useFakeTimers();
       const mockFetch = vi.fn().mockResolvedValue(acceptedResponse());
       vi.stubGlobal("fetch", mockFetch);
 
-      const promise = listVatObligations({}, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN });
+      const promise = listVatObligations(session, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN });
       const assertion = expect(promise).rejects.toThrow(ASYNC_ACCEPTED.headers.Location);
       await vi.runAllTimersAsync();
       await assertion;
@@ -224,10 +249,13 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, SUBMIT_VAT_RETURN_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await submitVatReturn(
-        {},
-        { vatNumber: VRN, periodStart: "2025-01-01", periodEnd: "2025-03-31", hmrcAccessToken: HMRC_ACCESS_TOKEN, ...NINE_BOX_FIELDS },
-      );
+      const result = await submitVatReturn(session, {
+        vatNumber: VRN,
+        periodStart: "2025-01-01",
+        periodEnd: "2025-03-31",
+        hmrcAccessToken: HMRC_ACCESS_TOKEN,
+        ...NINE_BOX_FIELDS,
+      });
 
       expect(result).toEqual(SUBMIT_VAT_RETURN_RESPONSE);
       expect(result.receipt.formBundleNumber).toBe(SUBMIT_VAT_RETURN_RESPONSE.receipt.formBundleNumber);
@@ -249,22 +277,30 @@ describe("submit-tools", () => {
     it("requires every one of the seven boxes", async () => {
       const rest = Object.fromEntries(Object.entries(NINE_BOX_FIELDS).filter(([key]) => key !== "vatDueSales"));
       await expect(
-        submitVatReturn(
-          {},
-          { vatNumber: VRN, periodStart: "2025-01-01", periodEnd: "2025-03-31", hmrcAccessToken: HMRC_ACCESS_TOKEN, ...rest },
-        ),
+        submitVatReturn(session, {
+          vatNumber: VRN,
+          periodStart: "2025-01-01",
+          periodEnd: "2025-03-31",
+          hmrcAccessToken: HMRC_ACCESS_TOKEN,
+          ...rest,
+        }),
       ).rejects.toThrow("vatDueSales");
     });
 
     it("requires hmrcAccessToken", async () => {
       await expect(
-        submitVatReturn({}, { vatNumber: VRN, periodStart: "2025-01-01", periodEnd: "2025-03-31", ...NINE_BOX_FIELDS }),
+        submitVatReturn(session, { vatNumber: VRN, periodStart: "2025-01-01", periodEnd: "2025-03-31", ...NINE_BOX_FIELDS }),
       ).rejects.toThrow("hmrcAccessToken");
     });
 
     it("requires vatNumber, or clientId", async () => {
       await expect(
-        submitVatReturn({}, { periodStart: "2025-01-01", periodEnd: "2025-03-31", hmrcAccessToken: HMRC_ACCESS_TOKEN, ...NINE_BOX_FIELDS }),
+        submitVatReturn(session, {
+          periodStart: "2025-01-01",
+          periodEnd: "2025-03-31",
+          hmrcAccessToken: HMRC_ACCESS_TOKEN,
+          ...NINE_BOX_FIELDS,
+        }),
       ).rejects.toThrow("vatNumber");
     });
 
@@ -272,16 +308,13 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, SUBMIT_VAT_RETURN_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      await submitVatReturn(
-        {},
-        {
-          clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-          periodStart: "2025-01-01",
-          periodEnd: "2025-03-31",
-          hmrcAccessToken: HMRC_ACCESS_TOKEN,
-          ...NINE_BOX_FIELDS,
-        },
-      );
+      await submitVatReturn(session, {
+        clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        periodStart: "2025-01-01",
+        periodEnd: "2025-03-31",
+        hmrcAccessToken: HMRC_ACCESS_TOKEN,
+        ...NINE_BOX_FIELDS,
+      });
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.clientId).toBe("01ARZ3NDEKTSV4RRFFQ69G5FAV");
@@ -296,10 +329,13 @@ describe("submit-tools", () => {
         .mockResolvedValueOnce(jsonResponse(200, SUBMIT_VAT_RETURN_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const promise = submitVatReturn(
-        {},
-        { vatNumber: VRN, periodStart: "2025-01-01", periodEnd: "2025-03-31", hmrcAccessToken: HMRC_ACCESS_TOKEN, ...NINE_BOX_FIELDS },
-      );
+      const promise = submitVatReturn(session, {
+        vatNumber: VRN,
+        periodStart: "2025-01-01",
+        periodEnd: "2025-03-31",
+        hmrcAccessToken: HMRC_ACCESS_TOKEN,
+        ...NINE_BOX_FIELDS,
+      });
       await vi.runAllTimersAsync();
       const result = await promise;
 
@@ -312,10 +348,13 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValue(acceptedResponse());
       vi.stubGlobal("fetch", mockFetch);
 
-      const promise = submitVatReturn(
-        {},
-        { vatNumber: VRN, periodStart: "2025-01-01", periodEnd: "2025-03-31", hmrcAccessToken: HMRC_ACCESS_TOKEN, ...NINE_BOX_FIELDS },
-      );
+      const promise = submitVatReturn(session, {
+        vatNumber: VRN,
+        periodStart: "2025-01-01",
+        periodEnd: "2025-03-31",
+        hmrcAccessToken: HMRC_ACCESS_TOKEN,
+        ...NINE_BOX_FIELDS,
+      });
       const assertion = expect(promise).rejects.toThrow(ASYNC_ACCEPTED.headers.Location);
       await vi.runAllTimersAsync();
       await assertion;
@@ -327,7 +366,7 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, GET_VAT_RECEIPT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await getVatReceipt({}, { name: "2025-03-31-123456789012.json" });
+      const result = await getVatReceipt(session, { name: "2025-03-31-123456789012.json" });
 
       expect(result).toEqual(GET_VAT_RECEIPT_RESPONSE);
       const [url, init] = mockFetch.mock.calls[0];
@@ -337,14 +376,14 @@ describe("submit-tools", () => {
     });
 
     it("requires name", async () => {
-      await expect(getVatReceipt({}, {})).rejects.toThrow("name");
+      await expect(getVatReceipt(session, {})).rejects.toThrow("name");
     });
 
     it("carries clientId as a query parameter when given", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, GET_VAT_RECEIPT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      await getVatReceipt({}, { name: "2025-03-31-123456789012.json", clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" });
+      await getVatReceipt(session, { name: "2025-03-31-123456789012.json", clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" });
 
       expect(mockFetch.mock.calls[0][0]).toBe(
         "https://submit.diyaccounting.co.uk/api/v1/hmrc/receipt/2025-03-31-123456789012.json?clientId=01ARZ3NDEKTSV4RRFFQ69G5FAV",
@@ -355,7 +394,7 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(403, { message: "client-not-found" }));
       vi.stubGlobal("fetch", mockFetch);
 
-      await expect(getVatReceipt({}, { name: "2025-03-31-123456789012.json", clientId: "not-my-client" })).rejects.toThrow(
+      await expect(getVatReceipt(session, { name: "2025-03-31-123456789012.json", clientId: "not-my-client" })).rejects.toThrow(
         "client-not-found",
       );
     });
@@ -366,7 +405,7 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, PREVIEW_MICRO_ENTITY_ACCOUNTS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await previewMicroEntityAccounts({}, ACCOUNTS_PARAMS);
+      const result = await previewMicroEntityAccounts(session, ACCOUNTS_PARAMS);
 
       expect(result).toEqual(PREVIEW_MICRO_ENTITY_ACCOUNTS_RESPONSE);
       expect(result.ixbrl).toContain("<?xml");
@@ -380,15 +419,15 @@ describe("submit-tools", () => {
 
     it("refuses when a statement is not accepted", async () => {
       const params = { ...ACCOUNTS_PARAMS, statementsAccepted: { ...ACCOUNTS_PARAMS.statementsAccepted, microEntityProvisions: false } };
-      await expect(previewMicroEntityAccounts({}, params)).rejects.toThrow("microEntityProvisions");
+      await expect(previewMicroEntityAccounts(session, params)).rejects.toThrow("microEntityProvisions");
     });
 
     it("still requires companyNumber when clientId is given, since the preview route never reads it", async () => {
       const withoutCompanyNumber = { ...ACCOUNTS_PARAMS };
       delete withoutCompanyNumber.companyNumber;
-      await expect(previewMicroEntityAccounts({}, { ...withoutCompanyNumber, clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" })).rejects.toThrow(
-        "companyNumber",
-      );
+      await expect(
+        previewMicroEntityAccounts(session, { ...withoutCompanyNumber, clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" }),
+      ).rejects.toThrow("companyNumber");
     });
   });
 
@@ -397,7 +436,7 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await submitMicroEntityAccounts({}, { ...ACCOUNTS_PARAMS, companyAuthCode: "Sim0123" });
+      const result = await submitMicroEntityAccounts(session, { ...ACCOUNTS_PARAMS, companyAuthCode: "Sim0123" });
 
       expect(result).toEqual(SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE);
       const [, init] = mockFetch.mock.calls[0];
@@ -406,13 +445,15 @@ describe("submit-tools", () => {
     });
 
     it("requires companyAuthCode", async () => {
-      await expect(submitMicroEntityAccounts({}, ACCOUNTS_PARAMS)).rejects.toThrow("companyAuthCode");
+      await expect(submitMicroEntityAccounts(session, ACCOUNTS_PARAMS)).rejects.toThrow("companyAuthCode");
     });
 
     it("requires companyNumber, or clientId", async () => {
       const withoutCompanyNumber = { ...ACCOUNTS_PARAMS };
       delete withoutCompanyNumber.companyNumber;
-      await expect(submitMicroEntityAccounts({}, { ...withoutCompanyNumber, companyAuthCode: "Sim0123" })).rejects.toThrow("companyNumber");
+      await expect(submitMicroEntityAccounts(session, { ...withoutCompanyNumber, companyAuthCode: "Sim0123" })).rejects.toThrow(
+        "companyNumber",
+      );
     });
 
     it("sends clientId instead of companyNumber when given, resolved by the route from the client row", async () => {
@@ -421,7 +462,11 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      await submitMicroEntityAccounts({}, { ...withoutCompanyNumber, clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV", companyAuthCode: "Sim0123" });
+      await submitMicroEntityAccounts(session, {
+        ...withoutCompanyNumber,
+        clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+        companyAuthCode: "Sim0123",
+      });
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.clientId).toBe("01ARZ3NDEKTSV4RRFFQ69G5FAV");
@@ -434,7 +479,7 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_ACCOUNTS_SUBMISSION_PENDING_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await pollAccountsSubmission({}, { submissionNumber: "000001" });
+      const result = await pollAccountsSubmission(session, { submissionNumber: "000001" });
 
       expect(result).toEqual(POLL_ACCOUNTS_SUBMISSION_PENDING_RESPONSE);
       expect(result.statusCode).toBe("PENDING");
@@ -445,14 +490,14 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_ACCOUNTS_SUBMISSION_ACCEPTED_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await pollAccountsSubmission({}, { submissionNumber: "000001" });
+      const result = await pollAccountsSubmission(session, { submissionNumber: "000001" });
 
       expect(result.statusCode).toBe("ACCEPT");
       expect(result.receiptId).toBe(POLL_ACCOUNTS_SUBMISSION_ACCEPTED_RESPONSE.receiptId);
     });
 
     it("requires submissionNumber", async () => {
-      await expect(pollAccountsSubmission({}, {})).rejects.toThrow("submissionNumber");
+      await expect(pollAccountsSubmission(session, {})).rejects.toThrow("submissionNumber");
     });
   });
 
@@ -461,10 +506,11 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, CONFIRMATION_STATEMENT_DATA_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await getConfirmationStatementData(
-        {},
-        { companyNumber: "12345678", companyAuthCode: "Sim0123", madeUpDate: "2026-03-01" },
-      );
+      const result = await getConfirmationStatementData(session, {
+        companyNumber: "12345678",
+        companyAuthCode: "Sim0123",
+        madeUpDate: "2026-03-01",
+      });
 
       expect(result).toEqual(CONFIRMATION_STATEMENT_DATA_RESPONSE);
       expect(result.paymentPeriodPaid).toBe(false);
@@ -478,19 +524,19 @@ describe("submit-tools", () => {
     });
 
     it("requires companyNumber", async () => {
-      await expect(getConfirmationStatementData({}, { companyAuthCode: "Sim0123", madeUpDate: "2026-03-01" })).rejects.toThrow(
+      await expect(getConfirmationStatementData(session, { companyAuthCode: "Sim0123", madeUpDate: "2026-03-01" })).rejects.toThrow(
         "companyNumber",
       );
     });
 
     it("requires companyAuthCode", async () => {
-      await expect(getConfirmationStatementData({}, { companyNumber: "12345678", madeUpDate: "2026-03-01" })).rejects.toThrow(
+      await expect(getConfirmationStatementData(session, { companyNumber: "12345678", madeUpDate: "2026-03-01" })).rejects.toThrow(
         "companyAuthCode",
       );
     });
 
     it("requires madeUpDate", async () => {
-      await expect(getConfirmationStatementData({}, { companyNumber: "12345678", companyAuthCode: "Sim0123" })).rejects.toThrow(
+      await expect(getConfirmationStatementData(session, { companyNumber: "12345678", companyAuthCode: "Sim0123" })).rejects.toThrow(
         "madeUpDate",
       );
     });
@@ -499,10 +545,12 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, CONFIRMATION_STATEMENT_DATA_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      await getConfirmationStatementData(
-        {},
-        { companyNumber: "12345678", companyAuthCode: "Sim0123", madeUpDate: "2026-03-01", companyType: "plc" },
-      );
+      await getConfirmationStatementData(session, {
+        companyNumber: "12345678",
+        companyAuthCode: "Sim0123",
+        madeUpDate: "2026-03-01",
+        companyType: "plc",
+      });
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.companyType).toBe("plc");
@@ -514,7 +562,7 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, PREVIEW_CONFIRMATION_STATEMENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await previewConfirmationStatement({}, CONFIRMATION_STATEMENT_PARAMS);
+      const result = await previewConfirmationStatement(session, CONFIRMATION_STATEMENT_PARAMS);
 
       expect(result).toEqual(PREVIEW_CONFIRMATION_STATEMENT_RESPONSE);
       expect(result.confirmationStatementXml).toContain("ConfirmationAndVerificationStatement");
@@ -527,41 +575,38 @@ describe("submit-tools", () => {
     });
 
     it("requires at least one director", async () => {
-      await expect(previewConfirmationStatement({}, { ...CONFIRMATION_STATEMENT_PARAMS, directors: [] })).rejects.toThrow("director");
+      await expect(previewConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, directors: [] })).rejects.toThrow("director");
     });
 
     it("requires lawfulPurposeStatementAccepted to be accepted", async () => {
       await expect(
-        previewConfirmationStatement({}, { ...CONFIRMATION_STATEMENT_PARAMS, lawfulPurposeStatementAccepted: false }),
+        previewConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, lawfulPurposeStatementAccepted: false }),
       ).rejects.toThrow("lawfulPurposeStatementAccepted");
     });
 
     it("requires companyNumber", async () => {
       const withoutCompanyNumber = { ...CONFIRMATION_STATEMENT_PARAMS };
       delete withoutCompanyNumber.companyNumber;
-      await expect(previewConfirmationStatement({}, withoutCompanyNumber)).rejects.toThrow("companyNumber");
+      await expect(previewConfirmationStatement(session, withoutCompanyNumber)).rejects.toThrow("companyNumber");
     });
 
     it("carries sicCodes, statementOfCapital, shareholdings and registeredEmailAddress through when given", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, PREVIEW_CONFIRMATION_STATEMENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      await previewConfirmationStatement(
-        {},
-        {
-          ...CONFIRMATION_STATEMENT_PARAMS,
-          sicCodes: ["43390"],
-          statementOfCapital: {
-            totalAmountUnpaid: 0,
-            totalNumberOfIssuedShares: 100,
-            shareCurrency: "GBP",
-            totalAggregateNominalValue: 100,
-            shares: [{ shareClass: "Ordinary", prescribedParticulars: "", numShares: 100, aggregateNominalValue: 100 }],
-          },
-          shareholdings: [{ shareClass: "Ordinary", numberHeld: 100 }],
-          registeredEmailAddress: "director@brickworkpro.example",
+      await previewConfirmationStatement(session, {
+        ...CONFIRMATION_STATEMENT_PARAMS,
+        sicCodes: ["43390"],
+        statementOfCapital: {
+          totalAmountUnpaid: 0,
+          totalNumberOfIssuedShares: 100,
+          shareCurrency: "GBP",
+          totalAggregateNominalValue: 100,
+          shares: [{ shareClass: "Ordinary", prescribedParticulars: "", numShares: 100, aggregateNominalValue: 100 }],
         },
-      );
+        shareholdings: [{ shareClass: "Ordinary", numberHeld: 100 }],
+        registeredEmailAddress: "director@brickworkpro.example",
+      });
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.sicCodes).toEqual(["43390"]);
@@ -576,7 +621,7 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_CONFIRMATION_STATEMENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await submitConfirmationStatement({}, { ...CONFIRMATION_STATEMENT_PARAMS, companyAuthCode: "Sim0123" });
+      const result = await submitConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, companyAuthCode: "Sim0123" });
 
       expect(result).toEqual(SUBMIT_CONFIRMATION_STATEMENT_RESPONSE);
       const [url, init] = mockFetch.mock.calls[0];
@@ -587,12 +632,12 @@ describe("submit-tools", () => {
     });
 
     it("requires companyAuthCode", async () => {
-      await expect(submitConfirmationStatement({}, CONFIRMATION_STATEMENT_PARAMS)).rejects.toThrow("companyAuthCode");
+      await expect(submitConfirmationStatement(session, CONFIRMATION_STATEMENT_PARAMS)).rejects.toThrow("companyAuthCode");
     });
 
     it("requires at least one director", async () => {
       await expect(
-        submitConfirmationStatement({}, { ...CONFIRMATION_STATEMENT_PARAMS, directors: [], companyAuthCode: "Sim0123" }),
+        submitConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, directors: [], companyAuthCode: "Sim0123" }),
       ).rejects.toThrow("director");
     });
 
@@ -604,7 +649,7 @@ describe("submit-tools", () => {
         .mockResolvedValueOnce(jsonResponse(201, SUBMIT_CONFIRMATION_STATEMENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const promise = submitConfirmationStatement({}, { ...CONFIRMATION_STATEMENT_PARAMS, companyAuthCode: "Sim0123" });
+      const promise = submitConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, companyAuthCode: "Sim0123" });
       await vi.runAllTimersAsync();
       const result = await promise;
 
@@ -618,7 +663,7 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_CONFIRMATION_STATEMENT_PENDING_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await pollConfirmationStatement({}, { submissionNumber: "000002" });
+      const result = await pollConfirmationStatement(session, { submissionNumber: "000002" });
 
       expect(result).toEqual(POLL_CONFIRMATION_STATEMENT_PENDING_RESPONSE);
       expect(result.statusCode).toBe("PENDING");
@@ -629,14 +674,14 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_CONFIRMATION_STATEMENT_ACCEPTED_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await pollConfirmationStatement({}, { submissionNumber: "000002" });
+      const result = await pollConfirmationStatement(session, { submissionNumber: "000002" });
 
       expect(result.statusCode).toBe("ACCEPT");
       expect(result.receiptId).toBe(POLL_CONFIRMATION_STATEMENT_ACCEPTED_RESPONSE.receiptId);
     });
 
     it("requires submissionNumber", async () => {
-      await expect(pollConfirmationStatement({}, {})).rejects.toThrow("submissionNumber");
+      await expect(pollConfirmationStatement(session, {})).rejects.toThrow("submissionNumber");
     });
   });
 

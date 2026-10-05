@@ -14,10 +14,9 @@
 //
 // Configuration comes from the environment: DIYA_SUBMIT_BASE_URL (the deployed site's base URL,
 // e.g. https://submit.diyaccounting.co.uk/). The session bearer is the MCP's own sign-in
-// (auth.js's accessToken()); run sign_in first to establish it.
+// (its credentials' accessToken()).
 
 import { callSubmitApi, requireField } from "./submit-tools.js";
-import { accessToken as mcpAccessToken } from "./auth.js";
 
 function baseUrl() {
   const value = process.env.DIYA_SUBMIT_BASE_URL;
@@ -31,18 +30,18 @@ function baseUrl() {
  * when the destination already holds a book with this id; this tool just carries that answer
  * back, or throws with the API's own message when it refuses.
  *
- * @param {Object} _session - unused; this tool carries no local session state
+ * @param {Object} session
  * @param {{clientId: string, bookId: string}} params
  * @returns {Promise<{bookId: string, clientId: string, movedObjectCount: number}>}
  */
-export async function moveBookToClient(_session, { clientId, bookId } = {}) {
+export async function moveBookToClient(session, { clientId, bookId } = {}) {
   if (!clientId) throw new Error("move_book_to_client requires a clientId");
   if (!bookId) throw new Error("move_book_to_client requires a bookId");
 
   const url = `${baseUrl()}/api/v1/practice/clients/${encodeURIComponent(clientId)}/books/${encodeURIComponent(bookId)}/move`;
   const response = await fetch(url, {
     method: "POST",
-    headers: { Authorization: `Bearer ${await mcpAccessToken()}` },
+    headers: { Authorization: `Bearer ${await session.credentials.accessToken()}` },
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -54,25 +53,25 @@ export async function moveBookToClient(_session, { clientId, bookId } = {}) {
 /**
  * list_clients: the signed-in practice's own client list (archived clients excluded), over
  * GET /api/v1/practice/clients.
- * @param {Object} _session - unused; this tool carries no local session state
+ * @param {Object} session
  * @returns {Promise<{clients: Object[]}>}
  */
-export async function listClients(_session, _params = {}) {
-  return callSubmitApi("/api/v1/practice/clients");
+export async function listClients(session, _params = {}) {
+  return callSubmitApi(session, "/api/v1/practice/clients");
 }
 
 /**
  * add_client: adds one client to the practice's list, over POST /api/v1/practice/clients. Every
  * identifier is optional, but a given one must match its HMRC or Companies House format, checked
  * by the route itself.
- * @param {Object} _session
+ * @param {Object} session
  * @param {{displayName: string, vrn?: string, nino?: string, utr?: string, companyNumber?: string}} params
  * @returns {Promise<{client: Object}>}
  */
-export async function addClient(_session, params = {}) {
+export async function addClient(session, params = {}) {
   const displayName = requireField("add_client", params, "displayName");
   const { vrn, nino, utr, companyNumber } = params;
-  return callSubmitApi("/api/v1/practice/clients", {
+  return callSubmitApi(session, "/api/v1/practice/clients", {
     method: "POST",
     body: { displayName, vrn, nino, utr, companyNumber },
   });
@@ -85,17 +84,17 @@ export async function addClient(_session, params = {}) {
  * practice's HMRC access token travels in the body, alongside the known fact HMRC's invitation
  * check asks for. arn, when given, is stored as the practice's agent reference number for reuse;
  * when omitted, the route reads back whatever the practice stored on an earlier call.
- * @param {Object} _session
+ * @param {Object} session
  * @param {{clientId: string, service: string, knownFact: string, hmrcAccessToken: string, arn?: string}} params
  * @returns {Promise<{client: Object, invitationId: string, status: string}>}
  */
-export async function inviteClient(_session, params = {}) {
+export async function inviteClient(session, params = {}) {
   const clientId = requireField("invite_client", params, "clientId");
   const service = requireField("invite_client", params, "service");
   const knownFact = requireField("invite_client", params, "knownFact");
   const hmrcAccessToken = requireField("invite_client", params, "hmrcAccessToken");
   const { arn } = params;
-  return callSubmitApi(`/api/v1/practice/clients/${encodeURIComponent(clientId)}/authorisation/invitations`, {
+  return callSubmitApi(session, `/api/v1/practice/clients/${encodeURIComponent(clientId)}/authorisation/invitations`, {
     method: "POST",
     body: { service, knownFact, accessToken: hmrcAccessToken, ...(arn ? { arn } : {}) },
   });
@@ -108,16 +107,16 @@ export async function inviteClient(_session, params = {}) {
  * HMRC access token from the plain Authorization header (extractHmrcAccessTokenFromLambdaEvent):
  * the practice's own session bearer goes on X-Authorization instead, freeing Authorization for the
  * HMRC token.
- * @param {Object} _session
+ * @param {Object} session
  * @param {{clientId: string, service: string, hmrcAccessToken: string}} params
  * @returns {Promise<{client: Object, status: string, invitationId: string|null}>}
  */
-export async function clientAuthorisationStatus(_session, params = {}) {
+export async function clientAuthorisationStatus(session, params = {}) {
   const clientId = requireField("client_authorisation_status", params, "clientId");
   const service = requireField("client_authorisation_status", params, "service");
   const hmrcAccessToken = requireField("client_authorisation_status", params, "hmrcAccessToken");
   const query = new URLSearchParams({ service });
-  return callSubmitApi(`/api/v1/practice/clients/${encodeURIComponent(clientId)}/authorisation?${query.toString()}`, {
+  return callSubmitApi(session, `/api/v1/practice/clients/${encodeURIComponent(clientId)}/authorisation?${query.toString()}`, {
     customAuthorizer: true,
     headers: { Authorization: `Bearer ${hmrcAccessToken}` },
   });
