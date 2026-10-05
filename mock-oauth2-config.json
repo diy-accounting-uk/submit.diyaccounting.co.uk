@@ -18,6 +18,24 @@
           }
         }
       ]
+    },
+    {
+      "issuerId": "oauth2",
+      "tokenExpiry": 3600,
+      "requestMappings": [
+        {
+          "requestParam": "client_id",
+          "match": "diya-submit-mcp-proxy",
+          "claims": {
+            "sub": "mcp-proxy-user",
+            "email": "mcp-proxy-user@example.com",
+            "client_id": "diya-submit-mcp-proxy",
+            "aud": ["diya-submit-mcp-proxy"],
+            "scope": "email openid profile",
+            "amr": ["mfa", "pwd"]
+          }
+        }
+      ]
     }
   ]
 }

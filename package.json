@@ -12,6 +12,7 @@
     "start": "./scripts/start-simulator.sh",
     "start:simulator": "./scripts/start-simulator.sh",
     "start:proxy": "./scripts/start-proxy.sh",
+    "mcp:vat-sandbox-proof": "bash -c 'set -o pipefail; scripts/proxy-secrets.sh npx dotenv -e .env.proxy -- node mcp/scripts/vat-sandbox-proof.js'",
     "clean": "./scripts/clean.sh",
     "formatting": "prettier --check . && ./mvnw spotless:check",
     "formatting-fix": "prettier --write . && ./mvnw spotless:apply && git restore web/public/submit.deployment-name.txt web/public/submit.environment-name.txt || true",
