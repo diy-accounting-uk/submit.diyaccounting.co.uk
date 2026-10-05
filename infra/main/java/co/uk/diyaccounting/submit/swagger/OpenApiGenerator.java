@@ -553,7 +553,7 @@ public class OpenApiGenerator {
         String swaggerUiHtml =
                 """
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
     <meta charset="UTF-8">
     <title>DIY Accounting Submit API</title>

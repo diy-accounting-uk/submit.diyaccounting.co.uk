@@ -24,13 +24,13 @@ import { loadTaxDataForBook, productOf, savePackageZip, saveWorkbook } from "@di
 import { PRODUCTS, productModule } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 import { stampBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/provenance.js";
 
-import { idToken as mcpAccessToken } from "./auth.js";
+import { storedCredentials } from "./auth.js";
 
 export const SAVE_FORMATS = ["diya-gl-dir", "diya-gl-zip", "json", "xlsx", "zip"];
 
 // The DIYA cloud forms of open_book/save_book reach DIY Accounting Submit's own storage routes
 // (diyaGlListGet.js, diyaGlVersionGet.js, diyaGlPut.js), the same routes the spreadsheets site's
-// DIYA-GL pages use, over the MCP's own signed-in session (auth.js). Configuration comes from the
+// DIYA-GL pages use, over the session's credentials. Configuration comes from the
 // environment: DIYA_SUBMIT_BASE_URL, the same variable practice-tools.js and submit-tools.js read.
 function baseUrl() {
   const value = process.env.DIYA_SUBMIT_BASE_URL;
@@ -40,12 +40,19 @@ function baseUrl() {
 
 /**
  * A fresh, empty session: no book loaded. cloud carries the last cloud open or save's bookId,
- * clientId and etag, so a later save_book with cloud: true sends the right if-match.
+ * clientId and etag, so a later save_book with cloud: true sends the right if-match. credentials
+ * supplies the bearer every API call sends (the stdio server's is auth.js's file-backed pair; the
+ * hosted Lambda passes the request's bearer and an idToken that answers null). pollBudgetMs caps
+ * how long one tool call polls an asynchronous route, null for the route's own attempt limit.
+ * @param {{credentials?: {accessToken: () => Promise<string>, idToken: () => Promise<string|null>},
+ *   pollBudgetMs?: number|null}} [options]
  * @returns {{book: Object|null, lines: Array|null, product: string|null, sourcePath: string|null,
- *   cloud: {bookId: string, clientId: string|null, etag: string}|null}}
+ *   cloud: {bookId: string, clientId: string|null, etag: string}|null,
+ *   credentials: {accessToken: () => Promise<string>, idToken: () => Promise<string|null>},
+ *   pollBudgetMs: number|null}}
  */
-export function createSession() {
-  return { book: null, lines: null, product: null, sourcePath: null, cloud: null };
+export function createSession({ credentials = storedCredentials, pollBudgetMs = null } = {}) {
+  return { book: null, lines: null, product: null, sourcePath: null, cloud: null, credentials, pollBudgetMs };
 }
 
 function requireLoaded(session) {
@@ -102,7 +109,7 @@ async function openCloudBook(session, { bookId, clientId } = {}) {
   if (!bookId) throw new Error("open_book with cloud: true requires bookId");
   const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
   const response = await fetch(`${baseUrl()}/api/v1/books/${encodeURIComponent(bookId)}/versions/latest${query}`, {
-    headers: { Authorization: `Bearer ${await mcpAccessToken()}` },
+    headers: { Authorization: `Bearer ${await session.credentials.accessToken()}` },
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -120,6 +127,17 @@ async function openCloudBook(session, { bookId, clientId } = {}) {
   session.cloud = { bookId, clientId: clientId ?? null, etag: body.metadata.latestETag };
 
   return summarise(session, "cloud", await bookChecksFor(book, lines));
+}
+
+/**
+ * Reloads the cloud book a stored pointer names into the session, as open_book with cloud: true
+ * does. The session's cloud pointer afterwards carries the etag the cloud answered, which may be
+ * newer than the pointer's.
+ * @param {Object} session
+ * @param {{bookId: string, clientId?: string|null, etag?: string}} pointer
+ */
+export async function restoreCloudBook(session, { bookId, clientId } = {}) {
+  return openCloudBook(session, { bookId, clientId: clientId ?? undefined });
 }
 
 /**
@@ -219,7 +237,7 @@ async function saveCloudBook(session, { bookId, clientId } = {}) {
     method: "PUT",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${await mcpAccessToken()}`,
+      "Authorization": `Bearer ${await session.credentials.accessToken()}`,
       ...(ifMatch ? { "if-match": ifMatch } : {}),
     },
     body: JSON.stringify({

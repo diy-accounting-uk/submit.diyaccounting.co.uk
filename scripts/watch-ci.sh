@@ -20,8 +20,10 @@ raw_runs() { # branch -> json array of all runs
   gh run list --branch "$1" --limit 60 --json workflowName,status,conclusion,databaseId,headSha,event 2>/dev/null
 }
 
-latest_runs() { # branch -> json array of latest run per workflow (push or pull_request events only)
-  raw_runs "$1" | jq -c '[.[] | select(.event == "push" or .event == "pull_request")] | group_by(.workflowName) | map(max_by(.databaseId))' 2>/dev/null
+latest_runs() { # branch -> json array of latest run per workflow and event (push or pull_request only)
+  # Grouped by event too: a skipped pull_request run must not hide a failed push run of the
+  # same workflow. Exits non-zero when gh fails, so a failed read is never taken for "no runs".
+  raw_runs "$1" | jq -ec '[.[] | select(.event == "push" or .event == "pull_request")] | group_by([.workflowName, .event]) | map(max_by(.databaseId))' 2>/dev/null
 }
 
 non_gating_runs() { # branch -> json array of latest runs that are not push or pull_request
@@ -33,10 +35,9 @@ empty=0
 quiet=0
 while true; do
   cycle=$((cycle + 1))
-  total=0; running=0; red=0
+  total=0; running=0; red=0; failed=0
   for branch in $(scope); do
-    runs=$(latest_runs "$branch")
-    [ -z "$runs" ] && continue
+    runs=$(latest_runs "$branch") || { failed=1; continue; }
     n=$(echo "$runs" | jq 'length')
     total=$((total + n))
     running=$((running + $(echo "$runs" | jq '[.[] | select(.status != "completed")] | length')))
@@ -89,7 +90,9 @@ while true; do
   if [ "$cycle" -eq 1 ]; then
     echo "SEEDED: $total latest runs in scope, $running in flight, $red red already"
   fi
-  if [ "$running" -eq 0 ]; then
+  if [ "$failed" -eq 1 ]; then
+    quiet=0
+  elif [ "$running" -eq 0 ]; then
     quiet=$((quiet + 1))
     if [ "$quiet" -ge 2 ]; then
       echo "TALLY: all terminal, $total latest runs, $red red"

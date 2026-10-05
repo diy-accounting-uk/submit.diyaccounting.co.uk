@@ -594,9 +594,26 @@ and 4 can run at once.
 | 4 | Sessions table and identity changes | `IdentityStack.java`, `DataStack.java`, `SubmitSharedNames.java` (table name, secret SSM name), `IdentityStackTest.java`, `DataStackTest.java` (5) | Sonnet |
 | 5 | MCP Lambda handler and session repository (after 3) | `app/functions/mcp/mcpHttp.js`, `app/data/dynamoDbMcpSessionRepository.js`, `app/unit-tests/functions/mcpHttp.test.js` (3) | Sonnet |
 | 6 | Express parity, environment files, system test (after 2 and 5) | `app/bin/server.js`, `.env.proxy`, `.env.simulator`, `.env.test`, `mock-oauth2-config.json`, `app/system-tests/mcpHosted.system.test.js` (6) | Sonnet |
-| 7 | McpStack, wiring and image (after 4 and 5) | `McpStack.java`, `SubmitSharedNames.java`, `SubmitApplication.java`, `McpStackTest.java`, `Dockerfile` (5) | Sonnet |
+| 7 | McpStack, wiring and image (after 4 and 5); also the facade blob-key secret and its name in `SubmitSharedNames.java`, which step 4 left out | `McpStack.java`, `SubmitSharedNames.java`, `SubmitApplication.java`, `McpStackTest.java`, `Dockerfile` (5) | Sonnet |
 | 8 | Edge and workflows (after 7) | `EdgeStack.java`, `EdgeStackTest.java`, `.github/workflows/deploy.yml`, `destroy-ci.yml`, `destroy-prod.yml`, `stack-drift.yml`, `scripts/ci/select-jobs.mjs`, `REPORT_CAPABILITIES.md` (8) | Sonnet |
 | 9 | Behaviour test and the public page (after a ci deploy of 8) | `behaviour-tests/mcpHosted.behaviour.test.js`, `playwright.config.js`, `package.json`, `scripts/toggle-cognito-native-auth.js`, `web/public/mcp.html`, `mcp/README.md` (6) | Sonnet |
+
+What step 2 settled that steps 6, 7 and 9 build on:
+
+- The consent POST requires the `__Host-mcp_consent` cookie the GET set (`Secure; HttpOnly;
+  SameSite=Strict`), so a cross-site POST of a consent blob cannot skip the click. The system
+  test keeps cookies between GET and POST; a browser does that on its own.
+- `MCP_OAUTH_BLOB_KEY` (a raw key of 32 or more characters) is read before
+  `MCP_OAUTH_BLOB_KEY_SECRET_ARN`. Step 6 sets the raw key in `.env.proxy`, `.env.simulator` and
+  `.env.test`; step 7 sets only the ARN.
+- `apiEndpoint(app)` is in `mcpOauth.js` already, form-body rebuild and verbatim body included;
+  step 6 calls it from `server.js` and leaves `mcpOauth.js` alone.
+- The issuer and every endpoint are `https://HOST`, and a host outside `MCP_PUBLIC_HOSTS` gets 400.
+  A plain-http local lane sets `MCP_PUBLIC_HOSTS` to its host and still advertises https URLs, so
+  the simulator system test calls the handlers directly or runs over HTTPS.
+- A refresh needs `client_id` to be `diya-submit-dcr` or a well-formed claude.ai or claude.com
+  CIMD URL (format only). The code grant returns the scope cut at authorize; a refresh omits it.
+- Upstream Cognito token and revoke calls time out at 6 s, inside the 8 s Lambda timeout.
 
 Done when step 9 passes on a ci slot host and the operator has added
 `https://submit.diyaccounting.co.uk/mcp` as a custom connector in Claude and run

@@ -13,13 +13,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockAccessToken = vi.fn().mockResolvedValue("practice-access-token");
 const mockIdToken = vi.fn().mockResolvedValue("practice-id-token");
-vi.mock("../lib/auth.js", () => ({
-  accessToken: (...args) => mockAccessToken(...args),
-  idToken: (...args) => mockIdToken(...args),
-}));
 
 import { moveBookToClient, listClients, addClient, inviteClient, clientAuthorisationStatus } from "../lib/practice-tools.js";
+import { createSession } from "../lib/book-tools.js";
 import { TOOLS } from "../lib/server.js";
+
+const session = createSession({
+  credentials: { accessToken: (...args) => mockAccessToken(...args), idToken: (...args) => mockIdToken(...args) },
+});
 
 const BOOK_ID = "11111111-2222-4333-8444-555555555555";
 const CLIENT_ID = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
@@ -53,7 +54,7 @@ describe("practice-tools move_book_to_client", () => {
     const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { bookId: BOOK_ID, clientId: CLIENT_ID, movedObjectCount: 3 }));
     vi.stubGlobal("fetch", mockFetch);
 
-    const result = await moveBookToClient({}, { clientId: CLIENT_ID, bookId: BOOK_ID });
+    const result = await moveBookToClient(session, { clientId: CLIENT_ID, bookId: BOOK_ID });
 
     expect(result).toEqual({ bookId: BOOK_ID, clientId: CLIENT_ID, movedObjectCount: 3 });
     const [url, init] = mockFetch.mock.calls[0];
@@ -67,7 +68,7 @@ describe("practice-tools move_book_to_client", () => {
     const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, {}));
     vi.stubGlobal("fetch", mockFetch);
 
-    await moveBookToClient({}, { clientId: CLIENT_ID, bookId: BOOK_ID });
+    await moveBookToClient(session, { clientId: CLIENT_ID, bookId: BOOK_ID });
 
     expect(mockFetch.mock.calls[0][0]).toBe(
       `https://submit.diyaccounting.co.uk/api/v1/practice/clients/${CLIENT_ID}/books/${BOOK_ID}/move`,
@@ -78,32 +79,32 @@ describe("practice-tools move_book_to_client", () => {
     const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(409, { message: "Client already has a book" }));
     vi.stubGlobal("fetch", mockFetch);
 
-    await expect(moveBookToClient({}, { clientId: CLIENT_ID, bookId: BOOK_ID })).rejects.toThrow("Client already has a book");
+    await expect(moveBookToClient(session, { clientId: CLIENT_ID, bookId: BOOK_ID })).rejects.toThrow("Client already has a book");
   });
 
   it("throws a generic message when a failed response carries no message", async () => {
     const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(500, {}));
     vi.stubGlobal("fetch", mockFetch);
 
-    await expect(moveBookToClient({}, { clientId: CLIENT_ID, bookId: BOOK_ID })).rejects.toThrow("HTTP 500");
+    await expect(moveBookToClient(session, { clientId: CLIENT_ID, bookId: BOOK_ID })).rejects.toThrow("HTTP 500");
   });
 
   it("requires a clientId", async () => {
-    await expect(moveBookToClient({}, { bookId: BOOK_ID })).rejects.toThrow("clientId");
+    await expect(moveBookToClient(session, { bookId: BOOK_ID })).rejects.toThrow("clientId");
   });
 
   it("requires a bookId", async () => {
-    await expect(moveBookToClient({}, { clientId: CLIENT_ID })).rejects.toThrow("bookId");
+    await expect(moveBookToClient(session, { clientId: CLIENT_ID })).rejects.toThrow("bookId");
   });
 
   it("requires DIYA_SUBMIT_BASE_URL to be configured", async () => {
     delete process.env.DIYA_SUBMIT_BASE_URL;
-    await expect(moveBookToClient({}, { clientId: CLIENT_ID, bookId: BOOK_ID })).rejects.toThrow("DIYA_SUBMIT_BASE_URL");
+    await expect(moveBookToClient(session, { clientId: CLIENT_ID, bookId: BOOK_ID })).rejects.toThrow("DIYA_SUBMIT_BASE_URL");
   });
 
-  it("propagates auth.js's not-signed-in error", async () => {
+  it("propagates the credentials' not-signed-in error", async () => {
     mockAccessToken.mockRejectedValueOnce(new Error("Not signed in to DIY Accounting Submit. Run signIn() first."));
-    await expect(moveBookToClient({}, { clientId: CLIENT_ID, bookId: BOOK_ID })).rejects.toThrow("Not signed in");
+    await expect(moveBookToClient(session, { clientId: CLIENT_ID, bookId: BOOK_ID })).rejects.toThrow("Not signed in");
   });
 
   it("is registered on the server as move_book_to_client", () => {
@@ -130,7 +131,7 @@ describe("practice-tools client tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, LIST_CLIENTS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await listClients({}, {});
+      const result = await listClients(session, {});
 
       expect(result).toEqual(LIST_CLIENTS_RESPONSE);
       expect(result.clients).toHaveLength(2);
@@ -143,7 +144,7 @@ describe("practice-tools client tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(500, { message: "Internal server error" }));
       vi.stubGlobal("fetch", mockFetch);
 
-      await expect(listClients({}, {})).rejects.toThrow("Internal server error");
+      await expect(listClients(session, {})).rejects.toThrow("Internal server error");
     });
 
     it("is registered on the server as list_clients", () => {
@@ -156,7 +157,7 @@ describe("practice-tools client tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, ADD_CLIENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await addClient({}, { displayName: "Brickwork Pro Ltd", vrn: "983238295", companyNumber: "12345678" });
+      const result = await addClient(session, { displayName: "Brickwork Pro Ltd", vrn: "983238295", companyNumber: "12345678" });
 
       expect(result).toEqual(ADD_CLIENT_RESPONSE);
       expect(result.client.clientId).toBe(ADD_CLIENT_RESPONSE.client.clientId);
@@ -170,7 +171,7 @@ describe("practice-tools client tools", () => {
     });
 
     it("requires displayName", async () => {
-      await expect(addClient({}, { vrn: "983238295" })).rejects.toThrow("displayName");
+      await expect(addClient(session, { vrn: "983238295" })).rejects.toThrow("displayName");
     });
 
     it("throws the API's own message on a validation error", async () => {
@@ -179,7 +180,7 @@ describe("practice-tools client tools", () => {
         .mockResolvedValueOnce(jsonResponse(400, { message: "Invalid VAT registration number format - must be 9 digits" }));
       vi.stubGlobal("fetch", mockFetch);
 
-      await expect(addClient({}, { displayName: "Brickwork Pro Ltd", vrn: "not-a-vrn" })).rejects.toThrow(
+      await expect(addClient(session, { displayName: "Brickwork Pro Ltd", vrn: "not-a-vrn" })).rejects.toThrow(
         "Invalid VAT registration number format",
       );
     });
@@ -202,7 +203,7 @@ describe("practice-tools client tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, INVITE_CLIENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await inviteClient({}, PARAMS);
+      const result = await inviteClient(session, PARAMS);
 
       expect(result).toEqual(INVITE_CLIENT_RESPONSE);
       expect(result.status).toBe("pending");
@@ -221,24 +222,24 @@ describe("practice-tools client tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, INVITE_CLIENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      await inviteClient({}, { ...PARAMS, arn: "XARN1234567" });
+      await inviteClient(session, { ...PARAMS, arn: "XARN1234567" });
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
       expect(body.arn).toBe("XARN1234567");
     });
 
     it("requires clientId, service, knownFact and hmrcAccessToken", async () => {
-      await expect(inviteClient({}, { ...PARAMS, clientId: undefined })).rejects.toThrow("clientId");
-      await expect(inviteClient({}, { ...PARAMS, service: undefined })).rejects.toThrow("service");
-      await expect(inviteClient({}, { ...PARAMS, knownFact: undefined })).rejects.toThrow("knownFact");
-      await expect(inviteClient({}, { ...PARAMS, hmrcAccessToken: undefined })).rejects.toThrow("hmrcAccessToken");
+      await expect(inviteClient(session, { ...PARAMS, clientId: undefined })).rejects.toThrow("clientId");
+      await expect(inviteClient(session, { ...PARAMS, service: undefined })).rejects.toThrow("service");
+      await expect(inviteClient(session, { ...PARAMS, knownFact: undefined })).rejects.toThrow("knownFact");
+      await expect(inviteClient(session, { ...PARAMS, hmrcAccessToken: undefined })).rejects.toThrow("hmrcAccessToken");
     });
 
     it("throws a 404 client-not-found style message for a client that is not the caller's", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(404, { message: "Client not found" }));
       vi.stubGlobal("fetch", mockFetch);
 
-      await expect(inviteClient({}, PARAMS)).rejects.toThrow("Client not found");
+      await expect(inviteClient(session, PARAMS)).rejects.toThrow("Client not found");
     });
 
     it("is registered on the server as invite_client", () => {
@@ -253,7 +254,7 @@ describe("practice-tools client tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, CLIENT_AUTHORISATION_STATUS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await clientAuthorisationStatus({}, PARAMS);
+      const result = await clientAuthorisationStatus(session, PARAMS);
 
       expect(result).toEqual(CLIENT_AUTHORISATION_STATUS_RESPONSE);
       expect(result.status).toBe("authorised");
@@ -265,16 +266,16 @@ describe("practice-tools client tools", () => {
     });
 
     it("requires clientId, service and hmrcAccessToken", async () => {
-      await expect(clientAuthorisationStatus({}, { ...PARAMS, clientId: undefined })).rejects.toThrow("clientId");
-      await expect(clientAuthorisationStatus({}, { ...PARAMS, service: undefined })).rejects.toThrow("service");
-      await expect(clientAuthorisationStatus({}, { ...PARAMS, hmrcAccessToken: undefined })).rejects.toThrow("hmrcAccessToken");
+      await expect(clientAuthorisationStatus(session, { ...PARAMS, clientId: undefined })).rejects.toThrow("clientId");
+      await expect(clientAuthorisationStatus(session, { ...PARAMS, service: undefined })).rejects.toThrow("service");
+      await expect(clientAuthorisationStatus(session, { ...PARAMS, hmrcAccessToken: undefined })).rejects.toThrow("hmrcAccessToken");
     });
 
     it("throws a 404 client-not-found style message for a client that is not the caller's", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(404, { message: "Client not found" }));
       vi.stubGlobal("fetch", mockFetch);
 
-      await expect(clientAuthorisationStatus({}, PARAMS)).rejects.toThrow("Client not found");
+      await expect(clientAuthorisationStatus(session, PARAMS)).rejects.toThrow("Client not found");
     });
 
     it("is registered on the server as client_authorisation_status", () => {

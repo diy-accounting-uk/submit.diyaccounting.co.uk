@@ -88,9 +88,7 @@ async function serveRealSite(page) {
 async function openEditForm(page, taxYear) {
   await serveRealSite(page);
   await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
-  await page.waitForFunction(
-    () => typeof window.handleImportDerivedFigures === "function" || document.getElementById("importDerivedFigures") !== null,
-  );
+  await page.waitForFunction(() => document.getElementById("booksImportFile") !== null);
   await page.evaluate((year) => {
     loadedTaxYear = year;
     document.getElementById("loadCriteriaForm").style.display = "none";
@@ -99,7 +97,7 @@ async function openEditForm(page, taxYear) {
 }
 
 async function importFile(page, name, content) {
-  await page.locator("#importDerivedFigures").setInputFiles({ name, mimeType: "application/json", buffer: Buffer.from(content) });
+  await page.locator("#booksImportFile").setInputFiles({ name, mimeType: "application/json", buffer: Buffer.from(content) });
 }
 
 test.describe("annualSubmission.html imports a book's derived figures", () => {
@@ -108,7 +106,7 @@ test.describe("annualSubmission.html imports a book's derived figures", () => {
 
     await importFile(page, "annual.json", JSON.stringify(DERIVED_2025_26));
 
-    await expect(page.locator("#importDerivedFiguresStatus")).toHaveText(
+    await expect(page.locator("#booksImportStatus")).toHaveText(
       "Imported 5 figures from annual.json for 2025-26. Some fields were not on this form.",
     );
     await expect(page.locator("#allowanceTypeItemised")).toBeChecked();
@@ -119,7 +117,7 @@ test.describe("annualSubmission.html imports a book's derived figures", () => {
     await expect(page.locator("#includedNonTaxableProfits")).toHaveValue("75.5");
     await expect(page.locator("#tradingIncomeAllowance")).toBeDisabled();
     // The file input is cleared so the same file can be picked again after an edit.
-    await expect(page.locator("#importDerivedFigures")).toHaveValue("");
+    await expect(page.locator("#booksImportFile")).toHaveValue("");
   });
 
   test("a trading-allowance file selects the trading option", async ({ page }) => {
@@ -127,7 +125,7 @@ test.describe("annualSubmission.html imports a book's derived figures", () => {
 
     await importFile(page, "trading.json", JSON.stringify({ taxYear: "2025-26", allowances: { tradingIncomeAllowance: 1000 } }));
 
-    await expect(page.locator("#importDerivedFiguresStatus")).toHaveText("Imported 1 figure from trading.json for 2025-26.");
+    await expect(page.locator("#booksImportStatus")).toHaveText("Imported 1 figure from trading.json for 2025-26.");
     await expect(page.locator("#allowanceTypeTrading")).toBeChecked();
     await expect(page.locator("#tradingIncomeAllowance")).toHaveValue("1000");
     await expect(page.locator("#annualInvestmentAllowance")).toBeDisabled();
@@ -138,9 +136,7 @@ test.describe("annualSubmission.html imports a book's derived figures", () => {
 
     await importFile(page, "annual.json", JSON.stringify(DERIVED_2025_26));
 
-    await expect(page.locator("#importDerivedFiguresStatus")).toHaveText(
-      "annual.json is for 2025-26; this form is for 2024-25. Nothing imported.",
-    );
+    await expect(page.locator("#booksImportStatus")).toHaveText("annual.json is for 2025-26; this form is for 2024-25. Nothing imported.");
     await expect(page.locator("#annualInvestmentAllowance")).toHaveValue("0");
     await expect(page.locator("#allowanceTypeNone")).toBeChecked();
   });
@@ -149,10 +145,10 @@ test.describe("annualSubmission.html imports a book's derived figures", () => {
     await openEditForm(page, "2025-26");
 
     await importFile(page, "notes.json", "not json at all");
-    await expect(page.locator("#importDerivedFiguresStatus")).toHaveText("Could not import notes.json: the file is not JSON.");
+    await expect(page.locator("#booksImportStatus")).toHaveText("Could not import notes.json: the file is not JSON.");
 
     await importFile(page, "empty.json", JSON.stringify({ taxYear: "2025-26", omitted: [] }));
-    await expect(page.locator("#importDerivedFiguresStatus")).toHaveText(
+    await expect(page.locator("#booksImportStatus")).toHaveText(
       "Could not import empty.json: the file carries no allowances and no adjustments.",
     );
     await expect(page.locator("#annualInvestmentAllowance")).toHaveValue("0");

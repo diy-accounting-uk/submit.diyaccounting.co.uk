@@ -7,23 +7,21 @@
 // Accounting Submit's deployed API rather than the local filesystem or the engine.
 //
 // Configuration comes from the environment: DIYA_SUBMIT_BASE_URL (the deployed site's base URL).
-// The session bearer is the MCP's own sign-in (auth.js's accessToken(), the Cognito access token
-// its client_id claim names as the MCP client -- ApiStack.java's main and custom authorisers
+// The session bearer is the Cognito access token the session's credentials answer (the stdio
+// server's is auth.js's own sign-in; the hosted Lambda's is the request's bearer), whose client_id
+// claim names the MCP client -- ApiStack.java's main and custom authorisers
 // both accept it, the same way they accept the Submit web client's). Two routes here
 // (list_vat_obligations, submit_vat_return) sit behind the API's custom Lambda authoriser, whose
 // identity source is the X-Authorization header (ApiStack.java), which frees the plain
 // Authorization header for the HMRC access token those two routes read directly
 // (hmrcVatObligationGet.js reads it from the header; hmrcVatReturnPost.js takes it as the body's
-// accessToken field). Those two routes also carry X-Id-Token (auth.js's idToken()), so the
+// accessToken field). Those two routes also carry X-Id-Token (the session credentials' idToken(), when it answers one), so the
 // custom authoriser can build Gov-Client-Multi-Factor from a verified claim rather than finding
 // none (see app/functions/auth/customAuthorizer.js's extractMfaContext). Every other route here
 // sits behind the standard Cognito JWT authoriser, so the session bearer goes in the plain
 // Authorization header, as practice-tools.js sends it.
 //
-// Obtaining the HMRC access token remains outside this tool's scope; run sign_in first to
-// establish the MCP's own session bearer.
-
-import { accessToken as mcpAccessToken, idToken as mcpIdToken } from "./auth.js";
+// Obtaining the HMRC access token remains outside this tool's scope.
 
 function baseUrl() {
   const value = process.env.DIYA_SUBMIT_BASE_URL;
@@ -50,16 +48,20 @@ const POLL_MAX_ATTEMPTS = 10;
 const POLL_INTERVAL_MS = 1000;
 const POLL_BACKOFF_MAX_MS = 4000;
 
-async function pollUntilSettled(url, requestInit, firstResponse) {
+async function pollUntilSettled(session, url, requestInit, firstResponse) {
   let response = firstResponse;
   const pollHeaders = { ...requestInit.headers };
   delete pollHeaders["x-initial-request"];
   const requestId = response.headers.get("x-request-id");
   if (requestId) pollHeaders["x-request-id"] = requestId;
   const pollUrl = response.headers.get("Location") || url;
+  const deadline = session.pollBudgetMs === null ? Infinity : Date.now() + session.pollBudgetMs;
 
   for (let attempt = 1; attempt <= POLL_MAX_ATTEMPTS && response.status === 202; attempt += 1) {
     const delayMs = Math.min(POLL_INTERVAL_MS * 2 ** (attempt - 1), POLL_BACKOFF_MAX_MS);
+    if (Date.now() + delayMs > deadline) {
+      throw new Error(`Timed out after ${session.pollBudgetMs} ms waiting for ${pollUrl} to complete`);
+    }
     await new Promise((resolve) => setTimeout(resolve, delayMs));
     response = await fetch(url, { ...requestInit, headers: pollHeaders });
   }
@@ -71,25 +73,27 @@ async function pollUntilSettled(url, requestInit, firstResponse) {
 }
 
 /**
- * Calls one of this service's own API routes with the MCP's own session bearer (auth.js's
- * accessToken()), over the custom authoriser's X-Authorization header when customAuthorizer is
+ * Calls one of this service's own API routes with the session's own bearer (its
+ * credentials' accessToken()), over the custom authoriser's X-Authorization header when customAuthorizer is
  * set, or the standard Authorization header otherwise; extra headers (an HMRC access token,
  * Gov-Test-Scenario, hmrcAccount) merge in on top and are never overwritten by the session
- * header. A customAuthorizer call also carries X-Id-Token (auth.js's idToken()), which
- * customAuthorizer.js reads to build Gov-Client-Multi-Factor server-side. A 202 response is
+ * header. A customAuthorizer call also carries X-Id-Token when the session's credentials answer an
+ * id token, which customAuthorizer.js reads to build Gov-Client-Multi-Factor server-side. A 202 response is
  * polled to a terminal status before this returns (see pollUntilSettled); a poll that never
- * settles throws with the poll URL in the message rather than returning a partial result.
+ * settles, or outlasts the session's pollBudgetMs, throws with the poll URL in the message rather than returning a partial result.
  * Exported so practice-tools.js's client tools (list_clients, add_client, invite_client,
  * client_authorisation_status) call the same routes over the same HTTP layer rather than a
  * second one of their own.
+ * @param {{credentials: {accessToken: () => Promise<string>, idToken: () => Promise<string|null>}, pollBudgetMs: number|null}} session
  * @param {string} path - the route, e.g. "/api/v1/hmrc/vat/obligation?vrn=..."
  * @param {{method?: string, body?: Object, headers?: Object, customAuthorizer?: boolean}} [options]
  */
-export async function callSubmitApi(path, { method = "GET", body, headers = {}, customAuthorizer = false } = {}) {
+export async function callSubmitApi(session, path, { method = "GET", body, headers = {}, customAuthorizer = false } = {}) {
   const sessionHeaderName = customAuthorizer ? "X-Authorization" : "Authorization";
+  const idToken = customAuthorizer ? await session.credentials.idToken() : null;
   const finalHeaders = {
-    [sessionHeaderName]: `Bearer ${await mcpAccessToken()}`,
-    ...(customAuthorizer ? { "X-Id-Token": await mcpIdToken() } : {}),
+    [sessionHeaderName]: `Bearer ${await session.credentials.accessToken()}`,
+    ...(idToken ? { "X-Id-Token": idToken } : {}),
     "x-initial-request": "true",
     ...headers,
   };
@@ -98,7 +102,7 @@ export async function callSubmitApi(path, { method = "GET", body, headers = {}, 
   const requestInit = { method, headers: finalHeaders, body: body !== undefined ? JSON.stringify(body) : undefined };
   let response = await fetch(url, requestInit);
   if (response.status === 202) {
-    response = await pollUntilSettled(url, requestInit, response);
+    response = await pollUntilSettled(session, url, requestInit, response);
   }
   const responseBody = await response.json().catch(() => ({}));
   if (!response.ok) {
@@ -111,11 +115,11 @@ export async function callSubmitApi(path, { method = "GET", body, headers = {}, 
  * list_vat_obligations: the open and fulfilled obligations for one VRN, or for one practice
  * client's VRN when clientId is given instead (hmrcVatObligationGet.js resolves it from the
  * client row; a client that is not this practice's own answers 403 client-not-found).
- * @param {Object} _session - unused; this tool carries no local session state
+ * @param {Object} session
  * @param {{vrn?: string, clientId?: string, from?: string, to?: string, status?: string,
  *   hmrcAccessToken: string, hmrcAccount?: string, govTestScenario?: string}} params
  */
-export async function listVatObligations(_session, params = {}) {
+export async function listVatObligations(session, params = {}) {
   const { vrn, clientId, from, to, status, hmrcAccount, govTestScenario } = params;
   if (!vrn && !clientId) {
     throw new Error("list_vat_obligations requires vrn, or clientId to resolve it from the client row");
@@ -133,7 +137,7 @@ export async function listVatObligations(_session, params = {}) {
   const headers = { Authorization: `Bearer ${hmrcAccessToken}` };
   if (hmrcAccount) headers.hmrcAccount = hmrcAccount;
 
-  return callSubmitApi(`/api/v1/hmrc/vat/obligation?${query.toString()}`, { customAuthorizer: true, headers });
+  return callSubmitApi(session, `/api/v1/hmrc/vat/obligation?${query.toString()}`, { customAuthorizer: true, headers });
 }
 
 const VAT_RETURN_BOX_FIELDS = [
@@ -155,7 +159,7 @@ const VAT_RETURN_BOX_FIELDS = [
  * — the filed receipt sits under `receipt` (also duplicated at `hmrcResponseBody`), `periodKey` is
  * the obligation period this route resolved from periodStart/periodEnd, and `receiptId` is the
  * receipt's file name without its .json suffix (get_vat_receipt takes `${receiptId}.json`).
- * @param {Object} _session
+ * @param {Object} session
  * @param {{vatNumber?: string, clientId?: string, periodStart: string, periodEnd: string,
  *   hmrcAccessToken: string, vatDueSales: number, vatDueAcquisitions: number,
  *   vatReclaimedCurrPeriod: number, totalValueSalesExVAT: number, totalValuePurchasesExVAT: number,
@@ -163,7 +167,7 @@ const VAT_RETURN_BOX_FIELDS = [
  *   hmrcAccount?: string, govTestScenario?: string, runFraudPreventionHeaderValidation?: boolean,
  *   allowSyntheticObligations?: boolean}} params
  */
-export async function submitVatReturn(_session, params = {}) {
+export async function submitVatReturn(session, params = {}) {
   const { vatNumber, clientId } = params;
   if (!vatNumber && !clientId) {
     throw new Error("submit_vat_return requires vatNumber, or clientId to resolve it from the client row");
@@ -181,7 +185,7 @@ export async function submitVatReturn(_session, params = {}) {
   if (hmrcAccount) headers.hmrcAccount = hmrcAccount;
   if (govTestScenario) headers["Gov-Test-Scenario"] = govTestScenario;
 
-  return callSubmitApi("/api/v1/hmrc/vat/return", {
+  return callSubmitApi(session, "/api/v1/hmrc/vat/return", {
     method: "POST",
     customAuthorizer: true,
     headers,
@@ -203,14 +207,14 @@ export async function submitVatReturn(_session, params = {}) {
  * practice's clients (hmrcReceiptGet.js checks the client belongs to this practice before
  * reading; a client that is not this practice's own answers 403 client-not-found) — it does not
  * change which receipt is read, since a receipt's key is the signed-in user's own regardless.
- * @param {Object} _session
+ * @param {Object} session
  * @param {{name: string, clientId?: string}} params
  */
-export async function getVatReceipt(_session, params = {}) {
+export async function getVatReceipt(session, params = {}) {
   const name = requireField("get_vat_receipt", params, "name");
   const { clientId } = params;
   const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
-  return callSubmitApi(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}${query}`);
+  return callSubmitApi(session, `/api/v1/hmrc/receipt/${encodeURIComponent(name)}${query}`);
 }
 
 const ACCOUNTS_STATEMENT_FIELDS = ["section477Exemption", "membersNotRequiredAudit", "directorsResponsibilities", "microEntityProvisions"];
@@ -256,14 +260,14 @@ function accountsFilingBody(toolName, params, { allowClientId = false } = {}) {
  * preview_micro_entity_accounts: the rendered iXBRL for confirmed figures, without reaching the
  * Companies House XML Gateway. The preview route never resolves a company from a practice
  * client's row, so this tool takes companyNumber only, not clientId.
- * @param {Object} _session
+ * @param {Object} session
  * @param {{companyNumber: string, companyName: string, periodStart: string, periodEnd: string,
  *   balanceSheet: {currentYear: Object, priorYear: Object}, averageEmployees: number,
  *   director: {name: string, dateApproved: string}, statementsAccepted: Object}} params
  */
-export async function previewMicroEntityAccounts(_session, params = {}) {
+export async function previewMicroEntityAccounts(session, params = {}) {
   const body = accountsFilingBody("preview_micro_entity_accounts", params);
-  return callSubmitApi("/api/v1/companies-house/accounts/preview", { method: "POST", body });
+  return callSubmitApi(session, "/api/v1/companies-house/accounts/preview", { method: "POST", body });
 }
 
 /**
@@ -275,26 +279,26 @@ export async function previewMicroEntityAccounts(_session, params = {}) {
  * {submissionNumber, gatewayTimestamp, pollInterval}; poll_accounts_submission takes the
  * submissionNumber to reach the filing's outcome. This route answers synchronously (200/201),
  * unlike list_vat_obligations and submit_vat_return.
- * @param {Object} _session
+ * @param {Object} session
  * @param {Object} params - as previewMicroEntityAccounts, but companyNumber is optional when
  *   clientId is given, plus companyAuthCode
  */
-export async function submitMicroEntityAccounts(_session, params = {}) {
+export async function submitMicroEntityAccounts(session, params = {}) {
   const companyAuthCode = requireField("submit_micro_entity_accounts", params, "companyAuthCode");
   const body = accountsFilingBody("submit_micro_entity_accounts", params, { allowClientId: true });
-  return callSubmitApi("/api/v1/companies-house/accounts", { method: "POST", body: { ...body, companyAuthCode } });
+  return callSubmitApi(session, "/api/v1/companies-house/accounts", { method: "POST", body: { ...body, companyAuthCode } });
 }
 
 /**
  * poll_accounts_submission: the filing's outcome — {submissionNumber, statusCode, companyNumber,
  * rejections}, where statusCode is "PENDING" while Companies House has not answered yet, "ACCEPT"
  * once filed (with a receiptId added), or "REJECT" with rejections carrying the reasons.
- * @param {Object} _session
+ * @param {Object} session
  * @param {{submissionNumber: string}} params
  */
-export async function pollAccountsSubmission(_session, params = {}) {
+export async function pollAccountsSubmission(session, params = {}) {
   const submissionNumber = requireField("poll_accounts_submission", params, "submissionNumber");
-  return callSubmitApi(`/api/v1/companies-house/accounts/${encodeURIComponent(submissionNumber)}`);
+  return callSubmitApi(session, `/api/v1/companies-house/accounts/${encodeURIComponent(submissionNumber)}`);
 }
 
 /**
@@ -304,16 +308,16 @@ export async function pollAccountsSubmission(_session, params = {}) {
  * paymentPeriods/paymentPeriodPaid — over the deployed API. Confirmation statement routes never
  * resolve a company from a practice client's row, so this tool takes companyNumber only, not
  * clientId. Takes the company authentication code on this one call only; it is not stored.
- * @param {Object} _session
+ * @param {Object} session
  * @param {{companyNumber: string, companyAuthCode: string, madeUpDate: string, companyType?: string}} params
  */
-export async function getConfirmationStatementData(_session, params = {}) {
+export async function getConfirmationStatementData(session, params = {}) {
   const companyNumber = requireField("get_confirmation_statement_data", params, "companyNumber");
   const companyAuthCode = requireField("get_confirmation_statement_data", params, "companyAuthCode");
   const madeUpDate = requireField("get_confirmation_statement_data", params, "madeUpDate");
   const { companyType } = params;
 
-  return callSubmitApi(`/api/v1/companies-house/company/${encodeURIComponent(companyNumber)}/filing-data`, {
+  return callSubmitApi(session, `/api/v1/companies-house/company/${encodeURIComponent(companyNumber)}/filing-data`, {
     method: "POST",
     body: { companyAuthCode, madeUpDate, ...(companyType !== undefined ? { companyType } : {}) },
   });
@@ -356,15 +360,15 @@ function confirmationStatementFilingBody(toolName, params) {
  * preview_confirmation_statement: the rendered ConfirmationAndVerificationStatement body for
  * confirmed answers, without reaching the Companies House XML Gateway. Every director's personal
  * code is masked in the rendered body before it leaves the route.
- * @param {Object} _session
+ * @param {Object} session
  * @param {{companyNumber: string, companyName: string, dateSigned: string, reviewDate: string,
  *   sicCodes?: string[], statementOfCapital?: Object, shareholdings?: Object[],
  *   registeredEmailAddress?: string, lawfulPurposeStatementAccepted: true,
  *   directors: {forename: string, surname: string, dob: string, personalCode: string}[]}} params
  */
-export async function previewConfirmationStatement(_session, params = {}) {
+export async function previewConfirmationStatement(session, params = {}) {
   const body = confirmationStatementFilingBody("preview_confirmation_statement", params);
-  return callSubmitApi("/api/v1/companies-house/confirmation-statement/preview", { method: "POST", body });
+  return callSubmitApi(session, "/api/v1/companies-house/confirmation-statement/preview", { method: "POST", body });
 }
 
 /**
@@ -374,13 +378,13 @@ export async function previewConfirmationStatement(_session, params = {}) {
  * {submissionNumber, gatewayTimestamp, pollInterval}; poll_confirmation_statement takes the
  * submissionNumber to reach the filing's outcome. This route answers synchronously (200/201),
  * unlike list_vat_obligations and submit_vat_return.
- * @param {Object} _session
+ * @param {Object} session
  * @param {Object} params - as previewConfirmationStatement, plus companyAuthCode
  */
-export async function submitConfirmationStatement(_session, params = {}) {
+export async function submitConfirmationStatement(session, params = {}) {
   const companyAuthCode = requireField("submit_confirmation_statement", params, "companyAuthCode");
   const body = confirmationStatementFilingBody("submit_confirmation_statement", params);
-  return callSubmitApi("/api/v1/companies-house/confirmation-statement", { method: "POST", body: { ...body, companyAuthCode } });
+  return callSubmitApi(session, "/api/v1/companies-house/confirmation-statement", { method: "POST", body: { ...body, companyAuthCode } });
 }
 
 /**
@@ -388,10 +392,10 @@ export async function submitConfirmationStatement(_session, params = {}) {
  * companyNumber, rejections}, where statusCode is "PENDING" while Companies House has not
  * answered yet, "ACCEPT" once filed (with a receiptId added), or "REJECT" with rejections
  * carrying the reasons.
- * @param {Object} _session
+ * @param {Object} session
  * @param {{submissionNumber: string}} params
  */
-export async function pollConfirmationStatement(_session, params = {}) {
+export async function pollConfirmationStatement(session, params = {}) {
   const submissionNumber = requireField("poll_confirmation_statement", params, "submissionNumber");
-  return callSubmitApi(`/api/v1/companies-house/confirmation-statement/${encodeURIComponent(submissionNumber)}`);
+  return callSubmitApi(session, `/api/v1/companies-house/confirmation-statement/${encodeURIComponent(submissionNumber)}`);
 }

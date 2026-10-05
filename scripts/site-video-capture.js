@@ -399,6 +399,8 @@ async function main() {
   const browser = await chromium.launch({ headless: !args.headed });
   const context = await browser.newContext({
     viewport: script.viewport,
+    locale: "en-GB",
+    timezoneId: "Europe/London",
     deviceScaleFactor: scaleFactor,
     // Same marker playwright.config.js appends for every behaviour-test and probe run
     // (app/lib/visitorClassifier.js), so a recording against a real deployment tags as

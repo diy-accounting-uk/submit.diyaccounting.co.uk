@@ -136,6 +136,7 @@ public class SubmitSharedNames {
     public String practiceClientsTableName;
     public String securityStateTableName;
     public String alarmIssueLockTableName;
+    public String mcpSessionsTableName;
     public String diyaGlBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
@@ -1640,6 +1641,7 @@ public class SubmitSharedNames {
         this.practiceClientsTableName = "%s-practice-clients".formatted(this.envResourceNamePrefix);
         this.securityStateTableName = "%s-security-state".formatted(this.envResourceNamePrefix);
         this.alarmIssueLockTableName = "%s-alarm-issue-locks".formatted(this.envResourceNamePrefix);
+        this.mcpSessionsTableName = "%s-mcp-sessions".formatted(this.envResourceNamePrefix);
         this.diyaGlBucketName = "%s-diya-gl-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogDeliveryHoldingSourceName =

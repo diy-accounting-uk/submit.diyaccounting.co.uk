@@ -75,6 +75,7 @@ export async function executeAsyncRequestPolling(res, input, init, currentHeader
     currentHeaders.set("x-request-id", requestId);
   }
 
+  const statusRequestId = requestId || `async-${crypto.randomUUID()}`;
   let pollCount = 0;
   const startTime = Date.now();
 
@@ -96,7 +97,7 @@ export async function executeAsyncRequestPolling(res, input, init, currentHeader
     const delay = urlPath.includes("/hmrc/") ? Math.min(Math.pow(2, pollCount - 1) * 1000, 4000) : 1000;
 
     if (typeof window !== "undefined" && window.showStatus) {
-      window.showStatus(init.pollPendingMessage || `Still processing... (poll #${pollCount})`, "info");
+      window.showStatus(init.pollPendingMessage || "Still processing...", "info", { requestId: statusRequestId });
     }
 
     await new Promise((resolve, reject) => {
@@ -126,9 +127,9 @@ export async function executeAsyncRequestPolling(res, input, init, currentHeader
   console.log(`finished async request ${requestDesc} (poll #${pollCount}, elapsed: ${Date.now() - startTime}ms, status: ${res.status})`);
   if (typeof window !== "undefined" && window.showStatus) {
     if (res.ok && init.pollSuccessMessage) {
-      window.showStatus(init.pollSuccessMessage, "success");
+      window.showStatus(init.pollSuccessMessage, "success", { requestId: statusRequestId });
     } else if (!res.ok && init.pollErrorMessage) {
-      window.showStatus(init.pollErrorMessage, "error");
+      window.showStatus(init.pollErrorMessage, "error", { requestId: statusRequestId });
     }
   }
   return res;

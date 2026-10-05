@@ -322,7 +322,7 @@ public class IdentityStack extends Stack {
                 .build();
 
         // MCP User Pool Client
-        // A third client on the same pool for the submission MCP's stdio surfaces.
+        // A third client on the same pool for the submission MCP's stdio and hosted surfaces.
         // Uses authorization code with PKCE on a loopback redirect, the flow every CLI uses, no
         // client secret. Cognito needs an exact callback URL match, so every port in the loopback
         // listener's range is registered on both hostnames a listener can bind (127.0.0.1 and
@@ -335,9 +335,10 @@ public class IdentityStack extends Stack {
                 .oAuth(OAuthSettings.builder()
                         .flows(OAuthFlows.builder().authorizationCodeGrant(true).build())
                         .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
-                        .callbackUrls(buildMcpLoopbackUrls())
+                        .callbackUrls(buildMcpCallbackUrls(props.sharedNames(), props.envName()))
                         .logoutUrls(buildMcpLoopbackUrls())
                         .build())
+                .refreshTokenRotationGracePeriod(Duration.seconds(MCP_REFRESH_TOKEN_ROTATION_GRACE_SECONDS))
                 .supportedIdentityProviders(allProviders)
                 .build();
         this.identityProviders
@@ -540,6 +541,18 @@ public class IdentityStack extends Stack {
     // listener can bind.
     private static final int MCP_LOOPBACK_PORT_FIRST = 49152;
     private static final int MCP_LOOPBACK_PORT_LAST = 49159;
+
+    // The hosted MCP's authorization facade receives Cognito's code at /mcp/oauth/callback on
+    // each deployment host; Cognito needs an exact match, so one URL per host joins the loopback ports.
+    private static final int MCP_REFRESH_TOKEN_ROTATION_GRACE_SECONDS = 30;
+
+    private static List<String> buildMcpCallbackUrls(SubmitSharedNames sharedNames, String envName) {
+        var urls = new java.util.ArrayList<String>(buildMcpLoopbackUrls());
+        for (var host : buildAuthHosts(sharedNames, envName)) {
+            urls.add("https://" + host + "/mcp/oauth/callback");
+        }
+        return urls;
+    }
 
     private static List<String> buildMcpLoopbackUrls() {
         var urls = new java.util.ArrayList<String>();

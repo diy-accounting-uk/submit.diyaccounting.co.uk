@@ -2,7 +2,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <title>Submit VAT return - DIY Accounting</title>
@@ -35,7 +35,7 @@
     <main id="mainContent">
       <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
 
-      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
@@ -46,6 +46,7 @@
       </div>
       <div id="vatForm" class="form-container">
         <h2>VAT return submission</h2>
+        <div id="booksImport"></div>
         <form id="vatSubmissionForm">
           <div class="form-group">
             <label for="vatNumber">VAT registration number</label>
@@ -406,6 +407,7 @@
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../widgets/books-import.js"></script>
     <script>
       // Strip commas from numeric input (thousands separators like "1,234.56" → "1234.56")
       function stripCommas(value) {
@@ -1399,6 +1401,9 @@
       });
 
       console.log("JS block finished loading.");
+    </script>
+    <script>
+      window.booksImport.mount(document.getElementById("booksImport"), { kind: "vat" });
     </script>
   </body>
 </html>

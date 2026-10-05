@@ -28,7 +28,7 @@ test.describe("Pass Redeemer widget on an activity page", () => {
 <html lang="en">
   <head><base href="http://localhost:3000/" /></head>
   <body>
-    <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+    <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
     <main id="mainContent"><h1>Activity page</h1></main>
     <script>
       window.__submitReady__ = true;

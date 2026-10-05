@@ -8,7 +8,8 @@
   //  - Add containers in HTML (recommended):
   //      <div id="statusMessagesContainer"></div>
   //      <div id="loadingSpinner" class="spinner" style="display:none"></div>
-  //  - Call StatusMessages.show('Message', 'info'|'error'|'success'|'warning')
+  //  - Call StatusMessages.show('Message', 'info'|'error'|'success'|'warning', { requestId })
+  //    A message with a requestId replaces the earlier message carrying the same requestId.
   //  - Or use globals: showStatus(), hideStatus(), showLoading(), hideLoading()
 
   function getStatusContainer(customId) {
@@ -33,8 +34,16 @@
   function show(message, type = "info", options = {}) {
     const container = getStatusContainer(options.containerId);
 
+    if (options.requestId) {
+      for (const previous of container.querySelectorAll(".status-message[data-request-id]")) {
+        if (previous.dataset.requestId === options.requestId) removeStatusMessage(previous);
+      }
+    }
+
     const msgDiv = document.createElement("div");
     msgDiv.className = `status-message status-${type}`;
+    if (options.requestId) msgDiv.dataset.requestId = options.requestId;
+    if (type === "error") msgDiv.setAttribute("role", "alert");
 
     const messageContent = document.createElement("span");
     messageContent.textContent = message;
@@ -132,7 +141,7 @@
 
   // Provide global function shims if not already defined, to ease migration
   if (typeof window.showStatus !== "function") {
-    window.showStatus = (m, t) => api.show(m, t);
+    window.showStatus = (m, t, o) => api.show(m, t, o);
   }
   if (typeof window.hideStatus !== "function") {
     window.hideStatus = () => api.clear();

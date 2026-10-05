@@ -302,6 +302,11 @@ export async function accessToken() {
 }
 
 /**
+ * storedCredentials: the credentials a stdio session carries, the file-backed pair above.
+ */
+export const storedCredentials = { accessToken, idToken };
+
+/**
  * signOut: revokes the refresh token at Cognito, tells the authenticated sign-out route to
  * publish "logout" and delete the session item, then deletes the local credentials file.
  * Best-effort on the network calls -- a revoke or sign-out failure (offline, an already-expired
