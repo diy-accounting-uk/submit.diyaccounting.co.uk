@@ -511,7 +511,9 @@
                 isMetered && __hasTokenBundles && !hasUnlimitedAccess && tokenCost === 0 && __tokensRemaining === 0;
 
               if (insufficientTokens) {
-                addActivity(path, `
+                addActivity(
+                  path,
+                  `
                   <div class="activity-item">
                     <button type="button" class="btn" disabled>
                       Insufficient tokens \u2014 ${activity.name}
@@ -520,9 +522,12 @@
                       Insufficient tokens
                     </p>
                   </div>
-                `);
+                `,
+                );
               } else if (noTokensForMetered) {
-                addActivity(path, `
+                addActivity(
+                  path,
+                  `
                   <div class="activity-item">
                     <button type="button" class="btn" disabled>
                       No tokens \u2014 ${activity.name}
@@ -531,25 +536,32 @@
                       No tokens available
                     </p>
                   </div>
-                `);
+                `,
+                );
               } else {
-                addActivity(path, `
+                addActivity(
+                  path,
+                  `
                   <div class="activity-item">
                     <button type="button" class="btn activity-secondary" onclick="window.location.href='${path}'">
                       ${activity.name}${tokenLabel}
                     </button>
                   </div>
-                `);
+                `,
+                );
               }
             } else if (hasExpiredAccess) {
               // User had access but it expired - show disabled button
-              addActivity(path, `
+              addActivity(
+                path,
+                `
                 <div class="activity-item">
                   <button type="button" class="btn" disabled>
                     Expired \u2014 ${activity.name}
                   </button>
                 </div>
-              `);
+              `,
+              );
             } else if (displayRule === "always-with-upsell") {
               // User doesn't have access - show activity with upsell annotation
               const isLoggedIn = !!localStorage.getItem("cognitoIdToken");
@@ -560,7 +572,9 @@
 
               if (isLoggedIn) {
                 // Logged in but missing bundle - link to bundles page
-                addActivity(path, `
+                addActivity(
+                  path,
+                  `
                   <div class="activity-item">
                     <button type="button" class="btn activity-secondary" onclick="window.location.href='bundles.html'">
                       ${activity.name}
@@ -569,10 +583,13 @@
                       Requires: ${requiredBundleNames}
                     </p>
                   </div>
-                `);
+                `,
+                );
               } else {
                 // Not logged in - prompt to log in
-                addActivity(path, `
+                addActivity(
+                  path,
+                  `
                   <div class="activity-item">
                     <button type="button" class="btn activity-secondary" onclick="window.location.href='auth/login.html'">
                       ${activity.name}
@@ -581,7 +598,8 @@
                       Login and add bundle to access
                     </p>
                   </div>
-                `);
+                `,
+                );
               }
             }
             // For displayRule === "on-entitlement" with no access, don't show anything

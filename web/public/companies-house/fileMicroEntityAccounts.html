@@ -651,14 +651,28 @@
         container.innerHTML = rejections.map((entry) => `<p>${entry.rejectCode}: ${entry.description}</p>`).join("\n");
       }
 
+      function showFilingResult(headline, detail) {
+        const container = document.getElementById("filingResult");
+        const headlineParagraph = document.createElement("p");
+        const strong = document.createElement("strong");
+        strong.textContent = headline;
+        headlineParagraph.append(strong);
+        container.replaceChildren(headlineParagraph);
+        if (detail) {
+          const detailParagraph = document.createElement("p");
+          detailParagraph.className = "hint";
+          detailParagraph.textContent = detail;
+          container.append(detailParagraph);
+        }
+      }
+
       async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
         for (let attempt = 0; attempt < 20; attempt++) {
           const result = await window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
           if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
             return result;
           }
-          document.getElementById("filingResult").innerHTML =
-            `<p>Submission <strong>${submissionNumber}</strong> is <strong>${result.statusCode}</strong>. Checking again...</p>`;
+          showFilingResult(`Submission ${submissionNumber} is ${result.statusCode}. Checking again...`);
           await new Promise((resolve) => setTimeout(resolve, 500));
         }
         return window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
@@ -687,21 +701,24 @@
           return;
         }
 
-        document.getElementById("filingResult").innerHTML =
-          `<p>Submission <strong>${submission.submissionNumber}</strong> accepted by the gateway at ${submission.gatewayTimestamp}. Waiting for Companies House...</p>`;
+        showFilingResult(
+          `Submission ${submission.submissionNumber} accepted by the gateway at ${submission.gatewayTimestamp}. Waiting for Companies House...`,
+        );
         showView("resultView");
         try {
           const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
           const accepted = outcome.statusCode === "ACCEPT";
-          document.getElementById("filingResult").innerHTML =
-            `<p><strong>Companies House ${accepted ? "accepted" : "rejected"} the accounts.</strong></p>` +
-            `<p class="hint">Status: ${outcome.statusCode}. Submission number ${outcome.submissionNumber}.</p>`;
+          showFilingResult(
+            `Companies House ${accepted ? "accepted" : "rejected"} the accounts.`,
+            `Status: ${outcome.statusCode}. Submission number ${outcome.submissionNumber}.`,
+          );
           renderRejections(outcome.rejections);
         } catch (error) {
           console.error("Companies House accounts status check failed:", error);
-          document.getElementById("filingResult").innerHTML =
-            `<p><strong>Your accounts were submitted. Companies House has not confirmed the outcome yet.</strong></p>` +
-            `<p class="hint">Submission number ${submission.submissionNumber}. The status check failed: ${error.message || "unknown error"}.</p>`;
+          showFilingResult(
+            "Your accounts were submitted. Companies House has not confirmed the outcome yet.",
+            `Submission number ${submission.submissionNumber}. The status check failed: ${error.message || "unknown error"}.`,
+          );
         } finally {
           document.getElementById("startAgainBtn").style.display = "inline-block";
           hideLoading();

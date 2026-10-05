@@ -61,18 +61,19 @@ function stopEverything() {
       // already exited
     }
   }
+  // eslint-disable-next-line sonarjs/no-os-command-from-path -- docker comes from the developer's PATH
   if (startedMockContainer) spawnSync("docker", ["stop", MOCK_OAUTH2_CONTAINER], { stdio: "ignore" });
 }
 
 async function portIsListening(port) {
   const { default: net } = await import("node:net");
-  return new Promise((done) => {
+  return new Promise((resolve) => {
     const socket = net.connect({ port, host: "127.0.0.1" });
     socket.once("connect", () => {
       socket.destroy();
-      done(true);
+      resolve(true);
     });
-    socket.once("error", () => done(false));
+    socket.once("error", () => resolve(false));
   });
 }
 
@@ -80,7 +81,7 @@ async function waitFor(label, probe, timeoutMs) {
   const deadline = Date.now() + timeoutMs;
   while (Date.now() < deadline) {
     if (await probe().catch(() => false)) return;
-    await new Promise((done) => setTimeout(done, 500));
+    await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new Error(`${label} was not ready within ${timeoutMs} ms`);
 }
@@ -121,7 +122,9 @@ async function main() {
   const clientId = process.env.HMRC_SANDBOX_CLIENT_ID;
   const baseUrl = process.env.DIY_SUBMIT_BASE_URL?.replace(/\/$/, "");
   if (!secret || !clientId || !baseUrl) {
-    throw new Error("HMRC_SANDBOX_CLIENT_SECRET, HMRC_SANDBOX_CLIENT_ID and DIY_SUBMIT_BASE_URL must be set; run npm run mcp:vat-sandbox-proof");
+    throw new Error(
+      "HMRC_SANDBOX_CLIENT_SECRET, HMRC_SANDBOX_CLIENT_ID and DIY_SUBMIT_BASE_URL must be set; run npm run mcp:vat-sandbox-proof",
+    );
   }
   for (const port of REQUIRED_FREE_PORTS) {
     if (await portIsListening(port)) throw new Error(`Port ${port} is already in use`);
@@ -143,12 +146,20 @@ async function main() {
   await waitFor("dynalite", () => portIsListening(9000), 30_000);
 
   const dockerRun = spawnSync(
+    // eslint-disable-next-line sonarjs/no-os-command-from-path -- docker comes from the developer's PATH
     "docker",
     [
-      "run", "--rm", "-d", "--name", MOCK_OAUTH2_CONTAINER,
-      "-p", `${MOCK_OAUTH2_PORT}:8080`,
-      "-e", "JSON_CONFIG_PATH=/config/mock-oauth2-config.json",
-      "-v", `${join(REPOSITORY_ROOT, "mock-oauth2-config.json")}:/config/mock-oauth2-config.json:ro`,
+      "run",
+      "--rm",
+      "-d",
+      "--name",
+      MOCK_OAUTH2_CONTAINER,
+      "-p",
+      `${MOCK_OAUTH2_PORT}:8080`,
+      "-e",
+      "JSON_CONFIG_PATH=/config/mock-oauth2-config.json",
+      "-v",
+      `${join(REPOSITORY_ROOT, "mock-oauth2-config.json")}:/config/mock-oauth2-config.json:ro`,
       MOCK_OAUTH2_IMAGE,
     ],
     { encoding: "utf8" },
@@ -240,11 +251,18 @@ async function main() {
     if (!hmrcAccessToken) throw new Error("The HMRC token exchange answered no hmrcAccessToken");
     say("HMRC token exchange: access token held in memory");
 
-    const listed = await callTool(client, "list_vat_obligations", { vrn: testUser.vrn, status: "O", hmrcAccessToken, hmrcAccount: "synthetic" });
+    const listed = await callTool(client, "list_vat_obligations", {
+      vrn: testUser.vrn,
+      status: "O",
+      hmrcAccessToken,
+      hmrcAccount: "synthetic",
+    });
     const obligations = listed.obligations ?? listed.hmrcResponse?.obligations ?? listed.hmrcResponseBody?.obligations;
     const open = obligations?.find((obligation) => obligation.status === "O");
     if (!open) throw new Error(`HMRC listed no open obligation for VRN ${testUser.vrn}`);
-    say(`list_vat_obligations: ${obligations.length} listed; filing the open one ${open.start} to ${open.end} (periodKey ${open.periodKey})`);
+    say(
+      `list_vat_obligations: ${obligations.length} listed; filing the open one ${open.start} to ${open.end} (periodKey ${open.periodKey})`,
+    );
 
     const submitted = await callTool(client, "submit_vat_return", {
       vatNumber: testUser.vrn,

@@ -477,9 +477,7 @@ describe("operatorSnapshotPublish", () => {
 
       const paid = snapshot.objectives.find((o) => o.id === "conversion-to-paid");
       const ids = paid.observations.map((o) => o.id);
-      expect(ids).toEqual(
-        expect.arrayContaining(["revenue-gbp", "revenue-donations-gbp", "donations-count", "revenue-subscriptions-gbp"]),
-      );
+      expect(ids).toEqual(expect.arrayContaining(["revenue-gbp", "revenue-donations-gbp", "donations-count", "revenue-subscriptions-gbp"]));
       const donations = paid.observations.find((o) => o.id === "revenue-donations-gbp");
       expect(donations.last30).toEqual({ value: 10, trend: 1 });
       const queries = mockAthenaSend.mock.calls
