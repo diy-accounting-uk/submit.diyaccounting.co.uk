@@ -54,6 +54,8 @@ import {
   toObservationWindows,
   toActivityFastWindows,
   buildSnapshot,
+  buildReinvestment,
+  REINVESTMENT_FRACTION,
   mergeFastWindows,
   mapInOrderWithConcurrency,
   writeSnapshot,
@@ -604,6 +606,64 @@ describe("operatorSnapshotPublish", () => {
       // self-employed is catalogued but not listed in prod (environments excludes it) -- its
       // pair must not appear, or a non-prod activity would silently join the operator's table.
       expect(activities.observations.some((o) => o.id === "self-employed::started")).toBe(false);
+    });
+  });
+
+  describe("reinvestment budget", () => {
+    const context = {
+      envName: "test",
+      region: "eu-west-2",
+      athenaWorkGroupName: "test-env-analytics",
+      githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+      ga4PropertyId: "523400333",
+    };
+
+    test("the reinvestment fraction is one fifth", () => {
+      expect(REINVESTMENT_FRACTION).toBe(0.2);
+    });
+
+    test("the revenue observation sums only the days after the 30-day cutoff into its trailing window", () => {
+      const revenue = OBJECTIVE_DEFINITIONS.flatMap((o) => o.observations).find((o) => o.id === "revenue-gbp");
+      const sql = buildWindowedSql(revenue);
+      const trailingColumn = sql.split("\n")[0];
+
+      expect(trailingColumn).toBe("SELECT sum(CASE WHEN day > date_add('day', -30, current_date) THEN revenue_gbp END) AS last_30,");
+      expect(sql).toContain("FROM   v_revenue_daily");
+      expect(sql).not.toContain("WHERE");
+    });
+
+    test("buildReinvestment gives a budget of the fraction of the trailing 30-day revenue", () => {
+      const objectives = [{ id: "conversion-to-paid", observations: [{ id: "revenue-gbp", last30: { value: 250 } }] }];
+
+      expect(buildReinvestment(objectives)).toEqual({ fraction: 0.2, trailing30IncomeGbp: 250, budgetGbp: 50 });
+    });
+
+    test("buildReinvestment gives no budget while the revenue query has no figure", () => {
+      const objectives = [{ id: "conversion-to-paid", observations: [{ id: "revenue-gbp", last30: { value: null } }] }];
+
+      expect(buildReinvestment(objectives)).toEqual({ fraction: 0.2, trailing30IncomeGbp: null, budgetGbp: null });
+    });
+
+    test("buildSnapshot carries the reinvestment figures from the revenue observation", async () => {
+      mockAllQueriesSucceedWith(["100", "50", "300", "200"]);
+
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
+
+      expect(snapshot.reinvestment).toEqual({ fraction: 0.2, trailing30IncomeGbp: 100, budgetGbp: 20 });
+    });
+
+    test("a fast-window-only patch carries no reinvestment figures", async () => {
+      mockAllQueriesSucceedWith(["100", "50", "300", "200"]);
+
+      const patch = await buildSnapshot({
+        workGroup: "wg",
+        database: "db",
+        context,
+        objectiveIds: ["conversion-to-submission"],
+        fastWindowOnly: true,
+      });
+
+      expect(patch.reinvestment).toBeUndefined();
     });
   });
 

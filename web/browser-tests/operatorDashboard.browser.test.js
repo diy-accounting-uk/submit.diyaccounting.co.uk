@@ -16,6 +16,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 const FIXTURE_SNAPSHOT = {
   generatedAt: "2026-09-08T03:15:00.000Z",
   environment: "prod",
+  reinvestment: { fraction: 0.2, trailing30IncomeGbp: 250, budgetGbp: 50 },
   objectives: [
     {
       id: "uptime",
@@ -433,6 +434,25 @@ test.describe("Operator Dashboard", () => {
 
     const capitalAndReservesRow = panel.locator('.company-accounts-row[data-observation-id="company-capital-and-reserves"]');
     await expect(capitalAndReservesRow.locator("td").nth(1)).toHaveText("£37000.00");
+  });
+
+  test("shows the reinvestment fraction, trailing 30-day income and the budget", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const panel = page.locator("#reinvestmentPanel");
+    await expect(panel).toBeVisible();
+    await expect(panel.locator('tr[data-figure-id="reinvestment-fraction"] td').nth(1)).toHaveText("20.0%");
+    await expect(panel.locator('tr[data-figure-id="trailing-30-income"] td').nth(1)).toHaveText("£250.00");
+    await expect(panel.locator('tr[data-figure-id="reinvestment-budget"] td').nth(1)).toHaveText("£50.00");
+  });
+
+  test("hides the reinvestment panel when the snapshot carries no reinvestment figures", async ({ page }) => {
+    const { reinvestment: _omitted, ...snapshotWithoutReinvestment } = FIXTURE_SNAPSHOT;
+    await setupRoutes(page, { snapshotBody: snapshotWithoutReinvestment });
+    await loadDashboard(page);
+
+    await expect(page.locator("#reinvestmentPanel")).toBeHidden();
   });
 
   test("hides the company accounts panel while the book pull job is off", async ({ page }) => {
