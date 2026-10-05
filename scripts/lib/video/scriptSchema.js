@@ -39,6 +39,7 @@ const STEP_REQUIRED_FIELDS = {
   select: ["target", "value"],
   dropFile: ["target", "file"],
   testScenario: ["value"],
+  checkHidden: ["target"],
   scroll: [],
   highlight: ["target"],
   sheetPrepare: [],
@@ -62,6 +63,7 @@ const STEP_REQUIRED_FIELDS = {
 // and a real identity provider, so a script may only use them once it has declared auth "user".
 const USER_ONLY_ACTIONS = new Set([
   "testScenario",
+  "checkHidden",
   "login",
   "consent",
   "ensureBundle",

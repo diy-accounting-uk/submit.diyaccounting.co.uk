@@ -76,6 +76,22 @@ describe("testScenario steps", () => {
   });
 });
 
+describe("checkHidden steps", () => {
+  const withStep = (auth, step) =>
+    baseScript({ auth, scenes: [{ id: "form", chapter: "Form", steps: [{ action: "goto", url: "/" }, step] }] });
+
+  test("names the checkbox it ticks", () => {
+    expect(() => validateScript(withStep("user", { action: "checkHidden", target: "#allowSyntheticObligations" }))).not.toThrow();
+    expect(() => validateScript(withStep("user", { action: "checkHidden" }))).toThrow(/target/);
+  });
+
+  test("needs a signed-in script", () => {
+    expect(() => validateScript(withStep("none", { action: "checkHidden", target: "#allowSyntheticObligations" }))).toThrow(
+      /auth to be "user"/,
+    );
+  });
+});
+
 describe("dropFile steps", () => {
   const withStep = (step) => baseScript({ scenes: [{ id: "upload", chapter: "Upload", steps: [{ action: "goto", url: "/" }, step] }] });
 

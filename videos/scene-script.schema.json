@@ -590,6 +590,19 @@
           }
         },
         {
+          "if": { "properties": { "action": { "const": "checkHidden" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "target"],
+            "description": "Ticks a checkbox the page keeps in its hidden developer section (for example #allowSyntheticObligations) without opening the developer panel, so a book's own periods can be filed on the sandbox account. Fails when the page has no such checkbox. Place it before the step that submits the form. Needs auth \"user\".",
+            "properties": {
+              "action": {},
+              "target": { "type": "string", "minLength": 1 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
           "if": { "properties": { "action": { "const": "hmrcAuthorise" } } },
           "then": {
             "additionalProperties": false,
