@@ -47,7 +47,17 @@
   },
 
   "consentAnswer": "declined",
-  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection", ".dev-float-left", "#latestTestsLink", "#apiDocsLink", "#viewSourceLink", "#localstorageContainer", ".entitlement-status", "#developerSection:has(#calculationTestScenario)"],
+  "suppress": [
+    "#feedbackEngagementBanner",
+    "#feedbackEngagementSection",
+    ".dev-float-left",
+    "#latestTestsLink",
+    "#apiDocsLink",
+    "#viewSourceLink",
+    "#localstorageContainer",
+    ".entitlement-status",
+    "#developerSection:has(#calculationTestScenario)"
+  ],
 
   "finalHoldMs": 2500,
 
