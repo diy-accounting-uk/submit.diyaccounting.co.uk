@@ -11,10 +11,16 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import { placeHeadline } from "./headlinePlacement.js";
+import { DEFAULT_HEADLINE_CONFIG, placeHeadline } from "./headlinePlacement.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const runtimeSource = fs.readFileSync(path.join(__dirname, "overlay-runtime.js"), "utf8");
+
+const HEADLINE_PADDING_WIDTH = 44;
+const HEADLINE_CHAR_WIDTH = 17;
+const HEADLINE_CONTROL_SELECTOR = "input, select, textarea, button, a[href]";
+const HEADLINE_TEXT_SELECTOR = "label, legend, h1, h2, h3, h4, th, td, p, li";
+const HEADLINE_GROUP_SELECTOR = ".form-group, fieldset";
 
 export async function installOverlay(page) {
   await page.addInitScript({ content: runtimeSource });
@@ -64,7 +70,59 @@ export async function typeChar(page, rect) {
 // which is a self-contained browser-side IIFE with no imports and so cannot be tested directly.
 export async function headline(page, text, keyWord, rect, viewport) {
   if (!text) return svcCall(page, "headline", null, null, null);
-  return svcCall(page, "headline", text, keyWord || null, placeHeadline(rect, viewport));
+  if (!rect) return svcCall(page, "headline", text, keyWord || null, placeHeadline(null, viewport));
+  const { subject, obstacles } = await probeAroundTarget(page, rect);
+  const width = Math.min(DEFAULT_HEADLINE_CONFIG.maxWidth, HEADLINE_PADDING_WIDTH + text.length * HEADLINE_CHAR_WIDTH);
+  const placement = placeHeadline(subject, viewport, { ...DEFAULT_HEADLINE_CONFIG, width }, obstacles);
+  return svcCall(page, "headline", text, keyWord || null, placement);
+}
+
+// What a tag must keep off: the target joined with the field group it belongs to (label, hint,
+// control), and the page content near it, each box weighted by how much hiding it costs.
+// Controls count more than text.
+async function probeAroundTarget(page, rect) {
+  const probe = ([box, controlSelector, textSelector, groupSelector]) => {
+    const overlayRoot = document.getElementById("svc-overlay");
+    const seen = (el) => !overlayRoot.contains(el);
+    const boxOf = (el) => {
+      const r = el.getBoundingClientRect();
+      return { left: r.left, top: r.top, width: r.width, height: r.height };
+    };
+    const centre = document.elementFromPoint(box.left + box.width / 2, box.top + box.height / 2);
+    const group = centre ? centre.closest(groupSelector) : null;
+    let subject = box;
+    if (group) {
+      const g = boxOf(group);
+      const left = Math.min(subject.left, g.left);
+      const top = Math.min(subject.top, g.top);
+      subject = {
+        left,
+        top,
+        width: Math.max(subject.left + subject.width, g.left + g.width) - left,
+        height: Math.max(subject.top + subject.height, g.top + g.height) - top,
+      };
+    }
+    const obstacles = [];
+    const collect = (selector, weight) => {
+      for (const el of document.querySelectorAll(selector)) {
+        if (!seen(el) || (group && group.contains(el))) continue;
+        const b = boxOf(el);
+        if (b.width === 0 || b.height === 0 || b.top > window.innerHeight || b.top + b.height < 0) continue;
+        obstacles.push({ ...b, weight });
+      }
+    };
+    collect(textSelector, 1);
+    collect(controlSelector, 4);
+    return { subject, obstacles };
+  };
+  const args = [rect, HEADLINE_CONTROL_SELECTOR, HEADLINE_TEXT_SELECTOR, HEADLINE_GROUP_SELECTOR];
+  try {
+    return await page.evaluate(probe, args);
+  } catch (err) {
+    if (!isExecutionContextDestroyed(err)) throw err;
+    await page.waitForLoadState("domcontentloaded");
+    return page.evaluate(probe, args);
+  }
 }
 
 export async function chapter(page, text) {

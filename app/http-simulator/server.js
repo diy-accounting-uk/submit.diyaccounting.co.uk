@@ -39,6 +39,7 @@ import { apiEndpoint as fraudHeadersEndpoint } from "./routes/fraud-headers.js";
 import { apiEndpoint as testUserEndpoint } from "./routes/test-user.js";
 import { apiEndpoint as companiesHouseEndpoint } from "./routes/companies-house.js";
 import { apiEndpoint as companiesHouseXmlGatewayEndpoint } from "./routes/companies-house-xmlgw.js";
+import { apiEndpoint as hmrcTransactionEngineEndpoint } from "./routes/hmrc-transaction-engine.js";
 import { apiEndpoint as openapiEndpoint } from "./routes/openapi.js";
 
 /**
@@ -112,6 +113,7 @@ export function createApp() {
   testUserEndpoint(app);
   companiesHouseEndpoint(app);
   companiesHouseXmlGatewayEndpoint(app);
+  hmrcTransactionEngineEndpoint(app);
 
   // OpenAPI spec serving
   openapiEndpoint(app);

@@ -772,6 +772,36 @@ textarea.input--error:focus {
   min-width: 0;
 }
 
+.vat-boxes {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 1em 1.25em;
+  margin: 0 0 1em;
+}
+
+.vat-boxes legend {
+  float: left;
+  width: 100%;
+  padding: 0;
+  margin-bottom: 1em;
+  font-weight: var(--font-weight-bold);
+}
+
+.vat-boxes legend + * {
+  clear: both;
+}
+
+.calculated-field input[readonly] {
+  background-color: #f1f3f5;
+  color: #495057;
+  border-style: dashed;
+  cursor: default;
+}
+
+.calculated-field input[readonly]:focus {
+  border-color: var(--color-border);
+}
+
 /* Loading spinner */
 .spinner {
   border: 4px solid #f3f3f3;
@@ -807,6 +837,11 @@ textarea.input--error:focus {
   color: #28a745;
   margin-bottom: 1em;
   font-size: 1.3em;
+}
+
+.receipt h3 .icon-inline {
+  vertical-align: -0.2em;
+  margin-right: 0.3em;
 }
 
 .receipt-details {
@@ -1531,6 +1566,10 @@ a.external-link:hover::after {
   font-weight: 600;
 }
 
+.results-table .date-column {
+  white-space: nowrap;
+}
+
 .no-data {
   text-align: center;
   padding: 2em;
@@ -2090,7 +2129,7 @@ a.external-link:hover::after {
   height: auto;
   aspect-ratio: 16 / 9;
   object-fit: cover;
-  object-position: top;
+  object-position: center;
 }
 .walkthrough-thumb:focus-visible,
 .walkthrough-overlay button:focus-visible {
@@ -2159,6 +2198,59 @@ a.external-link:hover::after {
   gap: 0.6em;
 }
 
+/* Walkthrough video pages: click-to-load player and reserved space (widgets/video-pages.js) */
+#videoList {
+  min-height: 30rem;
+}
+#videoContents .video-contents-groups {
+  min-height: 14em;
+}
+.video-facade {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: #000;
+  cursor: pointer;
+}
+.video-facade img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.video-facade-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4.5em;
+  height: 3.2em;
+  transform: translate(-50%, -50%);
+  border-radius: 0.9em;
+  background: rgba(0, 0, 0, 0.8);
+}
+.video-facade-play::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-35%, -50%);
+  border-style: solid;
+  border-width: 0.8em 0 0.8em 1.3em;
+  border-color: transparent transparent transparent #fff;
+}
+.video-facade:hover .video-facade-play,
+.video-facade:focus-visible .video-facade-play {
+  background: #c00;
+}
+.video-facade:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: -6px;
+}
+
 /* HMRC Assist feedback */
 .hmrc-assist {
   margin: var(--spacing-md, 1em) 0;
@@ -2180,4 +2272,37 @@ a.external-link:hover::after {
 input.hmrc-assist-highlight {
   outline: 3px solid #ffdd00;
   outline-offset: 0;
+}
+
+/* Target size: interactive controls are at least 24px in both directions (WCAG 2.5.8) */
+.btn-small,
+.btn-compact {
+  min-height: 32px;
+}
+.btn-compact {
+  padding: 0.4em 1em;
+  font-size: 0.85em;
+  min-width: unset;
+  width: auto;
+}
+select {
+  min-height: 32px;
+}
+input[type="file"] {
+  min-height: 32px;
+}
+input[type="file"]::file-selector-button {
+  min-height: 32px;
+  padding: 0.3em 0.9em;
+  margin-right: 0.75em;
+  cursor: pointer;
+}
+input[type="checkbox"],
+input[type="radio"] {
+  width: 24px;
+  height: 24px;
+  vertical-align: middle;
+}
+.footer-left a {
+  margin-right: 1.25em;
 }

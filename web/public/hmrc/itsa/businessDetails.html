@@ -156,6 +156,11 @@
         }
       }
 
+      function hideRequestControls() {
+        document.getElementById("cancelRequestBtn").style.display = "none";
+        document.getElementById("toggleSearchCriteriaBtn").style.display = "none";
+      }
+
       function cancelRequest() {
         sessionStorage.removeItem("pendingBusinessDetailsRequest");
         sessionStorage.removeItem("hmrcAccessToken");
@@ -271,6 +276,7 @@
 
           displayBusinesses(result.listOfBusinesses || []);
           document.getElementById("businessDetailsResults").style.display = "block";
+          hideRequestControls();
           hideStatus();
 
           sessionStorage.removeItem("currentActivity");
@@ -390,6 +396,7 @@
 
             displayBusinesses(result.listOfBusinesses || []);
             document.getElementById("businessDetailsResults").style.display = "block";
+            hideRequestControls();
             hideStatus();
           } catch (error) {
             console.error("Error retrieving business details:", error);

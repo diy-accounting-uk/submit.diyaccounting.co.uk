@@ -289,13 +289,20 @@
       function renderFilingResult(transaction) {
         const container = document.getElementById("filingResult");
         const filings = transaction.filings || [];
-        const lines = [`<p>Transaction <strong>${transaction.transactionId}</strong> is <strong>${transaction.status}</strong>.</p>`];
+        const lines = [];
+        if (filings.some((entry) => entry.status === "rejected")) {
+          lines.push("<p><strong>Companies House rejected the change.</strong></p>");
+        } else if (filings.length > 0 && filings.every((entry) => entry.status === "accepted")) {
+          lines.push("<p><strong>Companies House accepted the change.</strong></p>");
+        } else {
+          lines.push("<p><strong>Companies House is still processing the change.</strong></p>");
+        }
         filings.forEach((entry) => {
-          lines.push(`<p>Filing: ${entry.description || entry.type} - <strong>${entry.status}</strong></p>`);
           if (entry.rejectReasons && entry.rejectReasons.length > 0) {
             lines.push(`<p>Rejected: ${entry.rejectReasons.join(", ")}</p>`);
           }
         });
+        lines.push(`<p class="hint">Reference: ${transaction.transactionId}</p>`);
         container.innerHTML = lines.join("\n");
       }
 

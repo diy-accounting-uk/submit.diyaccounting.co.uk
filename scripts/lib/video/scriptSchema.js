@@ -13,6 +13,7 @@ const REQUIRED_TOP_LEVEL = ["name", "title", "description", "auth", "pages", "vi
 // from TEST_AUTH_PROVIDER at run time, never from the script, so one script proves locally
 // against the simulator and records against a deployment through the Cognito Hosted UI.
 const AUTH_VALUES = new Set(["none", "user"]);
+const CONSENT_ANSWERS = new Set(["granted", "declined"]);
 
 const REQUIRED_PACING_KEYS = [
   "perCharMs",
@@ -176,6 +177,10 @@ export function validateScript(script) {
     if ("readyTimeoutMs" in script.localApp && typeof script.localApp.readyTimeoutMs !== "number") {
       fail(`${localAppPath}.readyTimeoutMs`, "must be a number");
     }
+  }
+
+  if ("consentAnswer" in script && !CONSENT_ANSWERS.has(script.consentAnswer)) {
+    fail("consentAnswer", `must be one of ${[...CONSENT_ANSWERS].join(", ")}`);
   }
 
   if ("environments" in script) {

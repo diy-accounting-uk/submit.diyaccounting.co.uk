@@ -85,3 +85,10 @@ AKIAIOSFODNN7EXAMPLE
 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PYLxDmkAmr1c
 /^Bearer abc123\.def456-ghi789$/
 /^Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.payload\.sig$/
+
+# Anthropic's published outbound range, which the hosted MCP design in PLAN_SUBMISSION_MCP.md
+# rate-limits by Authorization header instead of by IP.
+160.79.104.0
+
+# The UTR HMRC's own CT600 samples use, the default in scripts/hmrc-tpvs-ct600.js.
+8596148860

@@ -38,7 +38,7 @@ people, and do not host it for others under any name.
 | `behaviour-tests/` | PolyForm |
 | `cdk-application/`, `cdk-backup/`, `cdk-cost/`, `cdk-environment/`, `cdk-typescript/` | PolyForm |
 | `docs/` | PolyForm |
-| `fixtures/` | PolyForm; the Companies House XML Gateway schemas under `fixtures/companies-house-xmlgw/` are Crown copyright, see below |
+| `fixtures/` | PolyForm; the Companies House XML Gateway schemas under `fixtures/companies-house-xmlgw/` are Crown copyright, see below; `fixtures/hmrc-transaction-engine/` holds HMRC's IRmark example and TPVS replies byte for byte and carries no header |
 | `infra/` | PolyForm |
 | `prompts/` | PolyForm |
 | `scripts/` | PolyForm |

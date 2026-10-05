@@ -271,7 +271,7 @@
       .dev-float-left {
         position: fixed;
         left: 0;
-        background: rgba(0, 15, 0, 0.5);
+        background: #000f00;
         border: 1px solid rgba(0, 255, 0, 0.4);
         border-left: none;
         border-radius: 0 4px 4px 0;
@@ -284,7 +284,7 @@
       }
 
       .dev-float-left:hover {
-        background: rgba(0, 30, 0, 0.6);
+        background: #001e00;
         border-color: #00ff00;
         box-shadow: 0 0 8px rgba(0, 255, 0, 0.4);
       }
@@ -316,7 +316,7 @@
       body.developer-mode .entitlement-status {
         position: fixed;
         left: 0;
-        background: rgba(0, 15, 0, 0.5);
+        background: #000f00;
         border: 1px solid rgba(0, 255, 0, 0.4);
         border-left: none;
         border-radius: 0 4px 4px 0;
@@ -334,7 +334,7 @@
       body.developer-mode #viewSourceLink {
         position: fixed;
         left: 0;
-        background: rgba(0, 15, 0, 0.5);
+        background: #000f00;
         border: 1px solid rgba(0, 255, 0, 0.4);
         border-left: none;
         border-radius: 0 4px 4px 0;
@@ -351,7 +351,7 @@
       body.developer-mode #latestTestsLink:hover,
       body.developer-mode #apiDocsLink:hover,
       body.developer-mode #viewSourceLink:hover {
-        background: rgba(0, 30, 0, 0.6);
+        background: #001e00;
         border-color: #00ff00;
         box-shadow: 0 0 8px rgba(0, 255, 0, 0.4);
       }
@@ -363,7 +363,7 @@
       body.developer-mode #developerSection {
         position: relative;
         display: block !important;
-        background: rgba(0, 15, 0, 0.5);
+        background: #000f00;
         border: 1px solid rgba(0, 255, 0, 0.3);
         border-radius: 6px;
         padding: 12px;
@@ -401,12 +401,12 @@
         top: 0;
         left: 0;
         right: 0;
-        background: rgba(0, 20, 0, 0.6);
+        background: #001400;
         border-bottom: 1px solid rgba(0, 255, 0, 0.2);
         padding: 2px 12px;
         font-size: 9px;
         letter-spacing: 1px;
-        color: rgba(0, 255, 0, 0.5);
+        color: #00c800;
         text-transform: lowercase;
       }
 
@@ -431,14 +431,14 @@
       }
 
       body.developer-mode #developerSection .hint {
-        color: rgba(0, 200, 0, 0.8);
+        color: #00c800;
         font-style: normal;
       }
 
       /* Terminal form controls */
       body.developer-mode #developerSection select,
       body.developer-mode #developerSection input[type="checkbox"] {
-        background: rgba(0, 30, 0, 0.8);
+        background: #001e00;
         border: 1px solid rgba(0, 255, 0, 0.4);
         color: #00ff00;
         font-family: "Courier New", Consolas, Monaco, monospace;
@@ -492,7 +492,7 @@
         display: block;
         margin-top: 10px;
         padding: 8px;
-        background: rgba(0, 10, 0, 0.5);
+        background: #000a00;
         border-left: 2px solid rgba(0, 255, 0, 0.3);
       }
     `;

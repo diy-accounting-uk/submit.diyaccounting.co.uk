@@ -40,6 +40,7 @@ on:
           - 'view-payments'
           - 'view-penalties'
           - 'submit-return'
+          - 'vat-hmrc-assist'
           - 'itsa-business-details'
           - 'itsa-quarterly-update'
           - 'itsa-year'

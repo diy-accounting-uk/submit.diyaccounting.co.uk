@@ -31,6 +31,7 @@ const EXCLUDED_PATH_PREFIXES = [
   "web/public/tests/",
   "web/public/docs/api/",
   "fixtures/companies-house-xmlgw/",
+  "fixtures/hmrc-transaction-engine/",
   "web/public/docs/hmrc-form-field-standards/",
   "web/public/lib/diya-gl/",
   "node_modules/",

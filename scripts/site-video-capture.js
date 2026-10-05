@@ -406,6 +406,16 @@ async function main() {
     userAgent:
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 DIYAccountingProbe/1",
   });
+  if (script.consentAnswer) {
+    await context.addInitScript((answer) => {
+      try {
+        localStorage.setItem("consent.rum", answer);
+        localStorage.setItem("consent.analytics", answer);
+      } catch {
+        // A document that denies storage has no consent banner to hide either.
+      }
+    }, script.consentAnswer);
+  }
   await context.route("**/*", (route) => {
     const url = route.request().url();
     if (ANALYTICS_URL_FRAGMENTS.some((fragment) => url.includes(fragment))) {

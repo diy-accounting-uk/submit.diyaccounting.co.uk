@@ -76,8 +76,9 @@
 
     chapterLabel = document.createElement("div");
     chapterLabel.style.cssText =
-      "position:absolute;top:24px;left:24px;font:24px/1.3 -apple-system,Segoe UI,Roboto,sans-serif;" +
-      "color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.7);opacity:0;transition:opacity 250ms ease;";
+      "position:absolute;top:24px;left:24px;padding:6px 14px;border-radius:8px;" +
+      "font:24px/1.3 -apple-system,Segoe UI,Roboto,sans-serif;color:#fff;background:rgba(12,14,18,0.82);" +
+      "border:1px solid rgba(255,255,255,0.25);opacity:0;transition:opacity 250ms ease;";
     root.appendChild(chapterLabel);
 
     // The headline tag — a short callout label anchored beside the element a step acts on,

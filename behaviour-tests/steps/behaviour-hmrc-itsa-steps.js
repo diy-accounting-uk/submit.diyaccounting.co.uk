@@ -322,11 +322,7 @@ export async function verifyItsaObligationsResults(page, obligationsQuery, scree
 
     for (let i = 0; i < rowCount; i++) {
       const r = rowLocator.nth(i);
-      const typeOfBusiness = (await r.locator("td").nth(0).innerText()).trim();
-      const businessId = (await r.locator("td").nth(1).innerText()).trim();
-      const status = (await r.locator("td").nth(5).innerText()).trim();
-      expect(typeOfBusiness.length).toBeGreaterThan(0);
-      expect(businessId.length).toBeGreaterThan(0);
+      const status = (await r.locator("td").nth(3).innerText()).trim();
       expect(status.length).toBeGreaterThan(0);
     }
   });

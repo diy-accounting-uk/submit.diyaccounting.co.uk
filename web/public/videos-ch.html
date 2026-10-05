@@ -46,7 +46,8 @@
         scroll-margin-top: 1em;
       }
       .video-section:target {
-        outline: 3px solid #2c5aa0;
+        outline: 4px solid #1a1a1a;
+        outline-offset: 2px;
       }
       .video-section h2 {
         margin: 0 0 0.5em;
@@ -134,11 +135,11 @@
           </p>
         </div>
 
-        <nav id="videoContents" class="video-contents-nav" aria-label="Contents" hidden>
+        <nav id="videoContents" class="video-contents-nav" aria-label="Contents">
           <h2>Contents</h2>
           <div class="video-contents-groups"></div>
         </nav>
-        <div id="videoList" aria-live="polite">
+        <div id="videoList">
           <p class="service-description">Loading videos...</p>
         </div>
       </div>

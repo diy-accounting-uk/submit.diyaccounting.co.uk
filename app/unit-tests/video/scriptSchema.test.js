@@ -287,3 +287,17 @@ describe("fill", () => {
     expect(() => validateScript(withStep({ action: "fill", target: "#fromDate" }))).toThrow(/value/);
   });
 });
+
+describe("consentAnswer", () => {
+  test.each(["granted", "declined"])("accepts %s", (answer) => {
+    expect(() => validateScript(baseScript({ consentAnswer: answer }))).not.toThrow();
+  });
+
+  test("rejects any other answer", () => {
+    expect(() => validateScript(baseScript({ consentAnswer: "maybe" }))).toThrow(/consentAnswer/);
+  });
+
+  test.each(["sign-in", "tour", "itsa-year"])("%s answers consent before its first frame", (name) => {
+    expect(readSceneScript(name).consentAnswer).toBe("declined");
+  });
+});
