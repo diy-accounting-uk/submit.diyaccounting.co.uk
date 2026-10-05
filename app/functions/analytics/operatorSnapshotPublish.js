@@ -32,6 +32,10 @@ const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotP
 // fastWindowView (see handler()'s mode branch).
 const FAST_WINDOW_OBJECTIVE_IDS = ["activity-started-and-completed", "conversion-to-submission"];
 
+// The four donation Payment Links' bundle ids (infra/stripe/stripe.toml). v_revenue_daily
+// labels each Stripe charge with its bundle id; PayPal donations are separate rows.
+const STRIPE_DONATION_PRODUCT_FILTER = "product IN ('donation-10', 'donation-20', 'donation-45', 'donation-custom')";
+
 /**
  * One started and one completed observation per prod-listed catalogue activity
  * (web/public/submit.catalogue.toml), generated here rather than hand-listed so a new prod
@@ -292,6 +296,39 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "revenue_gbp",
         aggregation: "sum",
         deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      },
+      {
+        id: "revenue-donations-gbp",
+        label: "Revenue, Stripe donations (Payment Links)",
+        unit: "gbp",
+        view: "v_revenue_daily",
+        dayColumn: "day",
+        valueExpr: "revenue_gbp",
+        aggregation: "sum",
+        where: STRIPE_DONATION_PRODUCT_FILTER,
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "donations-count",
+        label: "Stripe donations, charges",
+        unit: "count",
+        view: "v_revenue_daily",
+        dayColumn: "day",
+        valueExpr: "charges",
+        aggregation: "sum",
+        where: STRIPE_DONATION_PRODUCT_FILTER,
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "revenue-subscriptions-gbp",
+        label: "Revenue, subscriptions",
+        unit: "gbp",
+        view: "v_revenue_daily",
+        dayColumn: "day",
+        valueExpr: "revenue_gbp",
+        aggregation: "sum",
+        where: `product NOT LIKE 'donation-%' AND product NOT LIKE 'paypal-%'`,
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
         id: "passes-issued",

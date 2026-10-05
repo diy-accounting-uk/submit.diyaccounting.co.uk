@@ -463,6 +463,32 @@ describe("operatorSnapshotPublish", () => {
       }
     });
 
+    test("splits revenue into Stripe donations and subscriptions by product label", async () => {
+      mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
+
+      const context = {
+        envName: "test",
+        region: "eu-west-2",
+        athenaWorkGroupName: "test-env-analytics",
+        githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        ga4PropertyId: "523400333",
+      };
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
+
+      const paid = snapshot.objectives.find((o) => o.id === "conversion-to-paid");
+      const ids = paid.observations.map((o) => o.id);
+      expect(ids).toEqual(
+        expect.arrayContaining(["revenue-gbp", "revenue-donations-gbp", "donations-count", "revenue-subscriptions-gbp"]),
+      );
+      const donations = paid.observations.find((o) => o.id === "revenue-donations-gbp");
+      expect(donations.last30).toEqual({ value: 10, trend: 1 });
+      const queries = mockAthenaSend.mock.calls
+        .filter(([command]) => command.constructor.name === "StartQueryExecutionCommand")
+        .map(([command]) => command.input.QueryString);
+      expect(queries.some((q) => q.includes("FROM   v_revenue_daily") && q.includes("'donation-custom'"))).toBe(true);
+      expect(queries.some((q) => q.includes("FROM   v_revenue_daily") && q.includes("NOT LIKE 'donation-%'"))).toBe(true);
+    });
+
     test("a failing observation's query answers null instead of failing the whole snapshot", async () => {
       mockQueriesWithOneFailing("guardduty_findings", ["10", "5", "30", "20"]);
 
