@@ -74,7 +74,11 @@ async function assertSections(page, videos) {
     const section = page.locator(`section.video-section#${video.id}`);
     await expect(section).toHaveCount(1);
     await expect(section.locator("h2")).toHaveText(video.title);
-    await expect(section.locator("iframe")).toHaveAttribute("src", `https://www.youtube-nocookie.com/embed/${video.videoId}`);
+    await expect(section.locator("iframe")).toHaveCount(0);
+    await expect(section.locator("button.video-facade")).toHaveAttribute("aria-label", `Play video: ${video.title}`);
+    await section.locator("button.video-facade").click();
+    await expect(section.locator("iframe")).toHaveAttribute("src", `https://www.youtube-nocookie.com/embed/${video.videoId}?autoplay=1`);
+    await expect(section.locator("button.video-facade")).toHaveCount(0);
     await expect(section.locator("a.video-link")).toHaveAttribute("href", areaLinkHref(video));
     await expect(section.locator("button.copy-link")).toBeEnabled();
   }
@@ -171,6 +175,7 @@ test.describe("relabelled and stripped titles", () => {
     await page.goto("http://localhost:3000/videos-hmrc-itsa.html", { waitUntil: "domcontentloaded" });
     const section = page.locator(`section.video-section#${relabelled.id}`);
     await expect(section.locator("h2")).toHaveText(relabelled.title);
+    await section.locator("button.video-facade").click();
     await expect(section.locator("iframe")).toHaveAttribute("title", relabelled.title);
     await expect(page.locator(`nav a[href$="#${relabelled.id}"]`).first()).toHaveText(contentsText(relabelled));
   });
@@ -181,6 +186,7 @@ test.describe("relabelled and stripped titles", () => {
     await page.goto("http://localhost:3000/videos-ch.html", { waitUntil: "domcontentloaded" });
     const section = page.locator(`section.video-section#${stripped.id}`);
     await expect(section.locator("h2")).toHaveText(stripped.title);
+    await section.locator("button.video-facade").click();
     await expect(section.locator("iframe")).toHaveAttribute("title", stripped.title);
     await expect(page.locator(`nav a[href$="#${stripped.id}"]`).first()).toHaveText(contentsText(stripped));
   });

@@ -10,6 +10,7 @@ import { walkthroughElement, wireWalkthrough, openSceneFromHash, sceneForHash, s
 
 const MANIFEST_URL = "videos/publish.json";
 const EMBED_BASE = "https://www.youtube-nocookie.com/embed/";
+const THUMBNAIL_BASE = "https://i.ytimg.com/vi/";
 const TITLE_PREFIXES = ["DIY Accounting Submit: ", "DIY Accounting: "];
 
 const GROUP_LABELS = {
@@ -118,6 +119,16 @@ function shareLink(video) {
   return new URL(areaLinkHref(video), window.location.href).toString();
 }
 
+function embedElement(video) {
+  const iframe = document.createElement("iframe");
+  iframe.src = `${EMBED_BASE}${encodeURIComponent(video.videoId)}?autoplay=1`;
+  iframe.title = video.title;
+  iframe.allow = "autoplay; accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+  iframe.referrerPolicy = "strict-origin-when-cross-origin";
+  iframe.allowFullscreen = true;
+  return iframe;
+}
+
 function sectionElement(video) {
   const section = document.createElement("section");
   section.className = "video-section";
@@ -131,14 +142,26 @@ function sectionElement(video) {
 
   const frame = document.createElement("div");
   frame.className = "video-frame";
-  const iframe = document.createElement("iframe");
-  iframe.src = EMBED_BASE + encodeURIComponent(video.videoId);
-  iframe.title = video.title;
-  iframe.loading = "lazy";
-  iframe.allow = "accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
-  iframe.referrerPolicy = "strict-origin-when-cross-origin";
-  iframe.allowFullscreen = true;
-  frame.append(iframe);
+  const facade = document.createElement("button");
+  facade.type = "button";
+  facade.className = "video-facade";
+  facade.setAttribute("aria-label", `Play video: ${video.title}`);
+  const poster = document.createElement("img");
+  poster.src = `${THUMBNAIL_BASE}${encodeURIComponent(video.videoId)}/hqdefault.jpg`;
+  poster.alt = "";
+  poster.loading = "lazy";
+  poster.width = 480;
+  poster.height = 360;
+  const playIcon = document.createElement("span");
+  playIcon.className = "video-facade-play";
+  playIcon.setAttribute("aria-hidden", "true");
+  facade.append(poster, playIcon);
+  facade.addEventListener("click", () => {
+    const iframe = embedElement(video);
+    facade.replaceWith(iframe);
+    iframe.focus();
+  });
+  frame.append(facade);
 
   const share = document.createElement("div");
   share.className = "video-share";
@@ -212,27 +235,28 @@ function handleHash(mode, videos, pageVideos, walkthrough) {
 
 export async function renderVideoPage({ mode, group }) {
   const container = document.getElementById("videoList");
+  const navContents = document.getElementById("videoContents");
   let manifest;
   try {
-    const response = await fetch(MANIFEST_URL, { cache: "no-store" });
+    const response = await fetch(MANIFEST_URL);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     manifest = await response.json();
   } catch (err) {
+    if (navContents) navContents.hidden = true;
     container.replaceChildren(messageElement("The video list could not be loaded."));
     console.error("[video-pages.js] manifest load failed:", err);
     return;
   }
   const videos = (manifest.videos || []).filter((v) => v && v.videoId);
   if (videos.length === 0) {
+    if (navContents) navContents.hidden = true;
     container.replaceChildren(messageElement("No videos are published yet."));
     return;
   }
 
-  const navContents = document.getElementById("videoContents");
   if (navContents) {
     const groupsContainer = navContents.querySelector(".video-contents-groups");
     groupsContainer.replaceChildren(...groupVideos(videos).flatMap(contentsGroupElements));
-    navContents.hidden = false;
   }
 
   const pageVideos = mode === "area" ? videos.filter((v) => v.group === group) : videos.filter((v) => FEATURED_IDS.includes(v.id));
