@@ -38,6 +38,9 @@ step.
 
 ## In flight
 
+**COOL-DOWN is on since 2026-10-05T18:05:30Z.** No new board rows except a degradation. Agents commit
+and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+
 - [ ] **DG48. On batch `claude/sapphire-ux` (683fd4b72), PR #479; remaining: CI, merge. Adopt diya-gl 1.2.48 and the Self Employed package fill case.** Pin 1.2.48 in `package.json` and `mcp/package.json`, regenerate `web/public/lib/books-bundle.js` and `web/public/lib/rates/rates-data.js` (as 9e75f4300 did for 1.2.47), and add the SE package case to `web/browser-tests/booksImport.browser.test.js` that 1.2.48's round-trip fix (spreadsheets PR #157) allows. **Source**: spreadsheets inbox, 2026-10-05. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
 - [ ] **B55. On batch `claude/sapphire-ux` (8ed31d60f), PR #479; remaining: CI, merge, then the dispatch proof. The board workflow reports merged rows as still in flight (degradation).** `agentic-lib-board.yml` runs 37305080447 and 37317520283 (2026-10-05) answered "The board was already true" while `NEXT.md` listed seven rows in flight on `claude/saffron-books`, merged as PR #477 and gone from origin: the agent copied the rows' status from the prose and never checked origin (log of 37317520283: "In-flight items: All list claude/saffron-books ... (correct)"). The fix adds `Bash(gh pr view:*)` to the allowed tools and a step in `prompts/board-ci.md` and the board skill that settles each in-flight row with `git ls-remote --heads origin <branch>` and `gh pr list --state all --head <branch>`. Proof after merge: `gh workflow run agentic-lib-board.yml --ref main -f write-back=true` while `NEXT.md` still lists this batch's rows in flight; the "Push the board update" step must say "Pushed <sha> to main". **Source**: B54 dispatches, 2026-10-05. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files. Unblocks B54.
