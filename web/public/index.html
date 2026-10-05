@@ -61,6 +61,29 @@
     <!-- HEAD-prefetch scripts to prime API Gateway/Lambda and authorizers to reduce cold-start impact -->
     <!--script async src="./prefetch/prefetch-catalog-head.js"></script-->
     <!--script async src="./prefetch/prefetch-bundle-head.js"></script-->
+    <style>
+      .activity-group {
+        text-align: left;
+        margin: 1.5em 0;
+      }
+      .activity-group h2 {
+        font-size: 1.1em;
+        margin: 0 0 0.5em 0;
+        padding-bottom: 0.25em;
+        border-bottom: 1px solid #dee2e6;
+      }
+      .activity-item {
+        margin: 0.5em 0;
+      }
+      .btn.activity-secondary {
+        background-color: #fff;
+        color: var(--color-brand-primary);
+        border: 1px solid var(--color-brand-primary);
+      }
+      .btn.activity-secondary:hover {
+        background-color: #eef3fb;
+      }
+    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
@@ -435,7 +458,19 @@
             bundleLevelNameMap[bundle.id] = bundle.levelName || bundle.name || bundle.id;
           }
 
-          const buttons = [];
+          const activitiesByArea = new Map();
+          const areaOf = (activityPath) => {
+            if (activityPath.startsWith("hmrc/vat")) return "VAT";
+            if (activityPath.startsWith("hmrc/itsa")) return "Income Tax";
+            if (activityPath.startsWith("companies-house")) return "Companies House";
+            if (activityPath.startsWith("passes")) return "Passes";
+            return "More";
+          };
+          const addActivity = (activityPath, html) => {
+            const area = areaOf(activityPath);
+            if (!activitiesByArea.has(area)) activitiesByArea.set(area, []);
+            activitiesByArea.get(area).push(html);
+          };
 
           for (const activity of catalog.activities || []) {
             if (!activity.bundles || !Array.isArray(activity.bundles)) continue;
@@ -463,7 +498,7 @@
               // User has access OR display="always" - show active button
               const tokenCost = activity.tokenCost || 0;
               const isMetered = activity.metered === true;
-              const tokenLabel = isMetered ? ` (${tokenCost} token${tokenCost !== 1 ? "s" : ""})` : "";
+              const tokenLabel = isMetered && tokenCost > 0 ? ` (${tokenCost} token${tokenCost !== 1 ? "s" : ""})` : "";
 
               // An unlimited-grant bundle (the resident-pro practice licence) covering this
               // activity is exempt from the token count - never insufficient, never blocked.
@@ -476,8 +511,8 @@
                 isMetered && __hasTokenBundles && !hasUnlimitedAccess && tokenCost === 0 && __tokensRemaining === 0;
 
               if (insufficientTokens) {
-                buttons.push(`
-                  <div style="margin: 1em 0">
+                addActivity(path, `
+                  <div class="activity-item">
                     <button type="button" class="btn" disabled>
                       Insufficient tokens \u2014 ${activity.name}
                     </button>
@@ -487,8 +522,8 @@
                   </div>
                 `);
               } else if (noTokensForMetered) {
-                buttons.push(`
-                  <div style="margin: 1em 0">
+                addActivity(path, `
+                  <div class="activity-item">
                     <button type="button" class="btn" disabled>
                       No tokens \u2014 ${activity.name}
                     </button>
@@ -498,9 +533,9 @@
                   </div>
                 `);
               } else {
-                buttons.push(`
-                  <div style="margin: 1em 0">
-                    <button type="button" class="btn" onclick="window.location.href='${path}'">
+                addActivity(path, `
+                  <div class="activity-item">
+                    <button type="button" class="btn activity-secondary" onclick="window.location.href='${path}'">
                       ${activity.name}${tokenLabel}
                     </button>
                   </div>
@@ -508,8 +543,8 @@
               }
             } else if (hasExpiredAccess) {
               // User had access but it expired - show disabled button
-              buttons.push(`
-                <div style="margin: 1em 0">
+              addActivity(path, `
+                <div class="activity-item">
                   <button type="button" class="btn" disabled>
                     Expired \u2014 ${activity.name}
                   </button>
@@ -525,9 +560,9 @@
 
               if (isLoggedIn) {
                 // Logged in but missing bundle - link to bundles page
-                buttons.push(`
-                  <div style="margin: 1em 0">
-                    <button type="button" class="btn" onclick="window.location.href='bundles.html'">
+                addActivity(path, `
+                  <div class="activity-item">
+                    <button type="button" class="btn activity-secondary" onclick="window.location.href='bundles.html'">
                       ${activity.name}
                     </button>
                     <p style="font-size: 0.85em; color: #666; margin: 0.25em 0 0 0;">
@@ -537,9 +572,9 @@
                 `);
               } else {
                 // Not logged in - prompt to log in
-                buttons.push(`
-                  <div style="margin: 1em 0">
-                    <button type="button" class="btn" onclick="window.location.href='auth/login.html'">
+                addActivity(path, `
+                  <div class="activity-item">
+                    <button type="button" class="btn activity-secondary" onclick="window.location.href='auth/login.html'">
                       ${activity.name}
                     </button>
                     <p style="font-size: 0.85em; color: #666; margin: 0.25em 0 0 0;">
@@ -553,13 +588,25 @@
           }
 
           // If no activities to show, display message
-          if (buttons.length === 0) {
+          if (activitiesByArea.size === 0) {
             dynamicContainer.innerHTML =
               '<p style="color: #666;">No activities available. Request additional bundles to access more features.</p>';
             return;
           }
 
-          dynamicContainer.innerHTML = buttons.join("");
+          const areaOrder = ["VAT", "Income Tax", "Companies House", "Passes", "More"];
+          const sectionsHtml = areaOrder
+            .filter((area) => activitiesByArea.has(area))
+            .map(
+              (area) => `
+                <section class="activity-group" aria-label="${area}">
+                  <h2>${area}</h2>
+                  ${activitiesByArea.get(area).join("")}
+                </section>
+              `,
+            )
+            .join("");
+          dynamicContainer.innerHTML = sectionsHtml.replace("btn activity-secondary", "btn");
         } catch (error) {
           console.error("Error loading activities:", error);
           dynamicContainer.innerHTML = '<p style="color: #b00020;">Error loading activities. Please refresh the page.</p>';
