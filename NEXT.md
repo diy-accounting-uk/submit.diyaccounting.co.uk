@@ -38,9 +38,6 @@ step.
 
 ## In flight
 
-**COOL-DOWN is on since 2026-10-05T07:01:09Z.** No new board rows except a degradation. Agents commit
-and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
-
 ## Machine-only
 
 - [ ] **B54. Prove the last workflow commit is signed (PLAN_REPOSITORY_AUTOMATION).** `agentic-lib-code.yml`'s commit 8ac10525 and `publish.yml`'s release commit 027fc16a9 (run 37267809713) read `verification.verified: true` (reason valid). `agentic-lib-board.yml` run 37269474289 with `write-back=true` failed at "Push the board update": `main` moved during the run, so `expectedHeadOid` no longer matched; re-dispatch `gh workflow run agentic-lib-board.yml --ref main -f write-back=true` while `main` is quiet and read the verification on its commit. **Source**: `PLAN_REPOSITORY_AUTOMATION.md`. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files. Unblocks O54.
