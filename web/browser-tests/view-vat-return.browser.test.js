@@ -58,6 +58,7 @@ test.describe("View VAT Return - 9-Box Display", () => {
 window.showStatus = window.showStatus || function(){};
 window.checkAuthStatus = window.checkAuthStatus || function(){};
 window.toggleMenu = window.toggleMenu || function(){};
+window.CarriedIdentifiers = window.CarriedIdentifiers || { bind: function(){} };
 window.loadEnv = window.loadEnv || function(){ return Promise.resolve({ HMRC_VAT_API_BASE_URL: "https://test-api" }); };
 window.authorizedFetch = window.authorizedFetch || function(){ return Promise.resolve({ ok: true, json: function(){ return Promise.resolve({}); }}); };
 </script>`,

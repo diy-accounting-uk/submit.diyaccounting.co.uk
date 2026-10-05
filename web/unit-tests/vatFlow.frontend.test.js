@@ -15,6 +15,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 // Read the HTML file content
 const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/hmrc/vat/submitVat.html"), "utf-8");
+const carriedIdentifiersSource = fs.readFileSync(path.join(process.cwd(), "web/public/lib/carried-identifiers.js"), "utf-8");
 
 describe("VAT Flow Frontend JavaScript", () => {
   const originalEnv = process.env;
@@ -162,6 +163,11 @@ describe("VAT Flow Frontend JavaScript", () => {
       get: () => window.ensureSession,
       configurable: true,
     });
+
+    // The page's external helper script, loaded by a script tag in the browser
+    // eslint-disable-next-line no-new-func
+    new Function(carriedIdentifiersSource)();
+    window.CarriedIdentifiers = globalThis.CarriedIdentifiers;
 
     // Execute the inline script content to define page-specific functions
     const scriptMatch = htmlContent.match(/<script>([\s\S]*?)<\/script>/);
