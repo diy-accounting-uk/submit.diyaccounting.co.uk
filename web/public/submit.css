@@ -2306,3 +2306,22 @@ input[type="radio"] {
 .footer-left a {
   margin-right: 1.25em;
 }
+.books-import {
+  margin-bottom: 1.5em;
+}
+.books-import-drop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75em;
+  padding: 1em;
+  border: 2px dashed var(--color-brand-primary);
+  border-radius: 6px;
+  color: var(--color-text-primary);
+}
+.books-import-drop--over {
+  background: var(--color-brand-primary-light);
+}
+.books-import-status {
+  white-space: pre-line;
+}
