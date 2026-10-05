@@ -1,6 +1,6 @@
 {
   "name": "@diy-accounting-uk/web-submit-diyaccounting-co-uk",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Submit UK tax information to HMRC",
   "type": "module",
   "main": "app/bin/main.js",
