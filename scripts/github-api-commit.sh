@@ -103,8 +103,8 @@ while IFS= read -r -d '' STATUS && IFS= read -r -d '' PATH_NAME; do
     A | M)
       # base64, then strip every newline: GNU base64 wraps at 76 columns and BSD/macOS base64
       # does too, and the GraphQL field wants one unbroken base64 string.
-      CONTENTS=$(base64 <"$PATH_NAME" | tr -d '\n')
-      jq -n --arg path "$PATH_NAME" --arg contents "$CONTENTS" '{path: $path, contents: $contents}' \
+      # Pass contents via stdin to avoid argument list too long errors with large files.
+      base64 <"$PATH_NAME" | tr -d '\n' | jq -R --arg path "$PATH_NAME" '{path: $path, contents: .}' \
         >> "$WORK_DIR/additions.jsonl"
       ;;
     D)
