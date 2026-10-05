@@ -252,6 +252,19 @@ export function serializeResponseHeaders(headers) {
   return Object.entries(headers).map(([key, value]) => [key.toLowerCase(), value]);
 }
 
+// The event minus its body: request line, route, headers and requestContext, plus the body's size and content type.
+export function describeEventWithoutBody(event) {
+  const { body, ...eventWithoutBody } = event || {};
+  let bodyLength = 0;
+  if (typeof body === "string") bodyLength = body.length;
+  else if (body !== undefined && body !== null) bodyLength = JSON.stringify(body).length;
+  return {
+    ...sanitiseData(eventWithoutBody),
+    bodyLength,
+    bodyContentType: getHeader(event?.headers || {}, "content-type") || null,
+  };
+}
+
 export function extractRequest(event) {
   let request;
   // Initialise the store if it doesn't exist
@@ -287,13 +300,17 @@ export function extractRequest(event) {
           request.searchParams.append(key, event.queryStringParameters[key]);
         });
       }
-      logger.info({ message: "Processing request with event", request: sanitiseString(request.toString()), event: sanitiseData(event) });
+      logger.info({
+        message: "Processing request with event",
+        request: sanitiseString(request.toString()),
+        event: describeEventWithoutBody(event),
+      });
     } catch (err) {
-      logger.warn({ message: "Error building request URL from event", error: err, event: sanitiseData(event) });
+      logger.warn({ message: "Error building request URL from event", error: err, event: describeEventWithoutBody(event) });
       request = "https://unknown-url"; // Fallback URL in case of error
     }
   } else {
-    logger.warn({ message: "Event has missing URL path or host header", event: sanitiseData(event) });
+    logger.warn({ message: "Event has missing URL path or host header", event: describeEventWithoutBody(event) });
     request = "https://unknown";
   }
   return { request, requestId, amznTraceId, traceparent, correlationId };
