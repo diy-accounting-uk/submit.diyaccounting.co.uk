@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-027fc16** (release v1.0.1 on PR #475's code, deploy 37268209893, 2026-10-05); no spare prod set.
+**Prod runs deployment prod-db37a67** (PR #476, deploy 37288325894, 2026-10-05); no spare prod set.
 **ci**: `ci-set1` live (batch `claude/quartz-ux`, created 2026-10-05 04:47 UTC), self-destructs about 08:47 UTC.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
