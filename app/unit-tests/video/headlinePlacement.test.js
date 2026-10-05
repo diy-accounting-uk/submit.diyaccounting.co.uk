@@ -75,4 +75,18 @@ describe("placeHeadline", () => {
     assertInsideFrame(placement);
     assertClearOfTarget(placement, rect);
   });
+
+  test("when both sides clear the target, the tag takes the side that hides less content", () => {
+    const rect = { left: 860, top: 500, width: 200, height: 60 };
+    const controlAbove = { left: 760, top: 400, width: 400, height: 60, weight: 4 };
+    const textBelow = { left: 760, top: 600, width: 400, height: 20, weight: 1 };
+    expect(placeHeadline(rect, viewport, config, [controlAbove, textBelow]).anchor).toBe("below");
+    expect(placeHeadline(rect, viewport, config, []).anchor).toBe("above");
+  });
+
+  test("a side that hides content still loses to the only side that clears the target", () => {
+    const rect = { left: 860, top: 100, width: 200, height: 60 };
+    const controlBelow = { left: 760, top: 182, width: 400, height: 60, weight: 4 };
+    expect(placeHeadline(rect, viewport, config, [controlBelow]).anchor).toBe("below");
+  });
 });

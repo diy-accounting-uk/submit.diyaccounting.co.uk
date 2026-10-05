@@ -11,7 +11,7 @@
 
 import fs from "node:fs";
 
-export const PIPELINE_VERSION = 9;
+export const PIPELINE_VERSION = 10;
 
 export function manifestPathFor(videoFile) {
   if (!videoFile.endsWith(".mp4")) throw new Error(`${videoFile} is not an .mp4 file`);
