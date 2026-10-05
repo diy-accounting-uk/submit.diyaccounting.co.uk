@@ -13,6 +13,7 @@ import {
   serveHmrcAssistWidget,
   serveHmrcFieldTableAssets,
   serveFormErrors,
+  serveCarriedIdentifiers,
   serveSiteStyles,
   screenshotPath,
   expectCleanFigures,
@@ -39,6 +40,7 @@ test.describe("ITSA Final Declaration - Form", () => {
     await serveHmrcFieldTableAssets(page);
     await serveHmrcAssistWidget(page);
     await serveFormErrors(page);
+    await serveCarriedIdentifiers(page);
 
     const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">').replace(
       "<body>",
@@ -369,7 +371,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     });
 
     await page.locator("#nino").fill("AB123456C");
-    await page.locator("#taxYear").fill("2024-25");
+    await page.locator("#taxYear").selectOption("2024-25");
     await page.locator("#calculationId").fill("calc-7");
     await calculationSelect.selectOption("UK_SE_GIFTAID_EXAMPLE");
     await page.locator("#testScenario").selectOption("FINAL_DECLARATION_RECEIVED");

@@ -58,3 +58,7 @@ export function serveSelfEmploymentExpenses(page) {
 export function serveFormErrors(page) {
   return serveFile(page, "**/lib/form-errors.js", "lib/form-errors.js", "application/javascript");
 }
+
+export function serveCarriedIdentifiers(page) {
+  return serveFile(page, "**/lib/carried-identifiers.js", "lib/carried-identifiers.js", "application/javascript");
+}

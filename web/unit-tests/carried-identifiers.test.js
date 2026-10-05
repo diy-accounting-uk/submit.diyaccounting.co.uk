@@ -133,4 +133,55 @@ describe("carried identifiers", () => {
     expect(api.taxYearOptions(new Date(2026, 9, 5), 3)).toEqual(["2026-27", "2025-26", "2024-25"]);
     expect(api.taxYearOptions(new Date(2099, 5, 1), 2)).toEqual(["2099-00", "2098-99"]);
   });
+  describe("buildTaxYearSelect", () => {
+    class FakeSelect {
+      constructor() {
+        this.options = [];
+        this.selected = "";
+      }
+      appendChild(option) {
+        this.options.push(option);
+      }
+      replaceChildren() {
+        this.options = [];
+      }
+    }
+    Object.defineProperty(FakeSelect.prototype, "value", {
+      configurable: true,
+      get() {
+        return this.selected;
+      },
+      set(next) {
+        this.selected = this.options.some((option) => option.value === next) ? next : "";
+      },
+    });
+
+    beforeEach(() => {
+      vi.stubGlobal("HTMLSelectElement", FakeSelect);
+      vi.stubGlobal("document", { createElement: () => ({ value: "", textContent: "" }) });
+    });
+
+    it("offers a blank choice then the current and five earlier tax years", () => {
+      const select = new FakeSelect();
+      api.buildTaxYearSelect(select, new Date(2026, 9, 5));
+      expect(select.options.map((option) => option.value)).toEqual(["", "2026-27", "2025-26", "2024-25", "2023-24", "2022-23", "2021-22"]);
+    });
+
+    it("adds a year outside the list when it is assigned", () => {
+      const select = new FakeSelect();
+      api.buildTaxYearSelect(select, new Date(2026, 9, 5));
+      select.value = "2018-19";
+      expect(select.value).toBe("2018-19");
+      expect(select.options.map((option) => option.value)).toContain("2018-19");
+    });
+
+    it("lets a remembered year fill the select", () => {
+      const select = new FakeSelect();
+      api.buildTaxYearSelect(select, new Date(2026, 9, 5));
+      api.remember("taxYear", "2024-25");
+      select.tagName = "SELECT";
+      expect(api.prefill("taxYear", select)).toBe(true);
+      expect(select.value).toBe("2024-25");
+    });
+  });
 });

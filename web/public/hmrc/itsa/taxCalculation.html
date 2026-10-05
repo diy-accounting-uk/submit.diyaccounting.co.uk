@@ -68,8 +68,8 @@
 
           <div class="form-group">
             <label for="taxYear">Tax year</label>
-            <p id="taxYear-hint" class="hint">Enter in the format 2023-24, for example.</p>
-            <input type="text" id="taxYear" name="taxYear" required maxlength="7" aria-describedby="taxYear-hint" />
+            <p id="taxYear-hint" class="hint">Choose the tax year.</p>
+            <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
           </div>
 
           <div class="form-group">
@@ -156,6 +156,12 @@
     <script type="module" src="../../submit.js"></script>
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/carried-identifiers.js"></script>
+    <script>
+      window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
+      window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
+      window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
+    </script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/form-errors.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>

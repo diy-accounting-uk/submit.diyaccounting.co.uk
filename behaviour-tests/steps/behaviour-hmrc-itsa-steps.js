@@ -357,11 +357,11 @@ export async function fillInItsaSelfEmploymentPeriod(page, periodQuery = {}, scr
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-self-employment-period-test-data-added.png` });
 
       await expect(page.locator("#nino")).not.toHaveValue("");
-      if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
+      if (taxYear) await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
     } else {
       await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
       if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
-      if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
+      if (taxYear) await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
       if (periodStartDate) await loggedFill(page, "#periodStartDate", periodStartDate, "Entering period start date", { screenshotPath });
       if (periodEndDate) await loggedFill(page, "#periodEndDate", periodEndDate, "Entering period end date", { screenshotPath });
       if (turnover !== undefined) await loggedFill(page, "#turnover", String(turnover), "Entering turnover", { screenshotPath });
@@ -508,7 +508,7 @@ export async function fillInItsaUkPropertyPeriod(page, periodQuery = {}, screens
     } else {
       await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
       if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
-      if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
+      if (taxYear) await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
       if (propertyType) await loggedSelectOption(page, "#propertyType", propertyType, "the property type", { screenshotPath });
       if (fromDate) await loggedFill(page, "#fromDate", fromDate, "Entering period start date", { screenshotPath });
       if (toDate) await loggedFill(page, "#toDate", toDate, "Entering period end date", { screenshotPath });
@@ -636,7 +636,7 @@ export async function fillInItsaAnnualLoad(page, annualQuery = {}, screenshotPat
     const { hmrcNino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation } = annualQuery || {};
     await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
     if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
-    if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
+    if (taxYear) await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {
@@ -744,7 +744,7 @@ export async function fillInItsaUkPropertyAnnualLoad(page, annualQuery = {}, scr
     const { hmrcNino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation } = annualQuery || {};
     await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
     if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
-    if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
+    if (taxYear) await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {
@@ -858,7 +858,7 @@ export async function fillInItsaCalculationTrigger(page, calculationQuery = {}, 
   await test.step("The user fills in the Tax Calculation trigger form", async () => {
     const { hmrcNino, taxYear, calculationType, testScenario, runFraudPreventionHeaderValidation } = calculationQuery || {};
     await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
-    if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
+    if (taxYear) await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
     if (calculationType)
       await loggedSelectOption(page, "#calculationType", String(calculationType), "a calculation type", { screenshotPath });
     await page.waitForTimeout(50);
@@ -995,7 +995,7 @@ export async function fillInItsaLossesLoad(page, lossesQuery = {}, screenshotPat
     await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
     if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
     if (typeOfBusiness) await loggedSelectOption(page, "#typeOfBusiness", typeOfBusiness, "the business type", { screenshotPath });
-    if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
+    if (taxYear) await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation || suspendTemporalValidations) {

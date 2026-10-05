@@ -182,7 +182,7 @@ test.describe("books import on the VAT return page", () => {
 test.describe("books import on the ITSA quarterly update page", () => {
   test("fills the period summary, itemised expenses included, for the period end on the form", async ({ page }) => {
     await openPage(page, QUARTERLY_URL);
-    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#taxYear").selectOption("2025-26");
     await page.locator("#periodEndDate").fill("2025-07-05");
 
     await chooseFile(page, "brickwork-se.diya-gl.zip", await zippedBook("brickwork-pro-se-vat"));
@@ -207,7 +207,7 @@ test.describe("books import on the ITSA quarterly update page", () => {
 
   test("the period body carries the itemised expenses, or the total alone, never both", async ({ page }) => {
     await openPage(page, QUARTERLY_URL);
-    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#taxYear").selectOption("2025-26");
     await page.locator("#periodEndDate").fill("2025-07-05");
     await chooseFile(page, "brickwork-se.diya-gl.zip", await zippedBook("brickwork-pro-se-vat"));
     await expect(page.locator("#adminCosts")).toHaveValue("360");
@@ -255,7 +255,7 @@ test.describe("books import on the ITSA quarterly update page", () => {
 
   test("a period end the book does not carry names the period ends the book covers and fills nothing", async ({ page }) => {
     await openPage(page, QUARTERLY_URL);
-    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#taxYear").selectOption("2025-26");
     await page.locator("#periodEndDate").fill("2025-08-31");
 
     await chooseFile(page, "brickwork-se.diya-gl.zip", await zippedBook("brickwork-pro-se-vat"));
@@ -267,7 +267,7 @@ test.describe("books import on the ITSA quarterly update page", () => {
 
   test("a book for another tax year than the form is refused", async ({ page }) => {
     await openPage(page, QUARTERLY_URL);
-    await page.locator("#taxYear").fill("2024-25");
+    await page.locator("#taxYear").selectOption("2024-25");
     await page.locator("#periodEndDate").fill("2025-07-05");
 
     await chooseFile(page, "brickwork-se.diya-gl.zip", await zippedBook("brickwork-pro-se-vat"));
@@ -375,7 +375,7 @@ test.describe("books import fills equal the derivations run on the same book", (
     const derived = await deriveItsaQuarterlyUpdate(source.book, source.lines, {});
     const period = derived.periods.find((candidate) => candidate.periodDates.periodEndDate === "2025-07-05");
     await openPage(page, QUARTERLY_URL);
-    await page.locator("#taxYear").fill(derived.taxYear);
+    await page.locator("#taxYear").selectOption(derived.taxYear);
     await page.locator("#periodEndDate").fill("2025-07-05");
 
     await chooseFile(page, "brickwork-se.diya-gl.zip", bytes);
@@ -396,7 +396,7 @@ test.describe("books import fills equal the derivations run on the same book", (
     const source = await readInTestProcess("taxi-driver.xlsx", workbook);
     expect(source.product).toBe("taxi");
     await openPage(page, QUARTERLY_URL);
-    await page.locator("#taxYear").fill("2025-26");
+    await page.locator("#taxYear").selectOption("2025-26");
     await page.locator("#periodEndDate").fill("2025-07-05");
 
     await chooseFile(page, "taxi-driver.xlsx", workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");

@@ -111,6 +111,37 @@
     return Array.from({ length: count }, (_, index) => formatTaxYear(currentStartYear - index));
   }
 
-  const api = { IDENTIFIERS, remember, recall, forget, clearAll, prefill, bind, currentTaxYear, taxYearOptions };
+  // Turns a select into the tax year chooser: a blank choice, then the current tax year and the
+  // ones before it. Assigning a year the list lacks (from the address bar, a saved request or an
+  // imported book) adds that year as a choice, so the assignment always takes.
+  function buildTaxYearSelect(select, today = new Date()) {
+    if (!select) return;
+    const nativeValue = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, "value");
+    const addOption = (year) => {
+      const option = document.createElement("option");
+      option.value = year;
+      option.textContent = year;
+      select.appendChild(option);
+    };
+    select.replaceChildren();
+    const blank = document.createElement("option");
+    blank.value = "";
+    blank.textContent = "Choose the tax year";
+    select.appendChild(blank);
+    for (const year of taxYearOptions(today)) addOption(year);
+    Object.defineProperty(select, "value", {
+      configurable: true,
+      get() {
+        return nativeValue.get.call(select);
+      },
+      set(year) {
+        const text = String(year ?? "").trim();
+        if (text && !Array.from(select.options).some((option) => option.value === text)) addOption(text);
+        nativeValue.set.call(select, text);
+      },
+    });
+  }
+
+  const api = { IDENTIFIERS, remember, recall, forget, clearAll, prefill, bind, currentTaxYear, taxYearOptions, buildTaxYearSelect };
   globalThis.CarriedIdentifiers = api;
 })();

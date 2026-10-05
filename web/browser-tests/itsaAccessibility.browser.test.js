@@ -11,7 +11,13 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveHmrcAssistWidget, serveMoneyInput, serveFormErrors, serveHmrcFieldTableAssets } from "./hmrcFieldTableAssets.js";
+import {
+  serveHmrcAssistWidget,
+  serveMoneyInput,
+  serveFormErrors,
+  serveCarriedIdentifiers,
+  serveHmrcFieldTableAssets,
+} from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -43,6 +49,7 @@ async function loadItsaPage(page, fileName) {
   await serveHmrcAssistWidget(page);
   await serveMoneyInput(page);
   await serveFormErrors(page);
+  await serveCarriedIdentifiers(page);
 
   const modifiedHtml = html.replace(
     "<body>",
