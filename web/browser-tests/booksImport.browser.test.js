@@ -373,7 +373,7 @@ test.describe("books import fills equal the derivations run on the same book", (
     await expect(page.locator("#periodStartDate")).toHaveValue(period.periodDates.periodStartDate);
   });
 
-  test("an .xlsx workbook of a book the filing derivations do not answer fills nothing and says it could not import it", async ({
+  test("an .xlsx workbook of a taxi book is read in the browser, fills nothing and says the ITSA derivations take self-employed books", async ({
     page,
   }) => {
     const workbook = fs.readFileSync(path.join(process.cwd(), "videos/fixtures/diya-gl-taxi-driver.xlsx"));
@@ -385,7 +385,9 @@ test.describe("books import fills equal the derivations run on the same book", (
 
     await chooseFile(page, "taxi-driver.xlsx", workbook, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
-    await expect(page.locator("#booksImportStatus")).toContainText("Could not import taxi-driver.xlsx:");
+    await expect(page.locator("#booksImportStatus")).toHaveText(
+      'Could not import taxi-driver.xlsx: The book is a "taxi" book; the ITSA derivations read a self-employed (se) book.',
+    );
     await expect(page.locator("#turnover")).toHaveValue("0");
   });
 });
