@@ -23,6 +23,7 @@ vi.mock("@app/lib/logger.js", async (importOriginal) => {
 
 const { extractRequest } = await import("@app/lib/httpResponseHelper.js");
 const { processSqsRecords } = await import("@app/lib/sqsWorkerHelper.js");
+const { decodeJwtNoVerify } = await import("@app/lib/jwtHelper.js");
 
 const personalName = "Zebediah Quillfeather";
 const postalAddress = "17 Marmalade Lane, Nowhereton";
@@ -125,5 +126,22 @@ describe("processSqsRecords logging", () => {
     for (const secret of [personalName, postalAddress, vatFigure]) {
       expect(text).not.toContain(secret);
     }
+  });
+});
+
+describe("decodeJwtNoVerify logging", () => {
+  beforeEach(() => {
+    loggedLines.length = 0;
+  });
+
+  it("logs the claim names and none of their values", () => {
+    const claims = { sub: "user-sub-1", name: personalName, address: postalAddress };
+    const encode = (part) => Buffer.from(JSON.stringify(part)).toString("base64url");
+    const token = `${encode({ alg: "none" })}.${encode(claims)}.sig`;
+    expect(decodeJwtNoVerify(token)).toEqual(claims);
+    const text = allLoggedText();
+    expect(text).not.toContain(personalName);
+    expect(text).not.toContain(postalAddress);
+    expect(text).toContain("address");
   });
 });
