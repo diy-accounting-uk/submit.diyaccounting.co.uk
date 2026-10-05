@@ -15,8 +15,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-57ade3e** (PR #479, deploy 37356817098, 2026-10-05). PR #480 (146d5b2cf) is not on prod yet: its deploy 37364055214 lost every job to the GitHub Actions outage, and the operator re-ran its failed jobs at about 21:40 UTC.
-**ci**: `ci-set2` live (PR #480's branch deploy, created 2026-10-05 18:44 UTC), self-destructs about 22:44 UTC; `ci-set1` is being deleted by destroy-ci run 37356822373.
+**Prod runs deployment prod-57ade3e** (PR #479, deploy 37356817098, 2026-10-05). PR #480 (146d5b2cf) is deploying as prod-146d5b2 (7 stacks at 21:40 UTC) in deploy 37364055214, whose failed jobs the operator re-ran after the GitHub Actions outage; its "destroy previous" job removes prod-57ade3e once it is live.
+**ci**: `ci-set2` live (PR #480's branch deploy, created 2026-10-05 18:44 UTC), self-destructs about 22:44 UTC.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
