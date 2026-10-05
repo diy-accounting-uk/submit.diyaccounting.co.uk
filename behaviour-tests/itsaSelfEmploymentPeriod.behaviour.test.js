@@ -45,6 +45,7 @@ import {
   initHmrcAuth,
   submitHmrcAuth,
 } from "./steps/behaviour-hmrc-steps.js";
+import { dropBookOnForm, writeFixtureBookFile } from "./steps/behaviour-books-import-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
   assertHmrcApiRequestExists,
@@ -505,4 +506,72 @@ test("Click through: File an ITSA Quarterly Update with HMRC", async ({ page }, 
     });
     console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);
   }
+});
+
+test("Click through: File an ITSA Quarterly Update filled from a dropped book", async ({ page }, testInfo) => {
+  addOnPageLogging(page);
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  let testUsername = hmrcTestUsername;
+  let testPassword = hmrcTestPassword;
+  let testNino = hmrcTestNino;
+  if (!hmrcTestUsername) {
+    const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
+    const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
+    if (!hmrcClientId || !hmrcClientSecret) {
+      throw new Error("HMRC_SANDBOX_CLIENT_ID/SECRET (or HMRC_CLIENT_ID/SECRET) required to create test users");
+    }
+    const testUser = await createHmrcTestUser(hmrcClientId, hmrcClientSecret, { serviceNames: ["mtd-vat", "mtd-income-tax"] });
+    testUsername = testUser.userId;
+    testPassword = testUser.password;
+    testNino = testUser.nino;
+    if (!testNino) {
+      throw new Error("HMRC test user creation did not return a nino for the mtd-income-tax service");
+    }
+    saveHmrcTestUserToFiles(testUser, outputDir, path.resolve(process.cwd()));
+  }
+
+  const bookFile = writeFixtureBookFile("brickwork-pro-se-vat", outputDir);
+
+  await goToHomePageExpectNotLoggedIn(page, baseUrl, screenshotPath);
+  await clickLogIn(page, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
+  await verifyLoggedInStatus(page, screenshotPath);
+  await consentToDataCollection(page, screenshotPath);
+  await ensureBundleViaPassApi(page, "resident", screenshotPath, { testPass: true });
+  await goToHomePageUsingMainNav(page, screenshotPath);
+
+  await initItsaBusinessDetails(page, screenshotPath);
+  await fillInItsaBusinessDetails(page, { hmrcNino: testNino }, screenshotPath);
+  await submitItsaBusinessDetailsForm(page, screenshotPath);
+  await acceptCookiesHmrc(page, screenshotPath);
+  await goToHmrcAuth(page, screenshotPath);
+  await initHmrcAuth(page, screenshotPath);
+  await fillInHmrcAuth(page, testUsername, testPassword, screenshotPath);
+  await submitHmrcAuth(page, screenshotPath);
+  await grantPermissionHmrcAuth(page, screenshotPath);
+  await verifyItsaBusinessDetailsResults(page, screenshotPath);
+  const businessId = await readFirstBusinessId(page);
+  if (!businessId) {
+    throw new Error("Business Details returned no businesses - cannot file a quarterly update without a businessId");
+  }
+  await goToHomePageUsingMainNav(page, screenshotPath);
+
+  await initItsaSelfEmploymentPeriod(page, screenshotPath);
+  await page.locator("#nino").fill(testNino);
+  await page.locator("#businessId").fill(businessId);
+  await page.locator("#periodEndDate").fill("2025-10-05");
+  await dropBookOnForm(page, bookFile, "figures from brickwork-pro-se-vat.json for the period ending 2025-10-05", screenshotPath);
+
+  await expect(page.locator("#taxYear")).toHaveValue("2025-26");
+  await expect(page.locator("#periodStartDate")).toHaveValue("2025-04-06");
+  await expect(page.locator("#turnover")).toHaveValue("55950");
+  await expect(page.locator("#otherIncome")).toHaveValue("0");
+  await expect(page.locator("#costOfGoods")).toHaveValue("12450");
+  await expect(page.locator("#otherExpenses")).toHaveValue("1800");
+
+  await submitItsaSelfEmploymentPeriodForm(page, screenshotPath);
+  await completeHmrcReauthIfPresented(page, testUsername, testPassword, screenshotPath);
+  await verifyItsaSelfEmploymentPeriodResults(page, screenshotPath);
 });
