@@ -46,7 +46,7 @@
     "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
   },
 
-  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection", ".dev-float-left", "#latestTestsLink", "#apiDocsLink", "#viewSourceLink", "#localstorageContainer", ".entitlement-status", "#developerSection:has(#calculationTestScenario)"],
 
   "finalHoldMs": 2500,
 
