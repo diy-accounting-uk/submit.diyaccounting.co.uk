@@ -176,6 +176,11 @@
         }
       }
 
+      function hideRequestControls() {
+        document.getElementById("cancelRequestBtn").style.display = "none";
+        document.getElementById("toggleSearchCriteriaBtn").style.display = "none";
+      }
+
       function cancelRequest() {
         // Clear all in-progress session data
         sessionStorage.removeItem("pendingLiabilitiesRequest");
@@ -315,6 +320,7 @@
           // Display results
           displayLiabilities(result.liabilities || []);
           document.getElementById("liabilitiesResults").style.display = "block";
+          hideRequestControls();
           hideStatus();
 
           // Clean up session storage - keep token for subsequent HMRC operations
@@ -470,6 +476,7 @@
             // Display results
             displayLiabilities(result.liabilities || []);
             document.getElementById("liabilitiesResults").style.display = "block";
+            hideRequestControls();
             hideStatus();
           } catch (error) {
             console.error("Error retrieving liabilities:", error);

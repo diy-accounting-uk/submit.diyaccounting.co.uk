@@ -181,6 +181,11 @@
         }
       }
 
+      function hideRequestControls() {
+        document.getElementById("cancelRequestBtn").style.display = "none";
+        document.getElementById("toggleSearchCriteriaBtn").style.display = "none";
+      }
+
       function cancelRequest() {
         sessionStorage.removeItem("pendingObligationsRequest");
         sessionStorage.removeItem("hmrcAccessToken");
@@ -315,6 +320,7 @@
 
           displayObligations(result.obligations || []);
           document.getElementById("obligationsResults").style.display = "block";
+          hideRequestControls();
           hideStatus();
 
           sessionStorage.removeItem("currentActivity");
@@ -407,6 +413,7 @@
 
             displayObligations(result.obligations || []);
             document.getElementById("obligationsResults").style.display = "block";
+            hideRequestControls();
             hideStatus();
           } catch (error) {
             console.error("Error retrieving obligations:", error);

@@ -216,6 +216,11 @@
         }
       }
 
+      function hideRequestControls() {
+        document.getElementById("cancelRequestBtn").style.display = "none";
+        document.getElementById("toggleSearchCriteriaBtn").style.display = "none";
+      }
+
       function cancelRequest() {
         // Clear all in-progress session data
         sessionStorage.removeItem("pendingObligationsRequest");
@@ -358,6 +363,7 @@
           // Display results
           displayObligations(result.obligations || []);
           document.getElementById("obligationsResults").style.display = "block";
+          hideRequestControls();
           hideStatus();
 
           // Clean up session storage - keep token for subsequent HMRC operations
@@ -517,6 +523,7 @@
             // Display results
             displayObligations(result.obligations || []);
             document.getElementById("obligationsResults").style.display = "block";
+            hideRequestControls();
             hideStatus();
           } catch (error) {
             console.error("Error retrieving obligations:", error);
