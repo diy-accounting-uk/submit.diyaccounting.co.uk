@@ -17,6 +17,11 @@
 // Scenes shown: a scene with at least one captioned step, unless the scene is flagged
 // fastForward (those compress a step every video repeats, such as sign-in, into seconds).
 // A scene with more than three captioned steps gets one frame per captioned step.
+//
+// A recording of the submit site is cropped to its content column (CONTENT_COLUMN_CSS_PX wide,
+// centred) before scaling, because the app is 800 to 960px wide in a 1920px viewport and the
+// frame outside it is blank. A script with a localApp records another tool's full-width page
+// and keeps the whole frame.
 
 import fs from "fs";
 import path from "path";
@@ -30,6 +35,8 @@ import { copyVideosManifest } from "./copy-videos-manifest.js";
 export const SETTLE_BACK_MS = 300;
 export const THUMB_WIDTH = 480;
 export const FULL_WIDTH = 1600;
+export const CONTENT_COLUMN_CSS_PX = 1000;
+export const COLUMN_FULL_WIDTH = 1000;
 export const FULL_MAX_BYTES = 150 * 1024;
 export const WEBP_QUALITIES = [90, 82, 74, 66, 58, 50, 42];
 export const MAX_CAPTIONS_PER_SCENE = 2;
@@ -136,7 +143,17 @@ function ffmpegProbeDurationMs(ffmpeg, mp4Path) {
   return (Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3])) * 1000;
 }
 
-function writeWebp(ffmpeg, mp4Path, frameMs, width, quality, outPath) {
+/**
+ * The ffmpeg crop filter that keeps the content column, centred, of a frame laid out at
+ * viewportWidthCssPx; empty for a script that records a full-width page.
+ */
+export function columnCropFilter(script) {
+  if (script.localApp) return "";
+  const keep = `trunc(iw*${CONTENT_COLUMN_CSS_PX}/${script.viewport.width}/2)*2`;
+  return `crop=${keep}:ih:(iw-${keep})/2:0,`;
+}
+
+function writeWebp(ffmpeg, mp4Path, frameMs, width, quality, outPath, cropFilter) {
   const result = spawnSync(
     ffmpeg,
     [
@@ -150,7 +167,7 @@ function writeWebp(ffmpeg, mp4Path, frameMs, width, quality, outPath) {
       "-frames:v",
       "1",
       "-vf",
-      `scale=${width}:-2:flags=lanczos`,
+      `${cropFilter}scale=${width}:-2:flags=lanczos`,
       "-c:v",
       "libwebp",
       "-quality",
@@ -194,16 +211,18 @@ export function buildForEntry(entry, { ffmpeg = resolveFfmpegBinary(), outRoot =
   const timeline = JSON.parse(fs.readFileSync(path.join(dir, `${entry.id}.timeline.json`), "utf8"));
   const script = JSON.parse(fs.readFileSync(path.resolve("videos", `${entry.id}.json`), "utf8"));
   const plan = planWalkthrough({ script, timeline, videoDurationMs: ffmpegProbeDurationMs(ffmpeg, mp4Path) });
+  const cropFilter = columnCropFilter(script);
+  const fullWidth = cropFilter ? COLUMN_FULL_WIDTH : FULL_WIDTH;
   const outDir = path.join(outRoot, entry.id);
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
   let bytes = 0;
   for (const item of plan) {
-    writeWebp(ffmpeg, mp4Path, item.frameMs, THUMB_WIDTH, 70, path.join(outDir, `${frameKey(item)}-thumb.webp`));
+    writeWebp(ffmpeg, mp4Path, item.frameMs, THUMB_WIDTH, 70, path.join(outDir, `${frameKey(item)}-thumb.webp`), cropFilter);
     const fullPath = path.join(outDir, `${frameKey(item)}.webp`);
     let size = Infinity;
     for (const quality of WEBP_QUALITIES) {
-      size = writeWebp(ffmpeg, mp4Path, item.frameMs, FULL_WIDTH, quality, fullPath);
+      size = writeWebp(ffmpeg, mp4Path, item.frameMs, fullWidth, quality, fullPath, cropFilter);
       if (size <= FULL_MAX_BYTES) break;
     }
     bytes += size + fs.statSync(path.join(outDir, `${frameKey(item)}-thumb.webp`)).size;

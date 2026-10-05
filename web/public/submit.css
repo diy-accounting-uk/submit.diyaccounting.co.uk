@@ -2129,7 +2129,7 @@ a.external-link:hover::after {
   height: auto;
   aspect-ratio: 16 / 9;
   object-fit: cover;
-  object-position: top;
+  object-position: center;
 }
 .walkthrough-thumb:focus-visible,
 .walkthrough-overlay button:focus-visible {

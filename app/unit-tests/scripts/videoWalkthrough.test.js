@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, it, expect } from "vitest";
-import { ensureArtifact, parseArgs, planWalkthrough, buildWalkthroughEntries, SETTLE_BACK_MS } from "../../../scripts/video-walkthrough.js";
+import { columnCropFilter, ensureArtifact, parseArgs, planWalkthrough, buildWalkthroughEntries, SETTLE_BACK_MS } from "../../../scripts/video-walkthrough.js";
 
 function step(sceneId, stepIndex, startMs, endMs) {
   return { sceneId, stepIndex, startMs, endMs };
@@ -180,5 +180,15 @@ describe("ensureArtifact for a locally recorded entry", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "walkthrough-"));
     fs.writeFileSync(path.join(dir, "local-one.mp4"), "");
     expect(() => ensureArtifact({ id: "local-one", videoFile: path.join(dir, "local-one.mp4") })).toThrow(/no local recording/);
+  });
+});
+
+describe("columnCropFilter", () => {
+  it("crops a submit-site recording to a centred content column", () => {
+    expect(columnCropFilter({ viewport: { width: 1920, height: 1080 } })).toBe("crop=trunc(iw*1000/1920/2)*2:ih:(iw-trunc(iw*1000/1920/2)*2)/2:0,");
+  });
+
+  it("keeps the whole frame of a recording that targets another tool's page", () => {
+    expect(columnCropFilter({ viewport: { width: 1920, height: 1080 }, localApp: { command: "x", url: "y", readyPattern: "z" } })).toBe("");
   });
 });
