@@ -42,15 +42,16 @@ first.
 | Company lookup | REST API key, no presenter | n/a | live | free |
 | Registered office change | REST, OAuth as the company's user, no presenter | proven | live, proven on DIY Accounting Limited | free |
 | Registered email change | REST, OAuth as the company's user, no presenter | proven | live, proven on DIY Accounting Limited | free |
-| Micro-entity accounts | XML Gateway, presenter id + code, package reference | test presenter 00000000000: 000004 acknowledged 2026-09-13; status lookups fail until Companies House IT fixes the test account (B34.6c) | the credit-account presenter: authenticates on the live gateway since 2026-09-26; needs live clearance and the live package reference (O34c), then B34c | no Companies House fee; customer pays `resident-ltd` 99p a month (listed on ci only) |
-| Confirmation statement | XML Gateway, as above | test presenter 00000000000: harness run 36295600451: every case passes the gateway at submit, every status poll answers 9999 until Companies House repairs the presenter | the credit-account presenter: needs the cases pinned (CS-A3), software authorisation (CS-A4), then CS-11b (the operator's own proof filing, then customers) | our presenter: customer pays £61.35 by Stripe, Companies House charges the £50 fee to the credit account behind the presenter; the operator's own filings skip the Stripe charge (the fee waiver for listed company numbers, CS-11a); own presenter (CS-P1): Companies House charges £50 to the customer's own credit account, no Submit fee |
-| PSC verification statement (VS01) | XML Gateway, as above | test presenter 00000000000: CS-13b | the credit-account presenter: after CS-13b | Companies House fee to check |
+| Micro-entity accounts | XML Gateway, presenter id + code, package reference | the first test presenter: 000004 acknowledged 2026-09-13, never polled to a terminal state; the replacement presenter (2026-10-10) proves it afresh (B34.6c) | the credit-account presenter: authenticates on the live gateway since 2026-09-26; needs live clearance and the live package reference (O34c), then B34c | no Companies House fee; customer pays `resident-ltd` 99p a month (listed on ci only) |
+| Confirmation statement | XML Gateway, as above | the first test presenter: harness run 36295600451: every case passes the gateway at submit, every status poll answers 9999; the replacement presenter re-runs it (B34.6c, then CS-A3) | the credit-account presenter: needs the cases pinned (CS-A3), software authorisation (CS-A4), then CS-11b (the operator's own proof filing, then customers) | our presenter: customer pays £61.35 by Stripe, Companies House charges the £50 fee to the credit account behind the presenter; the operator's own filings skip the Stripe charge (the fee waiver for listed company numbers, CS-11a); own presenter (CS-P1): Companies House charges £50 to the customer's own credit account, no Submit fee |
+| PSC verification statement (VS01) | XML Gateway, as above | the replacement test presenter: CS-13b | the credit-account presenter: after CS-13b | Companies House fee to check |
 
 **Presenters**
 
 | Presenter | Environment | Issued | Status |
 |---|---|---|---|
-| Test presenter 00000000000 | Test service | 2026-09-11 | Status lookups broken; Companies House IT is fixing it (B34.6c) |
+| The first test presenter | Test service | 2026-09-11 | Withdrawn: its account "was not set up successfully" (XML team, 2026-09-25) |
+| The replacement test presenter | Test service | 2026-10-10 | Issued by the XML team on the 000004 thread; id and code in `../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_XMLGW_REPLACEMENT_TEST_PRESENTER.md`; goes into the ci secrets in B34.6c |
 | E0000000000 | Live | 2026-09-05 | Not used for filing; holds no credit account |
 | The credit-account presenter | Live | 2026-09-25, with the credit account, £500 limit | Authenticates on the live gateway since 2026-09-26. Its id, code and the account number are in `../private.diyaccounting.co.uk/operator/NEXT_OPERATOR_RUNBOOK.md` task A, which this repository does not carry — never write the presenter id, the account number or any code into this file |
 
@@ -61,7 +62,7 @@ statement).
 
 ```mermaid
 flowchart LR
-    CHIT[Companies House IT: test presenter repair] --> B346c[B34.6c]
+    SEC[The replacement test presenter into the ci secrets, on the operator's go] --> B346c[B34.6c]
     B346c --> O34c
     B346c --> B34c
     O34c --> B34c
@@ -82,7 +83,7 @@ flowchart LR
 
 The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarded in `PLAN_COMPANIES_HOUSE_APPROVAL.md`; the graph keeps them so the chain reads whole.
 
-- B34.6c: blocked by Companies House IT repairing the test presenter account (no row; external)
+- B34.6c: ready, machine-ask; the XML team issued a replacement test presenter on 2026-10-10 (NEXT.md B34)
 - O34c: blocked by B34.6c
 - B34c: blocked by B34.6c and O34c
 - CS-A3: blocked by B34.6c (every status poll answers 9999 until the test presenter is repaired)
@@ -143,8 +144,8 @@ member; the four audit-exemption statements are checked by phrase; every emitted
 against `fixtures/frc-taxonomy/frs-102-2026-concepts.json`. `FormIdentifier` is `Accounts`,
 `Category` `ACCOUNTS`, `Filename` `Accounts.xml`.
 
-Open: the test presenter's status lookups answer 9999 until Companies House IT repairs the test
-account (B34.6c); once they do, the live credit-account presenter needs clearing for live filing
+Open: B34.6c files afresh under the replacement test presenter (2026-10-10) and polls to a
+terminal state; then the live credit-account presenter needs clearing for live filing
 and the live package reference (O34c), then one proof filing (B34c).
 
 ## Confirmation statement (CS01) and PSC verification (VS01)
@@ -460,8 +461,8 @@ links to it.
 
 Every build proves its iXBRL against the concepts fixture and the public validator the micro
 filing passed, before any gateway call. B34f and B34e reuse the published accounts test companies
-and the test presenter; the gateway accepts a submission today and every poll answers 9999 until
-Companies House repairs the test presenter (B34.6c). O34g is the operator's registration with
+and the test presenter; the first test presenter accepted every submission and answered every poll
+with 9999, and B34.6c proves the replacement presenter polls to a terminal state. O34g is the operator's registration with
 HMRC's Software Developers Support Team (SDST) for the test services: the ETS sender ID and
 password and the 4-digit vendor ID, set on GitHub's `ci` environment.
 
@@ -512,7 +513,7 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 
 | Id | What | Files | Model | Blocked by | Class |
 |---|---|---|---|---|---|
-| B34.6c | Poll test submission 000004 once Companies House IT confirms the test presenter account works; pin the returned `StatusCode` as a case in `companiesHouseAccountsGet.test.js` | ~1 | Sonnet | Companies House IT | Blocked |
+| B34.6c | The replacement test presenter into the ci secrets and the ci environment; one accounts submission through the harness, polled to a terminal state; pin the returned `StatusCode` as a case in `companiesHouseAccountsGet.test.js`; reply on the XML team's thread | ~1 | Sonnet | the operator's go for two `gh secret set` writes | Machine-ask (NEXT.md B34) |
 | CS-A3 | Every observed response pinned in the simulator and the reject-code message map once a poll returns a terminal status; settles Q2 and Q3 | ~3 | Sonnet | B34.6c (Companies House IT) | Blocked |
 | CS-13b | The PSC verification statement's cases in the harness, run by its weekly workflow, pinned once a poll returns a terminal status | ~2 | Sonnet | B34.6c (Companies House IT) | Blocked |
 | CS-P1 | Filing under a customer's own presenter: the page option, storing no credentials, the credit-account explanation, skipping the Stripe checkout at the existing fee gate | ~5 | Sonnet | CS-11b | Blocked |
@@ -526,16 +527,26 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 The full brief for each open task, with the evidence it carries. Backlog context for the accounts
 filing (formerly `BACKLOG.md` rows 34b and 34c):
 
-- **Accounts filing through the XML Gateway (was 34b).** Companies House accounts filing through the XML Gateway (iXBRL in an XML envelope, FRS 105 micro-entity first). Presenter account issued 2026-09-05 (ID E0000000000, code in the operator's credentials store). The build that needs no credentials is on main (ci only), and `resident-ltd` at 99p a month carries it, listed on ci only. Test presenter 00000000000 issued 2026-09-11, on the ci environment since 2026-09-12; test submission 000004 acknowledged 2026-09-13; its status lookup waits on the XML team's answer (B34.6c).
+- **Accounts filing through the XML Gateway (was 34b).** Companies House accounts filing through the XML Gateway (iXBRL in an XML envelope, FRS 105 micro-entity first). Presenter account issued 2026-09-05 (ID E0000000000, code in the operator's credentials store). The build that needs no credentials is on main (ci only), and `resident-ltd` at 99p a month carries it, listed on ci only. The first test presenter, issued 2026-09-11 and on the ci environment since 2026-09-12, acknowledged test submission 000004 on 2026-09-13 and answered every poll with 9999; the XML team replaced it on 2026-10-10 (B34.6c).
 The tasks:
 
-- **B34.6c. Companies House accounts filing: the sandbox proof.** The XML team was asked on 2026-09-23 22:22 UTC in a new thread (from antony@, subject "Submission 000004 status and
-  GetSubmissionStatus query") whether 000004 was accepted and whether lookups are enabled for test
-  presenter 00000000000. When the answer says they are: poll 000004 through `GET /api/v1/companies-house/accounts/000004` on a
-  standing ci set and pin the returned `StatusCode` and any rejections as a case in
-  `app/unit-tests/functions/companiesHouseAccountsGet.test.js`. The prod catalogue listing is
-  BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs. Blocked
-  on IT at Companies House: the XML team answered on 2026-09-25 13:59 that the test presenter's account "was not set up successfully, causing the error", and will reply when IT answers. They asked for the request and response on 2026-09-24; the reply went the same day with transactions 1790285530232 (9999) and 1790285532345 (502), masked (`../private.diyaccounting.co.uk/companies-house/correspondence/DRAFT_EMAIL_XMLGW_000004_REPLY.md`; the unmasked set, from the 21:42 run, is `../DRAFT_EMAIL_XMLGW_000004_REPLY_UNMASKED.md` (workspace root, never committed: it carries a credential-equivalent value)). In the 9999 response the gateway echoes `Method` CHMD5 with an empty `Value`. A re-poll on 2026-09-26 13:43 UTC still answered 9999 (`../private.diyaccounting.co.uk/companies-house/xmlgw-evidence/xmlgw-000004-poll/`); no reply on the thread since 2026-09-25 16:16. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+- **B34.6c. Companies House accounts filing: the sandbox proof.** The XML team answered on the
+  "Submission 000004 status and GetSubmissionStatus query" thread (received by 2026-10-10) with a
+  replacement test presenter id and authentication code, after saying on 2026-09-25 that the first
+  one's account "was not set up successfully" (every poll under it answered 9999 "No presenter ID
+  supplied"; evidence in `../private.diyaccounting.co.uk/companies-house/xmlgw-evidence/`). The
+  email and the credentials: `../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_XMLGW_REPLACEMENT_TEST_PRESENTER.md`.
+  Steps: (1) on the operator's go, `gh secret set COMPANIES_HOUSE_PRESENTER_ID --env ci` and
+  `gh secret set COMPANIES_HOUSE_PRESENTER_CODE --env ci` with the new values; (2)
+  `gh workflow run deploy-environment.yml -f environment-name=ci`, which writes
+  `ci/submit/companies-house/presenter_id` and `presenter_code` in Secrets Manager; (3)
+  `gh workflow run companies-house-test-service.yml` (the harness files every case and polls; 000004
+  was filed under the withdrawn presenter, so the proof is a fresh submission); (4) when a poll
+  returns a terminal `StatusCode`, pin it and any rejections as a case in
+  `app/unit-tests/functions/companiesHouseAccountsGet.test.js`; (5) draft the reply the XML team
+  asked for ("update me on the success") in the correspondence folder. The prod catalogue listing is
+  BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs.
+  **Source**: BACKLOG 34b. **Owner**: Claude Code, the secrets on the operator's go. **Model**: Sonnet. **Size**:
   ~1 file.
 
 - **CS-A3. The harness's statement cases, pinned.** Harness run 36295600451 on `main` (d19cd6df): all six confirmation statement submissions (five ConfirmationAndVerificationStatement v1-0 cases and the v1-3 ConfirmationStatement case) now pass the gateway at submit; each status poll answers 9999 `No presenter ID supplied` from `GetSubmissionStatus`, the test-presenter account fault Companies House's XML team reported on their side (B34.6c waits on the same). The two blank-code cases are pinned at schema error 100. Remainder: when a poll returns a terminal status, dispatch `companies-house-test-service.yml` on `main` and pin each case's accepted or rejected outcome (the wrong-authentication-code case should reject). Blocked on Companies House fixing the test presenter account (B34.6c). **Source**: `PLAN_COMPANIES_HOUSE.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
