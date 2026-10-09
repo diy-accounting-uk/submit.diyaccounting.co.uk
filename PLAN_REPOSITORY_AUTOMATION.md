@@ -837,7 +837,7 @@ is tier 1. Everything else waits.
 
 Operator request (2026-10-04, verbatim): "have the main branch for each diy accounting repository replicated to a repository in gitlab."
 
-Each of the seven repositories pushes its `main` to a matching project in the gitlab.com group `diy-accounting-uk` from a `mirror-gitlab.yml` workflow, with a per-repository write deploy key. The GitLab copy is a replica: force-pushed, never written to directly. `NEXT.md` OGL1 (the group, projects and an API token) then GL1 (the workflows, keys and proof).
+Design (operator, 2026-10-10, replacing the workflow-and-deploy-key design): each checkout under the workspace carries a second remote, `gitlab`, pointing at its project in the gitlab.com group `diy-accounting-uk` (owner `polycode-limited`; five projects imported from GitHub on 2026-05-12, `private-diyaccounting-co-uk` and `homebrew-diya-gl` created 2026-10-10; project names carry hyphens in place of dots). The workspace skill `.claude/skills/gitlab-sync/` (`gitlab-sync.sh`) fetches `origin/main` and `gitlab/main` and pushes `refs/remotes/origin/main` to `gitlab` `main` when GitLab's is an ancestor of GitHub's; it pushes what GitHub has, never local commits, never forces, and reports a diverged replica as `DIVERGED`. The replica holds `main` only and is never written by hand. Remotes are the operator's to add (NEXT.md OGL1); the first sync and its proof are GL1. No GitHub workflow, deploy key or token: the operator's SSH key and `glab` sign-in authenticate.
 
 ## Proving the agent workflows by dispatch
 
