@@ -684,7 +684,7 @@ All repositories live in the **`diy-accounting-uk` GitHub org** — the `antonyc
 
 **Each subdirectory has a `CLAUDE.md`** with project-specific instructions — always read it before working in that project.
 
-**Maintenance skills** (in `.claude/skills/`): `repo-sync` (fetch + fast-forward all repos), `drive-sync` (refresh the Drive mirror), `mail-sync` (gyb Gmail backup), `reindex` (rebuild lookup indexes only).
+**Maintenance skills** (in `.claude/skills/`): `repo-sync` (fetch + fast-forward all repos), `gitlab-sync` (push each GitHub `main` to its GitLab replica, fast-forward only), `drive-sync` (refresh the Drive mirror), `mail-sync` (gyb Gmail backup), `reindex` (rebuild lookup indexes only).
 
 #### Search hygiene
 
