@@ -62,7 +62,7 @@ statement).
 
 ```mermaid
 flowchart LR
-    SEC[The replacement test presenter into the ci secrets, on the operator's go] --> B346c[B34.6c]
+    SEC[The replacement test presenter into the ci secrets] --> B346c[B34.6c]
     B346c --> O34c
     B346c --> B34c
     O34c --> B34c
@@ -83,7 +83,7 @@ flowchart LR
 
 The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarded in `PLAN_COMPANIES_HOUSE_APPROVAL.md`; the graph keeps them so the chain reads whole.
 
-- B34.6c: ready, machine-ask; the XML team issued a replacement test presenter on 2026-10-10 (NEXT.md B34)
+- B34.6c: ready, machine-only; the XML team issued a replacement test presenter on 2026-10-10 and the operator gave the go for the secrets and the two dispatches (NEXT.md B34)
 - O34c: blocked by B34.6c
 - B34c: blocked by B34.6c and O34c
 - CS-A3: blocked by B34.6c (every status poll answers 9999 until the test presenter is repaired)
@@ -513,7 +513,7 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 
 | Id | What | Files | Model | Blocked by | Class |
 |---|---|---|---|---|---|
-| B34.6c | The replacement test presenter into the ci secrets and the ci environment; one accounts submission through the harness, polled to a terminal state; pin the returned `StatusCode` as a case in `companiesHouseAccountsGet.test.js`; reply on the XML team's thread | ~1 | Sonnet | the operator's go for two `gh secret set` writes | Machine-ask (NEXT.md B34) |
+| B34.6c | The replacement test presenter into the ci secrets and the ci environment; one accounts submission through the harness, polled to a terminal state; pin the returned `StatusCode` as a case in `companiesHouseAccountsGet.test.js`; reply on the XML team's thread | ~1 | Sonnet | — (go given 2026-10-10) | Machine-only (NEXT.md B34) |
 | CS-A3 | Every observed response pinned in the simulator and the reject-code message map once a poll returns a terminal status; settles Q2 and Q3 | ~3 | Sonnet | B34.6c (Companies House IT) | Blocked |
 | CS-13b | The PSC verification statement's cases in the harness, run by its weekly workflow, pinned once a poll returns a terminal status | ~2 | Sonnet | B34.6c (Companies House IT) | Blocked |
 | CS-P1 | Filing under a customer's own presenter: the page option, storing no credentials, the credit-account explanation, skipping the Stripe checkout at the existing fee gate | ~5 | Sonnet | CS-11b | Blocked |
