@@ -38,9 +38,6 @@ step.
 
 ## In flight
 
-**COOL-DOWN is on since 2026-10-05T18:05:30Z.** No new board rows except a degradation. Agents commit
-and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
-
 - [ ] **BS9a. Journey C on ci with the real Picker: the diya-gl half of risk 2 (PLAN_BOOKS_TO_SUBMIT).** `https://ci.diya-gl.co.uk/cloud-config.js` carries the Picker key (checked 2026-10-04; BS10b's deploy step, spreadsheets PR #154). A session drives the page with Playwright while the operator signs in to Google and consents: save a book to Drive under the diya-gl client, reopen it through "Open from Google Drive" and the Picker, and confirm the folder list shows only files this client created; the browser console may name `www.gstatic.com` or `content.googleapis.com` for the CSP (`../spreadsheets.diyaccounting.co.uk/infra/main/resources/diya-gl-security-headers.json`), widened only as named. The operator's Google sign-in: given 2026-10-10 (antony@diyaccounting.co.uk; a CSP widening may go as a PR under cool-down); the headed run is in progress in the submit session. **Source**: `PLAN_BOOKS_TO_SUBMIT.md` BS9, risk 2. **Owner**: Claude Code, the submit session, with the operator's Google account. **Model**: Sonnet. **Size**: ~1 file in `../spreadsheets.diyaccounting.co.uk`.
 
 ## Machine-only
