@@ -238,8 +238,16 @@ jobs:
 
             PREV_RUN_ID=$(gh run list --repo "$REPO" --workflow video-capture.yml --limit 1 --json databaseId --jq '.[0].databaseId // empty')
 
-            echo "Dispatching video-capture.yml for ${SCRIPT}"
-            gh workflow run video-capture.yml --repo "$REPO" -f "script=${SCRIPT}" -f "environment-name=prod"
+            # A scene script declares where it can record; an absent field means both.
+            ENVIRONMENTS=$(SCENE_SCRIPT="$SCRIPT" node -e 'const scene = JSON.parse(require("fs").readFileSync(`videos/${process.env.SCENE_SCRIPT}.json`, "utf8")); process.stdout.write((scene.environments ?? ["ci", "prod"]).join(" "))')
+            case " ${ENVIRONMENTS} " in
+              *" prod "*) TARGET_ENVIRONMENT=prod ;;
+              *" ci "*) TARGET_ENVIRONMENT=ci ;;
+              *) echo "::error::videos/${SCRIPT}.json declares no environment video-capture.yml records"; exit 1 ;;
+            esac
+
+            echo "Dispatching video-capture.yml for ${SCRIPT} to ${TARGET_ENVIRONMENT} (declared: ${ENVIRONMENTS})"
+            gh workflow run video-capture.yml --repo "$REPO" -f "script=${SCRIPT}" -f "environment-name=${TARGET_ENVIRONMENT}"
 
             # Wait for the dispatched run to register before polling it, so this does not read
             # the previous run's already-completed status and move on before the new one starts.
