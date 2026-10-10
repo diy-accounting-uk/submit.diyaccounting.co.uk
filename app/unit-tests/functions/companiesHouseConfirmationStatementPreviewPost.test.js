@@ -67,6 +67,7 @@ function buildStatementBody(overrides = {}) {
     dateSigned: "2026-09-24",
     reviewDate: "2025-09-21",
     lawfulPurposeStatementAccepted: true,
+    stateConfirmationAccepted: true,
     directors: [{ personalCode: "CWMPS832223", forename: "ALICE", otherForenames: "MARGARET", surname: "EXAMPLE", dob: "1970-01-01" }],
     ...overrides,
   };
@@ -135,6 +136,13 @@ describe("companiesHouseConfirmationStatementPreviewPost ingestHandler", () => {
   test("rejects when the lawful purpose statement is not accepted", async () => {
     const response = await companiesHouseConfirmationStatementPreviewPostHandler(
       buildEvent({ body: buildStatementBody({ lawfulPurposeStatementAccepted: false }) }),
+    );
+    expect(response.statusCode).toBe(400);
+  });
+
+  test("rejects when the statement of confirmation is not accepted", async () => {
+    const response = await companiesHouseConfirmationStatementPreviewPostHandler(
+      buildEvent({ body: buildStatementBody({ stateConfirmationAccepted: false }) }),
     );
     expect(response.statusCode).toBe(400);
   });

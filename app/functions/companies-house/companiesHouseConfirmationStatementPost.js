@@ -131,6 +131,7 @@ export function extractAndValidateConfirmationStatementParameters(event, errorMe
     shareholdings,
     registeredEmailAddress,
     lawfulPurposeStatementAccepted,
+    stateConfirmationAccepted,
     directors,
     officers,
   } = parsedBody;
@@ -178,6 +179,10 @@ export function extractAndValidateConfirmationStatementParameters(event, errorMe
     errorMessages.push("The user must accept the lawful purpose statement");
   }
 
+  if (!stateConfirmationAccepted) {
+    errorMessages.push("The user must accept the statement of confirmation");
+  }
+
   validateOfficers(officers, errorMessages);
 
   // Directors carry a verification statement only for ConfirmationAndVerificationStatement-v1-0 -
@@ -196,6 +201,7 @@ export function extractAndValidateConfirmationStatementParameters(event, errorMe
     statementOfCapital,
     shareholdings,
     registeredEmailAddress,
+    stateConfirmationAccepted,
     directors: normalisedDirectors,
     officers,
   };
@@ -307,6 +313,7 @@ export async function ingestHandler(event) {
       statementOfCapital: statement.statementOfCapital,
       shareholdings: statement.shareholdings,
       registeredEmailAddress: statement.registeredEmailAddress,
+      stateConfirmationAccepted: statement.stateConfirmationAccepted,
       directors: statement.directors,
       officers: statement.officers,
     });

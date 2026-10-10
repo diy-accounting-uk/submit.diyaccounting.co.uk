@@ -190,6 +190,7 @@ test.describe("File Confirmation Statement page", () => {
 
   async function acceptLawfulPurposeStatement(page) {
     await page.check("#lawfulPurposeStatement");
+    await page.check("#stateConfirmation");
   }
 
   test("starts on the company number entry view", async ({ page }) => {

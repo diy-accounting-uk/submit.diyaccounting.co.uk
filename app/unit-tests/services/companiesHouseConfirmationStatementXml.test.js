@@ -34,6 +34,7 @@ const UNVERIFIED_OFFICER = { identityVerificationDetails: { appointment_verifica
 
 const BASE_INPUT = {
   reviewDate: "2024-08-30",
+  stateConfirmationAccepted: true,
   directors: [
     {
       title: "MR",
@@ -215,6 +216,12 @@ describe("services/companiesHouseConfirmationStatementXml", () => {
     });
 
     describe("validation", () => {
+      test("throws when the statement of confirmation is not accepted", () => {
+        expect(() => buildConfirmationStatementBody({ ...BASE_INPUT, stateConfirmationAccepted: undefined })).toThrow(
+          "stateConfirmationAccepted must be true",
+        );
+      });
+
       test("throws when reviewDate is missing", () => {
         expect(() => buildConfirmationStatementBody({ ...BASE_INPUT, reviewDate: undefined })).toThrow("reviewDate is required");
       });
@@ -340,6 +347,7 @@ describe("services/companiesHouseConfirmationStatementXml", () => {
       test("builds ConfirmationStatement with no VerificationStatement once every officer is verified, and needs no directors", () => {
         const xml = buildConfirmationStatementBody({
           reviewDate: "2024-08-30",
+          stateConfirmationAccepted: true,
           officers: [VERIFIED_OFFICER, VERIFIED_OFFICER],
         });
         const document = parseXmlDocument(xml);
@@ -351,6 +359,7 @@ describe("services/companiesHouseConfirmationStatementXml", () => {
       test("the ConfirmationStatement-v1-3 body passes its own element order, read from the checked-in XSD", () => {
         const xml = buildConfirmationStatementBody({
           reviewDate: "2024-08-30",
+          stateConfirmationAccepted: true,
           officers: [VERIFIED_OFFICER],
         });
         expect(readConfirmationStatementElementOrder(CONFIRMATION_STATEMENT_V1_3_XSD, "ConfirmationStatement")).toEqual(

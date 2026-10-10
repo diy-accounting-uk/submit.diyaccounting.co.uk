@@ -130,6 +130,11 @@ const confirmationStatementFilingInputSchema = {
   lawfulPurposeStatementAccepted: z
     .literal(true)
     .describe("The user's confirmation that the company's intended future activities are lawful"),
+  stateConfirmationAccepted: z
+    .literal(true)
+    .describe(
+      "The user's confirmation that the information the company must deliver to the registrar is delivered and that the statement is correct as at the confirmation date",
+    ),
   directors: z.array(confirmationStatementDirectorSchema).describe("One verification statement row per current director"),
 };
 

@@ -98,6 +98,7 @@ const CONFIRMATION_STATEMENT_PARAMS = {
   dateSigned: "2026-03-01",
   reviewDate: "2026-03-01",
   lawfulPurposeStatementAccepted: true,
+  stateConfirmationAccepted: true,
   directors: [{ forename: "Jo", surname: "Brick", dob: "1980-04-12", personalCode: "AB123CD45E" }],
 };
 
@@ -582,6 +583,12 @@ describe("submit-tools", () => {
       await expect(
         previewConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, lawfulPurposeStatementAccepted: false }),
       ).rejects.toThrow("lawfulPurposeStatementAccepted");
+    });
+
+    it("requires stateConfirmationAccepted to be accepted", async () => {
+      await expect(
+        previewConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, stateConfirmationAccepted: false }),
+      ).rejects.toThrow("stateConfirmationAccepted");
     });
 
     it("requires companyNumber", async () => {

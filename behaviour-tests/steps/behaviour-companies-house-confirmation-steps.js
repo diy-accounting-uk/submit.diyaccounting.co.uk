@@ -118,6 +118,7 @@ export async function verifyReviewFormPopulated(page, screenshotPath = defaultSc
 export async function tryPreviewWithBlankPersonalCodes(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user accepts the lawful purpose statement but leaves the director personal codes blank, and tries to preview", async () => {
     await page.check("#lawfulPurposeStatement");
+    await page.check("#stateConfirmation");
     await loggedClick(page, "#previewBtn", "Trying to preview with no personal codes entered", { screenshotPath });
     await expect(page.locator("#statusMessagesContainer")).toContainText("personal code", { timeout: 15000 });
     await expect(page.locator("#previewView")).toBeHidden();
@@ -145,6 +146,7 @@ export async function fillInDirectorPersonalCodes(
 export async function acceptLawfulPurposeStatement(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user confirms the intended future activities of the company are lawful", async () => {
     await page.check("#lawfulPurposeStatement");
+    await page.check("#stateConfirmation");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-lawful-purpose-accepted.png` });
   });
 }
