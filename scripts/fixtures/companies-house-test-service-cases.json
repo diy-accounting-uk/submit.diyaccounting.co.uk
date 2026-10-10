@@ -285,9 +285,9 @@
       "microEntityProvisions": true
     },
     "expectedOutcome": {
-      "status": "TERMINAL",
+      "status": "POLL_TIMEOUT",
       "pinned": true,
-      "note": "The test gateway's test mode answers a polled submission with a random ACCEPT or REJECT, so either terminal status is expected. The statement cases were observed accepted and polled in harness run 38009055293; this accounts filing has not yet been filed under the replacement test presenter."
+      "note": "The test service accepts the accounts submission at submit and answers every GetSubmissionStatus poll with PENDING for the runner's full ten-minute wall clock (harness runs 38023791050 and 38025557309 under the replacement test presenter), unlike the statement cases, which settle on their first poll. A later poll of the submission number through the ci API is the follow-up; a terminal StatusCode there is pinned here when it appears."
     }
   }
 ]
