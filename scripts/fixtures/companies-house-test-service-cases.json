@@ -244,5 +244,50 @@
       "pinned": true,
       "note": "Observed error 100 (schema validation) on the test service, run 36264617953 (2026-09-26)."
     }
+  },
+  {
+    "name": "micro-entity-accounts",
+    "type": "accounts",
+    "companyNumber": "03176906",
+    "companyName": "MILLENNIUM STADIUM PLC",
+    "companyAuthCode": "AUTH11",
+    "periodStart": "2025-01-01",
+    "periodEnd": "2025-12-31",
+    "balanceSheet": {
+      "currentYear": {
+        "fixedAssets": 1000,
+        "currentAssets": 5000,
+        "creditorsWithinOneYear": 2000,
+        "creditorsAfterOneYear": 0,
+        "calledUpShareCapital": 100,
+        "profitAndLossAccount": 3900,
+        "capitalAndReserves": 4000
+      },
+      "priorYear": {
+        "fixedAssets": 900,
+        "currentAssets": 3500,
+        "creditorsWithinOneYear": 1500,
+        "creditorsAfterOneYear": 0,
+        "calledUpShareCapital": 100,
+        "profitAndLossAccount": 2800,
+        "capitalAndReserves": 2900
+      }
+    },
+    "averageEmployees": 2,
+    "director": {
+      "name": "Maldwyn Beynon",
+      "dateApproved": "2026-01-15"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "microEntityProvisions": true
+    },
+    "expectedOutcome": {
+      "status": "TERMINAL",
+      "pinned": true,
+      "note": "The test gateway's test mode answers a polled submission with a random ACCEPT or REJECT, so either terminal status is expected. The statement cases were observed accepted and polled in harness run 38009055293; this accounts filing has not yet been filed under the replacement test presenter."
+    }
   }
 ]
