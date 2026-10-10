@@ -86,7 +86,7 @@
       "items": { "type": "string", "enum": ["ci", "prod"] },
       "minItems": 1,
       "default": ["ci", "prod"],
-      "description": "Where this script can be recorded. Defaults to [\"ci\", \"prod\"] when absent. An activity absent from prod records against a ci set instead: declare [\"ci\"] so the on-deploy dispatcher, which only ever targets prod, leaves this script out."
+      "description": "Where this script can be recorded. Defaults to [\"ci\", \"prod\"] when absent. An activity absent from prod records against a ci set instead: declare [\"ci\"] and the on-deploy dispatcher sends this script to the live ci set."
     },
     "localApp": {
       "type": "object",
