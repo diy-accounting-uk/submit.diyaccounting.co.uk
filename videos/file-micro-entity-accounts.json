@@ -290,9 +290,9 @@
       "steps": [
         {
           "action": "await",
-          "until": "#filingResult:has-text('PENDING'), #filingResult:has-text('Status:')",
+          "until": "#filingResult:has-text('Status:')",
           "label": "Waiting for Companies House",
-          "timeoutMs": 60000,
+          "timeoutMs": 180000,
           "caption": "The filing goes to Companies House.",
           "headline": "Companies House checks it",
           "keyWord": "checks"
