@@ -205,4 +205,53 @@ class EdgeStackTest {
                 "AWS::WAFv2::WebACL",
                 Match.objectLike(Map.of("Rules", Match.arrayWith(List.of(Match.objectLike(rule))))));
     }
+
+    @Test
+    void ec2MetadataSsrfBodyCountsInTheCommonRuleSetAndIsBlockedOnEveryPathExceptMcpRegister() {
+        Template template = Template.fromStack(synthEdgeStack());
+        Map<String, Object> countOverride = Map.of(
+                "Name", "EC2MetaDataSSRF_BODY", "ActionToUse", Match.objectLike(Map.of("Count", Match.anyValue())));
+        Map<String, Object> commonRuleSet = Map.of(
+                "Name",
+                "AWSManagedRulesCommonRuleSet",
+                "Statement",
+                Map.of(
+                        "ManagedRuleGroupStatement",
+                        Match.objectLike(Map.of(
+                                "RuleActionOverrides", Match.arrayWith(List.of(Match.objectLike(countOverride)))))));
+        Map<String, Object> label = Map.of(
+                "LabelMatchStatement",
+                Match.objectLike(
+                        Map.of("Scope", "LABEL", "Key", "awswaf:managed:aws:core-rule-set:EC2MetaDataSSRF_Body")));
+        Map<String, Object> notRegisterPath = Map.of(
+                "NotStatement",
+                Match.objectLike(Map.of(
+                        "Statement",
+                        Match.objectLike(Map.of(
+                                "ByteMatchStatement",
+                                Match.objectLike(Map.of(
+                                        "FieldToMatch",
+                                        Map.of("UriPath", Match.anyValue()),
+                                        "PositionalConstraint",
+                                        "EXACTLY",
+                                        "SearchString",
+                                        "/mcp/oauth/register")))))));
+        Map<String, Object> blockRule = Map.of(
+                "Name",
+                "EC2MetaDataSSRFOutsideMcpRegister",
+                "Action",
+                Match.objectLike(Map.of("Block", Match.anyValue())),
+                "Statement",
+                Map.of(
+                        "AndStatement",
+                        Match.objectLike(Map.of(
+                                "Statements",
+                                Match.arrayWith(
+                                        List.of(Match.objectLike(label), Match.objectLike(notRegisterPath)))))));
+        template.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of(
+                        "Rules",
+                        Match.arrayWith(List.of(Match.objectLike(commonRuleSet), Match.objectLike(blockRule))))));
+    }
 }
