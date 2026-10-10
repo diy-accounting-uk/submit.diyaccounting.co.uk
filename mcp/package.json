@@ -1,6 +1,6 @@
 {
   "name": "@diy-accounting-uk/diya-submit",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server that opens a diya-gl book, derives filing figures and drives DIY Accounting Submit's HMRC and Companies House submissions",
   "type": "module",
   "license": "LicenseRef-PolyForm-Internal-Use-1.0.0",
