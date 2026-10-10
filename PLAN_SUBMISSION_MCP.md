@@ -3,7 +3,7 @@
 
 # PLAN: The submission MCP
 
-Status: open, drafted 2026-09-07. M1 is on main (M1a, PR #226; M1b and M1c, PR #232); M2 is on main (PR #469); M5's workflow, staging and page are on main (PR #471), its first tag waits on OM5; M7 is on main (81654afe6, `mcp/scripts/vat-sandbox-proof.js`); M4, M6 and M8 are rows
+Status: open, drafted 2026-09-07. M1 is on main (M1a, PR #226; M1b and M1c, PR #232); M2 is on main (PR #469); M5 is done (workflow, staging and page PR #471; trusted publishing PR #490; 0.1.1 published from the tag `diya-submit-mcp-v0.1.1` by `publish-mcp.yml` run 38090857983 to npm and GHCR, 2026-10-10); M7 is on main (81654afe6, `mcp/scripts/vat-sandbox-proof.js`); M4, M6 and M8 are rows
 on `NEXT.md` (boarded 2026-10-03); M3 uses the authorization code grant with PKCE on a loopback
 redirect, because Cognito has no device-code grant.
 
