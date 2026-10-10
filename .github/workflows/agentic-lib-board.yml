@@ -345,11 +345,32 @@ jobs:
           else
             printf 'Board: update NEXT.md\n' > /tmp/commit-message.txt
           fi
-          scripts/github-api-commit.sh --repo "${{ github.repository }}" \
-            --branch "${{ github.event.repository.default_branch }}" \
-            --base-sha "${{ steps.before.outputs.sha }}" --message-file /tmp/commit-message.txt
-          echo "Pushed $(git rev-parse --short HEAD) to ${{ github.event.repository.default_branch }}." >> "$GITHUB_STEP_SUMMARY"
-          echo "pushed=true" | tee -a "$GITHUB_OUTPUT"
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+          BEFORE="${{ steps.before.outputs.sha }}"
+          BASE="$BEFORE"
+          for ATTEMPT in 1 2 3; do
+            if scripts/github-api-commit.sh --repo "${{ github.repository }}" \
+              --branch "$DEFAULT_BRANCH" --base-sha "$BASE" --message-file /tmp/commit-message.txt \
+              >/tmp/github-api-commit.log 2>&1; then
+              cat /tmp/github-api-commit.log
+              echo "Pushed $(git rev-parse --short HEAD) to ${DEFAULT_BRANCH}." >> "$GITHUB_STEP_SUMMARY"
+              echo "pushed=true" | tee -a "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            cat /tmp/github-api-commit.log >&2
+            # The head moved after the checkout. The edit is NEXT.md alone, so it applies on the
+            # new head unchanged as long as main's NEXT.md still matches what this run read.
+            if ! grep -q 'Expected branch to point to' /tmp/github-api-commit.log || [ "$ATTEMPT" -eq 3 ]; then
+              exit 1
+            fi
+            git fetch origin "$DEFAULT_BRANCH"
+            if ! git diff --quiet "$BEFORE" "origin/${DEFAULT_BRANCH}" -- NEXT.md; then
+              echo "main's NEXT.md changed during the run; not pushed" | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "pushed=false" | tee -a "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            BASE="$(git rev-parse "origin/${DEFAULT_BRANCH}")"
+          done
 
       # Agent-run ledger row for the one-stop dashboard (v_agent_runs_daily). "posted" covers both
       # a pushed write-back and a clean render-only pass; verify-failed reuses the alarm
