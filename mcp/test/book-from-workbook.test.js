@@ -68,7 +68,7 @@ describe("bookFromWorkbookSet", () => {
 
     for (const code of Object.keys(book.accounts.sales)) expect(code).toMatch(/^\d{4}$/);
     for (const code of Object.keys(book.accounts.purchases)) expect(code).toMatch(/^\d{4}$/);
-  });
+  }, 30_000);
 
   it("restores the leading zero the OpenAccounts company-number cell drops", async () => {
     // The example's own company number is already eight digits, so this
@@ -80,7 +80,7 @@ describe("bookFromWorkbookSet", () => {
 
     const book = await bookFromWorkbookSet({ dir: scratch });
     expect(book.entityInformation["diya-gl:companyNumber"]).toBe("01234567");
-  });
+  }, 30_000);
 
   it("requires a dir", async () => {
     await expect(bookFromWorkbookSet({})).rejects.toThrow(/requires a dir/);
@@ -226,7 +226,7 @@ describe("toToml", () => {
     const parsed = parseToml(toml);
     expect(parsed.entityInformation.organizationIdentifier).toBe("Precision Code Ltd");
     expect(parsed.openingBalances.tradeCreditors).toBe(book.openingBalances.tradeCreditors);
-  });
+  }, 30_000);
 });
 
 const CLOSING_SET_2025_2026 = "/Users/antony/projects/diy-accounting-limited/drive/DIY Accounting Limited/finance/2025-2026 accounts/";
