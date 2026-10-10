@@ -8,6 +8,7 @@
     "submit": "app/bin/main.js"
   },
   "scripts": {
+    "postinstall": "npm ci --prefix mcp --ignore-scripts --no-audit --no-fund",
     "build": "./mvnw clean verify && git restore web/public/submit.deployment-name.txt web/public/submit.environment-name.txt || true",
     "start": "./scripts/start-simulator.sh",
     "start:simulator": "./scripts/start-simulator.sh",
