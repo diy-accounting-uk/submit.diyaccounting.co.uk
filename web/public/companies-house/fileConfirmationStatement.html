@@ -194,6 +194,15 @@
             </label>
           </div>
 
+          <h3>Statement of confirmation</h3>
+          <div class="form-group">
+            <input type="checkbox" id="stateConfirmation" name="stateConfirmation" required />
+            <label for="stateConfirmation" style="display: inline; font-weight: normal">
+              The company confirms that the information it is required to deliver to the registrar has been delivered, and that all the
+              information in this statement is correct as at the confirmation date.
+            </label>
+          </div>
+
           <h3>Director identity verification</h3>
           <p class="hint">
             Every current director must have verified their identity with Companies House, and this statement needs their full name as
@@ -690,6 +699,7 @@
           dateSigned: new Date().toISOString().slice(0, 10),
           reviewDate: document.getElementById("reviewDate").value,
           lawfulPurposeStatementAccepted: document.getElementById("lawfulPurposeStatement").checked,
+          stateConfirmationAccepted: document.getElementById("stateConfirmation").checked,
           directors: readDirectors(),
           officers: currentOfficers.map((officer) => ({ identityVerificationDetails: officer.identityVerificationDetails })),
         };
@@ -717,6 +727,10 @@
         }
         if (!payload.lawfulPurposeStatementAccepted) {
           showStatus("The lawful purpose statement must be accepted before previewing.", "error");
+          return false;
+        }
+        if (!payload.stateConfirmationAccepted) {
+          showStatus("The statement of confirmation must be accepted before previewing.", "error");
           return false;
         }
         if (payload.directors.length === 0) {

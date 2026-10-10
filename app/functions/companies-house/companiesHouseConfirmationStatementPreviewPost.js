@@ -74,6 +74,7 @@ export async function ingestHandler(event) {
         statementOfCapital: statement.statementOfCapital,
         shareholdings: statement.shareholdings,
         registeredEmailAddress: statement.registeredEmailAddress,
+        stateConfirmationAccepted: statement.stateConfirmationAccepted,
         directors: statement.directors,
         officers: statement.officers,
       }),

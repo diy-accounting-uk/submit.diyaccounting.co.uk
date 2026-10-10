@@ -278,6 +278,9 @@ function buildVerificationDirectorXml({ title, forename, otherForenames, surname
  * @param {object[]} [input.shareholdings] - each holding's `shareholders` may carry several joint
  *   holders, at most ten
  * @param {string} [input.registeredEmailAddress]
+ * @param {true} input.stateConfirmationAccepted - the user's confirmation that the information the
+ *   company must deliver to the registrar is delivered and that the statement is correct as at the
+ *   confirmation date; written as StateConfirmation
  * @param {object[]} [input.directors] - one row per current director, each carrying an
  *   11-character Companies House personal code and OtherForenames; required unless `officers`
  *   shows every officer already verified
@@ -291,9 +294,13 @@ export function buildConfirmationStatementBody({
   statementOfCapital,
   shareholdings,
   registeredEmailAddress,
+  stateConfirmationAccepted,
   directors,
   officers,
 }) {
+  if (stateConfirmationAccepted !== true) {
+    throw new Error("stateConfirmationAccepted must be true");
+  }
   if (!reviewDate || Number.isNaN(Date.parse(reviewDate))) {
     throw new Error("reviewDate is required");
   }

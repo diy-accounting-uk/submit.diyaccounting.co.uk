@@ -330,7 +330,7 @@ async function runConfirmationStatementCase(caseDef, context) {
 
   const statement = caseDef.statement || {};
   const schema = selectConfirmationStatementSchema(statement.officers);
-  let statementXml = buildConfirmationStatementBody(statement);
+  let statementXml = buildConfirmationStatementBody({ stateConfirmationAccepted: true, ...statement });
   if (caseDef.corruptFirstDirectorPersonalCode) {
     statementXml = blankFirstDirectorPersonalCode(statementXml);
   }

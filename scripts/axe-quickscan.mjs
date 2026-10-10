@@ -10,6 +10,11 @@ import path from "path";
 
 const axeCorePath = path.join(process.cwd(), "node_modules/axe-core/axe.min.js");
 
+if (!process.argv[2] || !process.argv[3]) {
+  console.error("Usage: node scripts/axe-quickscan.mjs <baseUrl> <comma-separated axe tags, e.g. wcag2a,wcag2aa>");
+  process.exit(1);
+}
+
 const baseUrl = process.argv[2];
 const tags = process.argv[3].split(",");
 
@@ -60,6 +65,13 @@ const PAGES = [
   "/hmrc/itsa/ukPropertyPeriodAmend.html",
   "/hmrc/itsa/ukPropertyPeriods.html",
   "/hmrc/itsa/ukPropertyPeriodView.html",
+  "/companies-house/changeRegisteredEmail.html",
+  "/companies-house/changeRegisteredOffice.html",
+  "/companies-house/companySearch.html",
+  "/companies-house/fileConfirmationStatement.html",
+  "/companies-house/fileMicroEntityAccounts.html",
+  "/companies-house/fileSmallCompanyAccounts.html",
+  "/companies-house/filingCallback.html",
 ];
 
 const browser = await chromium.launch({ args: ["--disable-gpu", "--no-sandbox"] });

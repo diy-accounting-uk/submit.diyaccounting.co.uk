@@ -51,7 +51,7 @@ export async function getConfirmationStatementFilingData(companyNumber, { compan
  * Render the ConfirmationAndVerificationStatement body from the form's answers, with every
  * director's personal code masked, without submitting anything to Companies House.
  * @param {object} statement - reviewDate, sicCodes, statementOfCapital, shareholdings,
- *   registeredEmailAddress, lawfulPurposeStatementAccepted, directors (see submitConfirmationStatement)
+ *   registeredEmailAddress, lawfulPurposeStatementAccepted, stateConfirmationAccepted, directors (see submitConfirmationStatement)
  * @returns {Promise<{confirmationStatementXml: string}>}
  */
 export async function previewConfirmationStatement(statement) {

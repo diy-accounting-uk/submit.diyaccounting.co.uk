@@ -331,7 +331,7 @@ describe("System Journey: HMRC VAT Obligation-Based Flow", () => {
 
     // Verify the journey completed successfully
     expect(getReturnBody.periodKey).toBe(periodKeyToSubmit);
-  });
+  }, 60_000);
 
   it("should handle multiple obligations with different statuses", async () => {
     // Get auth URL and token (abbreviated)

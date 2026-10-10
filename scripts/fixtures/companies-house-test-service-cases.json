@@ -289,5 +289,54 @@
       "pinned": true,
       "note": "The test service accepts the accounts submission at submit and answers every GetSubmissionStatus poll with PENDING for the runner's full ten-minute wall clock (harness runs 38023791050 and 38025557309 under the replacement test presenter), unlike the statement cases, which settle on their first poll. A later poll of the submission number through the ci API is the follow-up; a terminal StatusCode there is pinned here when it appears."
     }
+  },
+  {
+    "name": "micro-entity-accounts-dormant",
+    "type": "accounts",
+    "companyNumber": "03176906",
+    "companyName": "MILLENNIUM STADIUM PLC",
+    "companyAuthCode": "AUTH11",
+    "periodStart": "2026-01-01",
+    "periodEnd": "2026-12-31",
+    "balanceSheet": {
+      "currentYear": {
+        "fixedAssets": 0,
+        "currentAssets": 100,
+        "creditorsWithinOneYear": 0,
+        "creditorsAfterOneYear": 0,
+        "calledUpShareCapital": 100,
+        "profitAndLossAccount": 0,
+        "capitalAndReserves": 100
+      },
+      "priorYear": {
+        "fixedAssets": 0,
+        "currentAssets": 100,
+        "creditorsWithinOneYear": 0,
+        "creditorsAfterOneYear": 0,
+        "calledUpShareCapital": 100,
+        "profitAndLossAccount": 0,
+        "capitalAndReserves": 100
+      }
+    },
+    "averageEmployees": 0,
+    "director": {
+      "name": "Maldwyn Beynon",
+      "dateApproved": "2027-01-15"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "microEntityProvisions": true
+    },
+    "expectedOutcome": {
+      "status": "POLL_TIMEOUT",
+      "pinned": true,
+      "note": "The test service answers every accounts poll with PENDING, as the micro-entity-accounts case does. The dormant document carries the section 480 statement, the trading-status member and the share note."
+    },
+    "dormant": true,
+    "dormantTradingStatus": "neverTraded",
+    "shareClass": "ordinaryShares",
+    "nominalValue": 1
   }
 ]

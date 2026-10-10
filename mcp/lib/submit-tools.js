@@ -341,6 +341,9 @@ function confirmationStatementFilingBody(toolName, params) {
   if (params.lawfulPurposeStatementAccepted !== true) {
     throw new Error(`${toolName} requires lawfulPurposeStatementAccepted to be accepted`);
   }
+  if (params.stateConfirmationAccepted !== true) {
+    throw new Error(`${toolName} requires stateConfirmationAccepted to be accepted`);
+  }
   const { sicCodes, statementOfCapital, shareholdings, registeredEmailAddress } = params;
   return {
     companyNumber,
@@ -349,6 +352,7 @@ function confirmationStatementFilingBody(toolName, params) {
     reviewDate,
     directors,
     lawfulPurposeStatementAccepted: true,
+    stateConfirmationAccepted: true,
     ...(sicCodes !== undefined ? { sicCodes } : {}),
     ...(statementOfCapital !== undefined ? { statementOfCapital } : {}),
     ...(shareholdings !== undefined ? { shareholdings } : {}),
@@ -363,7 +367,7 @@ function confirmationStatementFilingBody(toolName, params) {
  * @param {Object} session
  * @param {{companyNumber: string, companyName: string, dateSigned: string, reviewDate: string,
  *   sicCodes?: string[], statementOfCapital?: Object, shareholdings?: Object[],
- *   registeredEmailAddress?: string, lawfulPurposeStatementAccepted: true,
+ *   registeredEmailAddress?: string, lawfulPurposeStatementAccepted: true, stateConfirmationAccepted: true,
  *   directors: {forename: string, surname: string, dob: string, personalCode: string}[]}} params
  */
 export async function previewConfirmationStatement(session, params = {}) {
