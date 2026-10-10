@@ -92,6 +92,13 @@ async function requireLocator(page, step, ctx) {
       { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: step.target },
     );
   }
+  if (!(await locator.isVisible())) {
+    await writeFailureStill(page, ctx);
+    throw new SceneStepError(
+      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (${step.action}): target is in the page but not visible: ${JSON.stringify(step.target)}`,
+      { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: step.target },
+    );
+  }
   await locator.scrollIntoViewIfNeeded();
   return locator;
 }
