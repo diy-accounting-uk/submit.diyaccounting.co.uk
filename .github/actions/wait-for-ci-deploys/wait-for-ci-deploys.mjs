@@ -37,12 +37,21 @@ const UNFINISHED = new Set(["in_progress", "queued", "pending", "waiting", "requ
 // destroy-ci.yml today.
 const DESTROY_CI_CALLER_JOB_NAMES = new Set(["sweep ci for a stale set"]);
 
+// The jobs API lists a called workflow's jobs under the caller's name with the called job's name
+// after a slash ("sweep ci for a stale set / params"), so the queued call shows up by prefix.
+export function isDestroyCiCallerJobName(name) {
+  for (const callerJobName of DESTROY_CI_CALLER_JOB_NAMES) {
+    if (name === callerJobName || name.startsWith(`${callerJobName} / `)) return true;
+  }
+  return false;
+}
+
 // True when a run has unfinished work, but every one of its unfinished jobs is a queued call into
 // destroy-ci.yml. An empty or fully-finished job list answers false: nothing here says the run's
 // remaining work is safe to ignore, so the caller falls back to treating it as still blocking.
 export function blockedOnlyByDestroyCiCallerJobs(jobs) {
   const unfinishedJobs = (jobs || []).filter((job) => UNFINISHED.has(job.status));
-  return unfinishedJobs.length > 0 && unfinishedJobs.every((job) => DESTROY_CI_CALLER_JOB_NAMES.has(job.name));
+  return unfinishedJobs.length > 0 && unfinishedJobs.every((job) => isDestroyCiCallerJobName(job.name));
 }
 
 const token = process.env.GH_TOKEN;

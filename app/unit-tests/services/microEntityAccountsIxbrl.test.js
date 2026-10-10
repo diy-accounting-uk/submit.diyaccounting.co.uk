@@ -249,8 +249,12 @@ describe("services/microEntityAccountsIxbrl", () => {
     });
 
     test("the share note carries the number of shares and the nominal value against the share class", () => {
-      expect(dormantXhtml).toMatch(/name="core:NumberSharesIssuedFullyPaid"[^>]*unitRef="shares"[^>]*>200</);
-      expect(dormantXhtml).toMatch(/name="core:NominalValueAllottedShareCapital"[^>]*unitRef="GBP"[^>]*>0.5</);
+      expect(dormantXhtml).toMatch(
+        /name="core:NumberSharesIssuedFullyPaid"[^>]*contextRef="e\d{4}-share-class"[^>]*unitRef="shares"[^>]*>200</,
+      );
+      expect(dormantXhtml).toMatch(
+        /name="core:NominalValueAllottedShareCapital"[^>]*contextRef="y\d{4}-share-class"[^>]*unitRef="GBP"[^>]*>0.5</,
+      );
       expect(dimensionNames(dormantXhtml)).toContainEqual({
         dimension: "bus:EntityShareClassesDimension",
         member: "bus:OrdinaryShareClass1",
