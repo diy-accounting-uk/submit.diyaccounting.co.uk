@@ -385,6 +385,51 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
       expect(ixbrl).toContain("Jo Director");
     });
 
+    test("keeps polling a submission that stays PENDING for forty polls until it is ACCEPTed", async () => {
+      const realFetch = globalThis.fetch;
+      let polls = 0;
+      const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url, init) => {
+        const response = await realFetch(url, init);
+        if (!String(init?.body).includes("GetSubmissionStatus")) return response;
+        polls += 1;
+        if (polls > 40) return response;
+        const text = (await response.text()).replace("<StatusCode>ACCEPT</StatusCode>", "<StatusCode>PENDING</StatusCode>");
+        return new Response(text, { status: response.status, headers: { "Content-Type": "text/xml" } });
+      });
+      try {
+        const { entries } = await runCases([accountsCase({ expectedOutcome: { status: "ACCEPT" } })], outDir, { sleepFn: fastSleep });
+
+        expect(entries[0].observedStatus).toBe("ACCEPT");
+        expect(entries[0].pass).toBe(true);
+        expect(entries[0].exchanges.filter((exchange) => exchange.label.startsWith("poll-"))).toHaveLength(41);
+      } finally {
+        fetchSpy.mockRestore();
+      }
+    });
+
+    test("reports POLL_TIMEOUT when a submission stays PENDING past the poll wall clock", async () => {
+      let now = 1_000_000;
+      const startedAt = now;
+      const dateSpy = vi.spyOn(Date, "now").mockImplementation(() => now);
+      const sleepFn = (ms) => {
+        now += ms;
+        return Promise.resolve();
+      };
+      try {
+        const { entries } = await runCases(
+          [accountsCase({ govTestScenario: "PENDING_FOREVER", expectedOutcome: { status: "POLL_TIMEOUT" } })],
+          outDir,
+          { sleepFn },
+        );
+
+        expect(entries[0].observedStatus).toBe("POLL_TIMEOUT");
+        expect(entries[0].pass).toBe(true);
+        expect(now - startedAt).toBeGreaterThanOrEqual(10 * 60 * 1000);
+      } finally {
+        dateSpy.mockRestore();
+      }
+    });
+
     test("throws when the accounts case is not a valid accounts request", async () => {
       const cases = [accountsCase({ balanceSheet: undefined })];
 
