@@ -16,6 +16,7 @@
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { createServer } from "node:http";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
@@ -185,10 +186,7 @@ test("an unauthenticated client is challenged, registers, and is sent to the ups
   await discoverRegisterAndConsent(page);
 });
 
-test("a chat client connects, signs in, refreshes, lists the hosted tools and derives a VAT return from a cloud book", async ({
-  page,
-  context,
-}) => {
+test("a chat client connects, signs in, refreshes, lists the hosted tools and derives a VAT return from a cloud book", async ({ page }) => {
   test.skip(testAuthProvider !== "cognito-native", "the sign-in needs the Cognito Hosted UI with a native test user");
   addOnPageLogging(page);
 
@@ -198,18 +196,27 @@ test("a chat client connects, signs in, refreshes, lists the hosted tools and de
   /*  SIGN IN, THEN CATCH THE LOOPBACK REDIRECT AND ITS CODE   */
   /* ******************************************************* */
 
-  const caught = new Promise((resolve) => {
-    context.route(`http://127.0.0.1:${LOOPBACK_PORT}/**`, (route) => {
-      resolve(route.request().url());
-      return route.fulfill({ status: 200, contentType: "text/plain", body: "caught" });
-    });
+  // The facade answers the upstream callback with a redirect to the loopback URI, and the browser
+  // follows that redirect at the network layer, where a Playwright route does not run; a listener
+  // on the port catches it as the chat client would.
+  let redirected;
+  const loopback = createServer((request, response) => {
+    response.writeHead(200, { "Content-Type": "text/plain" });
+    response.end("caught");
+    redirected = new URL(request.url, LOOPBACK_REDIRECT_URI);
   });
-  await fillInHostedUINativeAuth(page, testAuthUsername, testAuthPassword, screenshotPath);
-  await submitHostedUINativeAuth(page, screenshotPath);
-  if (process.env.TEST_AUTH_TOTP_SECRET) {
-    await handleTotpChallenge(page, process.env.TEST_AUTH_TOTP_SECRET, screenshotPath);
+  const caught = new Promise((resolve) => loopback.once("request", () => resolve()));
+  await new Promise((resolve) => loopback.listen(LOOPBACK_PORT, "127.0.0.1", resolve));
+  try {
+    await fillInHostedUINativeAuth(page, testAuthUsername, testAuthPassword, screenshotPath);
+    await submitHostedUINativeAuth(page, screenshotPath);
+    if (process.env.TEST_AUTH_TOTP_SECRET) {
+      await handleTotpChallenge(page, process.env.TEST_AUTH_TOTP_SECRET, screenshotPath);
+    }
+    await caught;
+  } finally {
+    await new Promise((resolve) => loopback.close(resolve));
   }
-  const redirected = new URL(await caught);
   expect(redirected.origin + redirected.pathname).toBe(LOOPBACK_REDIRECT_URI);
   expect(redirected.searchParams.get("state")).toBe(state);
   expect(redirected.searchParams.get("error")).toBeNull();
