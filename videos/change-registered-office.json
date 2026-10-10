@@ -4,6 +4,7 @@
   "title": "Change a company's registered office address",
   "description": "A signed-in walk through changing a registered office address: look up the current address, enter the new one, review it, then file with Companies House's sandbox.",
   "auth": "user",
+  "environments": ["ci"],
   "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/companies-house/changeRegisteredOffice.html"],
   "viewport": { "width": 1920, "height": 1080 },
   "deviceScaleFactor": 2,

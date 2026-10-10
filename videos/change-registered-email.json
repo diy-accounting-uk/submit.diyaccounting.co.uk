@@ -4,6 +4,7 @@
   "title": "Change a company's registered email address",
   "description": "A signed-in walk through changing a registered email address: check eligibility, enter the new address, review it, then file with Companies House's sandbox.",
   "auth": "user",
+  "environments": ["ci"],
   "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/companies-house/changeRegisteredEmail.html"],
   "viewport": { "width": 1920, "height": 1080 },
   "deviceScaleFactor": 2,
