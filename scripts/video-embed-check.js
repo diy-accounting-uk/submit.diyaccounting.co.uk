@@ -45,6 +45,17 @@ export function extractEmbedId(src) {
   return id ? decodeURIComponent(id) : null;
 }
 
+export function extractFacadeId(src) {
+  const id = String(src).match(/\/vi\/([^/?#]+)\//)?.[1];
+  return id ? decodeURIComponent(id) : null;
+}
+
+/** Video ids on one page: swapped-in iframes carry /embed/<id>, unclicked facades carry /vi/<id>/ thumbnails. */
+export function extractPageVideoIds({ iframeSrcs, facadeSrcs }) {
+  const ids = [...iframeSrcs.map(extractEmbedId), ...facadeSrcs.map(extractFacadeId)];
+  return [...new Set(ids.filter(Boolean))];
+}
+
 /**
  * Compare what the channel, the manifest and the site say.
  *
@@ -148,11 +159,9 @@ export async function collectSiteEmbeds({ base, chromium }) {
     const embeds = new Map();
     for (const href of areaPages) {
       await page.goto(new URL(href, base).href, { waitUntil: "networkidle" });
-      const srcs = await page.$$eval("iframe", (frames) => frames.map((f) => f.src));
-      for (const src of srcs) {
-        const id = extractEmbedId(src);
-        if (id) embeds.set(id, href);
-      }
+      const iframeSrcs = await page.$$eval("iframe", (frames) => frames.map((f) => f.src));
+      const facadeSrcs = await page.$$eval(".video-facade img", (images) => images.map((i) => i.src));
+      for (const id of extractPageVideoIds({ iframeSrcs, facadeSrcs })) embeds.set(id, href);
     }
     return { areaPages, embeds };
   } finally {
