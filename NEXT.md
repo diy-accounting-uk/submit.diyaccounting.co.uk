@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-259f129** (PR #486, deploy 38043574231, 2026-10-10); its "destroy previous" job is removing prod-13ee792.
+**Prod runs deployment prod-259f129** (PR #486, deploy 38043574231, 2026-10-10).
 **ci**: `ci-set1` standing (12 stacks, created 2026-10-10 01:25 UTC, last updated 06:21 by PR #485's branch deploy, redeployed by PR #486's branch; `last-known-good-deployment` = `ci-set1`). The sweep leaves it: `destroy-ci.yml`'s minimum age is 8 hours and the last-known-good set is kept unless `force-last-known-good=true`. It serves V1's ci captures and M4i's ci run.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
