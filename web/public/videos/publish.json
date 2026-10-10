@@ -2030,8 +2030,8 @@
       "id": "file-micro-entity-accounts",
       "group": "companies-house",
       "publish": true,
-      "pipelineVersion": 7,
-      "sourceRun": 36342977308,
+      "pipelineVersion": 10,
+      "sourceRun": 38090731635,
       "sourceArtifact": "video-file-micro-entity-accounts-ci",
       "videoFile": "target/videos/video-file-micro-entity-accounts-ci/file-micro-entity-accounts.mp4",
       "captionFile": "target/videos/video-file-micro-entity-accounts-ci/file-micro-entity-accounts.vtt",
@@ -2039,14 +2039,14 @@
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows filing a company's FRS 105 micro-entity accounts: sign in, take out Resident, look up a company, fill in the balance sheet, preview the iXBRL, and file it with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "micro-entity accounts", "sandbox"],
       "categoryId": "27",
-      "videoId": "_FZyGeODndw",
+      "videoId": "yPSpvLKrTJU",
       "walkthrough": [
         {
           "scene": "company-lookup",
           "step": 0,
           "headline": "Find the company",
           "caption": "Open File Micro-entity Accounts to find the company.",
-          "startSeconds": 30,
+          "startSeconds": 36,
           "thumb": "videos/file-micro-entity-accounts/company-lookup-0-thumb.webp",
           "full": "videos/file-micro-entity-accounts/company-lookup-0.webp"
         },
@@ -2055,7 +2055,7 @@
           "step": 2,
           "headline": "Enter the company number",
           "caption": "Type the company number.",
-          "startSeconds": 38,
+          "startSeconds": 44,
           "thumb": "videos/file-micro-entity-accounts/company-lookup-2-thumb.webp",
           "full": "videos/file-micro-entity-accounts/company-lookup-2.webp"
         },
@@ -2064,7 +2064,7 @@
           "step": 3,
           "headline": "Look up the company",
           "caption": "Look up the company with Companies House.",
-          "startSeconds": 44,
+          "startSeconds": 50,
           "thumb": "videos/file-micro-entity-accounts/company-lookup-3-thumb.webp",
           "full": "videos/file-micro-entity-accounts/company-lookup-3.webp"
         },
@@ -2073,7 +2073,7 @@
           "step": 5,
           "headline": "Confirm the company name",
           "caption": "Companies House confirms the company name.",
-          "startSeconds": 50,
+          "startSeconds": 56,
           "thumb": "videos/file-micro-entity-accounts/company-lookup-5-thumb.webp",
           "full": "videos/file-micro-entity-accounts/company-lookup-5.webp"
         },
@@ -2082,7 +2082,7 @@
           "step": 0,
           "headline": "Set the accounting period",
           "caption": "Set the accounting period.",
-          "startSeconds": 57,
+          "startSeconds": 63,
           "thumb": "videos/file-micro-entity-accounts/accounts-form-0-thumb.webp",
           "full": "videos/file-micro-entity-accounts/accounts-form-0.webp"
         },
@@ -2091,7 +2091,7 @@
           "step": 2,
           "headline": "This year, then last year",
           "caption": "Enter this year's balance sheet, then last year's for comparison.",
-          "startSeconds": 65,
+          "startSeconds": 70,
           "thumb": "videos/file-micro-entity-accounts/accounts-form-2-thumb.webp",
           "full": "videos/file-micro-entity-accounts/accounts-form-2.webp"
         },
@@ -2100,7 +2100,7 @@
           "step": 8,
           "headline": "Net assets must balance",
           "caption": "This checks net assets against capital and reserves.",
-          "startSeconds": 81,
+          "startSeconds": 86,
           "thumb": "videos/file-micro-entity-accounts/accounts-form-8-thumb.webp",
           "full": "videos/file-micro-entity-accounts/accounts-form-8.webp"
         },
@@ -2109,7 +2109,7 @@
           "step": 16,
           "headline": "Name the approving director",
           "caption": "Name the director approving the accounts.",
-          "startSeconds": 101,
+          "startSeconds": 105,
           "thumb": "videos/file-micro-entity-accounts/accounts-form-16-thumb.webp",
           "full": "videos/file-micro-entity-accounts/accounts-form-16.webp"
         },
@@ -2118,15 +2118,15 @@
           "step": 18,
           "headline": "Accept the statements",
           "caption": "Accept the four statutory statements.",
-          "startSeconds": 110,
+          "startSeconds": 114,
           "thumb": "videos/file-micro-entity-accounts/accounts-form-18-thumb.webp",
           "full": "videos/file-micro-entity-accounts/accounts-form-18.webp"
         },
         {
           "scene": "preview",
           "headline": "Preview",
-          "caption": "Preview the iXBRL before anything is filed. This is the XML that will be filed. Nothing has gone to Companies House yet.",
-          "startSeconds": 122,
+          "caption": "Preview the iXBRL before anything is filed. These are the accounts as they will be filed. Nothing has gone to Companies House yet.",
+          "startSeconds": 126,
           "thumb": "videos/file-micro-entity-accounts/preview-thumb.webp",
           "full": "videos/file-micro-entity-accounts/preview.webp"
         },
@@ -2134,15 +2134,15 @@
           "scene": "submit",
           "headline": "File it",
           "caption": "Type the company's Companies House authentication code. Submit the filing to Companies House's sandbox.",
-          "startSeconds": 139,
+          "startSeconds": 143,
           "thumb": "videos/file-micro-entity-accounts/submit-thumb.webp",
           "full": "videos/file-micro-entity-accounts/submit.webp"
         },
         {
           "scene": "result",
           "headline": "The outcome",
-          "caption": "Companies House settles on an outcome. The filing is accepted.",
-          "startSeconds": 156,
+          "caption": "The filing goes to Companies House. Companies House has the filing and reports the outcome here.",
+          "startSeconds": 159,
           "thumb": "videos/file-micro-entity-accounts/result-thumb.webp",
           "full": "videos/file-micro-entity-accounts/result.webp"
         }
