@@ -580,3 +580,159 @@ test.describe("figures sent from a DIYA-GL page in the URL fragment", () => {
     expect(await page.evaluate(() => sessionStorage.getItem("booksHandoff"))).toBeNull();
   });
 });
+
+const GOOGLE_SHEET_MIME_TYPE = "application/vnd.google-apps.spreadsheet";
+const DRIVE_CORS_HEADERS = {
+  "access-control-allow-origin": "*",
+  "access-control-allow-headers": "authorization",
+};
+
+async function withFakeGoogleIdentity(page) {
+  await page.addInitScript(() => {
+    window.__tokenRequests = [];
+    window.google = {
+      accounts: {
+        oauth2: {
+          initTokenClient(config) {
+            return {
+              requestAccessToken(options) {
+                window.__tokenRequests.push({ clientId: config.client_id, scope: config.scope, prompt: options.prompt });
+                setTimeout(() => config.callback({ access_token: "fake-drive-token", expires_in: 3600 }), 0);
+              },
+            };
+          },
+          hasGrantedAllScopes: () => true,
+        },
+      },
+    };
+  });
+}
+
+async function withFakeGooglePicker(page, pickedFile) {
+  await page.addInitScript((file) => {
+    window.__pickerBuilds = [];
+    window.google.picker = {
+      ViewId: { DOCS: "docs" },
+      Response: { ACTION: "action", DOCUMENTS: "docs" },
+      Action: { PICKED: "picked", CANCEL: "cancel" },
+      Document: { ID: "id", NAME: "name", MIME_TYPE: "mimeType" },
+      DocsView: function () {
+        this.setMimeTypes = (mimeTypes) => {
+          this.mimeTypes = mimeTypes;
+          return this;
+        };
+      },
+      PickerBuilder: function () {
+        const record = {};
+        window.__pickerBuilds.push(record);
+        const builder = this;
+        builder.addView = (view) => ((record.mimeTypes = view.mimeTypes), builder);
+        builder.setOAuthToken = (token) => ((record.token = token), builder);
+        builder.setDeveloperKey = (key) => ((record.developerKey = key), builder);
+        builder.setAppId = (appId) => ((record.appId = appId), builder);
+        builder.setCallback = (callback) => ((record.callback = callback), builder);
+        builder.build = () => ({
+          setVisible() {
+            setTimeout(() => record.callback({ action: "picked", docs: [file] }), 0);
+          },
+        });
+      },
+    };
+  }, pickedFile);
+}
+
+async function openPageWithDriveConfig(page, url, driveEnv, download) {
+  await serveRealSite(page);
+  await page.route("**/submit.env", async (route) => {
+    const placeholder = fs.readFileSync(path.join(PUBLIC_ROOT, "submit.env"), "utf-8");
+    await route.fulfill({ status: 200, contentType: "text/plain", body: `${placeholder}\n${driveEnv}\n` });
+  });
+  const downloads = [];
+  await page.route("https://www.googleapis.com/drive/v3/files/**", async (route) => {
+    const request = route.request();
+    if (request.method() === "OPTIONS") {
+      await route.fulfill({ status: 204, headers: DRIVE_CORS_HEADERS });
+      return;
+    }
+    downloads.push({ url: request.url(), authorization: request.headers().authorization });
+    await route.fulfill({ status: 200, headers: DRIVE_CORS_HEADERS, contentType: "application/zip", body: download });
+  });
+  await page.goto(url, { waitUntil: "domcontentloaded" });
+  await expect(page.locator("#booksImportFile")).toBeAttached();
+  return downloads;
+}
+
+const DRIVE_ENV = [
+  "GOOGLE_DRIVE_CLIENT_ID=670010122633-56q89d0h9c4skb9cpj4h9j2gr3kq06vd.apps.googleusercontent.com",
+  "GOOGLE_DRIVE_PICKER_API_KEY=test-picker-key",
+].join("\n");
+
+test.describe("books import from Google Drive", () => {
+  test("the Drive button is absent when the page has no Drive client id", async ({ page }) => {
+    await openPageWithDriveConfig(page, VAT_URL, "GOOGLE_DRIVE_CLIENT_ID=\nGOOGLE_DRIVE_PICKER_API_KEY=", Buffer.from(""));
+    await page.waitForFunction(() => window.envReady.then(() => true));
+
+    await expect(page.locator("#booksImportChoose")).toBeVisible();
+    await expect(page.locator("#booksImportDrive")).toHaveCount(0);
+  });
+
+  test("the Drive button is absent when the page has a client id and no Picker key", async ({ page }) => {
+    await openPageWithDriveConfig(
+      page,
+      VAT_URL,
+      "GOOGLE_DRIVE_CLIENT_ID=670010122633-56q89d0h9c4skb9cpj4h9j2gr3kq06vd.apps.googleusercontent.com\nGOOGLE_DRIVE_PICKER_API_KEY=",
+      Buffer.from(""),
+    );
+    await page.waitForFunction(() => window.envReady.then(() => true));
+
+    await expect(page.locator("#booksImportDrive")).toHaveCount(0);
+  });
+
+  test("the Drive button sits beside the file dialog when the page has a client id and a Picker key", async ({ page }) => {
+    await openPageWithDriveConfig(page, VAT_URL, DRIVE_ENV, Buffer.from(""));
+
+    await expect(page.locator("#booksImportDrop #booksImportChoose")).toBeVisible();
+    await expect(page.locator("#booksImportDrop #booksImportDrive")).toBeVisible();
+  });
+
+  test("a diya-gl zip picked from Drive is downloaded with the token and fills the form", async ({ page }) => {
+    await withFakeGoogleIdentity(page);
+    await withFakeGooglePicker(page, { id: "picked-1", name: "brickwork.diya-gl.zip", mimeType: "application/zip" });
+    const downloads = await openPageWithDriveConfig(page, VAT_URL, DRIVE_ENV, await zippedBook("brickwork-pro-ltd-vat"));
+    await page.locator("#periodEnd").fill("2026-03-31");
+
+    await page.locator("#booksImportDrive").click();
+
+    await expect(page.locator("#booksImportStatus")).toContainText(
+      "Filled the nine boxes from brickwork.diya-gl.zip for the period 2026-01-01 to 2026-03-31.",
+    );
+    await expect(page.locator("#vatDueSales")).toHaveValue("5760");
+    expect(downloads).toEqual([
+      { url: "https://www.googleapis.com/drive/v3/files/picked-1?alt=media", authorization: "Bearer fake-drive-token" },
+    ]);
+    const tokenRequests = await page.evaluate(() => window.__tokenRequests);
+    expect(tokenRequests).toEqual([
+      {
+        clientId: "670010122633-56q89d0h9c4skb9cpj4h9j2gr3kq06vd.apps.googleusercontent.com",
+        scope: "https://www.googleapis.com/auth/drive.file",
+        prompt: "consent",
+      },
+    ]);
+    const pickerBuild = await page.evaluate(() => window.__pickerBuilds[0]);
+    expect(pickerBuild).toMatchObject({ token: "fake-drive-token", developerKey: "test-picker-key", appId: "670010122633" });
+    expect(pickerBuild.mimeTypes).toContain("application/zip");
+  });
+
+  test("a native Google Sheet picked from Drive is refused and nothing is downloaded or filled", async ({ page }) => {
+    await withFakeGoogleIdentity(page);
+    await withFakeGooglePicker(page, { id: "sheet-1", name: "My books", mimeType: GOOGLE_SHEET_MIME_TYPE });
+    const downloads = await openPageWithDriveConfig(page, VAT_URL, DRIVE_ENV, await zippedBook("brickwork-pro-ltd-vat"));
+    await page.locator("#periodEnd").fill("2026-03-31");
+
+    await page.locator("#booksImportDrive").click();
+
+    await expect(page.locator("#booksImportStatus")).toContainText("Could not import My books: it is a Google Sheet.");
+    await expect(page.locator("#vatDueSales")).toHaveValue("");
+    expect(downloads).toEqual([]);
+  });
+});

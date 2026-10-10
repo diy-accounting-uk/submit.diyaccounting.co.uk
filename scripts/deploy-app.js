@@ -415,6 +415,9 @@ function syncWebAssets(config) {
       `DIY_SUBMIT_BASE_URL=${process.env.DIY_SUBMIT_BASE_URL || ""}`,
       `GA4_MEASUREMENT_ID=${process.env.GA4_MEASUREMENT_ID || ""}`,
       "",
+      `GOOGLE_DRIVE_CLIENT_ID=${process.env.GOOGLE_DRIVE_CLIENT_ID || ""}`,
+      `GOOGLE_DRIVE_PICKER_API_KEY=${process.env.GOOGLE_DRIVE_PICKER_API_KEY || ""}`,
+      "",
     ].join("\n");
     fs.writeFileSync(path.join(tmpWebDir, "submit.env"), submitEnv);
 

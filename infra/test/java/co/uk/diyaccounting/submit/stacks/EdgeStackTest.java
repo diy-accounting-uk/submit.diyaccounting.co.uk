@@ -135,4 +135,31 @@ class EdgeStackTest {
             assertTrue(policies > 0, directive + " not found");
         }
     }
+
+    @Test
+    void contentSecurityPolicyAllowsGoogleDrivePickerAndTokenClient() {
+        String templateJson = Template.fromStack(synthEdgeStack()).toJSON().toString();
+        String[][] required = {
+            {"script-src", "https://accounts.google.com", "https://apis.google.com"},
+            {"connect-src", "https://www.googleapis.com", "https://oauth2.googleapis.com", "https://accounts.google.com"},
+            {"frame-src", "https://accounts.google.com", "https://apis.google.com", "https://docs.google.com"},
+            {"img-src", "https://*.googleusercontent.com", "https://ssl.gstatic.com", "https://www.gstatic.com"},
+        };
+
+        for (String[] directive : required) {
+            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(directive[0] + " [^;]*;")
+                    .matcher(templateJson);
+            int policies = 0;
+            while (matcher.find()) {
+                if (!matcher.group().contains("'self'")) {
+                    continue;
+                }
+                policies++;
+                for (int i = 1; i < directive.length; i++) {
+                    assertTrue(matcher.group().contains(directive[i]), directive[0] + " " + directive[i]);
+                }
+            }
+            assertTrue(policies > 0, directive[0] + " not found");
+        }
+    }
 }
