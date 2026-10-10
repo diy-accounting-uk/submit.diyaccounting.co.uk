@@ -56,6 +56,7 @@ import software.amazon.awscdk.services.route53.HostedZone;
 import software.amazon.awscdk.services.route53.HostedZoneAttributes;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
+import software.amazon.awscdk.services.secretsmanager.SecretStringGenerator;
 import software.amazon.awscdk.services.ssm.StringParameter;
 import software.constructs.Construct;
 import software.constructs.IDependable;
@@ -349,6 +350,23 @@ public class IdentityStack extends Stack {
         StringParameter.Builder.create(this, props.resourceNamePrefix() + "-McpUserPoolClientIdParameter")
                 .parameterName(mcpUserPoolClientIdParameterName)
                 .stringValue(this.mcpUserPoolClient.getUserPoolClientId())
+                .build();
+
+        // Signs the hosted MCP authorization facade's consent, code and refresh blobs. One per
+        // environment, so a destroyed and recreated deployment finds it again; McpStack reads the
+        // ARN from SSM.
+        var mcpOauthBlobKeySecret = Secret.Builder.create(this, props.resourceNamePrefix() + "-McpOauthBlobKey")
+                .secretName(props.sharedNames().mcpOauthBlobKeySecretName)
+                .description("Signs the hosted MCP authorization facade's consent, code and refresh blobs")
+                .generateSecretString(SecretStringGenerator.builder()
+                        .passwordLength(64)
+                        .excludePunctuation(true)
+                        .build())
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+        StringParameter.Builder.create(this, props.resourceNamePrefix() + "-McpOauthBlobKeyArnParameter")
+                .parameterName(props.sharedNames().mcpOauthBlobKeySecretArnParameterName)
+                .stringValue(mcpOauthBlobKeySecret.getSecretArn())
                 .build();
 
         // Create Cognito User Pool Domain

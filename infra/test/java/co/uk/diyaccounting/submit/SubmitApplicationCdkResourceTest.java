@@ -600,6 +600,40 @@ class SubmitApplicationCdkResourceTest {
 
     @Test
     @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
+    void mcpStackRoutesJoinTheApiWhenTheMcpClientIdIsSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        List<Template> apiTemplates = List.of(
+                Template.fromStack(submitApplication.apiStack), Template.fromStack(submitApplication.apiRoutesStack));
+
+        org.junit.jupiter.api.Assertions.assertNotNull(submitApplication.mcpStack);
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "ANY /mcp"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /.well-known/oauth-authorization-server"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /.well-known/oauth-protected-resource"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /.well-known/oauth-protected-resource/mcp"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "ANY /mcp/oauth/{action}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "HEAD /mcp"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "HEAD /mcp/oauth/{action}"));
+    }
+
+    @Test
+    void mcpStackIsAbsentWhenNoMcpClientIdIsSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+
+        org.junit.jupiter.api.Assertions.assertNull(submitApplication.mcpStack);
+    }
+
+    @Test
+    @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
     void hmrcItsaStackLambdaCarriesTheMcpClientIdWhenSet() throws IOException {
         Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
         Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);

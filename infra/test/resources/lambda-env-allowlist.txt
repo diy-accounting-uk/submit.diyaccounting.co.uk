@@ -28,6 +28,7 @@ USER_SUB_HASH_SALT         app/services/subHasher.js:79 truthy guard; prod path 
 OPERATOR_EMAILS            app/lib/operators.js truthy guard; prod path reads Secrets Manager via ENVIRONMENT_NAME
 COGNITO_CLIENT_ID          app/lib/appClientResolver.js:32 truthy guard, local-lane map only
 COGNITO_MCP_CLIENT_ID      app/lib/appClientResolver.js:33 and app/lib/buildFraudHeaders.js:196, both truthy-guarded; wired only on the 4 functions SubmitApplicationCdkResourceTest's MCP-client-id tests cover
+MCP_OAUTH_BLOB_KEY        app/functions/mcp/mcpOauth.js:63 truthy guard, local-lane raw key; the deployed path reads MCP_OAUTH_BLOB_KEY_SECRET_ARN
 TEST_FORCE_UNAUTHORIZED_TOKEN   app/services/hmrcApi.js:92, `=== "true"`; test-only escape hatch, never set in ci/prod
 COMPANIES_HOUSE_API_KEY        app/services/companiesHouseApi.js:42 truthy guard, falls back to the ARN + Secrets Manager
 COMPANIES_HOUSE_API_KEY_ARN    the ARN-based fallback path companiesHouseApi.js:42 falls back to
@@ -139,6 +140,8 @@ HMRC_AGENT_AUTHORISATION_BASE_URI  app/functions/hmrc/hmrcVatReturnPost.js  app/
 
 HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/account/activityStartedPost.js  app/data/dynamoDbHmrcApiRequestRepository.js via httpResponseHelper.js's performTokenExchange() (line 470); this handler imports httpResponseHelper.js only for its generic request/response helpers, not that one
 HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/account/bundleDelete.js  app/data/dynamoDbHmrcApiRequestRepository.js via httpResponseHelper.js's performTokenExchange() (line 470); this handler imports httpResponseHelper.js only for its generic request/response helpers, not that one
+HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/mcp/mcpHttp.js  app/data/dynamoDbHmrcApiRequestRepository.js via httpResponseHelper.js's performTokenExchange() (line 470); this handler imports httpResponseHelper.js only for its generic request/response helpers, not that one
+HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/mcp/mcpOauth.js  app/data/dynamoDbHmrcApiRequestRepository.js via httpResponseHelper.js's performTokenExchange() (line 470); this handler imports httpResponseHelper.js only for its generic request/response helpers, not that one
 HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/account/bundleGet.js  app/data/dynamoDbHmrcApiRequestRepository.js via httpResponseHelper.js's performTokenExchange() (line 470); this handler imports httpResponseHelper.js only for its generic request/response helpers, not that one
 HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/account/bundlePost.js  app/data/dynamoDbHmrcApiRequestRepository.js via httpResponseHelper.js's performTokenExchange() (line 470); this handler imports httpResponseHelper.js only for its generic request/response helpers, not that one
 HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/account/interestPost.js  app/data/dynamoDbHmrcApiRequestRepository.js via httpResponseHelper.js's performTokenExchange() (line 470); this handler imports httpResponseHelper.js only for its generic request/response helpers, not that one

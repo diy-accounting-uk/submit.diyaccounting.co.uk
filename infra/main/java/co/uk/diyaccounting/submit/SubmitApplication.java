@@ -20,6 +20,7 @@ import co.uk.diyaccounting.submit.stacks.DiyaGlStack;
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
 import co.uk.diyaccounting.submit.stacks.HmrcItsaStack;
 import co.uk.diyaccounting.submit.stacks.HmrcStack;
+import co.uk.diyaccounting.submit.stacks.McpStack;
 import co.uk.diyaccounting.submit.stacks.OpsStack;
 import co.uk.diyaccounting.submit.stacks.PublishStack;
 import co.uk.diyaccounting.submit.stacks.SelfDestructStack;
@@ -42,6 +43,7 @@ public class SubmitApplication {
     public final AccountStack accountStack;
     public final BillingStack billingStack;
     public final DiyaGlStack diyaGlStack;
+    public final McpStack mcpStack;
     public final ApiStack apiStack;
     public final ApiRoutesStack apiRoutesStack;
     public final OpsStack opsStack;
@@ -534,6 +536,30 @@ public class SubmitApplication {
                         .residentTierEnabled(true)
                         .build());
 
+        // The hosted MCP surface exists once the MCP Cognito client does; its routes are public.
+        if (cognitoMcpUserPoolClientId != null && !cognitoMcpUserPoolClientId.isBlank()) {
+            infof(
+                    "Synthesizing stack %s for deployment %s to environment %s",
+                    sharedNames.mcpStackId, deploymentName, envName);
+            this.mcpStack = new McpStack(
+                    app,
+                    sharedNames.mcpStackId,
+                    McpStack.McpStackProps.builder()
+                            .env(primaryEnv)
+                            .crossRegionReferences(false)
+                            .envName(envName)
+                            .deploymentName(deploymentName)
+                            .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                            .cloudTrailEnabled(cloudTrailEnabled)
+                            .sharedNames(sharedNames)
+                            .baseImageTag(baseImageTag)
+                            .cognitoUserPoolId(cognitoUserPoolId)
+                            .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
+                            .build());
+        } else {
+            this.mcpStack = null;
+        }
+
         // Create the ApiStack with API Gateway v2 for all Lambda endpoints
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
@@ -562,6 +588,7 @@ public class SubmitApplication {
         routesStackLambdaFunctions.addAll(this.hmrcItsaStack.lambdaFunctionProps);
         routesStackLambdaFunctions.addAll(this.companiesHouseStack.lambdaFunctionProps);
         routesStackLambdaFunctions.addAll(this.diyaGlStack.lambdaFunctionProps);
+        if (this.mcpStack != null) routesStackLambdaFunctions.addAll(this.mcpStack.lambdaFunctionProps);
 
         this.apiStack = new ApiStack(
                 app,
@@ -618,6 +645,7 @@ public class SubmitApplication {
         this.apiRoutesStack.addStackDependency(hmrcItsaStack);
         this.apiRoutesStack.addStackDependency(companiesHouseStack);
         this.apiRoutesStack.addStackDependency(diyaGlStack);
+        if (this.mcpStack != null) this.apiRoutesStack.addStackDependency(mcpStack);
 
         // Get optional alert email from environment variable
         String alertEmail = envOr("ALERT_EMAIL", "");
