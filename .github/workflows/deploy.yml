@@ -1707,6 +1707,29 @@ jobs:
       lookup-cognito: 'true'
       base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
 
+  deploy-mcp:
+    name: 'deploy McpStack via deploy-cdk-stack.yml'
+    needs:
+      - names
+      - skip-deploy-check
+      - push-images
+      - validate-secrets
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ needs.names.outputs.deployment-name }}-app-McpStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
+
   deploy-api:
     name: 'deploy api'
     needs:
@@ -1721,6 +1744,7 @@ jobs:
       - deploy-account
       - deploy-billing
       - deploy-diya-gl
+      - deploy-mcp
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:

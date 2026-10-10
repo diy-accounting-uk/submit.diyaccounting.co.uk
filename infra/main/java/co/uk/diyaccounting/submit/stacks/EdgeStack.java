@@ -325,6 +325,11 @@ public class EdgeStack extends Stack {
                                         .rateBasedStatement(CfnWebACL.RateBasedStatementProperty.builder()
                                                 .limit(2000L) // requests per 5 minutes
                                                 .aggregateKeyType("IP")
+                                                .scopeDownStatement(CfnWebACL.StatementProperty.builder()
+                                                        .notStatement(CfnWebACL.NotStatementProperty.builder()
+                                                                .statement(mcpRouteUriPrefixStatement())
+                                                                .build())
+                                                        .build())
                                                 .build())
                                         .build())
                                 .action(CfnWebACL.RuleActionProperty.builder()
@@ -491,6 +496,40 @@ public class EdgeStack extends Stack {
                                 .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
                                         .cloudWatchMetricsEnabled(true)
                                         .metricName("OversizedBodyOutsideBookWrite")
+                                        .sampledRequestsEnabled(true)
+                                        .build())
+                                .build(),
+                        // Every Claude user reaches /mcp and the OAuth metadata paths from the same
+                        // address block, so these paths are counted per bearer token, not per IP.
+                        CfnWebACL.RuleProperty.builder()
+                                .name("McpRateLimitRule")
+                                .priority(6)
+                                .statement(CfnWebACL.StatementProperty.builder()
+                                        .rateBasedStatement(CfnWebACL.RateBasedStatementProperty.builder()
+                                                .limit(2000L) // requests per 5 minutes per Authorization header value
+                                                .aggregateKeyType("CUSTOM_KEYS")
+                                                .customKeys(
+                                                        List.of(CfnWebACL.RateBasedStatementCustomKeyProperty.builder()
+                                                                .header(CfnWebACL.RateLimitHeaderProperty.builder()
+                                                                        .name("authorization")
+                                                                        .textTransformations(List.of(
+                                                                                CfnWebACL.TextTransformationProperty
+                                                                                        .builder()
+                                                                                        .priority(0)
+                                                                                        .type("NONE")
+                                                                                        .build()))
+                                                                        .build())
+                                                                .build()))
+                                                .scopeDownStatement(mcpRouteUriPrefixStatement())
+                                                .build())
+                                        .build())
+                                .action(CfnWebACL.RuleActionProperty.builder()
+                                        .block(CfnWebACL.BlockActionProperty.builder()
+                                                .build())
+                                        .build())
+                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                        .cloudWatchMetricsEnabled(true)
+                                        .metricName("McpRateLimitRule")
                                         .sampledRequestsEnabled(true)
                                         .build())
                                 .build()))
@@ -1044,6 +1083,18 @@ public class EdgeStack extends Stack {
         additionalBehaviors.put("/api/v1/books/*", booksApiGatewayBehavior);
         infof("Added API Gateway behavior for /api/v1/books/* pointing to %s", props.apiGatewayUrl());
 
+        // The hosted MCP endpoint, its OAuth facade and the OAuth discovery documents reach the
+        // same API Gateway origin with caching off. The origin request policy forwards every
+        // viewer header, which carries Authorization, Mcp-Session-Id, MCP-Protocol-Version,
+        // Origin and Accept.
+        for (String mcpPathPattern : List.of("/mcp", "/mcp/*", "/.well-known/oauth-*")) {
+            additionalBehaviors.put(
+                    mcpPathPattern,
+                    createBehaviorOptionsForApiGateway(
+                            props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy));
+            infof("Added API Gateway behavior for %s pointing to %s", mcpPathPattern, props.apiGatewayUrl());
+        }
+
         // Add behaviour for /tests/* and /docs/* with short TTL cache policy
         additionalBehaviors.put("/tests/*", testsAndDocsBehaviorOptions);
         infof("Added /tests/* behavior with short TTL cache policy");
@@ -1199,6 +1250,16 @@ public class EdgeStack extends Stack {
                         .statements(List.of(
                                 uriPathStartsWithStatement("/api/v1/diya-gl"),
                                 uriPathStartsWithStatement("/api/v1/books")))
+                        .build())
+                .build();
+    }
+
+    /** Matches the hosted MCP endpoint, its OAuth facade and the OAuth discovery documents. */
+    private static CfnWebACL.StatementProperty mcpRouteUriPrefixStatement() {
+        return CfnWebACL.StatementProperty.builder()
+                .orStatement(CfnWebACL.OrStatementProperty.builder()
+                        .statements(List.of(
+                                uriPathStartsWithStatement("/mcp"), uriPathStartsWithStatement("/.well-known/oauth-")))
                         .build())
                 .build();
     }
