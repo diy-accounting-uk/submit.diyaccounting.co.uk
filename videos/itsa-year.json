@@ -300,7 +300,7 @@
           "keyWord": "ID"
         },
         {
-          "action": "fill",
+          "action": "select",
           "target": "#taxYear",
           "value": "2026-27",
           "caption": "The tax year this quarter falls in.",
@@ -361,7 +361,7 @@
           "headline": "The property ID",
           "keyWord": "property"
         },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "select", "target": "#taxYear", "value": "2026-27" },
         { "action": "fill", "target": "#fromDate", "value": "2026-04-06" },
         { "action": "fill", "target": "#toDate", "value": "2026-07-05" },
         {
@@ -409,7 +409,7 @@
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "select", "target": "#taxYear", "value": "2026-27" },
         {
           "action": "click",
           "target": "#loadBtn",
@@ -460,7 +460,7 @@
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "select", "target": "#taxYear", "value": "2026-27" },
         { "action": "fill", "target": "#accountingPeriodStartDate", "value": "2026-04-06" },
         { "action": "fill", "target": "#accountingPeriodEndDate", "value": "2027-04-05" },
         {
@@ -517,7 +517,7 @@
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "select", "target": "#taxYear", "value": "2026-27" },
         {
           "action": "click",
           "target": "#suspendTemporalValidations",
@@ -568,7 +568,7 @@
           "keyWord": "calculate"
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "select", "target": "#taxYear", "value": "2026-27" },
         {
           "action": "select",
           "target": "#calculationType",

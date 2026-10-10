@@ -295,7 +295,7 @@
           "keyWord": "ID"
         },
         {
-          "action": "fill",
+          "action": "select",
           "target": "#taxYear",
           "value": "2024-25",
           "caption": "The tax year this quarter falls in.",
@@ -356,7 +356,7 @@
           "headline": "The property ID",
           "keyWord": "property"
         },
-        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        { "action": "select", "target": "#taxYear", "value": "2024-25" },
         { "action": "fill", "target": "#fromDate", "value": "2024-04-06" },
         { "action": "fill", "target": "#toDate", "value": "2024-07-05" },
         {
@@ -404,7 +404,7 @@
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        { "action": "select", "target": "#taxYear", "value": "2024-25" },
         {
           "action": "click",
           "target": "#loadBtn",
@@ -455,7 +455,7 @@
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        { "action": "select", "target": "#taxYear", "value": "2024-25" },
         { "action": "fill", "target": "#accountingPeriodStartDate", "value": "2024-04-06" },
         { "action": "fill", "target": "#accountingPeriodEndDate", "value": "2025-04-05" },
         {

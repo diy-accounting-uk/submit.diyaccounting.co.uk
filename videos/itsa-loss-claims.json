@@ -216,7 +216,7 @@
           "keyWord": "ID"
         },
         {
-          "action": "fill",
+          "action": "select",
           "target": "#taxYear",
           "value": "2026-27",
           "caption": "HMRC's sandbox needs this tax year for carry-back claims.",

@@ -121,7 +121,7 @@
         { "action": "goto", "url": "/hmrc/itsa/ukPropertyPeriod.html", "waitFor": "#itsaUkPropertyPeriodForm" },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XPIS00000000002" },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "select", "target": "#taxYear", "value": "2026-27" },
         { "action": "fill", "target": "#fromDate", "value": "2026-04-06" },
         { "action": "fill", "target": "#toDate", "value": "2026-07-05" },
         { "action": "fill", "target": "#periodAmount", "value": "800" },
@@ -163,7 +163,7 @@
           "keyWord": "property"
         },
         {
-          "action": "fill",
+          "action": "select",
           "target": "#taxYear",
           "value": "2026-27",
           "caption": "This tax year reports one running total, not a list of quarters.",
@@ -207,7 +207,7 @@
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XPIS00000000002" },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "select", "target": "#taxYear", "value": "2026-27" },
         { "action": "hold", "ms": 400 },
         {
           "action": "click",
@@ -246,7 +246,7 @@
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XPIS00000000002" },
         {
-          "action": "fill",
+          "action": "select",
           "target": "#taxYear",
           "value": "2026-27",
           "caption": "This tax year reports a running total, not one quarter.",
@@ -312,7 +312,7 @@
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XPIS00000000002" },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "select", "target": "#taxYear", "value": "2026-27" },
         {
           "action": "click",
           "target": "#loadBtn",
@@ -364,7 +364,7 @@
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XPIS00000000002" },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "select", "target": "#taxYear", "value": "2026-27" },
         { "action": "fill", "target": "#accountingPeriodStartDate", "value": "2026-04-06" },
         { "action": "fill", "target": "#accountingPeriodEndDate", "value": "2027-04-05" },
         {

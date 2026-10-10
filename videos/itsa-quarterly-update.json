@@ -285,7 +285,7 @@
           "keyWord": "ID"
         },
         {
-          "action": "fill",
+          "action": "select",
           "target": "#taxYear",
           "value": "2024-25",
           "caption": "Then the tax year this quarter falls in.",
