@@ -87,7 +87,7 @@ The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarde
 - CS-A4: in flight; the pack rides on B34's email
 - CS-11b: blocked by CS-A4
 - CS-P1: blocked by CS-11b (it adds a second payment path to the journey CS-11b launches)
-- B34f: blocked by B34h
+- B34f: ready; the build is on main (PR #469), the test-service case remains (NEXT.md B34f)
 - B34e: on main (PR #471), with B34e2's validator fix
 - B34g1: ready (B34e's full accounts are on main); its ETS proof waits on O34g
 - B34g2: blocked by B34g1 and O34g
@@ -492,11 +492,11 @@ tags. B34g1 can reach TPVS before O34g; its ETS proof waits on O34g.
 | 1 | Can two activities share `^/api/v1/companies-house/accounts.*`? | `bundleManagement.js` path matching | B34e |
 | 2 | Prior-year P&L: a prior book, or typed? | operator | B34e |
 | 3 | Filleted copy at Companies House: offered, and the default? | operator | B34e |
-| 4 | Dormant rules in the accounts TIS (P&L facts, trading status) | Companies House accounts TIS, XML forum | B34f |
+| 4 | Dormant rules in the accounts TIS (P&L facts, trading status): decided 2026-10-10 to file under the assumed rules (section 480 statement, trading status as the page's choice, P&L reserve unchanged) and prove on the test service; a TIS answer changes the builder only if it contradicts them | operator (decided) | B34f |
 | 5 | One live package reference for every accounts regime? | XML team, with O34c | launch |
 | 9 | CT recognition criteria for the software list | SDST | B34g2 launch |
 | 10 | Agent filing for `resident-pro` practices | HMRC CT technical pack | B34g2 |
-| 12 | Share class and nominal value in the book | spreadsheets Companysecretary register | B34f |
+| 12 | Share class and nominal value: typed on the filing page (decided 2026-10-10); a read from the spreadsheets Companysecretary register can follow | operator (decided) | B34f |
 | 13 | Token charge for a paired filing: 2 tokens or 1 | operator | B34g2 |
 
 Row 2: `ltd.js` sets the prior-year P&L cells to 0, and FRS 102 1A needs comparatives. Row 3:
@@ -512,7 +512,7 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 | B34.6c | The reply on the XML team's thread, carrying the O34c and CS-A4 asks; the accounts case's terminal `StatusCode` pinned in `scripts/fixtures/companies-house-test-service-cases.json` if a later poll of 00002Y returns one | ~1 | Haiku | — | Human-driven (NEXT.md B34) |
 | CS-A5 | The statement of confirmation as a required checkbox on the filing page (criterion 10 shows both declarations); `scripts/axe-quickscan.mjs` scanning the filing pages | ~3 | Sonnet | — | Machine-only (NEXT.md CS-A5) |
 | CS-P1 | Filing under a customer's own presenter: the page option, storing no credentials, the credit-account explanation, skipping the Stripe checkout at the existing fee gate | ~5 | Sonnet | CS-11b | Blocked |
-| B34f | Dormant company accounts on the micro-entity page and builder, per the B34h design | ~9 | Sonnet | B34h | Blocked |
+| B34f | The dormant accounts case in the test-service harness; the build is on main (PR #469) | ~2 | Sonnet | — | Machine-only (NEXT.md B34f) |
 | B34g1 | The ETS proof: the TPVS-proven return through `buildCt600SubmissionRequest` with the SDST test credentials and vendor ID, polled and deleted | ~1 | Sonnet | O34g | Blocked |
 | B34g2 | The CT600 filing journey: Lambdas, page, activity, receipts, per the B34h design | ~14 | Sonnet | O34g | Blocked |
 
