@@ -386,6 +386,24 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
       expect(ixbrl).toContain("Jo Director");
     });
 
+    test("builds the fixture's dormant accounts case as a dormant iXBRL document", async () => {
+      const fixtureCases = JSON.parse(
+        readFileSync(new URL("../../../scripts/fixtures/companies-house-test-service-cases.json", import.meta.url), "utf8"),
+      );
+      const dormantCase = fixtureCases.find((fixtureCase) => fixtureCase.name === "micro-entity-accounts-dormant");
+      expect(dormantCase.dormant).toBe(true);
+
+      const { entries } = await runCases([{ ...dormantCase, expectedOutcome: { status: "TERMINAL", pinned: true } }], outDir, {
+        sleepFn: fastSleep,
+      });
+
+      const submitExchange = entries[0].exchanges.find((exchange) => exchange.label === "submit");
+      const data = /<Data>([^<]+)<\/Data>/.exec(submitExchange.requestXml)[1];
+      const ixbrl = Buffer.from(data, "base64").toString("utf8");
+      expect(ixbrl).toContain("StatementThatCompanyEntitledToExemptionFromAuditUnderSection480CompaniesAct2006RelatingToDormantCompanies");
+      expect(ixbrl).toMatch(/name="bus:EntityDormantTruefalse"[^>]*>true</);
+    });
+
     test("keeps polling a submission that stays PENDING for forty polls until it is ACCEPTed", async () => {
       const realFetch = globalThis.fetch;
       let polls = 0;
