@@ -48,6 +48,8 @@ step.
 
 ## Machine-only
 
+- [ ] **V2. The eight VAT recordings from main's post-deploy dispatcher.** After PR #490's deploy, `video-capture-on-deploy.yml` run 38073713275 found the eight VAT scenes touched and recorded them on prod: tour 38073741127, view-obligations 38074201883, hmrc-authorise 38074630142, view-return 38075060530, view-liabilities 38075651410, view-payments 38076051687, view-penalties 38076451168, submit-return 38076811746 (all success). Per `.claude/skills/video-publish/SKILL.md` step 1a, fetch each and read its contact sheet against the published entry in `videos/publish.json`; a recording that shows a change on the page supersedes its entry (`videoId` to `null`, `sourceRun`, then `npm run video:publish`, stills, a PR, `--public`, and the superseded id for the operator's deletion); one that shows no change is left, with its run id noted on this row. Runs after V1's publish so the two do not edit `videos/publish.json` at once. **Source**: `PLAN_BOOKS_TO_SUBMIT.md` BS13's pipeline. **Owner**: Claude Code. **Model**: Sonnet. **Size**: `videos/publish.json`, stills.
+
 ## Machine-ask
 
 ## Human-driven
