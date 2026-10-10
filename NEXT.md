@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-baa4779** (PR #487, deploy 38051782610, 2026-10-10).
-**ci**: `ci-set1` standing (12 stacks, created 2026-10-10 01:25 UTC, redeployed last by PR #487's branch at 3e8df3a37, the same content as main; `last-known-good-deployment` = `ci-set1`). The sweep leaves it: `destroy-ci.yml`'s minimum age is 8 hours and the last-known-good set is kept unless `force-last-known-good=true`. It serves V1's ci captures and M4i's ci run.
+**ci**: `ci-set2` is last-known-good (12 stacks, created 2026-10-10 14:05 UTC by PR #489's branch at c0a8eaee0, main plus the WAF change); `ci-set1` standing (12 stacks, created 01:25 UTC, redeployed last by PR #488's branch at 7861723eb, now on main). The sweep leaves the last-known-good set unless `force-last-known-good=true` and takes ci-set1 at its next pass once it is 8 hours old and unclaimed. The apex serves V1's ci captures; M4i's ci run goes to `ci-set2.submit.diyaccounting.co.uk`.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
