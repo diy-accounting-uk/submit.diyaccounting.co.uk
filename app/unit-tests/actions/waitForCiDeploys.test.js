@@ -47,6 +47,16 @@ describe("blockedOnlyByDestroyCiCallerJobs", () => {
     ).toBe(true);
   });
 
+  test("is true when the only unfinished jobs are the called workflow's, listed as caller / called", () => {
+    expect(
+      blockedOnlyByDestroyCiCallerJobs([
+        { name: "mvn-package", status: "completed" },
+        { name: "sweep ci for a stale set / params", status: "pending" },
+        { name: "sweep ci for a stale set / destroy", status: "pending" },
+      ]),
+    ).toBe(true);
+  });
+
   test("ignores an unrelated job name even when it is the only unfinished one", () => {
     expect(blockedOnlyByDestroyCiCallerJobs([{ name: "some-other-job", status: "queued" }])).toBe(false);
   });
