@@ -188,6 +188,25 @@ class EdgeStackTest {
     }
 
     @Test
+    void mcpRoutesKeepTheFacadesContentSecurityPolicyWhileApiRoutesTakeCloudFronts() {
+        Template template = Template.fromStack(synthEdgeStack());
+        for (Map.Entry<String, Boolean> expected :
+                Map.of("-mcp-whp", false, "-diya-gl-whp", true).entrySet()) {
+            Map<String, Object> contentSecurityPolicy = Map.of("Override", expected.getValue());
+            Map<String, Object> securityHeaders =
+                    Map.of("ContentSecurityPolicy", Match.objectLike(contentSecurityPolicy));
+            Map<String, Object> config = Map.of(
+                    "Name",
+                    Match.stringLikeRegexp(expected.getKey() + "$"),
+                    "SecurityHeadersConfig",
+                    Match.objectLike(securityHeaders));
+            template.hasResourceProperties(
+                    "AWS::CloudFront::ResponseHeadersPolicy",
+                    Match.objectLike(Map.of("ResponseHeadersPolicyConfig", Match.objectLike(config))));
+        }
+    }
+
+    @Test
     void perIpRateRuleLeavesOutMcpPathsAndAnAuthorizationKeyedRuleCoversThem() {
         Template template = Template.fromStack(synthEdgeStack());
         String json = template.toJSON().toString();
