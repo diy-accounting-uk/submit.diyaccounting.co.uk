@@ -28,8 +28,9 @@ describe("parseArgs", () => {
     expect(opts.client).toBe("diya-gl");
   });
 
-  test("leaves --client app and --client both unchanged", () => {
+  test("leaves --client app, mcp and both unchanged", () => {
     expect(parseArgs(["enable", "ci", "--client", "app"]).client).toBe("app");
+    expect(parseArgs(["enable", "ci", "--client", "mcp"]).client).toBe("mcp");
     expect(parseArgs(["enable", "ci", "--client", "both"]).client).toBe("both");
   });
 });

@@ -5,15 +5,16 @@
 //
 // Toggle native Cognito authentication on/off for the Hosted UI
 //
-// Usage: node scripts/toggle-cognito-native-auth.js <enable|disable> <environment-name> [--client app|diya-gl|both]
+// Usage: node scripts/toggle-cognito-native-auth.js <enable|disable> <environment-name> [--client app|diya-gl|mcp|both]
 // Example: node scripts/toggle-cognito-native-auth.js enable ci
 // Example: node scripts/toggle-cognito-native-auth.js enable prod --client diya-gl
 //
-// This script adds or removes COGNITO from one or both UserPoolClient's SupportedIdentityProviders:
+// This script adds or removes COGNITO from the UserPoolClients' SupportedIdentityProviders:
 // - UserPoolClient (submit app): native email/password login
 // - BooksUserPoolClient (DIYA-GL pages): native email/password login
+// - McpUserPoolClient (hosted MCP connector sign-in): native email/password login
 //
-// --client selects which client to change (default: both). The spreadsheets repository's ci
+// --client selects which client to change (default: both, which covers all three). The spreadsheets repository's ci
 // behaviour run uses --client diya-gl to toggle only the DIYA-GL client, against submit's prod
 // environment, without touching the submit app client's own sign-in state. "books" is still
 // accepted as an alias for "diya-gl" for the spreadsheets repository's existing call, until it
@@ -51,7 +52,7 @@ import {
   UpdateUserPoolClientCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
 
-const USAGE = "Usage: node scripts/toggle-cognito-native-auth.js <enable|disable> <environment-name> [--client app|diya-gl|both]";
+const USAGE = "Usage: node scripts/toggle-cognito-native-auth.js <enable|disable> <environment-name> [--client app|diya-gl|mcp|both]";
 
 export function parseArgs(argv) {
   const positional = [];
@@ -184,7 +185,7 @@ export async function main() {
     process.exit(1);
   }
 
-  if (!["app", "diya-gl", "both"].includes(client)) {
+  if (!["app", "diya-gl", "mcp", "both"].includes(client)) {
     console.error(USAGE);
     console.error(`Invalid --client value: ${client}`);
     process.exit(1);
@@ -204,6 +205,7 @@ export async function main() {
   let userPoolId;
   let clientId;
   let diyaGlClientId;
+  let mcpClientId;
 
   try {
     const response = await cfnClient.send(new DescribeStacksCommand({ StackName: stackName }));
@@ -233,9 +235,16 @@ export async function main() {
     }
     diyaGlClientId = diyaGlClientIdOutput.OutputValue;
 
+    const mcpClientIdOutput = stack.Outputs?.find((o) => o.OutputKey === "McpUserPoolClientId");
+    if (!mcpClientIdOutput?.OutputValue) {
+      throw new Error(`McpUserPoolClientId output not found in stack ${stackName}`);
+    }
+    mcpClientId = mcpClientIdOutput.OutputValue;
+
     console.log(`User Pool ID: ${userPoolId}`);
     console.log(`Submit Client ID: ${clientId}`);
     console.log(`DIYA-GL Client ID: ${diyaGlClientId}`);
+    console.log(`MCP Client ID: ${mcpClientId}`);
   } catch (error) {
     console.error(`ERROR: Could not find Cognito config for environment: ${environmentName}`);
     console.error(`Looking for stack: ${stackName}`);
@@ -247,6 +256,7 @@ export async function main() {
 
   const updateApp = client === "app" || client === "both";
   const updateDiyaGl = client === "diya-gl" || client === "both";
+  const updateMcp = client === "mcp" || client === "both";
 
   try {
     console.log("");
@@ -262,6 +272,10 @@ export async function main() {
       } else {
         await updateClient(cognitoClient, userPoolId, diyaGlClientId, "BooksUserPoolClient (DIYA-GL)", action);
       }
+      console.log("");
+    }
+    if (updateMcp) {
+      await updateClient(cognitoClient, userPoolId, mcpClientId, "McpUserPoolClient (hosted MCP)", action);
     }
 
     console.log("");

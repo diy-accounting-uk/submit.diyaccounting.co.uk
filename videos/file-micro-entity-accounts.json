@@ -248,8 +248,8 @@
         { "action": "await", "until": "#previewView", "label": "Rendering the preview" },
         {
           "action": "point",
-          "target": "#previewIxbrl",
-          "caption": "This is the XML that will be filed. Nothing has gone to Companies House yet.",
+          "target": "#previewRendered",
+          "caption": "These are the accounts as they will be filed. Nothing has gone to Companies House yet.",
           "headline": "Nothing filed yet",
           "keyWord": "yet",
           "dwellMs": 600

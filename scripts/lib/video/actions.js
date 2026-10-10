@@ -92,6 +92,13 @@ async function requireLocator(page, step, ctx) {
       { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: step.target },
     );
   }
+  if (!(await locator.isVisible())) {
+    await writeFailureStill(page, ctx);
+    throw new SceneStepError(
+      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (${step.action}): target is in the page but not visible: ${JSON.stringify(step.target)}`,
+      { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: step.target },
+    );
+  }
   await locator.scrollIntoViewIfNeeded();
   return locator;
 }
@@ -215,7 +222,27 @@ async function doSelect(page, step, ctx) {
   const locator = await requireLocator(page, step, ctx);
   const rect = await pointAndReturnRect(page, locator, ctx.onTargetRect);
   await overlay.highlight(page, rect, 400);
-  await locator.selectOption(step.value);
+  const value = step.value;
+  const listed = await locator.evaluate((el, wanted) => Array.from(el.options).some((option) => option.value === wanted), value);
+  if (listed) {
+    await locator.selectOption(value);
+    return { waitMs: 0, rect };
+  }
+  // A page that accepts an unlisted value through the element's own value property (the tax-year
+  // select appends the option) takes it here; selectOption refuses an absent option.
+  const taken = await locator.evaluate((el, wanted) => {
+    el.value = wanted;
+    el.dispatchEvent(new Event("input", { bubbles: true }));
+    el.dispatchEvent(new Event("change", { bubbles: true }));
+    return el.value === wanted;
+  }, value);
+  if (!taken) {
+    await writeFailureStill(page, ctx);
+    throw new SceneStepError(
+      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (select): value not accepted: ${JSON.stringify(step.target)} = ${JSON.stringify(value)}`,
+      { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: step.target },
+    );
+  }
   return { waitMs: 0, rect };
 }
 

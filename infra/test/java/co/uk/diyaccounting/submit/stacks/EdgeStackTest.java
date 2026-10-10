@@ -147,6 +147,7 @@ class EdgeStackTest {
             },
             {"frame-src", "https://accounts.google.com", "https://apis.google.com", "https://docs.google.com"},
             {"img-src", "https://*.googleusercontent.com", "https://ssl.gstatic.com", "https://www.gstatic.com"},
+            {"img-src", "https://i.ytimg.com"},
         };
 
         for (String[] directive : required) {

@@ -2,7 +2,14 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, it, expect } from "vitest";
-import { compareEmbeds, extractEmbedId, groupAreaPageMatches, parseArgs } from "../../../scripts/video-embed-check.js";
+import {
+  compareEmbeds,
+  extractEmbedId,
+  extractFacadeId,
+  extractPageVideoIds,
+  groupAreaPageMatches,
+  parseArgs,
+} from "../../../scripts/video-embed-check.js";
 
 const areaPages = ["videos-hmrc-vat.html", "videos-hmrc-itsa.html", "videos-account.html", "videos-ch.html", "videos-accounting.html"];
 
@@ -104,6 +111,24 @@ describe("helpers", () => {
   it("reads the video id from an embed URL", () => {
     expect(extractEmbedId("https://www.youtube-nocookie.com/embed/abc123?rel=0")).toBe("abc123");
     expect(extractEmbedId("https://example.com/")).toBeNull();
+  });
+
+  it("reads the video id from a facade thumbnail URL", () => {
+    expect(extractFacadeId("https://i.ytimg.com/vi/Mz017jlKwWI/hqdefault.jpg")).toBe("Mz017jlKwWI");
+    expect(extractFacadeId("https://example.com/logo.png")).toBeNull();
+  });
+
+  it("collects ids from facades alone", () => {
+    expect(extractPageVideoIds({ iframeSrcs: [], facadeSrcs: ["https://i.ytimg.com/vi/aaa/hqdefault.jpg"] })).toEqual(["aaa"]);
+  });
+
+  it("collects ids from a page with a swapped iframe and facades", () => {
+    expect(
+      extractPageVideoIds({
+        iframeSrcs: ["https://www.youtube-nocookie.com/embed/aaa?autoplay=1"],
+        facadeSrcs: ["https://i.ytimg.com/vi/bbb/hqdefault.jpg", "https://i.ytimg.com/vi/aaa/hqdefault.jpg"],
+      }),
+    ).toEqual(["aaa", "bbb"]);
   });
 
   it("defaults the base URL and normalises a trailing slash", () => {
