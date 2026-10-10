@@ -497,11 +497,10 @@ tags. B34g1 can reach TPVS before O34g; its ETS proof waits on O34g.
 | 9 | CT recognition criteria for the software list | SDST | B34g2 launch |
 | 10 | Agent filing for `resident-pro` practices | HMRC CT technical pack | B34g2 |
 | 12 | Share class and nominal value: typed on the filing page (decided 2026-10-10); a read from the spreadsheets Companysecretary register can follow | operator (decided) | B34f |
-| 13 | Token charge for a paired filing: 2 tokens or 1 | operator | B34g2 |
 
 Row 2: `ltd.js` sets the prior-year P&L cells to 0, and FRS 102 1A needs comparatives. Row 3:
-the default proposed is full accounts at Companies House, with filleting as an option. Row 13: the
-default proposed is one token per filing sent, 2 for a pair.
+the default proposed is full accounts at Companies House, with filleting as an option. A paired
+filing charges one token per filing sent, two for the pair (operator, 2026-10-10).
 
 ## Tasks
 
