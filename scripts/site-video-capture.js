@@ -676,9 +676,12 @@ async function main() {
         // An off-camera step names nothing a viewer sees: it never reaches the transcript, so it
         // never has to describe itself in words a reader would notice weren't on screen.
         // A testScenario or checkHidden step sets a form value the viewer never sees, so the
-        // transcript has nothing to say about it.
-        if (!offCamera && step.action !== "testScenario" && step.action !== "checkHidden")
-          entries.push({ caption: captionTextForStep(step), description, note: step.note || null });
+        // transcript describes nothing about it; its caption, when it has one, is on screen and
+        // so belongs in the transcript like any other.
+        const hiddenAction = step.action === "testScenario" || step.action === "checkHidden";
+        const caption = captionTextForStep(step);
+        if (!offCamera && (!hiddenAction || caption))
+          entries.push({ caption, description: hiddenAction ? null : description, note: step.note || null });
 
         const compression = WAIT_CAPABLE_ACTIONS.has(step.action) ? compressionFor(waitMs, unscaledPacing) : null;
 
