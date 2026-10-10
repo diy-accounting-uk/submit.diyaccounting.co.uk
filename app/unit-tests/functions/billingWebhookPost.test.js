@@ -96,6 +96,26 @@ vi.mock("@app/data/dynamoDbActivityChargeRepository.js", () => ({
   putActivityChargeIfAbsent: (...args) => mockPutActivityChargeIfAbsent(...args),
 }));
 
+const mockLoggerInfo = vi.fn();
+const mockLoggerError = vi.fn();
+vi.mock("@app/lib/logger.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    createLogger: (bindings) => {
+      const child = actual.createLogger(bindings);
+      return {
+        info: (obj) => mockLoggerInfo(obj),
+        error: (obj) => mockLoggerError(obj),
+        warn: (...args) => child.warn(...args),
+        debug: (...args) => child.debug(...args),
+        trace: (...args) => child.trace(...args),
+        fatal: (...args) => child.fatal(...args),
+      };
+    },
+  };
+});
+
 // Mock the diya-gl book retention move (S3) and the practice client list (DynamoDB)
 const mockSetOwnerBooksRetention = vi.fn();
 vi.mock("@app/data/s3DiyaGlRepository.js", () => ({
@@ -193,6 +213,8 @@ describe("billingWebhookPost", () => {
     mockSetOwnerBooksRetention.mockReset();
     mockListClientsByHashedSub.mockReset();
     mockEventBridgeSend.mockClear();
+    mockLoggerInfo.mockClear();
+    mockLoggerError.mockClear();
 
     mockPutActivityChargeIfAbsent.mockResolvedValue(true);
     mockSetOwnerBooksRetention.mockResolvedValue([]);
@@ -1497,5 +1519,35 @@ describe("billingWebhookPost", () => {
 
     expect(result.statusCode).toBe(200);
     expect(mockPutActivityChargeIfAbsent).not.toHaveBeenCalled();
+  });
+
+  test("a payment-mode Payment Link checkout without metadata is logged at info and records no charge", async () => {
+    const payload = buildActivityChargeSessionPayload({ metadata: {}, payment_link: "plink_test" });
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockPutActivityChargeIfAbsent).not.toHaveBeenCalled();
+    expect(mockLoggerError).not.toHaveBeenCalled();
+    expect(mockLoggerInfo).toHaveBeenCalledWith({
+      message: "Payment Link checkout, no activity charge",
+      sessionId: "cs_test_activity_charge",
+      paymentLink: "plink_test",
+    });
+  });
+
+  test("a payment-mode checkout without a Payment Link and without metadata is logged as an error and records no charge", async () => {
+    const payload = buildActivityChargeSessionPayload({ metadata: {} });
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockPutActivityChargeIfAbsent).not.toHaveBeenCalled();
+    expect(mockLoggerError).toHaveBeenCalledWith({
+      message: "checkout.session.completed (payment mode) missing metadata",
+      sessionId: "cs_test_activity_charge",
+    });
   });
 });
