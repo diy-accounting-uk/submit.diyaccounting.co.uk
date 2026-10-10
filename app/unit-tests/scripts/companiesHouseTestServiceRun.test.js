@@ -31,6 +31,7 @@ import {
   evaluateOutcome,
   blankFirstDirectorPersonalCode,
   runCases,
+  runPoll,
 } from "../../../scripts/companies-house-test-service-run.js";
 import { parseGatewayResponse, hashPresenterCredential } from "../../../app/services/companiesHouseXmlGateway.js";
 import { startSimulator } from "../../http-simulator/index.js";
@@ -434,6 +435,59 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
       const cases = [accountsCase({ balanceSheet: undefined })];
 
       await expect(runCases(cases, outDir, { sleepFn: fastSleep })).rejects.toThrow(/not a valid accounts request/);
+    });
+  });
+
+  describe("poll mode", () => {
+    const submitOne = async () => {
+      const { entries } = await runCases([baseCase({ name: "submitted", expectedOutcome: { status: "ACCEPT" } })], outDir, {
+        sleepFn: fastSleep,
+      });
+      return entries[0].submissionNumber;
+    };
+
+    test("polls an existing submission to ACCEPT without allocating or submitting another filing", async () => {
+      const submissionNumber = await submitOne();
+      const dynamoCallsBefore = mockDynamoSend.mock.calls.length;
+
+      const entry = await runPoll(submissionNumber, outDir, { sleepFn: fastSleep });
+
+      expect(entry.observedStatus).toBe("ACCEPT");
+      expect(entry.pass).toBe(true);
+      expect(entry.exchanges.length).toBeGreaterThan(0);
+      expect(entry.exchanges.every((exchange) => exchange.label.startsWith("poll-"))).toBe(true);
+      expect(mockDynamoSend.mock.calls.length).toBe(dynamoCallsBefore);
+      const evidence = JSON.parse(readFileSync(join(outDir, "evidence-log.json"), "utf8"));
+      expect(evidence).toHaveLength(1);
+      expect(evidence[0].observedStatus).toBe("ACCEPT");
+    });
+
+    test("reports POLL_TIMEOUT when a polled submission stays PENDING past the poll wall clock", async () => {
+      const submissionNumber = await submitOne();
+      const realFetch = globalThis.fetch;
+      const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url, init) => {
+        const response = await realFetch(url, init);
+        if (!String(init?.body).includes("GetSubmissionStatus")) return response;
+        const text = (await response.text()).replace("<StatusCode>ACCEPT</StatusCode>", "<StatusCode>PENDING</StatusCode>");
+        return new Response(text, { status: response.status, headers: { "Content-Type": "text/xml" } });
+      });
+      let now = 1_000_000;
+      const startedAt = now;
+      const dateSpy = vi.spyOn(Date, "now").mockImplementation(() => now);
+      const sleepFn = (ms) => {
+        now += ms;
+        return Promise.resolve();
+      };
+      try {
+        const entry = await runPoll(submissionNumber, outDir, { sleepFn });
+
+        expect(entry.observedStatus).toBe("POLL_TIMEOUT");
+        expect(entry.pass).toBe(true);
+        expect(now - startedAt).toBeGreaterThanOrEqual(10 * 60 * 1000);
+      } finally {
+        dateSpy.mockRestore();
+        fetchSpy.mockRestore();
+      }
     });
   });
 });
