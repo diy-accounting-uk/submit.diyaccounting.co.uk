@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Two MCP servers: diya-gl for reading and editing a book, and the submission MCP for filing VAT returns and Companies House accounts, from npm or Docker."
+      content="Connect Claude to DIY Accounting Submit with one connector URL, or run the diya-gl and submission MCP servers from npm or Docker."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/mcp.html" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -147,8 +147,58 @@
             connect devices, MCP provides a standardised way to connect AI assistants to external systems.
           </p>
           <p>
-            Two MCP servers exist for DIY Accounting's own tools: the diya-gl MCP server for reading and editing a book, available now, and
-            the submission MCP for filing VAT returns and Companies House accounts. Every filing they make is one the web app can make too.
+            DIY Accounting offers three ways in: the hosted connector, which a chat client reaches with one URL; the diya-gl MCP server for
+            reading and editing a book; and the submission MCP you run yourself for filing VAT returns and Companies House accounts. Every
+            filing they make is one the web app can make too.
+          </p>
+        </div>
+
+        <div class="mcp-intro">
+          <span class="mcp-status mcp-status-available">Available now</span>
+          <h2>The hosted connector</h2>
+          <p>
+            The hosted connector gives a chat client your saved books and the derivation tools with nothing to install. It signs in with the
+            same account as the web app.
+          </p>
+          <p>The connector URL is:</p>
+          <pre><code>https://submit.diyaccounting.co.uk/mcp</code></pre>
+          <h3>Add it in Claude</h3>
+          <p>
+            In Claude on the web, in Claude Desktop, on mobile and in Cowork, open Settings, then Connectors, and add a custom connector
+            with that URL. Claude opens the sign-in page; choose Continue, then sign in to your account.
+          </p>
+          <p>In Claude Code, run:</p>
+          <pre><code>claude mcp add --transport http diya-submit https://submit.diyaccounting.co.uk/mcp</code></pre>
+          <p>Then run <code>/mcp</code> in Claude Code and choose the server to sign in.</p>
+          <h3>Tools</h3>
+          <p>
+            <code>open_book</code> opens a book saved in your DIYA cloud by its id, and the other tools work on the book that is open. The
+            connector does not reach HMRC.
+          </p>
+          <dl>
+            <dt><code>open_book</code></dt>
+            <dd>Open a saved cloud book, for you or for a practice client.</dd>
+            <dt><code>derive_vat_return</code>, <code>get_vat_receipt</code></dt>
+            <dd>The nine VAT return boxes for a period, and a stored receipt.</dd>
+            <dt><code>derive_itsa_quarterly_update</code>, <code>derive_itsa_annual_submission</code></dt>
+            <dd>The Self Employment figures for one quarter and for the year.</dd>
+            <dt><code>derive_micro_entity_accounts</code>, <code>derive_small_company_accounts</code></dt>
+            <dd>The accounts figures for the current and prior year.</dd>
+            <dt>
+              <code>preview_micro_entity_accounts</code>, <code>submit_micro_entity_accounts</code>, <code>poll_accounts_submission</code>
+            </dt>
+            <dd>Preview the filing, file confirmed accounts with Companies House, and check the outcome.</dd>
+            <dt>
+              <code>get_confirmation_statement_data</code>, <code>preview_confirmation_statement</code>,
+              <code>submit_confirmation_statement</code>, <code>poll_confirmation_statement</code>
+            </dt>
+            <dd>Read the company's confirmation statement data, preview the statement, file it and check the outcome.</dd>
+            <dt><code>list_clients</code>, <code>add_client</code>, <code>move_book_to_client</code></dt>
+            <dd>For a practice: list its clients, add one, and move a book under a client.</dd>
+          </dl>
+          <p>
+            A filing tool takes the figures its derive or preview tool returned, so you see and approve the figures before anything reaches
+            Companies House. Submitting a VAT return to HMRC is done in the web app or with the submission MCP below.
           </p>
         </div>
 
@@ -180,7 +230,7 @@
 
         <div class="mcp-intro">
           <span class="mcp-status mcp-status-available">Available now</span>
-          <h2>The submission MCP</h2>
+          <h2>The submission MCP on your computer</h2>
           <p>
             The submission MCP takes a customer's book and files the two submissions this service makes: the VAT return to HMRC and the
             micro-entity accounts to Companies House. It works out the figures a filing needs, shows them for confirmation, and only then
@@ -247,10 +297,6 @@
           <p>
             A submit tool takes the figures the derive tool returned, never a book, so you see and approve the figures before anything
             reaches HMRC or Companies House.
-          </p>
-          <p>
-            A hosted version, reachable from a chat client without installing anything, is in development. It will use the same account as
-            the web app.
           </p>
         </div>
 

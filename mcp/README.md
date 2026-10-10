@@ -20,6 +20,22 @@ Point an MCP client at that command with no arguments. The server is `mcp/lib/se
 stdio entry point only connects it to stdin and stdout, so the hosted transport connects the
 same server to a different one.
 
+## Hosted
+
+The same server runs behind the site at `/mcp`, for chat clients that connect by URL. Add
+`https://submit.diyaccounting.co.uk/mcp` as a custom connector in Claude (web, Desktop, mobile or
+Cowork), or in Claude Code:
+
+```
+claude mcp add --transport http diya-submit https://submit.diyaccounting.co.uk/mcp
+```
+
+The client finds the sign-in through `/.well-known/oauth-protected-resource/mcp`, registers itself, and
+the user signs in with their Submit account. The ci form of the URL is
+`https://ci-submit.diyaccounting.co.uk/mcp`. The hosted tool set is `HOSTED_TOOL_NAMES` in
+`lib/hosted-tools.js`: `open_book` reads the DIYA cloud only, and the sign-in, filesystem and HMRC
+tools are not registered.
+
 ## Tools
 
 | Tool | Does |

@@ -42,13 +42,18 @@ const OAUTH_ERROR_CODE = /^[a-z_]{1,64}$/;
 const CONSENT_COOKIE = "__Host-mcp_consent";
 const METADATA_CACHE_CONTROL = "max-age=300";
 const NO_STORE = { "Cache-Control": "no-store", "Pragma": "no-cache" };
-const PAGE_HEADERS = {
-  "Content-Type": "text/html; charset=utf-8",
-  "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'",
-  "X-Frame-Options": "DENY",
-  "Referrer-Policy": "no-referrer",
-  "Cache-Control": "no-store",
-};
+// Chrome applies form-action to the redirect that answers a form POST, so the consent form's
+// answer, a redirect to the upstream authorize endpoint, needs that origin listed.
+function pageHeaders() {
+  const upstreamOrigin = new URL(process.env.MCP_UPSTREAM_AUTHORIZE_URL).origin;
+  return {
+    "Content-Type": "text/html; charset=utf-8",
+    "Content-Security-Policy": `default-src 'none'; style-src 'unsafe-inline'; form-action 'self' ${upstreamOrigin}; frame-ancestors 'none'`,
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Cache-Control": "no-store",
+  };
+}
 
 const smClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
 let blobKeyPromise = null;
@@ -230,7 +235,7 @@ const PAGE_STYLE =
 function htmlPage(statusCode, title, bodyHtml, headers = {}) {
   return {
     statusCode,
-    headers: { ...PAGE_HEADERS, ...headers },
+    headers: { ...pageHeaders(), ...headers },
     body:
       `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">` +
       `<title>${escapeHtml(title)}</title><style>${PAGE_STYLE}</style></head><body>${bodyHtml}</body></html>`,
@@ -544,6 +549,12 @@ const ROUTES = {
   "/mcp/oauth/revoke": { POST: handleRevoke },
 };
 
+function withJsonContentType(result) {
+  if (!result.body) return result;
+  if (Object.keys(result.headers || {}).some((name) => name.toLowerCase() === "content-type")) return result;
+  return { ...result, headers: { ...result.headers, "Content-Type": "application/json" } };
+}
+
 function metadataResponse(request, data) {
   return http200OkResponse({ request, headers: { "Cache-Control": METADATA_CACHE_CONTROL }, data });
 }
@@ -566,19 +577,19 @@ export async function ingestHandler(event) {
 
   if (!publicHosts().includes(host)) {
     logOutcome({ endpoint: path, outcome: "unknown_host" });
-    return oauthError(request, "invalid_request", "Unknown host");
+    return withJsonContentType(oauthError(request, "invalid_request", "Unknown host"));
   }
 
   const route = ROUTES[path];
-  if (!route) return http404NotFoundResponse({ request, headers: {}, message: "Not found" });
+  if (!route) return withJsonContentType(http404NotFoundResponse({ request, headers: {}, message: "Not found" }));
   const handler = route[method];
   if (!handler) return methodNotAllowed(Object.keys(route).join(", "));
 
   try {
-    return await handler({ event, request, host });
+    return withJsonContentType(await handler({ event, request, host }));
   } catch (error) {
     logger.error({ message: "MCP OAuth facade failed", endpoint: path, errorName: error?.name, errorMessage: error?.message });
-    return http500ServerErrorResponse({ request, headers: { ...NO_STORE }, message: "server_error" });
+    return withJsonContentType(http500ServerErrorResponse({ request, headers: { ...NO_STORE }, message: "server_error" }));
   }
 }
 

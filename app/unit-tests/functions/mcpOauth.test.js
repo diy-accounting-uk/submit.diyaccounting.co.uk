@@ -170,6 +170,20 @@ describe("mcpOauth metadata", () => {
     );
   });
 
+  it.each([
+    ["/.well-known/oauth-protected-resource/mcp", "GET"],
+    ["/.well-known/oauth-authorization-server", "GET"],
+    ["/mcp/oauth/nothing", "GET"],
+  ])("labels the JSON body of %s as application/json", async (path, method) => {
+    const result = await ingestHandler(event({ method, path }));
+    expect(result.headers["Content-Type"]).toBe("application/json");
+  });
+
+  it("labels the JSON body of a host rejection as application/json", async () => {
+    const result = await ingestHandler(event({ path: "/.well-known/oauth-authorization-server", headers: { host: "evil.example" } }));
+    expect(result.headers["Content-Type"]).toBe("application/json");
+  });
+
   it("uses the request's host when it is listed", async () => {
     const result = await ingestHandler(
       event({ path: "/.well-known/oauth-authorization-server", headers: { host: "CI-Submit.diyaccounting.co.uk" } }),
@@ -248,7 +262,7 @@ describe("mcpOauth authorize GET", () => {
     expect(result.statusCode).toBe(200);
     expect(result.headers["Content-Type"]).toBe("text/html; charset=utf-8");
     expect(result.headers["Content-Security-Policy"]).toBe(
-      "default-src 'none'; style-src 'unsafe-inline'; form-action 'self'; frame-ancestors 'none'",
+      `default-src 'none'; style-src 'unsafe-inline'; form-action 'self' ${new URL(UPSTREAM).origin}; frame-ancestors 'none'`,
     );
     expect(result.headers["X-Frame-Options"]).toBe("DENY");
     expect(result.headers["Cache-Control"]).toBe("no-store");
