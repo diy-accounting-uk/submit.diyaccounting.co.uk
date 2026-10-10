@@ -82,22 +82,13 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: 'https://registry.npmjs.org'
 
-      - name: Require NPM_TOKEN
-        run: |
-          if [ -z "${NODE_AUTH_TOKEN}" ]; then
-            echo "::error::NPM_TOKEN is not set. Store an npm automation token that can publish @diy-accounting-uk/diya-submit with: gh secret set NPM_TOKEN --repo diy-accounting-uk/submit.diyaccounting.co.uk"
-            exit 1
-          fi
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
       - name: Stage the package away from the repository's app/ directory
         run: node mcp/scripts/stage-package.js "${RUNNER_TEMP}/diya-submit-mcp"
 
+      # The package's npm settings name this repository and workflow as a trusted publisher, so
+      # npm takes the job's OIDC token (id-token: write above) in place of an automation token.
       - run: npm publish --provenance --access public
         working-directory: ${{ runner.temp }}/diya-submit-mcp
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   publish-image:
     needs: verify
