@@ -123,13 +123,6 @@
             <groupId>software.amazon.awscdk</groupId>
             <artifactId>aws-cdk-lib</artifactId>
         </dependency>
-        <!-- @NotNull on KindCdk and the CDK tests; aws-cdk-lib stopped carrying it at compile scope in 2.273.0 -->
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>26.1.0</version>
-            <scope>provided</scope>
-        </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>lambda</artifactId>
@@ -145,6 +138,13 @@
         <dependency>
             <groupId>org.immutables</groupId>
             <artifactId>value</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- @NotNull on KindCdk and the CDK tests; aws-cdk-lib stopped carrying it at compile scope in 2.273.0 -->
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>26.1.0</version>
             <scope>provided</scope>
         </dependency>
         <!-- Route logs to System.out -->
