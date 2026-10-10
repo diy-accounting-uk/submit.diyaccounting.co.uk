@@ -204,16 +204,26 @@ export function buildMicroEntityAccounts(input) {
   let shareNoteHtml = "";
   if (input.dormant) {
     const sharesIssued = sharesIssuedFor(input.balanceSheet.current.calledUpShareCapital, input.nominalValue);
-    const shareClassContextId = buildDimensionedContext({
+    const shareClassDimensionXml = dimensionMemberXml(DIMENSIONS.entityShareClasses, MEMBERS[input.shareClass]);
+    // The number of shares is held at the balance sheet date (an instant); the nominal value is
+    // a duration item in the FRC taxonomy, so each fact takes its own share-class context.
+    const shareClassInstantContextId = buildDimensionedContext({
       additionalContexts,
       entityIdentifierXml,
       periodXml: periodXml[refs.currentInstant],
-      dimensionXml: dimensionMemberXml(DIMENSIONS.entityShareClasses, MEMBERS[input.shareClass]),
+      dimensionXml: shareClassDimensionXml,
       id: `${refs.currentInstant}-share-class`,
     });
+    const shareClassDurationContextId = buildDimensionedContext({
+      additionalContexts,
+      entityIdentifierXml,
+      periodXml: periodXml[refs.current],
+      dimensionXml: shareClassDimensionXml,
+      id: `${refs.current}-share-class`,
+    });
     facts.push(
-      `<ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassContextId}" unitRef="shares" decimals="0">${sharesIssued}</ix:nonFraction>`,
-      `<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction>`,
+      `<ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0">${sharesIssued}</ix:nonFraction>`,
+      `<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction>`,
     );
     shareNoteHtml = `<p>Share capital: ${sharesIssued} ${SHARE_CLASS_LABEL[input.shareClass]} shares of £${input.nominalValue} each, allotted and fully paid</p>\n`;
   }
