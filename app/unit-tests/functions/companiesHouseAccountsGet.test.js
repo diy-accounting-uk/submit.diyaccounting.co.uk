@@ -272,6 +272,25 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
     expect(body.rejections[0].rejectCode).toBe("9999");
   });
 
+  test("returns the test-mode rejection the test gateway gives a well-formed filing", async () => {
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [
+        {
+          statusCode: "REJECT",
+          submissionNumber: "000026",
+          companyNumber: "00000001",
+          rejections: [{ rejectCode: "1", description: "Random Test mode rejection", instanceNumber: "1" }],
+        },
+      ],
+    });
+    const response = await companiesHouseAccountsGetHandler(buildEvent({ submissionNumber: "000026" }));
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.statusCode).toBe("REJECT");
+    expect(body.rejections).toEqual([{ rejectCode: "1", description: "Random Test mode rejection", instanceNumber: "1" }]);
+  });
+
   test("returns 500 when the gateway answers with GovTalkErrors", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [{ raisedBy: "Gateway", number: "502", type: "fatal", text: "Authentication Failure", location: "" }],
