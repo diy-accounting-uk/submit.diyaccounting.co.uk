@@ -377,10 +377,12 @@ public class EdgeStack extends Stack {
                                                 // Every other route keeps the same 8KB block through
                                                 // OversizedBodyOutsideBookWrite below; a book write's real size
                                                 // limit is diyaGlPut.js, the only place that sees the whole body.
-                                                // EC2MetaDataSSRF_BODY counts instead of blocking, because it
-                                                // blocks a loopback redirect URI in a client registration body.
-                                                // Every other route keeps that block through
-                                                // EC2MetaDataSSRFOutsideMcpRegister below.
+                                                // EC2MetaDataSSRF_BODY, EC2MetaDataSSRF_QUERYARGUMENTS, GenericRFI_BODY
+                                                // and GenericRFI_QUERYARGUMENTS count instead of blocking, because
+                                                // they block an IPv4 loopback redirect URI in the hosted MCP's OAuth
+                                                // requests: the registration body, the authorize query and the token
+                                                // body. Every other route keeps those blocks through
+                                                // LoopbackUriRulesOutsideMcpOauth below.
                                                 .ruleActionOverrides(List.of(
                                                         CfnWebACL.RuleActionOverrideProperty.builder()
                                                                 .name("SizeRestrictions_BODY")
@@ -392,6 +394,30 @@ public class EdgeStack extends Stack {
                                                                 .build(),
                                                         CfnWebACL.RuleActionOverrideProperty.builder()
                                                                 .name("EC2MetaDataSSRF_BODY")
+                                                                .actionToUse(CfnWebACL.RuleActionProperty.builder()
+                                                                        .count(
+                                                                                CfnWebACL.CountActionProperty.builder()
+                                                                                        .build())
+                                                                        .build())
+                                                                .build(),
+                                                        CfnWebACL.RuleActionOverrideProperty.builder()
+                                                                .name("EC2MetaDataSSRF_QUERYARGUMENTS")
+                                                                .actionToUse(CfnWebACL.RuleActionProperty.builder()
+                                                                        .count(
+                                                                                CfnWebACL.CountActionProperty.builder()
+                                                                                        .build())
+                                                                        .build())
+                                                                .build(),
+                                                        CfnWebACL.RuleActionOverrideProperty.builder()
+                                                                .name("GenericRFI_BODY")
+                                                                .actionToUse(CfnWebACL.RuleActionProperty.builder()
+                                                                        .count(
+                                                                                CfnWebACL.CountActionProperty.builder()
+                                                                                        .build())
+                                                                        .build())
+                                                                .build(),
+                                                        CfnWebACL.RuleActionOverrideProperty.builder()
+                                                                .name("GenericRFI_QUERYARGUMENTS")
                                                                 .actionToUse(CfnWebACL.RuleActionProperty.builder()
                                                                         .count(
                                                                                 CfnWebACL.CountActionProperty.builder()
@@ -513,30 +539,53 @@ public class EdgeStack extends Stack {
                                         .build())
                                 .build(),
                         // The common rule set labels a request awswaf:managed:aws:core-rule-set:
-                        // EC2MetaDataSSRF_Body when its body holds an address the rule treats as a
-                        // metadata-service target; that rule only counts above. This rule blocks
-                        // the label on every path except POST /mcp/oauth/register, where an MCP
-                        // client sends its loopback redirect URI (http://localhost or
-                        // http://127.0.0.1 with a port). The register handler validates the URI
-                        // shape and stores it; it never fetches it, so the SSRF the rule guards
-                        // against has no path there.
+                        // EC2MetaDataSSRF_Body, EC2MetaDataSSRF_QueryArguments, GenericRFI_Body or
+                        // GenericRFI_QueryArguments when a body or query argument holds an address or
+                        // URL the rule treats as a metadata-service or remote-include target; those
+                        // rules only count above. This rule blocks those labels on every path except
+                        // POST /mcp/oauth/register, GET /mcp/oauth/authorize and POST /mcp/oauth/token,
+                        // where an MCP client sends its loopback redirect URI (http://localhost or
+                        // http://127.0.0.1 with a port). The three handlers validate the URI shape,
+                        // compare it with the registration and redirect to it; none fetches it, so
+                        // the SSRF and RFI the rules guard against have no path there.
                         CfnWebACL.RuleProperty.builder()
-                                .name("EC2MetaDataSSRFOutsideMcpRegister")
+                                .name("LoopbackUriRulesOutsideMcpOauth")
                                 .priority(7)
                                 .statement(CfnWebACL.StatementProperty.builder()
                                         .andStatement(CfnWebACL.AndStatementProperty.builder()
                                                 .statements(List.of(
                                                         CfnWebACL.StatementProperty.builder()
-                                                                .labelMatchStatement(
-                                                                        CfnWebACL.LabelMatchStatementProperty.builder()
-                                                                                .scope("LABEL")
-                                                                                .key(
-                                                                                        "awswaf:managed:aws:core-rule-set:EC2MetaDataSSRF_Body")
-                                                                                .build())
+                                                                .orStatement(CfnWebACL.OrStatementProperty.builder()
+                                                                        .statements(
+                                                                                List.of(
+                                                                                        coreRuleSetLabelStatement(
+                                                                                                "EC2MetaDataSSRF_Body"),
+                                                                                        coreRuleSetLabelStatement(
+                                                                                                "EC2MetaDataSSRF_QueryArguments"),
+                                                                                        coreRuleSetLabelStatement(
+                                                                                                "GenericRFI_Body"),
+                                                                                        coreRuleSetLabelStatement(
+                                                                                                "GenericRFI_QueryArguments")))
+                                                                        .build())
                                                                 .build(),
                                                         CfnWebACL.StatementProperty.builder()
                                                                 .notStatement(CfnWebACL.NotStatementProperty.builder()
-                                                                        .statement(mcpRegisterUriPathStatement())
+                                                                        .statement(
+                                                                                CfnWebACL.StatementProperty.builder()
+                                                                                        .orStatement(
+                                                                                                CfnWebACL
+                                                                                                        .OrStatementProperty
+                                                                                                        .builder()
+                                                                                                        .statements(
+                                                                                                                List.of(
+                                                                                                                        exactUriPathStatement(
+                                                                                                                                "/mcp/oauth/register"),
+                                                                                                                        exactUriPathStatement(
+                                                                                                                                "/mcp/oauth/authorize"),
+                                                                                                                        exactUriPathStatement(
+                                                                                                                                "/mcp/oauth/token")))
+                                                                                                        .build())
+                                                                                        .build())
                                                                         .build())
                                                                 .build()))
                                                 .build())
@@ -547,7 +596,7 @@ public class EdgeStack extends Stack {
                                         .build())
                                 .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
                                         .cloudWatchMetricsEnabled(true)
-                                        .metricName("EC2MetaDataSSRFOutsideMcpRegister")
+                                        .metricName("LoopbackUriRulesOutsideMcpOauth")
                                         .sampledRequestsEnabled(true)
                                         .build())
                                 .build(),
@@ -1316,15 +1365,25 @@ public class EdgeStack extends Stack {
                 .build();
     }
 
-    /** Matches exactly the OAuth client registration path of the hosted MCP endpoint. */
-    private static CfnWebACL.StatementProperty mcpRegisterUriPathStatement() {
+    /** Matches a request the common rule set labelled with the named rule's label. */
+    private static CfnWebACL.StatementProperty coreRuleSetLabelStatement(String ruleName) {
+        return CfnWebACL.StatementProperty.builder()
+                .labelMatchStatement(CfnWebACL.LabelMatchStatementProperty.builder()
+                        .scope("LABEL")
+                        .key("awswaf:managed:aws:core-rule-set:" + ruleName)
+                        .build())
+                .build();
+    }
+
+    /** Matches exactly the given URI path. */
+    private static CfnWebACL.StatementProperty exactUriPathStatement(String path) {
         return CfnWebACL.StatementProperty.builder()
                 .byteMatchStatement(CfnWebACL.ByteMatchStatementProperty.builder()
                         .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
                                 .uriPath(Map.of())
                                 .build())
                         .positionalConstraint("EXACTLY")
-                        .searchString("/mcp/oauth/register")
+                        .searchString(path)
                         .textTransformations(List.of(CfnWebACL.TextTransformationProperty.builder()
                                 .priority(0)
                                 .type("NONE")
