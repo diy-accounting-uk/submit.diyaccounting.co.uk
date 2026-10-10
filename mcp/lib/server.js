@@ -18,7 +18,7 @@ import { signIn, signOut } from "./auth.js";
 import { writeFinancePackage } from "./finance/package-writer.js";
 import { deriveMicroEntityAccounts, deriveSmallCompanyAccounts } from "./accounts-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
-import { registerItsaTools } from "./itsa-tools.js";
+import { ITSA_TOOLS } from "./itsa-tools.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
 import { moveBookToClient, listClients, addClient, inviteClient, clientAuthorisationStatus } from "./practice-tools.js";
 import {
@@ -460,14 +460,21 @@ export const TOOLS = {
 };
 
 /**
- * An McpServer with every tool registered against one session. Connect it to
- * whichever transport the surface uses.
+ * An McpServer with the tools registered against one session. Connect it to
+ * whichever transport the surface uses. toolNames limits the registration to
+ * those names; overrides replaces a named tool's description, inputSchema and
+ * handler.
  * @param {Object} [session] - defaults to a fresh, empty session
+ * @param {{toolNames?: string[], overrides?: Object}} [options]
  * @returns {McpServer}
  */
-export function createServer(session = createSession()) {
+export function createServer(session = createSession(), { toolNames, overrides = {} } = {}) {
   const server = new McpServer(SERVER_INFO);
-  for (const [name, tool] of Object.entries(TOOLS)) {
+  const known = { ...TOOLS, ...ITSA_TOOLS };
+  const names = toolNames ?? Object.keys(known);
+  for (const name of names) {
+    const tool = overrides[name] ?? known[name];
+    if (!tool) throw new Error(`Unknown tool: ${name}`);
     server.registerTool(name, { description: tool.description, inputSchema: tool.inputSchema }, async (params) => {
       try {
         return asToolResult(await tool.handler(session, params));
@@ -476,6 +483,5 @@ export function createServer(session = createSession()) {
       }
     });
   }
-  registerItsaTools(server, session);
   return server;
 }
