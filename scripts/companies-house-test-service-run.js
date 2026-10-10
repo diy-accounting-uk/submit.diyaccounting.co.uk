@@ -142,12 +142,18 @@ export function nextPollDelayMs(parsed, previousDelayMs) {
 /**
  * Whether a case's observed outcome matches its fixture's expected one. A loose, top-level
  * status comparison only - the evidence log carries the full detail for a human to check the
- * reject codes and error numbers themselves.
+ * reject codes and error numbers themselves. An expected status of "TERMINAL" matches either
+ * ACCEPT or REJECT, for a gateway test mode that picks between them at random; the observed
+ * status stays in the case entry, the console line and the summary row, so a run shows which
+ * of the two it was.
  * @param {{status: string}} expectedOutcome
  * @param {string} observedStatus
  * @returns {boolean}
  */
 export function evaluateOutcome(expectedOutcome, observedStatus) {
+  if (expectedOutcome?.status === "TERMINAL") {
+    return observedStatus === "ACCEPT" || observedStatus === "REJECT";
+  }
   return expectedOutcome?.status === observedStatus;
 }
 

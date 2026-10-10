@@ -109,6 +109,18 @@ describe("evaluateOutcome", () => {
   test("fails when they differ", () => {
     expect(evaluateOutcome({ status: "ACCEPT" }, "REJECT")).toBe(false);
   });
+
+  test("a TERMINAL expectation matches an observed ACCEPT", () => {
+    expect(evaluateOutcome({ status: "TERMINAL" }, "ACCEPT")).toBe(true);
+  });
+
+  test("a TERMINAL expectation matches an observed REJECT", () => {
+    expect(evaluateOutcome({ status: "TERMINAL" }, "REJECT")).toBe(true);
+  });
+
+  test("a TERMINAL expectation does not match an observed GOVTALK_ERROR", () => {
+    expect(evaluateOutcome({ status: "TERMINAL" }, "GOVTALK_ERROR")).toBe(false);
+  });
 });
 
 describe("blankFirstDirectorPersonalCode", () => {
