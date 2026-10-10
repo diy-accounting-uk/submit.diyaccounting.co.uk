@@ -5,9 +5,11 @@
 
 package co.uk.diyaccounting.submit.stacks;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
@@ -62,7 +64,7 @@ class EdgeStackTest {
                                 "BillingMode",
                                 "PAY_PER_REQUEST",
                                 "KeySchema",
-                                java.util.List.of(Map.of("AttributeName", "clientIp", "KeyType", "HASH")),
+                                List.of(Map.of("AttributeName", "clientIp", "KeyType", "HASH")),
                                 "TimeToLiveSpecification",
                                 Map.of("AttributeName", "ttl", "Enabled", true))))));
     }
@@ -77,7 +79,7 @@ class EdgeStackTest {
                         "PolicyDocument",
                         Match.objectLike(Map.of(
                                 "Statement",
-                                Match.arrayWith(java.util.List.of(Match.objectLike(
+                                Match.arrayWith(List.of(Match.objectLike(
                                         Map.of("Action", "dynamodb:UpdateItem", "Effect", "Allow")))))))));
 
         // Least privilege: the grant is scoped to UpdateItem only, never a broader read/write set.
@@ -162,5 +164,44 @@ class EdgeStackTest {
             }
             assertTrue(policies > 0, directive[0] + " not found");
         }
+    }
+
+    @Test
+    void mcpPathsReachTheApiGatewayOriginWithCachingDisabledAndNoErrorResponses() {
+        Template template = Template.fromStack(synthEdgeStack());
+        for (String pathPattern : new String[] {"/mcp", "/mcp/*", "/.well-known/oauth-*"}) {
+            Map<String, Object> behaviour = Map.of(
+                    "PathPattern",
+                    pathPattern,
+                    "AllowedMethods",
+                    Match.arrayWith(List.of("POST", "DELETE")),
+                    "CachePolicyId",
+                    "4135ea2d-6df8-44a3-9df3-4b5a84be39ad");
+            Map<String, Object> config =
+                    Map.of("CacheBehaviors", Match.arrayWith(List.of(Match.objectLike(behaviour))));
+            template.hasResourceProperties(
+                    "AWS::CloudFront::Distribution", Match.objectLike(Map.of("DistributionConfig", config)));
+        }
+        assertFalse(template.toJSON().toString().contains("CustomErrorResponses"));
+    }
+
+    @Test
+    void perIpRateRuleLeavesOutMcpPathsAndAnAuthorizationKeyedRuleCoversThem() {
+        Template template = Template.fromStack(synthEdgeStack());
+        String json = template.toJSON().toString();
+        assertTrue(json.contains("McpRateLimitRule"));
+        assertTrue(json.contains("CUSTOM_KEYS"));
+        assertTrue(json.contains("authorization"));
+        assertTrue(json.contains("/.well-known/oauth-"));
+        Map<String, Object> rateStatement = Map.of(
+                "AggregateKeyType",
+                "IP",
+                "ScopeDownStatement",
+                Match.objectLike(Map.of("NotStatement", Match.anyValue())));
+        Map<String, Object> rule = Map.of(
+                "Name", "RateLimitRule", "Statement", Map.of("RateBasedStatement", Match.objectLike(rateStatement)));
+        template.hasResourceProperties(
+                "AWS::WAFv2::WebACL",
+                Match.objectLike(Map.of("Rules", Match.arrayWith(List.of(Match.objectLike(rule))))));
     }
 }

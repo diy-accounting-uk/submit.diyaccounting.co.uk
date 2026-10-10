@@ -357,6 +357,22 @@ class IdentityStackTest {
     }
 
     @Test
+    void mcpOauthBlobKeySecretIsGeneratedOncePerEnvironmentAndItsArnPublishedToSsm() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        template.hasResourceProperties(
+                "AWS::SecretsManager::Secret",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "ci/submit/mcp/oauth-blob-key",
+                        "GenerateSecretString",
+                        Match.objectLike(Map.of("PasswordLength", 64, "ExcludePunctuation", true)))));
+        template.hasResourceProperties(
+                "AWS::SSM::Parameter", Match.objectLike(Map.of("Name", "/submit/ci/mcp-oauth-blob-key-arn")));
+    }
+
+    @Test
     void submitClientIdIsPublishedAsAnSsmParameter() {
         IdentityStack stack = synthIdentityStack("ci");
         Template template = Template.fromStack(stack);

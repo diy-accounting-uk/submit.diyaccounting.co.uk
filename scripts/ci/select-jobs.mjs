@@ -136,6 +136,7 @@ export const DEPLOY_SKIPPABLE_JOBS = [
   { id: "deploy-account", description: "Deploys AccountStack (customer account and bundle entitlement data) via CDK." },
   { id: "deploy-billing", description: "Deploys BillingStack (Stripe billing Lambdas and webhooks) via CDK." },
   { id: "deploy-diya-gl", description: "Deploys DiyaGlStack (the diya-gl subscription bundle's own resources) via CDK." },
+  { id: "deploy-mcp", description: "Deploys McpStack (the hosted MCP server and OAuth metadata Lambdas) via CDK." },
   { id: "deploy-api", description: "Deploys the API Gateway stage and its stack wiring for this deployment." },
   { id: "deploy-edge", description: "Deploys EdgeStack (CloudFront distribution, WAF, and edge Lambdas) via CDK." },
   { id: "deploy-publish", description: "Publishes web/public assets to S3 and invalidates the CloudFront distribution." },

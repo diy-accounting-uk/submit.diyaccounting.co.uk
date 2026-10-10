@@ -463,6 +463,8 @@
   "author": "",
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.31.0",
+    "zod": "^3.25.0",
     "@aws-sdk/client-athena": "^3.1045.0",
     "@aws-sdk/client-cloudformation": "^3.1045.0",
     "@aws-sdk/client-cloudwatch": "^3.1045.0",
@@ -545,6 +547,8 @@
   "homepage": "https://submit.diyaccounting.co.uk/",
   "overrides": {
     "fast-xml-parser": "^5.7.0",
+    "proxy-addr": "^2.0.8",
+    "source-map-js": "^1.2.2",
     "typescript": "6.0.3",
     "@microsoft/eslint-formatter-sarif": {
       "eslint": "$eslint"

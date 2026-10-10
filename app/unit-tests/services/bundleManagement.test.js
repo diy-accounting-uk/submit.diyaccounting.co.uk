@@ -397,6 +397,20 @@ describe("bundleEnforcement.js", () => {
         },
       );
 
+      test("a company lookup path shared with activities the environment does not list stays available", async () => {
+        process.env.ENVIRONMENT_NAME = "prod";
+        const token = makeJWT("lookup-prod");
+        const authorizerContext = {
+          "sub": "lookup-prod",
+          "cognito:username": "test",
+          "email": "test@test.submit.diyaccunting.co.uk",
+          "scope": "read write",
+        };
+        getUserBundles.mockResolvedValue([]);
+
+        await expect(enforceBundles(buildEvent(token, authorizerContext, "/api/v1/companies-house/company/00001A"))).resolves.toBeDefined();
+      });
+
       test("an environment the small company activity does not list refuses the shared route", async () => {
         process.env.ENVIRONMENT_NAME = "prod";
         const token = makeJWT("accounts-filer-prod");

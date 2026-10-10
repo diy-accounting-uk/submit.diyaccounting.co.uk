@@ -7,7 +7,7 @@
  * Runs a fixed list of Companies House XML Gateway test-service cases end to end - a
  * CompanyDataRequest, a PaymentPeriodsRequest, several confirmation statement variants (a
  * no-change statement, a SIC change, one with Shareholdings, a registered email change), one PSC
- * verification statement for a director who is also a PSC, and the negative cases the assumed
+ * verification statement for a director who is also a PSC, one micro-entity accounts filing, and the negative cases the assumed
  * software-authorisation criteria ask for (a blank director or PSC code, a wrong company
  * authentication code) - and writes an evidence log a human can hand to Companies House's XML
  * team or fold into the CS-A4 evidence pack.
@@ -63,6 +63,7 @@ import {
   buildPaymentPeriodsRequest,
   buildConfirmationStatementSubmission,
   buildPscVerificationStatementSubmission,
+  buildAccountsSubmission,
   buildStatusRequest,
   parseGatewayResponse,
   resolvePresenterCredentials,
@@ -75,6 +76,7 @@ import {
   selectConfirmationStatementSchema,
 } from "../app/services/companiesHouseConfirmationStatementXml.js";
 import { buildPscVerificationStatementBody } from "../app/services/companiesHousePscVerificationStatementXml.js";
+import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "../app/functions/companies-house/companiesHouseAccountsPost.js";
 import { assertOutsideRepository, resolveRepoRoot } from "./companies-house-xmlgw-poll.js";
 import { validateEnv } from "../app/lib/env.js";
 
@@ -428,7 +430,65 @@ async function runPscVerificationStatementCase(caseDef, context) {
   };
 }
 
+/**
+ * Run one accounts filing case: validate the request-shaped case through the live handler's own
+ * extractAndValidateAccountsParameters, build the iXBRL with buildAccountsIxbrl (the micro-entity
+ * builder), wrap it with buildAccountsSubmission, submit, and poll to a terminal state the same
+ * way the statement cases do.
+ */
+async function runAccountsCase(caseDef, context) {
+  const { presenterId, presenterCode, gatewayTest, packageReference } = context;
+  const exchanges = [];
+  const transactionIds = [];
+
+  const { name: caseName, type, govTestScenario, ...requestBody } = caseDef;
+  const errorMessages = [];
+  const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify(requestBody) }, errorMessages);
+  if (errorMessages.length > 0) {
+    throw new Error(`Accounts case "${caseName}" is not a valid accounts request: ${errorMessages.join("; ")}`);
+  }
+  const ixbrl = buildAccountsIxbrl(accounts);
+  const submissionNumber = await allocateSubmissionNumber();
+
+  const submitTransactionId = String(Date.now());
+  transactionIds.push(submitTransactionId);
+  const submitXml = buildAccountsSubmission({
+    presenterId,
+    presenterCode,
+    companyNumber: accounts.companyNumber,
+    companyName: accounts.companyName,
+    companyAuthenticationCode: accounts.companyAuthCode,
+    packageReference,
+    submissionNumber,
+    dateSigned: accounts.dateOfApproval,
+    ixbrl,
+    transactionId: submitTransactionId,
+    gatewayTest,
+  });
+
+  const submittedAt = nowIso();
+  const { parsed: submitParsed } = await sendEnvelope({ label: "submit", xml: submitXml, exchanges, govTestScenario });
+
+  const terminal = await pollUntilTerminal(submitParsed, submissionNumber, context, caseDef, exchanges, transactionIds);
+
+  return {
+    case: caseName,
+    type,
+    requestClass: "Accounts",
+    submissionNumber,
+    transactionIds,
+    timestamps: { submittedAt, terminalAt: nowIso() },
+    observedStatus: terminal.status,
+    errors: terminal.errors || [],
+    rejections: terminal.rejections || [],
+    exchanges,
+  };
+}
+
 function runnerFor(caseType) {
+  if (caseType === "accounts") {
+    return runAccountsCase;
+  }
   if (caseType === "confirmationStatement") {
     return runConfirmationStatementCase;
   }

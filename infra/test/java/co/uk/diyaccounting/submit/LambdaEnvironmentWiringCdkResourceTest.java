@@ -70,6 +70,7 @@ class LambdaEnvironmentWiringCdkResourceTest {
                 value = "arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_123456789"),
         @SetEnvironmentVariable(key = "COGNITO_CLIENT_ID", value = "tt-witheight-cognito-client-id"),
         @SetEnvironmentVariable(key = "COGNITO_DIYA_GL_CLIENT_ID", value = "tt-witheight-cognito-books-client-id"),
+        @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id"),
         @SetEnvironmentVariable(
                 key = "HMRC_CLIENT_SECRET_ARN",
                 value = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:tt-witheight/submit/hmrc/client_secret"),

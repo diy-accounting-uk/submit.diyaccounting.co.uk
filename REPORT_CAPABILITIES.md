@@ -382,6 +382,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Server and CLI](#server-and-cli-mcp)
     - [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools: use when a session needs the submission MCP's tool set, over stdio or one call across every practice client.
     - [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito: use when the MCP's own tools (cloud book open/save) need a signed-in DIY Accounting Submit session.
+    - [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront: use when a chat client must reach the submission MCP at `/mcp` with OAuth, or the routes, stack, edge behaviours or rate rules behind that endpoint need tracing.
   - [Book and derivation tools](#book-and-derivation-tools-mcp)
     - [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP: use when an MCP session needs to open or save a diya-gl book, locally or in the cloud.
     - [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing: use when a Company (ltd) book's FRS 105 balance-sheet lines are needed before a Companies House accounts filing.
@@ -4207,7 +4208,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## MCP and tools (MCP)
 
 <!-- generated:area MCP -->
-- [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito
+- [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito · [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront
 - [Book and derivation tools](#book-and-derivation-tools-mcp): [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP · [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing · [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools · [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures
 - [Filing and practice tools](#filing-and-practice-tools-mcp): [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API · [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation · [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client
 - [Finance data import](#finance-data-import-mcp): [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines · [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set · [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index · [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines · [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines) Parse PayPal statements into diya-gl lines · [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book
@@ -4219,6 +4220,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group server-and-cli-mcp -->
 - [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools
 - [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito
+- [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront
 <!-- /generated:group server-and-cli-mcp -->
 
 #### MCP-01 Expose the submission MCP server and tools
@@ -4240,6 +4242,15 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** mcp/lib/auth.js, mcp/test/auth.test.js
 - **Keywords:** mcp auth, cognito, pkce, oauth, loopback, credentials.json, sign in, access token
 - **Related:** MCP-01, MCP-03
+
+#### MCP-18 Serve the submission MCP over HTTP behind CloudFront
+- **Use when:** a chat client must reach the submission MCP at `/mcp` with OAuth, or the routes, stack, edge behaviours or rate rules behind that endpoint need tracing.
+- **Does:** mcpHttp.js answers `/mcp` through handleMcpRequest in mcp/lib/http.js, with sessions in the mcp-sessions DynamoDB table. mcpOauth.js serves the OAuth metadata documents under `/.well-known/oauth-*` and the authorization facade under `/mcp/oauth/*` in front of Cognito. McpStack.java creates both Lambdas; deploy.yml's deploy-mcp job deploys it before deploy-api. EdgeStack.java sends `/mcp`, `/mcp/*` and `/.well-known/oauth-*` to the API Gateway origin with caching off and every viewer header forwarded, and counts those paths in a WAF rate rule keyed on the Authorization header instead of the per-IP rule.
+- **Run:** no command; see Does and Entry
+- **Entry:** `app/functions/mcp/mcpHttp.js`; `app/functions/mcp/mcpOauth.js`; `infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java`
+- **Files:** app/functions/mcp/mcpHttp.js, app/functions/mcp/mcpOauth.js, mcp/lib/http.js, app/data/dynamoDbMcpSessionRepository.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java, .github/workflows/deploy.yml
+- **Keywords:** hosted mcp, mcp http, streamable http, oauth facade, well-known, protected resource, mcp session, mcp rate limit, McpStack, deploy-mcp
+- **Related:** MCP-01, MCP-02
 
 ### Book and derivation tools (MCP)
 
@@ -6216,6 +6227,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - deploy workflow: [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - deploy-app: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3)
 - deploy-holding: [SS-30](#ss-30-serve-the-holding-page-and-failover)
+- deploy-mcp: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - deploy-time overwrite: [SS-34](#ss-34-configure-cloudwatch-rum)
 - deploy.yml: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - deployed environment: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments)
@@ -6629,6 +6641,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - holds: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - homebrew tap: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - homepage cta: [SITE-03](#site-03-capture-feedback-interest)
+- hosted mcp: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - hosted ui: [SITE-01](#site-01-sign-customers-in-via-cognito), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - hourly: [BILL-05](#bill-05-reconcile-bundle-capacity-counters)
 - http client: [CH-10](#ch-10-fetch-http-with-a-timeout)
@@ -6836,11 +6849,15 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mcp auth: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
 - mcp book tools: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - mcp disclaimer: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
+- mcp http: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp inspector: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
+- mcp rate limit: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp readme: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - mcp server: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
+- mcp session: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp tools: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - mcp.html: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
+- mcpstack: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - measured figures: [DEV-37](#dev-37-write-the-session-report), [SS-56](#ss-56-write-the-session-report)
 - measurement id: [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events)
 - merge gates: [SS-51](#ss-51-merge-every-pr-that-is-ready)
@@ -6935,6 +6952,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - oauth authorize: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
 - oauth client assert: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - oauth client check: [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure)
+- oauth facade: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - oauth redirect: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - oauth state: [SITE-17](#site-17-trace-and-secure-client-requests)
 - oauth.toml: [DATA-44](#data-44-assert-google-oauth-client-configuration)
@@ -7141,6 +7159,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - prompt library: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
 - proof: [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition)
 - property income allowance: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
+- protected resource: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - provision secrets: [BILL-32](#bill-32-provision-stripe-secrets)
 - provision test user: [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning)
 - provisioned concurrency: [BILL-38](#bill-38-cdk-billing-webhook-stack)
@@ -7494,6 +7513,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - storage tiering: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - strategy: [SITE-20](#site-20-document-business-governance-and-positioning)
 - stray project: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
+- streamable http: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - stripe: [BILL-24](#bill-24-create-a-stripe-checkout-session), [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status), [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-27](#bill-27-recover-an-abandoned-checkout), [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-31](#bill-31-configure-stripe-account-policies), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - stripe balance transactions: [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
 - stripe donor: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
@@ -7771,6 +7791,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - weekly review: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - weekly schedule: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)
 - weekly verification: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
+- well-known: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - what does the repo do: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - window globals: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)
 - withdraw invite: [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite)

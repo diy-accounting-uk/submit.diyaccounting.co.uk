@@ -21,6 +21,10 @@ COPY web/public/submit.catalogue.toml web/public/submit.catalogue.toml
 # --ignore-scripts: skip native compilation (none needed for our pure-JS deps)
 RUN npm ci --omit=dev --ignore-scripts
 
+# The hosted MCP handler imports the SDK from mcp/node_modules
+COPY mcp/package.json mcp/package-lock.json mcp/
+RUN npm ci --omit=dev --ignore-scripts --prefix mcp
+
 # Final stage: ARM64 Lambda base image
 FROM public.ecr.aws/lambda/nodejs:24
 
@@ -35,12 +39,16 @@ LABEL org.opencontainers.image.licenses="LicenseRef-PolyForm-Internal-Use-1.0.0"
 COPY --from=builder /build/node_modules ./node_modules
 COPY --from=builder /build/package.json ./package.json
 COPY --from=builder /build/web/public/submit.catalogue.toml ./web/public/submit.catalogue.toml
+COPY --from=builder /build/mcp/node_modules ./mcp/node_modules
 
 # Copy application code
 COPY app/lib app/lib
 COPY app/functions app/functions
 COPY app/data app/data
 COPY app/services app/services
+COPY mcp/package.json mcp/package.json
+COPY mcp/lib mcp/lib
+COPY mcp/bin mcp/bin
 COPY submit.passes.toml submit.passes.toml
 COPY lifecycle.toml lifecycle.toml
 COPY secrets-rotation.toml secrets-rotation.toml

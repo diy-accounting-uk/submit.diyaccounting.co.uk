@@ -1314,6 +1314,32 @@ public class SubmitSharedNames {
     // DIYA-GL Lambda names
     public String diyaGlStackId;
 
+    // Hosted MCP Lambda names
+    public String mcpStackId;
+    public String mcpOauthBlobKeySecretName;
+    public String mcpOauthBlobKeySecretArnParameterName;
+
+    public String mcpHttpIngestLambdaHandler;
+    public String mcpHttpIngestLambdaFunctionName;
+    public String mcpHttpIngestLambdaArn;
+    public String mcpHttpIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod mcpHttpLambdaHttpMethod;
+    public String mcpHttpLambdaUrlPath;
+    public boolean mcpHttpLambdaJwtAuthorizer;
+    public boolean mcpHttpLambdaCustomAuthorizer;
+
+    public String mcpOauthIngestLambdaHandler;
+    public String mcpOauthIngestLambdaFunctionName;
+    public String mcpOauthIngestLambdaArn;
+    public String mcpOauthIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod mcpOauthLambdaHttpMethod;
+    public String mcpOauthLambdaUrlPath;
+    public String mcpOauthProtectedResourceUrlPath;
+    public String mcpOauthProtectedResourceMcpUrlPath;
+    public String mcpOauthActionUrlPath;
+    public boolean mcpOauthLambdaJwtAuthorizer;
+    public boolean mcpOauthLambdaCustomAuthorizer;
+
     public String diyaGlListGetIngestLambdaHandler;
     public String diyaGlListGetIngestLambdaFunctionName;
     public String diyaGlListGetIngestLambdaArn;
@@ -1665,6 +1691,9 @@ public class SubmitSharedNames {
         this.accountStackId = "%s-app-AccountStack".formatted(props.deploymentName);
         this.billingStackId = "%s-app-BillingStack".formatted(props.deploymentName);
         this.diyaGlStackId = "%s-app-DiyaGlStack".formatted(props.deploymentName);
+        this.mcpStackId = "%s-app-McpStack".formatted(props.deploymentName);
+        this.mcpOauthBlobKeySecretName = "%s/submit/mcp/oauth-blob-key".formatted(props.envName);
+        this.mcpOauthBlobKeySecretArnParameterName = "/submit/%s/mcp-oauth-blob-key-arn".formatted(props.envName);
         this.apiStackId = "%s-app-ApiStack".formatted(props.deploymentName);
         this.apiRoutesStackId = "%s-app-ApiRoutesStack".formatted(props.deploymentName);
         this.opsStackId = "%s-app-OpsStack".formatted(props.deploymentName);
@@ -5052,6 +5081,37 @@ public class SubmitSharedNames {
                 List.of(
                         new ApiParameter("clientId", "path", true, "The client's id"),
                         new ApiParameter("bookId", "path", true, "The book's id"))));
+
+        // Hosted MCP endpoint: verifies the bearer itself, so no API Gateway authoriser
+        this.mcpHttpLambdaHttpMethod = HttpMethod.ANY;
+        this.mcpHttpLambdaUrlPath = "/mcp";
+        this.mcpHttpLambdaJwtAuthorizer = false;
+        this.mcpHttpLambdaCustomAuthorizer = false;
+        var mcpHttpLambdaHandlerName = "mcpHttp.ingestHandler";
+        var mcpHttpLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(mcpHttpLambdaHandlerName);
+        this.mcpHttpIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, mcpHttpLambdaHandlerDashed);
+        this.mcpHttpIngestLambdaHandler = "%s/mcp/%s".formatted(appLambdaHandlerPrefix, mcpHttpLambdaHandlerName);
+        this.mcpHttpIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, mcpHttpLambdaHandlerDashed);
+        this.mcpHttpIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.mcpHttpIngestLambdaArn, this.provisionedConcurrencyAliasName);
+
+        // Hosted MCP authorization server facade: public discovery, registration and token endpoints
+        this.mcpOauthLambdaHttpMethod = HttpMethod.GET;
+        this.mcpOauthLambdaUrlPath = "/.well-known/oauth-authorization-server";
+        this.mcpOauthProtectedResourceUrlPath = "/.well-known/oauth-protected-resource";
+        this.mcpOauthProtectedResourceMcpUrlPath = "/.well-known/oauth-protected-resource/mcp";
+        this.mcpOauthActionUrlPath = "/mcp/oauth/{action}";
+        this.mcpOauthLambdaJwtAuthorizer = false;
+        this.mcpOauthLambdaCustomAuthorizer = false;
+        var mcpOauthLambdaHandlerName = "mcpOauth.ingestHandler";
+        var mcpOauthLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(mcpOauthLambdaHandlerName);
+        this.mcpOauthIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, mcpOauthLambdaHandlerDashed);
+        this.mcpOauthIngestLambdaHandler = "%s/mcp/%s".formatted(appLambdaHandlerPrefix, mcpOauthLambdaHandlerName);
+        this.mcpOauthIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, mcpOauthLambdaHandlerDashed);
+        this.mcpOauthIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.mcpOauthIngestLambdaArn, this.provisionedConcurrencyAliasName);
 
         // Alarm-to-GitHub-issue Lambda (EventBridge target, not API)
         var alarmToGithubIssueLambdaHandlerName = "alarmToGithubIssue.handler";

@@ -36,6 +36,23 @@
           }
         }
       ]
+    },
+    {
+      "issuerId": "mcp",
+      "tokenExpiry": 3600,
+      "requestMappings": [
+        {
+          "requestParam": "client_id",
+          "match": "mcp-local",
+          "claims": {
+            "sub": "mcp-local-user",
+            "email": "mcp-local-user@example.com",
+            "token_use": "access",
+            "client_id": "mcp-local",
+            "scope": "openid email profile"
+          }
+        }
+      ]
     }
   ]
 }

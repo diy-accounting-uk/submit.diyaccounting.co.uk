@@ -321,4 +321,74 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
     expect(entries).toHaveLength(1);
     expect(entries[0].case).toBe("second-case");
   });
+  describe("accounts cases", () => {
+    const accountsCase = (overrides = {}) => ({
+      name: "accounts-case",
+      type: "accounts",
+      companyNumber: FIXTURE_COMPANY_NUMBER,
+      companyName: "EXAMPLE ACCOUNTS LIMITED",
+      companyAuthCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
+      periodStart: "2025-01-01",
+      periodEnd: "2025-12-31",
+      balanceSheet: {
+        currentYear: {
+          fixedAssets: 1000,
+          currentAssets: 5000,
+          creditorsWithinOneYear: 2000,
+          creditorsAfterOneYear: 0,
+          calledUpShareCapital: 100,
+          profitAndLossAccount: 3900,
+          capitalAndReserves: 4000,
+        },
+        priorYear: {
+          fixedAssets: 900,
+          currentAssets: 3500,
+          creditorsWithinOneYear: 1500,
+          creditorsAfterOneYear: 0,
+          calledUpShareCapital: 100,
+          profitAndLossAccount: 2800,
+          capitalAndReserves: 2900,
+        },
+      },
+      averageEmployees: 2,
+      director: { name: "Jo Director", dateApproved: "2026-01-15" },
+      statementsAccepted: {
+        section477Exemption: true,
+        membersNotRequiredAudit: true,
+        directorsResponsibilities: true,
+        microEntityProvisions: true,
+      },
+      expectedOutcome: { status: "TERMINAL", pinned: true },
+      ...overrides,
+    });
+
+    test("submits the micro-entity iXBRL accounts in an Accounts form and polls to a terminal status", async () => {
+      const { entries } = await runCases([accountsCase()], outDir, { sleepFn: fastSleep });
+
+      expect(entries[0].requestClass).toBe("Accounts");
+      expect(["ACCEPT", "REJECT"]).toContain(entries[0].observedStatus);
+      expect(entries[0].pass).toBe(true);
+      expect(entries[0].exchanges.some((exchange) => exchange.label.startsWith("poll-"))).toBe(true);
+      const submitExchange = entries[0].exchanges.find((exchange) => exchange.label === "submit");
+      expect(submitExchange.requestXml).toContain("<FormIdentifier>Accounts</FormIdentifier>");
+      expect(submitExchange.requestXml).toContain("<PackageReference>0012</PackageReference>");
+      expect(submitExchange.requestXml).toContain("<Category>ACCOUNTS</Category>");
+    });
+
+    test("carries the case's figures into the base64 iXBRL document", async () => {
+      const { entries } = await runCases([accountsCase()], outDir, { sleepFn: fastSleep });
+
+      const submitExchange = entries[0].exchanges.find((exchange) => exchange.label === "submit");
+      const data = /<Data>([^<]+)<\/Data>/.exec(submitExchange.requestXml)[1];
+      const ixbrl = Buffer.from(data, "base64").toString("utf8");
+      expect(ixbrl).toContain("EXAMPLE ACCOUNTS LIMITED");
+      expect(ixbrl).toContain("Jo Director");
+    });
+
+    test("throws when the accounts case is not a valid accounts request", async () => {
+      const cases = [accountsCase({ balanceSheet: undefined })];
+
+      await expect(runCases(cases, outDir, { sleepFn: fastSleep })).rejects.toThrow(/not a valid accounts request/);
+    });
+  });
 });

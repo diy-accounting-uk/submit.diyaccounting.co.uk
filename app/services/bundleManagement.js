@@ -134,15 +134,11 @@ export async function enforceBundles(event, options = {}) {
   const { request } = extractRequest(event);
   const requestPath = request?.pathname || "";
   const catalog = loadCatalogFromRoot();
-  const matchedActivities = findMatchingActivitiesForUrlPath(catalog, requestPath);
-  const requiredBundleIds = requiredBundleIdsFromActivities(matchedActivities);
-  if (requiredBundleIds.length === 0) {
-    logger.info({ message: "No required bundles for request path - unrestricted", requestPath });
-  }
-
   const environmentName = process.env.ENVIRONMENT_NAME;
-  const environmentRestrictedActivity = matchedActivities.find((activity) => !isActivityListedInEnvironment(activity, environmentName));
-  if (environmentRestrictedActivity) {
+  const pathActivities = findMatchingActivitiesForUrlPath(catalog, requestPath);
+  const matchedActivities = pathActivities.filter((activity) => isActivityListedInEnvironment(activity, environmentName));
+  if (pathActivities.length > 0 && matchedActivities.length === 0) {
+    const environmentRestrictedActivity = pathActivities[0];
     const errorDetails = {
       code: "ACTIVITY_ENVIRONMENT_RESTRICTED",
       activityId: environmentRestrictedActivity.id,
@@ -153,6 +149,11 @@ export async function enforceBundles(event, options = {}) {
     const message = `Forbidden: ${environmentRestrictedActivity.id} is not available in the ${environmentName || "current"} environment`;
     logger.warn({ message, ...errorDetails });
     throw new BundleEntitlementError(message, errorDetails);
+  }
+
+  const requiredBundleIds = requiredBundleIdsFromActivities(matchedActivities);
+  if (requiredBundleIds.length === 0) {
+    logger.info({ message: "No required bundles for request path - unrestricted", requestPath });
   }
 
   // Automatic bundles that everyone has implicitly

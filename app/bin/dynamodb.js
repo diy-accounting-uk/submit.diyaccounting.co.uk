@@ -354,6 +354,36 @@ export async function ensurePracticeClientsTableExists(tableName, endpoint) {
   }
 }
 
+// Create MCP sessions table if it doesn't exist. Key schema matches dynamoDbMcpSessionRepository.js.
+export async function ensureMcpSessionsTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring MCP sessions table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const dynamodb = new DynamoDBClient({
+    endpoint,
+    region: "us-east-1",
+    credentials: { accessKeyId: "dummy", secretAccessKey: "dummy" },
+  });
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [{ AttributeName: "sessionId", KeyType: "HASH" }],
+          AttributeDefinitions: [{ AttributeName: "sessionId", AttributeType: "S" }],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+    }
+  }
+}
+
 // Create passes table if it doesn't exist
 export async function ensurePassesTableExists(tableName, endpoint) {
   logger.info(`[dynamodb]: Ensuring passes table: '${tableName}' exists on endpoint '${endpoint}'`);
@@ -466,6 +496,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     const passesTableName = process.env.PASSES_DYNAMODB_TABLE_NAME;
     if (passesTableName) {
       await ensurePassesTableExists(passesTableName, endpoint);
+    }
+    const mcpSessionsTableName = process.env.MCP_SESSIONS_DYNAMODB_TABLE_NAME;
+    if (mcpSessionsTableName) {
+      await ensureMcpSessionsTableExists(mcpSessionsTableName, endpoint);
     }
     const capacityTableName = process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME;
     if (capacityTableName) {
