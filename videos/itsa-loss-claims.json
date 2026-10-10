@@ -224,7 +224,7 @@
           "keyWord": "year"
         },
         {
-          "action": "click",
+          "action": "checkHidden",
           "target": "#suspendTemporalValidations",
           "caption": "The sandbox's current tax year hasn't really ended, so suspend that check.",
           "headline": "Suspend the tax year check",

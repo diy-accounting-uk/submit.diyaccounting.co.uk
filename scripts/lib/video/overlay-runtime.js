@@ -406,7 +406,10 @@
 
   // A stylesheet rule rather than an inline style on each match. The elements a script suppresses
   // are usually the ones a page reveals later from its own script, and an inline display:none set
-  // now loses to the display:block that arrives after the feature flag resolves.
+  // now loses to the display:block that arrives after the feature flag resolves. Each selector is
+  // scoped under two :not(#id) terms because a page rule such as
+  // "body.developer-mode #viewSourceLink { display: block !important }" ties on !important and wins
+  // on specificity against a bare selector; the scope lifts this rule above any page rule.
   function suppress(selectors) {
     const list = selectors || [];
     if (list.length === 0) return;
@@ -416,7 +419,9 @@
       sheet.id = "__svc-suppress";
       document.head.appendChild(sheet);
     }
-    sheet.textContent = list.map((selector) => `${selector}{display:none !important}`).join("\n");
+    sheet.textContent = list
+      .map((selector) => `html:not(#__svc-scope-a):not(#__svc-scope-b) ${selector}{display:none !important}`)
+      .join("\n");
   }
 
   function mark(name, detail) {
