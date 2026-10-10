@@ -8,7 +8,6 @@
     "submit": "app/bin/main.js"
   },
   "scripts": {
-    "postinstall": "npm ci --prefix mcp --ignore-scripts --no-audit --no-fund",
     "build": "./mvnw clean verify && git restore web/public/submit.deployment-name.txt web/public/submit.environment-name.txt || true",
     "start": "./scripts/start-simulator.sh",
     "start:simulator": "./scripts/start-simulator.sh",
@@ -464,6 +463,8 @@
   "author": "",
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
+    "@modelcontextprotocol/sdk": "1.31.0",
+    "zod": "^3.25.0",
     "@aws-sdk/client-athena": "^3.1045.0",
     "@aws-sdk/client-cloudformation": "^3.1045.0",
     "@aws-sdk/client-cloudwatch": "^3.1045.0",
