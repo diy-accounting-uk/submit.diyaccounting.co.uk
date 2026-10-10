@@ -11,6 +11,7 @@ import {
   ensurePassesTableExists,
   ensureCapacityTableExists,
   ensurePracticeClientsTableExists,
+  ensureMcpSessionsTableExists,
   ensureActivityChargesTableExists,
   ensureSecurityStateTableExists,
 } from "@app/bin/dynamodb.js";
@@ -111,6 +112,11 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     const practiceClientsTable = process.env.PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME;
     if (practiceClientsTable) {
       await ensurePracticeClientsTableExists(practiceClientsTable, endpoint);
+    }
+
+    const mcpSessionsTable = process.env.MCP_SESSIONS_DYNAMODB_TABLE_NAME;
+    if (mcpSessionsTable) {
+      await ensureMcpSessionsTableExists(mcpSessionsTable, endpoint);
     }
 
     const asyncTable = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;

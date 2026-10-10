@@ -13,6 +13,8 @@ import { fileURLToPath } from "url";
 import { apiEndpoint as mockAuthUrlGetApiEndpoint } from "../functions/non-lambda-mocks/mockAuthUrlGet.js";
 import { apiEndpoint as mockTokenPostApiEndpoint } from "../functions/non-lambda-mocks/mockTokenPost.js";
 import { apiEndpoint as mockBillingApiEndpoint } from "../functions/non-lambda-mocks/mockBilling.js";
+import { apiEndpoint as mcpHttpApiEndpoint } from "../functions/mcp/mcpHttp.js";
+import { apiEndpoint as mcpOauthApiEndpoint } from "../functions/mcp/mcpOauth.js";
 import { apiEndpoint as bundleGetApiEndpoint } from "../functions/account/bundleGet.js";
 import { apiEndpoint as bundlePostApiEndpoint } from "../functions/account/bundlePost.js";
 import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bundleDelete.js";
@@ -113,7 +115,7 @@ dotenvConfigIfNotBlank({ path: ".env" });
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-const app = express();
+export const app = express();
 
 // Disable X-Powered-By header (security: prevents server fingerprinting)
 app.disable("x-powered-by");
@@ -260,6 +262,9 @@ app.get("/auth/login-mock-addon.js", (req, res) => {
     res.send("// Mock auth not available in this environment\n");
   }
 });
+
+mcpHttpApiEndpoint(app);
+mcpOauthApiEndpoint(app);
 
 app.use(express.static(path.join(__dirname, "../../web/public"), { dotfiles: "allow" }));
 

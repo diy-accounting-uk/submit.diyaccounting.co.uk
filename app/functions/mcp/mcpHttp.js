@@ -9,6 +9,7 @@
 import { JwtVerifier } from "aws-jwt-verify";
 import { createLogger } from "../../lib/logger.js";
 import { getHeader } from "../../lib/httpResponseHelper.js";
+import { buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { createMcpSession, deleteMcpSession, getMcpSession, updateMcpSessionCloud } from "../../data/dynamoDbMcpSessionRepository.js";
 import { handleMcpRequest } from "../../../mcp/lib/http.js";
@@ -213,3 +214,22 @@ function isToolCall(bodyText) {
     return false;
   }
 }
+
+// Server hook for Express app, and construction of a Lambda-like event from HTTP request. The
+// body goes out verbatim: the shared response builder would JSON-parse it and turn a 202's empty
+// body into {}.
+/* v8 ignore start */
+export function apiEndpoint(app) {
+  const handle = async (httpRequest, httpResponse) => {
+    const event = buildLambdaEventFromHttpRequest(httpRequest);
+    event.httpMethod = httpRequest.method;
+    event.body = httpRequest.body === undefined || httpRequest.method === "GET" ? "" : JSON.stringify(httpRequest.body);
+    const result = await ingestHandler(event);
+    if (result.headers) httpResponse.set(result.headers);
+    return httpResponse.status(result.statusCode).send(result.body || "");
+  };
+  app.post("/mcp", handle);
+  app.delete("/mcp", handle);
+  app.get("/mcp", handle);
+}
+/* v8 ignore stop */
