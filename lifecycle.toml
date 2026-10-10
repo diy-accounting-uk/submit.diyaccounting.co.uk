@@ -52,7 +52,7 @@ action = "Tracks Maven compiler configuration and GitHub Actions JAVA_VERSION en
 [[lifecycle]]
 name = "AWS CDK"
 kind = "dependency"
-current = "2.266.0"
+current = "2.273.0"
 end_date = ""
 source = "pom.xml (cdk.version property)"
 action = "CDK major version: 2. No deprecation timeline available."

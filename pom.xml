@@ -18,7 +18,7 @@
 
     <properties>
         <baseUrl>${env.DIY_SUBMIT_APEX_URL}</baseUrl>
-        <cdk.version>2.266.0</cdk.version>
+        <cdk.version>2.273.0</cdk.version>
         <immutables.version>2.12.1</immutables.version>
         <maven.compiler.source>25</maven.compiler.source>
         <maven.compiler.target>25</maven.compiler.target>
@@ -122,6 +122,13 @@
         <dependency>
             <groupId>software.amazon.awscdk</groupId>
             <artifactId>aws-cdk-lib</artifactId>
+        </dependency>
+        <!-- @NotNull on KindCdk and the CDK tests; aws-cdk-lib stopped carrying it at compile scope in 2.273.0 -->
+        <dependency>
+            <groupId>org.jetbrains</groupId>
+            <artifactId>annotations</artifactId>
+            <version>26.1.0</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
