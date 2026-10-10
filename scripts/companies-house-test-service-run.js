@@ -33,10 +33,14 @@
  *
  * Usage:
  *   node scripts/companies-house-test-service-run.js --cases <fixture.json> --out-dir <dir> [--case <name>]
+ *   node scripts/companies-house-test-service-run.js --poll <submissionNumber> --out-dir <dir>
  *
  * --out-dir is required and must resolve outside this repository (assertOutsideRepository), so
  * an evidence log carrying redacted gateway exchanges is never a file git could pick up.
  * --case runs a single named case from the fixture instead of the whole list.
+ * --poll polls an existing submission to a terminal state without submitting anything: it
+ * allocates no submission number and posts no filing, and exits non-zero only on a GovTalkErrors
+ * block.
  *
  * A case may carry an optional `govTestScenario`, sent as the Gov-Test-Scenario header on every
  * gateway call the case makes; the real gateway ignores headers it does not know (postToGateway's
@@ -518,7 +522,7 @@ function buildSummaryMarkdown(entries) {
 }
 
 function parseArgs(argv) {
-  const args = { casesPath: undefined, outDir: undefined, caseName: undefined };
+  const args = { casesPath: undefined, outDir: undefined, caseName: undefined, pollSubmission: undefined };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === "--cases") {
@@ -529,6 +533,9 @@ function parseArgs(argv) {
       i += 1;
     } else if (arg === "--case") {
       args.caseName = argv[i + 1];
+      i += 1;
+    } else if (arg === "--poll") {
+      args.pollSubmission = argv[i + 1];
       i += 1;
     }
   }
@@ -571,22 +578,91 @@ export async function runCases(cases, outDir, { caseName, sleepFn } = {}) {
     );
   }
 
-  writeFileSync(`${outDir}/evidence-log.json`, JSON.stringify(entries, null, 2));
-  writeFileSync(`${outDir}/summary.md`, buildSummaryMarkdown(entries));
+  writeEvidence(outDir, entries);
 
   return { entries, allPass: entries.every((entry) => entry.pass) };
 }
 
+function writeEvidence(outDir, entries) {
+  writeFileSync(`${outDir}/evidence-log.json`, JSON.stringify(entries, null, 2));
+  writeFileSync(`${outDir}/summary.md`, buildSummaryMarkdown(entries));
+}
+
+/**
+ * Poll an existing submission to a terminal state, without submitting anything: no submission
+ * number is allocated and no filing is posted. Writes the evidence log and summary the same way
+ * runCases() does. The entry passes unless the gateway answered a GovTalkErrors block.
+ * @param {string} submissionNumber
+ * @param {string} outDir
+ * @param {{sleepFn?: Function}} [options] - sleepFn overrides the real between-poll wait
+ * @returns {Promise<object>} the poll's evidence log entry
+ */
+export async function runPoll(submissionNumber, outDir, { sleepFn } = {}) {
+  const { presenterId, presenterCode } = await resolvePresenterCredentials();
+  const gatewayTest = process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
+  const exchanges = [];
+  const transactionIds = [];
+
+  console.log(`[companies-house-test-service-run] polling submission "${submissionNumber}"`);
+  const submittedAt = nowIso();
+  const terminal = await pollUntilTerminal(
+    {},
+    submissionNumber,
+    { presenterId, presenterCode, gatewayTest, sleepFn },
+    {},
+    exchanges,
+    transactionIds,
+  );
+
+  for (const exchange of exchanges) {
+    const step = decidePollStep(parseGatewayResponse(exchange.responseXml), submissionNumber);
+    console.log(`[companies-house-test-service-run] ${exchange.label}: ${step.status}`);
+  }
+
+  const entry = {
+    case: `poll ${submissionNumber}`,
+    type: "poll",
+    requestClass: "GetSubmissionStatus",
+    submissionNumber,
+    transactionIds,
+    timestamps: { submittedAt, terminalAt: nowIso() },
+    observedStatus: terminal.status,
+    errors: terminal.errors || [],
+    rejections: terminal.rejections || [],
+    exchanges,
+    expectedStatus: "any",
+    expectedPinned: true,
+    pass: terminal.status !== "GOVTALK_ERROR",
+  };
+  console.log(`[companies-house-test-service-run] poll "${submissionNumber}": observed ${entry.observedStatus}`);
+
+  writeEvidence(outDir, [entry]);
+
+  return entry;
+}
+
 async function main() {
-  const { casesPath, outDir, caseName } = parseArgs(process.argv.slice(2));
-  if (!casesPath || !outDir) {
-    console.error("Usage: node scripts/companies-house-test-service-run.js --cases <fixture.json> --out-dir <dir> [--case <name>]");
+  const { casesPath, outDir, caseName, pollSubmission } = parseArgs(process.argv.slice(2));
+  if (!outDir || Boolean(casesPath) === Boolean(pollSubmission)) {
+    console.error(
+      "Usage: node scripts/companies-house-test-service-run.js --cases <fixture.json> --out-dir <dir> [--case <name>]\n" +
+        "       node scripts/companies-house-test-service-run.js --poll <submissionNumber> --out-dir <dir>",
+    );
     process.exitCode = 1;
     return;
   }
 
   assertOutsideRepository(outDir, resolveRepoRoot());
   mkdirSync(outDir, { recursive: true });
+
+  if (pollSubmission) {
+    const entry = await runPoll(pollSubmission, outDir);
+    if (!entry.pass) {
+      console.error(`[companies-house-test-service-run] poll "${pollSubmission}" answered a GovTalkErrors block`);
+      process.exitCode = 1;
+    }
+    return;
+  }
 
   const cases = JSON.parse(readFileSync(casesPath, "utf8"));
   const { allPass } = await runCases(cases, outDir, { caseName });

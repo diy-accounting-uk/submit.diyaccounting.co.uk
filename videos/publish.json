@@ -12,8 +12,8 @@
       "id": "view-obligations",
       "group": "vat",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36886550412,
+      "pipelineVersion": 10,
+      "sourceRun": 37456188481,
       "sourceArtifact": "video-view-obligations-prod",
       "videoFile": "target/videos/video-view-obligations-prod/view-obligations.mp4",
       "captionFile": "target/videos/video-view-obligations-prod/view-obligations.vtt",
@@ -21,13 +21,13 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and asking HMRC which VAT periods are due on a VAT registration number. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "VAT obligations", "VAT return"],
       "categoryId": "27",
-      "videoId": "yFW9QD6wExE",
+      "videoId": "1TbGJA9Hk5w",
       "walkthrough": [
         {
           "scene": "obligations-form",
           "headline": "Ask HMRC",
           "caption": "Type the VAT registration number. Then the stretch of time to look at.",
-          "startSeconds": 24,
+          "startSeconds": 39,
           "thumb": "videos/view-obligations/obligations-form-thumb.webp",
           "full": "videos/view-obligations/obligations-form.webp"
         },
@@ -35,7 +35,7 @@
           "scene": "results",
           "headline": "The answer",
           "caption": "HMRC answers with the periods it is expecting. Each row is a period, its due date and its status.",
-          "startSeconds": 62,
+          "startSeconds": 88,
           "thumb": "videos/view-obligations/results-thumb.webp",
           "full": "videos/view-obligations/results.webp"
         }
@@ -45,7 +45,7 @@
       "id": "hmrc-authorise",
       "group": "vat",
       "publish": true,
-      "pipelineVersion": 9,
+      "pipelineVersion": 10,
       "sourceArtifact": "video-hmrc-authorise-prod",
       "videoFile": "target/videos/video-hmrc-authorise-prod/hmrc-authorise.mp4",
       "captionFile": "target/videos/video-hmrc-authorise-prod/hmrc-authorise.vtt",
@@ -53,14 +53,14 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. Every activity that talks to HMRC starts with the step this video shows: sending the first request, signing in at HMRC and granting access, then returning to the answer. The other videos in this series skip through it and point here. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "HMRC authorisation", "VAT return"],
       "categoryId": "27",
-      "sourceRun": 36850899559,
-      "videoId": "i6b77NES-Xc",
+      "sourceRun": 37456960727,
+      "videoId": "t2P6cMZ0thY",
       "walkthrough": [
         {
           "scene": "authorise",
           "headline": "Authorise with HMRC",
           "caption": "The first request sends you to HMRC to grant access. Sign in to HMRC and say yes once. Later requests reuse that access.",
-          "startSeconds": 41,
+          "startSeconds": 43,
           "thumb": "videos/hmrc-authorise/authorise-thumb.webp",
           "full": "videos/hmrc-authorise/authorise.webp"
         },
@@ -68,7 +68,7 @@
           "scene": "results",
           "headline": "The answer",
           "caption": "With access granted, HMRC answers straight away. Every other activity now runs without asking again.",
-          "startSeconds": 80,
+          "startSeconds": 83,
           "thumb": "videos/hmrc-authorise/results-thumb.webp",
           "full": "videos/hmrc-authorise/results.webp"
         }
@@ -78,8 +78,8 @@
       "id": "submit-return",
       "group": "vat",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36851558975,
+      "pipelineVersion": 10,
+      "sourceRun": 37458375348,
       "sourceArtifact": "video-submit-return-prod",
       "videoFile": "target/videos/video-submit-return-prod/submit-return.mp4",
       "captionFile": "target/videos/video-submit-return-prod/submit-return.vtt",
@@ -87,13 +87,13 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, checking which VAT period is open, then filling in the nine boxes and submitting the return to HMRC. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "VAT submission"],
       "categoryId": "27",
-      "videoId": "klwCVNlLOyk",
+      "videoId": "XUt2gdYxR1g",
       "walkthrough": [
         {
           "scene": "obligations-form",
           "headline": "Ask HMRC",
           "caption": "Type the VAT registration number. Then the stretch of time to look at.",
-          "startSeconds": 37,
+          "startSeconds": 26,
           "thumb": "videos/submit-return/obligations-form-thumb.webp",
           "full": "videos/submit-return/obligations-form.webp"
         },
@@ -101,7 +101,7 @@
           "scene": "results",
           "headline": "The periods on file",
           "caption": "HMRC answers with every period it holds. An open period is still waiting for a return.",
-          "startSeconds": 85,
+          "startSeconds": 65,
           "thumb": "videos/submit-return/results-thumb.webp",
           "full": "videos/submit-return/results.webp"
         },
@@ -110,7 +110,7 @@
           "step": 0,
           "headline": "Start the return",
           "caption": "Start a return for that open period.",
-          "startSeconds": 103,
+          "startSeconds": 82,
           "thumb": "videos/submit-return/submit-form-0-thumb.webp",
           "full": "videos/submit-return/submit-form-0.webp"
         },
@@ -119,7 +119,7 @@
           "step": 2,
           "headline": "Box 1, VAT on sales",
           "caption": "Box 1 is the VAT due on your sales.",
-          "startSeconds": 111,
+          "startSeconds": 89,
           "thumb": "videos/submit-return/submit-form-2-thumb.webp",
           "full": "videos/submit-return/submit-form-2.webp"
         },
@@ -128,7 +128,7 @@
           "step": 3,
           "headline": "Box 2, usually zero",
           "caption": "Box 2 is VAT on EU acquisitions, usually zero now.",
-          "startSeconds": 117,
+          "startSeconds": 95,
           "thumb": "videos/submit-return/submit-form-3-thumb.webp",
           "full": "videos/submit-return/submit-form-3.webp"
         },
@@ -137,7 +137,7 @@
           "step": 4,
           "headline": "Box 3 adds it up",
           "caption": "Box 3 adds boxes 1 and 2 for you.",
-          "startSeconds": 125,
+          "startSeconds": 103,
           "thumb": "videos/submit-return/submit-form-4-thumb.webp",
           "full": "videos/submit-return/submit-form-4.webp"
         },
@@ -146,7 +146,7 @@
           "step": 5,
           "headline": "Box 4, VAT reclaimed",
           "caption": "Box 4 is VAT you can reclaim on purchases.",
-          "startSeconds": 131,
+          "startSeconds": 109,
           "thumb": "videos/submit-return/submit-form-5-thumb.webp",
           "full": "videos/submit-return/submit-form-5.webp"
         },
@@ -155,7 +155,7 @@
           "step": 6,
           "headline": "Box 5, the net total",
           "caption": "Box 5 works out what you owe overall.",
-          "startSeconds": 138,
+          "startSeconds": 116,
           "thumb": "videos/submit-return/submit-form-6-thumb.webp",
           "full": "videos/submit-return/submit-form-6.webp"
         },
@@ -164,7 +164,7 @@
           "step": 7,
           "headline": "Box 6, total sales",
           "caption": "Box 6 is your total sales, without VAT.",
-          "startSeconds": 144,
+          "startSeconds": 122,
           "thumb": "videos/submit-return/submit-form-7-thumb.webp",
           "full": "videos/submit-return/submit-form-7.webp"
         },
@@ -173,7 +173,7 @@
           "step": 8,
           "headline": "Box 7, total purchases",
           "caption": "Box 7 is your total purchases, without VAT.",
-          "startSeconds": 150,
+          "startSeconds": 128,
           "thumb": "videos/submit-return/submit-form-8-thumb.webp",
           "full": "videos/submit-return/submit-form-8.webp"
         },
@@ -182,7 +182,7 @@
           "step": 9,
           "headline": "Boxes 8 and 9, EU trade",
           "caption": "Boxes 8 and 9 cover EU trade, usually zero now.",
-          "startSeconds": 157,
+          "startSeconds": 135,
           "thumb": "videos/submit-return/submit-form-9-thumb.webp",
           "full": "videos/submit-return/submit-form-9.webp"
         },
@@ -191,7 +191,7 @@
           "step": 11,
           "headline": "Confirm the declaration",
           "caption": "Tick the declaration to confirm the return is accurate.",
-          "startSeconds": 165,
+          "startSeconds": 143,
           "thumb": "videos/submit-return/submit-form-11-thumb.webp",
           "full": "videos/submit-return/submit-form-11.webp"
         },
@@ -199,7 +199,7 @@
           "scene": "authorise-submit",
           "headline": "Authorise again",
           "caption": "Submitting needs a wider grant, so HMRC asks once more. Sign in to HMRC and say yes again.",
-          "startSeconds": 173,
+          "startSeconds": 151,
           "thumb": "videos/submit-return/authorise-submit-thumb.webp",
           "full": "videos/submit-return/authorise-submit.webp"
         },
@@ -207,7 +207,7 @@
           "scene": "receipt",
           "headline": "Submitted",
           "caption": "HMRC confirms the return is filed. The receipt is your record that it went through.",
-          "startSeconds": 205,
+          "startSeconds": 178,
           "thumb": "videos/submit-return/receipt-thumb.webp",
           "full": "videos/submit-return/receipt.webp"
         }
@@ -217,8 +217,8 @@
       "id": "view-return",
       "group": "vat",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36852682539,
+      "pipelineVersion": 10,
+      "sourceRun": 37275567958,
       "sourceArtifact": "video-view-return-prod",
       "videoFile": "target/videos/video-view-return-prod/view-return.mp4",
       "captionFile": "target/videos/video-view-return-prod/view-return.vtt",
@@ -226,13 +226,13 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and opening a VAT return already on file with HMRC to read back all nine boxes. The return on screen was filed earlier, off camera, with Box 6 (total sales excluding VAT) at £5,000. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "VAT obligations"],
       "categoryId": "27",
-      "videoId": "WKlb6KApkb8",
+      "videoId": "c7r5s8oVp_M",
       "walkthrough": [
         {
           "scene": "obligations-form",
           "headline": "Ask HMRC",
           "caption": "Type the VAT registration number. Then the stretch of time to look at.",
-          "startSeconds": 31,
+          "startSeconds": 38,
           "thumb": "videos/view-return/obligations-form-thumb.webp",
           "full": "videos/view-return/obligations-form.webp"
         },
@@ -240,7 +240,7 @@
           "scene": "results",
           "headline": "The periods on file",
           "caption": "HMRC answers with every period it holds. One of these periods is still open, waiting for a return.",
-          "startSeconds": 75,
+          "startSeconds": 89,
           "thumb": "videos/view-return/results-thumb.webp",
           "full": "videos/view-return/results.webp"
         },
@@ -249,7 +249,7 @@
           "step": 0,
           "headline": "Back to activities",
           "caption": "Back to the activities, to ask again.",
-          "startSeconds": 98,
+          "startSeconds": 112,
           "thumb": "videos/view-return/obligations-again-0-thumb.webp",
           "full": "videos/view-return/obligations-again-0.webp"
         },
@@ -258,7 +258,7 @@
           "step": 2,
           "headline": "Ask HMRC again",
           "caption": "Ask HMRC the same question again.",
-          "startSeconds": 105,
+          "startSeconds": 119,
           "thumb": "videos/view-return/obligations-again-2-thumb.webp",
           "full": "videos/view-return/obligations-again-2.webp"
         },
@@ -267,7 +267,7 @@
           "step": 4,
           "headline": "Same VAT number",
           "caption": "The same VAT registration number.",
-          "startSeconds": 112,
+          "startSeconds": 126,
           "thumb": "videos/view-return/obligations-again-4-thumb.webp",
           "full": "videos/view-return/obligations-again-4.webp"
         },
@@ -276,7 +276,7 @@
           "step": 8,
           "headline": "No sign-in needed",
           "caption": "This time no HMRC sign-in is needed.",
-          "startSeconds": 122,
+          "startSeconds": 136,
           "thumb": "videos/view-return/obligations-again-8-thumb.webp",
           "full": "videos/view-return/obligations-again-8.webp"
         },
@@ -285,7 +285,7 @@
           "step": 9,
           "headline": "Periods after filing",
           "caption": "The periods on file, after the submission.",
-          "startSeconds": 129,
+          "startSeconds": 142,
           "thumb": "videos/view-return/obligations-again-9-thumb.webp",
           "full": "videos/view-return/obligations-again-9.webp"
         },
@@ -294,7 +294,7 @@
           "step": 0,
           "headline": "Back to activities",
           "caption": "Back to the activities, to view a return.",
-          "startSeconds": 138,
+          "startSeconds": 151,
           "thumb": "videos/view-return/view-return-0-thumb.webp",
           "full": "videos/view-return/view-return-0.webp"
         },
@@ -303,7 +303,7 @@
           "step": 2,
           "headline": "Open View VAT Return",
           "caption": "Ask to see a return you've already sent.",
-          "startSeconds": 145,
+          "startSeconds": 159,
           "thumb": "videos/view-return/view-return-2-thumb.webp",
           "full": "videos/view-return/view-return-2.webp"
         },
@@ -312,7 +312,7 @@
           "step": 4,
           "headline": "Same VAT number",
           "caption": "The same VAT registration number.",
-          "startSeconds": 153,
+          "startSeconds": 166,
           "thumb": "videos/view-return/view-return-4-thumb.webp",
           "full": "videos/view-return/view-return-4.webp"
         },
@@ -321,7 +321,7 @@
           "step": 5,
           "headline": "Choose the period",
           "caption": "Then the period you want to read back.",
-          "startSeconds": 159,
+          "startSeconds": 172,
           "thumb": "videos/view-return/view-return-5-thumb.webp",
           "full": "videos/view-return/view-return-5.webp"
         },
@@ -330,7 +330,7 @@
           "step": 8,
           "headline": "Same access covers this",
           "caption": "The same HMRC access already covers this.",
-          "startSeconds": 167,
+          "startSeconds": 180,
           "thumb": "videos/view-return/view-return-8-thumb.webp",
           "full": "videos/view-return/view-return-8.webp"
         },
@@ -339,7 +339,7 @@
           "step": 9,
           "headline": "HMRC sends the return",
           "caption": "HMRC sends back exactly what was filed.",
-          "startSeconds": 174,
+          "startSeconds": 187,
           "thumb": "videos/view-return/view-return-9-thumb.webp",
           "full": "videos/view-return/view-return-9.webp"
         },
@@ -348,7 +348,7 @@
           "step": 12,
           "headline": "Read all nine boxes",
           "caption": "All nine boxes, just as they were submitted.",
-          "startSeconds": 183,
+          "startSeconds": 195,
           "thumb": "videos/view-return/view-return-12-thumb.webp",
           "full": "videos/view-return/view-return-12.webp"
         }
@@ -358,8 +358,8 @@
       "id": "view-liabilities",
       "group": "vat",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36853838334,
+      "pipelineVersion": 10,
+      "sourceRun": 37613743964,
       "sourceArtifact": "video-view-liabilities-prod",
       "videoFile": "target/videos/video-view-liabilities-prod/view-liabilities.mp4",
       "captionFile": "target/videos/video-view-liabilities-prod/view-liabilities.vtt",
@@ -367,13 +367,13 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and asking HMRC what VAT is still outstanding on a VAT registration number. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "VAT liabilities", "VAT return"],
       "categoryId": "27",
-      "videoId": "ji-c7MhZIwo",
+      "videoId": "m7IBPUd73sc",
       "walkthrough": [
         {
           "scene": "liabilities-form",
           "headline": "Ask HMRC",
           "caption": "Type the VAT registration number. Then the stretch of time to check.",
-          "startSeconds": 34,
+          "startSeconds": 38,
           "thumb": "videos/view-liabilities/liabilities-form-thumb.webp",
           "full": "videos/view-liabilities/liabilities-form.webp"
         },
@@ -381,7 +381,7 @@
           "scene": "results",
           "headline": "The answer",
           "caption": "HMRC answers with whatever it currently has on file. Any outstanding VAT shows here, with its due date.",
-          "startSeconds": 82,
+          "startSeconds": 88,
           "thumb": "videos/view-liabilities/results-thumb.webp",
           "full": "videos/view-liabilities/results.webp"
         }
@@ -391,8 +391,8 @@
       "id": "view-payments",
       "group": "vat",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36854563952,
+      "pipelineVersion": 10,
+      "sourceRun": 37614522275,
       "sourceArtifact": "video-view-payments-prod",
       "videoFile": "target/videos/video-view-payments-prod/view-payments.mp4",
       "captionFile": "target/videos/video-view-payments-prod/view-payments.vtt",
@@ -400,13 +400,13 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and asking HMRC which VAT payments it has recorded against a VAT registration number. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "VAT payments", "VAT return"],
       "categoryId": "27",
-      "videoId": "uJZ0jCnhATk",
+      "videoId": "yuuQvyi1Dy4",
       "walkthrough": [
         {
           "scene": "payments-form",
           "headline": "Ask HMRC",
           "caption": "Type the VAT registration number. Then the stretch of time to check.",
-          "startSeconds": 29,
+          "startSeconds": 39,
           "thumb": "videos/view-payments/payments-form-thumb.webp",
           "full": "videos/view-payments/payments-form.webp"
         },
@@ -414,7 +414,7 @@
           "scene": "results",
           "headline": "The answer",
           "caption": "HMRC answers with whatever payments it has on file. Any payment against the account shows here, with its date.",
-          "startSeconds": 70,
+          "startSeconds": 88,
           "thumb": "videos/view-payments/results-thumb.webp",
           "full": "videos/view-payments/results.webp"
         }
@@ -424,8 +424,8 @@
       "id": "view-penalties",
       "group": "vat",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36855178231,
+      "pipelineVersion": 10,
+      "sourceRun": 37615311104,
       "sourceArtifact": "video-view-penalties-prod",
       "videoFile": "target/videos/video-view-penalties-prod/view-penalties.mp4",
       "captionFile": "target/videos/video-view-penalties-prod/view-penalties.vtt",
@@ -433,7 +433,7 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and asking HMRC whether a VAT registration number carries any penalty points. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "VAT penalties", "VAT return"],
       "categoryId": "27",
-      "videoId": "MKNB9flqJMA",
+      "videoId": "FGUfWSI2e0E",
       "walkthrough": [
         {
           "scene": "penalties-form",
@@ -447,7 +447,7 @@
           "scene": "results",
           "headline": "The answer",
           "caption": "HMRC answers for the last 24 months. Any penalty points or charges show here.",
-          "startSeconds": 82,
+          "startSeconds": 74,
           "thumb": "videos/view-penalties/results-thumb.webp",
           "full": "videos/view-penalties/results.webp"
         }
@@ -1163,8 +1163,8 @@
       "id": "sign-in",
       "group": "account",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36857110044,
+      "pipelineVersion": 10,
+      "sourceRun": 38012406839,
       "sourceArtifact": "video-sign-in-prod",
       "videoFile": "target/videos/video-sign-in-prod/sign-in.mp4",
       "captionFile": "target/videos/video-sign-in-prod/sign-in.vtt",
@@ -1172,7 +1172,7 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows the part every other activity starts with: signing in through Cognito's Hosted UI (Google sign-in follows the same page) and taking out a day pass so the VAT activities unlock. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "sign in", "day pass", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "Ks6BYfVMjpM",
+      "videoId": "uxqPHu36aSw",
       "walkthrough": [
         {
           "scene": "home",
@@ -1186,7 +1186,7 @@
           "scene": "sign-in",
           "headline": "Sign in",
           "caption": "This account signs in through Cognito's Hosted UI. Google sign-in follows this same page. Its consent screen is Google's own.",
-          "startSeconds": 8,
+          "startSeconds": 9,
           "thumb": "videos/sign-in/sign-in-thumb.webp",
           "full": "videos/sign-in/sign-in.webp"
         },
@@ -1194,7 +1194,7 @@
           "scene": "day-pass",
           "headline": "Day pass",
           "caption": "Bundles decide which activities you can run. A day pass opens the VAT activities for a day, no subscription needed.",
-          "startSeconds": 37,
+          "startSeconds": 44,
           "thumb": "videos/sign-in/day-pass-thumb.webp",
           "full": "videos/sign-in/day-pass.webp"
         },
@@ -1202,7 +1202,7 @@
           "scene": "activities",
           "headline": "Activities",
           "caption": "Every activity starts from the home page, once you're signed in.",
-          "startSeconds": 58,
+          "startSeconds": 67,
           "thumb": "videos/sign-in/activities-thumb.webp",
           "full": "videos/sign-in/activities.webp"
         }
@@ -1212,8 +1212,8 @@
       "id": "tokens",
       "group": "account",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36857615560,
+      "pipelineVersion": 10,
+      "sourceRun": 38012804136,
       "sourceArtifact": "video-tokens-prod",
       "videoFile": "target/videos/video-tokens-prod/tokens.mp4",
       "captionFile": "target/videos/video-tokens-prod/tokens.vtt",
@@ -1221,14 +1221,14 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows the token balance every account carries: what a bundle grants, what each metered activity spends, and what happens when the balance runs out. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "tokens", "token usage", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "rN-UX2o4Z9Q",
+      "videoId": "kEEZ71v0ZAE",
       "walkthrough": [
         {
           "scene": "balance",
           "step": 0,
           "headline": "Your balance, always on screen",
           "caption": "Every account carries a running token balance, shown in the header.",
-          "startSeconds": 25,
+          "startSeconds": 22,
           "thumb": "videos/tokens/balance-0-thumb.webp",
           "full": "videos/tokens/balance-0.webp"
         },
@@ -1237,7 +1237,7 @@
           "step": 1,
           "headline": "Open token usage",
           "caption": "Click it to see where the tokens came from and where they went.",
-          "startSeconds": 32,
+          "startSeconds": 29,
           "thumb": "videos/tokens/balance-1-thumb.webp",
           "full": "videos/tokens/balance-1.webp"
         },
@@ -1246,7 +1246,7 @@
           "step": 3,
           "headline": "What granted them",
           "caption": "Each bundle you hold grants tokens on its own schedule.",
-          "startSeconds": 40,
+          "startSeconds": 37,
           "thumb": "videos/tokens/balance-3-thumb.webp",
           "full": "videos/tokens/balance-3.webp"
         },
@@ -1255,7 +1255,7 @@
           "step": 5,
           "headline": "What spent them",
           "caption": "Every metered activity spends one token when it runs.",
-          "startSeconds": 48,
+          "startSeconds": 44,
           "thumb": "videos/tokens/balance-5-thumb.webp",
           "full": "videos/tokens/balance-5.webp"
         },
@@ -1263,7 +1263,7 @@
           "scene": "running-out",
           "headline": "Running out",
           "caption": "Run out, and the activity says so before it lets you spend nothing.",
-          "startSeconds": 57,
+          "startSeconds": 53,
           "thumb": "videos/tokens/running-out-thumb.webp",
           "full": "videos/tokens/running-out.webp"
         }
@@ -1273,8 +1273,8 @@
       "id": "subscription-management",
       "group": "account",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36858137678,
+      "pipelineVersion": 10,
+      "sourceRun": 38013083725,
       "sourceArtifact": "video-subscription-management-prod",
       "videoFile": "target/videos/video-subscription-management-prod/subscription-management.mp4",
       "captionFile": "target/videos/video-subscription-management-prod/subscription-management.vtt",
@@ -1282,13 +1282,13 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows a subscription bundle: what Subscribe starts through Stripe's own checkout, where an active subscription shows once it's running, and how Stripe's billing portal ends it. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "subscription", "billing", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "CCnxkiq7K2g",
+      "videoId": "Gd4VVCrjCSk",
       "walkthrough": [
         {
           "scene": "subscribe",
           "headline": "Subscribe",
           "caption": "A subscription bundle runs every month until you cancel it. Subscribe opens Stripe's own checkout, where a live site takes a card.",
-          "startSeconds": 17,
+          "startSeconds": 14,
           "thumb": "videos/subscription-management/subscribe-thumb.webp",
           "full": "videos/subscription-management/subscribe.webp"
         },
@@ -1296,7 +1296,7 @@
           "scene": "active",
           "headline": "Once it's active",
           "caption": "Once active, it shows in your current bundles.",
-          "startSeconds": 37,
+          "startSeconds": 33,
           "thumb": "videos/subscription-management/active-thumb.webp",
           "full": "videos/subscription-management/active.webp"
         },
@@ -1304,7 +1304,7 @@
           "scene": "cancel",
           "headline": "Cancel",
           "caption": "A real subscription adds a Manage Subscription button. It opens Stripe's own billing portal — Cancel plan ends it.",
-          "startSeconds": 57,
+          "startSeconds": 52,
           "thumb": "videos/subscription-management/cancel-thumb.webp",
           "full": "videos/subscription-management/cancel.webp"
         }
@@ -1314,8 +1314,8 @@
       "id": "tour",
       "group": "account",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36858702977,
+      "pipelineVersion": 10,
+      "sourceRun": 37612853628,
       "sourceArtifact": "video-tour-prod",
       "videoFile": "target/videos/video-tour-prod/tour.mp4",
       "captionFile": "target/videos/video-tour-prod/tour.vtt",
@@ -1323,7 +1323,7 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video is an unauthenticated tour of the site: what it does, how to use it, the bundles that unlock each activity, and where to find help and accessibility information. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "tour", "overview", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "6TQGQ8t46X8",
+      "videoId": "o8QQ4mue0ao",
       "walkthrough": [
         {
           "scene": "home",
@@ -1361,7 +1361,7 @@
           "scene": "bundles",
           "headline": "Bundles",
           "caption": "Bundles decide what you can run and how many submissions you get. Got a pass? Redeem it here.",
-          "startSeconds": 99,
+          "startSeconds": 98,
           "thumb": "videos/tour/bundles-thumb.webp",
           "full": "videos/tour/bundles.webp"
         },
@@ -1404,8 +1404,8 @@
       "id": "generate-pass-digital",
       "group": "account",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36860126423,
+      "pipelineVersion": 10,
+      "sourceRun": 38013644172,
       "sourceArtifact": "video-generate-pass-digital-prod",
       "videoFile": "target/videos/video-generate-pass-digital-prod/generate-pass-digital.mp4",
       "captionFile": "target/videos/video-generate-pass-digital-prod/generate-pass-digital.vtt",
@@ -1413,14 +1413,14 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows generating a digital pass: a shareable link that gives whoever redeems it free VAT submission access for 7 days. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "digital pass", "day pass", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "K3IJe9BvC0U",
+      "videoId": "sR5gi4CJlx4",
       "walkthrough": [
         {
           "scene": "generate",
           "step": 0,
           "headline": "Open Generate Digital Pass",
           "caption": "This spends a handful of tokens to mint a shareable pass.",
-          "startSeconds": 26,
+          "startSeconds": 30,
           "thumb": "videos/generate-pass-digital/generate-0-thumb.webp",
           "full": "videos/generate-pass-digital/generate-0.webp"
         },
@@ -1429,7 +1429,7 @@
           "step": 2,
           "headline": "Add a note (optional)",
           "caption": "A note for your own records, not shown to whoever redeems it.",
-          "startSeconds": 34,
+          "startSeconds": 39,
           "thumb": "videos/generate-pass-digital/generate-2-thumb.webp",
           "full": "videos/generate-pass-digital/generate-2.webp"
         },
@@ -1438,7 +1438,7 @@
           "step": 3,
           "headline": "Always redeemed anonymously",
           "caption": "Companies House and HMRC never see who redeems it.",
-          "startSeconds": 42,
+          "startSeconds": 46,
           "thumb": "videos/generate-pass-digital/generate-3-thumb.webp",
           "full": "videos/generate-pass-digital/generate-3.webp"
         },
@@ -1447,7 +1447,7 @@
           "step": 5,
           "headline": "Share this code",
           "caption": "This is the pass code, ready to share.",
-          "startSeconds": 50,
+          "startSeconds": 54,
           "thumb": "videos/generate-pass-digital/generate-5-thumb.webp",
           "full": "videos/generate-pass-digital/generate-5.webp"
         }
@@ -1457,8 +1457,8 @@
       "id": "generate-pass-physical",
       "group": "account",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36860604036,
+      "pipelineVersion": 10,
+      "sourceRun": 38014747983,
       "sourceArtifact": "video-generate-pass-physical-prod",
       "videoFile": "target/videos/video-generate-pass-physical-prod/generate-pass-physical.mp4",
       "captionFile": "target/videos/video-generate-pass-physical-prod/generate-pass-physical.vtt",
@@ -1466,13 +1466,13 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows generating a physical pass: a code for merchandise or print that gives whoever redeems it free VAT submission access. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "physical pass", "merchandise", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "5W7LAj75cFM",
+      "videoId": "-S3GF_3H090",
       "walkthrough": [
         {
           "scene": "generate",
           "headline": "Generate the pass",
           "caption": "It works the same way whether it ends up on a mug or a leaflet. This is the code, ready to print or engrave.",
-          "startSeconds": 27,
+          "startSeconds": 34,
           "thumb": "videos/generate-pass-physical/generate-thumb.webp",
           "full": "videos/generate-pass-physical/generate.webp"
         }
@@ -1482,22 +1482,22 @@
       "id": "company-lookup",
       "group": "companies-house",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36916677202,
-      "sourceArtifact": "video-company-lookup-ci",
-      "videoFile": "target/videos/video-company-lookup-ci/company-lookup.mp4",
-      "captionFile": "target/videos/video-company-lookup-ci/company-lookup.vtt",
+      "pipelineVersion": 10,
+      "sourceRun": 38028629609,
+      "sourceArtifact": "video-company-lookup-prod",
+      "videoFile": "target/videos/video-company-lookup-prod/company-lookup.mp4",
+      "captionFile": "target/videos/video-company-lookup-prod/company-lookup.vtt",
       "title": "DIY Accounting Submit: look up a company at Companies House",
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital, and for looking up companies at Companies House. This video shows searching for a company by name or number and reading back its Companies House profile: status, incorporation date and registered address. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "company lookup", "company search"],
       "categoryId": "27",
-      "videoId": "YQh-fzFYp7k",
+      "videoId": "1_vd-CA0zt0",
       "walkthrough": [
         {
           "scene": "search",
           "headline": "Search",
           "caption": "Type a company name or number. Companies House answers with a profile.",
-          "startSeconds": 13,
+          "startSeconds": 19,
           "thumb": "videos/company-lookup/search-thumb.webp",
           "full": "videos/company-lookup/search.webp"
         },
@@ -1505,7 +1505,7 @@
           "scene": "profile",
           "headline": "The profile",
           "caption": "The profile carries the company's status, address and officers. Status, address and officers, straight from the register.",
-          "startSeconds": 32,
+          "startSeconds": 39,
           "thumb": "videos/company-lookup/profile-thumb.webp",
           "full": "videos/company-lookup/profile.webp"
         }
@@ -1515,8 +1515,8 @@
       "id": "file-confirmation-statement",
       "group": "companies-house",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36882074026,
+      "pipelineVersion": 10,
+      "sourceRun": 38020235907,
       "sourceArtifact": "video-file-confirmation-statement-ci",
       "videoFile": "target/videos/video-file-confirmation-statement-ci/file-confirmation-statement.mp4",
       "captionFile": "target/videos/video-file-confirmation-statement-ci/file-confirmation-statement.vtt",
@@ -1524,13 +1524,13 @@
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows starting a confirmation statement (CS01): sign in, take out Resident, look up a company, then read its directors and persons with significant control from Companies House's register. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "confirmation statement", "CS01"],
       "categoryId": "27",
-      "videoId": "t6TeSVYnhlQ",
+      "videoId": "P0aG_mLfhZI",
       "walkthrough": [
         {
           "scene": "company-lookup",
           "headline": "Which company?",
           "caption": "Type the company number. Companies House confirms the next statement due.",
-          "startSeconds": 29,
+          "startSeconds": 39,
           "thumb": "videos/file-confirmation-statement/company-lookup-thumb.webp",
           "full": "videos/file-confirmation-statement/company-lookup.webp"
         },
@@ -1538,7 +1538,7 @@
           "scene": "register",
           "headline": "The register",
           "caption": "This is the company's own register of officers. And its people with significant control.",
-          "startSeconds": 53,
+          "startSeconds": 65,
           "thumb": "videos/file-confirmation-statement/register-thumb.webp",
           "full": "videos/file-confirmation-statement/register.webp"
         }
@@ -1820,8 +1820,8 @@
       "id": "mcp-diya-gl",
       "group": "account",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36863463194,
+      "pipelineVersion": 10,
+      "sourceRun": 38015822394,
       "sourceArtifact": "video-mcp-diya-gl-",
       "videoFile": "target/videos/video-mcp-diya-gl-/mcp-diya-gl.mp4",
       "captionFile": "target/videos/video-mcp-diya-gl-/mcp-diya-gl.vtt",
@@ -1829,7 +1829,7 @@
       "description": "diya-gl is DIY Accounting's open-source bookkeeping engine. This video looks under the hood: an MCP Inspector session driving diya-gl's Model Context Protocol server, extracting a real example set of accounts and reading back its report, transactions and account balances. Try DIY Accounting Submit's VAT side of the product at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "diya-gl", "MCP", "Model Context Protocol", "developer tools"],
       "categoryId": "27",
-      "videoId": "B3uicaZhUi4",
+      "videoId": "6-HowTQgI2E",
       "walkthrough": [
         {
           "scene": "connect",
@@ -1851,7 +1851,7 @@
           "scene": "extract-book",
           "headline": "Reading a set of accounts",
           "caption": "Running it turns the spreadsheet into structured data. The whole book comes back as data, ready to check or change.",
-          "startSeconds": 41,
+          "startSeconds": 42,
           "thumb": "videos/mcp-diya-gl/extract-book-thumb.webp",
           "full": "videos/mcp-diya-gl/extract-book.webp"
         },
@@ -1860,7 +1860,7 @@
           "step": 0,
           "headline": "Open the report tool",
           "caption": "report runs the same sums diya-gl uses to fill in the workbook.",
-          "startSeconds": 62,
+          "startSeconds": 64,
           "thumb": "videos/mcp-diya-gl/figures-0-thumb.webp",
           "full": "videos/mcp-diya-gl/figures-0.webp"
         },
@@ -1869,7 +1869,7 @@
           "step": 1,
           "headline": "Compute the figures",
           "caption": "It reuses the book this session already extracted.",
-          "startSeconds": 70,
+          "startSeconds": 73,
           "thumb": "videos/mcp-diya-gl/figures-1-thumb.webp",
           "full": "videos/mcp-diya-gl/figures-1.webp"
         },
@@ -1878,7 +1878,7 @@
           "step": 2,
           "headline": "The figures come back",
           "caption": "Every figure and check comes back the same way, however it's called.",
-          "startSeconds": 77,
+          "startSeconds": 79,
           "thumb": "videos/mcp-diya-gl/figures-2-thumb.webp",
           "full": "videos/mcp-diya-gl/figures-2.webp"
         },
@@ -1887,7 +1887,7 @@
           "step": 5,
           "headline": "Figures and engine version",
           "caption": "The engine version and every figure, ready to read.",
-          "startSeconds": 86,
+          "startSeconds": 89,
           "thumb": "videos/mcp-diya-gl/figures-5-thumb.webp",
           "full": "videos/mcp-diya-gl/figures-5.webp"
         }
@@ -1897,8 +1897,8 @@
       "id": "itsa-self-employment-amend",
       "group": "itsa",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36915576462,
+      "pipelineVersion": 10,
+      "sourceRun": 38025560550,
       "sourceArtifact": "video-itsa-self-employment-amend-ci",
       "videoFile": "target/videos/video-itsa-self-employment-amend-ci/itsa-self-employment-amend.mp4",
       "captionFile": "target/videos/video-itsa-self-employment-amend-ci/itsa-self-employment-amend.vtt",
@@ -1906,14 +1906,14 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax: see what a self-employment business has filed so far this tax year, open it, and correct a figure with HMRC. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "e_o0vfPl-HQ",
+      "videoId": "rNj0njHHajI",
       "walkthrough": [
         {
           "scene": "list-quarters",
           "step": 0,
           "headline": "What's filed so far",
           "caption": "Check what you've already told HMRC for this business.",
-          "startSeconds": 32,
+          "startSeconds": 31,
           "thumb": "videos/itsa-self-employment-amend/list-quarters-0-thumb.webp",
           "full": "videos/itsa-self-employment-amend/list-quarters-0.webp"
         },
@@ -1922,7 +1922,7 @@
           "step": 1,
           "headline": "Your NI number",
           "caption": "Your National Insurance number.",
-          "startSeconds": 39,
+          "startSeconds": 37,
           "thumb": "videos/itsa-self-employment-amend/list-quarters-1-thumb.webp",
           "full": "videos/itsa-self-employment-amend/list-quarters-1.webp"
         },
@@ -1931,7 +1931,7 @@
           "step": 2,
           "headline": "The business ID",
           "caption": "The self-employment business's ID.",
-          "startSeconds": 44,
+          "startSeconds": 42,
           "thumb": "videos/itsa-self-employment-amend/list-quarters-2-thumb.webp",
           "full": "videos/itsa-self-employment-amend/list-quarters-2.webp"
         },
@@ -1940,7 +1940,7 @@
           "step": 3,
           "headline": "Choose the tax year",
           "caption": "The tax year this business filed quarters in.",
-          "startSeconds": 50,
+          "startSeconds": 48,
           "thumb": "videos/itsa-self-employment-amend/list-quarters-3-thumb.webp",
           "full": "videos/itsa-self-employment-amend/list-quarters-3.webp"
         },
@@ -1949,7 +1949,7 @@
           "step": 5,
           "headline": "Ask HMRC for the list",
           "caption": "Ask HMRC for the quarters on file.",
-          "startSeconds": 56,
+          "startSeconds": 53,
           "thumb": "videos/itsa-self-employment-amend/list-quarters-5-thumb.webp",
           "full": "videos/itsa-self-employment-amend/list-quarters-5.webp"
         },
@@ -1958,7 +1958,7 @@
           "step": 6,
           "headline": "Each quarter and its ID",
           "caption": "HMRC answers with each quarter and its period ID.",
-          "startSeconds": 61,
+          "startSeconds": 59,
           "thumb": "videos/itsa-self-employment-amend/list-quarters-6-thumb.webp",
           "full": "videos/itsa-self-employment-amend/list-quarters-6.webp"
         },
@@ -1966,7 +1966,7 @@
           "scene": "view-quarter",
           "headline": "Open it",
           "caption": "Retrieve it from HMRC. Turnover, other income and cost of goods for that quarter.",
-          "startSeconds": 72,
+          "startSeconds": 69,
           "thumb": "videos/itsa-self-employment-amend/view-quarter-thumb.webp",
           "full": "videos/itsa-self-employment-amend/view-quarter.webp"
         },
@@ -1975,7 +1975,7 @@
           "step": 0,
           "headline": "Correct a filed figure",
           "caption": "Filed the wrong figure? Correct it here.",
-          "startSeconds": 100,
+          "startSeconds": 97,
           "thumb": "videos/itsa-self-employment-amend/amend-quarter-0-thumb.webp",
           "full": "videos/itsa-self-employment-amend/amend-quarter-0.webp"
         },
@@ -1984,7 +1984,7 @@
           "step": 3,
           "headline": "The tax year",
           "caption": "The tax year the quarter was filed in.",
-          "startSeconds": 110,
+          "startSeconds": 107,
           "thumb": "videos/itsa-self-employment-amend/amend-quarter-3-thumb.webp",
           "full": "videos/itsa-self-employment-amend/amend-quarter-3.webp"
         },
@@ -1993,7 +1993,7 @@
           "step": 6,
           "headline": "Enter the new figures",
           "caption": "Enter the corrected figures for that quarter.",
-          "startSeconds": 117,
+          "startSeconds": 114,
           "thumb": "videos/itsa-self-employment-amend/amend-quarter-6-thumb.webp",
           "full": "videos/itsa-self-employment-amend/amend-quarter-6.webp"
         },
@@ -2002,7 +2002,7 @@
           "step": 11,
           "headline": "Send the correction",
           "caption": "Send the correction to HMRC.",
-          "startSeconds": 128,
+          "startSeconds": 124,
           "thumb": "videos/itsa-self-employment-amend/amend-quarter-11-thumb.webp",
           "full": "videos/itsa-self-employment-amend/amend-quarter-11.webp"
         },
@@ -2011,7 +2011,7 @@
           "step": 12,
           "headline": "HMRC accepts it",
           "caption": "HMRC accepts the amendment.",
-          "startSeconds": 133,
+          "startSeconds": 129,
           "thumb": "videos/itsa-self-employment-amend/amend-quarter-12-thumb.webp",
           "full": "videos/itsa-self-employment-amend/amend-quarter-12.webp"
         },
@@ -2020,7 +2020,7 @@
           "step": 15,
           "headline": "Amendment accepted",
           "caption": "Amended. HMRC now holds the corrected total.",
-          "startSeconds": 143,
+          "startSeconds": 138,
           "thumb": "videos/itsa-self-employment-amend/amend-quarter-15-thumb.webp",
           "full": "videos/itsa-self-employment-amend/amend-quarter-15.webp"
         }
@@ -2602,13 +2602,117 @@
       "group": "vat",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": null,
+      "sourceRun": 38015803644,
       "sourceArtifact": "video-vat-from-books-ci",
       "videoFile": "target/videos/video-vat-from-books-ci/vat-from-books.mp4",
       "captionFile": "target/videos/video-vat-from-books-ci/vat-from-books.vtt",
       "title": "DIY Accounting Submit: fill a VAT return from a book (sandbox example)",
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video drops a diya-gl book on the VAT return form instead of typing the figures, checks the nine boxes it fills, submits the return to HMRC's test service and shows the receipt. This is a sandbox recording against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "diya-gl"],
+      "categoryId": "27",
+      "videoId": "nXNUvo4encM",
+      "walkthrough": [
+        {
+          "scene": "vat-form",
+          "headline": "Choose the period",
+          "caption": "Type the VAT registration number. Choose the period the return covers.",
+          "startSeconds": 32,
+          "thumb": "videos/vat-from-books/vat-form-thumb.webp",
+          "full": "videos/vat-from-books/vat-form.webp"
+        },
+        {
+          "scene": "import-book",
+          "step": 0,
+          "headline": "Drop your book",
+          "caption": "Drop your diya-gl book on the form.",
+          "startSeconds": 49,
+          "thumb": "videos/vat-from-books/import-book-0-thumb.webp",
+          "full": "videos/vat-from-books/import-book-0.webp"
+        },
+        {
+          "scene": "import-book",
+          "step": 1,
+          "headline": "The boxes fill",
+          "caption": "The nine boxes fill from the book's own figures.",
+          "startSeconds": 54,
+          "thumb": "videos/vat-from-books/import-book-1-thumb.webp",
+          "full": "videos/vat-from-books/import-book-1.webp"
+        },
+        {
+          "scene": "import-book",
+          "step": 4,
+          "headline": "Box 1 from the book",
+          "caption": "Box 1 is the VAT due on the period's sales.",
+          "startSeconds": 61,
+          "thumb": "videos/vat-from-books/import-book-4-thumb.webp",
+          "full": "videos/vat-from-books/import-book-4.webp"
+        },
+        {
+          "scene": "import-book",
+          "step": 5,
+          "headline": "Box 4 from the book",
+          "caption": "Box 4 is the VAT reclaimed on purchases.",
+          "startSeconds": 67,
+          "thumb": "videos/vat-from-books/import-book-5-thumb.webp",
+          "full": "videos/vat-from-books/import-book-5.webp"
+        },
+        {
+          "scene": "import-book",
+          "step": 6,
+          "headline": "Boxes 6 and 7",
+          "caption": "Boxes 6 and 7 total sales and purchases.",
+          "startSeconds": 73,
+          "thumb": "videos/vat-from-books/import-book-6-thumb.webp",
+          "full": "videos/vat-from-books/import-book-6.webp"
+        },
+        {
+          "scene": "import-book",
+          "step": 7,
+          "headline": "Check the figures",
+          "caption": "Check every figure before you submit.",
+          "startSeconds": 79,
+          "thumb": "videos/vat-from-books/import-book-7-thumb.webp",
+          "full": "videos/vat-from-books/import-book-7.webp"
+        },
+        {
+          "scene": "import-book",
+          "step": 10,
+          "headline": "Confirm the declaration",
+          "caption": "Tick the declaration to confirm the return is accurate.",
+          "startSeconds": 85,
+          "thumb": "videos/vat-from-books/import-book-10-thumb.webp",
+          "full": "videos/vat-from-books/import-book-10.webp"
+        },
+        {
+          "scene": "submit",
+          "headline": "Submit to HMRC",
+          "caption": "Submitting sends you to HMRC to grant access. Sign in to HMRC and say yes.",
+          "startSeconds": 93,
+          "thumb": "videos/vat-from-books/submit-thumb.webp",
+          "full": "videos/vat-from-books/submit.webp"
+        },
+        {
+          "scene": "receipt",
+          "headline": "Submitted",
+          "caption": "HMRC confirms the return is filed. The receipt is your record that it went through.",
+          "startSeconds": 124,
+          "thumb": "videos/vat-from-books/receipt-thumb.webp",
+          "full": "videos/vat-from-books/receipt.webp"
+        }
+      ]
+    },
+    {
+      "id": "vat-hmrc-assist",
+      "group": "vat",
+      "publish": false,
+      "pipelineVersion": 10,
+      "sourceRun": null,
+      "sourceArtifact": "video-vat-hmrc-assist-ci",
+      "videoFile": "target/videos/video-vat-hmrc-assist-ci/vat-hmrc-assist.mp4",
+      "captionFile": "target/videos/video-vat-hmrc-assist-ci/vat-hmrc-assist.vtt",
+      "title": "DIY Accounting Submit: check a VAT return with HMRC Assist (sandbox example)",
+      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video fills in the nine boxes of a VAT return for an open period, asks HMRC Assist to check them, reads its messages and then submits the return. This is a sandbox recording against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "HMRC Assist"],
       "categoryId": "27",
       "videoId": null,
       "walkthrough": []
@@ -2618,7 +2722,7 @@
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": null,
+      "sourceRun": 38017625053,
       "sourceArtifact": "video-itsa-quarterly-from-books-ci",
       "videoFile": "target/videos/video-itsa-quarterly-from-books-ci/itsa-quarterly-from-books.mp4",
       "captionFile": "target/videos/video-itsa-quarterly-from-books-ci/itsa-quarterly-from-books.vtt",
@@ -2626,8 +2730,135 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video drops a diya-gl book on the quarterly update form instead of typing the figures, checks the quarter's figures it fills, and submits the update to HMRC's test service. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA", "diya-gl"],
       "categoryId": "27",
-      "videoId": null,
-      "walkthrough": []
+      "videoId": "kcNTqhuCTJg",
+      "walkthrough": [
+        {
+          "scene": "quarter-form",
+          "step": 0,
+          "headline": "The quarterly form",
+          "caption": "This is the form a quarterly update is filed on.",
+          "startSeconds": 28,
+          "thumb": "videos/itsa-quarterly-from-books/quarter-form-0-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/quarter-form-0.webp"
+        },
+        {
+          "scene": "quarter-form",
+          "step": 1,
+          "headline": "Enter your NI number",
+          "caption": "Type the National Insurance number.",
+          "startSeconds": 34,
+          "thumb": "videos/itsa-quarterly-from-books/quarter-form-1-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/quarter-form-1.webp"
+        },
+        {
+          "scene": "quarter-form",
+          "step": 2,
+          "headline": "Choose the business",
+          "caption": "Then the business the update is for.",
+          "startSeconds": 39,
+          "thumb": "videos/itsa-quarterly-from-books/quarter-form-2-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/quarter-form-2.webp"
+        },
+        {
+          "scene": "quarter-form",
+          "step": 3,
+          "headline": "Choose the quarter end",
+          "caption": "Choose the date the quarter ends.",
+          "startSeconds": 44,
+          "thumb": "videos/itsa-quarterly-from-books/quarter-form-3-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/quarter-form-3.webp"
+        },
+        {
+          "scene": "import-book",
+          "step": 0,
+          "headline": "Drop your book",
+          "caption": "Drop your diya-gl book on the form.",
+          "startSeconds": 50,
+          "thumb": "videos/itsa-quarterly-from-books/import-book-0-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/import-book-0.webp"
+        },
+        {
+          "scene": "import-book",
+          "step": 1,
+          "headline": "The figures fill",
+          "caption": "The quarter's figures fill from the book.",
+          "startSeconds": 54,
+          "thumb": "videos/itsa-quarterly-from-books/import-book-1-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/import-book-1.webp"
+        },
+        {
+          "scene": "import-book",
+          "step": 4,
+          "headline": "Tax year from the book",
+          "caption": "The tax year and quarter start come from the book.",
+          "startSeconds": 61,
+          "thumb": "videos/itsa-quarterly-from-books/import-book-4-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/import-book-4.webp"
+        },
+        {
+          "scene": "import-book",
+          "step": 5,
+          "headline": "Turnover from the book",
+          "caption": "Turnover is the quarter's sales.",
+          "startSeconds": 67,
+          "thumb": "videos/itsa-quarterly-from-books/import-book-5-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/import-book-5.webp"
+        },
+        {
+          "scene": "import-book",
+          "step": 6,
+          "headline": "Costs from the book",
+          "caption": "Costs come from the book's expense accounts.",
+          "startSeconds": 72,
+          "thumb": "videos/itsa-quarterly-from-books/import-book-6-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/import-book-6.webp"
+        },
+        {
+          "scene": "import-book",
+          "step": 7,
+          "headline": "Check the figures",
+          "caption": "Check every figure before you submit.",
+          "startSeconds": 78,
+          "thumb": "videos/itsa-quarterly-from-books/import-book-7-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/import-book-7.webp"
+        },
+        {
+          "scene": "submit",
+          "step": 0,
+          "headline": "Submit the update",
+          "caption": "Submitting sends you to HMRC to grant access.",
+          "startSeconds": 84,
+          "thumb": "videos/itsa-quarterly-from-books/submit-0-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/submit-0.webp"
+        },
+        {
+          "scene": "submit",
+          "step": 1,
+          "headline": "Grant HMRC access",
+          "caption": "Sign in to HMRC and say yes.",
+          "startSeconds": 90,
+          "thumb": "videos/itsa-quarterly-from-books/submit-1-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/submit-1.webp"
+        },
+        {
+          "scene": "submit",
+          "step": 2,
+          "headline": "HMRC accepts it",
+          "caption": "HMRC accepts the quarterly update.",
+          "startSeconds": 116,
+          "thumb": "videos/itsa-quarterly-from-books/submit-2-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/submit-2.webp"
+        },
+        {
+          "scene": "submit",
+          "step": 5,
+          "headline": "Keep the result",
+          "caption": "The result is your record that it went through.",
+          "startSeconds": 124,
+          "thumb": "videos/itsa-quarterly-from-books/submit-5-thumb.webp",
+          "full": "videos/itsa-quarterly-from-books/submit-5.webp"
+        }
+      ]
     },
     {
       "id": "itsa-carry-back-adjustments",
@@ -2820,7 +3051,7 @@
       "id": "accounting-diya-gl-profit",
       "group": "accounting",
       "publish": true,
-      "sourceRun": 37020999836,
+      "sourceRun": 38016186705,
       "sourceArtifact": "video-accounting-diya-gl-profit-",
       "videoFile": "target/videos/video-accounting-diya-gl-profit-/accounting-diya-gl-profit.mp4",
       "captionFile": "target/videos/video-accounting-diya-gl-profit-/accounting-diya-gl-profit.vtt",
@@ -2828,8 +3059,8 @@
       "description": "The first video in a how-to series on doing your own accounts. A sole trader starts a new book in diya-gl, DIY Accounting's free bookkeeping tool that runs in your browser. They enter three sales and two purchases over April and May, each with a date, a description and an amount. The book adds up as they go, and the year total and the profit and loss account both show £1,200 of profit. It's a real recording of the live tool, not a mockup or a design draft. Try it yourself at https://diya-gl.co.uk/bst.html.",
       "tags": ["DIY Accounting", "diya-gl", "bookkeeping", "sole trader", "profit and loss", "self-employed accounts"],
       "categoryId": "27",
-      "videoId": "UEsbvVF0Wos",
-      "pipelineVersion": 9,
+      "videoId": "GslXLZVt1eo",
+      "pipelineVersion": 10,
       "walkthrough": [
         {
           "scene": "new-book",
@@ -2854,7 +3085,7 @@
           "step": 2,
           "headline": "Your business name",
           "caption": "Type your business name.",
-          "startSeconds": 14,
+          "startSeconds": 13,
           "thumb": "videos/accounting-diya-gl-profit/new-book-2-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/new-book-2.webp"
         },
@@ -2926,7 +3157,7 @@
           "step": 4,
           "headline": "A second sale",
           "caption": "A second job in April: a garden tidy for £300.",
-          "startSeconds": 74,
+          "startSeconds": 75,
           "thumb": "videos/accounting-diya-gl-profit/april-4-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-4.webp"
         },
@@ -2935,7 +3166,7 @@
           "step": 8,
           "headline": "A purchase",
           "caption": "Now a purchase: plants and compost for a job.",
-          "startSeconds": 89,
+          "startSeconds": 90,
           "thumb": "videos/accounting-diya-gl-profit/april-8-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-8.webp"
         },
@@ -2962,7 +3193,7 @@
           "step": 12,
           "headline": "Add the purchase",
           "caption": "Add it.",
-          "startSeconds": 110,
+          "startSeconds": 111,
           "thumb": "videos/accounting-diya-gl-profit/april-12-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-12.webp"
         },
@@ -2971,7 +3202,7 @@
           "step": 13,
           "headline": "April's profit: £600",
           "caption": "April so far: £800 of sales, £200 of costs, £600 profit.",
-          "startSeconds": 114,
+          "startSeconds": 115,
           "thumb": "videos/accounting-diya-gl-profit/april-13-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-13.webp"
         },
@@ -2989,7 +3220,7 @@
           "step": 1,
           "headline": "Show the entries",
           "caption": "Then show its entries.",
-          "startSeconds": 130,
+          "startSeconds": 131,
           "thumb": "videos/accounting-diya-gl-profit/may-1-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/may-1.webp"
         },
@@ -2998,7 +3229,7 @@
           "step": 2,
           "headline": "A sale in May",
           "caption": "A bigger job in May: a new border for £700.",
-          "startSeconds": 135,
+          "startSeconds": 136,
           "thumb": "videos/accounting-diya-gl-profit/may-2-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/may-2.webp"
         },
@@ -3007,7 +3238,7 @@
           "step": 6,
           "headline": "A purchase in May",
           "caption": "And leaflets to find new customers.",
-          "startSeconds": 150,
+          "startSeconds": 151,
           "thumb": "videos/accounting-diya-gl-profit/may-6-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/may-6.webp"
         },
@@ -3016,7 +3247,7 @@
           "step": 7,
           "headline": "Advertising",
           "caption": "Leaflets go under advertising.",
-          "startSeconds": 155,
+          "startSeconds": 157,
           "thumb": "videos/accounting-diya-gl-profit/may-7-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/may-7.webp"
         },
@@ -3025,7 +3256,7 @@
           "step": 9,
           "headline": "Amount: £100",
           "caption": "They cost £100.",
-          "startSeconds": 162,
+          "startSeconds": 164,
           "thumb": "videos/accounting-diya-gl-profit/may-9-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/may-9.webp"
         },
@@ -3034,7 +3265,7 @@
           "step": 10,
           "headline": "Add the purchase",
           "caption": "Add it.",
-          "startSeconds": 168,
+          "startSeconds": 169,
           "thumb": "videos/accounting-diya-gl-profit/may-10-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/may-10.webp"
         },
@@ -3042,7 +3273,7 @@
           "scene": "profit",
           "headline": "See the profit",
           "caption": "The P&L tab sets the same figures out as a profit and loss account. Net profit: £1,200. That's your sales less what you spent to earn them.",
-          "startSeconds": 172,
+          "startSeconds": 173,
           "thumb": "videos/accounting-diya-gl-profit/profit-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/profit.webp"
         }
@@ -3052,7 +3283,7 @@
       "id": "accounting-spreadsheet-profit",
       "group": "accounting",
       "publish": true,
-      "sourceRun": 37038028005,
+      "sourceRun": 38016832809,
       "sourceArtifact": "video-accounting-spreadsheet-profit-",
       "videoFile": "target/videos/video-accounting-spreadsheet-profit-/accounting-spreadsheet-profit.mp4",
       "captionFile": "target/videos/video-accounting-spreadsheet-profit-/accounting-spreadsheet-profit.vtt",
@@ -3060,8 +3291,8 @@
       "description": "The second video in a how-to series on doing your own accounts. A sole trader opens the free Basic Sole Trader Excel workbook from DIY Accounting and enters three sales and two purchases over April and May, each on its month sheet. The workbook adds up as they go, and the Profit & Loss sheet shows £1,200 of profit for the year. The workbook is the real download, opened here in Collabora Online, which runs the .xlsx as Excel or LibreOffice would. It is a real recording, not a mockup. Download the workbook free at https://spreadsheets.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Excel", "bookkeeping", "sole trader", "profit and loss", "self-employed accounts"],
       "categoryId": "27",
-      "videoId": "woPN9kL9nDI",
-      "pipelineVersion": 9,
+      "videoId": "is8irPKlVWM",
+      "pipelineVersion": 10,
       "walkthrough": [
         {
           "scene": "open",
@@ -3076,7 +3307,7 @@
           "step": 0,
           "headline": "April's sales",
           "caption": "Open April's sales.",
-          "startSeconds": 16,
+          "startSeconds": 15,
           "thumb": "videos/accounting-spreadsheet-profit/april-0-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-0.webp"
         },
@@ -3085,7 +3316,7 @@
           "step": 2,
           "headline": "Date of the sale",
           "caption": "Type the date the customer paid you.",
-          "startSeconds": 23,
+          "startSeconds": 22,
           "thumb": "videos/accounting-spreadsheet-profit/april-2-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-2.webp"
         },
@@ -3094,7 +3325,7 @@
           "step": 3,
           "headline": "The customer and the job",
           "caption": "Then the customer and the job.",
-          "startSeconds": 29,
+          "startSeconds": 28,
           "thumb": "videos/accounting-spreadsheet-profit/april-3-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-3.webp"
         },
@@ -3103,7 +3334,7 @@
           "step": 5,
           "headline": "How they paid",
           "caption": "How they paid. Leave this blank if they still owe you.",
-          "startSeconds": 39,
+          "startSeconds": 37,
           "thumb": "videos/accounting-spreadsheet-profit/april-5-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-5.webp"
         },
@@ -3112,7 +3343,7 @@
           "step": 7,
           "headline": "Amount: £500",
           "caption": "And the amount: £500.",
-          "startSeconds": 47,
+          "startSeconds": 46,
           "thumb": "videos/accounting-spreadsheet-profit/april-7-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-7.webp"
         },
@@ -3121,7 +3352,7 @@
           "step": 8,
           "headline": "A second sale",
           "caption": "A second job in April: a garden tidy for £300.",
-          "startSeconds": 53,
+          "startSeconds": 52,
           "thumb": "videos/accounting-spreadsheet-profit/april-8-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-8.webp"
         },
@@ -3130,7 +3361,7 @@
           "step": 15,
           "headline": "April's sales: £800",
           "caption": "The month's total updates as you type: £800.",
-          "startSeconds": 73,
+          "startSeconds": 72,
           "thumb": "videos/accounting-spreadsheet-profit/april-15-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-15.webp"
         },
@@ -3139,7 +3370,7 @@
           "step": 17,
           "headline": "A purchase",
           "caption": "Now April's purchases: plants and compost for a job.",
-          "startSeconds": 81,
+          "startSeconds": 80,
           "thumb": "videos/accounting-spreadsheet-profit/april-17-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-17.webp"
         },
@@ -3148,7 +3379,7 @@
           "step": 23,
           "headline": "Letter S: materials",
           "caption": "The expense letter sorts it. S is for stock and materials you use on jobs.",
-          "startSeconds": 100,
+          "startSeconds": 98,
           "thumb": "videos/accounting-spreadsheet-profit/april-23-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-23.webp"
         },
@@ -3157,7 +3388,7 @@
           "step": 25,
           "headline": "Amount: £200",
           "caption": "They cost £200.",
-          "startSeconds": 110,
+          "startSeconds": 108,
           "thumb": "videos/accounting-spreadsheet-profit/april-25-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-25.webp"
         },
@@ -3165,7 +3396,7 @@
           "scene": "may",
           "headline": "May: a sale and a purchase",
           "caption": "And leaflets to find new customers. A is for advertising. They cost £100.",
-          "startSeconds": 116,
+          "startSeconds": 114,
           "thumb": "videos/accounting-spreadsheet-profit/may-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/may.webp"
         },
@@ -3173,7 +3404,7 @@
           "scene": "profit",
           "headline": "See the profit",
           "caption": "£600 profit in April, and £600 in May. The year so far: £1,500 of sales, £300 of costs, £1,200 profit.",
-          "startSeconds": 165,
+          "startSeconds": 162,
           "thumb": "videos/accounting-spreadsheet-profit/profit-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/profit.webp"
         }

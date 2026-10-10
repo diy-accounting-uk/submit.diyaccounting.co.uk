@@ -22,6 +22,11 @@ on:
         description: 'Run only this named case from the fixture (default: every case)'
         required: false
         default: ''
+      poll-submission:
+        type: string
+        description: 'Poll this existing submission number instead of filing the cases'
+        required: false
+        default: ''
 
 concurrency:
   group: companies-house-test-service-${{ github.ref }}
@@ -89,11 +94,18 @@ jobs:
         id: run
         continue-on-error: true
         run: |
-          node scripts/companies-house-test-service-run.js \
-            --cases scripts/fixtures/companies-house-test-service-cases.json \
-            --out-dir "$RUNNER_TEMP/companies-house-test-service" \
-            ${{ inputs.case != '' && format('--case {0}', inputs.case) || '' }}
+          if [ -n "$POLL_SUBMISSION" ]; then
+            node scripts/companies-house-test-service-run.js \
+              --poll "$POLL_SUBMISSION" \
+              --out-dir "$RUNNER_TEMP/companies-house-test-service"
+          else
+            node scripts/companies-house-test-service-run.js \
+              --cases scripts/fixtures/companies-house-test-service-cases.json \
+              --out-dir "$RUNNER_TEMP/companies-house-test-service" \
+              ${{ inputs.case != '' && format('--case {0}', inputs.case) || '' }}
+          fi
         env:
+          POLL_SUBMISSION: ${{ inputs.poll-submission }}
           COMPANIES_HOUSE_XMLGW_URI: ${{ steps.env-ci.outputs.xmlgw-uri }}
           COMPANIES_HOUSE_PRESENTER_ID_ARN: ${{ steps.env-ci.outputs.presenter-id-arn }}
           COMPANIES_HOUSE_PRESENTER_CODE_ARN: ${{ steps.env-ci.outputs.presenter-code-arn }}
