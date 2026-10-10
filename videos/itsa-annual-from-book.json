@@ -117,7 +117,7 @@
         { "action": "goto", "url": "/hmrc/itsa/selfEmploymentPeriod.html", "waitFor": "#itsaSelfEmploymentPeriodForm" },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "select", "target": "#taxYear", "value": "2026-27" },
         { "action": "fill", "target": "#periodStartDate", "value": "2026-04-06" },
         { "action": "fill", "target": "#periodEndDate", "value": "2026-07-05" },
         { "action": "fill", "target": "#turnover", "value": "1000" },
@@ -142,7 +142,7 @@
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "select", "target": "#taxYear", "value": "2026-27" },
         {
           "action": "click",
           "target": "#loadBtn",

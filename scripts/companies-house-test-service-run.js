@@ -85,7 +85,6 @@ import { validateEnv } from "../app/lib/env.js";
 const DEFAULT_POLL_INTERVAL_MS = 2000;
 const MIN_POLL_INTERVAL_MS = 1000;
 const MAX_POLL_INTERVAL_MS = 30000;
-const MAX_POLL_ATTEMPTS = 30;
 const MAX_POLL_WALL_CLOCK_MS = 10 * 60 * 1000;
 
 function sleep(ms) {
@@ -245,12 +244,12 @@ async function pollUntilTerminal(
   let attempts = 0;
 
   while (!terminal.terminal) {
-    attempts += 1;
-    if (attempts > MAX_POLL_ATTEMPTS || Date.now() - pollStartedAt > MAX_POLL_WALL_CLOCK_MS) {
+    if (Date.now() - pollStartedAt > MAX_POLL_WALL_CLOCK_MS) {
       terminal = { terminal: true, status: "POLL_TIMEOUT" };
       break;
     }
 
+    attempts += 1;
     await sleepFn(delayMs);
 
     const pollTransactionId = String(Date.now());

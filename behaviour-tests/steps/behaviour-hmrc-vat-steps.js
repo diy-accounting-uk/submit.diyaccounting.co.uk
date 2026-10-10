@@ -562,9 +562,11 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
       expect(processingDateText, "processingDate should not be Invalid Date").not.toContain("Invalid Date");
 
       // Parse the displayed date and verify it's recent (within last 24 hours)
-      // The date is displayed in en-GB format: "10 January 2026 at 15:52"
+      // The date is displayed in en-GB format: "10 January 2026 at 15:52", in the browser's time
+      // zone, so the browser parses it back; the runner's zone can differ (a UTC runner, a London
+      // recording, a continental laptop) and parsing it here misread the hour.
       const processingDateClean = processingDateText.replace(" at ", " ");
-      const parsedDate = new Date(processingDateClean);
+      const parsedDate = new Date(await page.evaluate((text) => new Date(text).getTime(), processingDateClean));
       const now = new Date();
       const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
       expect(parsedDate.getTime(), "processingDate should be a valid parseable date").not.toBeNaN();

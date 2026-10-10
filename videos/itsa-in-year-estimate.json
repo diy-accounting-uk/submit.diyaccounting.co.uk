@@ -126,7 +126,7 @@
           "headline": "Your NI number",
           "keyWord": "NI"
         },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "select", "target": "#taxYear", "value": "2026-27" },
         {
           "action": "select",
           "target": "#calculationType",
