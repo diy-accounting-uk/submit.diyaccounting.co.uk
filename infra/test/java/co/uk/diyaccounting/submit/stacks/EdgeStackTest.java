@@ -141,14 +141,15 @@ class EdgeStackTest {
         String templateJson = Template.fromStack(synthEdgeStack()).toJSON().toString();
         String[][] required = {
             {"script-src", "https://accounts.google.com", "https://apis.google.com"},
-            {"connect-src", "https://www.googleapis.com", "https://oauth2.googleapis.com", "https://accounts.google.com"},
+            {"connect-src", "https://www.googleapis.com", "https://oauth2.googleapis.com", "https://accounts.google.com"
+            },
             {"frame-src", "https://accounts.google.com", "https://apis.google.com", "https://docs.google.com"},
             {"img-src", "https://*.googleusercontent.com", "https://ssl.gstatic.com", "https://www.gstatic.com"},
         };
 
         for (String[] directive : required) {
-            java.util.regex.Matcher matcher = java.util.regex.Pattern.compile(directive[0] + " [^;]*;")
-                    .matcher(templateJson);
+            java.util.regex.Matcher matcher =
+                    java.util.regex.Pattern.compile(directive[0] + " [^;]*;").matcher(templateJson);
             int policies = 0;
             while (matcher.find()) {
                 if (!matcher.group().contains("'self'")) {
