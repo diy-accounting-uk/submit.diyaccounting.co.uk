@@ -255,8 +255,8 @@ confirm brand verification. They replace LP-24a's steps 1 to 4.
    board row, because the Drive store is independent of filing from diya-gl.
 2. **`drive.file` across two sites.** Expected: a file created under one client in a project is
    visible to another client in the same project. The diya-gl half is proven on ci (2026-10-10:
-   save, update, list and open through the Picker under the diya-gl client; NEXT.md BS9a carries
-   the duplicate-on-new-tab remainder); BS6's first step proves the cross-client half, since
+   save, update, list and open through the Picker under the diya-gl client; a save from a fresh tab
+   updates the same-named file since spreadsheets PR #162); BS6's first step proves the cross-client half, since
    Submit's Picker is what BS6 builds.
 3. **Brand verification.** Google asks every external production app to pass brand
    verification (homepage, privacy policy, verified domains, branding). `diya-gl.co.uk` as a
