@@ -1379,8 +1379,8 @@
       "id": "my-receipts",
       "group": "account",
       "publish": true,
-      "pipelineVersion": 9,
-      "sourceRun": 36859554879,
+      "pipelineVersion": 10,
+      "sourceRun": 38032748384,
       "sourceArtifact": "video-my-receipts-prod",
       "videoFile": "target/videos/video-my-receipts-prod/my-receipts.mp4",
       "captionFile": "target/videos/video-my-receipts-prod/my-receipts.vtt",
@@ -1388,13 +1388,13 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows a signed-in walk through submission receipts: submitting a VAT return, then finding and opening its receipt from the account's receipt history. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "receipts", "VAT return", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "2RNO6PZhX-s",
+      "videoId": "EquVvRsz2Us",
       "walkthrough": [
         {
           "scene": "receipts",
           "headline": "Your receipts",
           "caption": "Open one to see the full HMRC response. It carries HMRC's own confirmation, kept for your records.",
-          "startSeconds": 24,
+          "startSeconds": 35,
           "thumb": "videos/my-receipts/receipts-thumb.webp",
           "full": "videos/my-receipts/receipts.webp"
         }

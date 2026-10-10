@@ -51,7 +51,8 @@
     "#apiDocsLink",
     "#viewSourceLink",
     "#localstorageContainer",
-    ".entitlement-status"
+    ".entitlement-status",
+    "#developerSection"
   ],
 
   "finalHoldMs": 2500,
@@ -226,7 +227,7 @@
         },
         { "action": "await", "until": "#itsaBusinessDetailsForm", "label": "Opening the business details form" },
         {
-          "action": "select",
+          "action": "testScenario",
           "target": "#testScenario",
           "value": "BUSINESS_AND_PROPERTY",
           "caption": "This sandbox account holds a self-employment and a property business.",

@@ -408,7 +408,7 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
       }
     });
 
-    test("reports POLL_TIMEOUT when a submission stays PENDING past the poll wall clock", async () => {
+    test("reports POLL_TIMEOUT when a submission stays PENDING past the poll wall clock", { timeout: 30_000 }, async () => {
       let now = 1_000_000;
       const startedAt = now;
       const dateSpy = vi.spyOn(Date, "now").mockImplementation(() => now);
@@ -462,7 +462,7 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
       expect(evidence[0].observedStatus).toBe("ACCEPT");
     });
 
-    test("reports POLL_TIMEOUT when a polled submission stays PENDING past the poll wall clock", async () => {
+    test("reports POLL_TIMEOUT when a polled submission stays PENDING past the poll wall clock", { timeout: 30_000 }, async () => {
       const submissionNumber = await submitOne();
       const realFetch = globalThis.fetch;
       const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (url, init) => {

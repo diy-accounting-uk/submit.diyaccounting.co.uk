@@ -203,7 +203,7 @@
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
         { "action": "select", "target": "#taxYear", "value": "2027-28" },
-        { "action": "click", "target": "#suspendTemporalValidations" },
+        { "action": "checkHidden", "target": "#suspendTemporalValidations" },
         { "action": "click", "target": "#loadBtn" },
         { "action": "await", "until": "#lossesEditForm", "label": "Loading losses and claims" },
         { "action": "fill", "target": "#previousYearGeneralIncome", "value": "150" },
@@ -233,7 +233,7 @@
           "headline": "The earlier tax year",
           "keyWord": "earlier"
         },
-        { "action": "click", "target": "#suspendTemporalValidations" },
+        { "action": "checkHidden", "target": "#suspendTemporalValidations" },
         {
           "action": "click",
           "target": "#loadBtn",

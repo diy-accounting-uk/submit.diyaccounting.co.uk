@@ -290,19 +290,19 @@
       "steps": [
         {
           "action": "await",
-          "until": "#filingResult:has-text('ACCEPT')",
+          "until": "#filingResult:has-text('PENDING'), #filingResult:has-text('Status:')",
           "label": "Waiting for Companies House",
           "timeoutMs": 60000,
-          "caption": "Companies House settles on an outcome.",
-          "headline": "Companies House decides",
-          "keyWord": "decides"
+          "caption": "The filing goes to Companies House.",
+          "headline": "Companies House checks it",
+          "keyWord": "checks"
         },
         {
           "action": "point",
           "target": "#filingResult",
-          "caption": "The filing is accepted.",
-          "headline": "The filing is accepted",
-          "keyWord": "accepted",
+          "caption": "Companies House has the filing and reports the outcome here.",
+          "headline": "Companies House has the filing",
+          "keyWord": "filing",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 2500 },

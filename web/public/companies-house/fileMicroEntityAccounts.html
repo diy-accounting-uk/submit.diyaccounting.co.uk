@@ -707,9 +707,12 @@
         showView("resultView");
         try {
           const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
-          const accepted = outcome.statusCode === "ACCEPT";
+          const outcomeHeadlines = {
+            ACCEPT: "Companies House accepted the accounts.",
+            REJECT: "Companies House rejected the accounts.",
+          };
           showFilingResult(
-            `Companies House ${accepted ? "accepted" : "rejected"} the accounts.`,
+            outcomeHeadlines[outcome.statusCode] || "Companies House has the accounts and has not finished checking them.",
             `Status: ${outcome.statusCode}. Submission number ${outcome.submissionNumber}.`,
           );
           renderRejections(outcome.rejections);
