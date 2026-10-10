@@ -817,15 +817,15 @@ public class EdgeStack extends Stack {
                 .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; "
-                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net; "
+                                        + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com; "
+                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com; "
                                         // Wildcard, not just https://www.google-analytics.com: GA4's /g/collect
                                         // beacon lands on a region-specific subdomain (e.g.
                                         // region1.google-analytics.com),
                                         // which the literal host doesn't match and CSP then silently drops the pixel.
-                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net; "
-                                        + "style-src 'self' 'unsafe-inline'; "
-                                        + "frame-src 'self' https://www.youtube-nocookie.com; "
+                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.googleusercontent.com https://ssl.gstatic.com https://www.gstatic.com; "
+                                        + "style-src 'self' 'unsafe-inline' https://www.gstatic.com; "
+                                        + "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com https://apis.google.com https://docs.google.com; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self';")
                                 .override(true)
@@ -900,11 +900,11 @@ public class EdgeStack extends Stack {
                 .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; "
-                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net; "
-                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net; "
-                                        + "style-src 'self' 'unsafe-inline'; "
-                                        + "frame-src 'self' https://www.youtube-nocookie.com; "
+                                        + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com; "
+                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com; "
+                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.googleusercontent.com https://ssl.gstatic.com https://www.gstatic.com; "
+                                        + "style-src 'self' 'unsafe-inline' https://www.gstatic.com; "
+                                        + "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com https://apis.google.com https://docs.google.com; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self';")
                                 .override(true)

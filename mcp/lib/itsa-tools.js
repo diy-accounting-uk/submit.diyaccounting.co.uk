@@ -65,7 +65,7 @@ export async function deriveItsaAnnualSubmission(session, { taxYear, path } = {}
 
 /**
  * The ITSA tools keyed by MCP name, in the shape server.js's TOOLS table
- * uses, so registerItsaTools can add them to any server the same way.
+ * uses; createServer registers them beside it.
  */
 export const ITSA_TOOLS = {
   derive_itsa_quarterly_update: {
@@ -93,29 +93,3 @@ export const ITSA_TOOLS = {
     handler: deriveItsaAnnualSubmission,
   },
 };
-
-function asToolResult(value) {
-  return { content: [{ type: "text", text: JSON.stringify(value, null, 2) }], structuredContent: value };
-}
-
-function asToolError(err) {
-  return { isError: true, content: [{ type: "text", text: err?.message ?? String(err) }] };
-}
-
-/**
- * Registers the two ITSA tools on an McpServer against one session.
- * @param {import("@modelcontextprotocol/sdk/server/mcp.js").McpServer} server
- * @param {Object} session
- */
-export function registerItsaTools(server, session) {
-  for (const [name, tool] of Object.entries(ITSA_TOOLS)) {
-    server.registerTool(name, { description: tool.description, inputSchema: tool.inputSchema }, async (params) => {
-      try {
-        return asToolResult(await tool.handler(session, params));
-      } catch (err) {
-        return asToolError(err);
-      }
-    });
-  }
-  return server;
-}

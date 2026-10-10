@@ -66,6 +66,9 @@ on:
           - 'itsa-uk-property-year'
           - 'itsa-annual-from-book'
           - 'itsa-in-year-estimate'
+          - 'vat-from-books'
+          - 'itsa-quarterly-from-books'
+          - 'timer-check'
         default: 'tour'
       environment-name:
         type: choice

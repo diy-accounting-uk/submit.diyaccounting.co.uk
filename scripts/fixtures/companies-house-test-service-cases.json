@@ -31,13 +31,19 @@
     "statement": {
       "reviewDate": "2026-09-21",
       "directors": [
-        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "CWMPS832223" }
+        {
+          "forename": "Maldwyn",
+          "otherForenames": "Maldwyn",
+          "surname": "BEYNON",
+          "dob": "1932-12-03",
+          "personalCode": "CWMPS832223"
+        }
       ]
     },
     "expectedOutcome": {
-      "status": "GOVTALK_ERROR",
-      "pinned": false,
-      "note": "companyAuthenticationCode is a placeholder, no real code for 03176906 is on record, so the gateway is expected to reject on authentication rather than reach GetSubmissionStatus's 9999 'No presenter ID supplied' blocker (B34.6c). CS-A3 pins the real outcome."
+      "status": "TERMINAL",
+      "pinned": true,
+      "note": "The test gateway's test mode answers a polled statement with a random ACCEPT or REJECT (reject code 1, 'Random Test mode rejection'), so either terminal status is expected; ACCEPT is possible even for a wrong company authentication code. Observed REJECT in harness run 38009055293."
     }
   },
   {
@@ -50,13 +56,19 @@
       "reviewDate": "2026-09-21",
       "sicCodes": ["93110"],
       "directors": [
-        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "CWMPS832223" }
+        {
+          "forename": "Maldwyn",
+          "otherForenames": "Maldwyn",
+          "surname": "BEYNON",
+          "dob": "1932-12-03",
+          "personalCode": "CWMPS832223"
+        }
       ]
     },
     "expectedOutcome": {
-      "status": "GOVTALK_ERROR",
-      "pinned": false,
-      "note": "companyAuthenticationCode is a placeholder, no real code for 03176906 is on record. Run 36286117103 (2026-09-27) observed GovTalk 9999 'Invalid envelope number' here instead of the personal-code error the other cases got with the same shape of statement: Companies House rejects a re-used SubmissionNumber forever, per its own Technical Interface Specification section 2.1.3, and this run's SubmissionNumber came from allocateSubmissionNumber()'s atomic, monotonically increasing counter, which had not issued this value before within its own tracked history. The collision predates that counter's history against the real presenter account. CS-A3 pins the real outcome."
+      "status": "TERMINAL",
+      "pinned": true,
+      "note": "The test gateway's test mode answers a polled statement with a random ACCEPT or REJECT (reject code 1, 'Random Test mode rejection'), so either terminal status is expected; ACCEPT is possible even for a wrong company authentication code. Observed REJECT in harness run 38009055293."
     }
   },
   {
@@ -67,15 +79,31 @@
     "companyAuthenticationCode": "AUTH05",
     "statement": {
       "reviewDate": "2026-09-21",
-      "shareholdings": [{ "shareClass": "Ordinary", "numberHeld": "50000", "shareholders": [{ "surname": "WELSH RUGBY UNION LTD" }] }],
+      "shareholdings": [
+        {
+          "shareClass": "Ordinary",
+          "numberHeld": "50000",
+          "shareholders": [
+            {
+              "surname": "WELSH RUGBY UNION LTD"
+            }
+          ]
+        }
+      ],
       "directors": [
-        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "CWMPS832223" }
+        {
+          "forename": "Maldwyn",
+          "otherForenames": "Maldwyn",
+          "surname": "BEYNON",
+          "dob": "1932-12-03",
+          "personalCode": "CWMPS832223"
+        }
       ]
     },
     "expectedOutcome": {
-      "status": "GOVTALK_ERROR",
-      "pinned": false,
-      "note": "companyAuthenticationCode is a placeholder, no real code for 03176906 is on record. CS-A3 pins the real outcome. Settles Q2 once pinned."
+      "status": "TERMINAL",
+      "pinned": true,
+      "note": "The test gateway's test mode answers a polled statement with a random ACCEPT or REJECT (reject code 1, 'Random Test mode rejection'), so either terminal status is expected; ACCEPT is possible even for a wrong company authentication code. Observed REJECT in harness run 38009055293."
     }
   },
   {
@@ -88,13 +116,19 @@
       "reviewDate": "2026-09-21",
       "registeredEmailAddress": "confirmation-statement-test@example.com",
       "directors": [
-        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "CWMPS832223" }
+        {
+          "forename": "Maldwyn",
+          "otherForenames": "Maldwyn",
+          "surname": "BEYNON",
+          "dob": "1932-12-03",
+          "personalCode": "CWMPS832223"
+        }
       ]
     },
     "expectedOutcome": {
-      "status": "GOVTALK_ERROR",
-      "pinned": false,
-      "note": "companyAuthenticationCode is a placeholder, no real code for 03176906 is on record. CS-A3 pins the real outcome."
+      "status": "TERMINAL",
+      "pinned": true,
+      "note": "The test gateway's test mode answers a polled statement with a random ACCEPT or REJECT (reject code 1, 'Random Test mode rejection'), so either terminal status is expected; ACCEPT is possible even for a wrong company authentication code. Observed REJECT in harness run 38009055293."
     }
   },
   {
@@ -106,7 +140,13 @@
     "statement": {
       "reviewDate": "2026-09-21",
       "directors": [
-        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "CWMPS832223" }
+        {
+          "forename": "Maldwyn",
+          "otherForenames": "Maldwyn",
+          "surname": "BEYNON",
+          "dob": "1932-12-03",
+          "personalCode": "CWMPS832223"
+        }
       ]
     },
     "corruptFirstDirectorPersonalCode": true,
@@ -125,13 +165,19 @@
     "statement": {
       "reviewDate": "2026-09-21",
       "directors": [
-        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "CWMPS832223" }
+        {
+          "forename": "Maldwyn",
+          "otherForenames": "Maldwyn",
+          "surname": "BEYNON",
+          "dob": "1932-12-03",
+          "personalCode": "CWMPS832223"
+        }
       ]
     },
     "expectedOutcome": {
-      "status": "GOVTALK_ERROR",
-      "pinned": false,
-      "note": "companyAuthenticationCode is deliberately a different placeholder from the other cases', to prove the gateway rejects a mismatched code. CS-A3 pins the real reject code."
+      "status": "TERMINAL",
+      "pinned": true,
+      "note": "The test gateway's test mode answers a polled statement with a random ACCEPT or REJECT (reject code 1, 'Random Test mode rejection'), so either terminal status is expected; ACCEPT is possible even for a wrong company authentication code. Observed ACCEPT in harness run 38009055293."
     }
   },
   {
@@ -142,12 +188,18 @@
     "companyAuthenticationCode": "AUTH08",
     "statement": {
       "reviewDate": "2026-09-21",
-      "officers": [{ "identityVerificationDetails": { "appointment_verification_end_on": "9999-12-31" } }]
+      "officers": [
+        {
+          "identityVerificationDetails": {
+            "appointment_verification_end_on": "9999-12-31"
+          }
+        }
+      ]
     },
     "expectedOutcome": {
-      "status": "GOVTALK_ERROR",
-      "pinned": false,
-      "note": "Forces ConfirmationStatement-v1-3 (no verification block) for schema coverage; whether the test company's real officers are all verified is unconfirmed, and companyAuthenticationCode is a placeholder with no real code for 03176906 on record. CS-A3 pins it."
+      "status": "TERMINAL",
+      "pinned": true,
+      "note": "The test gateway's test mode answers a polled statement with a random ACCEPT or REJECT (reject code 1, 'Random Test mode rejection'), so either terminal status is expected; ACCEPT is possible even for a wrong company authentication code. Observed REJECT in harness run 38009055293."
     }
   },
   {
@@ -166,9 +218,9 @@
       "personalCode": "CWMPS832223"
     },
     "expectedOutcome": {
-      "status": "GOVTALK_ERROR",
-      "pinned": false,
-      "note": "Alan James Morgan is company 04549236's one director and its one individual PSC (find-and-update.company-information.service.gov.uk, 2026-09-26), the director-PSC case CS-13b asks for. companyAuthenticationCode is a placeholder, no real code for 04549236 is on record. The weekly run pins the real outcome."
+      "status": "TERMINAL",
+      "pinned": true,
+      "note": "The test gateway's test mode answers a polled statement with a random ACCEPT or REJECT (reject code 1, 'Random Test mode rejection'), so either terminal status is expected; ACCEPT is possible even for a wrong company authentication code. Observed REJECT in harness run 38009055293."
     }
   },
   {

@@ -328,6 +328,11 @@ async function handleActivityChargeComplete(session) {
   const activityId = session.metadata?.activityId;
   const subjectKey = session.metadata?.subjectKey;
 
+  if (session.payment_link) {
+    logger.info({ message: "Payment Link checkout, no activity charge", sessionId: session.id, paymentLink: session.payment_link });
+    return;
+  }
+
   if (!hashedSub || !activityId || !subjectKey) {
     logger.error({ message: "checkout.session.completed (payment mode) missing metadata", sessionId: session.id });
     return;

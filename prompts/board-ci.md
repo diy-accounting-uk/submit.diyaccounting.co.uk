@@ -26,9 +26,10 @@ runner. Do not report one and do not start one.
 unverified and name the failure — never as absent.
 
 **Part 4's AWS reads are split across two jobs**, because a job carries one GitHub environment and
-this workflow's ci and prod roles each live on their own. This job's own role reaches ci only: run
-the skill's `aws cloudformation list-stacks` and `aws ssm get-parameter` commands against ci
-yourself. Prod's equivalents were already gathered by a separate job carrying the prod environment
+this workflow's ci and prod roles each live on their own. This job's own role reaches ci only. Run
+the ci reads as bare `aws cloudformation list-stacks ...` and `aws ssm get-parameter ...`, with no
+`--profile` flag: the runner has no profile, and a `--profile` prefix takes the command outside the
+allowed patterns, so it is refused. Prod's equivalents were already gathered by a separate job carrying the prod environment
 and are pasted below, not something to re-query — this job holds no prod credentials at all.
 
 Prod app stacks (`StackName`, `CreationTime`, tab-separated, one per line):
@@ -47,8 +48,8 @@ A row's prose is a claim, not evidence. For each row under `## In flight` that n
 pull request, check it this run:
 
 1. `git ls-remote --heads origin <branch>`. No output means the branch is gone from origin.
-2. `gh pr list --state all --head <branch> --json number,state,mergedAt` (and `gh pr view <n>
-   --json state,mergedAt` for a named PR). `MERGED` means the row's change is on `main`.
+2. `gh pr list --repo ${GITHUB_REPOSITORY} --state all --head <branch> --json number,state,mergedAt`
+   (and `gh pr view <n> --repo ${GITHUB_REPOSITORY} --json state,mergedAt` for a named PR). `MERGED` means the row's change is on `main`.
 
 A branch that is gone from origin, or whose pull request is `MERGED`, means the row's batch landed:
 the row leaves `## In flight` (its remainder, if any, moves to the section its class dictates;
@@ -65,8 +66,21 @@ grounds that nobody is reading; the point is that somebody reads it later.
 
 You may change **`NEXT.md` and nothing else**. Any other file changed will fail this job.
 
-The skill's write-back rule stands: after rendering, make any row whose status no longer matches
-what you just printed true again. But an unattended run adds a caution the terminal does not need —
+**The order of the run is fixed, and the report is the last output.** Print no part of the report,
+and no summary text, until step 3 is done.
+
+1. Gather: the settle checks above, the ci reads, the issue and run reads.
+2. Decide: list every row whose status no longer matches what you found. Merged-PR rows found in
+   step 1 are on this list.
+3. Edit `NEXT.md` now, with the Edit tool, for every row on the list, and `git add NEXT.md` and
+   `git commit`. Writing "Proceeding with the update" in text is not the edit; the Edit tool call
+   is. Do this before rendering anything.
+   On a render-only run (the section at the end of this prompt says so), step 3 makes no edit
+   and no commit: its list of edits is what step 4 prints instead.
+4. Render the five parts. Part 1 states what step 3 changed, row by row. If step 3 changed nothing,
+   print exactly: `NEXT.md already true: no edit made.`
+
+But an unattended run adds a caution the terminal does not need —
 **do not commit for the sake of committing.** A no-op commit on `main` every few hours is noise that
 trains everyone to ignore the file's history.
 
@@ -78,8 +92,8 @@ Commit only when at least one of these is true:
 - an alarm family has no home on the board and needs one;
 - the prod or ci deployment line no longer matches what is actually live.
 
-If none holds, say plainly that the board is already true and commit nothing. That is a good
-outcome and the most common one.
+If none holds, step 3 is empty and step 4 prints the line above. That is a good outcome and the
+most common one.
 
 ## GitHub issues that deserve a row
 

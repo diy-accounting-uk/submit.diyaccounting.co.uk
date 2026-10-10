@@ -15,6 +15,10 @@
 // The annual card also accepts the derived-figures JSON the diya-submit MCP tool
 // derive_itsa_annual_submission writes.
 //
+// Where the page's environment carries a Google Drive client id and Picker key, a "Choose from
+// Google Drive" button sits beside the file dialog. It opens the customer's own Drive in the
+// Google Picker and reads the chosen file the way a dropped one is read.
+//
 // The reader and the three derivations load from lib/books-bundle.js on the first file, not on
 // page load.
 //
@@ -38,6 +42,7 @@
   const MAX_UNMAPPED_SHOWN = 12;
 
   let bundlePromise = null;
+  let drivePickerPromise = null;
   let mountedCard = null;
 
   function loadBundle() {
@@ -48,6 +53,16 @@
       });
     }
     return bundlePromise;
+  }
+
+  function loadDrivePicker() {
+    if (!drivePickerPromise) {
+      drivePickerPromise = import("../lib/google-drive-picker.js").catch((error) => {
+        drivePickerPromise = null;
+        throw error;
+      });
+    }
+    return drivePickerPromise;
   }
 
   // An answer for the customer, as opposed to a fault in the code: shown as the status line.
@@ -535,6 +550,58 @@
     }
     mountedCard = { applyPendingHandoff };
     applyPendingHandoff();
+
+    // The Drive button exists only where the page's environment carries the Drive configuration.
+    async function offerDrive() {
+      if (!window.envReady) return;
+      let driveConfig;
+      let drivePicker;
+      try {
+        const env = await window.envReady;
+        drivePicker = await loadDrivePicker();
+        driveConfig = drivePicker.driveConfig(env);
+      } catch {
+        return;
+      }
+      if (!driveConfig) return;
+      const driveButton = element(
+        "button",
+        { type: "button", id: "booksImportDrive", class: "secondary-button" },
+        "Choose from Google Drive",
+      );
+      dropZone.append(driveButton);
+      let choosing = false;
+      driveButton.addEventListener("pointerenter", () => drivePicker.preload());
+      driveButton.addEventListener("focus", () => drivePicker.preload());
+      driveButton.addEventListener("click", async () => {
+        if (choosing || working) return;
+        choosing = true;
+        driveButton.disabled = true;
+        say("Waiting for Google Drive...");
+        try {
+          const token = await drivePicker.connect(driveConfig);
+          const picked = await drivePicker.pick(driveConfig, token);
+          if (!picked) {
+            say("");
+            return;
+          }
+          if (picked.mimeType === drivePicker.GOOGLE_SHEET_MIME_TYPE) {
+            say(
+              `Could not import ${picked.name}: it is a Google Sheet. Choose the DIYA-GL book, the spreadsheets workbook (.xlsx) or the package zip instead.`,
+            );
+            return;
+          }
+          say(`Reading ${picked.name}...`);
+          await handleFile(await drivePicker.download(picked, token));
+        } catch (error) {
+          say(`Could not open Google Drive: ${withoutFinalStop(error.message)}.`);
+        } finally {
+          choosing = false;
+          driveButton.disabled = false;
+        }
+      });
+    }
+    offerDrive();
 
     chooseButton.addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", () => handleFile(fileInput.files && fileInput.files[0]));
