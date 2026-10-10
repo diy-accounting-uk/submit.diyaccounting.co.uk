@@ -87,7 +87,7 @@ The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarde
 - CS-A4: in flight; the pack rides on B34's email
 - CS-11b: blocked by CS-A4
 - CS-P1: blocked by CS-11b (it adds a second payment path to the journey CS-11b launches)
-- B34f: ready; the build is on main (PR #469), the test-service case remains (NEXT.md B34f)
+- B34f: on main (PR #469 the build, PR #488 the harness case); the proof run on the test service remains (NEXT.md B34f)
 - B34e: on main (PR #471), with B34e2's validator fix
 - B34g1: ready (B34e's full accounts are on main); its ETS proof waits on O34g
 - B34g2: blocked by B34g1 and O34g
@@ -510,9 +510,9 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 | Id | What | Files | Model | Blocked by | Class |
 |---|---|---|---|---|---|
 | B34.6c | The reply on the XML team's thread, carrying the O34c and CS-A4 asks; the accounts case's terminal `StatusCode` pinned in `scripts/fixtures/companies-house-test-service-cases.json` if a later poll of 00002Y returns one | ~1 | Haiku | — | Human-driven (NEXT.md B34) |
-| CS-A5 | The statement of confirmation as a required checkbox on the filing page (criterion 10 shows both declarations); `scripts/axe-quickscan.mjs` scanning the filing pages | ~3 | Sonnet | — | Machine-only (NEXT.md CS-A5) |
+| CS-A5 | The statement of confirmation as a required checkbox on the filing page (criterion 10 shows both declarations); `scripts/axe-quickscan.mjs` scanning the filing pages | ~3 | Sonnet | — | On main (PR #488, 0896c7620) |
 | CS-P1 | Filing under a customer's own presenter: the page option, storing no credentials, the credit-account explanation, skipping the Stripe checkout at the existing fee gate | ~5 | Sonnet | CS-11b | Blocked |
-| B34f | The dormant accounts case in the test-service harness; the build is on main (PR #469) | ~2 | Sonnet | — | Machine-only (NEXT.md B34f) |
+| B34f | The dormant accounts case in the test-service harness; on main (PR #488); the proof run remains | ~2 | Sonnet | — | Machine-only (NEXT.md B34f) |
 | B34g1 | The ETS proof: the TPVS-proven return through `buildCt600SubmissionRequest` with the SDST test credentials and vendor ID, polled and deleted | ~1 | Sonnet | O34g | Blocked |
 | B34g2 | The CT600 filing journey: Lambdas, page, activity, receipts, per the B34h design | ~14 | Sonnet | O34g | Blocked |
 

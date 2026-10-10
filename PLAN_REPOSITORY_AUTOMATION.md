@@ -5,7 +5,7 @@
 
 Status: **design, drafted 2026-09-09.** Phases 0 and 1 in part on main (commit signing, CODEOWNERS, the
 origin labels, the alarm-origin verifier); the ruleset gate, the Actions settings, the security-review cron and the kill switch are done (2026-09-16).
-Open on NEXT.md: B54 and O54 (the signed-commits rule); phase 6 is the dashboard's D16 (NEXT.md B52l).
+The signed-commits rule is on `main` (ruleset 16057564 `required_signatures`, 2026-10-10; the bot exemption removed in PR #488); phase 6 is the dashboard's D16 (NEXT.md B52l).
 
 ## What the operator asked for
 
