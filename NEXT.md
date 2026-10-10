@@ -15,8 +15,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-a212acc** (PR #491 and PR #492, deploy 38086596977, 2026-10-10; 11 stacks). main's deploy 38093526141 (dbf4e0ad9: PR #493) is standing up prod-dbf4e0a and will promote it. The operator's `destroy-prod.yml` dispatch 38088659914 removed prod-0c8ceec.
-**ci**: `ci-set2` is last-known-good (12 stacks, created 2026-10-10 20:28 UTC by PR #492's branch at 26e297803); ci-set1 is swept; both ci slots are free. The sweep leaves the last-known-good set unless `force-last-known-good=true`.
+**Prod runs deployment prod-a212acc** (PR #491 and PR #492, deploy 38086596977, 2026-10-10; 11 stacks). main's deploy 38093526141 (dbf4e0ad9: PR #493) is standing up prod-dbf4e0a and will promote it.
+**ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-10 22:35 UTC by PR #493's branch at e964c3859; the apex promoted to it at 23:05 UTC); ci-set2 (12 stacks, 20:28 UTC) stands until its self-destruct at 00:28 UTC. The sweep leaves the last-known-good set unless `force-last-known-good=true`.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
