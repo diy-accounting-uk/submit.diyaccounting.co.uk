@@ -207,6 +207,30 @@ class EdgeStackTest {
     }
 
     @Test
+    void webPagesMayOpenAnIdentityPopupWhileApiAndMcpRoutesStaySameOrigin() {
+        Template template = Template.fromStack(synthEdgeStack());
+        Map<String, String> expectedOpenerPolicyByName = Map.of(
+                "^(?!.*(-diya-gl-whp|-mcp-whp)$).*-whp$",
+                "same-origin-allow-popups",
+                "-diya-gl-whp$",
+                "same-origin",
+                "-mcp-whp$",
+                "same-origin");
+        for (Map.Entry<String, String> expected : expectedOpenerPolicyByName.entrySet()) {
+            Map<String, Object> openerPolicy =
+                    Map.of("Header", "Cross-Origin-Opener-Policy", "Value", expected.getValue(), "Override", true);
+            Map<String, Object> config = Map.of(
+                    "Name",
+                    Match.stringLikeRegexp(expected.getKey()),
+                    "CustomHeadersConfig",
+                    Match.objectLike(Map.of("Items", Match.arrayWith(List.of(Match.objectLike(openerPolicy))))));
+            template.hasResourceProperties(
+                    "AWS::CloudFront::ResponseHeadersPolicy",
+                    Match.objectLike(Map.of("ResponseHeadersPolicyConfig", Match.objectLike(config))));
+        }
+    }
+
+    @Test
     void perIpRateRuleLeavesOutMcpPathsAndAnAuthorizationKeyedRuleCoversThem() {
         Template template = Template.fromStack(synthEdgeStack());
         String json = template.toJSON().toString();
