@@ -3,7 +3,7 @@
 
 # PLAN: The submission MCP
 
-Status: open, drafted 2026-09-07. M1 is on main (M1a, PR #226; M1b and M1c, PR #232); M2 is on main (PR #469); M5 is done (workflow, staging and page PR #471; trusted publishing PR #490; 0.1.1 published from the tag `diya-submit-mcp-v0.1.1` by `publish-mcp.yml` run 38090857983 to npm and GHCR, 2026-10-10); M7 is on main (81654afe6, `mcp/scripts/vat-sandbox-proof.js`); M4, M6 and M8 are rows
+Status: open, drafted 2026-09-07. M1 is on main (M1a, PR #226; M1b and M1c, PR #232); M2 is on main (PR #469); M5 is done (workflow, staging and page PR #471; trusted publishing PR #490; 0.1.1 published from the tag `diya-submit-mcp-v0.1.1` by `publish-mcp.yml` run 38090857983 to npm and GHCR, 2026-10-10); M7 is on main (81654afe6, `mcp/scripts/vat-sandbox-proof.js`); M4 and M6 are on main (PR #491, 0c8ceec64); M8 is done (mcp-cli laUarnsdkNw, mcp-docker 8dfs9PfeJQs, mcp-hosted doDCupnqrB4, all public 2026-10-18)
 on `NEXT.md` (boarded 2026-10-03); M3 uses the authorization code grant with PKCE on a loopback
 redirect, because Cognito has no device-code grant.
 
@@ -645,11 +645,11 @@ for H7.
 | M1 | The package skeleton at `mcp/`: the SDK, stdio transport, `open_book`, `save_book` over the filesystem, `derive_vat_return`, `derive_micro_entity_accounts`; unit tests over the BrickWork Pro Ltd example and the Precision Code Ltd example; the seven derived lines for BrickWork Pro passed through `buildMicroEntityAccounts` and the public validator script | a `file:` dependency on the sibling `diya-gl/` | Claude Code, Opus for the derivation mapping, Sonnet for the rest M1 runs as three `NEXT.md` rows since 2026-09-15: M1a the skeleton, transport and the two book tools; M1b `derive_vat_return`; M1c `derive_micro_entity_accounts`. |
 | M2 | The Submit-facing tools over the deployed REST API with a bearer token from the environment, against the simulator lane first: obligations, VAT submit, receipt, accounts preview, submit and poll | M1 | Claude Code, Sonnet |
 | M3 (on main) | The third Cognito app client, its JWT authoriser and the authorization code grant with PKCE on a loopback redirect; `open_book` and `save_book` over the DIYA cloud routes | M1; the DIYA-GL client pattern in `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_DIYA_GL_STORAGE.md` | Claude Code, Sonnet; the CDK change through the usual deploy |
-| M4 | The hosted transport: a Lambda with streamable HTTP behind API Gateway on the existing domain, the resource-server metadata, and the OAuth flow end to end from a chat client; design and build steps in "The hosted surface (M4)" above | M3 | Claude Code, Sonnet (step 2 Opus) |
+| M4 (on main) | The hosted transport: a Lambda with streamable HTTP behind API Gateway on the existing domain, the resource-server metadata, and the OAuth flow end to end from a chat client; design and build steps in "The hosted surface (M4)" above | M3 | Claude Code, Sonnet (step 2 Opus) |
 | M5 | Distribution: `npm publish` from this repo on a tag, the Docker image on GHCR, `web/public/mcp.html` rewritten as the real instructions | M2; H7 on the spreadsheets board for the dependency | Claude Code, Haiku |
-| M6 | The Companies House proof: BrickWork Pro's derived accounts filed to the XML Gateway test service through the MCP | M2; NEXT.md B34.6c | Claude Code, Sonnet |
+| M6 (on main) | The Companies House proof: BrickWork Pro's derived accounts filed to the XML Gateway test service through the MCP | M2; NEXT.md B34.6c | Claude Code, Sonnet |
 | M7 | The VAT proof: a derived return filed through the MCP against HMRC's sandbox with the existing test user | M2 | Claude Code, Sonnet |
-| M8 | A video for the npm CLI, a video for the Docker image, and a video for the hosted MCP, published as each surface ships | M4 for the hosted video; M5 for the npm and Docker videos | Claude Code, Haiku |
+| M8 (done) | A video for the npm CLI, a video for the Docker image, and a video for the hosted MCP, published as each surface ships | M4 for the hosted video; M5 for the npm and Docker videos | Claude Code, Haiku |
 
 ## Videos
 
