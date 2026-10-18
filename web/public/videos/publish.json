@@ -3287,9 +3287,9 @@
     {
       "id": "vat-hmrc-assist",
       "group": "vat",
-      "publish": false,
+      "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": null,
+      "sourceRun": 39176527019,
       "sourceArtifact": "video-vat-hmrc-assist-simulator",
       "videoFile": "target/videos/video-vat-hmrc-assist-simulator/vat-hmrc-assist.mp4",
       "captionFile": "target/videos/video-vat-hmrc-assist-simulator/vat-hmrc-assist.vtt",
@@ -3297,8 +3297,95 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video fills in the nine boxes of a VAT return for an open period, asks HMRC Assist to check them, reads its messages and then submits the return. HMRC Assist's reply in this video is simulated from the three illustrative messages HMRC has published, because HMRC's VAT Assist (MTD) API is not yet available, and no live filing is made. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "HMRC Assist"],
       "categoryId": "27",
-      "videoId": null,
-      "walkthrough": []
+      "videoId": "ZXOS6TskYfk",
+      "walkthrough": [
+        {
+          "scene": "vat-form",
+          "headline": "Open the VAT return",
+          "caption": "Start a VAT return from the activities page. Type the VAT registration number.",
+          "startSeconds": 19,
+          "thumb": "videos/vat-hmrc-assist/vat-form-thumb.webp",
+          "full": "videos/vat-hmrc-assist/vat-form.webp"
+        },
+        {
+          "scene": "fill-boxes",
+          "step": 0,
+          "headline": "Choose the open period",
+          "caption": "HMRC supplies the open period to file for.",
+          "startSeconds": 40,
+          "thumb": "videos/vat-hmrc-assist/fill-boxes-0-thumb.webp",
+          "full": "videos/vat-hmrc-assist/fill-boxes-0.webp"
+        },
+        {
+          "scene": "fill-boxes",
+          "step": 1,
+          "headline": "Box 1, VAT on sales",
+          "caption": "Box 1 is the VAT due on your sales.",
+          "startSeconds": 47,
+          "thumb": "videos/vat-hmrc-assist/fill-boxes-1-thumb.webp",
+          "full": "videos/vat-hmrc-assist/fill-boxes-1.webp"
+        },
+        {
+          "scene": "fill-boxes",
+          "step": 3,
+          "headline": "Box 4, VAT reclaimed",
+          "caption": "Box 4 is the VAT you reclaim on purchases.",
+          "startSeconds": 55,
+          "thumb": "videos/vat-hmrc-assist/fill-boxes-3-thumb.webp",
+          "full": "videos/vat-hmrc-assist/fill-boxes-3.webp"
+        },
+        {
+          "scene": "fill-boxes",
+          "step": 4,
+          "headline": "Box 6, total sales",
+          "caption": "Box 6 is your total sales, without VAT.",
+          "startSeconds": 62,
+          "thumb": "videos/vat-hmrc-assist/fill-boxes-4-thumb.webp",
+          "full": "videos/vat-hmrc-assist/fill-boxes-4.webp"
+        },
+        {
+          "scene": "fill-boxes",
+          "step": 5,
+          "headline": "Box 7, total purchases",
+          "caption": "Box 7 is your total purchases, without VAT.",
+          "startSeconds": 68,
+          "thumb": "videos/vat-hmrc-assist/fill-boxes-5-thumb.webp",
+          "full": "videos/vat-hmrc-assist/fill-boxes-5.webp"
+        },
+        {
+          "scene": "fill-boxes",
+          "step": 8,
+          "headline": "Confirm the declaration",
+          "caption": "Tick the declaration to confirm the return is accurate.",
+          "startSeconds": 78,
+          "thumb": "videos/vat-hmrc-assist/fill-boxes-8-thumb.webp",
+          "full": "videos/vat-hmrc-assist/fill-boxes-8.webp"
+        },
+        {
+          "scene": "assist-check",
+          "headline": "Check with HMRC Assist",
+          "caption": "Before you submit, ask HMRC Assist to check the return. HMRC Assist answers with messages about the figures, in HMRC's own words.",
+          "startSeconds": 86,
+          "thumb": "videos/vat-hmrc-assist/assist-check-thumb.webp",
+          "full": "videos/vat-hmrc-assist/assist-check.webp"
+        },
+        {
+          "scene": "submit",
+          "headline": "Submit the return",
+          "caption": "The messages are advice. You decide whether to submit.",
+          "startSeconds": 109,
+          "thumb": "videos/vat-hmrc-assist/submit-thumb.webp",
+          "full": "videos/vat-hmrc-assist/submit.webp"
+        },
+        {
+          "scene": "receipt",
+          "headline": "Submitted",
+          "caption": "HMRC confirms the return is filed. The receipt is your record that it went through.",
+          "startSeconds": 117,
+          "thumb": "videos/vat-hmrc-assist/receipt-thumb.webp",
+          "full": "videos/vat-hmrc-assist/receipt.webp"
+        }
+      ]
     },
     {
       "id": "itsa-quarterly-from-books",
