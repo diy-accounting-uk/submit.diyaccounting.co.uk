@@ -10,7 +10,7 @@
 // might have changed.
 //
 // CLI usage: pass the changed files as arguments, or pipe them one per line on stdin. An
-// optional --environment <ci|prod> leaves out scripts whose declared "environments" (see
+// optional --environment <ci|prod|simulator> leaves out scripts whose declared "environments" (see
 // videos/scene-script.schema.json) excludes it; omit it to filter by pages alone.
 //   node scripts/video-scripts-for-changed-files.mjs web/public/hmrc/vat/vatObligations.html
 //   git diff --name-only base head | node scripts/video-scripts-for-changed-files.mjs --environment prod

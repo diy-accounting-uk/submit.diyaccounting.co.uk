@@ -4,6 +4,7 @@
   "title": "Check a VAT return with HMRC Assist before you submit",
   "description": "A signed-in walk through HMRC Assist on the VAT return: fill in the nine boxes for an open period, ask HMRC Assist to check them, read its messages, then submit the return.",
   "auth": "user",
+  "environments": ["simulator"],
   "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/vat/submitVat.html"],
   "viewport": {
     "width": 1920,
