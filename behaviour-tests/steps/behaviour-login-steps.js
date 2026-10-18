@@ -287,7 +287,10 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
   });
 }
 
-export async function submitHostedUINativeAuth(page, screenshotPath = defaultScreenshotPath) {
+// `settle` is the load state the step waits for after the click. A page that keeps a live
+// connection open (an event stream) never reaches "networkidle", so a caller that returns to
+// such a page passes "load".
+export async function submitHostedUINativeAuth(page, screenshotPath = defaultScreenshotPath, { settle = "networkidle" } = {}) {
   await test.step("The user submits the Cognito Hosted UI login form", async () => {
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submit-hosted-ui-native.png` });
     // The Cognito Hosted UI sign-in button is input[name="signInSubmitButton"][type="submit"].
@@ -301,14 +304,15 @@ export async function submitHostedUINativeAuth(page, screenshotPath = defaultScr
       }
     });
     console.log(`Clicked sign-in button on Hosted UI`);
-    await page.waitForLoadState("networkidle");
+    await page.waitForLoadState(settle);
     await page.waitForTimeout(1000);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-hosted-ui-native-signed-in.png` });
   });
 }
 
 // Handle the Cognito Hosted UI TOTP MFA challenge page
-export async function handleTotpChallenge(page, totpSecret, screenshotPath = defaultScreenshotPath) {
+// `settle` is the load state awaited after each submit; see submitHostedUINativeAuth.
+export async function handleTotpChallenge(page, totpSecret, screenshotPath = defaultScreenshotPath, { settle = "networkidle" } = {}) {
   await test.step("The user completes the TOTP MFA challenge on the Cognito Hosted UI", async () => {
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-totp-challenge.png` });
 
@@ -373,7 +377,7 @@ export async function handleTotpChallenge(page, totpSecret, screenshotPath = def
       });
       console.log("Submitted TOTP challenge form");
 
-      await page.waitForLoadState("networkidle");
+      await page.waitForLoadState(settle);
       await page.waitForTimeout(1000);
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-totp-challenge-completed.png` });
 

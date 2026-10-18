@@ -486,11 +486,24 @@ async function doHostedUiLogin(page, step, ctx) {
   }
   const capturePage = withoutDebugScreenshots(formPage);
   await steps.fillInHostedUINativeAuth(capturePage, journey.authUsername, journey.authPassword, ctx.stepScreenshotDir);
-  await steps.submitHostedUINativeAuth(capturePage, ctx.stepScreenshotDir);
+  // The OAuth flow returns to the application that started it (MCP Inspector), which holds an
+  // event stream open, so the steps settle on "load" and the wait for the way back is explicit.
+  const hostedUiOrigin = new URL(formPage.url()).origin;
+  await steps.submitHostedUINativeAuth(capturePage, ctx.stepScreenshotDir, { settle: "load" });
   const totpSecret = process.env.TEST_AUTH_TOTP_SECRET;
   if (totpSecret) {
-    await ctx.waitPhase(() => steps.handleTotpChallenge(capturePage, totpSecret, ctx.stepScreenshotDir));
+    await ctx.waitPhase(() => steps.handleTotpChallenge(capturePage, totpSecret, ctx.stepScreenshotDir, { settle: "load" }));
   }
+  await formPage
+    .waitForURL((url) => url.origin !== hostedUiOrigin, { timeout: 60000 })
+    .catch(async () => {
+      if (formPage.isClosed()) return;
+      await writeFailureStill(page, ctx);
+      throw new SceneStepError(
+        `scene "${ctx.sceneId}" step ${ctx.stepIndex} (hostedUiLogin): still on the Hosted UI (${hostedUiOrigin}) 60000 ms after the sign-in`,
+        { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: null },
+      );
+    });
   return { waitMs: Date.now() - start, rect: null };
 }
 
