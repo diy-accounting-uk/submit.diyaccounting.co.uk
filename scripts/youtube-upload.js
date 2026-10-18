@@ -146,6 +146,8 @@ export function selectPendingUploads(list) {
   return list.videos.filter((entry) => entry.publish === true && !entry.videoId);
 }
 
+const PRIVACY_TO_FLIP = ["unlisted", "private"];
+
 export function selectUploadedVideos(list) {
   return list.videos.filter((entry) => entry.publish === true && entry.videoId);
 }
@@ -861,22 +863,41 @@ export async function publishEntry({
 }
 
 /**
- * Flip every already-uploaded entry to public, unless the entry's own declared status pins a
- * different privacyStatus, in which case that wins.
+ * Set every already-uploaded entry to public, unless the entry's own declared status pins a
+ * different privacyStatus, in which case that wins. Reads each entry's live status first and
+ * updates only the entries that are unlisted or private, because videos.update costs 50 quota
+ * units and videos.list costs 1.
  */
 export async function flipUploadedVideosPublic({
   list,
   accessToken,
   quotaProject,
   setVideoStatusImpl = setVideoStatus,
+  fetchVideoStatusesImpl = fetchVideoStatuses,
   log = console.log,
 }) {
-  for (const entry of selectUploadedVideos(list)) {
+  const uploaded = selectUploadedVideos(list);
+  const liveStatusesById = await fetchVideoStatusesImpl({
+    videoIds: uploaded.map((entry) => entry.videoId),
+    accessToken,
+    quotaProject,
+  });
+  let updatedCount = 0;
+  for (const entry of uploaded) {
+    const live = liveStatusesById[entry.videoId];
+    if (!live) throw new Error(`${entry.id}: YouTube returned no status for ${entry.videoId}`);
     const declaredStatus = resolveDeclaredStatus(list, entry);
+    const isPinned = declaredStatus.privacyStatus !== undefined;
+    if (!isPinned && !PRIVACY_TO_FLIP.includes(live.privacyStatus)) {
+      log(`${entry.id} https://youtu.be/${entry.videoId} left alone: already ${live.privacyStatus}`);
+      continue;
+    }
     const privacyStatus = resolvePrivacyStatus(declaredStatus, "public");
     const status = await setVideoStatusImpl({ videoId: entry.videoId, privacyStatus, declaredStatus, accessToken, quotaProject });
+    updatedCount += 1;
     log(`${entry.id} https://youtu.be/${entry.videoId} is now ${status.privacyStatus}`);
   }
+  log(`${updatedCount} of ${uploaded.length} uploaded videos updated`);
 }
 
 export async function main() {

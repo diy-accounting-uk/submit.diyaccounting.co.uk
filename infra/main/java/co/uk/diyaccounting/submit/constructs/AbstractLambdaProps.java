@@ -71,7 +71,7 @@ public interface AbstractLambdaProps {
 
     @Value.Default
     default RetentionDays logGroupRetention() {
-        return RetentionDays.THREE_DAYS;
+        return RetentionDays.ONE_WEEK;
     }
 
     @Value.Default

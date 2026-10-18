@@ -74,6 +74,16 @@ export function http502BadGatewayResponse({ request, headers, message, error }) 
   });
 }
 
+export function http504GatewayTimeoutResponse({ request, headers, message, error }) {
+  return httpResponse({
+    statusCode: 504,
+    request,
+    headers,
+    data: { message, ...error },
+    levelledLogger: logger.error.bind(logger),
+  });
+}
+
 export function http403ForbiddenResponse({ request, headers, message, error }) {
   return httpResponse({
     statusCode: 403,
