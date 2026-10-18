@@ -243,6 +243,7 @@ jobs:
             case " ${ENVIRONMENTS} " in
               *" prod "*) TARGET_ENVIRONMENT=prod ;;
               *" ci "*) TARGET_ENVIRONMENT=ci ;;
+              *" simulator "*) TARGET_ENVIRONMENT=simulator ;;
               *) echo "::error::videos/${SCRIPT}.json declares no environment video-capture.yml records"; exit 1 ;;
             esac
 

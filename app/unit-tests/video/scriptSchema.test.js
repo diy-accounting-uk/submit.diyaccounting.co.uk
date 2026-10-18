@@ -273,6 +273,10 @@ describe("environments", () => {
     expect(() => validateScript(baseScript({ environments: [] }))).toThrow(/environments/);
   });
 
+  test("accepts a simulator-only script", () => {
+    expect(() => validateScript(baseScript({ environments: ["simulator"] }))).not.toThrow();
+  });
+
   test("rejects an unknown environment name", () => {
     expect(() => validateScript(baseScript({ environments: ["staging"] }))).toThrow(/environments/);
   });
@@ -292,7 +296,7 @@ describe("environments", () => {
     const script = readSceneScript(name);
     if (!("environments" in script)) return;
     for (const environment of script.environments) {
-      expect(["ci", "prod"]).toContain(environment);
+      expect(["ci", "prod", "simulator"]).toContain(environment);
     }
   });
 });

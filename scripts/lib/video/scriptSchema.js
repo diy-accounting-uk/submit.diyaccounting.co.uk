@@ -80,7 +80,7 @@ const ALLOWED_HMRC_SERVICES = new Set(["mtd-vat", "mtd-income-tax"]);
 
 // Where a script can be recorded. Defaults to both when a script omits the field, so an
 // existing script needs no change.
-const ALLOWED_ENVIRONMENTS = new Set(["ci", "prod"]);
+const ALLOWED_ENVIRONMENTS = new Set(["ci", "prod", "simulator"]);
 
 // Frames render at this multiple of the CSS viewport (3840x2160 for a 1920x1080 layout) unless
 // a script overrides deviceScaleFactor, so YouTube's re-encode draws its higher-bitrate ladder
