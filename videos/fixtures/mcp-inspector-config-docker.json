@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "diya-submit-docker": {
+      "command": "docker",
+      "args": ["run", "-i", "--rm", "-v", "__FIXTURES__:/books:ro", "ghcr.io/diy-accounting-uk/diya-submit-mcp:0.1.1"]
+    }
+  }
+}

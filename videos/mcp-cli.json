@@ -1,0 +1,202 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "mcp-cli",
+  "title": "The submission MCP from npm, inspected",
+  "description": "A look under the hood: the DIY Accounting Submit MCP server, run from npm with one command, answering a developer tool (MCP Inspector) by opening an example book and working out its VAT return boxes.",
+  "auth": "none",
+  "pages": ["videos/books/brickwork-pro-ltd-vat.json", "videos/fixtures/mcp-inspector-config-npm.json"],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+  "localApp": {
+    "command": "DANGEROUSLY_OMIT_AUTH=true CLIENT_PORT=6274 npx -y @modelcontextprotocol/inspector --web --config videos/fixtures/mcp-inspector-config-npm.json --server diya-submit-npm",
+    "url": "http://127.0.0.1:6274",
+    "readyPattern": "MCP Inspector Web is up and running",
+    "readyTimeoutMs": 120000
+  },
+  "pacing": {
+    "perCharMs": 90,
+    "betweenActionsMs": 700,
+    "aroundMotionMs": 600,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
+  },
+  "finalHoldMs": 6000,
+  "scenes": [
+    {
+      "id": "connect",
+      "chapter": "Connecting to the server",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "text=diya-submit-npm",
+          "caption": "One npx command runs the submission server. This tool watches it work.",
+          "headline": "A developer's view",
+          "keyWord": "developer's"
+        },
+        {
+          "action": "click",
+          "target": ".mantine-Switch-root",
+          "caption": "Switching it on runs the npm package and opens a channel to it.",
+          "headline": "Connect to the server",
+          "keyWord": "Connect",
+          "note": "The accessible switch sits under its own track span, which intercepts a direct click; the enclosing .mantine-Switch-root label does not."
+        },
+        {
+          "action": "await",
+          "until": "text=Connected (",
+          "timeoutMs": 60000,
+          "label": "the connection to come up",
+          "caption": "Connected. The server just listed the tools it offers.",
+          "headline": "Now connected",
+          "keyWord": "connected"
+        }
+      ]
+    },
+    {
+      "id": "tools",
+      "chapter": "What the server offers",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "text": "Tools"
+          },
+          "caption": "It offers 26 tools. Some read a book, some file with HMRC.",
+          "headline": "See the tools",
+          "keyWord": "tools"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "open_book"
+          },
+          "caption": "open_book loads a set of accounts from a file.",
+          "headline": "Open open_book",
+          "keyWord": "open_book"
+        }
+      ]
+    },
+    {
+      "id": "open-book",
+      "chapter": "Opening a set of accounts",
+      "still": true,
+      "steps": [
+        {
+          "action": "fill",
+          "target": ".mantine-InputWrapper-root:has-text(\"Path to the book\") input",
+          "value": "videos/books/brickwork-pro-ltd-vat.json",
+          "caption": "A real example: the books of a small building firm.",
+          "headline": "Point it at a book",
+          "keyWord": "book",
+          "note": "fill, not type: a plain path value, and the Mantine input's own keystroke handling runs past the typing cadence tolerance."
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Execute Tool"
+          },
+          "caption": "Running it loads the book and runs its checks.",
+          "headline": "Open the book",
+          "keyWord": "Open"
+        },
+        {
+          "action": "await",
+          "until": "text=lineCount",
+          "label": "the book summary to come back",
+          "caption": "The book is open. It has 171 lines and no failed checks.",
+          "headline": "The book is open",
+          "keyWord": "open"
+        }
+      ]
+    },
+    {
+      "id": "derive",
+      "chapter": "Working out a VAT return",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "derive_vat_return"
+          },
+          "caption": "derive_vat_return works out the nine VAT boxes for one quarter.",
+          "headline": "Open derive_vat_return",
+          "keyWord": "derive_vat_return"
+        },
+        {
+          "action": "fill",
+          "target": ".mantine-InputWrapper-root:has-text(\"period end\") input",
+          "value": "2025-06-30",
+          "caption": "The quarter ends on 30 June 2025.",
+          "headline": "Pick the quarter",
+          "keyWord": "quarter"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Execute Tool"
+          },
+          "caption": "Nothing is sent to HMRC. This tool only reads the book.",
+          "headline": "Work out the boxes",
+          "keyWord": "boxes"
+        },
+        {
+          "action": "await",
+          "until": "text=netVatDue",
+          "label": "the VAT boxes to come back",
+          "caption": "The nine boxes come back, each worked out from the book's own lines.",
+          "headline": "The boxes come back",
+          "keyWord": "boxes"
+        },
+        {
+          "action": "scroll",
+          "target": "text=netVatDue"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        },
+        {
+          "action": "point",
+          "target": "text=netVatDue",
+          "caption": "Net VAT due for the quarter, ready to check before anything is filed.",
+          "headline": "Net VAT due",
+          "keyWord": "VAT",
+          "dwellMs": 600
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        }
+      ]
+    }
+  ]
+}
