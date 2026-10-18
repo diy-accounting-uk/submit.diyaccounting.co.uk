@@ -2276,7 +2276,10 @@
           "thumb": "videos/mcp-hosted/connect-3-thumb.webp",
           "full": "videos/mcp-hosted/connect-3.webp"
         }
-      ]
+      ],
+      "status": {
+        "privacyStatus": "unlisted"
+      }
     },
     {
       "id": "mcp-docker",
