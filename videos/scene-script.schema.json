@@ -14,7 +14,7 @@
     "auth": {
       "type": "string",
       "enum": ["none", "user"],
-      "description": "\"user\" says the journey needs a signed-in account, and unlocks the login, consent, ensureBundle and hmrcAuthorise actions. Which identity provider signs the account in comes from TEST_AUTH_PROVIDER at run time, never from the script, so one script proves locally against the simulator variant and records against a deployment through the Cognito Hosted UI."
+      "description": "\"user\" says the journey needs a signed-in account, and unlocks the login, hostedUiLogin, consent, ensureBundle and hmrcAuthorise actions. Which identity provider signs the account in comes from TEST_AUTH_PROVIDER at run time, never from the script, so one script proves locally against the simulator variant and records against a deployment through the Cognito Hosted UI."
     },
     "pages": {
       "type": "array",
@@ -517,6 +517,23 @@
             "properties": {
               "action": {},
               "name": { "type": "string", "minLength": 1 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "hostedUiLogin" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action"],
+            "description": "Fills in and submits the Cognito Hosted UI sign-in form (and the TOTP code when the account has one) that another application's OAuth sign-in opened, in the same tab or in a popup. Place it directly after the step that continues to the sign-in. The username, password and TOTP secret come from TEST_AUTH_USERNAME, TEST_AUTH_PASSWORD and TEST_AUTH_TOTP_SECRET, so no credential ever appears in a scene script. Needs auth \"user\" with TEST_AUTH_PROVIDER=cognito-native.",
+            "properties": {
+              "action": {},
+              "timeoutMs": { "type": "number", "exclusiveMinimum": 0 },
+              "caption": { "type": "string" },
+              "headline": { "type": "string", "minLength": 1 },
+              "keyWord": { "type": "string", "minLength": 1 },
+              "pauseMs": { "type": "number", "minimum": 0 },
               "note": { "type": "string" }
             }
           }

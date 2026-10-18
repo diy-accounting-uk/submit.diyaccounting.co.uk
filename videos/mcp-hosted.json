@@ -2,8 +2,8 @@
   "$schema": "./scene-script.schema.json",
   "name": "mcp-hosted",
   "title": "The hosted submission MCP, inspected",
-  "description": "A look under the hood: MCP Inspector connecting to the hosted DIY Accounting Submit MCP URL, and the sign-in the server asks for before it offers any tool.",
-  "auth": "none",
+  "description": "A look under the hood: MCP Inspector connecting to the hosted DIY Accounting Submit MCP URL, the sign-in the server asks for, and the tools it offers once you are in.",
+  "auth": "user",
   "pages": ["videos/fixtures/mcp-inspector-config-hosted.json"],
   "viewport": {
     "width": 1920,
@@ -73,19 +73,59 @@
           "keyWord": "sign"
         },
         {
-          "action": "point",
+          "action": "click",
           "target": {
             "role": "button",
             "name": "Continue"
           },
-          "caption": "Continue goes to the same sign-in page the web app uses. The tools appear after it.",
+          "caption": "Continue goes to the same sign-in page the web app uses.",
           "headline": "Continue to sign in",
-          "keyWord": "sign",
-          "dwellMs": 600
+          "keyWord": "sign"
+        },
+        {
+          "action": "hostedUiLogin",
+          "caption": "The test account signs in with its password and a one-time code.",
+          "headline": "Sign in",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "await",
+          "until": "text=Connected (",
+          "timeoutMs": 90000,
+          "label": "the connection to come up",
+          "caption": "Signed in and connected. The server just listed the tools it offers.",
+          "headline": "Now connected",
+          "keyWord": "connected"
+        }
+      ]
+    },
+    {
+      "id": "tools",
+      "chapter": "What the server offers",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "text": "Tools"
+          },
+          "caption": "Signed in, it offers 17 tools. Some read a book, some file with HMRC.",
+          "headline": "See the tools",
+          "keyWord": "tools"
+        },
+        {
+          "action": "point",
+          "target": {
+            "role": "button",
+            "name": "submit_micro_entity_accounts"
+          },
+          "caption": "Each tool is listed by name, ready for a chat app to use.",
+          "headline": "The tool list",
+          "keyWord": "tool"
         },
         {
           "action": "hold",
-          "ms": 2500
+          "ms": 3000
         }
       ]
     }

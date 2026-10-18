@@ -43,6 +43,7 @@ const STEP_GROUP = {
   sheetPoint: 2,
   await: 2,
   login: 2,
+  hostedUiLogin: 2,
   consent: 2,
   ensureBundle: 2,
   hmrcAuthorise: 2,

@@ -200,6 +200,8 @@ function describeStep(step, waitMs, values, now) {
       return "captures a still";
     case "login":
       return `signs in${waitSuffix}`;
+    case "hostedUiLogin":
+      return `signs in on the identity provider's form${waitSuffix}`;
     case "consent":
       return "answers the analytics consent prompt";
     case "ensureBundle":
@@ -220,6 +222,7 @@ const WAIT_CAPABLE_ACTIONS = new Set([
   "click",
   "await",
   "login",
+  "hostedUiLogin",
   "consent",
   "ensureBundle",
   "hmrcAuthorise",
@@ -233,6 +236,7 @@ const WAIT_CAPABLE_ACTIONS = new Set([
 const ALWAYS_NAVIGATING_ACTIONS = new Set([
   "goto",
   "login",
+  "hostedUiLogin",
   "consent",
   "ensureBundle",
   "hmrcAuthorise",

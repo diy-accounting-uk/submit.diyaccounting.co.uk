@@ -182,6 +182,7 @@ describe("journey actions", () => {
 
   test("are allowed once the script declares a user", () => {
     expect(() => validateScript(withStep("user", { action: "login" }))).not.toThrow();
+    expect(() => validateScript(withStep("user", { action: "hostedUiLogin" }))).not.toThrow();
     expect(() => validateScript(withStep("user", { action: "consent" }))).not.toThrow();
     expect(() => validateScript(withStep("user", { action: "ensureBundle", bundle: "Day pass" }))).not.toThrow();
     expect(() => validateScript(withStep("user", { action: "hmrcAuthorise" }))).not.toThrow();
@@ -189,6 +190,7 @@ describe("journey actions", () => {
   });
 
   test("are refused when the script has no user", () => {
+    expect(() => validateScript(withStep("none", { action: "hostedUiLogin" }))).toThrow(/auth to be "user"/);
     expect(() => validateScript(withStep("none", { action: "login" }))).toThrow(/auth to be "user"/);
     expect(() => validateScript(withStep("none", { action: "submitReturn" }))).toThrow(/auth to be "user"/);
   });
