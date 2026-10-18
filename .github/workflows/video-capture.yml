@@ -128,8 +128,9 @@ jobs:
           if [ -z "$GH_ENV" ]; then
             if [ "${{ github.ref }}" == "refs/heads/main" ]; then GH_ENV="prod"; else GH_ENV="ci"; fi
           fi
-          # A simulator capture runs on the runner with no GitHub environment and no AWS role.
-          if [ "$GH_ENV" == "simulator" ]; then GH_ENV=""; fi
+          # A simulator capture runs on the runner with no deployment. It keeps the ci GitHub
+          # environment for the AWS role that the narration's Polly calls need.
+          if [ "$GH_ENV" == "simulator" ]; then GH_ENV="ci"; fi
           echo "github-environment=${GH_ENV}" | tee -a "$GITHUB_OUTPUT"
           echo 'deployment-name=${{ inputs.deployment-name }}' | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.skip-native-auth-disable }}'; echo "skip-native-auth-disable=${X:-false}" | tee -a "$GITHUB_OUTPUT"
@@ -335,7 +336,6 @@ jobs:
         run: node scripts/ensure-cognito-test-user.js "${{ needs.names.outputs.environment-name || needs.params.outputs.environment-name }}" videoCapture
 
       - name: Configure AWS role via GitHub OIDC (for the capture)
-        if: ${{ env.CAPTURE_ENVIRONMENT_NAME != 'simulator' }}
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
@@ -347,7 +347,6 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role (for the capture)
-        if: ${{ env.CAPTURE_ENVIRONMENT_NAME != 'simulator' }}
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
@@ -361,7 +360,7 @@ jobs:
       - name: 'Record ${{ needs.params.outputs.script }} on the simulator'
         if: ${{ env.CAPTURE_ENVIRONMENT_NAME == 'simulator' }}
         # The capture starts dynalite, the HTTP simulator and the site itself, so it needs no
-        # deployment, AWS role, Cognito user or HMRC credential.
+        # deployment, Cognito user or HMRC credential. The AWS role above serves the narration.
         run: |
           npx dotenv -e .env.simulator -- node scripts/site-video-capture.js \
             --script "videos/${{ needs.params.outputs.script }}.json" \
