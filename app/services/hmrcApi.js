@@ -438,16 +438,17 @@ export async function hmrcHttpGet(
     },
   });
 
-  // Add a conservative timeout to avoid hung connections
   let duration = 0;
-  const timeoutMs = 115000;
   let hmrcResponse;
+  const timeoutMs = hmrcRequestTimeoutMillis(HMRC_WORKER_READ_TIMEOUT_MS);
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), Number(timeoutMs));
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const startTime = Date.now();
-    hmrcResponse = await fetch(hmrcRequestUrl, httpRequest);
+    hmrcResponse = await fetch(hmrcRequestUrl, { ...httpRequest, signal: controller.signal });
     duration = Date.now() - startTime;
+  } catch (error) {
+    throw toHmrcTimeoutError(error, "GET", hmrcRequestUrl, timeoutMs);
   } finally {
     clearTimeout(timeout);
   }
@@ -503,6 +504,29 @@ export async function hmrcHttpGet(
   };
 }
 
+// An API Gateway request is cut at 29 s and the ingest Lambda at 28 s. A call to HMRC made
+// inline in an ingest Lambda is aborted at 25 s, leaving time to audit the call and answer JSON.
+export const HMRC_INGEST_REQUEST_TIMEOUT_MS = 25000;
+// An SQS worker Lambda has its own, longer timeout.
+const HMRC_WORKER_READ_TIMEOUT_MS = 115000;
+const HMRC_WORKER_WRITE_TIMEOUT_MS = 295000;
+
+export class HmrcTimeoutError extends Error {
+  constructor(method, url, timeoutMs) {
+    super(`HMRC did not answer ${method} ${url} within ${timeoutMs} ms`);
+    this.name = "HmrcTimeoutError";
+    this.timeoutMs = timeoutMs;
+  }
+}
+
+function hmrcRequestTimeoutMillis(workerTimeoutMillis) {
+  return context.get("sqsWorker") ? workerTimeoutMillis : HMRC_INGEST_REQUEST_TIMEOUT_MS;
+}
+
+function toHmrcTimeoutError(error, method, url, timeoutMs) {
+  return error?.name === "AbortError" ? new HmrcTimeoutError(method, url, timeoutMs) : error;
+}
+
 export async function hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub) {
   return hmrcHttpWriteRequest("POST", hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);
 }
@@ -517,7 +541,6 @@ export async function hmrcHttpDelete(hmrcRequestUrl, hmrcRequestHeaders, govClie
 
 async function hmrcHttpWriteRequest(method, hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub) {
   let hmrcResponse;
-  const httpRequestTimeoutMillis = 295000;
   const httpRequest = {
     method,
     headers: {
@@ -543,12 +566,14 @@ async function hmrcHttpWriteRequest(method, hmrcRequestUrl, hmrcRequestHeaders, 
 
   let duration = 0;
   const controller = new AbortController();
-  const timeoutMs = Number(httpRequestTimeoutMillis);
+  const timeoutMs = hmrcRequestTimeoutMillis(HMRC_WORKER_WRITE_TIMEOUT_MS);
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
   try {
     const startTime = Date.now();
     hmrcResponse = await fetch(hmrcRequestUrl, { ...httpRequest, signal: controller.signal });
     duration = Date.now() - startTime;
+  } catch (error) {
+    throw toHmrcTimeoutError(error, method, hmrcRequestUrl, timeoutMs);
   } finally {
     clearTimeout(timeout);
   }

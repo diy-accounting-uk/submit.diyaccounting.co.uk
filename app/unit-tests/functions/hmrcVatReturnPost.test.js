@@ -54,6 +54,7 @@ vi.mock("@app/services/tokenEnforcement.js", () => ({
 
 // Defer importing the ingestHandlers until after mocks are defined
 import { ingestHandler as hmrcVatReturnPostHandler, extractAndValidateParameters } from "@app/functions/hmrc/hmrcVatReturnPost.js";
+import { HmrcTimeoutError } from "@app/services/hmrcApi.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -195,6 +196,19 @@ describe("hmrcVatReturnPost ingestHandler", () => {
     const body = parseResponseBody(response);
     expect(body.message).toContain("periodEnd");
     expect(body.message).toContain("YYYY-MM-DD");
+  });
+
+  test("answers a JSON 504 when HMRC does not answer the obligation lookup in time", async () => {
+    mockGetVatObligations.mockRejectedValue(new HmrcTimeoutError("GET", "/organisations/vat/111222333/obligations", 25000));
+
+    const event = buildHmrcEvent({
+      body: { vatNumber: "111222333", periodStart: TEST_PERIOD_START, periodEnd: TEST_PERIOD_END, vatDue: 100, accessToken: "test-token" },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+    expect(response.statusCode).toBe(504);
+    const body = parseResponseBody(response);
+    expect(body.message).toContain("HMRC did not answer in time");
+    expect(body.message).toContain("try again");
   });
 
   test("returns 400 when no matching obligation found for period dates", async () => {

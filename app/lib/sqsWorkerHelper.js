@@ -99,6 +99,7 @@ export async function processSqsRecords(
       if (!context.getStore()) {
         context.enterWith(new Map());
       }
+      context.set("sqsWorker", true);
       context.set("requestId", requestId);
       context.set("traceparent", traceparent);
       context.set("correlationId", correlationId);

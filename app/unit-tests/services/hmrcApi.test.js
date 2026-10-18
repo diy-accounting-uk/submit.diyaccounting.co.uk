@@ -4,7 +4,12 @@
 // app/unit-tests/services/hmrcApi.test.js
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { buildHmrcHeaders, http403ForbiddenFromBundleEnforcement } from "@app/services/hmrcApi.js";
+import {
+  buildHmrcHeaders,
+  http403ForbiddenFromBundleEnforcement,
+  HMRC_INGEST_REQUEST_TIMEOUT_MS,
+  HmrcTimeoutError,
+} from "@app/services/hmrcApi.js";
 import { BundleAuthorizationError, BundleEntitlementError } from "@app/services/bundleManagement.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -95,6 +100,26 @@ describe("services/hmrcApi", () => {
     // Ensure Gov-Test-Scenario propagates
     const calledInit = mockFetch.mock.calls[0][1];
     expect(calledInit.headers["Gov-Test-Scenario"]).toBe("SCENARIO");
+  });
+
+  it("keeps the HMRC request bound under the 28 s ingest Lambda timeout", () => {
+    expect(HMRC_INGEST_REQUEST_TIMEOUT_MS).toBeLessThan(28000);
+  });
+
+  it("hmrcHttpGet throws HmrcTimeoutError when the request is aborted", async () => {
+    const { hmrcHttpGet } = await import("@app/services/hmrcApi.js");
+    const abort = Object.assign(new Error("This operation was aborted"), { name: "AbortError" });
+    const mockFetch = vi.fn().mockRejectedValueOnce(abort);
+    vi.stubGlobal("fetch", mockFetch);
+    await expect(hmrcHttpGet("/test/endpoint", {}, {}, undefined, "synthetic", {}, "user-sub-1")).rejects.toBeInstanceOf(HmrcTimeoutError);
+    expect(mockFetch.mock.calls[0][1].signal).toBeInstanceOf(AbortSignal);
+  });
+
+  it("hmrcHttpPost throws HmrcTimeoutError when the request is aborted", async () => {
+    const { hmrcHttpPost } = await import("@app/services/hmrcApi.js");
+    const abort = Object.assign(new Error("This operation was aborted"), { name: "AbortError" });
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValueOnce(abort));
+    await expect(hmrcHttpPost("https://test-api.service.hmrc.gov.uk/x", {}, {}, {}, "user-sub-1")).rejects.toBeInstanceOf(HmrcTimeoutError);
   });
 
   it("validateFraudPreventionHeaders calls HMRC validation endpoint with correct headers", async () => {

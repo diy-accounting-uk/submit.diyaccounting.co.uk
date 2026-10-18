@@ -13,6 +13,7 @@ import {
   http403ForbiddenResponse,
   http409ConflictResponse,
   http500ServerErrorResponse,
+  http504GatewayTimeoutResponse,
   getHeader,
   serializeResponseHeaders,
 } from "../../lib/httpResponseHelper.js";
@@ -28,6 +29,7 @@ import {
   http403ForbiddenFromBundleEnforcement,
   generateHmrcErrorResponseWithRetryAdvice,
   hmrcHttpPost,
+  HmrcTimeoutError,
   validateFraudPreventionHeaders,
   buildHmrcHeaders,
 } from "../../services/hmrcApi.js";
@@ -59,6 +61,7 @@ const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" 
 const AGENT_AUTHORISATION_SERVICE = "MTD-VAT";
 
 const MAX_WAIT_MS = 25000;
+const HMRC_TIMEOUT_MESSAGE = "HMRC did not answer in time. Your return was not confirmed. Check your HMRC account, then try again.";
 const DEFAULT_WAIT_MS = 0;
 
 const BUSINESS_METRICS_NAMESPACE = "Submit/Business";
@@ -590,6 +593,15 @@ export async function ingestHandler(event) {
       logger.info({ message: "Resolved periodKey from date range", periodStart, periodEnd, resolvedPeriodKey: normalizedPeriodKey });
     } catch (error) {
       logger.error({ message: "Error resolving periodKey from obligations", error: error.message });
+      if (error instanceof HmrcTimeoutError) {
+        await recordSubmissionFailure({
+          failure: "hmrc-timeout",
+          summary: "VAT return blocked: HMRC did not answer the obligation lookup in time",
+          userSub,
+          clientId,
+        });
+        return http504GatewayTimeoutResponse({ request, headers: { ...responseHeaders }, message: HMRC_TIMEOUT_MESSAGE });
+      }
       await recordSubmissionFailure({
         failure: "internal-error",
         summary: "VAT return failed while resolving the obligation period",
@@ -753,6 +765,15 @@ export async function ingestHandler(event) {
       result = error.data;
     } else {
       logger.error({ message: "Unexpected error during VAT submission", error: error.message, stack: error.stack });
+      if (error instanceof HmrcTimeoutError) {
+        await recordSubmissionFailure({
+          failure: "hmrc-timeout",
+          summary: "VAT return not confirmed: HMRC did not answer in time",
+          userSub,
+          clientId,
+        });
+        return http504GatewayTimeoutResponse({ request, headers: { ...responseHeaders }, message: HMRC_TIMEOUT_MESSAGE });
+      }
       await recordSubmissionFailure({
         failure: "internal-error",
         summary: "VAT return failed unexpectedly",
