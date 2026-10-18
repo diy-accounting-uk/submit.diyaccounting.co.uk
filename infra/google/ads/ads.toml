@@ -136,7 +136,7 @@ content_network = false
 
 [campaign.bidding]
 strategy = "maximize_clicks"
-cpc_bid_ceiling_gbp = 1.00
+cpc_bid_ceiling_gbp = 2.00
 
 [campaign.negative_keywords]
 phrase = [

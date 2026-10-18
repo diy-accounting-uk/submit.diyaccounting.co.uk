@@ -1151,9 +1151,9 @@ describe("infra/google/ads/ads.toml", () => {
     return hay.some((_, start) => need.every((word, offset) => hay[start + offset] === word));
   };
 
-  it("runs the search campaign at 1 pound a day with a 1 pound click ceiling", () => {
+  it("runs the search campaign at 1 pound a day with a 2 pound click ceiling", () => {
     expect(search.budgetMicros).toBe("1000000");
-    expect(search.bidding).toEqual({ strategy: "maximize_clicks", cpcBidCeilingMicros: "1000000" });
+    expect(search.bidding).toEqual({ strategy: "maximize_clicks", cpcBidCeilingMicros: "2000000" });
   });
 
   it("declares six ad groups of phrase-match keywords, 34 in all, each with one ad", () => {
