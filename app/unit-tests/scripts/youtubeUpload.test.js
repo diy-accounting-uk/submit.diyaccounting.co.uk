@@ -952,11 +952,19 @@ describe("applyStatusSync", () => {
 });
 
 describe("flipUploadedVideosPublic", () => {
-  test("flips an entry with no declared privacy to public", async () => {
+  test("flips an entry with no declared privacy to public when it is unlisted", async () => {
     const list = { videos: [{ id: "a", publish: true, videoId: "yt-a" }] };
     const setVideoStatusImpl = vi.fn().mockResolvedValue({ privacyStatus: "public" });
+    const fetchVideoStatusesImpl = vi.fn().mockResolvedValue({ "yt-a": { privacyStatus: "unlisted" } });
 
-    await flipUploadedVideosPublic({ list, accessToken: "token", quotaProject: "p", setVideoStatusImpl, log: () => {} });
+    await flipUploadedVideosPublic({
+      list,
+      accessToken: "token",
+      quotaProject: "p",
+      setVideoStatusImpl,
+      fetchVideoStatusesImpl,
+      log: () => {},
+    });
 
     expect(setVideoStatusImpl).toHaveBeenCalledWith({
       videoId: "yt-a",
@@ -973,8 +981,16 @@ describe("flipUploadedVideosPublic", () => {
       videos: [{ id: "a", publish: true, videoId: "yt-a", status: { privacyStatus: "unlisted" } }],
     };
     const setVideoStatusImpl = vi.fn().mockResolvedValue({ privacyStatus: "unlisted" });
+    const fetchVideoStatusesImpl = vi.fn().mockResolvedValue({ "yt-a": { privacyStatus: "unlisted" } });
 
-    await flipUploadedVideosPublic({ list, accessToken: "token", quotaProject: "p", setVideoStatusImpl, log: () => {} });
+    await flipUploadedVideosPublic({
+      list,
+      accessToken: "token",
+      quotaProject: "p",
+      setVideoStatusImpl,
+      fetchVideoStatusesImpl,
+      log: () => {},
+    });
 
     expect(setVideoStatusImpl).toHaveBeenCalledWith({
       videoId: "yt-a",
@@ -994,11 +1010,109 @@ describe("flipUploadedVideosPublic", () => {
       ],
     };
     const setVideoStatusImpl = vi.fn().mockResolvedValue({ privacyStatus: "public" });
+    const fetchVideoStatusesImpl = vi.fn().mockResolvedValue({ "yt-ready": { privacyStatus: "unlisted" } });
 
-    await flipUploadedVideosPublic({ list, accessToken: "token", quotaProject: "p", setVideoStatusImpl, log: () => {} });
+    await flipUploadedVideosPublic({
+      list,
+      accessToken: "token",
+      quotaProject: "p",
+      setVideoStatusImpl,
+      fetchVideoStatusesImpl,
+      log: () => {},
+    });
 
+    expect(fetchVideoStatusesImpl).toHaveBeenCalledWith({ videoIds: ["yt-ready"], accessToken: "token", quotaProject: "p" });
     expect(setVideoStatusImpl).toHaveBeenCalledTimes(1);
     expect(setVideoStatusImpl.mock.calls[0][0].videoId).toBe("yt-ready");
+  });
+
+  test("sets only the uploaded entries that are not yet public, and logs the ones it leaves alone", async () => {
+    const list = {
+      status: { embeddable: true },
+      videos: [
+        { id: "first", publish: true, videoId: "yt-first" },
+        { id: "second", publish: true, videoId: "yt-second" },
+        { id: "third", publish: true, videoId: "yt-third" },
+      ],
+    };
+    const setVideoStatusImpl = vi.fn().mockImplementation(async ({ privacyStatus }) => ({ privacyStatus }));
+    const fetchVideoStatusesImpl = vi.fn().mockResolvedValue({
+      "yt-first": { privacyStatus: "public" },
+      "yt-second": { privacyStatus: "unlisted" },
+      "yt-third": { privacyStatus: "private" },
+    });
+    const log = vi.fn();
+
+    await flipUploadedVideosPublic({
+      list,
+      accessToken: "token",
+      quotaProject: "p",
+      setVideoStatusImpl,
+      fetchVideoStatusesImpl,
+      log,
+    });
+
+    expect(setVideoStatusImpl).toHaveBeenCalledTimes(2);
+    expect(setVideoStatusImpl).toHaveBeenNthCalledWith(1, {
+      videoId: "yt-second",
+      privacyStatus: "public",
+      declaredStatus: { embeddable: true },
+      accessToken: "token",
+      quotaProject: "p",
+    });
+    expect(setVideoStatusImpl).toHaveBeenNthCalledWith(2, {
+      videoId: "yt-third",
+      privacyStatus: "public",
+      declaredStatus: { embeddable: true },
+      accessToken: "token",
+      quotaProject: "p",
+    });
+    const logged = log.mock.calls.map((call) => call[0]);
+    expect(logged).toContain("first https://youtu.be/yt-first left alone: already public");
+    expect(logged).toContain("2 of 3 uploaded videos updated");
+  });
+
+  test("applies an entry's pinned privacyStatus as before, whatever its live status", async () => {
+    const list = {
+      videos: [{ id: "pinned", publish: true, videoId: "yt-pinned", status: { privacyStatus: "unlisted" } }],
+    };
+    const setVideoStatusImpl = vi.fn().mockResolvedValue({ privacyStatus: "unlisted" });
+    const fetchVideoStatusesImpl = vi.fn().mockResolvedValue({ "yt-pinned": { privacyStatus: "public" } });
+
+    await flipUploadedVideosPublic({
+      list,
+      accessToken: "token",
+      quotaProject: "p",
+      setVideoStatusImpl,
+      fetchVideoStatusesImpl,
+      log: () => {},
+    });
+
+    expect(setVideoStatusImpl).toHaveBeenCalledWith({
+      videoId: "yt-pinned",
+      privacyStatus: "unlisted",
+      declaredStatus: { privacyStatus: "unlisted" },
+      accessToken: "token",
+      quotaProject: "p",
+    });
+  });
+
+  test("fails when YouTube returns no status for an uploaded video", async () => {
+    const list = { videos: [{ id: "gone", publish: true, videoId: "yt-gone" }] };
+    const setVideoStatusImpl = vi.fn();
+    const fetchVideoStatusesImpl = vi.fn().mockResolvedValue({});
+
+    await expect(
+      flipUploadedVideosPublic({
+        list,
+        accessToken: "token",
+        quotaProject: "p",
+        setVideoStatusImpl,
+        fetchVideoStatusesImpl,
+        log: () => {},
+      }),
+    ).rejects.toThrow("gone: YouTube returned no status for yt-gone");
+    expect(setVideoStatusImpl).not.toHaveBeenCalled();
   });
 });
 
