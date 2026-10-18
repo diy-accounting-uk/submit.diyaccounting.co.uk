@@ -329,7 +329,7 @@ jobs:
       - name: Ensure Cognito test user
         id: cognito-test-user
         if: ${{ steps.script-auth.outputs.auth == 'user' }}
-        run: node scripts/ensure-cognito-test-user.js "${{ env.CAPTURE_ENVIRONMENT_NAME }}" videoCapture
+        run: node scripts/ensure-cognito-test-user.js "${{ needs.names.outputs.environment-name || needs.params.outputs.environment-name }}" videoCapture
 
       - name: Configure AWS role via GitHub OIDC (for the capture)
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6

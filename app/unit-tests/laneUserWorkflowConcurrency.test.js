@@ -19,7 +19,12 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..", "..");
 const WORKFLOWS_DIR = resolve(ROOT, ".github", "workflows");
 
-const ENVIRONMENT_EXPRESSION = "${{ needs.names.outputs.environment-name }}";
+// The environment a rotation names: the names job's output, or, in a workflow whose names job can be
+// skipped, that output with the params job's normalised input as the fallback.
+const ENVIRONMENT_EXPRESSIONS = [
+  "${{ needs.names.outputs.environment-name }}",
+  "${{ needs.names.outputs.environment-name || needs.params.outputs.environment-name }}",
+];
 
 // One shell argument: a `${{ ... }}` expression or a bare word, optionally quoted.
 const ARGUMENT = String.raw`['"]?(\$\{\{[^}]*\}\}|[^'"\s]+)['"]?`;
@@ -74,8 +79,10 @@ describe("workflow jobs that rotate a lane's durable Cognito user", () => {
         const job = enclosingJob(workflowText, rotation.line);
         const concurrency = jobConcurrency(job.text);
         const expectedGroup = `behaviour-test-user-${rotation.environment}-${rotation.lane}`;
-        if (rotation.environment !== ENVIRONMENT_EXPRESSION) {
-          offenders.push(`${name} job ${job.id}: rotates a user for ${rotation.environment}, expected ${ENVIRONMENT_EXPRESSION}`);
+        if (!ENVIRONMENT_EXPRESSIONS.includes(rotation.environment)) {
+          offenders.push(
+            `${name} job ${job.id}: rotates a user for ${rotation.environment}, expected one of ${ENVIRONMENT_EXPRESSIONS.join(" or ")}`,
+          );
         }
         if (!concurrency) {
           offenders.push(`${name} job ${job.id}: no job-level concurrency block`);
