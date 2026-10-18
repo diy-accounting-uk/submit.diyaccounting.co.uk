@@ -2226,6 +2226,234 @@
       ]
     },
     {
+      "id": "mcp-hosted",
+      "group": "account",
+      "publish": true,
+      "pipelineVersion": 10,
+      "sourceRun": 39094415422,
+      "sourceArtifact": "video-mcp-hosted-",
+      "videoFile": "target/videos/video-mcp-hosted-/mcp-hosted.mp4",
+      "captionFile": "target/videos/video-mcp-hosted-/mcp-hosted.vtt",
+      "title": "DIY Accounting Submit: the hosted MCP server, inspected",
+      "description": "DIY Accounting Submit also runs as a hosted MCP server at one web address. This video shows a developer tool, MCP Inspector, connecting to it and the sign-in page the server asks for before it offers any tool. It is a real recording. Try DIY Accounting Submit at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "MCP", "Model Context Protocol", "developer tools"],
+      "categoryId": "27",
+      "videoId": "t96ZhqzlPAI",
+      "walkthrough": [
+        {
+          "scene": "connect",
+          "step": 0,
+          "headline": "A developer's view",
+          "caption": "Chat apps reach the submission server at one web address. This tool tries it.",
+          "startSeconds": 0,
+          "thumb": "videos/mcp-hosted/connect-0-thumb.webp",
+          "full": "videos/mcp-hosted/connect-0.webp"
+        },
+        {
+          "scene": "connect",
+          "step": 1,
+          "headline": "Connect to the server",
+          "caption": "Switching it on asks the hosted server for its tools.",
+          "startSeconds": 8,
+          "thumb": "videos/mcp-hosted/connect-1-thumb.webp",
+          "full": "videos/mcp-hosted/connect-1.webp"
+        },
+        {
+          "scene": "connect",
+          "step": 2,
+          "headline": "It asks you to sign in",
+          "caption": "The server asks who is using it. Nothing opens until you sign in.",
+          "startSeconds": 15,
+          "thumb": "videos/mcp-hosted/connect-2-thumb.webp",
+          "full": "videos/mcp-hosted/connect-2.webp"
+        },
+        {
+          "scene": "connect",
+          "step": 3,
+          "headline": "Continue to sign in",
+          "caption": "Continue goes to the same sign-in page the web app uses. The tools appear after it.",
+          "startSeconds": 22,
+          "thumb": "videos/mcp-hosted/connect-3-thumb.webp",
+          "full": "videos/mcp-hosted/connect-3.webp"
+        }
+      ],
+      "status": {
+        "privacyStatus": "unlisted"
+      }
+    },
+    {
+      "id": "mcp-docker",
+      "group": "account",
+      "publish": true,
+      "pipelineVersion": 10,
+      "sourceRun": 39094040061,
+      "sourceArtifact": "video-mcp-docker-",
+      "videoFile": "target/videos/video-mcp-docker-/mcp-docker.mp4",
+      "captionFile": "target/videos/video-mcp-docker-/mcp-docker.vtt",
+      "title": "DIY Accounting Submit: the submission MCP in Docker, inspected",
+      "description": "The DIY Accounting Submit MCP server also runs as a Docker image, with a folder of books mounted into it. This video shows a developer tool, MCP Inspector, connecting to the container, opening an example book and working out its VAT return boxes. It is a real recording. Try DIY Accounting Submit at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "MCP", "Model Context Protocol", "developer tools"],
+      "categoryId": "27",
+      "videoId": "8dfs9PfeJQs",
+      "walkthrough": [
+        {
+          "scene": "connect",
+          "headline": "Connecting to the server",
+          "caption": "Switching it on starts the container and opens a channel to it. Connected. The server just listed the tools it offers.",
+          "startSeconds": 0,
+          "thumb": "videos/mcp-docker/connect-thumb.webp",
+          "full": "videos/mcp-docker/connect.webp"
+        },
+        {
+          "scene": "tools",
+          "headline": "What the server offers",
+          "caption": "It offers 26 tools. Some read a book, some file with HMRC. open_book loads a set of accounts from a file.",
+          "startSeconds": 22,
+          "thumb": "videos/mcp-docker/tools-thumb.webp",
+          "full": "videos/mcp-docker/tools.webp"
+        },
+        {
+          "scene": "open-book",
+          "headline": "Opening a set of accounts",
+          "caption": "Running it loads the book and runs its checks. The book is open. It has 171 lines and no failed checks.",
+          "startSeconds": 38,
+          "thumb": "videos/mcp-docker/open-book-thumb.webp",
+          "full": "videos/mcp-docker/open-book.webp"
+        },
+        {
+          "scene": "derive",
+          "step": 0,
+          "headline": "Open derive_vat_return",
+          "caption": "derive_vat_return works out the nine VAT boxes for one quarter.",
+          "startSeconds": 60,
+          "thumb": "videos/mcp-docker/derive-0-thumb.webp",
+          "full": "videos/mcp-docker/derive-0.webp"
+        },
+        {
+          "scene": "derive",
+          "step": 1,
+          "headline": "Pick the quarter",
+          "caption": "The quarter ends on 30 June 2025.",
+          "startSeconds": 69,
+          "thumb": "videos/mcp-docker/derive-1-thumb.webp",
+          "full": "videos/mcp-docker/derive-1.webp"
+        },
+        {
+          "scene": "derive",
+          "step": 2,
+          "headline": "Work out the boxes",
+          "caption": "Nothing is sent to HMRC. This tool only reads the book.",
+          "startSeconds": 76,
+          "thumb": "videos/mcp-docker/derive-2-thumb.webp",
+          "full": "videos/mcp-docker/derive-2.webp"
+        },
+        {
+          "scene": "derive",
+          "step": 3,
+          "headline": "The boxes come back",
+          "caption": "The nine boxes come back, each worked out from the book's own lines.",
+          "startSeconds": 85,
+          "thumb": "videos/mcp-docker/derive-3-thumb.webp",
+          "full": "videos/mcp-docker/derive-3.webp"
+        },
+        {
+          "scene": "derive",
+          "step": 6,
+          "headline": "Net VAT due",
+          "caption": "Net VAT due for the quarter, ready to check before anything is filed.",
+          "startSeconds": 94,
+          "thumb": "videos/mcp-docker/derive-6-thumb.webp",
+          "full": "videos/mcp-docker/derive-6.webp"
+        }
+      ]
+    },
+    {
+      "id": "mcp-cli",
+      "group": "account",
+      "publish": true,
+      "pipelineVersion": 10,
+      "sourceRun": 39093643392,
+      "sourceArtifact": "video-mcp-cli-",
+      "videoFile": "target/videos/video-mcp-cli-/mcp-cli.mp4",
+      "captionFile": "target/videos/video-mcp-cli-/mcp-cli.vtt",
+      "title": "DIY Accounting Submit: the submission MCP from npm, inspected",
+      "description": "The DIY Accounting Submit MCP server runs from npm with one command. This video shows a developer tool, MCP Inspector, connecting to it, opening an example book and working out its VAT return boxes. It is a real recording. Try DIY Accounting Submit at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "MCP", "Model Context Protocol", "developer tools"],
+      "categoryId": "27",
+      "videoId": "laUarnsdkNw",
+      "walkthrough": [
+        {
+          "scene": "connect",
+          "headline": "Connecting to the server",
+          "caption": "Switching it on runs the npm package and opens a channel to it. Connected. The server just listed the tools it offers.",
+          "startSeconds": 0,
+          "thumb": "videos/mcp-cli/connect-thumb.webp",
+          "full": "videos/mcp-cli/connect.webp"
+        },
+        {
+          "scene": "tools",
+          "headline": "What the server offers",
+          "caption": "It offers 26 tools. Some read a book, some file with HMRC. open_book loads a set of accounts from a file.",
+          "startSeconds": 25,
+          "thumb": "videos/mcp-cli/tools-thumb.webp",
+          "full": "videos/mcp-cli/tools.webp"
+        },
+        {
+          "scene": "open-book",
+          "headline": "Opening a set of accounts",
+          "caption": "Running it loads the book and runs its checks. The book is open. It has 171 lines and no failed checks.",
+          "startSeconds": 41,
+          "thumb": "videos/mcp-cli/open-book-thumb.webp",
+          "full": "videos/mcp-cli/open-book.webp"
+        },
+        {
+          "scene": "derive",
+          "step": 0,
+          "headline": "Open derive_vat_return",
+          "caption": "derive_vat_return works out the nine VAT boxes for one quarter.",
+          "startSeconds": 63,
+          "thumb": "videos/mcp-cli/derive-0-thumb.webp",
+          "full": "videos/mcp-cli/derive-0.webp"
+        },
+        {
+          "scene": "derive",
+          "step": 1,
+          "headline": "Pick the quarter",
+          "caption": "The quarter ends on 30 June 2025.",
+          "startSeconds": 71,
+          "thumb": "videos/mcp-cli/derive-1-thumb.webp",
+          "full": "videos/mcp-cli/derive-1.webp"
+        },
+        {
+          "scene": "derive",
+          "step": 2,
+          "headline": "Work out the boxes",
+          "caption": "Nothing is sent to HMRC. This tool only reads the book.",
+          "startSeconds": 79,
+          "thumb": "videos/mcp-cli/derive-2-thumb.webp",
+          "full": "videos/mcp-cli/derive-2.webp"
+        },
+        {
+          "scene": "derive",
+          "step": 3,
+          "headline": "The boxes come back",
+          "caption": "The nine boxes come back, each worked out from the book's own lines.",
+          "startSeconds": 88,
+          "thumb": "videos/mcp-cli/derive-3-thumb.webp",
+          "full": "videos/mcp-cli/derive-3.webp"
+        },
+        {
+          "scene": "derive",
+          "step": 6,
+          "headline": "Net VAT due",
+          "caption": "Net VAT due for the quarter, ready to check before anything is filed.",
+          "startSeconds": 97,
+          "thumb": "videos/mcp-cli/derive-6-thumb.webp",
+          "full": "videos/mcp-cli/derive-6.webp"
+        }
+      ]
+    },
+    {
       "id": "itsa-self-employment-amend",
       "group": "itsa",
       "publish": true,

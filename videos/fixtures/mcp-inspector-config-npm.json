@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "diya-submit-npm": {
+      "command": "npx",
+      "args": ["-y", "@diy-accounting-uk/diya-submit@0.1.1"]
+    }
+  }
+}
