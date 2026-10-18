@@ -37,7 +37,8 @@ const vatSteps = await import("../../../behaviour-tests/steps/behaviour-hmrc-vat
 const companiesHouseFilingSteps = await import("../../../behaviour-tests/steps/behaviour-companies-house-filing-steps.js");
 const helpers = await import("../../../behaviour-tests/helpers/behaviour-helpers.js");
 
-export const { loginWithCognitoOrMockAuth, verifyLoggedInStatus } = loginSteps;
+export const { loginWithCognitoOrMockAuth, verifyLoggedInStatus, fillInHostedUINativeAuth, submitHostedUINativeAuth, handleTotpChallenge } =
+  loginSteps;
 export const { consentToDataCollection, goToHomePageUsingMainNav } = siteSteps;
 export const { ensureBundlePresent } = bundleSteps;
 export const { acceptCookiesHmrc, goToHmrcAuth, initHmrcAuth, fillInHmrcAuth, submitHmrcAuth, grantPermissionHmrcAuth } = hmrcSteps;

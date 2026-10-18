@@ -28,7 +28,7 @@ import {
   pressKey,
 } from "./collabora.js";
 
-// The journey actions (login, consent, ensureBundle, hmrcAuthorise) run the behaviour tests' own
+// The journey actions (login, hostedUiLogin, consent, ensureBundle, hmrcAuthorise) run the behaviour tests' own
 // step functions. Loading that bridge registers a process-wide module resolution hook and pulls
 // in the app's data layer, so an unauthenticated script never pays for it: the import happens the
 // first time a journey action actually runs.
@@ -448,6 +448,52 @@ async function doLogin(page, step, ctx) {
   return { waitMs: Date.now() - start, rect: null };
 }
 
+// Drives the Cognito Hosted UI form that another application's OAuth sign-in lands on (the hosted
+// MCP server's, run inside MCP Inspector). The form may open in the same tab or in a popup, so
+// the page that shows it is found among the context's pages. Credentials come from the run, as
+// login's do, and are typed by the behaviour steps.
+async function doHostedUiLogin(page, step, ctx) {
+  const steps = await behaviourSteps();
+  const journey = requireJourney(step, ctx);
+  const timeoutMs = step.timeoutMs || 60000;
+  const formSelector = 'input[name="username"]';
+  const start = Date.now();
+  let formPage = null;
+  while (!formPage && Date.now() - start < timeoutMs) {
+    for (const candidate of page.context().pages()) {
+      if (candidate.isClosed()) continue;
+      const found = await candidate
+        .locator(formSelector)
+        .count()
+        .catch(() => 0);
+      if (found > 0) {
+        formPage = candidate;
+        break;
+      }
+    }
+    if (!formPage) await page.waitForTimeout(250);
+  }
+  if (!formPage) {
+    await writeFailureStill(page, ctx);
+    throw new SceneStepError(
+      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (hostedUiLogin): no Hosted UI sign-in form appeared in ${timeoutMs} ms`,
+      {
+        sceneId: ctx.sceneId,
+        stepIndex: ctx.stepIndex,
+        target: null,
+      },
+    );
+  }
+  const capturePage = withoutDebugScreenshots(formPage);
+  await steps.fillInHostedUINativeAuth(capturePage, journey.authUsername, journey.authPassword, ctx.stepScreenshotDir);
+  await steps.submitHostedUINativeAuth(capturePage, ctx.stepScreenshotDir);
+  const totpSecret = process.env.TEST_AUTH_TOTP_SECRET;
+  if (totpSecret) {
+    await ctx.waitPhase(() => steps.handleTotpChallenge(capturePage, totpSecret, ctx.stepScreenshotDir));
+  }
+  return { waitMs: Date.now() - start, rect: null };
+}
+
 async function doConsent(page, step, ctx) {
   const steps = await behaviourSteps();
   const capturePage = withoutDebugScreenshots(page);
@@ -665,6 +711,7 @@ const HANDLERS = {
   highlight: doHighlight,
   await: doAwait,
   login: doLogin,
+  hostedUiLogin: doHostedUiLogin,
   consent: doConsent,
   ensureBundle: doEnsureBundle,
   hmrcAuthorise: doHmrcAuthorise,
