@@ -4,7 +4,7 @@
 # PLAN: From books to Submit
 
 Approved 2026-09-26 and boarded 2026-10-03: BS1 to BS14 are rows on `NEXT.md`; BS5 landed (PR
-#419, the client id recorded in PR #425); BS10 landed (spreadsheets PR #153); BS11 and BS12 landed (PR #469); BS1 and BS2 landed (PR #471).
+#419, the client id recorded in PR #425); BS10 landed (spreadsheets PR #153); BS11 and BS12 landed (PR #469); BS1 and BS2 landed (PR #471); BS6 landed (PR #481, opener policy PR #502) and its cross-client Picker check passed on ci-set1 (2026-10-18).
 
 A customer's books reach a Submit filing in two ways. The activity page reads a file the
 customer drops, picks from disk or picks from their own Google Drive, and fills the form. Or a
@@ -256,8 +256,8 @@ confirm brand verification. They replace LP-24a's steps 1 to 4.
 2. **`drive.file` across two sites.** Expected: a file created under one client in a project is
    visible to another client in the same project. The diya-gl half is proven on ci (2026-10-10:
    save, update, list and open through the Picker under the diya-gl client; a save from a fresh tab
-   updates the same-named file since spreadsheets PR #162); BS6's first step proves the cross-client half, since
-   Submit's Picker is what BS6 builds.
+   updates the same-named file since spreadsheets PR #162); The cross-client half is proven on ci-set1 (2026-10-18): Submit's Picker listed, downloaded
+   and parsed the diya-gl-saved book, and filled the nine boxes from a VAT-registered one.
 3. **Brand verification.** Google asks every external production app to pass brand
    verification (homepage, privacy policy, verified domains, branding). `diya-gl.co.uk` as a
    JavaScript origin likely needs to be an authorised, verified domain on the consent screen.
