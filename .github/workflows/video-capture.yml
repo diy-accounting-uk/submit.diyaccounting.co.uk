@@ -231,7 +231,7 @@ jobs:
       base-url: ${{ steps.deployment-config.outputs.base-url }}
 
   capture:
-    name: 'capture ${{ needs.params.outputs.script }}-${{ needs.names.outputs.environment-name }}'
+    name: 'capture ${{ needs.params.outputs.script }}-${{ needs.names.outputs.environment-name || needs.params.outputs.environment-name }}'
     needs:
       - params
       - script-meta
@@ -253,8 +253,10 @@ jobs:
         options: --cap-add MKNOD --cap-add SYS_ADMIN
     # This job rotates and purges the videoCapture lane's durable Cognito user, so two runs on
     # that user queue rather than overlap.
+    env:
+      CAPTURE_ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name || needs.params.outputs.environment-name }}
     concurrency:
-      group: behaviour-test-user-${{ needs.names.outputs.environment-name }}-videoCapture
+      group: behaviour-test-user-${{ needs.names.outputs.environment-name || needs.params.outputs.environment-name }}-videoCapture
       cancel-in-progress: false
     steps:
       - name: Checkout
@@ -281,6 +283,7 @@ jobs:
         run: |
           AUTH=$(node -p "require('./videos/${{ needs.params.outputs.script }}.json').auth")
           echo "auth=${AUTH}" | tee -a "$GITHUB_OUTPUT"
+          if [ "${AUTH}" = "user" ] && [ -z "${CAPTURE_ENVIRONMENT_NAME}" ]; then echo "Script ${{ needs.params.outputs.script }} signs in as a user and has no environment: dispatch with environment-name set (ci or prod)"; exit 1; fi
 
       - name: Configure AWS role via GitHub OIDC (for native auth / test user)
         if: ${{ steps.script-auth.outputs.auth == 'user' }}
@@ -307,7 +310,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Wait for older ci deploy runs to finish
-        if: ${{ steps.script-auth.outputs.auth == 'user' && needs.names.outputs.environment-name != 'prod' }}
+        if: ${{ steps.script-auth.outputs.auth == 'user' && env.CAPTURE_ENVIRONMENT_NAME != 'prod' }}
         uses: './.github/actions/wait-for-ci-deploys'
         with:
           github-token: ${{ github.token }}
@@ -317,7 +320,7 @@ jobs:
         uses: './.github/actions/hold-native-auth'
         with:
           mode: enable
-          environment-name: ${{ needs.names.outputs.environment-name }}
+          environment-name: ${{ env.CAPTURE_ENVIRONMENT_NAME }}
           holder-id: ${{ github.run_id }}
           run-id: ${{ github.run_id }}
           workflow: ${{ github.workflow }}
@@ -326,7 +329,7 @@ jobs:
       - name: Ensure Cognito test user
         id: cognito-test-user
         if: ${{ steps.script-auth.outputs.auth == 'user' }}
-        run: node scripts/ensure-cognito-test-user.js "${{ needs.names.outputs.environment-name }}" videoCapture
+        run: node scripts/ensure-cognito-test-user.js "${{ needs.names.outputs.environment-name || needs.params.outputs.environment-name }}" videoCapture
 
       - name: Configure AWS role via GitHub OIDC (for the capture)
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
@@ -410,7 +413,7 @@ jobs:
         uses: './.github/actions/hold-native-auth'
         with:
           mode: disable
-          environment-name: ${{ needs.names.outputs.environment-name }}
+          environment-name: ${{ env.CAPTURE_ENVIRONMENT_NAME }}
           holder-id: ${{ github.run_id }}
           run-id: ${{ github.run_id }}
           workflow: ${{ github.workflow }}
@@ -424,7 +427,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: 'video-${{ needs.params.outputs.script }}-${{ needs.names.outputs.environment-name }}'
+          name: 'video-${{ needs.params.outputs.script }}-${{ env.CAPTURE_ENVIRONMENT_NAME }}'
           retention-days: 30
           path: |
             target/videos/${{ needs.params.outputs.script }}/
@@ -432,7 +435,7 @@ jobs:
   capture-docker:
     # The capture job runs inside the Playwright container, which has no docker; the Docker MCP
     # scene runs here on the bare runner, where docker is installed.
-    name: 'capture ${{ needs.params.outputs.script }}-${{ needs.names.outputs.environment-name }}'
+    name: 'capture ${{ needs.params.outputs.script }}-${{ needs.names.outputs.environment-name || needs.params.outputs.environment-name }}'
     needs:
       - params
       - script-meta
@@ -498,7 +501,7 @@ jobs:
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: 'video-${{ needs.params.outputs.script }}-${{ needs.names.outputs.environment-name }}'
+          name: 'video-${{ needs.params.outputs.script }}-${{ needs.names.outputs.environment-name || needs.params.outputs.environment-name }}'
           retention-days: 30
           path: |
             target/videos/${{ needs.params.outputs.script }}/

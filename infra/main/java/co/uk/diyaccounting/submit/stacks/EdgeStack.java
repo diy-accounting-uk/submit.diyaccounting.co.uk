@@ -1004,7 +1004,7 @@ public class EdgeStack extends Stack {
                                         .build(),
                                 ResponseCustomHeader.builder()
                                         .header("Cross-Origin-Opener-Policy")
-                                        .value("same-origin")
+                                        .value("same-origin-allow-popups")
                                         .override(true)
                                         .build(),
                                 ResponseCustomHeader.builder()
