@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-9300b37** (PR #498, deploy 39091726579, 2026-10-18 04:49 UTC; last-known-good; the only prod set). The prod environment carries PR #498's log retention since the redeploy 39099124323 (05:07 UTC); the push-triggered environment deploy 39091726387 had rolled `prod-env-DataStack` back after CloudFormation lost the custom resource provider's response for one of about thirty concurrent updates.
-**ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-18 02:06 UTC by PR #498's branch, redeployed by PR #499's deploy 39094676966 at 03:44 UTC; the apex promoted to it). Its `SelfDestructStack` timer is anchored to 02:06, so it goes at about 06:06 UTC unless the sweep keeps the last-known-good set.
+**ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-18 02:06 UTC by PR #498's branch, redeployed by PR #499's deploy 39094676966 at 03:44 UTC; the apex promoted to it). Its self-destruct fires every four hours (03:45, 07:45, 11:45, … UTC) and skips while the set is last-known-good inside the 12 h protection window from the pointer's last write (04:11 UTC): the 07:45 firing skipped (`skip: ci-set1 is the last-known-good deployment`), so the set goes at the 19:45 UTC firing unless a later deploy renews the pointer.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
