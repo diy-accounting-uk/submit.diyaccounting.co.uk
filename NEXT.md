@@ -38,11 +38,11 @@ step.
 
 ## In flight
 
-- [ ] **HA7. The HMRC Assist VAT video, recorded on the simulator lane (PLAN_HMRC_ASSIST HA7).** The simulator lane of `video-capture.yml` is on main (PR #505, 091dae627): `environment-name=simulator` records on the runner under `.env.simulator`, the scene declares `"environments": ["simulator"]`, and the publish entry (`web/public/videos/publish.json`, `vat-hmrc-assist`) names the artefact `video-vat-hmrc-assist-simulator` and says the HMRC Assist reply is simulated from HMRC's three published illustrative messages. The first run, 39172371159, failed at the Record step: the narration calls Amazon Polly and the lane had skipped every AWS role step (`pollySynthesizeChild: Could not load credentials from any providers`, `scripts/lib/video/narration.js` line 57). The fix is on branch `claude/granite-capture` (716ce9598, worktree `.claude/worktrees/granite`): the lane maps to the `ci` GitHub environment and runs the two role steps for the capture; `names`, the ci-deploy wait, the Cognito steps and the test user stay skipped. Its batch check is running; then one PR, `/watch`, `/auto-merge`, then `gh workflow run video-capture.yml --ref main -f script=vat-hmrc-assist -f environment-name=simulator`, the `video-publish` skill (fetch, check, upload unlisted, stills), the operator's review and the public flip. **Source**: `PLAN_HMRC_ASSIST.md` HA7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 1 file.
-
 ## Machine-only
 
 ## Machine-ask
+
+- [ ] **HA7. The HMRC Assist VAT video: the public flip (PLAN_HMRC_ASSIST HA7).** Recorded on the simulator lane by video-capture run 39176527019 (the lane: PR #505, 091dae627; its AWS role for the narration: PR #506, 2cbcaab5c) and uploaded unlisted as https://youtu.be/ZXOS6TskYfk (2 min 19 s, 22 caption cues; stills checked: the three HMRC feedback messages, the receipt as the final frame). The entry (`publish: true`, `sourceRun: 39176527019`, `videoId: ZXOS6TskYfk`) and its walkthrough panels under `web/public/videos/vat-hmrc-assist/` are on branch `claude/helix-assist-video` (worktree `.claude/worktrees/helix`), PR to open. Remaining: the operator watches the unlisted video; on their go `AWS_PROFILE=diya-submit-prod npm run video:publish -- --public` from main, then `AWS_PROFILE=diya-submit-prod npm run video:embed-check` after main's deploy ships the manifest. **Source**: `PLAN_HMRC_ASSIST.md` HA7. **Owner**: Claude Code (the flip), Operator (the review). **Model**: Sonnet. **Size**: 1 file.
 
 ## Human-driven
 
