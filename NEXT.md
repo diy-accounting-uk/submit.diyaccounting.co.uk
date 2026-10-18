@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-b4fcb0e** (PR #499, deploy 39123022316, 2026-10-18 11:58 UTC; last-known-good; the only prod set). PR #501 (3f30025d2, capture scripts only) started no deploy.
+**Prod runs deployment prod-dd94e8c** (PR #502, deploy 39131399092, 2026-10-18 14:0x UTC; last-known-good; the only prod set; the web pages send `Cross-Origin-Opener-Policy: same-origin-allow-popups`).
 **ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-18 02:06 UTC, redeployed by PR #499's deploy 39094676966 at 03:44 UTC; the apex `ci-submit.diyaccounting.co.uk` points at it). Its self-destruct fires every four hours (03:45, 07:45, 11:45, … UTC) and skips while the set is last-known-good inside the 12 h protection window from the pointer's last write (04:11 UTC); it goes at the 19:45 UTC firing unless `claude/cobalt-edge`'s deploy claims the slot and renews it first.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
