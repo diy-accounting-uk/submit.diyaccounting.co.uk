@@ -197,7 +197,7 @@ Arrangements". The body, with the mail client's chrome and the standing footer r
 4. Decide whether the spreadsheets site points sole traders at a recognised bridging product for
    2026-27. VitalTax wrote on 2022-07-12 that they saw interest in integrating DIY Accounting with
    VitalTax for MTD Income Tax, and announced MTD for Income Tax in their product on 2025-11-18
-   (both in the mail mirror). A commercial decision, the operator's.
+   (both in the mail mirror). Decided (a) on 2026-10-20; the note is `NEXT.md` IA4a.
 
 **Sent 2026-10-03.** The note to SDST went from antony@diyaccounting.co.uk (text as sent in `../private.diyaccounting.co.uk/hmrc/itsa/DRAFT_EMAIL_ITSA_2027_NOTE.md`); it also points HMRC at the published ITSA sandbox recordings as evidence of the working product. SDST's reply, if any, rewrites the blocked rows below.
 
@@ -221,12 +221,6 @@ section is their board.
   assurance" row answered from this repository's record (PR gates, sandbox transcripts, the
   evidence pack's check per claim). **Owner**: Claude Code. **Model**: Haiku. **Size**: 4 files
   (private).
-- [ ] **IA4. The 2026-27 bridge.** A decision between named alternatives: (a) a note on the
-  spreadsheets site pointing sole traders at a recognised bridging product for 2026-27, VitalTax
-  the candidate from the 2022 thread; (b) no note, Submit's Income Tax pages stay sandbox-only
-  until 2027-28. Write the answer here; (a) becomes a spreadsheets row. **Owner**: Operator.
-  **Model**: none. **Size**: 0 files.
-
 - [ ] **IA11. The walkthrough videos as evidence (BACKLOG 17d).** The note to SDST pointed HMRC at the published ITSA recordings, so they are part of the application's evidence. Review the eight walkthrough videos for test-data improvements (HMRC's sandbox answered "No liabilities/payments/penalties found" for the three VAT read pages, so those show the search and not a result), de-duplicate the day-pass and HMRC-authorisation scenes that every recording repeats, and compress the full recordings; re-record what changes with the `site-video-capture` skill and republish with `video-publish`. All eight are public on the channel. **Owner**: Claude Code. **Model**: Sonnet. **Size**: the scene scripts under `videos/` and `web/public/videos/publish.json`.
 
 ### Blocked on HMRC's early-2027 update
@@ -268,7 +262,7 @@ send.
 IA2 ──► HMRC's early-2027 update ──► IA5 ──► IA6 ──► IA7 ──► IA8 ──► IA10
                                                └──► IA9
 IA3 ──► IA6
-IA4 (independent; (a) opens a spreadsheets row)
+IA4 decided (a); the note is NEXT.md IA4a
 IA11 ──► IA6 (the recordings are cited in the application)
 ```
 

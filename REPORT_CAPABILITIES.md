@@ -4420,10 +4420,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### MCP-14 Document the submission MCP's plan and tool reference
 
 - **Use when:** starting work on the submission MCP: what is built, planned, and how to run it.
-- **Does:** PLAN_SUBMISSION_MCP.md is the plan of record for the submission MCP: milestones, book-to-filing field mappings and open rows. mcp/README.md is the package's short reference: how to run it, test it, and its tools at time of writing.
+- **Does:** ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md is the plan of record for the submission MCP: milestones, book-to-filing field mappings and open rows. mcp/README.md is the package's short reference: how to run it, test it, and its tools at time of writing.
 - **Run:** `npm --prefix mcp install`; `npm --prefix mcp test`
-- **Entry:** `PLAN_SUBMISSION_MCP.md`; `mcp/README.md`
-- **Files:** PLAN_SUBMISSION_MCP.md, mcp/README.md
+- **Entry:** `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md`; `mcp/README.md`
+- **Files:** ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md, mcp/README.md
 - **Keywords:** plan submission mcp, mcp readme, milestones, field mappings, plan of record
 - **Related:** MCP-01
 

@@ -3,7 +3,7 @@
 
 # @diy-accounting-uk/diya-submit
 
-The submission MCP for DIY Accounting Submit (`PLAN_SUBMISSION_MCP.md`). It opens a customer's
+The submission MCP for DIY Accounting Submit (`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md`). It opens a customer's
 books with the published `@diy-accounting-uk/diya-gl` engine, derives the figures a filing
 needs, and drives the VAT return and the micro-entity accounts through this service's
 endpoints. This package is the skeleton: the server, the stdio transport and the two book

@@ -85,7 +85,7 @@ objective they serve.
 | Objective | Headline observation (the SLI) | Target (the SLO) | Supporting observations | Levers, each with its own metric |
 |---|---|---|---|---|
 | Uptime | Availability of the customer journey: probe pass rate over sign-in, obligations, submit on prod | 99.9 % monthly, error budget shown | Golden signals per route (latency p95, request rate, error rate, saturation as throttles); Core Web Vitals p75 (LCP, INP, CLS); alarm count by family; HMRC and Companies House upstream error rate | Deploy frequency and change failure rate (DORA); alarm consolidation (B30); provisioned concurrency; canary coverage of each activity |
-| Conversion to submission | Signed-in users who complete a submission within 30 days, by activity | Set from the first month's baseline, then raise | Funnel: visit, sign-in, HMRC or Companies House authorisation, first obligation view, first submission; drop-off per step; HMRC failures by class; synthetic and bot traffic excluded | Landing copy and demo videos (B17); the CSV and DIYA-GL import (row 16, `PLAN_SUBMISSION_MCP.md`); activity gating and free-bundle scope; email nudges after sign-in without a submission |
+| Conversion to submission | Signed-in users who complete a submission within 30 days, by activity | Set from the first month's baseline, then raise | Funnel: visit, sign-in, HMRC or Companies House authorisation, first obligation view, first submission; drop-off per step; HMRC failures by class; synthetic and bot traffic excluded | Landing copy and demo videos (B17); the CSV and DIYA-GL import (row 16, `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md`); activity gating and free-bundle scope; email nudges after sign-in without a submission |
 | Conversion to paid | Paying customers as a share of submitters; revenue per month by product, subscriptions and donations | Set from baseline | Checkout starts and completions; renewals and churn; passes issued and redeemed; donations by channel; downloads by product on spreadsheets as the top of the funnel | Price and bundle catalogue (`stripe-catalogue-sync`); the free-bundle boundary; the donate prompt on the DIYA-GL pages; the resident-company bundle when accounts filing lands |
 | Low running cost | Monthly AWS and Google spend, and cost per submission | Steady-state target from the cost plan, cost per submission falling | Cost by service and by environment (FOCUS columns); spare deployment sets standing; canary and alarm spend; Lambda duration and memory | Deployment lifecycle (`destroy-*` workflows); alarm and canary cuts (B30o); scheduled ingestion cadence; log retention; reserved capacity |
 | Security | Days since the last unhandled finding above medium, across Security Hub, GuardDuty, CodeQL, Dependabot and secret scanning | Zero open above medium; every finding triaged within a week; the 72-hour breach clock never starts | Vulnerability and lifecycle calendar; global exploits matched to our stack; intrusion signals; rate-limit and WAF blocks; concerning traffic; secrets and access age; backup and restore proof | Dependency updates and runtime upgrades; WAF rules and thresholds; Security Hub standards and AWS Config; alarm coverage of the detection stacks; the pen test (row 27a); backups outside the account (issue #11) |
@@ -294,7 +294,7 @@ agree. Rows D16 and D17.
 | Raw export and index | All | none | The nightly export, the pull script, the corpus source | D12 |
 | Deep links | All | none | Every row links to its object | D9 |
 | Company P&L and balance sheet | Outcome | none | The company's diya-gl book through the finance plan; nightly derivation with the Ltd engine | D10 |
-| Invoicing MCP, chat trigger | Horizon | none | The finance plan's vouchers and invoices as tools on the submission MCP; a button that opens a chat with the export attached | after `PLAN_SUBMISSION_MCP.md` M4 |
+| Invoicing MCP, chat trigger | Horizon | none | The finance plan's vouchers and invoices as tools on the submission MCP; a button that opens a chat with the export attached | after `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md` M4 |
 
 ## Decisions
 
@@ -314,7 +314,7 @@ agree. Rows D16 and D17.
    invented before the data exists; the uptime SLO alone starts at 99.9 % because the probes
    already give a month of history.
 6. **The company accounts come from the same engine customers use**, through the finance plan
-   and `PLAN_SUBMISSION_MCP.md`, never from a spreadsheet read by hand.
+   and `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md`, never from a spreadsheet read by hand.
 
 ## Sequence
 
@@ -333,7 +333,7 @@ on NEXT.md.
 | D7 | FOCUS 1.2 Data Export from the management account into the lake, tags, budgets, the anomaly monitor; cost per submission | operator's yes for the management-account export | Claude Code, Sonnet; the cost plan is the design, with the export format changed |
 | D8 | DORA rows from the deploy and destroy workflows and the alarm issues; the panel | none | Claude Code, Sonnet |
 | D9 | Deep links on every row | D1 | Claude Code, Haiku |
-| D10 | The company P&L and balance sheet from the company's cloud book | finance plan phase 2; `PLAN_SUBMISSION_MCP.md` M1, M3 | Claude Code, Sonnet |
+| D10 | The company P&L and balance sheet from the company's cloud book | finance plan phase 2; `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md` M1, M3 | Claude Code, Sonnet |
 | D11 | `experiments.toml`, the annotations, the open list; the first experiment written from a baseline month | D1 | Claude Code, Sonnet; the hypothesis is the operator's |
 | D12 | The raw export, `scripts/analytics-pull.sh`, the `analytics` corpus source, `reindex` | D1 | Claude Code, Sonnet; the corpus change at the workspace root |
 | D13 | The security panels: AWS Config recorder and the CIS 5.0 standard, findings and GitHub alerts into the lake, `lifecycle.toml` and its check, the SBOM and KEV match, the CloudTrail metric filters, WAF logs, the rotation record | D1; the operator's yes for Config and the multi-region trail (an environment deploy) | Claude Code, Sonnet; Opus for the traffic baselines |
@@ -846,7 +846,7 @@ Swept on 2026-09-07 across this repo's plans, boards and open issues.
 | Issue #18 (alerting in Slack with agents raising issues) | The alarm-to-issue chain delivered the issue half; Slack was not chosen | Operator's call: close, or re-scope to the alarms panel |
 | `../private.diyaccounting.co.uk/engineering/submit/backlog/PLAN_SECURITY_DETECTION_UPLIFT.md` | Phases 0 to 3 delivered in January 2026; phase 4's ideas are the security panels | Archived 2026-09-07 |
 | `../private.diyaccounting.co.uk/engineering/submit/backlog/SLACK_INTEGRATION_PLAN.md` | Superseded by the alarm-to-issue chain | Archived 2026-09-07 |
-| `../private.diyaccounting.co.uk/engineering/submit/backlog/PLAN_MCP_SERVER.md` | Superseded by `PLAN_SUBMISSION_MCP.md` | Archived 2026-09-07 |
+| `../private.diyaccounting.co.uk/engineering/submit/backlog/PLAN_MCP_SERVER.md` | Superseded by `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md` | Archived 2026-09-07 |
 | `../private.diyaccounting.co.uk/engineering/submit/backlog/METRIC_SON_DESIGN.md` | A second presentation of the same metrics | Keep as a horizon |
 | `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_USAGE_DATA_PIPELINE.md`, `PLAN_SCHEDULED_INGESTION.md`, `PLAN_GA4.md`, `PLAN_COST_INSTRUMENTATION.md`, `PLAN_COST_OPTIMISATION.md`, `PLAN_ALARM_CONSOLIDATION.md`, `PLAN_SYNTHETIC_NAMING_ALIGNMENT.md` | The delivered designs this plan builds on | Reference only |
 
@@ -857,7 +857,7 @@ Swept on 2026-09-07 across this repo's plans, boards and open issues.
 - `.claude/skills/board/SKILL.md` renders the work board; this page renders the business.
 - `../private.diyaccounting.co.uk/engineering/submit/backlog/METRIC_SON_DESIGN.md` can sit on the page as a second presentation of
   the same metrics.
-- `../private.diyaccounting.co.uk/finance/PLAN_FINANCE_AUTOMATION.md`, `PLAN_SUBMISSION_MCP.md`
+- `../private.diyaccounting.co.uk/finance/PLAN_FINANCE_AUTOMATION.md`, `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md`
 - Standards: Google SRE workbook (SLOs, golden signals); web.dev Core Web Vitals;
   opentelemetry.io semantic conventions; dora.dev; focus.finops.org (specification 1.3, 1.4);
   GA4 key events.

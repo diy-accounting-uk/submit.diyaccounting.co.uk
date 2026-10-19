@@ -571,8 +571,6 @@ real alarm issue and fails on a hand-typed copy of one.
   diff ceiling, one commit author email, and 6 merges per rolling 24 hours.
 - Rollout: the workflow reports every PR's result to its step summary; only a Markdown-only PR's
   failure fails the job. Widen enforcement to code once the check has a run history.
-- Open: `merge gate` is not yet a required status check on the `main` ruleset (a settings write),
-  and platform auto-merge is not yet turned on gated by it — both are for the operator.
 - Auto-merge turns on only for PRs that pass it, and only where the PR closes nothing or closes an
   `origin:alarm` issue whose verifier passed.
 

@@ -228,7 +228,7 @@ Design points to settle:
 
 Companies House offers no MCP or agent tool for filing. An MCP integration that files under the
 customer's own presenter is a feature this option opens up for paid subscribers, alongside the
-submission MCP (`PLAN_SUBMISSION_MCP.md`).
+submission MCP (`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SUBMISSION_MCP.md`).
 
 ## Software authorisation: assumed criteria
 
