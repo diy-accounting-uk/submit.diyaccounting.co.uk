@@ -15,8 +15,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-53c148c** (PR #504, deploy 39142968121, 2026-10-18 16:5x UTC; last-known-good; the only complete prod set). PR #505's deploy 39172344830 is creating prod-091dae6 (started 22:33 UTC); when its probes pass it becomes last-known-good and prod-53c148c is destroyed by the run.
-**ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-18 02:06 UTC, last redeployed by PR #505's branch deploy 39170330475; the apex `ci-submit.diyaccounting.co.uk` points at it). Its self-destruct fires every four hours (03:45, 07:45, 11:45, … UTC) and skips while the set is last-known-good inside the 12 h protection window from the pointer's last write (22:26 UTC on 2026-10-18), so it goes at the 11:45 UTC firing on 2026-10-19 unless a branch deploy renews it first.
+**Prod runs deployment prod-f8b9c09** (PR #507, deploy 39179552461, 2026-10-19 00:15 UTC; last-known-good; the only prod set).
+**ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-18 02:06 UTC, last redeployed by PR #507's branch deploy 39177638923; the apex `ci-submit.diyaccounting.co.uk` points at it). Its self-destruct fires every four hours (03:45, 07:45, 11:45, 15:45, … UTC) and skips while the set is last-known-good inside the 12 h protection window from the pointer's last write (00:08 UTC on 2026-10-19), so it goes at the 15:45 UTC firing on 2026-10-19 unless a branch deploy renews it first.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -42,7 +42,7 @@ step.
 
 ## Machine-ask
 
-- [ ] **HA7. The HMRC Assist VAT video: the public flip (PLAN_HMRC_ASSIST HA7).** Recorded on the simulator lane by video-capture run 39176527019 (the lane: PR #505, 091dae627; its AWS role for the narration: PR #506, 2cbcaab5c) and uploaded unlisted as https://youtu.be/ZXOS6TskYfk (2 min 19 s, 22 caption cues; stills checked: the three HMRC feedback messages, the receipt as the final frame). The entry (`publish: true`, `sourceRun: 39176527019`, `videoId: ZXOS6TskYfk`) and its walkthrough panels under `web/public/videos/vat-hmrc-assist/` are on branch `claude/helix-assist-video` (worktree `.claude/worktrees/helix`), PR to open. Remaining: the operator watches the unlisted video; on their go `AWS_PROFILE=diya-submit-prod npm run video:publish -- --public` from main, then `AWS_PROFILE=diya-submit-prod npm run video:embed-check` after main's deploy ships the manifest. **Source**: `PLAN_HMRC_ASSIST.md` HA7. **Owner**: Claude Code (the flip), Operator (the review). **Model**: Sonnet. **Size**: 1 file.
+- [ ] **HA7. The HMRC Assist VAT video: the public flip (PLAN_HMRC_ASSIST HA7).** Recorded on the simulator lane by video-capture run 39176527019 and uploaded unlisted as https://youtu.be/ZXOS6TskYfk (2 min 19 s, 22 caption cues; stills checked: the three HMRC feedback messages, the receipt as the final frame). The manifest entry (`publish: true`, `sourceRun: 39176527019`, `videoId: ZXOS6TskYfk`) and its walkthrough panels are on main (PR #507, f8b9c0917) and live on prod-f8b9c09; `video:embed-check` reports 39 videos, 39 embedded. Remaining: the operator watches the unlisted video; on their go `AWS_PROFILE=diya-submit-prod npm run video:publish -- --public` from main, then `AWS_PROFILE=diya-submit-prod npm run video:embed-check`. **Source**: `PLAN_HMRC_ASSIST.md` HA7. **Owner**: Claude Code (the flip), Operator (the review). **Model**: Sonnet. **Size**: 1 file.
 
 ## Human-driven
 
