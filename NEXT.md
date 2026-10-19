@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-f8b9c09** (PR #507, deploy 39179552461, 2026-10-19 00:15 UTC; last-known-good; the only prod set).
-**ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-18 02:06 UTC, last redeployed by PR #507's branch deploy 39177638923; the apex `ci-submit.diyaccounting.co.uk` points at it). Its self-destruct fires every four hours (03:45, 07:45, 11:45, 15:45, … UTC) and skips while the set is last-known-good inside the 12 h protection window from the pointer's last write (00:08 UTC on 2026-10-19), so it goes at the 15:45 UTC firing on 2026-10-19 unless a branch deploy renews it first.
+**ci**: no set is standing. `ci-set1` went at its 15:45 UTC self-destruct firing on 2026-10-19 (the 12 h last-known-good protection from the pointer's 00:08 UTC write had lapsed; `destroy-ci` run 39280816244 at 15:49 found nothing to sweep; `ci-submit.diyaccounting.co.uk` no longer resolves). The next branch deploy creates a set.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -40,7 +40,11 @@ step.
 
 ## Machine-only
 
+- [ ] **CF1. September's fraud-prevention header record (fraud-header-check run 38743625578 red on 2026-10-15).** The launchd check wrote `data/compliance/fraud-prevention-headers/2026-09.json` on 2026-10-12 as `status: missing, needsAction: true` because the mail mirror was last synced on 2026-10-01 13:52 (`../mail/INDEX.tsv`), before HMRC's September report arrived (the monthly email comes on the first Tuesday or Wednesday at 10:30: 2026-08-05, 2026-09-02). The file is untracked in the main checkout. Steps: (1) `../mail/pull.sh antony@diyaccounting.co.uk` (the workspace `mail-sync` skill; gyb is incremental); (2) `node scripts/fraud-header-email-check.js --now 2026-10-12T09:00:00Z` from the main checkout, which rewrites the September record from the report; publishing the activity event needs `AWS_PROFILE=diya-submit-prod` and an SSO session, and the record is written without it; (3) if the report carries advisories or errors, act on them as August's did (`2026-08.json`); (4) commit the record on a `claude/ops-fraud-record` branch and PR, then `gh run rerun 38743625578` or dispatch `fraud-header-check.yml -f month=2026-09` to prove it green. **Source**: `.github/workflows/fraud-header-check.yml`; run 38743625578. **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
+
 ## Machine-ask
+
+- [ ] **SR1. The security review of 2026-10-19: two medium findings (issue #510).** `security-review.yml` run 39251699152 reviewed main at 7cac150ba and found 2 medium, 0 high, 0 critical; A08 was not reached. The findings are held privately at `s3://prod-env-analytics-lake-972912397388/private/security-review/dt=2026-10-19/39251699152-1.md` (prod account, read-only). The issue stays open until each finding has a board row and its fix merges. Steps: (1) `aws --profile diya-submit-prod s3 cp s3://prod-env-analytics-lake-972912397388/private/security-review/dt=2026-10-19/39251699152-1.md ../staging/security-review-2026-10-19.md`; (2) one row per finding here, with its file and fix; (3) fix each on a `claude/sec-<topic>` branch and PR; (4) close #510 when both fixes are on main. The ask: `aws sso login --sso-session diyaccounting` for the read. **Source**: issue #510; `prompts/security-review.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: — (set after the read).
 
 ## Human-driven
 
