@@ -25,6 +25,7 @@ section is their board.
 | CS-A4 | Claude Code assembles the evidence pack from a `companies-house-test-service.yml` run inside 14 days; the operator sends it to `xml@companieshouse.gov.uk` and asks for the live package reference for the confirmation statement | 0 | Sonnet | — (in flight: the pack from run 38029097822 rides on B34's email) |
 | CS-11b | Customer prod launch: `prod` on the confirmation statement activity's `environments`, the live Stripe price for the £61.35 fee, prod gateway values and the live package reference, the operator's own proof filing first, `compliance.toml` rows | ~7 | Sonnet | CS-A4, CS-11a |
 | OCH1 | Companies House sandbox user for the opt-in ci REST suites, created by a session under `antony+ch-sandbox@diyaccounting.co.uk` (NEXT.md OCH1) | 0 | Sonnet | none |
+| OCH1k | A sandbox Test API client key from the Developer Hub, set as `COMPANIES_HOUSE_SANDBOX_API_KEY` on ci (NEXT.md OCH1k) | 0 | none | none |
 
 ### Human-driven
 
@@ -40,7 +41,7 @@ section is their board.
 
 - [ ] **CS-11b. Confirmation statement's customer prod launch.** DIY Accounting Limited already files its own statements through Submit under its credit-account presenter; CS-11b takes the same activity to customers on prod. `file-confirmation-statement` already lists `bundles = ["resident", "resident-pro"]`, so no operator-only gate is needed — add `prod` to its `environments` (`web/public/submit.catalogue.toml` lines 449 to 457, `environments` at 457; the VS01 activity too, when CS-13a adds one), and a live Stripe price alongside the existing one for the £61.35 fee. Prove it first: the prod gateway values and the live package reference from CS-A4, then one fee-free operator proof filing (a second statement for 06846849 in the 2026-27 payment period, its fee waived by CS-11a's company list; the operator approved it; it moves the next review date to about a year after the filing day) before the listing goes live. Then `compliance.toml` rows for the credit account and the authorisation. Shares BACKLOG 34c steps 3 and 4 with the accounts launch. Blocked on CS-A4. **Source**: `PLAN_COMPANIES_HOUSE.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
-- [ ] **OCH1. Companies House sandbox user.** On `NEXT.md` as OCH1: a session creates the account under `antony+ch-sandbox@diyaccounting.co.uk` (operator, 2026-10-20) and sets `TEST_COMPANIES_HOUSE_USER_ID`, `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET` and `COMPANIES_HOUSE_SANDBOX_API_KEY` on GitHub's `ci` environment. Unblocks V4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
+- [ ] **OCH1. Companies House sandbox user.** On `NEXT.md` as OCH1: a session creates the account under `antony+ch-sandbox@diyaccounting.co.uk` (operator, 2026-10-20) and sets `TEST_COMPANIES_HOUSE_USER_ID`, `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET` and `COMPANIES_HOUSE_SANDBOX_API_KEY` on GitHub's `ci` environment. Unblocks V4 with OCH1k, the sandbox Test API client key the operator creates in the Developer Hub (`NEXT.md` OCH1k). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
 
 ## Context: the accounts launch to prod
 
