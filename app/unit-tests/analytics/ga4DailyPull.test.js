@@ -52,6 +52,13 @@ const FEDERATION_ENV = {
   AWS_SESSION_TOKEN: "session",
 };
 
+function bigQueryError(reason) {
+  const error = new Error("The job encountered an error during execution. Retrying the job may solve the problem.");
+  error.code = 400;
+  error.errors = [{ message: error.message, domain: "global", reason }];
+  return error;
+}
+
 function stubJob(rows) {
   mockGetQueryResults.mockResolvedValue([rows]);
   mockCreateQueryJob.mockResolvedValue([{ getQueryResults: mockGetQueryResults }]);
@@ -199,6 +206,62 @@ describe("ga4DailyPull", () => {
       expect(mockS3Send).not.toHaveBeenCalled();
     });
   });
+  describe("transient BigQuery failures", () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ toFake: ["setTimeout"] });
+    });
+
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    test.each(["jobBackendError", "backendError"])("a %s on the first job is retried and the object is written", async (reason) => {
+      mockGetQueryResults.mockResolvedValue([[]]);
+      mockCreateQueryJob.mockRejectedValueOnce(bigQueryError(reason));
+      mockCreateQueryJob.mockResolvedValue([{ getQueryResults: mockGetQueryResults }]);
+
+      const pending = handler({ date: "2026-08-20" });
+      await vi.runAllTimersAsync();
+      await pending;
+
+      expect(mockCreateQueryJob).toHaveBeenCalledTimes(4 + 1);
+      expect(mockS3Send).toHaveBeenCalledTimes(4);
+    });
+
+    test("a job that fails while reading results is created again", async () => {
+      const failing = { getQueryResults: vi.fn().mockRejectedValue(bigQueryError("backendError")) };
+      mockCreateQueryJob.mockResolvedValueOnce([failing]);
+      mockCreateQueryJob.mockResolvedValue([{ getQueryResults: mockGetQueryResults }]);
+      mockGetQueryResults.mockResolvedValue([[]]);
+
+      const pending = handler({ date: "2026-08-20" });
+      await vi.runAllTimersAsync();
+      await pending;
+
+      expect(failing.getQueryResults).toHaveBeenCalledTimes(1);
+      expect(mockCreateQueryJob).toHaveBeenCalledTimes(4 + 1);
+    });
+
+    test("a non-transient error is not retried", async () => {
+      mockCreateQueryJob.mockRejectedValue(bigQueryError("invalidQuery"));
+
+      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/Retrying the job may solve/);
+      expect(mockCreateQueryJob).toHaveBeenCalledTimes(1);
+      expect(mockS3Send).not.toHaveBeenCalled();
+    });
+
+    test("two transient errors in a row fail the invocation", async () => {
+      mockCreateQueryJob.mockRejectedValue(bigQueryError("jobBackendError"));
+
+      const assertion = expect(handler({ date: "2026-08-20" })).rejects.toThrow(/Retrying the job may solve/);
+      await vi.runAllTimersAsync();
+      await assertion;
+
+      expect(mockCreateQueryJob).toHaveBeenCalledTimes(2);
+      expect(mockS3Send).not.toHaveBeenCalled();
+    });
+  });
+
   describe("hourly mode", () => {
     const putKeys = () => mockS3Send.mock.calls.map(([command]) => command.input.Key);
     const putBody = (key) => {

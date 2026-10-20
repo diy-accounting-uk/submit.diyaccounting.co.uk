@@ -21,6 +21,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { BigQuery } from "@google-cloud/bigquery";
 import { federationSettings, createFederatedGoogleAuth } from "../../lib/googleWorkloadIdentity.js";
 import { createLogger } from "../../lib/logger.js";
+import { withTransientRetry } from "../../lib/bigQueryRetry.js";
 
 const logger = createLogger({ source: "app/functions/analytics/ga4EventExportPull.js" });
 
@@ -237,11 +238,17 @@ export async function handler(event = {}) {
     return { date: targetDate, key, count: 0 };
   }
 
-  const [job] = await bigQuery.createQueryJob({
-    query: buildQuery(projectId, datasetId, tableDateSuffix),
-    location,
-  });
-  const [rows] = await job.getQueryResults();
+  const rows = await withTransientRetry(
+    async () => {
+      const [job] = await bigQuery.createQueryJob({
+        query: buildQuery(projectId, datasetId, tableDateSuffix),
+        location,
+      });
+      const [jobRows] = await job.getQueryResults();
+      return jobRows;
+    },
+    { description: `${datasetId}.${tableName}` },
+  );
 
   const s3Client = getS3Client();
   const key = await putEventsObject(s3Client, bucket, targetDate, rows);
