@@ -48,6 +48,8 @@ step.
 
 ## Machine-only
 
+- [ ] **JF-0. The advisory job filter overflows its model on a large diff (PLAN_REASONED_JOB_FILTER).** `select-jobs` on PR #511's deploy (run 39363368935, job 118434501331) answered `"result":"Prompt is too long"` from `eu.anthropic.claude-haiku-4-5-20251001-v1:0` and exited 1 after 3.3 s; the job is `continue-on-error` and nothing reads it, so the deploy ran, but the trial (JF-1) records no decision for a batch of 55 files. In `scripts/ci/select-jobs.mjs` (the prompt is written to stdin since PR #408) cap what the prompt carries: the changed-file list in full, a per-file diff only up to a byte budget that fits the model's context with headroom (measure the prompt size that failed from the job log; the file list alone decides most skips), and a line in the decision artifact saying when the diff was truncated. Unit test in `app/unit-tests/scripts/selectJobs.test.js` for the cap. Proof: the next branch push's `select jobs` job green and its artifact `select-jobs-decision-deploy-<run-id>` carrying a decision. **Source**: `PLAN_REASONED_JOB_FILTER.md`; run 39363368935. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 ## Machine-ask
 
 ## Human-driven
