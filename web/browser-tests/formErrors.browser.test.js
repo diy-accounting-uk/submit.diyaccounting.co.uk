@@ -8,7 +8,13 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveMoneyInput, serveFormErrors, serveCarriedIdentifiers, serveSelfEmploymentExpenses } from "./hmrcFieldTableAssets.js";
+import {
+  serveMoneyInput,
+  serveFormErrors,
+  serveCarriedIdentifiers,
+  serveSelfEmploymentExpenses,
+  serveItsaPageScripts,
+} from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -56,6 +62,7 @@ async function openPage(page, fileName) {
       await route.continue();
     }
   });
+  await serveItsaPageScripts(page);
   await serveMoneyInput(page);
   await serveFormErrors(page);
   await serveCarriedIdentifiers(page);

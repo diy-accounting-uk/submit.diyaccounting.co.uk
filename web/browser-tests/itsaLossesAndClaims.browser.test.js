@@ -16,6 +16,7 @@ import {
   serveHmrcFieldTableAssets,
   serveSiteStyles,
   screenshotPath,
+  serveItsaPageScripts,
 } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -33,6 +34,7 @@ async function loadPage(page, html, url) {
       await route.continue();
     }
   });
+  await serveItsaPageScripts(page);
 
   await serveMoneyInput(page);
   await serveFormErrors(page);
@@ -67,6 +69,7 @@ async function loadPageAtRealOrigin(page, html, url) {
       await route.continue();
     }
   });
+  await serveItsaPageScripts(page);
 
   await serveMoneyInput(page);
   await serveFormErrors(page);

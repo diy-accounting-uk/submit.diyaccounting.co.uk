@@ -10,7 +10,13 @@ import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { itsaDefaultMessages } from "@app/http-simulator/scenarios/assist.js";
-import { serveHmrcAssistWidget, serveHmrcFieldTableAssets, serveFormErrors, serveCarriedIdentifiers } from "./hmrcFieldTableAssets.js";
+import {
+  serveHmrcAssistWidget,
+  serveHmrcFieldTableAssets,
+  serveFormErrors,
+  serveCarriedIdentifiers,
+  serveItsaPageScripts,
+} from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -59,6 +65,7 @@ async function stubSite(page) {
       await route.continue();
     }
   });
+  await serveItsaPageScripts(page);
   await serveHmrcFieldTableAssets(page);
   await serveHmrcAssistWidget(page);
   await serveFormErrors(page);

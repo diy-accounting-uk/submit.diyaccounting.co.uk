@@ -11,7 +11,15 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveCarriedIdentifiers } from "./hmrcFieldTableAssets.js";
+import {
+  serveCarriedIdentifiers,
+  serveItsaPageScripts,
+  serveItsaSubmissionModel,
+  serveSelfEmploymentExpenses,
+  serveMoneyInput,
+  serveFormErrors,
+  serveHmrcFieldTableAssets,
+} from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -30,6 +38,12 @@ async function loadPage(page, html, url) {
   });
 
   await serveCarriedIdentifiers(page);
+  await serveItsaPageScripts(page);
+  await serveItsaSubmissionModel(page);
+  await serveSelfEmploymentExpenses(page);
+  await serveMoneyInput(page);
+  await serveFormErrors(page);
+  await serveHmrcFieldTableAssets(page);
 
   const modifiedHtml = html.replace("<head>", `<head><base href="${new URL(".", url)}">`).replace(
     "<body>",
@@ -45,16 +59,6 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
   );
 
   await page.setContent(modifiedHtml, { url, waitUntil: "domcontentloaded" });
-
-  // The lib script is stripped by the blanket **/*.js route above (it has no src on the base
-  // page's own origin resolution path in this harness), so load the real submission-model
-  // helper directly into the page for these tests.
-  await page.addScriptTag({ path: path.join(process.cwd(), "web/public/lib/itsaSubmissionModel.js") });
-  await page.addScriptTag({ path: path.join(process.cwd(), "web/public/lib/self-employment-expenses.js") });
-  await page.evaluate(() => {
-    const container = document.getElementById("expenseFields");
-    if (container) window.selfEmploymentExpenses.mountFields(container);
-  });
 
   await delay(200);
 }

@@ -8,6 +8,7 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
+import { serveItsaPageScripts, serveCarriedIdentifiers } from "./hmrcFieldTableAssets.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -30,6 +31,8 @@ test.describe("ITSA Annual Submission - Form", () => {
         await route.continue();
       }
     });
+    await serveItsaPageScripts(page);
+    await serveCarriedIdentifiers(page);
 
     const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">').replace(
       "<body>",
