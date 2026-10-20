@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-893b30a** (PR #514, deploy 39401649914, last-known-good since about 11:00 UTC on 2026-10-20; the only prod set once prod-6056ba3's destroy completes).
+**Prod runs deployment prod-0e924d9** (PR #515, deploy 39429515076, last-known-good since about 14:10 UTC on 2026-10-20; the only prod set once prod-893b30a's destroy completes). The site's `script-src` carries no `'unsafe-inline'` from this set on.
 **ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-20 03:42 UTC by PR #511's first branch deploy, redeployed by PR #511's later heads and PR #512's deploy 39383588329; the pointer last written 07:26 UTC; the slot parameter still names run 39383588329). Its self-destruct fires every four hours from creation (11:42, 15:42, 19:42 UTC) and skips while the set is last-known-good inside the 12 h protection window from the pointer's last write, so it goes at the 19:42 UTC firing unless a branch deploy renews it first. PR #514's deploy takes the second slot.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
