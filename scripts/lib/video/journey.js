@@ -12,7 +12,14 @@
 // exactly as it does for the behaviour tests, so the same script proves locally against the
 // simulator and records against a deployment through the Cognito Hosted UI.
 
-import { createHmrcTestUser, runLocalDynamoDb, runLocalHttpServer, runLocalOAuth2Server } from "./behaviourSteps.js";
+import {
+  createHmrcTestUser,
+  provisionCompaniesHouseTestCompany,
+  releaseCompaniesHouseTestCompany,
+  runLocalDynamoDb,
+  runLocalHttpServer,
+  runLocalOAuth2Server,
+} from "./behaviourSteps.js";
 
 // Cognito's one-time code field, by every name its Hosted UI gives it. Masked on camera so a
 // recording never shows a code being typed, while the rest of the sign-in stays on screen.
@@ -104,6 +111,28 @@ export async function resolveHmrcTestUser(env, hmrcServices = ["mtd-vat"]) {
     password: testUser.password,
     vatNumber: testUser.vrn,
     nino: wantsIncomeTax ? testUser.nino : undefined,
+  };
+}
+
+// The company number the simulator lane keeps typing; the simulator serves any number.
+const SIMULATOR_COMPANY_NUMBER = "06846849";
+
+// A script with companiesHouseTestCompany set gets a Companies House sandbox test company for
+// the run, the same one the behaviour tests create, so the company-scoped sign-in has a
+// company number and authentication code that belong together. The values feed the
+// {{companiesHouseNumber}} placeholder and the companiesHouseAuthorise action. The simulator
+// lane provisions nothing and keeps the canned number. release deletes the company and is safe
+// to call on every path.
+export async function provisionSceneCompany(env) {
+  const company = await provisionCompaniesHouseTestCompany(env.DIY_SUBMIT_ENV_FILEPATH);
+  if (!company.companyNumber) {
+    return { companyNumber: SIMULATOR_COMPANY_NUMBER, authCode: undefined, release: async () => {} };
+  }
+  console.log(`Companies House sandbox test company ready, company number ${company.companyNumber}`);
+  return {
+    companyNumber: company.companyNumber,
+    authCode: company.authCode,
+    release: () => releaseCompaniesHouseTestCompany(company),
   };
 }
 

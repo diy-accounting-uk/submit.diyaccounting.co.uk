@@ -4,7 +4,7 @@
 // app/unit-tests/video/journey.test.js
 
 import { describe, test, expect, vi, afterEach } from "vitest";
-import { resolveHmrcTestUser, credentialFieldMaskInitScript } from "../../../scripts/lib/video/journey.js";
+import { resolveHmrcTestUser, credentialFieldMaskInitScript, provisionSceneCompany } from "../../../scripts/lib/video/journey.js";
 
 const baseEnv = {
   TEST_HMRC_USERNAME: "user123456789",
@@ -87,5 +87,14 @@ describe("credentialFieldMaskInitScript", () => {
     frames.shift()();
 
     expect(observe).toHaveBeenCalledWith(doc.documentElement, { childList: true, subtree: true });
+  });
+});
+
+describe("provisionSceneCompany", () => {
+  test("keeps the canned company number and creates nothing on the simulator lane", async () => {
+    const company = await provisionSceneCompany({ DIY_SUBMIT_ENV_FILEPATH: ".env.simulator" });
+    expect(company.companyNumber).toBe("06846849");
+    expect(company.authCode).toBeUndefined();
+    await expect(company.release()).resolves.toBeUndefined();
   });
 });

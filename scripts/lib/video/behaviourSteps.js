@@ -43,5 +43,10 @@ export const { consentToDataCollection, goToHomePageUsingMainNav } = siteSteps;
 export const { ensureBundlePresent } = bundleSteps;
 export const { acceptCookiesHmrc, goToHmrcAuth, initHmrcAuth, fillInHmrcAuth, submitHmrcAuth, grantPermissionHmrcAuth } = hmrcSteps;
 export const { initSubmitVat, fillInVat, submitFormVat, completeVat, verifyVatSubmission } = vatSteps;
-export const { authoriseWithCompaniesHouse, resolveCompaniesHouseSignInCredentials } = companiesHouseFilingSteps;
+export const {
+  authoriseWithCompaniesHouse,
+  resolveCompaniesHouseSignInCredentials,
+  provisionCompaniesHouseTestCompany,
+  releaseCompaniesHouseTestCompany,
+} = companiesHouseFilingSteps;
 export const { addOnPageLogging, createHmrcTestUser, isSandboxMode, runLocalDynamoDb, runLocalHttpServer, runLocalOAuth2Server } = helpers;
