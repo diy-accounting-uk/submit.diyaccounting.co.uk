@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { servePageScripts } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -75,6 +76,7 @@ test.describe("Bundles page subscription UI", () => {
         await route.continue();
       }
     });
+    await servePageScripts(page);
 
     await page.route("**/submit.catalogue.toml", async (route) => {
       const tomlBody = `

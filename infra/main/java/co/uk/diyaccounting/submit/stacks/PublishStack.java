@@ -272,6 +272,20 @@ public class PublishStack extends Stack {
                         "/terms.html",
                         "/.well-known/security.txt",
                         "/site.webmanifest",
+                        "/about.page.js",
+                        "/bundles.page.js",
+                        "/diy-accounting-spreadsheets.page.js",
+                        "/guide.page.js",
+                        "/index.banner-hold.page.js",
+                        "/index.page.js",
+                        "/spreadsheets.page.js",
+                        "/usage.page.js",
+                        "/videos.page.js",
+                        "/videos-account.page.js",
+                        "/videos-accounting.page.js",
+                        "/videos-ch.page.js",
+                        "/videos-hmrc-itsa.page.js",
+                        "/videos-hmrc-vat.page.js",
                         "/developer-mode.js"))
                 .retainOnDelete(true)
                 .logGroup(webDeploymentLogGroup)

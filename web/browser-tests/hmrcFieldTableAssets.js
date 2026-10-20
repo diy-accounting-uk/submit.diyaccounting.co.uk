@@ -63,6 +63,16 @@ export function serveCarriedIdentifiers(page) {
   return serveFile(page, "**/lib/carried-identifiers.js", "lib/carried-identifiers.js", "application/javascript");
 }
 
+// The real page script of any page under web/public, for a test that serves the page HTML from disk.
+export function servePageScripts(page) {
+  return page.route("**/*.page.js", async (route) => {
+    const pathname = decodeURIComponent(new URL(route.request().url()).pathname);
+    const exactPath = path.join(PUBLIC_DIR, pathname);
+    const filePath = fs.existsSync(exactPath) ? exactPath : path.join(PUBLIC_DIR, path.basename(pathname));
+    await route.fulfill({ status: 200, contentType: "application/javascript", body: fs.readFileSync(filePath, "utf-8") });
+  });
+}
+
 // The real page script of an ITSA page whose other scripts are stubbed out.
 export function serveItsaPageScripts(page) {
   return page.route("**/hmrc/itsa/*.page.js", async (route) => {

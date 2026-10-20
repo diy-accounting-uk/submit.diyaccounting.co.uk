@@ -52,7 +52,7 @@
 
       <div class="form-container" style="text-align: center">
         <div class="navigation-container" style="text-align: center; margin-top: 2em">
-          <button type="button" class="btn" id="navigationBtn" onclick="window.location.href = '../'">Return home</button>
+          <button type="button" class="btn" id="navigationBtn">Return home</button>
         </div>
       </div>
     </main>
@@ -86,17 +86,6 @@
     <script src="../widgets/entitlement-status.js"></script>
     <script src="../widgets/auth-status.js"></script>
     <script type="module" src="../widgets/view-source-link.js"></script>
-    <script>
-      // Initialize page - wait for submit.js module to be ready
-      function initPage() {
-        checkAuthStatus();
-      }
-
-      if (window.__submitReady__) {
-        initPage();
-      } else {
-        document.addEventListener("submit-ready", initPage, { once: true });
-      }
-    </script>
+    <script src="404-error-distribution.page.js"></script>
   </body>
 </html>

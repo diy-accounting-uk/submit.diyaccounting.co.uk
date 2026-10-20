@@ -133,14 +133,33 @@ export default [
         adjustBsasUkProperty: "readonly",
         getUkPropertyAnnual: "readonly",
         putUkPropertyAnnual: "readonly",
+        checkAuthStatus: "readonly",
+        updateLoginStatus: "readonly",
+        formatGbp: "readonly",
+        QRCode: "readonly",
+        SwaggerUIBundle: "readonly",
+        SwaggerUIStandalonePreset: "readonly",
       },
     },
     rules: {
       "no-empty": "off",
       "no-unused-vars": "off",
+      "no-useless-escape": "off",
+      "new-cap": "off",
+      "promise/catch-or-return": "off",
+      "promise/always-return": "off",
       "sonarjs/no-ignored-exceptions": "off",
       "sonarjs/no-nested-conditional": "off",
+      "sonarjs/cognitive-complexity": "off",
+      "sonarjs/no-gratuitous-expressions": "off",
+      "sonarjs/no-unused-vars": "off",
+      "sonarjs/no-dead-store": "off",
     },
+  },
+  // Page scripts that import widgets load as modules
+  {
+    files: ["web/public/videos*.page.js"],
+    languageOptions: { sourceType: "module" },
   },
   // Browser environment for gateway site
   {

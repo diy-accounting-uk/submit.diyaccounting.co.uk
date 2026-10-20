@@ -17,18 +17,6 @@
       <p>You have been signed out of DIY Accounting Submit.</p>
       <p><a href="../">Return to home page</a></p>
     </main>
-    <script>
-      (function () {
-        // Clear any remaining auth-related localStorage
-        // (auth-status.js already clears these before the Cognito redirect,
-        // but belt-and-braces in case the user navigates here directly)
-        localStorage.removeItem("loginProvider");
-        localStorage.removeItem("cognitoAccessToken");
-        localStorage.removeItem("cognitoIdToken");
-        localStorage.removeItem("cognitoRefreshToken");
-        localStorage.removeItem("userInfo");
-        localStorage.removeItem("authState");
-      })();
-    </script>
+    <script src="signed-out.page.js"></script>
   </body>
 </html>
