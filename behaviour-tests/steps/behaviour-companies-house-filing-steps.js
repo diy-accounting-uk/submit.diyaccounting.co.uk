@@ -3,8 +3,8 @@
 
 // behaviour-tests/steps/behaviour-companies-house-filing-steps.js
 // Steps for the two Companies House filing journeys: change registered office address and
-// change registered email address. Both share the same OAuth screen (one sign-in-and-permission
-// page, unlike HMRC's four-step journey) and the same review/result view ids.
+// change registered email address. Both share the same OAuth sign-in (GOV.UK One Login on the
+// sandbox, one form on the simulator) and the same review/result view ids.
 
 import { expect, test } from "@playwright/test";
 import { TOTP, Secret } from "otpauth";
@@ -203,74 +203,84 @@ export async function verifyEligibilityRejected(page, expectedMessageFragment, s
   });
 }
 
-/**
- * Completes the authenticator app challenge identity-sandbox.company-information.service.gov.uk
- * shows a sandbox account with 2SV turned on, the same way the Cognito Hosted UI's TOTP challenge
- * is handled (see handleTotpChallenge in behaviour-login-steps.js): compute a six-digit code from
- * the base32 secret and type it in. Not every sandbox account has 2SV enabled, and the simulator's
- * OAuth stand-in never shows this page, so this waits a short, bounded time for the field and
- * moves on if it never appears. The selector list is a best guess at the real page's field names,
- * built from GOV.UK's usual one-time-code patterns rather than a live sign-in — a failing run's
- * screenshots (…-01-authenticator-challenge.png onward) show what to correct.
- */
+const oneLoginLinkSelector = 'a:has-text("Go to GOV.UK One Login")';
+
+async function clickContinue(page, description, screenshotPath) {
+  await loggedClick(page, 'button:has-text("Continue")', description, { screenshotPath });
+}
+
+/** Types the six-digit authenticator code on GOV.UK One Login's enter-authenticator-app-code page. */
 export async function handleCompaniesHouseAuthenticatorChallenge(page, totpSecret, screenshotPath = defaultScreenshotPath) {
   if (!totpSecret) {
-    // No real sign-in happened (the simulator's OAuth stand-in has no 2SV), so there is nothing
-    // to wait for. Skipping outright avoids a pointless timeout on every simulator/proxy run.
-    return;
+    throw new Error("TEST_COMPANIES_HOUSE_TOTP_SECRET must be set: the Companies House sandbox sign-in asks for an authenticator code.");
   }
 
-  await test.step("The user completes the Companies House authenticator app challenge, if the sandbox asks for one", async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-authenticator-challenge.png` });
-
-    const codeInputSelector = 'input[name="code"], input#code, input[name="otac"], input[autocomplete="one-time-code"]';
-    const codeInput = await page.waitForSelector(codeInputSelector, { state: "visible", timeout: 10000 }).catch(() => null);
-
-    if (!codeInput) {
-      console.log("No Companies House authenticator challenge detected — 2SV may not be enabled for this sandbox account");
-      return;
-    }
-
-    console.log("Companies House authenticator challenge detected");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-authenticator-challenge-page.png` });
-
+  await test.step("The user enters the GOV.UK One Login authenticator app code", async () => {
+    await page.waitForSelector("#code", { state: "visible", timeout: 30000 });
     const totp = new TOTP({ secret: Secret.fromBase32(totpSecret), algorithm: "SHA1", digits: 6, period: 30 });
-    const code = totp.generate();
-    console.log("Generated Companies House authenticator code");
-
-    await codeInput.fill(code);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-authenticator-code-entered.png` });
-
-    await Promise.all([
-      page.waitForLoadState("networkidle"),
-      page.locator('button:has-text("Continue"), input[type="submit"], button[type="submit"]').first().click(),
-    ]);
-    await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-authenticator-challenge-completed.png` });
+    await loggedFill(page, "#code", totp.generate(), "GOV.UK One Login authenticator code", { screenshotPath });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-authenticator-code-entered.png` });
+    await clickContinue(page, "Continue after the authenticator code", screenshotPath);
+    // The redirect to Companies House happens but the click's own navigation wait can time out,
+    // so wait on the address leaving the code page instead of on a load state.
+    await page.waitForURL((url) => !url.pathname.endsWith("/enter-authenticator-app-code"), { timeout: 30000, waitUntil: "commit" });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-authenticator-challenge-completed.png` });
   });
 }
 
-export async function authoriseWithCompaniesHouse(
-  page,
-  { userId, password, companyAuthCode, totpSecret },
-  screenshotPath = defaultScreenshotPath,
-) {
+async function signInWithGovUkOneLogin(page, { userId, password, totpSecret }, screenshotPath) {
+  await loggedClick(page, oneLoginLinkSelector, "Go to GOV.UK One Login", { screenshotPath });
+  await loggedClick(page, "#sign-in-button", "Sign in to GOV.UK One Login", { screenshotPath });
+  await loggedFill(page, "#email", userId, "GOV.UK One Login email address", { screenshotPath });
+  await clickContinue(page, "Continue after the email address", screenshotPath);
+  await loggedFill(page, "#password", password, "GOV.UK One Login password", { screenshotPath });
+  await clickContinue(page, "Continue after the password", screenshotPath);
+  await handleCompaniesHouseAuthenticatorChallenge(page, totpSecret, screenshotPath);
+}
+
+// A scope that names a company adds this page between One Login and the permission page.
+async function enterCompanyAuthCodeIfAsked(page, companyAuthCode, screenshotPath) {
+  await page.locator("#auth_code, #is_auth_confirmed").first().waitFor({ state: "visible", timeout: 30000 });
+  if ((await page.locator("#auth_code").count()) === 0) {
+    return;
+  }
+  if (!companyAuthCode) {
+    throw new Error("Companies House asked for the company authentication code and none was supplied.");
+  }
+  await loggedFill(page, "#auth_code", companyAuthCode, "Company authentication code", { screenshotPath });
+  await loggedClick(page, "#submit", "Continue after the company authentication code", { screenshotPath });
+}
+
+async function authoriseOnRealSandbox(page, credentials, screenshotPath) {
+  await signInWithGovUkOneLogin(page, credentials, screenshotPath);
+  await enterCompanyAuthCodeIfAsked(page, credentials.companyAuthCode, screenshotPath);
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-authorise-application.png` });
+  await loggedClick(page, "#is_auth_confirmed", "Allow access", { screenshotPath });
+}
+
+async function authoriseOnSimulator(page, { userId, password, companyAuthCode }, screenshotPath) {
+  await loggedFill(page, "#userId", userId, "Companies House email address", { screenshotPath });
+  await loggedFill(page, "#password", password, "Companies House password", { screenshotPath });
+  await loggedFill(page, "#companyAuthCode", companyAuthCode, "Company authentication code", { screenshotPath });
+  await loggedClick(page, "#givePermission", "Give permission", { screenshotPath });
+}
+
+export async function authoriseWithCompaniesHouse(page, credentials, screenshotPath = defaultScreenshotPath) {
   await test.step("The user signs in to Companies House and grants permission", async () => {
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(300);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-authorise-with-companies-house.png` });
-    await expect(page.locator("#userId")).toBeVisible({ timeout: 15000 });
-    await loggedFill(page, "#userId", userId, "Companies House email address", { screenshotPath });
-    await loggedFill(page, "#password", password, "Companies House password", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-authorise-with-companies-house.png` });
-
-    await handleCompaniesHouseAuthenticatorChallenge(page, totpSecret, screenshotPath);
-
-    await loggedFill(page, "#companyAuthCode", companyAuthCode, "Company authentication code", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-authorise-with-companies-house.png` });
-    await Promise.all([page.waitForURL(/.*/, { timeout: 30000 }), loggedClick(page, "#givePermission", "Give permission")]);
+    await page.locator(`${oneLoginLinkSelector}, #userId`).first().waitFor({ state: "visible", timeout: 15000 });
+    const startUrl = page.url();
+    if (await page.locator("#userId").count()) {
+      await authoriseOnSimulator(page, credentials, screenshotPath);
+    } else {
+      await authoriseOnRealSandbox(page, credentials, screenshotPath);
+    }
+    await page.waitForURL((url) => url.href !== startUrl && !/\/oauth2\/|signin\.account\.gov\.uk/.test(url.href), {
+      timeout: 30000,
+      waitUntil: "commit",
+    });
     await page.waitForLoadState("networkidle");
-    await page.waitForTimeout(500);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-authorise-with-companies-house.png` });
   });
 }
