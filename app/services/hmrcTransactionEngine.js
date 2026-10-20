@@ -83,7 +83,10 @@ export function computeIrmark(govTalkMessageXml) {
 export function withIrmark(govTalkMessageXml) {
   const pattern = /<IRmark Type="generic">[^<]*<\/IRmark>/g;
   const matches = govTalkMessageXml.match(pattern) || [];
-  if (matches.length !== 1) throw new Error(`Expected one <IRmark Type="generic"> element, found ${matches.length}`);
+  // The message carries the Gateway password, so the error names the rule and nothing read
+  // from the document.
+  if (matches.length === 0) throw new Error('The GovTalk message carries no <IRmark Type="generic"> element');
+  if (matches.length > 1) throw new Error('The GovTalk message carries more than one <IRmark Type="generic"> element');
   const irmark = computeIrmark(govTalkMessageXml);
   return { xml: govTalkMessageXml.replace(pattern, `<IRmark Type="generic">${irmark.base64}</IRmark>`), irmark };
 }

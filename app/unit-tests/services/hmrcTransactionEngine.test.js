@@ -85,8 +85,21 @@ describe("withIrmark", () => {
     expect(xml).toContain('<IRmark Type="generic">RPfWtxHeCZRcwfitnIJmK9xc4OQ=</IRmark>');
   });
 
-  test("refuses a message without exactly one generic IRmark", () => {
-    expect(() => withIrmark("<GovTalkMessage><Body/></GovTalkMessage>")).toThrow(/found 0/);
+  test("refuses a message with no generic IRmark element", () => {
+    expect(() => withIrmark("<GovTalkMessage><Body/></GovTalkMessage>")).toThrow(/carries no <IRmark/);
+  });
+
+  test("refuses a message with more than one generic IRmark element, naming nothing from the message", () => {
+    const twoMarks =
+      '<GovTalkMessage><Body><IRmark Type="generic">a</IRmark><IRmark Type="generic">b</IRmark><Value>secret</Value></Body></GovTalkMessage>';
+    let thrown;
+    try {
+      withIrmark(twoMarks);
+    } catch (error) {
+      thrown = error;
+    }
+    expect(thrown.message).toMatch(/more than one <IRmark/);
+    expect(thrown.message).not.toContain("secret");
   });
 });
 
