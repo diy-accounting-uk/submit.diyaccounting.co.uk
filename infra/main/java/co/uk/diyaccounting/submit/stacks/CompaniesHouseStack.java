@@ -884,8 +884,7 @@ public class CompaniesHouseStack extends Stack {
         this.lambdaFunctionProps.add(this.hmrcCtReturnPostLambdaProps);
         infof(
                 "Created Lambda %s for HMRC Company Tax Return submit with ingestHandler %s",
-                this.hmrcCtReturnPostLambda.getNode().getId(),
-                props.sharedNames().hmrcCtReturnPostIngestLambdaHandler);
+                this.hmrcCtReturnPostLambda.getNode().getId(), props.sharedNames().hmrcCtReturnPostIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.hmrcCtReturnPostLambda, bundlesTable, region, account, props, activityBusArn, false);
         companiesHouseAccountsAsyncRequestsTable.grant(
@@ -922,8 +921,7 @@ public class CompaniesHouseStack extends Stack {
         this.lambdaFunctionProps.add(this.hmrcCtReturnGetLambdaProps);
         infof(
                 "Created Lambda %s for HMRC Company Tax Return poll with ingestHandler %s",
-                this.hmrcCtReturnGetLambda.getNode().getId(),
-                props.sharedNames().hmrcCtReturnGetIngestLambdaHandler);
+                this.hmrcCtReturnGetLambda.getNode().getId(), props.sharedNames().hmrcCtReturnGetIngestLambdaHandler);
         grantCompaniesHouseLambdaAccess(
                 this.hmrcCtReturnGetLambda, bundlesTable, region, account, props, activityBusArn, false);
         receiptsTable.grant(this.hmrcCtReturnGetLambda, "dynamodb:PutItem");

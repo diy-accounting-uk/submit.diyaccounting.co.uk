@@ -4389,10 +4389,14 @@ public class SubmitSharedNames {
         this.hmrcCtReturnPreviewPostLambdaJwtAuthorizer = true;
         this.hmrcCtReturnPreviewPostLambdaCustomAuthorizer = false;
         var hmrcCtReturnPreviewPostLambdaHandlerName = "hmrcCtReturnPreviewPost.ingestHandler";
-        var hmrcCtReturnPreviewPostLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcCtReturnPreviewPostLambdaHandlerName);
-        this.hmrcCtReturnPreviewPostIngestLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, hmrcCtReturnPreviewPostLambdaHandlerDashed);
-        this.hmrcCtReturnPreviewPostIngestLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcCtReturnPreviewPostLambdaHandlerName);
-        this.hmrcCtReturnPreviewPostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcCtReturnPreviewPostLambdaHandlerDashed);
+        var hmrcCtReturnPreviewPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcCtReturnPreviewPostLambdaHandlerName);
+        this.hmrcCtReturnPreviewPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcCtReturnPreviewPostLambdaHandlerDashed);
+        this.hmrcCtReturnPreviewPostIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcCtReturnPreviewPostLambdaHandlerName);
+        this.hmrcCtReturnPreviewPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcCtReturnPreviewPostLambdaHandlerDashed);
         this.hmrcCtReturnPreviewPostIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.hmrcCtReturnPreviewPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
@@ -4407,10 +4411,14 @@ public class SubmitSharedNames {
         this.hmrcCtReturnPostLambdaJwtAuthorizer = true;
         this.hmrcCtReturnPostLambdaCustomAuthorizer = false;
         var hmrcCtReturnPostLambdaHandlerName = "hmrcCtReturnPost.ingestHandler";
-        var hmrcCtReturnPostLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcCtReturnPostLambdaHandlerName);
-        this.hmrcCtReturnPostIngestLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, hmrcCtReturnPostLambdaHandlerDashed);
-        this.hmrcCtReturnPostIngestLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcCtReturnPostLambdaHandlerName);
-        this.hmrcCtReturnPostIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcCtReturnPostLambdaHandlerDashed);
+        var hmrcCtReturnPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcCtReturnPostLambdaHandlerName);
+        this.hmrcCtReturnPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcCtReturnPostLambdaHandlerDashed);
+        this.hmrcCtReturnPostIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcCtReturnPostLambdaHandlerName);
+        this.hmrcCtReturnPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcCtReturnPostLambdaHandlerDashed);
         this.hmrcCtReturnPostIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.hmrcCtReturnPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
@@ -4425,9 +4433,12 @@ public class SubmitSharedNames {
         this.hmrcCtReturnGetLambdaJwtAuthorizer = true;
         this.hmrcCtReturnGetLambdaCustomAuthorizer = false;
         var hmrcCtReturnGetLambdaHandlerName = "hmrcCtReturnGet.ingestHandler";
-        var hmrcCtReturnGetLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcCtReturnGetLambdaHandlerName);
-        this.hmrcCtReturnGetIngestLambdaFunctionName = "%s-%s".formatted(this.appResourceNamePrefix, hmrcCtReturnGetLambdaHandlerDashed);
-        this.hmrcCtReturnGetIngestLambdaHandler = "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcCtReturnGetLambdaHandlerName);
+        var hmrcCtReturnGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcCtReturnGetLambdaHandlerName);
+        this.hmrcCtReturnGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcCtReturnGetLambdaHandlerDashed);
+        this.hmrcCtReturnGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcCtReturnGetLambdaHandlerName);
         this.hmrcCtReturnGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcCtReturnGetLambdaHandlerDashed);
         this.hmrcCtReturnGetIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.hmrcCtReturnGetIngestLambdaArn, this.provisionedConcurrencyAliasName);

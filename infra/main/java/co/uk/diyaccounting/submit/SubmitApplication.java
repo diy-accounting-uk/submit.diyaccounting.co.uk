@@ -229,8 +229,7 @@ public class SubmitApplication {
                 "COMPANIES_HOUSE_XMLGW_URI",
                 appProps.companiesHouseXmlGatewayUri,
                 "(from companiesHouseXmlGatewayUri in cdk.json)");
-        var hmrcCtVendorId = envOr(
-                "HMRC_CT_VENDOR_ID", appProps.hmrcCtVendorId, "(from hmrcCtVendorId in cdk.json)");
+        var hmrcCtVendorId = envOr("HMRC_CT_VENDOR_ID", appProps.hmrcCtVendorId, "(from hmrcCtVendorId in cdk.json)");
         var companiesHousePresenterIdArn = envOr(
                 "COMPANIES_HOUSE_PRESENTER_ID_ARN",
                 appProps.companiesHousePresenterIdArn,

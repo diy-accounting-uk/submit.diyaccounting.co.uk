@@ -510,9 +510,10 @@ class CompaniesHouseStackTest {
 
         // Every Lambda except the token exchange queries the bundles table: the two company
         // lookup routes, the registered office address read, the six filing routes, the three
-        // accounts routes, the three Company Tax Return routes, the six confirmation statement routes, and the two PSC verification
-        // statement routes, all gated by enforceBundles(). The token exchange has no authorizer
-        // and so no user to check a bundle entitlement against.
+        // accounts routes, the three Company Tax Return routes, the six confirmation statement
+        // routes, and the two PSC verification statement routes, all gated by enforceBundles().
+        // The token exchange has no authorizer and so no user to check a bundle entitlement
+        // against.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
