@@ -22,6 +22,7 @@
 import { BigQuery } from "@google-cloud/bigquery";
 import { assertFederatedCredentials } from "../../infra/google/lib/googleAuth.js";
 import { getStripeClient } from "@app/lib/stripeClient.js";
+import { withTransientRetry } from "@app/lib/bigQueryRetry.js";
 
 let cachedClient = null;
 
@@ -152,9 +153,11 @@ export async function findPurchaseEvent({ transactionId, projectId, datasetId, l
   const client = await getBigQueryClient(projectId);
   const suffixes = dailyTableSuffixes(lookbackDays);
 
-  const [rows] = await client.query({
-    location,
-    query: `
+  const [rows] = await withTransientRetry(
+    () =>
+      client.query({
+        location,
+        query: `
       SELECT event_name
       FROM \`${projectId}.${datasetId}.events_*\`
       WHERE _TABLE_SUFFIX IN UNNEST(@suffixes)
@@ -165,8 +168,10 @@ export async function findPurchaseEvent({ transactionId, projectId, datasetId, l
         )
       LIMIT 1
     `,
-    params: { suffixes, transactionId },
-  });
+        params: { suffixes, transactionId },
+      }),
+    { attempts: 3, waitMs: 10_000, description: `purchase ${transactionId}` },
+  );
 
   return { found: rows.length > 0, tablesQueried: suffixes.map((suffix) => `events_${suffix}`) };
 }
