@@ -42,17 +42,6 @@ async function loginWithCognito() {
   window.location.href = authResponseUrl;
 }
 
-// Check if user is already logged in
-function checkExistingAuth() {
-  const accessToken = localStorage.getItem("cognitoAccessToken");
-  const userInfo = localStorage.getItem("userInfo");
-
-  if (accessToken && userInfo) {
-    console.log("User already authenticated");
-    updateLoginStatus();
-  }
-}
-
 // DOM elements and event listeners
 // The button ships disabled: it renders long before the scripts above have loaded, and a
 // click on it before this line ran did nothing at all.
@@ -64,7 +53,6 @@ sessionStorage.removeItem("currentActivity");
 console.log("Current activity cleared");
 
 // Initialize authentication on page load
-checkExistingAuth();
 
 // Only load mock auth addon in local development (localhost/127.0.0.1/local.submit)
 // In production, this script is excluded from deployment and not needed
