@@ -17,10 +17,12 @@
   ],
   "hmrcServices": ["mtd-vat", "mtd-income-tax"],
   "environments": ["ci"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 80,
     "betweenActionsMs": 500,
@@ -31,7 +33,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -40,9 +41,12 @@
     "charsPerSecond": 16,
     "minMs": 1200,
     "fadeMs": 200,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "suppress": [
     "#feedbackEngagementBanner",
     "#feedbackEngagementSection",
@@ -54,97 +58,87 @@
     ".entitlement-status",
     "#developerSection"
   ],
-
   "finalHoldMs": 2500,
-
   "scenes": [
     {
       "id": "home",
       "chapter": "Home",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "goto",
           "url": "/",
-          "waitFor": "#mainContent",
-          "caption": "This is a sandbox preview against HMRC's test service, not a live filing.",
-          "headline": "A sandbox preview",
-          "keyWord": "sandbox"
+          "waitFor": "#mainContent"
         },
         {
-          "action": "caption",
-          "text": "See the full sign-in walkthrough in our sign-in video.",
-          "holdMs": 1200,
-          "headline": "Sign in, faster",
-          "keyWord": "faster"
-        },
-        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
-        { "action": "hold", "ms": 400 }
-      ]
+          "action": "hold",
+          "ms": 400
+        }
+      ],
+      "offCamera": true
     },
     {
       "id": "sign-in",
       "chapter": "Sign in",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "click",
-          "target": "a.login-link",
-          "caption": "Sign in with the account you already use.",
-          "headline": "Sign in first",
-          "keyWord": "Sign"
+          "target": "a.login-link"
         },
         {
-          "action": "login",
-          "caption": "Your account keeps a whole year's filings in one place.",
-          "headline": "Confirm your identity",
-          "keyWord": "identity"
+          "action": "login"
         },
-        { "action": "consent" },
-        { "action": "hold", "ms": 400 }
-      ]
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
+      ],
+      "offCamera": true
     },
     {
       "id": "subscription",
       "chapter": "Resident",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "click",
-          "target": { "role": "link", "name": "Bundles" },
-          "caption": "Bundles decide which activities you can run.",
-          "headline": "Open your bundles",
-          "keyWord": "bundles"
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          }
         },
         {
           "action": "ensureBundle",
           "bundle": "Resident",
-          "testPass": true,
-          "caption": "Resident opens the Self Assessment activities.",
-          "headline": "Unlock Self Assessment",
-          "keyWord": "Self"
+          "testPass": true
         },
-        { "action": "hold", "ms": 500 },
+        {
+          "action": "hold",
+          "ms": 500
+        },
         {
           "action": "click",
-          "target": { "role": "link", "name": "Activities" },
-          "caption": "Every activity starts from the home page.",
-          "headline": "Go to activities",
-          "keyWord": "activities"
+          "target": {
+            "role": "link",
+            "name": "Activities"
+          }
         },
-        { "action": "await", "until": ".developer-mode-toggle", "label": "Waiting for the developer mode toggle" },
+        {
+          "action": "await",
+          "until": ".developer-mode-toggle",
+          "label": "Waiting for the developer mode toggle"
+        },
         {
           "action": "click",
-          "target": ".developer-mode-toggle",
-          "caption": "One switch, so this run can ask HMRC's sandbox for two kinds of business.",
-          "headline": "One switch, two businesses",
-          "keyWord": "switch"
+          "target": ".developer-mode-toggle"
         },
-        { "action": "hold", "ms": 400 }
-      ]
+        {
+          "action": "hold",
+          "ms": 400
+        }
+      ],
+      "offCamera": true
     },
     {
       "id": "business-picker",
@@ -152,14 +146,35 @@
       "still": true,
       "steps": [
         {
+          "action": "caption",
+          "text": "This is a sandbox preview against HMRC's test service, not a live filing.",
+          "holdMs": 1200,
+          "headline": "A sandbox preview",
+          "keyWord": "sandbox"
+        },
+        {
+          "action": "caption",
+          "text": "You are already signed in. See the full sign-in walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Already signed in",
+          "keyWord": "signed"
+        },
+        {
           "action": "click",
-          "target": { "role": "button", "name": "Self Assessment (HMRC)" },
+          "target": {
+            "role": "button",
+            "name": "Self Assessment (HMRC)"
+          },
           "expectsNavigation": true,
           "caption": "Making Tax Digital for Income Tax starts from one dashboard.",
           "headline": "One dashboard for MTD",
           "keyWord": "dashboard"
         },
-        { "action": "await", "until": "#businessPickerForm", "label": "Opening the ITSA dashboard" },
+        {
+          "action": "await",
+          "until": "#businessPickerForm",
+          "label": "Opening the ITSA dashboard"
+        },
         {
           "action": "type",
           "target": "#nino",
@@ -202,7 +217,10 @@
           "keyWord": "ID",
           "dwellMs": 500
         },
-        { "action": "hold", "ms": 600 }
+        {
+          "action": "hold",
+          "ms": 600
+        }
       ]
     },
     {
@@ -220,12 +238,19 @@
         },
         {
           "action": "click",
-          "target": { "role": "link", "name": "Go to Business Details" },
+          "target": {
+            "role": "link",
+            "name": "Go to Business Details"
+          },
           "caption": "Business Details lists every business by type.",
           "headline": "List businesses by type",
           "keyWord": "type"
         },
-        { "action": "await", "until": "#itsaBusinessDetailsForm", "label": "Opening the business details form" },
+        {
+          "action": "await",
+          "until": "#itsaBusinessDetailsForm",
+          "label": "Opening the business details form"
+        },
         {
           "action": "testScenario",
           "target": "#testScenario",
@@ -260,7 +285,10 @@
           "headline": "Both businesses, two IDs",
           "keyWord": "IDs"
         },
-        { "action": "scroll", "target": "#businessDetailsTable" },
+        {
+          "action": "scroll",
+          "target": "#businessDetailsTable"
+        },
         {
           "action": "point",
           "target": "#businessDetailsTable",
@@ -269,8 +297,14 @@
           "keyWord": "business",
           "dwellMs": 600
         },
-        { "action": "still", "name": "itsa-year-part-businesses" },
-        { "action": "hold", "ms": 600 }
+        {
+          "action": "still",
+          "name": "itsa-year-part-businesses"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
       ]
     },
     {
@@ -286,7 +320,13 @@
           "headline": "First quarter, self-employment",
           "keyWord": "self-employment"
         },
-        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
         {
           "action": "fill",
           "target": "#businessId",
@@ -303,8 +343,16 @@
           "headline": "Choose the tax year",
           "keyWord": "year"
         },
-        { "action": "fill", "target": "#periodStartDate", "value": "2024-04-06" },
-        { "action": "fill", "target": "#periodEndDate", "value": "2024-07-05" },
+        {
+          "action": "fill",
+          "target": "#periodStartDate",
+          "value": "2024-04-06"
+        },
+        {
+          "action": "fill",
+          "target": "#periodEndDate",
+          "value": "2024-07-05"
+        },
         {
           "action": "fill",
           "target": "#turnover",
@@ -313,8 +361,15 @@
           "headline": "Income and expenses",
           "keyWord": "expenses"
         },
-        { "action": "fill", "target": "#costOfGoods", "value": "150" },
-        { "action": "hold", "ms": 500 },
+        {
+          "action": "fill",
+          "target": "#costOfGoods",
+          "value": "150"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        },
         {
           "action": "click",
           "target": "#submitBtn",
@@ -331,8 +386,14 @@
           "headline": "HMRC accepts the quarter",
           "keyWord": "accepts"
         },
-        { "action": "still", "name": "itsa-year-part-self-employment-quarter" },
-        { "action": "hold", "ms": 500 }
+        {
+          "action": "still",
+          "name": "itsa-year-part-self-employment-quarter"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
       ]
     },
     {
@@ -348,7 +409,13 @@
           "headline": "Same quarter, property business",
           "keyWord": "property"
         },
-        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
         {
           "action": "fill",
           "target": "#businessId",
@@ -357,9 +424,21 @@
           "headline": "The property ID",
           "keyWord": "property"
         },
-        { "action": "select", "target": "#taxYear", "value": "2024-25" },
-        { "action": "fill", "target": "#fromDate", "value": "2024-04-06" },
-        { "action": "fill", "target": "#toDate", "value": "2024-07-05" },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2024-25"
+        },
+        {
+          "action": "fill",
+          "target": "#fromDate",
+          "value": "2024-04-06"
+        },
+        {
+          "action": "fill",
+          "target": "#toDate",
+          "value": "2024-07-05"
+        },
         {
           "action": "fill",
           "target": "#periodAmount",
@@ -368,8 +447,15 @@
           "headline": "Rent and expenses",
           "keyWord": "Rent"
         },
-        { "action": "fill", "target": "#repairsAndMaintenance", "value": "100" },
-        { "action": "hold", "ms": 500 },
+        {
+          "action": "fill",
+          "target": "#repairsAndMaintenance",
+          "value": "100"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        },
         {
           "action": "click",
           "target": "#submitBtn",
@@ -386,8 +472,14 @@
           "headline": "Both businesses now filed",
           "keyWord": "filed"
         },
-        { "action": "still", "name": "itsa-year-part-uk-property-quarter" },
-        { "action": "hold", "ms": 500 }
+        {
+          "action": "still",
+          "name": "itsa-year-part-uk-property-quarter"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
       ]
     },
     {
@@ -403,9 +495,23 @@
           "headline": "Year-end steps start",
           "keyWord": "Year-end"
         },
-        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
-        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "select", "target": "#taxYear", "value": "2024-25" },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XBIS00000000001"
+        },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2024-25"
+        },
         {
           "action": "click",
           "target": "#loadBtn",
@@ -413,7 +519,11 @@
           "headline": "Load the year so far",
           "keyWord": "Load"
         },
-        { "action": "await", "until": "#annualEditForm", "label": "Loading the annual submission" },
+        {
+          "action": "await",
+          "until": "#annualEditForm",
+          "label": "Loading the annual submission"
+        },
         {
           "action": "click",
           "target": "#allowanceTypeTrading",
@@ -421,7 +531,11 @@
           "headline": "Claim the trading allowance",
           "keyWord": "allowance"
         },
-        { "action": "fill", "target": "#tradingIncomeAllowance", "value": "1000" },
+        {
+          "action": "fill",
+          "target": "#tradingIncomeAllowance",
+          "value": "1000"
+        },
         {
           "action": "click",
           "target": "#saveBtn",
@@ -438,7 +552,10 @@
           "headline": "HMRC accepts the year",
           "keyWord": "accepts"
         },
-        { "action": "hold", "ms": 500 }
+        {
+          "action": "hold",
+          "ms": 500
+        }
       ]
     },
     {
@@ -454,11 +571,33 @@
           "headline": "HMRC works out a summary",
           "keyWord": "summary"
         },
-        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
-        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "select", "target": "#taxYear", "value": "2024-25" },
-        { "action": "fill", "target": "#accountingPeriodStartDate", "value": "2024-04-06" },
-        { "action": "fill", "target": "#accountingPeriodEndDate", "value": "2025-04-05" },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XBIS00000000001"
+        },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2024-25"
+        },
+        {
+          "action": "fill",
+          "target": "#accountingPeriodStartDate",
+          "value": "2024-04-06"
+        },
+        {
+          "action": "fill",
+          "target": "#accountingPeriodEndDate",
+          "value": "2025-04-05"
+        },
         {
           "action": "click",
           "target": "#triggerBtn",
@@ -475,7 +614,11 @@
           "headline": "Turnover, expenses, net profit",
           "keyWord": "profit"
         },
-        { "action": "point", "target": "#summaryDetails", "dwellMs": 500 },
+        {
+          "action": "point",
+          "target": "#summaryDetails",
+          "dwellMs": 500
+        },
         {
           "action": "fill",
           "target": "#adjustTurnover",
@@ -484,8 +627,15 @@
           "headline": "Correct a figure",
           "keyWord": "Correct"
         },
-        { "action": "fill", "target": "#adjustCostOfGoods", "value": "160" },
-        { "action": "click", "target": "#submitAdjustmentBtn" },
+        {
+          "action": "fill",
+          "target": "#adjustCostOfGoods",
+          "value": "160"
+        },
+        {
+          "action": "click",
+          "target": "#submitAdjustmentBtn"
+        },
         {
           "action": "await",
           "until": "#adjustmentResults",
@@ -495,8 +645,14 @@
           "headline": "HMRC accepts the change",
           "keyWord": "accepts"
         },
-        { "action": "scroll", "target": "#adjustmentResults" },
-        { "action": "hold", "ms": 600 },
+        {
+          "action": "scroll",
+          "target": "#adjustmentResults"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        },
         {
           "action": "point",
           "target": "#adjustmentResults h3",
@@ -505,9 +661,18 @@
           "keyWord": "submitted",
           "dwellMs": 600
         },
-        { "action": "hold", "ms": 2500 },
-        { "action": "still", "name": "itsa-year-part-final" },
-        { "action": "hold", "ms": 1200 }
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "itsa-year-part-final"
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        }
       ]
     }
   ]

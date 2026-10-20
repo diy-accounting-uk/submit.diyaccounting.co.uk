@@ -5,10 +5,12 @@
   "description": "A signed-in walk through VAT liabilities: sign in, take out a day pass, ask HMRC what is outstanding on a VAT registration number, and read the answer.",
   "auth": "user",
   "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/vat/vatLiabilities.html"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 90,
     "betweenActionsMs": 700,
@@ -19,7 +21,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -28,98 +29,90 @@
     "charsPerSecond": 15,
     "minMs": 1500,
     "fadeMs": 250,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
-
   "finalHoldMs": 3000,
-
   "scenes": [
     {
       "id": "home",
       "chapter": "Home",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "goto",
           "url": "/",
-          "waitFor": "#mainContent",
-          "caption": "HMRC keeps a running total of what you owe on VAT.",
-          "headline": "See what you owe",
-          "keyWord": "owe"
+          "waitFor": "#mainContent"
         },
         {
-          "action": "caption",
-          "text": "See the full sign-in and day pass walkthrough in our sign-in video.",
-          "holdMs": 1200,
-          "headline": "Sign in and day pass, faster",
-          "keyWord": "faster"
-        },
-        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
-        { "action": "hold", "ms": 600 }
-      ]
+          "action": "hold",
+          "ms": 600
+        }
+      ],
+      "offCamera": true
     },
     {
       "id": "sign-in",
       "chapter": "Sign in",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "click",
-          "target": "a.login-link",
-          "caption": "Sign in with the account you already use.",
-          "headline": "Sign in first",
-          "keyWord": "Sign"
+          "target": "a.login-link"
         },
         {
-          "action": "login",
-          "caption": "Your account keeps your submissions in one place.",
-          "headline": "Confirm your identity",
-          "keyWord": "identity"
+          "action": "login"
         },
-        { "action": "consent" },
-        { "action": "hold", "ms": 600 }
-      ]
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ],
+      "offCamera": true
     },
     {
       "id": "day-pass",
       "chapter": "Day pass",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "click",
-          "target": { "role": "link", "name": "Bundles" },
-          "caption": "Bundles decide which activities you can run.",
-          "headline": "Open your bundles",
-          "keyWord": "bundles"
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          }
         },
         {
           "action": "ensureBundle",
           "bundle": "Day pass",
-          "testPass": true,
-          "caption": "A day pass opens the VAT activities for a day.",
-          "headline": "Get a day pass",
-          "keyWord": "pass"
+          "testPass": true
         },
-        { "action": "hold", "ms": 700 },
+        {
+          "action": "hold",
+          "ms": 700
+        },
         {
           "action": "click",
-          "target": { "role": "link", "name": "Activities" },
-          "caption": "Every activity starts from the home page.",
-          "headline": "Go to activities",
-          "keyWord": "activities"
+          "target": {
+            "role": "link",
+            "name": "Activities"
+          }
         },
         {
           "action": "await",
           "until": "button:has-text('VAT Liabilities (HMRC)')",
           "label": "Waiting for the day pass to unlock the activity"
         },
-        { "action": "hold", "ms": 500 }
-      ]
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ],
+      "offCamera": true
     },
     {
       "id": "liabilities-form",
@@ -127,13 +120,31 @@
       "still": true,
       "steps": [
         {
+          "action": "caption",
+          "text": "HMRC keeps a running total of what you owe on VAT.",
+          "holdMs": 1200,
+          "headline": "See what you owe",
+          "keyWord": "owe"
+        },
+        {
+          "action": "caption",
+          "text": "You are already signed in. See the full sign-in walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Already signed in",
+          "keyWord": "signed"
+        },
+        {
           "action": "click",
           "target": "button:has-text('VAT Liabilities (HMRC)')",
           "caption": "Open VAT Liabilities to ask what is outstanding.",
           "headline": "Open VAT Liabilities",
           "keyWord": "Liabilities"
         },
-        { "action": "await", "until": "#vatLiabilitiesForm", "label": "Opening the liabilities form" },
+        {
+          "action": "await",
+          "until": "#vatLiabilitiesForm",
+          "label": "Opening the liabilities form"
+        },
         {
           "action": "type",
           "target": "#vrn",
@@ -151,32 +162,37 @@
           "headline": "Choose the start date",
           "keyWord": "start"
         },
-        { "action": "fill", "target": "#toDate", "value": "2018-12-21" },
-        { "action": "testScenario", "value": "MULTIPLE_LIABILITIES_2018_19" },
-        { "action": "hold", "ms": 700 }
-      ]
-    },
-    {
-      "id": "authorise",
-      "chapter": "Authorise with HMRC",
-      "still": true,
-      "fastForward": true,
-      "steps": [
+        {
+          "action": "fill",
+          "target": "#toDate",
+          "value": "2018-12-21"
+        },
+        {
+          "action": "testScenario",
+          "value": "MULTIPLE_LIABILITIES_2018_19"
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        },
         {
           "action": "click",
           "target": "#retrieveBtn",
           "caption": "The first request sends you to HMRC to grant access.",
           "headline": "Ask HMRC for access",
           "keyWord": "access"
-        },
+        }
+      ]
+    },
+    {
+      "id": "authorise",
+      "chapter": "Authorise with HMRC",
+      "offCamera": true,
+      "steps": [
         {
           "action": "hmrcAuthorise",
-          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
-          "headline": "Grant access, faster",
-          "keyWord": "faster",
           "timeoutMs": 60000
-        },
-        { "action": "hold", "ms": 500 }
+        }
       ]
     },
     {
@@ -184,6 +200,13 @@
       "chapter": "The answer",
       "still": true,
       "steps": [
+        {
+          "action": "caption",
+          "text": "HMRC access was granted off screen. See it in full in our HMRC authorisation video.",
+          "holdMs": 1200,
+          "headline": "Access granted, faster",
+          "keyWord": "faster"
+        },
         {
           "action": "await",
           "until": "#liabilitiesResults",
@@ -193,8 +216,14 @@
           "headline": "HMRC sends the answer",
           "keyWord": "answer"
         },
-        { "action": "scroll", "target": "#liabilitiesTable" },
-        { "action": "hold", "ms": 1500 },
+        {
+          "action": "scroll",
+          "target": "#liabilitiesTable"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        },
         {
           "action": "point",
           "target": "#liabilitiesTable",
@@ -203,9 +232,18 @@
           "keyWord": "owe",
           "dwellMs": 600
         },
-        { "action": "hold", "ms": 2500 },
-        { "action": "still", "name": "liabilities-table" },
-        { "action": "hold", "ms": 1500 }
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "liabilities-table"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        }
       ]
     }
   ]

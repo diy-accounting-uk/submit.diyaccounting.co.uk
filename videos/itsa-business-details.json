@@ -13,10 +13,12 @@
   ],
   "hmrcServices": ["mtd-vat", "mtd-income-tax"],
   "environments": ["ci"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 90,
     "betweenActionsMs": 700,
@@ -27,7 +29,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -36,98 +37,90 @@
     "charsPerSecond": 15,
     "minMs": 1500,
     "fadeMs": 250,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
-
   "finalHoldMs": 3000,
-
   "scenes": [
     {
       "id": "home",
       "chapter": "Home",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "goto",
           "url": "/",
-          "waitFor": "#mainContent",
-          "caption": "HMRC keeps a list of the businesses behind your Self Assessment.",
-          "headline": "See your businesses",
-          "keyWord": "businesses"
+          "waitFor": "#mainContent"
         },
         {
-          "action": "caption",
-          "text": "See the full sign-in walkthrough in our sign-in video.",
-          "holdMs": 1200,
-          "headline": "Sign in, faster",
-          "keyWord": "faster"
-        },
-        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
-        { "action": "hold", "ms": 600 }
-      ]
+          "action": "hold",
+          "ms": 600
+        }
+      ],
+      "offCamera": true
     },
     {
       "id": "sign-in",
       "chapter": "Sign in",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "click",
-          "target": "a.login-link",
-          "caption": "Sign in with the account you already use.",
-          "headline": "Sign in first",
-          "keyWord": "Sign"
+          "target": "a.login-link"
         },
         {
-          "action": "login",
-          "caption": "Your account keeps your filings in one place.",
-          "headline": "Confirm your identity",
-          "keyWord": "identity"
+          "action": "login"
         },
-        { "action": "consent" },
-        { "action": "hold", "ms": 600 }
-      ]
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ],
+      "offCamera": true
     },
     {
       "id": "subscription",
       "chapter": "Resident",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "click",
-          "target": { "role": "link", "name": "Bundles" },
-          "caption": "Bundles decide which activities you can run.",
-          "headline": "Open your bundles",
-          "keyWord": "bundles"
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          }
         },
         {
           "action": "ensureBundle",
           "bundle": "Resident",
-          "testPass": true,
-          "caption": "Resident opens the Self Assessment activities.",
-          "headline": "Unlock Self Assessment",
-          "keyWord": "Self"
+          "testPass": true
         },
-        { "action": "hold", "ms": 700 },
+        {
+          "action": "hold",
+          "ms": 700
+        },
         {
           "action": "click",
-          "target": { "role": "link", "name": "Activities" },
-          "caption": "Every activity starts from the home page.",
-          "headline": "Go to activities",
-          "keyWord": "activities"
+          "target": {
+            "role": "link",
+            "name": "Activities"
+          }
         },
         {
           "action": "await",
           "until": "button:has-text('Self Assessment (HMRC)')",
           "label": "Waiting for the subscription to unlock the activity"
         },
-        { "action": "hold", "ms": 500 }
-      ]
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ],
+      "offCamera": true
     },
     {
       "id": "business-details-form",
@@ -135,22 +128,50 @@
       "still": true,
       "steps": [
         {
+          "action": "caption",
+          "text": "HMRC keeps a list of the businesses behind your Self Assessment.",
+          "holdMs": 1200,
+          "headline": "See your businesses",
+          "keyWord": "businesses"
+        },
+        {
+          "action": "caption",
+          "text": "You are already signed in. See the full sign-in walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Already signed in",
+          "keyWord": "signed"
+        },
+        {
           "action": "click",
-          "target": { "role": "button", "name": "Self Assessment (HMRC)" },
+          "target": {
+            "role": "button",
+            "name": "Self Assessment (HMRC)"
+          },
           "expectsNavigation": true,
           "caption": "Making Tax Digital for Income Tax starts from one dashboard.",
           "headline": "One dashboard for MTD",
           "keyWord": "dashboard"
         },
-        { "action": "await", "until": "#businessPickerForm", "label": "Opening the ITSA dashboard" },
+        {
+          "action": "await",
+          "until": "#businessPickerForm",
+          "label": "Opening the ITSA dashboard"
+        },
         {
           "action": "click",
-          "target": { "role": "link", "name": "Go to Business Details" },
+          "target": {
+            "role": "link",
+            "name": "Go to Business Details"
+          },
           "caption": "Business Details is the first step: which businesses does HMRC know about?",
           "headline": "Start with Business Details",
           "keyWord": "Business"
         },
-        { "action": "await", "until": "#itsaBusinessDetailsForm", "label": "Opening the business details form" },
+        {
+          "action": "await",
+          "until": "#itsaBusinessDetailsForm",
+          "label": "Opening the business details form"
+        },
         {
           "action": "type",
           "target": "#nino",
@@ -161,30 +182,28 @@
           "headline": "Enter your NI number",
           "keyWord": "NI"
         },
-        { "action": "hold", "ms": 700 }
-      ]
-    },
-    {
-      "id": "authorise",
-      "chapter": "Authorise with HMRC",
-      "still": true,
-      "fastForward": true,
-      "steps": [
+        {
+          "action": "hold",
+          "ms": 700
+        },
         {
           "action": "click",
           "target": "#retrieveBtn",
           "caption": "The first request sends you to HMRC to grant access.",
           "headline": "Ask HMRC for access",
           "keyWord": "access"
-        },
+        }
+      ]
+    },
+    {
+      "id": "authorise",
+      "chapter": "Authorise with HMRC",
+      "offCamera": true,
+      "steps": [
         {
           "action": "hmrcAuthorise",
-          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
-          "headline": "Grant access, faster",
-          "keyWord": "faster",
           "timeoutMs": 60000
-        },
-        { "action": "hold", "ms": 500 }
+        }
       ]
     },
     {
@@ -192,6 +211,13 @@
       "chapter": "The answer",
       "still": true,
       "steps": [
+        {
+          "action": "caption",
+          "text": "HMRC access was granted off screen. See it in full in our HMRC authorisation video.",
+          "holdMs": 1200,
+          "headline": "Access granted, faster",
+          "keyWord": "faster"
+        },
         {
           "action": "await",
           "until": "#businessDetailsResults",
@@ -201,8 +227,14 @@
           "headline": "HMRC lists your businesses",
           "keyWord": "businesses"
         },
-        { "action": "scroll", "target": "#businessDetailsTable" },
-        { "action": "hold", "ms": 1500 },
+        {
+          "action": "scroll",
+          "target": "#businessDetailsTable"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        },
         {
           "action": "point",
           "target": "#businessDetailsTable",
@@ -211,9 +243,18 @@
           "keyWord": "ID",
           "dwellMs": 600
         },
-        { "action": "hold", "ms": 2500 },
-        { "action": "still", "name": "business-details-table" },
-        { "action": "hold", "ms": 1500 }
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "business-details-table"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        }
       ]
     }
   ]
