@@ -46,8 +46,6 @@ step.
 
 - [ ] **AL2. Close issue #513 (`prod-env-ga4-daily-pull-errors`) when the alarm reads OK.** The 07:20 UTC errors on 2026-10-20 were one request's BigQuery `backendError` retries (request 8f0d5fc2-dd2f-4884-a8d2-e9827e25a011); the hourly runs since are clean; `app/lib/bigQueryRetry.js` retries a transient job once in both GA4 pulls (PR #514). The 24-hour datapoint ages out about 07:21 UTC on 2026-10-21; then read `aws --profile diya-submit-prod cloudwatch describe-alarms --alarm-names prod-env-ga4-daily-pull-errors` and close #513 with that evidence. **Source**: issue #513. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
-- [ ] **D2b. PayPal donations on the operator dashboard (PLAN_ONE_STOP_DASHBOARD D2).** Stripe donations and subscription revenue are split (b23810ce9). PayPal donation rows are in `v_revenue_daily` as `product LIKE 'paypal-%'` (from `paypalDonationsPull.js`), and the subscriptions observation excludes them, but no observation counts them. Add `revenue-paypal-donations-gbp` and its charge count beside `revenue-donations-gbp` in `app/functions/analytics/operatorSnapshotPublish.js` (about line 304), with test cases in its unit test. **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D2. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
 ## Machine-ask
 
 ## Human-driven
