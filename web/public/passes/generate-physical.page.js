@@ -76,6 +76,10 @@ function escapeXml(str) {
 
 // Parse an SVG string as XML and put it in the container as nodes.
 function setSvgContent(container, svgText) {
+  // The SVG is built by this page; a declaration would mean something else wrote it.
+  if (svgText.includes("<!")) {
+    throw new Error("SVG must not carry a DOCTYPE or entity declaration");
+  }
   const svgDocument = new DOMParser().parseFromString(svgText, "image/svg+xml");
   if (svgDocument.querySelector("parsererror")) {
     throw new Error("SVG is not well-formed");
