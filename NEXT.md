@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-c307ec3** (PR #511, deploy 39375702746, 11 stacks created 2026-10-20 06:03 UTC, last-known-good since 06:32 UTC; the only prod set).
-**ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-20 03:42 UTC by PR #511's first branch deploy, redeployed by its three later heads; the pointer last written 05:32 UTC). Its self-destruct fires every four hours from creation (07:42, 11:42, 15:42, 19:42 UTC) and skips while the set is last-known-good inside the 12 h protection window from the pointer's last write, so it goes at the 19:42 UTC firing unless a branch deploy renews it first; PR #512's deploy renews it. The SSO session that opened at 00:00 UTC on 2026-10-20 expired at about 08:30 UTC; the next AWS read needs `aws sso login --sso-session diyaccounting`.
+**ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-20 03:42 UTC by PR #511's first branch deploy, redeployed by PR #511's later heads and PR #512's deploy 39383588329; the pointer last written 07:26 UTC; the slot parameter still names run 39383588329). Its self-destruct fires every four hours from creation (11:42, 15:42, 19:42 UTC) and skips while the set is last-known-good inside the 12 h protection window from the pointer's last write, so it goes at the 19:42 UTC firing unless a branch deploy renews it first. PR #514's deploy takes the second slot.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
