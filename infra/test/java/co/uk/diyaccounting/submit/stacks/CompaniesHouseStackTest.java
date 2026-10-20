@@ -169,11 +169,19 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void stackWiresTwentyOneLambdas() {
+    void stackStaysUnderTheCloudFormationResourceLimit() {
+        Template template = Template.fromStack(synthCompaniesHouseStack());
+
+        int resourceCount = ((Map<?, ?>) template.toJSON().get("Resources")).size();
+        assertTrue(resourceCount < 450, "CompaniesHouseStack has " + resourceCount + " resources; the limit is 500");
+    }
+
+    @Test
+    void stackWiresTwentyFourLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 21);
+        template.resourceCountIs("AWS::Lambda::Function", 24);
         for (String functionName : List.of(
                 stack.companiesHouseSearchGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
@@ -188,6 +196,9 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
+                stack.hmrcCtReturnPreviewPostLambdaProps.ingestFunctionName(),
+                stack.hmrcCtReturnPostLambdaProps.ingestFunctionName(),
+                stack.hmrcCtReturnGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseOfficersGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
@@ -199,6 +210,38 @@ class CompaniesHouseStackTest {
             template.hasResourceProperties(
                     "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
         }
+    }
+
+    @Test
+    void companyTaxReturnLambdasCarryTheirRoutesBehindTheJwtAuthorizer() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+
+        assertEquals(HttpMethod.POST, stack.hmrcCtReturnPreviewPostLambdaProps.httpMethod());
+        assertEquals("/api/v1/hmrc/ct/return/preview", stack.hmrcCtReturnPreviewPostLambdaProps.urlPath());
+        assertEquals(HttpMethod.POST, stack.hmrcCtReturnPostLambdaProps.httpMethod());
+        assertEquals("/api/v1/hmrc/ct/return", stack.hmrcCtReturnPostLambdaProps.urlPath());
+        assertEquals(HttpMethod.GET, stack.hmrcCtReturnGetLambdaProps.httpMethod());
+        assertEquals("/api/v1/hmrc/ct/return/{correlationId}", stack.hmrcCtReturnGetLambdaProps.urlPath());
+
+        for (var props : List.of(
+                stack.hmrcCtReturnPreviewPostLambdaProps,
+                stack.hmrcCtReturnPostLambdaProps,
+                stack.hmrcCtReturnGetLambdaProps)) {
+            assertTrue(props.jwtAuthorizer(), "route " + props.urlPath() + " must use the JWT authorizer");
+            assertFalse(props.customAuthorizer(), "route " + props.urlPath() + " must not use the custom authorizer");
+        }
+    }
+
+    @Test
+    void companyTaxReturnSubmitSetsGatewayTestOffOutsideCi() {
+        Template template = Template.fromStack(synthCompaniesHouseStack());
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        SubmitSharedNames.forDocs().hmrcCtReturnPostIngestLambdaFunctionName,
+                        "Environment",
+                        Map.of("Variables", Match.objectLike(Map.of("HMRC_CT_GATEWAY_TEST", "false"))))));
     }
 
     @Test
@@ -298,10 +341,10 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void lambdaFunctionPropsExposesAllTwentyOneForApiStackToConsume() {
+    void lambdaFunctionPropsExposesAllTwentyFourForApiStackToConsume() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
-        assertEquals(21, stack.lambdaFunctionProps.size());
+        assertEquals(24, stack.lambdaFunctionProps.size());
         assertEquals(
                 List.of(
                         "/api/v1/companies-house/search",
@@ -317,6 +360,9 @@ class CompaniesHouseStackTest {
                         "/api/v1/companies-house/accounts/preview",
                         "/api/v1/companies-house/accounts",
                         "/api/v1/companies-house/accounts/{submissionNumber}",
+                        "/api/v1/hmrc/ct/return/preview",
+                        "/api/v1/hmrc/ct/return",
+                        "/api/v1/hmrc/ct/return/{correlationId}",
                         "/api/v1/companies-house/company/{companyNumber}/officers",
                         "/api/v1/companies-house/company/{companyNumber}/persons-with-significant-control",
                         "/api/v1/companies-house/company/{companyNumber}/filing-data",
@@ -419,7 +465,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         Match.stringLikeRegexp(".*docs/submit/operator-emails.*"))))))))),
-                20);
+                23);
     }
 
     @Test
@@ -464,7 +510,7 @@ class CompaniesHouseStackTest {
 
         // Every Lambda except the token exchange queries the bundles table: the two company
         // lookup routes, the registered office address read, the six filing routes, the three
-        // accounts routes, the six confirmation statement routes, and the two PSC verification
+        // accounts routes, the three Company Tax Return routes, the six confirmation statement routes, and the two PSC verification
         // statement routes, all gated by enforceBundles(). The token exchange has no authorizer
         // and so no user to check a bundle entitlement against.
         template.resourcePropertiesCountIs(
@@ -474,7 +520,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "dynamodb:Query")))))))),
-                20);
+                23);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -482,7 +528,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "events:PutEvents")))))))),
-                21);
+                24);
     }
 
     @Test

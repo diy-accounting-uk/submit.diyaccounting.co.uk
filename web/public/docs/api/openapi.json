@@ -3,7 +3,7 @@
   "info" : {
     "title" : "DIY Accounting Submit API",
     "description" : "DIY Accounting Submit API documentation",
-    "version" : "1.0.0",
+    "version" : "1.0.1",
     "termsOfService" : "https://submit.diyaccounting.co.uk/terms.html",
     "contact" : {
       "email" : "admin@diyaccounting.co.uk"
@@ -124,6 +124,22 @@
             "type" : "string"
           }
         } ]
+      }
+    },
+    "/hmrc/ct/return/preview" : {
+      "post" : {
+        "summary" : "Preview a Company Tax Return",
+        "description" : "Builds the CT600, the computations iXBRL and the FRS 102 accounts iXBRL for review without submitting them",
+        "operationId" : "previewHmrcCtReturn",
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
       }
     },
     "/pass" : {
@@ -2389,6 +2405,31 @@
         }
       }
     },
+    "/hmrc/ct/return/{correlationId}" : {
+      "get" : {
+        "summary" : "Poll a Company Tax Return",
+        "description" : "Polls HMRC's Transaction Engine for the outcome of a submitted Company Tax Return",
+        "operationId" : "getHmrcCtReturn",
+        "parameters" : [ {
+          "name" : "correlationId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The Transaction Engine correlation id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
     "/companies-house/transaction/{transactionId}/registered-email-address" : {
       "post" : {
         "summary" : "File a registered email address change",
@@ -3024,6 +3065,22 @@
             "type" : "string"
           }
         } ]
+      }
+    },
+    "/hmrc/ct/return" : {
+      "post" : {
+        "summary" : "Submit a Company Tax Return",
+        "description" : "Signs the CT600 with its IRmark and submits it through HMRC's Transaction Engine",
+        "operationId" : "postHmrcCtReturn",
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
       }
     },
     "/hmrc/vat/penalty" : {

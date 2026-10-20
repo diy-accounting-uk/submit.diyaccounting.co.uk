@@ -15,6 +15,7 @@ import {
   buildDeleteRequest,
   parseTransactionEngineResponse,
   getTransactionEngineSubmissionUrl,
+  redactGatewayCredentials,
   CT600_CLASS,
   CT600_TEST_IN_LIVE_CLASS,
   TRANSACTION_ENGINE_LIVE_SUBMISSION_URL,
@@ -221,5 +222,30 @@ describe("getTransactionEngineSubmissionUrl", () => {
   test("uses HMRC_TRANSACTION_ENGINE_URL when set", () => {
     process.env.HMRC_TRANSACTION_ENGINE_URL = "http://localhost:9000/hmrc-transaction-engine/submission";
     expect(getTransactionEngineSubmissionUrl({ gatewayTest: false })).toBe("http://localhost:9000/hmrc-transaction-engine/submission");
+  });
+});
+
+describe("redactGatewayCredentials", () => {
+  test("blanks the Government Gateway user ID and password and keeps the rest of the message", () => {
+    const { xml } = buildCt600SubmissionRequest({
+      senderId: "gateway-user-77",
+      password: "s3cret-pass",
+      utr: "8596148860",
+      vendorId: "1000",
+      productName: "DIY Accounting Submit",
+      productVersion: "1.0",
+      irEnvelopeXml: IR_ENVELOPE,
+      gatewayTest: true,
+    });
+    const redacted = redactGatewayCredentials(xml);
+    expect(redacted).not.toContain("gateway-user-77");
+    expect(redacted).not.toContain("s3cret-pass");
+    expect(redacted).toContain("<SenderID>***</SenderID>");
+    expect(redacted).toContain("<Value>***</Value>");
+    expect(redacted).toContain('<Key Type="UTR">8596148860</Key>');
+  });
+
+  test("passes a non-string through", () => {
+    expect(redactGatewayCredentials(undefined)).toBeUndefined();
   });
 });
