@@ -5,7 +5,7 @@
 
 Status: open, drafted 2026-09-07, reshaped the same evening around objectives, levers and
 experiments, then widened to eight objectives with the optimisation and reinvestment loop. D1, D5 to D9
-and D11 to D15 are on main, D3 too; D4 on main; D2 in part (NEXT.md D2); D10, D16 and D17 open (NEXT.md B52i, B52l,
+and D11 to D15 are on main, D3 too; D4 on main; D2 in part (NEXT.md D2b, the PayPal donations figure); D10, D16 and D17 open (NEXT.md B52i, B52l,
 B52m-a and B52m-b).
 
 One page the operator opens to see how DIY Accounting is doing against eight objectives, which levers
