@@ -564,11 +564,12 @@ async function doHmrcAuthorise(page, step, ctx) {
   return { waitMs: Date.now() - start, rect: null };
 }
 
-// The redirect to Companies House's own sign-in-and-permission page, then the one form that
-// grants it (userId, password, company authentication code) — one screen, unlike HMRC's four.
+// The redirect to Companies House's sign-in, then the pages that grant permission: GOV.UK One
+// Login on the sandbox, the simulator's one form otherwise.
 // The simulator lane's canned user and code come from resolveCompaniesHouseSignInCredentials
-// itself; a real lane needs TEST_COMPANIES_HOUSE_USER_ID and TEST_COMPANIES_HOUSE_PASSWORD in
-// the run's environment, the same variables the behaviour tests read.
+// itself; a real lane needs TEST_COMPANIES_HOUSE_USER_ID, TEST_COMPANIES_HOUSE_PASSWORD and
+// TEST_COMPANIES_HOUSE_TOTP_SECRET in the run's environment, the same variables the behaviour
+// tests read.
 async function doCompaniesHouseAuthorise(page, step, ctx) {
   const steps = await behaviourSteps();
   const capturePage = withoutDebugScreenshots(page);
