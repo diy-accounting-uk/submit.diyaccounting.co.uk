@@ -1177,6 +1177,10 @@
         <h2>Filing result</h2>
         <div id="filingResult"></div>
         <div id="rejections" style="display: none"></div>
+        <p id="taxReturnPrompt" style="display: none">
+          The accounts are filed. <a href="fileCompanyTaxReturn.html" id="fileCompanyTaxReturnLink">File the Company Tax Return</a> with
+          these accounts.
+        </p>
         <div class="button-group">
           <button type="button" id="startAgainBtn" class="secondary-button" style="display: none">Start a new filing</button>
         </div>
@@ -1507,7 +1511,8 @@
         showLoading();
         hideStatus();
         try {
-          const accounts = { ...buildAccountsPayload(), companyAuthCode };
+          const filedAccounts = buildAccountsPayload();
+          const accounts = { ...filedAccounts, companyAuthCode };
           const govTestScenario = document.getElementById("govTestScenario").value.trim();
           const govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
           const submission = await window.submitMicroEntityAccounts(accounts, govTestScenarioHeaders);
@@ -1527,6 +1532,10 @@
             .getElementById("filingResult")
             .replaceChildren(paragraph("Submission ", { strong: outcome.submissionNumber }, " was ", { strong: outcome.statusCode }, "."));
           renderRejections(outcome.rejections);
+          if (outcome.statusCode === "ACCEPT") {
+            sessionStorage.setItem("filedSmallCompanyAccounts", JSON.stringify(filedAccounts));
+            document.getElementById("taxReturnPrompt").style.display = "block";
+          }
           document.getElementById("startAgainBtn").style.display = "inline-block";
         } catch (error) {
           console.error("Companies House accounts filing failed:", error);
@@ -1549,6 +1558,7 @@
         document.getElementById("accountsForm").reset();
         toggleSections();
         document.getElementById("rejections").style.display = "none";
+        document.getElementById("taxReturnPrompt").style.display = "none";
         document.getElementById("startAgainBtn").style.display = "none";
         hideStatus();
         showView("companyView");

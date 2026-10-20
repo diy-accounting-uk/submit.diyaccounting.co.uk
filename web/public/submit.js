@@ -67,6 +67,7 @@ import {
   pollConfirmationStatement,
 } from "./lib/services/companies-house-confirmation-service.js";
 import { submitPscVerificationStatement, pollPscVerificationStatement } from "./lib/services/companies-house-psc-verification-service.js";
+import { previewCtReturn, submitCtReturn, pollCtReturn } from "./lib/services/hmrc-ct-return-service.js";
 import { describeGovTalkError, describeGovTalkErrors } from "./lib/services/companies-house-error-messages.js";
 
 // Debug widgets initial setup
@@ -495,6 +496,11 @@ if (typeof window !== "undefined") {
   window.previewMicroEntityAccounts = previewMicroEntityAccounts;
   window.submitMicroEntityAccounts = submitMicroEntityAccounts;
   window.pollMicroEntityAccounts = pollMicroEntityAccounts;
+
+  // HMRC Company Tax Return service
+  window.previewCtReturn = previewCtReturn;
+  window.submitCtReturn = submitCtReturn;
+  window.pollCtReturn = pollCtReturn;
 
   // Companies House confirmation statement service
   window.getConfirmationStatementFilingData = getConfirmationStatementFilingData;

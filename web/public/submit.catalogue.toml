@@ -478,7 +478,7 @@ display = "on-entitlement"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
 metered = true
-paths = ["^/api/v1/hmrc/ct/return.*"]
+paths = ["companies-house/fileCompanyTaxReturn.html", "^/api/v1/hmrc/ct/return.*", "^/api/v1/companies-house/company/[^/]+$"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]

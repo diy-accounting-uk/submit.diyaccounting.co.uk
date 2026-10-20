@@ -192,6 +192,7 @@ describe("productCatalogHelper", () => {
     expect(activity.tokenCost).toBe(1);
     expect(activity.metered).toBe(true);
     expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
+    expect(activity.paths).toContain("companies-house/fileCompanyTaxReturn.html");
     expect(activity.paths).toContain("^/api/v1/hmrc/ct/return.*");
   });
 

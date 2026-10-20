@@ -105,6 +105,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch)
     - [CH-07](#ch-07-preview-micro-entity-accounts-before-filing) Preview micro-entity accounts before filing: use when a user needs to see the iXBRL accounts document before it reaches the XML Gateway.
     - [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House: use when a small company must submit its FRS 105 micro-entity accounts to the XML Gateway.
+  - [Company Tax Return filing](#company-tax-return-filing-ch)
+    - [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC: use when a small company's CT600 return, computations and FRS 102 section 1A accounts must be previewed and sent to the HMRC Transaction Engine, or the journey needs a simulator proof.
   - [Filing infrastructure](#filing-infrastructure-ch)
     - [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions: use when a filing (office address, email address, accounts) needs a Companies House transaction created, read or updated.
     - [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout: use when any outbound Companies House API call needs a bounded wait instead of hanging.
@@ -1274,6 +1276,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Company search and profile](#company-search-and-profile-ch): [CH-03](#ch-03-search-the-companies-house-register) Search the Companies House register · [CH-04](#ch-04-fetch-a-company-profile) Fetch a company profile
 - [Registered office and email](#registered-office-and-email-ch): [CH-05](#ch-05-file-a-change-of-registered-office-address) File a change of registered office address · [CH-06](#ch-06-file-a-change-of-registered-email-address) File a change of registered email address
 - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-preview-micro-entity-accounts-before-filing) Preview micro-entity accounts before filing · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House
+- [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC
 - [Filing infrastructure](#filing-infrastructure-ch): [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions · [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout · [CH-11](#ch-11-parse-xml-safely) Parse XML safely
 - [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:area CH -->
@@ -1385,6 +1388,22 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/companies-house/companiesHouseAccountsPost.js, app/functions/companies-house/companiesHouseAccountsGet.js, app/unit-tests/functions/companiesHouseAccountsPost.test.js, app/unit-tests/functions/companiesHouseAccountsGet.test.js, app/services/microEntityAccountsIxbrl.js, app/unit-tests/services/microEntityAccountsIxbrl.test.js, app/services/accountsIxbrlCommon.js, app/services/smallCompanyAccountsIxbrl.js, app/services/smallCompanyAccountsRequest.js, app/services/smallCompanyAccounts.js, app/unit-tests/services/smallCompanyAccountsIxbrl.test.js, web/public/companies-house/fileSmallCompanyAccounts.html, app/services/companiesHouseXmlGateway.js, app/unit-tests/services/companiesHouseXmlGateway.test.js, web/public/companies-house/fileMicroEntityAccounts.html, web/public/lib/services/companies-house-filing-service.js, behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-filing-steps.js, app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js, app/system-tests/companiesHouseFilingSimulator.system.test.js, app/system-tests/companiesHouseSimulator.system.test.js, PLAN_COMPANIES_HOUSE.md
 - **Keywords:** companies house, micro-entity accounts, small company accounts, FRS 102, section 1A, filleted accounts, ixbrl, xml gateway, govtalk, async request, dynamodb, filing, presenter credential
 - **Related:** CH-07, CH-09, CH-11, CH-12, CH-13
+
+### Company Tax Return filing (CH)
+
+<!-- generated:group company-tax-return-filing-ch -->
+- [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC
+<!-- /generated:group company-tax-return-filing-ch -->
+
+#### CH-15 File a Company Tax Return with HMRC
+
+- **Use when:** a small company's CT600 return, computations and FRS 102 section 1A accounts must be previewed and sent to the HMRC Transaction Engine, or the journey needs a simulator proof.
+- **Does:** hmrcCtReturnPreviewPost.js builds the CT600 IRenvelope, the computations iXBRL and the accounts iXBRL from a book export plus the typed UTR, declarant and statements, and sends nothing. hmrcCtReturnPost.js signs the CT600 with its base32 IRmark, redacts the typed Government Gateway credentials and posts it. hmrcCtReturnGet.js polls within HMRC's poll interval and stores the receipt. fileCompanyTaxReturn.html takes the figures from a pasted or chosen book export (or from the accounts just accepted on fileSmallCompanyAccounts.html), stops on an overdrawn director's loan account, shows the CT600 and computations tables, and shows the IRmark on acceptance. The simulator acknowledges the first poll and answers the receipt after; the scenario CT600_REJECT_IRMARK returns error 2021.
+- **Run:** `npm run test:companyTaxReturnBehaviour-simulator`
+- **Entry:** `app/functions/hmrc/hmrcCtReturnPreviewPost.js:ingestHandler`; `app/functions/hmrc/hmrcCtReturnPost.js:ingestHandler`; `app/functions/hmrc/hmrcCtReturnGet.js:ingestHandler`; `web/public/companies-house/fileCompanyTaxReturn.page.js`
+- **Files:** app/functions/hmrc/hmrcCtReturnPreviewPost.js, app/functions/hmrc/hmrcCtReturnPost.js, app/functions/hmrc/hmrcCtReturnGet.js, app/services/hmrcCtReturnRequest.js, app/services/hmrcCtSubmissionStatus.js, app/test-helpers/ctReturnFixture.js, web/public/companies-house/fileCompanyTaxReturn.html, web/public/companies-house/fileCompanyTaxReturn.page.js, web/public/lib/services/hmrc-ct-return-service.js, behaviour-tests/companyTaxReturn.behaviour.test.js, behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js, .github/workflows/test.yml (behaviour-test-simulator-company-tax-return)
+- **Keywords:** company tax return, CT600, corporation tax, computations, irmark, transaction engine, government gateway, UTR, hmrc, filing, simulator
+- **Related:** CH-08
 
 ### Filing infrastructure (CH)
 
@@ -6066,6 +6085,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - company package: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - company profile: [CH-04](#ch-04-fetch-a-company-profile)
 - company search: [CH-03](#ch-03-search-the-companies-house-register), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
+- company tax return: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - competitor analysis: [SITE-20](#site-20-document-business-governance-and-positioning)
 - compliance accessibility: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard)
 - compliance check: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)
@@ -6076,6 +6096,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - compliance rows: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - compliance status: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - compliance.toml: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)
+- computations: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - concat demuxer: [OPS-90](#ops-90-encode-captured-video-frames-and-captions)
 - concatenate modules: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - concepts fixture: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
@@ -6106,7 +6127,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - copilot workspace setup: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - copy secrets: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts)
 - copyright header: [DEV-20](#dev-20-check-spdx-licence-headers)
-- corporation tax: [SITE-22](#site-22-source-and-publish-sourced-tax-facts), [SS-04](#ss-04-apply-book-edits-and-derivations)
+- corporation tax: [SITE-22](#site-22-source-and-publish-sourced-tax-facts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [SS-04](#ss-04-apply-book-edits-and-derivations)
 - corpus cli: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - corpus index: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - correlation headers: [SITE-07](#site-07-format-http-responses-and-errors)
@@ -6157,6 +6178,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - csv export: [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup)
 - csv import: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
 - csv per view: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
+- ct600: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - ctr: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - cumulative model: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - curated ads: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
@@ -6439,7 +6461,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ffmpeg: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [DEV-40](#dev-40-record-a-product-demo-video)
 - field mappings: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - field whitelist: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
-- filing: [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
+- filing: [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - filing api: [CH-09](#ch-09-query-and-submit-document-transactions)
 - filing base url: [CH-09](#ch-09-query-and-submit-document-transactions)
 - filing callback: [CH-01](#ch-01-exchange-a-companies-house-oauth-token)
@@ -6565,6 +6587,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - gov-test-scenario: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - gov-vendor: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - gov.uk: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
+- government gateway: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - govtalk: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-11](#ch-11-parse-xml-safely), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - gpg signing: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
 - grace period: [BILL-21](#bill-21-sweep-lapsed-diya-gl-books)
@@ -6602,7 +6625,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - help page: [SITE-10](#site-10-serve-general-site-pages)
 - help page form: [SITE-05](#site-05-submit-support-tickets)
 - hmac hash: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
-- hmrc: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [BILL-13](#bill-13-check-a-clients-authorisation-status), [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
+- hmrc: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [BILL-13](#bill-13-check-a-clients-authorisation-status), [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - hmrc access token: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - hmrc api request: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state)
 - hmrc compliance record: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
@@ -6697,6 +6720,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - invite_client: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - invoice import: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - invoice.paid: [BILL-28](#bill-28-process-stripe-webhook-events)
+- irmark: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - isdiyaglpackage: [BILL-17](#bill-17-upload-a-diya-gl-book)
 - iso 8601 duration: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - issue events: [DATA-07](#data-07-pull-github-operator-effort-data)
@@ -7450,6 +7474,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - signature verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - signup to first submission: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - silent local failure: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
+- simulator: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - single stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
 - single-file json: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
 - site map: [SITE-12](#site-12-map-the-site-structure)
@@ -7650,6 +7675,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - trailing window: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - training video: [DEV-40](#dev-40-record-a-product-demo-video)
 - transaction: [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-09](#ch-09-query-and-submit-document-transactions)
+- transaction engine: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - transaction lifecycle: [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - transaction_status: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
 - transactionid: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
@@ -7704,7 +7730,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - user-restricted api: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
 - utm_campaign: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - utm_source: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
-- utr: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
+- utr: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - v2 schema: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
 - validate workflows: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - validatelines: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)

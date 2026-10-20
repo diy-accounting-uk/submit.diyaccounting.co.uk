@@ -99,6 +99,7 @@ export const SKIPPABLE_JOBS = [
     id: "behaviour-test-simulator-file-micro-entity-accounts",
     description: "Companies House micro-entity accounts filing behaviour, simulator.",
   },
+  { id: "behaviour-test-simulator-company-tax-return", description: "HMRC Company Tax Return filing behaviour, simulator." },
   { id: "behaviour-test-simulator-itsa-business-details", description: "ITSA business details behaviour, simulator." },
   { id: "behaviour-test-simulator-itsa-obligations", description: "ITSA obligations behaviour, simulator." },
   { id: "behaviour-test-simulator-itsa-self-employment-period", description: "ITSA self-employment period behaviour, simulator." },

@@ -1,0 +1,259 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>File Company Tax Return - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
+      <h1>File Company Tax Return</h1>
+      <p class="subtitle">File a small company's CT600 return, computations and accounts with HMRC</p>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Company entry view -->
+      <div id="companyView" class="form-container">
+        <h2>Which company?</h2>
+        <form id="companyForm">
+          <div class="form-group">
+            <label for="companyNumber">Company number</label>
+            <p id="companyNumber-hint" class="hint">
+              The 8-character company number, for example 00000001. Not sure of the number?
+              <a href="companySearch.html">Search Companies House</a> for it first.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              required
+              value=""
+              placeholder="e.g., 00000001"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="companyLookupBtn" class="btn">Look up company</button>
+        </form>
+      </div>
+
+      <!-- Return details view -->
+      <div id="formView" class="form-container" style="display: none">
+        <h2>Company Tax Return</h2>
+        <p>
+          Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). This is not the company you meant?
+          <a href="#" id="changeCompanyLink">Change company</a>.
+        </p>
+        <form id="returnForm">
+          <div class="form-group">
+            <label for="utr">Unique Taxpayer Reference (UTR)</label>
+            <p id="utr-hint" class="hint">The 10 digits on the company's HMRC Corporation Tax letters.</p>
+            <input
+              type="text"
+              id="utr"
+              name="utr"
+              required
+              inputmode="numeric"
+              pattern="[0-9]{10}"
+              maxlength="10"
+              aria-describedby="utr-hint"
+              spellcheck="false"
+            />
+          </div>
+
+          <h3>Figures from the company's book</h3>
+          <div class="form-group">
+            <label for="bookExportFile">Book export file (JSON)</label>
+            <p id="bookExport-hint" class="hint">
+              The export of the company's diya-gl book: the CT600 boxes, the computation lines and the accounts figures. Choose the file, or
+              paste its contents in the box below.
+            </p>
+            <input type="file" id="bookExportFile" name="bookExportFile" accept=".json,application/json" />
+          </div>
+          <div class="form-group">
+            <label for="bookExport">Book export contents</label>
+            <textarea id="bookExport" name="bookExport" rows="8" required spellcheck="false" aria-describedby="bookExport-hint"></textarea>
+          </div>
+
+          <h3>Accounts to attach</h3>
+          <div class="form-group">
+            <input type="radio" id="accountsSourceBook" name="accountsSource" value="book" checked />
+            <label for="accountsSourceBook" style="display: inline; font-weight: normal">The accounts in the book export</label>
+          </div>
+          <div class="form-group" id="accountsSourceFiledGroup" style="display: none">
+            <input type="radio" id="accountsSourceFiled" name="accountsSource" value="filed" />
+            <label for="accountsSourceFiled" style="display: inline; font-weight: normal">
+              The accounts just accepted by Companies House for <span id="filedAccountsCompany"></span>
+            </label>
+          </div>
+
+          <h3>Director's loan account</h3>
+          <div class="form-group">
+            <p id="loanQuestion">Was a director's loan account overdrawn at the end of the period?</p>
+            <input type="radio" id="loanOverdrawnNo" name="loanOverdrawn" value="no" checked aria-describedby="loanQuestion" />
+            <label for="loanOverdrawnNo" style="display: inline; font-weight: normal">No</label>
+            <input type="radio" id="loanOverdrawnYes" name="loanOverdrawn" value="yes" aria-describedby="loanQuestion" />
+            <label for="loanOverdrawnYes" style="display: inline; font-weight: normal">Yes</label>
+            <p id="loanOverdrawnStop" class="hint" role="alert" style="display: none">
+              A director's loan account overdrawn at the end of the period needs supplementary page CT600A, and this service does not file
+              it. This return cannot be filed here.
+            </p>
+          </div>
+
+          <h3>Declarant</h3>
+          <div class="form-group">
+            <label for="declarantName">Name of the person signing the return</label>
+            <input type="text" id="declarantName" name="declarantName" required minlength="2" />
+          </div>
+          <div class="form-group">
+            <label for="declarantStatus">Status of that person</label>
+            <input type="text" id="declarantStatus" name="declarantStatus" required minlength="2" value="Director" />
+          </div>
+
+          <h3>Statements</h3>
+          <div class="form-group">
+            <input type="checkbox" id="statementSection477Exemption" name="statementSection477Exemption" />
+            <label for="statementSection477Exemption" style="display: inline; font-weight: normal">
+              The company is entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small companies.
+            </label>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="statementMembersNotRequiredAudit" name="statementMembersNotRequiredAudit" />
+            <label for="statementMembersNotRequiredAudit" style="display: inline; font-weight: normal">
+              The members have not required the company to obtain an audit for the year in question.
+            </label>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="statementDirectorsResponsibilities" name="statementDirectorsResponsibilities" />
+            <label for="statementDirectorsResponsibilities" style="display: inline; font-weight: normal">
+              The directors acknowledge their responsibilities for complying with the requirements of the Companies Act 2006 with respect to
+              accounting records and the preparation of accounts.
+            </label>
+          </div>
+          <div class="form-group">
+            <input type="checkbox" id="statementSmallCompaniesRegime" name="statementSmallCompaniesRegime" />
+            <label for="statementSmallCompaniesRegime" style="display: inline; font-weight: normal">
+              These accounts have been prepared in accordance with the provisions applicable to companies subject to the small companies
+              regime.
+            </label>
+          </div>
+
+          <h3>Declaration</h3>
+          <div class="form-group">
+            <input type="checkbox" id="declarationAccepted" name="declarationAccepted" />
+            <label for="declarationAccepted" style="display: inline; font-weight: normal">
+              I declare that the information in this return and the attached accounts and computations is correct and complete to the best
+              of my knowledge and belief.
+            </label>
+          </div>
+
+          <button type="submit" id="previewBtn" class="btn">Preview the return</button>
+        </form>
+      </div>
+
+      <!-- Review view -->
+      <div id="previewView" class="results-container" style="display: none">
+        <h2>Review</h2>
+        <p>These are the figures HMRC will receive. Nothing has been sent to HMRC yet.</p>
+        <h3>CT600 boxes</h3>
+        <table id="ct600Table" class="results-table">
+          <thead>
+            <tr>
+              <th scope="col">Box</th>
+              <th scope="col">Meaning</th>
+              <th scope="col">Value</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <h3>Computations</h3>
+        <table id="computationsTable" class="results-table">
+          <thead>
+            <tr>
+              <th scope="col">Line</th>
+              <th scope="col">Amount</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+        <pre id="previewIxbrl" class="ixbrl-preview developer-only-section"></pre>
+
+        <h3>Government Gateway sign-in</h3>
+        <p class="hint">
+          The user ID and password for the company's Corporation Tax enrolment. They are sent once with this return and never stored.
+        </p>
+        <div class="form-group">
+          <label for="gatewayUserId">Government Gateway user ID</label>
+          <input type="text" id="gatewayUserId" name="gatewayUserId" required autocomplete="off" spellcheck="false" maxlength="128" />
+        </div>
+        <div class="form-group">
+          <label for="gatewayPassword">Government Gateway password</label>
+          <input
+            type="password"
+            id="gatewayPassword"
+            name="gatewayPassword"
+            required
+            autocomplete="off"
+            spellcheck="false"
+            maxlength="128"
+          />
+        </div>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button type="button" id="backToFormBtn" class="secondary-button">Back</button>
+          <button type="button" id="submitReturnBtn" class="btn">Submit to HMRC</button>
+        </div>
+      </div>
+
+      <!-- Result view -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2>Return result</h2>
+        <div id="returnResult"></div>
+        <div id="returnIrmark" style="display: none"></div>
+        <div id="returnErrors" style="display: none"></div>
+        <div class="button-group">
+          <button type="button" id="tryAgainBtn" class="secondary-button" style="display: none">Check the return and try again</button>
+          <button type="button" id="startAgainBtn" class="secondary-button" style="display: none">Start a new return</button>
+        </div>
+      </div>
+    </main>
+
+    <footer data-footer="activity"></footer>
+
+    <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/env-loader.js"></script>
+    <script src="../lib/auth-url-builder.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script src="fileCompanyTaxReturn.page.js"></script>
+  </body>
+</html>

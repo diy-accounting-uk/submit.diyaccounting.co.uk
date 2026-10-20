@@ -450,6 +450,7 @@ export async function runLocalHttpSimulator(runSimulator, port) {
       process.env.COMPANIES_HOUSE_IDENTITY_BASE_URI = result.baseUrl;
       process.env.COMPANIES_HOUSE_FILING_BASE_URI = result.baseUrl;
       process.env.COMPANIES_HOUSE_XMLGW_URI = `${result.baseUrl}/v1-0/xmlgw/Gateway`;
+      process.env.HMRC_TRANSACTION_ENGINE_URL = `${result.baseUrl}/hmrc-transaction-engine/submission`;
 
       return {
         stop: result.stop,

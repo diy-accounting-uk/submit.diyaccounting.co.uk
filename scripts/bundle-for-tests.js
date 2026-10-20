@@ -39,6 +39,7 @@ const moduleFiles = [
   "lib/services/companies-house-confirmation-service.js",
   "lib/services/companies-house-psc-verification-service.js",
   "lib/services/companies-house-error-messages.js",
+  "lib/services/hmrc-ct-return-service.js",
   // Main entry point
   "submit.js",
 ];
