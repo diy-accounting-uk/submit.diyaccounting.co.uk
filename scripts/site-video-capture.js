@@ -399,9 +399,6 @@ async function main() {
     console.log(`Signing in with the ${journey.authProvider} identity provider as ${journey.authUsername}`);
   }
 
-  const values = { hmrcVatNumber: journey?.hmrcUser?.vatNumber, hmrcNino: journey?.hmrcUser?.nino };
-  const secrets = collectSecrets(process.env, [journey?.hmrcUser?.password, journey?.hmrcUser?.username].filter(Boolean));
-
   const browser = await chromium.launch({ headless: !args.headed });
   const context = await browser.newContext({
     viewport: script.viewport,
@@ -487,6 +484,24 @@ async function main() {
   // that (wrongly) opens with anything other than a goto fails loudly rather than silently
   // skipping its first overlay cue.
   let hasNavigated = false;
+
+  // Provisioned last before the try, so its finally always deletes the company.
+  let sceneCompany = null;
+  if (script.companiesHouseTestCompany) {
+    const journeyModule = await import("./lib/video/journey.js");
+    sceneCompany = await journeyModule.provisionSceneCompany(process.env);
+  }
+
+  const values = {
+    hmrcVatNumber: journey?.hmrcUser?.vatNumber,
+    hmrcNino: journey?.hmrcUser?.nino,
+    companiesHouseNumber: sceneCompany?.companyNumber,
+    companiesHouseAuthCode: sceneCompany?.authCode,
+  };
+  const secrets = collectSecrets(
+    process.env,
+    [journey?.hmrcUser?.password, journey?.hmrcUser?.username, sceneCompany?.authCode].filter(Boolean),
+  );
 
   try {
     for (let sceneIndex = 0; sceneIndex < script.scenes.length; sceneIndex++) {
@@ -739,6 +754,7 @@ async function main() {
     await browser.close();
     await localServices.stop();
     await localApp.stop();
+    await sceneCompany?.release();
   }
 
   // Close each caption event still missing an endMs (a caption whose hold never resolved because

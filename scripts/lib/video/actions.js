@@ -569,7 +569,8 @@ async function doHmrcAuthorise(page, step, ctx) {
 // The simulator lane's canned user and code come from resolveCompaniesHouseSignInCredentials
 // itself; a real lane needs TEST_COMPANIES_HOUSE_USER_ID, TEST_COMPANIES_HOUSE_PASSWORD and
 // TEST_COMPANIES_HOUSE_TOTP_SECRET in the run's environment, the same variables the behaviour
-// tests read.
+// tests read. A script with companiesHouseTestCompany passes its provisioned company's
+// authentication code, which a company-scoped request asks for after sign-in.
 async function doCompaniesHouseAuthorise(page, step, ctx) {
   const steps = await behaviourSteps();
   const capturePage = withoutDebugScreenshots(page);
@@ -585,7 +586,7 @@ async function doCompaniesHouseAuthorise(page, step, ctx) {
       { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: null },
     );
   }
-  const credentials = steps.resolveCompaniesHouseSignInCredentials(undefined, process.env.DIY_SUBMIT_ENV_FILEPATH);
+  const credentials = steps.resolveCompaniesHouseSignInCredentials(ctx.values.companiesHouseAuthCode, process.env.DIY_SUBMIT_ENV_FILEPATH);
   await steps.authoriseWithCompaniesHouse(capturePage, credentials, ctx.stepScreenshotDir);
   return { waitMs: Date.now() - start, rect: null };
 }

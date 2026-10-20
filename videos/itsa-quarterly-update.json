@@ -14,10 +14,12 @@
   ],
   "hmrcServices": ["mtd-vat", "mtd-income-tax"],
   "environments": ["ci"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 90,
     "betweenActionsMs": 700,
@@ -28,7 +30,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -37,98 +38,90 @@
     "charsPerSecond": 15,
     "minMs": 1500,
     "fadeMs": 250,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
-
   "finalHoldMs": 4000,
-
   "scenes": [
     {
       "id": "home",
       "chapter": "Home",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "goto",
           "url": "/",
-          "waitFor": "#mainContent",
-          "caption": "This is a sandbox preview against HMRC's test service, not a live filing.",
-          "headline": "A sandbox preview",
-          "keyWord": "sandbox"
+          "waitFor": "#mainContent"
         },
         {
-          "action": "caption",
-          "text": "See the full sign-in walkthrough in our sign-in video.",
-          "holdMs": 1200,
-          "headline": "Sign in, faster",
-          "keyWord": "faster"
-        },
-        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
-        { "action": "hold", "ms": 600 }
-      ]
+          "action": "hold",
+          "ms": 600
+        }
+      ],
+      "offCamera": true
     },
     {
       "id": "sign-in",
       "chapter": "Sign in",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "click",
-          "target": "a.login-link",
-          "caption": "Sign in with the account you already use.",
-          "headline": "Sign in first",
-          "keyWord": "Sign"
+          "target": "a.login-link"
         },
         {
-          "action": "login",
-          "caption": "Your account keeps your filings in one place.",
-          "headline": "Confirm your identity",
-          "keyWord": "identity"
+          "action": "login"
         },
-        { "action": "consent" },
-        { "action": "hold", "ms": 600 }
-      ]
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ],
+      "offCamera": true
     },
     {
       "id": "subscription",
       "chapter": "Resident",
-      "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "click",
-          "target": { "role": "link", "name": "Bundles" },
-          "caption": "Bundles decide which activities you can run.",
-          "headline": "Open your bundles",
-          "keyWord": "bundles"
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          }
         },
         {
           "action": "ensureBundle",
           "bundle": "Resident",
-          "testPass": true,
-          "caption": "Resident opens the Self Assessment activities.",
-          "headline": "Unlock Self Assessment",
-          "keyWord": "Self"
+          "testPass": true
         },
-        { "action": "hold", "ms": 700 },
+        {
+          "action": "hold",
+          "ms": 700
+        },
         {
           "action": "click",
-          "target": { "role": "link", "name": "Activities" },
-          "caption": "Every activity starts from the home page.",
-          "headline": "Go to activities",
-          "keyWord": "activities"
+          "target": {
+            "role": "link",
+            "name": "Activities"
+          }
         },
         {
           "action": "await",
           "until": "button:has-text('Self Assessment (HMRC)')",
           "label": "Waiting for the subscription to unlock the activity"
         },
-        { "action": "hold", "ms": 500 }
-      ]
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ],
+      "offCamera": true
     },
     {
       "id": "business-details",
@@ -136,14 +129,35 @@
       "still": true,
       "steps": [
         {
+          "action": "caption",
+          "text": "This is a sandbox preview against HMRC's test service, not a live filing.",
+          "holdMs": 1200,
+          "headline": "A sandbox preview",
+          "keyWord": "sandbox"
+        },
+        {
+          "action": "caption",
+          "text": "You are already signed in. See the full sign-in walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Already signed in",
+          "keyWord": "signed"
+        },
+        {
           "action": "click",
-          "target": { "role": "button", "name": "Self Assessment (HMRC)" },
+          "target": {
+            "role": "button",
+            "name": "Self Assessment (HMRC)"
+          },
           "expectsNavigation": true,
           "caption": "Making Tax Digital for Income Tax starts from one dashboard.",
           "headline": "One dashboard for MTD",
           "keyWord": "dashboard"
         },
-        { "action": "await", "until": "#businessPickerForm", "label": "Opening the ITSA dashboard" },
+        {
+          "action": "await",
+          "until": "#businessPickerForm",
+          "label": "Opening the ITSA dashboard"
+        },
         {
           "action": "type",
           "target": "#nino",
@@ -186,9 +200,18 @@
           "keyWord": "ID",
           "dwellMs": 600
         },
-        { "action": "hold", "ms": 1500 },
-        { "action": "still", "name": "itsa-businesses" },
-        { "action": "hold", "ms": 1000 }
+        {
+          "action": "hold",
+          "ms": 1500
+        },
+        {
+          "action": "still",
+          "name": "itsa-businesses"
+        },
+        {
+          "action": "hold",
+          "ms": 1000
+        }
       ]
     },
     {
@@ -198,12 +221,19 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "link", "name": "Go to Obligations" },
+          "target": {
+            "role": "link",
+            "name": "Go to Obligations"
+          },
           "caption": "Obligations groups the open and fulfilled quarters by business.",
           "headline": "See quarters by business",
           "keyWord": "quarters"
         },
-        { "action": "await", "until": "#itsaObligationsForm", "label": "Opening the obligations form" },
+        {
+          "action": "await",
+          "until": "#itsaObligationsForm",
+          "label": "Opening the obligations form"
+        },
         {
           "action": "type",
           "target": "#nino",
@@ -230,8 +260,14 @@
           "headline": "Due dates and status",
           "keyWord": "status"
         },
-        { "action": "scroll", "target": "#obligationsTable" },
-        { "action": "hold", "ms": 1000 },
+        {
+          "action": "scroll",
+          "target": "#obligationsTable"
+        },
+        {
+          "action": "hold",
+          "ms": 1000
+        },
         {
           "action": "point",
           "target": "#obligationsTable",
@@ -240,9 +276,18 @@
           "keyWord": "Open",
           "dwellMs": 600
         },
-        { "action": "hold", "ms": 2000 },
-        { "action": "still", "name": "itsa-obligations" },
-        { "action": "hold", "ms": 1000 }
+        {
+          "action": "hold",
+          "ms": 2000
+        },
+        {
+          "action": "still",
+          "name": "itsa-obligations"
+        },
+        {
+          "action": "hold",
+          "ms": 1000
+        }
       ]
     },
     {
@@ -260,12 +305,19 @@
         },
         {
           "action": "click",
-          "target": { "role": "link", "name": "Go to File a Quarterly Update" },
+          "target": {
+            "role": "link",
+            "name": "Go to File a Quarterly Update"
+          },
           "caption": "This is the form an open quarter is filed on.",
           "headline": "File the open quarter",
           "keyWord": "quarter"
         },
-        { "action": "await", "until": "#itsaSelfEmploymentPeriodForm", "label": "Opening the quarterly update form" },
+        {
+          "action": "await",
+          "until": "#itsaSelfEmploymentPeriodForm",
+          "label": "Opening the quarterly update form"
+        },
         {
           "action": "type",
           "target": "#nino",
@@ -292,8 +344,16 @@
           "headline": "Choose the tax year",
           "keyWord": "year"
         },
-        { "action": "fill", "target": "#periodStartDate", "value": "2024-04-06" },
-        { "action": "fill", "target": "#periodEndDate", "value": "2024-07-05" },
+        {
+          "action": "fill",
+          "target": "#periodStartDate",
+          "value": "2024-04-06"
+        },
+        {
+          "action": "fill",
+          "target": "#periodEndDate",
+          "value": "2024-07-05"
+        },
         {
           "action": "fill",
           "target": "#turnover",
@@ -302,9 +362,19 @@
           "headline": "Income and expenses",
           "keyWord": "expenses"
         },
-        { "action": "fill", "target": "#costOfGoods", "value": "150" },
-        { "action": "hold", "ms": 1500 },
-        { "action": "still", "name": "itsa-quarterly-update-form" },
+        {
+          "action": "fill",
+          "target": "#costOfGoods",
+          "value": "150"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        },
+        {
+          "action": "still",
+          "name": "itsa-quarterly-update-form"
+        },
         {
           "action": "click",
           "target": "#submitBtn",
@@ -321,8 +391,14 @@
           "headline": "HMRC accepts the quarter",
           "keyWord": "accepts"
         },
-        { "action": "scroll", "target": "#selfEmploymentPeriodResults" },
-        { "action": "hold", "ms": 600 },
+        {
+          "action": "scroll",
+          "target": "#selfEmploymentPeriodResults"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        },
         {
           "action": "point",
           "target": "#selfEmploymentPeriodResults h3",
@@ -331,9 +407,18 @@
           "keyWord": "filed",
           "dwellMs": 600
         },
-        { "action": "hold", "ms": 2500 },
-        { "action": "still", "name": "itsa-quarterly-update-filed" },
-        { "action": "hold", "ms": 1200 }
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "itsa-quarterly-update-filed"
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        }
       ]
     }
   ]
