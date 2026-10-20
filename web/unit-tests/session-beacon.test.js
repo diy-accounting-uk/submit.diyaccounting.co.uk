@@ -100,7 +100,7 @@ describe("web/public/lib/session-beacon.js", () => {
     it("carries the stored landing attribution fields alongside the page", () => {
       storedAttribution = (key) =>
         key === "attribution.landing"
-          ? JSON.stringify({ utmSource: "google", gclid: "abc123", landedAt: "2026-01-01T00:00:00.000Z" })
+          ? JSON.stringify({ utmSource: "google", gclid: "abc123", msclkid: "bing456", landedAt: "2026-01-01T00:00:00.000Z" })
           : null;
       global.localStorage.getItem = vi.fn((key) => (key === "consent.analytics" ? "granted" : storedAttribution(key)));
 
@@ -110,6 +110,7 @@ describe("web/public/lib/session-beacon.js", () => {
         page: "/index.html",
         utmSource: "google",
         gclid: "abc123",
+        msclkid: "bing456",
         landedAt: "2026-01-01T00:00:00.000Z",
       });
     });

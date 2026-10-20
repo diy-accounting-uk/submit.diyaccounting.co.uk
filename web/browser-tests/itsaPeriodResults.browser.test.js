@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveHmrcFieldTableAssets, expectCleanFigures } from "./hmrcFieldTableAssets.js";
+import { serveHmrcFieldTableAssets, expectCleanFigures, serveItsaPageScripts, serveCarriedIdentifiers } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -21,6 +21,8 @@ async function loadPage(page, fileName) {
       await route.continue();
     }
   });
+  await serveItsaPageScripts(page);
+  await serveCarriedIdentifiers(page);
   await serveHmrcFieldTableAssets(page);
   const stubs = `<body><script>
 window.showStatus = function(){}; window.hideStatus = function(){}; window.showLoading = function(){}; window.hideLoading = function(){};

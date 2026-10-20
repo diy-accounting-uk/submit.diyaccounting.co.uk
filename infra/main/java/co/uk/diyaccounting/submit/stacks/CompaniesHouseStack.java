@@ -99,6 +99,18 @@ public class CompaniesHouseStack extends Stack {
     public Function companiesHouseAccountsGetLambda;
     public ILogGroup companiesHouseAccountsGetLambdaLogGroup;
 
+    public AbstractApiLambdaProps hmrcCtReturnPreviewPostLambdaProps;
+    public Function hmrcCtReturnPreviewPostLambda;
+    public ILogGroup hmrcCtReturnPreviewPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcCtReturnPostLambdaProps;
+    public Function hmrcCtReturnPostLambda;
+    public ILogGroup hmrcCtReturnPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcCtReturnGetLambdaProps;
+    public Function hmrcCtReturnGetLambda;
+    public ILogGroup hmrcCtReturnGetLambdaLogGroup;
+
     public AbstractApiLambdaProps companiesHouseOfficersGetLambdaProps;
     public Function companiesHouseOfficersGetLambda;
     public ILogGroup companiesHouseOfficersGetLambdaLogGroup;
@@ -172,6 +184,11 @@ public class CompaniesHouseStack extends Stack {
         String companiesHouseClientSecretArn();
 
         String companiesHouseXmlGatewayUri();
+
+        @Value.Default
+        default String hmrcCtVendorId() {
+            return "";
+        }
 
         String companiesHousePresenterIdArn();
 
@@ -798,6 +815,119 @@ public class CompaniesHouseStack extends Stack {
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHouseAccountsGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
+        // The Company Tax Return route: preview builds the three documents only; submit posts the
+        // signed CT600 to HMRC's Transaction Engine with the credentials the user types; poll reads the
+        // outcome. None reads a secret: the Government Gateway credentials arrive in the request.
+        var hmrcCtReturnPreviewPostLambdaEnv = hmrcCtLambdaEnv(props);
+        var hmrcCtReturnPreviewPostLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcCtReturnPreviewPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcCtReturnPreviewPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcCtReturnPreviewPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcCtReturnPreviewPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcCtReturnPreviewPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(512)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcCtReturnPreviewPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcCtReturnPreviewPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcCtReturnPreviewPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcCtReturnPreviewPostLambdaCustomAuthorizer)
+                        .environment(hmrcCtReturnPreviewPostLambdaEnv)
+                        .build());
+        this.hmrcCtReturnPreviewPostLambdaProps = hmrcCtReturnPreviewPostLambdaUrlOrigin.apiProps;
+        this.hmrcCtReturnPreviewPostLambda = hmrcCtReturnPreviewPostLambdaUrlOrigin.ingestLambda;
+        this.hmrcCtReturnPreviewPostLambdaLogGroup = hmrcCtReturnPreviewPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcCtReturnPreviewPostLambdaProps);
+        infof(
+                "Created Lambda %s for HMRC Company Tax Return preview with ingestHandler %s",
+                this.hmrcCtReturnPreviewPostLambda.getNode().getId(),
+                props.sharedNames().hmrcCtReturnPreviewPostIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.hmrcCtReturnPreviewPostLambda, bundlesTable, region, account, props, activityBusArn, false);
+
+        var hmrcCtReturnPostLambdaEnv = hmrcCtLambdaEnv(props)
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("HMRC_CT_GATEWAY_TEST", gatewayTestFlag(props));
+        if (StringUtils.isNotBlank(props.hmrcCtVendorId())) {
+            hmrcCtReturnPostLambdaEnv.with("HMRC_CT_VENDOR_ID", props.hmrcCtVendorId());
+        }
+        var hmrcCtReturnPostLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcCtReturnPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcCtReturnPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcCtReturnPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcCtReturnPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcCtReturnPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(512)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcCtReturnPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcCtReturnPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcCtReturnPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcCtReturnPostLambdaCustomAuthorizer)
+                        .environment(hmrcCtReturnPostLambdaEnv)
+                        .build());
+        this.hmrcCtReturnPostLambdaProps = hmrcCtReturnPostLambdaUrlOrigin.apiProps;
+        this.hmrcCtReturnPostLambda = hmrcCtReturnPostLambdaUrlOrigin.ingestLambda;
+        this.hmrcCtReturnPostLambdaLogGroup = hmrcCtReturnPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcCtReturnPostLambdaProps);
+        infof(
+                "Created Lambda %s for HMRC Company Tax Return submit with ingestHandler %s",
+                this.hmrcCtReturnPostLambda.getNode().getId(), props.sharedNames().hmrcCtReturnPostIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.hmrcCtReturnPostLambda, bundlesTable, region, account, props, activityBusArn, false);
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.hmrcCtReturnPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+        var hmrcCtReturnGetLambdaEnv = hmrcCtLambdaEnv(props)
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName());
+        var hmrcCtReturnGetLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcCtReturnGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcCtReturnGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcCtReturnGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcCtReturnGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcCtReturnGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(512)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcCtReturnGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcCtReturnGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcCtReturnGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcCtReturnGetLambdaCustomAuthorizer)
+                        .environment(hmrcCtReturnGetLambdaEnv)
+                        .build());
+        this.hmrcCtReturnGetLambdaProps = hmrcCtReturnGetLambdaUrlOrigin.apiProps;
+        this.hmrcCtReturnGetLambda = hmrcCtReturnGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcCtReturnGetLambdaLogGroup = hmrcCtReturnGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcCtReturnGetLambdaProps);
+        infof(
+                "Created Lambda %s for HMRC Company Tax Return poll with ingestHandler %s",
+                this.hmrcCtReturnGetLambda.getNode().getId(), props.sharedNames().hmrcCtReturnGetIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.hmrcCtReturnGetLambda, bundlesTable, region, account, props, activityBusArn, false);
+        receiptsTable.grant(this.hmrcCtReturnGetLambda, "dynamodb:PutItem");
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.hmrcCtReturnGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
         // The confirmation statement route: two public-data lookups (officers, PSCs - the API-key
         // client, same setting as the two company lookup Lambdas above), a synchronous filing-data
         // read (CompanyDataRequest and PaymentPeriodsRequest, through the gateway with the
@@ -1214,6 +1344,9 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseAccountsPreviewPostLambdaUrlOrigin,
                         companiesHouseAccountsPostLambdaUrlOrigin,
                         companiesHouseAccountsGetLambdaUrlOrigin,
+                        hmrcCtReturnPreviewPostLambdaUrlOrigin,
+                        hmrcCtReturnPostLambdaUrlOrigin,
+                        hmrcCtReturnGetLambdaUrlOrigin,
                         companiesHouseOfficersGetLambdaUrlOrigin,
                         companiesHousePscGetLambdaUrlOrigin,
                         companiesHouseFilingDataPostLambdaUrlOrigin,
@@ -1260,6 +1393,9 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHouseAccountsPreviewPostLambda.getFunctionArn());
         cfnOutput(this, "CompaniesHouseAccountsPostLambdaArn", this.companiesHouseAccountsPostLambda.getFunctionArn());
         cfnOutput(this, "CompaniesHouseAccountsGetLambdaArn", this.companiesHouseAccountsGetLambda.getFunctionArn());
+        cfnOutput(this, "HmrcCtReturnPreviewPostLambdaArn", this.hmrcCtReturnPreviewPostLambda.getFunctionArn());
+        cfnOutput(this, "HmrcCtReturnPostLambdaArn", this.hmrcCtReturnPostLambda.getFunctionArn());
+        cfnOutput(this, "HmrcCtReturnGetLambdaArn", this.hmrcCtReturnGetLambda.getFunctionArn());
         cfnOutput(this, "CompaniesHouseOfficersGetLambdaArn", this.companiesHouseOfficersGetLambda.getFunctionArn());
         cfnOutput(this, "CompaniesHousePscGetLambdaArn", this.companiesHousePscGetLambda.getFunctionArn());
         cfnOutput(
@@ -1399,6 +1535,16 @@ public class CompaniesHouseStack extends Stack {
             env.with("COMPANIES_HOUSE_XMLGW_URI", props.companiesHouseXmlGatewayUri());
         }
         return env;
+    }
+
+    // Shared environment for the Company Tax Return Lambdas: the bundles table, activity bus and
+    // environment name. PopulatedMap rejects a blank value, so optional settings are added only
+    // when configured.
+    private static PopulatedMap<String, String> hmrcCtLambdaEnv(CompaniesHouseStackProps props) {
+        return new PopulatedMap<String, String>()
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
     }
 
     // Every route that posts an envelope to the gateway (accounts submit/poll, confirmation

@@ -58,6 +58,7 @@ GITHUB_APP_PRIVATE_KEY_SECRET_ID  IngestionStack.java:539-546, only when props.g
 TELEGRAM_BOT_TOKEN_ARN            ActivityStack.java:164-176, only when props.telegramBotTokenArn() is non-blank
 COMPANIES_HOUSE_CLIENT_ID         CompaniesHouseStack.java:328, only when props.companiesHouseClientId() is non-blank
 COMPANIES_HOUSE_PACKAGE_REFERENCE CompaniesHouseStack.java:708-710/968-969, only when envName equals XML_GATEWAY_TEST_ENV_NAME
+HMRC_CT_VENDOR_ID CompaniesHouseStack.java hmrcCtReturnPost env, only when hmrcCtVendorId (HMRC_CT_VENDOR_ID at synth) is non-blank
 
 # --- file-level over-collection, scoped per handler file (bucket b) ---
 # COMPANIES_HOUSE_IDENTITY_BASE_URI/FILING_BASE_URI are also CDK-conditional
@@ -227,3 +228,14 @@ COMPANIES_HOUSE_IDENTITY_BASE_URI  app/functions/companies-house/companiesHouseT
 COMPANIES_HOUSE_IDENTITY_BASE_URI  app/functions/companies-house/companiesHouseTransactionPut.js  app/services/companiesHouseFilingApi.js:43-48 getIdentityBaseUrl(); this handler imports companiesHouseFilingApi.js for a different export
 
 ENVIRONMENT_NAME  app/functions/infra/selfDestruct.js  reached only via httpResponseHelper.js -> dynamoDbHmrcApiRequestRepository.js -> subHasher.js's initializeSalt(), which this handler's own call path (putHmrcApiRequest via hashSub/getSaltVersion) never invokes
+COMPANIES_HOUSE_BASE_URI  app/functions/hmrc/hmrcCtReturnGet.js  app/services/companiesHouseApi.js getCompaniesHouseBaseUrl(); this handler imports companiesHouseApi.js only for http403ForbiddenFromBundleEnforcement, not this export
+HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/hmrc/hmrcCtReturnGet.js  app/data/dynamoDbHmrcApiRequestRepository.js via httpResponseHelper.js's performTokenExchange(); this handler imports httpResponseHelper.js only for its generic request/response helpers, not that one
+PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME  app/functions/hmrc/hmrcCtReturnGet.js  app/data/dynamoDbPracticeClientRepository.js getClient()/createClient(); reached here only via an unrelated re-export (e.g. BundleAuthorizationError from bundleManagement.js), never called by this handler
+COMPANIES_HOUSE_BASE_URI  app/functions/hmrc/hmrcCtReturnPost.js  app/services/companiesHouseApi.js getCompaniesHouseBaseUrl(); this handler imports companiesHouseApi.js only for http403ForbiddenFromBundleEnforcement, not this export
+HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/hmrc/hmrcCtReturnPost.js  app/data/dynamoDbHmrcApiRequestRepository.js via httpResponseHelper.js's performTokenExchange(); this handler imports httpResponseHelper.js only for its generic request/response helpers, not that one
+PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME  app/functions/hmrc/hmrcCtReturnPost.js  app/data/dynamoDbPracticeClientRepository.js getClient()/createClient(); reached here only via an unrelated re-export (e.g. BundleAuthorizationError from bundleManagement.js), never called by this handler
+COMPANIES_HOUSE_BASE_URI  app/functions/hmrc/hmrcCtReturnPreviewPost.js  app/services/companiesHouseApi.js getCompaniesHouseBaseUrl(); this handler imports companiesHouseApi.js only for http403ForbiddenFromBundleEnforcement, not this export
+HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/hmrc/hmrcCtReturnPreviewPost.js  app/data/dynamoDbHmrcApiRequestRepository.js via httpResponseHelper.js's performTokenExchange(); this handler imports httpResponseHelper.js only for its generic request/response helpers, not that one
+PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME  app/functions/hmrc/hmrcCtReturnPreviewPost.js  app/data/dynamoDbPracticeClientRepository.js getClient()/createClient(); reached here only via an unrelated re-export (e.g. BundleAuthorizationError from bundleManagement.js), never called by this handler
+HMRC_TRANSACTION_ENGINE_URL  app/functions/hmrc/hmrcCtReturnGet.js  app/services/hmrcTransactionEngine.js getTransactionEngineSubmissionUrl(): set only on the simulator lanes; unset means the External Test Service or the live service by the gateway-test flag
+HMRC_TRANSACTION_ENGINE_URL  app/functions/hmrc/hmrcCtReturnPost.js  app/services/hmrcTransactionEngine.js getTransactionEngineSubmissionUrl(): set only on the simulator lanes; unset means the External Test Service or the live service by the gateway-test flag

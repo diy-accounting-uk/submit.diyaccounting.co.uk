@@ -99,8 +99,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 21);
-        assertStackHealthAlarm(companiesHouseStackTemplate, 21, 0, routedPrefixes);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 24);
+        assertStackHealthAlarm(companiesHouseStackTemplate, 24, 0, routedPrefixes);
 
         // Every route that can carry a clientId resolves it via enforceBundles -> getClient(),
         // which needs the practice clients table name on the Lambda's own environment. Regression
@@ -250,6 +250,9 @@ class SubmitApplicationCdkResourceTest {
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/accounts/preview"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/accounts"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/accounts/{submissionNumber}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/hmrc/ct/return/preview"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/hmrc/ct/return"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/hmrc/ct/return/{correlationId}"));
         assertApiRoute(
                 apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}/officers"));
         assertApiRoute(
@@ -320,9 +323,11 @@ class SubmitApplicationCdkResourceTest {
         // unauthenticated OPTIONS preflight route (every Cognito app client's origin needs the
         // cross-origin browser preflight to reach a route with no authoriser, the same reason
         // the books routes get one), for 170 + 3 = 173. POST /api/v1/activity/started adds its own
-        // route plus its own auto-HEAD route, for 173 + 2 = 175.
+        // route plus its own auto-HEAD route, for 173 + 2 = 175. The three Company Tax Return routes
+        // each sit on their own unshared path, adding three primary routes and three auto-HEAD
+        // routes, for 187 + 6 = 193 in total.
         assertEquals(
-                187,
+                193,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

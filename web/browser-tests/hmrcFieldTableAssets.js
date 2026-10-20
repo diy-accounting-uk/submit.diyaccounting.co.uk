@@ -62,3 +62,20 @@ export function serveFormErrors(page) {
 export function serveCarriedIdentifiers(page) {
   return serveFile(page, "**/lib/carried-identifiers.js", "lib/carried-identifiers.js", "application/javascript");
 }
+
+// The real page script of an ITSA page whose other scripts are stubbed out.
+export function serveItsaPageScripts(page) {
+  return page.route("**/hmrc/itsa/*.page.js", async (route) => {
+    const fileName = path.basename(new URL(route.request().url()).pathname);
+    await route.fulfill({
+      status: 200,
+      contentType: "application/javascript",
+      body: fs.readFileSync(path.join(PUBLIC_DIR, "hmrc/itsa", fileName), "utf-8"),
+    });
+  });
+}
+
+// The real dated/cumulative model helper, for an ITSA period page.
+export function serveItsaSubmissionModel(page) {
+  return serveFile(page, "**/lib/itsaSubmissionModel.js", "lib/itsaSubmissionModel.js", "application/javascript");
+}

@@ -1085,6 +1085,33 @@ public class SubmitSharedNames {
     public boolean companiesHouseAccountsGetLambdaJwtAuthorizer;
     public boolean companiesHouseAccountsGetLambdaCustomAuthorizer;
 
+    public String hmrcCtReturnPreviewPostIngestLambdaHandler;
+    public String hmrcCtReturnPreviewPostIngestLambdaFunctionName;
+    public String hmrcCtReturnPreviewPostIngestLambdaArn;
+    public String hmrcCtReturnPreviewPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod hmrcCtReturnPreviewPostLambdaHttpMethod;
+    public String hmrcCtReturnPreviewPostLambdaUrlPath;
+    public boolean hmrcCtReturnPreviewPostLambdaJwtAuthorizer;
+    public boolean hmrcCtReturnPreviewPostLambdaCustomAuthorizer;
+
+    public String hmrcCtReturnPostIngestLambdaHandler;
+    public String hmrcCtReturnPostIngestLambdaFunctionName;
+    public String hmrcCtReturnPostIngestLambdaArn;
+    public String hmrcCtReturnPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod hmrcCtReturnPostLambdaHttpMethod;
+    public String hmrcCtReturnPostLambdaUrlPath;
+    public boolean hmrcCtReturnPostLambdaJwtAuthorizer;
+    public boolean hmrcCtReturnPostLambdaCustomAuthorizer;
+
+    public String hmrcCtReturnGetIngestLambdaHandler;
+    public String hmrcCtReturnGetIngestLambdaFunctionName;
+    public String hmrcCtReturnGetIngestLambdaArn;
+    public String hmrcCtReturnGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod hmrcCtReturnGetLambdaHttpMethod;
+    public String hmrcCtReturnGetLambdaUrlPath;
+    public boolean hmrcCtReturnGetLambdaJwtAuthorizer;
+    public boolean hmrcCtReturnGetLambdaCustomAuthorizer;
+
     public String companiesHouseOfficersGetIngestLambdaHandler;
     public String companiesHouseOfficersGetIngestLambdaFunctionName;
     public String companiesHouseOfficersGetIngestLambdaArn;
@@ -4356,6 +4383,72 @@ public class SubmitSharedNames {
                 "Polls the Companies House XML Gateway for the outcome of a submitted accounts filing",
                 "getCompaniesHouseAccounts",
                 List.of(new ApiParameter("submissionNumber", "path", true, "The 6-character submission number"))));
+
+        this.hmrcCtReturnPreviewPostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcCtReturnPreviewPostLambdaUrlPath = "/api/v1/hmrc/ct/return/preview";
+        this.hmrcCtReturnPreviewPostLambdaJwtAuthorizer = true;
+        this.hmrcCtReturnPreviewPostLambdaCustomAuthorizer = false;
+        var hmrcCtReturnPreviewPostLambdaHandlerName = "hmrcCtReturnPreviewPost.ingestHandler";
+        var hmrcCtReturnPreviewPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcCtReturnPreviewPostLambdaHandlerName);
+        this.hmrcCtReturnPreviewPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcCtReturnPreviewPostLambdaHandlerDashed);
+        this.hmrcCtReturnPreviewPostIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcCtReturnPreviewPostLambdaHandlerName);
+        this.hmrcCtReturnPreviewPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcCtReturnPreviewPostLambdaHandlerDashed);
+        this.hmrcCtReturnPreviewPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcCtReturnPreviewPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcCtReturnPreviewPostLambdaHttpMethod,
+                this.hmrcCtReturnPreviewPostLambdaUrlPath,
+                "Preview a Company Tax Return",
+                "Builds the CT600, the computations iXBRL and the FRS 102 accounts iXBRL for review without submitting them",
+                "previewHmrcCtReturn"));
+
+        this.hmrcCtReturnPostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcCtReturnPostLambdaUrlPath = "/api/v1/hmrc/ct/return";
+        this.hmrcCtReturnPostLambdaJwtAuthorizer = true;
+        this.hmrcCtReturnPostLambdaCustomAuthorizer = false;
+        var hmrcCtReturnPostLambdaHandlerName = "hmrcCtReturnPost.ingestHandler";
+        var hmrcCtReturnPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcCtReturnPostLambdaHandlerName);
+        this.hmrcCtReturnPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcCtReturnPostLambdaHandlerDashed);
+        this.hmrcCtReturnPostIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcCtReturnPostLambdaHandlerName);
+        this.hmrcCtReturnPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcCtReturnPostLambdaHandlerDashed);
+        this.hmrcCtReturnPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcCtReturnPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcCtReturnPostLambdaHttpMethod,
+                this.hmrcCtReturnPostLambdaUrlPath,
+                "Submit a Company Tax Return",
+                "Signs the CT600 with its IRmark and submits it through HMRC's Transaction Engine",
+                "postHmrcCtReturn"));
+
+        this.hmrcCtReturnGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcCtReturnGetLambdaUrlPath = "/api/v1/hmrc/ct/return/{correlationId}";
+        this.hmrcCtReturnGetLambdaJwtAuthorizer = true;
+        this.hmrcCtReturnGetLambdaCustomAuthorizer = false;
+        var hmrcCtReturnGetLambdaHandlerName = "hmrcCtReturnGet.ingestHandler";
+        var hmrcCtReturnGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcCtReturnGetLambdaHandlerName);
+        this.hmrcCtReturnGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcCtReturnGetLambdaHandlerDashed);
+        this.hmrcCtReturnGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcCtReturnGetLambdaHandlerName);
+        this.hmrcCtReturnGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, hmrcCtReturnGetLambdaHandlerDashed);
+        this.hmrcCtReturnGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcCtReturnGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcCtReturnGetLambdaHttpMethod,
+                this.hmrcCtReturnGetLambdaUrlPath,
+                "Poll a Company Tax Return",
+                "Polls HMRC's Transaction Engine for the outcome of a submitted Company Tax Return",
+                "getHmrcCtReturn",
+                List.of(new ApiParameter("correlationId", "path", true, "The Transaction Engine correlation id"))));
 
         this.companiesHouseOfficersGetLambdaHttpMethod = HttpMethod.GET;
         this.companiesHouseOfficersGetLambdaUrlPath = "/api/v1/companies-house/company/{companyNumber}/officers";

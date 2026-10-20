@@ -68,6 +68,7 @@ const PAGES = [
   "/companies-house/changeRegisteredEmail.html",
   "/companies-house/changeRegisteredOffice.html",
   "/companies-house/companySearch.html",
+  "/companies-house/fileCompanyTaxReturn.html",
   "/companies-house/fileConfirmationStatement.html",
   "/companies-house/fileMicroEntityAccounts.html",
   "/companies-house/fileSmallCompanyAccounts.html",

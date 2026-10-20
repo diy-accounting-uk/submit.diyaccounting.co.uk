@@ -17,6 +17,7 @@ import {
   serveFormErrors,
   serveCarriedIdentifiers,
   serveHmrcFieldTableAssets,
+  serveItsaPageScripts,
 } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -45,6 +46,7 @@ async function loadItsaPage(page, fileName) {
       await route.continue();
     }
   });
+  await serveItsaPageScripts(page);
   await serveHmrcFieldTableAssets(page);
   await serveHmrcAssistWidget(page);
   await serveMoneyInput(page);

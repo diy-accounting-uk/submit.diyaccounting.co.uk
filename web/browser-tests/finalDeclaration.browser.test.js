@@ -17,6 +17,7 @@ import {
   serveSiteStyles,
   screenshotPath,
   expectCleanFigures,
+  serveItsaPageScripts,
 } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -37,6 +38,7 @@ test.describe("ITSA Final Declaration - Form", () => {
         await route.continue();
       }
     });
+    await serveItsaPageScripts(page);
     await serveHmrcFieldTableAssets(page);
     await serveHmrcAssistWidget(page);
     await serveFormErrors(page);

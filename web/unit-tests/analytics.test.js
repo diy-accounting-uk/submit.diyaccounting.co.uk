@@ -262,14 +262,23 @@ describe("web/public/lib/analytics.js", () => {
     });
 
     it("stores utm and click-id params from a tagged landing", () => {
-      global.location.search = "?utm_source=google&utm_medium=cpc&gclid=abc123";
+      global.location.search = "?utm_source=google&utm_medium=cpc&gclid=abc123&msclkid=bing456";
 
       eval(scriptContent);
       acceptBannerThenFire();
 
       const stored = JSON.parse(global.localStorage.setItem.mock.calls.find((call) => call[0] === "attribution.landing")[1]);
-      expect(stored).toMatchObject({ utmSource: "google", utmMedium: "cpc", gclid: "abc123" });
+      expect(stored).toMatchObject({ utmSource: "google", utmMedium: "cpc", gclid: "abc123", msclkid: "bing456" });
       expect(typeof stored.landedAt).toBe("string");
+    });
+
+    it("stores a Microsoft Advertising click id from a tagged landing", () => {
+      global.location.search = "?msclkid=bing456";
+
+      eval(scriptContent);
+      acceptBannerThenFire();
+
+      expect(JSON.parse(global.localStorage.getItem("attribution.landing"))).toMatchObject({ msclkid: "bing456" });
     });
 
     it("stores a bare record with no tag fields on a first, untagged visit", () => {

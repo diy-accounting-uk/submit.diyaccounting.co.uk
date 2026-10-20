@@ -8,6 +8,7 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
+import { serveItsaPageScripts, serveCarriedIdentifiers } from "./hmrcFieldTableAssets.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -57,6 +58,8 @@ test.describe("ITSA Dashboard", () => {
     await page.route("**/*.js", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
     });
+    await serveItsaPageScripts(page);
+    await serveCarriedIdentifiers(page);
   }
 
   async function loadDashboard(page) {

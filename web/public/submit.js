@@ -67,6 +67,7 @@ import {
   pollConfirmationStatement,
 } from "./lib/services/companies-house-confirmation-service.js";
 import { submitPscVerificationStatement, pollPscVerificationStatement } from "./lib/services/companies-house-psc-verification-service.js";
+import { previewCtReturn, submitCtReturn, pollCtReturn } from "./lib/services/hmrc-ct-return-service.js";
 import { describeGovTalkError, describeGovTalkErrors } from "./lib/services/companies-house-error-messages.js";
 
 // Debug widgets initial setup
@@ -131,7 +132,7 @@ function hasConsentChoice() {
 function isPaidVisit() {
   try {
     const params = new URLSearchParams(window.location.search);
-    if (params.has("gclid")) return true;
+    if (params.has("gclid") || params.has("msclkid")) return true;
     return Array.from(params.keys()).some((name) => name.startsWith("utm_"));
   } catch (error) {
     console.warn("Failed to read the URL for a paid visit:", error);
@@ -495,6 +496,11 @@ if (typeof window !== "undefined") {
   window.previewMicroEntityAccounts = previewMicroEntityAccounts;
   window.submitMicroEntityAccounts = submitMicroEntityAccounts;
   window.pollMicroEntityAccounts = pollMicroEntityAccounts;
+
+  // HMRC Company Tax Return service
+  window.previewCtReturn = previewCtReturn;
+  window.submitCtReturn = submitCtReturn;
+  window.pollCtReturn = pollCtReturn;
 
   // Companies House confirmation statement service
   window.getConfirmationStatementFilingData = getConfirmationStatementFilingData;

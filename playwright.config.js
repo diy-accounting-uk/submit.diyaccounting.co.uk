@@ -332,6 +332,14 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "companyTaxReturnBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/companyTaxReturn.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
       name: "fileConfirmationStatementBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/fileConfirmationStatement.behaviour.test.js"],

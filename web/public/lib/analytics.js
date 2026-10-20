@@ -100,6 +100,7 @@ const ATTRIBUTION_URL_PARAMS = [
   ["utm_content", "utmContent"],
   ["utm_term", "utmTerm"],
   ["gclid", "gclid"],
+  ["msclkid", "msclkid"],
   ["ref", "ref"],
 ];
 

@@ -34,4 +34,10 @@ describe("catalogue paths", () => {
 
     expect(missingPaths).toEqual([], `Missing catalogue paths under web/public/: ${missingPaths.join(", ")}`);
   });
+
+  it("the Company Tax Return page is listed under its activity", () => {
+    const tomlText = fs.readFileSync(path.join(process.cwd(), "web/public/submit.catalogue.toml"), "utf-8");
+    const activity = TOML.parse(tomlText).activities.find((entry) => entry.id === "file-company-tax-return");
+    expect(activity.paths).toContain("companies-house/fileCompanyTaxReturn.html");
+  });
 });

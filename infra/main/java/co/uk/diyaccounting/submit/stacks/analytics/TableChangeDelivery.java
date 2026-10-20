@@ -309,6 +309,7 @@ public class TableChangeDelivery extends Construct {
                 columns.add(column("acq_utm_content", "string"));
                 columns.add(column("acq_utm_term", "string"));
                 columns.add(column("acq_gclid", "string"));
+                columns.add(column("acq_msclkid", "string"));
                 columns.add(column("acq_ref", "string"));
                 columns.add(column("acq_landed_at", "string"));
             }

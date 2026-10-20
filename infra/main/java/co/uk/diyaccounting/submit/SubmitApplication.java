@@ -73,6 +73,7 @@ public class SubmitApplication {
         public String companiesHouseClientSecretArn;
         public String companiesHouseXmlGatewayUri;
         public String companiesHousePresenterIdArn;
+        public String hmrcCtVendorId;
         public String companiesHousePresenterCodeArn;
         public String companiesHouseCsFeeWaivedCompanyNumbers;
         public String baseImageTag;
@@ -228,6 +229,7 @@ public class SubmitApplication {
                 "COMPANIES_HOUSE_XMLGW_URI",
                 appProps.companiesHouseXmlGatewayUri,
                 "(from companiesHouseXmlGatewayUri in cdk.json)");
+        var hmrcCtVendorId = envOr("HMRC_CT_VENDOR_ID", appProps.hmrcCtVendorId, "(from hmrcCtVendorId in cdk.json)");
         var companiesHousePresenterIdArn = envOr(
                 "COMPANIES_HOUSE_PRESENTER_ID_ARN",
                 appProps.companiesHousePresenterIdArn,
@@ -429,6 +431,7 @@ public class SubmitApplication {
                                 companiesHouseClientSecretArn != null ? companiesHouseClientSecretArn : "")
                         .companiesHouseXmlGatewayUri(
                                 companiesHouseXmlGatewayUri != null ? companiesHouseXmlGatewayUri : "")
+                        .hmrcCtVendorId(hmrcCtVendorId != null ? hmrcCtVendorId : "")
                         .companiesHousePresenterIdArn(
                                 companiesHousePresenterIdArn != null ? companiesHousePresenterIdArn : "")
                         .companiesHousePresenterCodeArn(

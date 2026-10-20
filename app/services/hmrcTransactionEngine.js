@@ -17,6 +17,8 @@ import { parseXmlTree, canonicaliseElement, childElement, localName } from "../l
 const logger = createLogger({ source: "app/services/hmrcTransactionEngine.js" });
 
 export const CT600_CLASS = "HMRC-CT-CT600";
+// Marks the async request record of a Company Tax Return, so a poll never reads another form's record.
+export const CT_RETURN_KIND = "company-tax-return";
 export const CT600_TEST_IN_LIVE_CLASS = "HMRC-CT-CT600-TIL";
 
 export const TRANSACTION_ENGINE_LIVE_SUBMISSION_URL = "https://transaction-engine.tax.service.gov.uk/submission";
@@ -62,7 +64,7 @@ function base32(bytes) {
  */
 export function computeIrmark(govTalkMessageXml) {
   const root = parseXmlTree(govTalkMessageXml);
-  if (localName(root.name) !== "GovTalkMessage") throw new Error(`The root element is ${root.name}, not GovTalkMessage`);
+  if (localName(root.name) !== "GovTalkMessage") throw new Error("The root element is not GovTalkMessage");
   const body = childElement(root, "Body");
   if (!body) throw new Error("The GovTalk message has no Body to compute an IRmark over");
   // SHA-1 is the IRmark protocol's own required digest, not a security control this code chooses.
@@ -81,7 +83,10 @@ export function computeIrmark(govTalkMessageXml) {
 export function withIrmark(govTalkMessageXml) {
   const pattern = /<IRmark Type="generic">[^<]*<\/IRmark>/g;
   const matches = govTalkMessageXml.match(pattern) || [];
-  if (matches.length !== 1) throw new Error(`Expected one <IRmark Type="generic"> element, found ${matches.length}`);
+  // The message carries the Gateway password, so the error names the rule and nothing read
+  // from the document.
+  if (matches.length === 0) throw new Error('The GovTalk message carries no <IRmark Type="generic"> element');
+  if (matches.length > 1) throw new Error('The GovTalk message carries more than one <IRmark Type="generic"> element');
   const irmark = computeIrmark(govTalkMessageXml);
   return { xml: govTalkMessageXml.replace(pattern, `<IRmark Type="generic">${irmark.base64}</IRmark>`), irmark };
 }
@@ -251,15 +256,29 @@ export function getTransactionEngineSubmissionUrl({ gatewayTest }) {
  * submission request carries the customer's Government Gateway password.
  * @param {string} url
  * @param {string} xml
+ * @param {Record<string, string>} [extraHeaders] - forwarded as they are, e.g. the simulator's Gov-Test-Scenario
  * @returns {Promise<{ok: boolean, status: number, data: string, headers: object, duration: number}>}
  */
-export async function postToTransactionEngine(url, xml) {
+export async function postToTransactionEngine(url, xml, extraHeaders = {}) {
   logger.info({ message: `POST ${url}`, url });
   const result = await fetchTextWithTimeout(
     url,
-    { method: "POST", headers: { "Content-Type": "text/xml; charset=UTF-8" }, body: xml },
+    { method: "POST", headers: { "Content-Type": "text/xml; charset=UTF-8", ...extraHeaders }, body: xml },
     DEFAULT_TIMEOUTS.LONG,
   );
   logger.info({ message: `Response from POST ${url}`, url, status: result.status });
   return result;
+}
+
+/**
+ * Blank the Government Gateway user ID and password in a GovTalk message, so the message can be
+ * logged. A submission request carries both in clear.
+ * @param {string} xml
+ * @returns {string}
+ */
+export function redactGatewayCredentials(xml) {
+  if (typeof xml !== "string") return xml;
+  return xml
+    .replace(/(<SenderID>)[\s\S]*?(<\/SenderID>)/g, "$1***$2")
+    .replace(/(<Authentication>[\s\S]*?<Value>)[\s\S]*?(<\/Value>[\s\S]*?<\/Authentication>)/g, "$1***$2");
 }

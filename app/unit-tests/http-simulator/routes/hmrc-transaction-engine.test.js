@@ -10,6 +10,7 @@ import {
   apiEndpoint,
   SUBMISSION_PATH,
   POLL_PATH,
+  REJECT_IRMARK_SCENARIO,
   resetTransactionEngineSubmissions,
 } from "@app/http-simulator/routes/hmrc-transaction-engine.js";
 import {
@@ -41,8 +42,8 @@ function app() {
   return server;
 }
 
-async function post(server, path, xml) {
-  const response = await request(server).post(path).set("Content-Type", "text/xml").send(xml);
+async function post(server, path, xml, headers = {}) {
+  const response = await request(server).post(path).set("Content-Type", "text/xml").set(headers).send(xml);
   expect(response.status).toBe(200);
   return parseTransactionEngineResponse(response.text);
 }
@@ -61,18 +62,19 @@ describe("HMRC Transaction Engine simulator", () => {
     expect(acknowledgement.responseEndPoint).toBe(POLL_PATH);
     expect(acknowledgement.pollIntervalSeconds).toBe(1);
 
-    const response = await post(server, POLL_PATH, buildPollRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true }));
+    const pollRequest = buildPollRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true });
+    const stillProcessing = await post(server, POLL_PATH, pollRequest);
+    expect(stillProcessing).toMatchObject({ qualifier: "acknowledgement", correlationId: acknowledgement.correlationId });
+    expect(stillProcessing.pollIntervalSeconds).toBe(1);
+
+    const response = await post(server, POLL_PATH, pollRequest);
     expect(response.qualifier).toBe("response");
     expect(response.irmarkReceipt).toBe(irmark.base64);
     expect(response.successMessage).toContain(irmark.base32);
 
     const deleted = await post(server, POLL_PATH, buildDeleteRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true }));
     expect(deleted).toMatchObject({ qualifier: "response", messageFunction: "delete" });
-    const afterDelete = await post(
-      server,
-      POLL_PATH,
-      buildPollRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true }),
-    );
+    const afterDelete = await post(server, POLL_PATH, pollRequest);
     expect(afterDelete.qualifier).toBe("error");
   });
 
@@ -80,9 +82,21 @@ describe("HMRC Transaction Engine simulator", () => {
     const server = app();
     const tampered = submissionXml().xml.replace("<Sender>Company</Sender>", "<Sender>Agent</Sender>");
     const acknowledgement = await post(server, SUBMISSION_PATH, tampered);
-    const response = await post(server, POLL_PATH, buildPollRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true }));
+    const pollRequest = buildPollRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true });
+    await post(server, POLL_PATH, pollRequest);
+    const response = await post(server, POLL_PATH, pollRequest);
     expect(response.qualifier).toBe("error");
     expect(response.businessErrors[0]).toMatchObject({ number: "2021", text: "The supplied IRmark is incorrect." });
+  });
+
+  test("answers error 2021 for a correct IRmark when the submission names the reject scenario", async () => {
+    const server = app();
+    const acknowledgement = await post(server, SUBMISSION_PATH, submissionXml().xml, { "Gov-Test-Scenario": REJECT_IRMARK_SCENARIO });
+    const pollRequest = buildPollRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true });
+    expect((await post(server, POLL_PATH, pollRequest)).qualifier).toBe("acknowledgement");
+    const response = await post(server, POLL_PATH, pollRequest);
+    expect(response.qualifier).toBe("error");
+    expect(response.businessErrors[0].number).toBe("2021");
   });
 
   test("answers a fatal error for a badly formed message or another class", async () => {

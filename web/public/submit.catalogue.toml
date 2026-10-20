@@ -472,6 +472,16 @@ paths = ["companies-house/fileSmallCompanyAccounts.html", "^/api/v1/companies-ho
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
+id = "file-company-tax-return"
+name = "File Company Tax Return (HMRC)"
+display = "on-entitlement"
+bundles = ["resident", "resident-pro"]
+tokenCost = 1
+metered = true
+paths = ["companies-house/fileCompanyTaxReturn.html", "^/api/v1/hmrc/ct/return.*", "^/api/v1/companies-house/company/[^/]+$"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "file-confirmation-statement"
 name = "File Confirmation Statement (Companies House)"
 display = "on-entitlement"

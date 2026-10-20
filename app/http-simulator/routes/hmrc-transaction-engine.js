@@ -5,9 +5,12 @@
 // HMRC Transaction Engine simulator for CT600 filings, following the Document Submission Protocol.
 // Handles: POST /hmrc-transaction-engine/submission - a SUBMISSION_REQUEST, answered with an
 //          acknowledgement carrying a CorrelationID and a poll end point;
-//          POST /hmrc-transaction-engine/poll - a SUBMISSION_POLL, answered with the final
-//          response (the success receipt, or error 2021 when the IRmark does not match), or a
-//          DELETE_REQUEST, answered with a delete response.
+//          POST /hmrc-transaction-engine/poll - a SUBMISSION_POLL, answered with an acknowledgement
+//          the first time (still processing) and then with the final response (the success
+//          receipt, or error 2021 when the IRmark does not match), or a DELETE_REQUEST, answered
+//          with a delete response.
+// A Gov-Test-Scenario header of CT600_REJECT_IRMARK on the submission makes its final response
+// error 2021.
 // The response shapes copy what HMRC's Third Party Validation Service returned on 2026-10-05.
 
 import express from "express";
@@ -18,6 +21,7 @@ import { computeIrmark, CT600_CLASS, CT600_TEST_IN_LIVE_CLASS } from "../../serv
 export const SUBMISSION_PATH = "/hmrc-transaction-engine/submission";
 export const POLL_PATH = "/hmrc-transaction-engine/poll";
 const POLL_INTERVAL_SECONDS = 1;
+export const REJECT_IRMARK_SCENARIO = "CT600_REJECT_IRMARK";
 
 const submissions = new Map();
 
@@ -98,7 +102,8 @@ export function apiEndpoint(app) {
       messageClass,
       utr: firstElementText(document, "Key") || "",
       irmark,
-      irmarkMatches: suppliedIrmark === irmark.base64,
+      irmarkMatches: suppliedIrmark === irmark.base64 && req.get("Gov-Test-Scenario") !== REJECT_IRMARK_SCENARIO,
+      polls: 0,
       receivedAt: new Date().toISOString().replace("Z", ""),
     });
     return sendXml(
@@ -128,6 +133,19 @@ export function apiEndpoint(app) {
     }
     if (firstElementText(document, "Qualifier") !== "poll")
       return sendXml(res, fatalError("A poll is Qualifier poll, Function submit", 1002));
+    submission.polls += 1;
+    if (submission.polls === 1) {
+      return sendXml(
+        res,
+        envelope({
+          messageClass: submission.messageClass,
+          qualifier: "acknowledgement",
+          messageFunction: "submit",
+          correlationId,
+          responseEndPoint: POLL_PATH,
+        }),
+      );
+    }
     return sendXml(
       res,
       submission.irmarkMatches

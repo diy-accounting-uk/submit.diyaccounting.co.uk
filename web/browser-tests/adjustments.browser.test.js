@@ -17,6 +17,7 @@ import {
   serveSiteStyles,
   screenshotPath,
   expectCleanFigures,
+  serveItsaPageScripts,
 } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -55,6 +56,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
         await route.continue();
       }
     });
+    await serveItsaPageScripts(page);
     await serveHmrcFieldTableAssets(page);
     await serveMoneyInput(page);
     await serveFormErrors(page);

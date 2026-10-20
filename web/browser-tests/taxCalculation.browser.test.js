@@ -15,6 +15,8 @@ import {
   serveSiteStyles,
   screenshotPath,
   expectCleanFigures,
+  serveItsaPageScripts,
+  serveCarriedIdentifiers,
 } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -35,6 +37,8 @@ test.describe("ITSA Tax Calculation - Form", () => {
         await route.continue();
       }
     });
+    await serveItsaPageScripts(page);
+    await serveCarriedIdentifiers(page);
     await serveHmrcFieldTableAssets(page);
     await serveHmrcAssistWidget(page);
 

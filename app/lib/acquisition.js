@@ -5,7 +5,7 @@
 
 // Same field names session-beacon.js carries to the activity event, shared by the bundle grant,
 // the checkout request and the Stripe webhook so every record of an account's source agrees.
-export const ACQUISITION_KEYS = ["utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm", "gclid", "ref", "landedAt"];
+export const ACQUISITION_KEYS = ["utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm", "gclid", "msclkid", "ref", "landedAt"];
 
 const MAX_ACQUISITION_VALUE_LENGTH = 200;
 const STRIPE_METADATA_PREFIX = "acq_";
