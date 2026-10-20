@@ -489,6 +489,38 @@ describe("operatorSnapshotPublish", () => {
       expect(queries.some((q) => q.includes("FROM   v_revenue_daily") && q.includes("NOT LIKE 'donation-%'"))).toBe(true);
     });
 
+    test("publishes PayPal donation revenue and charges filtered to the donation-paypal product", async () => {
+      mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
+
+      const context = {
+        envName: "test",
+        region: "eu-west-2",
+        athenaWorkGroupName: "test-env-analytics",
+        githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        ga4PropertyId: "523400333",
+      };
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
+
+      const paid = snapshot.objectives.find((o) => o.id === "conversion-to-paid");
+      const revenue = paid.observations.find((o) => o.id === "revenue-paypal-donations-gbp");
+      expect(revenue.label).toBe("Revenue, PayPal donations");
+      expect(revenue.unit).toBe("gbp");
+      expect(revenue.last30).toEqual({ value: 10, trend: 1 });
+      const charges = paid.observations.find((o) => o.id === "paypal-donations-count");
+      expect(charges.label).toBe("PayPal donations, charges");
+      expect(charges.unit).toBe("count");
+      expect(charges.last30).toEqual({ value: 10, trend: 1 });
+      const queries = mockAthenaSend.mock.calls
+        .filter(([command]) => command.constructor.name === "StartQueryExecutionCommand")
+        .map(([command]) => command.input.QueryString);
+      expect(
+        queries.some((q) => q.includes("THEN revenue_gbp END") && q.includes("FROM   v_revenue_daily\nWHERE  product = 'donation-paypal'")),
+      ).toBe(true);
+      expect(
+        queries.some((q) => q.includes("THEN charges END") && q.includes("FROM   v_revenue_daily\nWHERE  product = 'donation-paypal'")),
+      ).toBe(true);
+    });
+
     test("a failing observation's query answers null instead of failing the whole snapshot", async () => {
       mockQueriesWithOneFailing("guardduty_findings", ["10", "5", "30", "20"]);
 

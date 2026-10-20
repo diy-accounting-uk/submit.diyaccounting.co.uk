@@ -38,6 +38,8 @@ export const REINVESTMENT_FRACTION = 0.2;
 // The four donation Payment Links' bundle ids (infra/stripe/stripe.toml). v_revenue_daily
 // labels each Stripe charge with its bundle id; PayPal donations are separate rows.
 const STRIPE_DONATION_PRODUCT_FILTER = "product IN ('donation-10', 'donation-20', 'donation-45', 'donation-custom')";
+// The PayPal pull labels a donation receipt donation-paypal (see paypalDonationsPull.js).
+const PAYPAL_DONATION_PRODUCT_FILTER = "product = 'donation-paypal'";
 
 /**
  * One started and one completed observation per prod-listed catalogue activity
@@ -320,6 +322,28 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "charges",
         aggregation: "sum",
         where: STRIPE_DONATION_PRODUCT_FILTER,
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "revenue-paypal-donations-gbp",
+        label: "Revenue, PayPal donations",
+        unit: "gbp",
+        view: "v_revenue_daily",
+        dayColumn: "day",
+        valueExpr: "revenue_gbp",
+        aggregation: "sum",
+        where: PAYPAL_DONATION_PRODUCT_FILTER,
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "paypal-donations-count",
+        label: "PayPal donations, charges",
+        unit: "count",
+        view: "v_revenue_daily",
+        dayColumn: "day",
+        valueExpr: "charges",
+        aggregation: "sum",
+        where: PAYPAL_DONATION_PRODUCT_FILTER,
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
