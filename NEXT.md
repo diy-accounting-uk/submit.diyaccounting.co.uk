@@ -44,6 +44,8 @@ step.
 
 ## Machine-only
 
+- [ ] **AL2. `prod-env-ga4-daily-pull-errors` fired on a transient BigQuery error (issue #513).** At 07:20 UTC on 2026-10-20 the hourly GA4 pull (`app/functions/analytics/ga4DailyPull.js`, Lambda `prod-env-ga4-daily-pull`, EventBridge cron minute 20 with a three-day lookback) failed twice on BigQuery's `backendError` / `jobBackendError` ("Error encountered during execution. Retrying may solve the problem."; request 8f0d5fc2-dd2f-4884-a8d2-e9827e25a011), so the errors alarm (threshold 1 over 24 h) opened #513. The next hourly run re-covers the hour, so no data is lost, and the alarm clears when the datapoint ages out of its 24-hour period. The fix: inside the function, retry a BigQuery job that fails with reason `backendError` or `jobBackendError` once after a short wait (the error text itself says retrying may solve it) before the invocation fails, with a unit case in `app/unit-tests/analytics/ga4DailyPull.test.js` that mocks the first job failing with that reason and the second succeeding, and one that a different reason is not retried. Then confirm the 08:20 UTC run of 2026-10-20 succeeded (`aws --profile diya-submit-prod logs filter-log-events --log-group-name /aws/lambda/prod-env-ga4-daily-pull`) and close #513 with that evidence when the alarm is OK. **Source**: issue #513; `app/data/alarm-remedies.json` (family `prod-env-ga4-daily-pull-errors`, remedy `draft-pr`). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 ## Machine-ask
 
 ## Human-driven
