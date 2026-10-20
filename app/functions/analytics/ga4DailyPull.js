@@ -27,6 +27,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { BigQuery } from "@google-cloud/bigquery";
 import { federationSettings, createFederatedGoogleAuth } from "../../lib/googleWorkloadIdentity.js";
 import { createLogger } from "../../lib/logger.js";
+import { withTransientRetry } from "../../lib/bigQueryRetry.js";
 
 const logger = createLogger({ source: "app/functions/analytics/ga4DailyPull.js" });
 
@@ -181,8 +182,14 @@ async function pullHourlyDay({ bigQuery, projectId, datasetId, location, dateStr
   const sourceTable = await firstExistingTable(bigQuery, datasetId, [`events_${suffix}`, `events_intraday_${suffix}`]);
   if (sourceTable === null) return { sourceTable: null, rows: [] };
 
-  const [job] = await bigQuery.createQueryJob({ query: buildHourlyQuery(projectId, datasetId, sourceTable), location });
-  const [rows] = await job.getQueryResults();
+  const rows = await withTransientRetry(
+    async () => {
+      const [job] = await bigQuery.createQueryJob({ query: buildHourlyQuery(projectId, datasetId, sourceTable), location });
+      const [jobRows] = await job.getQueryResults();
+      return jobRows;
+    },
+    { description: `${datasetId}.${sourceTable}` },
+  );
   return { sourceTable, rows };
 }
 
@@ -275,8 +282,14 @@ export async function handler(event = {}) {
   const keys = {};
   const counts = {};
   for (const tableName of TABLES) {
-    const [job] = await bigQuery.createQueryJob({ query: buildQuery(projectId, tableName, targetDate), location });
-    const [rows] = await job.getQueryResults();
+    const rows = await withTransientRetry(
+      async () => {
+        const [job] = await bigQuery.createQueryJob({ query: buildQuery(projectId, tableName, targetDate), location });
+        const [jobRows] = await job.getQueryResults();
+        return jobRows;
+      },
+      { description: `${tableName} ${targetDate}` },
+    );
 
     keys[tableName] = await putTableObject(s3Client, bucket, tableName, targetDate, rows);
     counts[tableName] = rows.length;
