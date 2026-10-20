@@ -197,7 +197,7 @@ Arrangements". The body, with the mail client's chrome and the standing footer r
 4. Decide whether the spreadsheets site points sole traders at a recognised bridging product for
    2026-27. VitalTax wrote on 2022-07-12 that they saw interest in integrating DIY Accounting with
    VitalTax for MTD Income Tax, and announced MTD for Income Tax in their product on 2025-11-18
-   (both in the mail mirror). Decided (a) on 2026-10-20; the note is `NEXT.md` IA4a.
+   (both in the mail mirror). Decided (a) on 2026-10-20; the note is on the spreadsheets home page (spreadsheets PR #164, merged as 511945ab).
 
 **Sent 2026-10-03.** The note to SDST went from antony@diyaccounting.co.uk (text as sent in `../private.diyaccounting.co.uk/hmrc/itsa/DRAFT_EMAIL_ITSA_2027_NOTE.md`); it also points HMRC at the published ITSA sandbox recordings as evidence of the working product. SDST's reply, if any, rewrites the blocked rows below.
 
@@ -262,7 +262,7 @@ send.
 IA2 ──► HMRC's early-2027 update ──► IA5 ──► IA6 ──► IA7 ──► IA8 ──► IA10
                                                └──► IA9
 IA3 ──► IA6
-IA4 decided (a); the note is NEXT.md IA4a
+IA4 decided (a); the note is on the spreadsheets home page (spreadsheets PR #164)
 IA11 ──► IA6 (the recordings are cited in the application)
 ```
 
