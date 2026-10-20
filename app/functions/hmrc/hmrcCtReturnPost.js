@@ -8,6 +8,7 @@
 // once this call returns. HMRC answers with an acknowledgement; the GET Lambda polls for the result.
 
 import { createLogger } from "../../lib/logger.js";
+import { HttpTimeoutError } from "../../lib/httpFetch.js";
 import {
   extractRequest,
   buildValidationError,
@@ -171,13 +172,11 @@ export async function ingestHandler(event) {
       data: { correlationId: parsed.correlationId, transactionId, irmark: irmark.base32, pollIntervalSeconds },
     });
   } catch (error) {
-    // The request body carries the typed Gateway password, and an HTTP client error can quote
-    // its request, so neither the message nor the stack is logged here.
+    // The submission carries the typed Gateway password, so nothing read from the error is
+    // logged: an error's message, stack or fields can quote the document that failed.
     logger.error({
       message: "Unexpected error submitting the Company Tax Return",
-      errorName: error?.name,
-      errorCode: error?.code,
-      upstreamStatus: error?.response?.status,
+      timedOut: error instanceof HttpTimeoutError,
     });
     await recordSubmissionFailure({
       failure: "internal-error",

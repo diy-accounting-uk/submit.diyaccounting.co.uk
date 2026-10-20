@@ -64,7 +64,7 @@ function base32(bytes) {
  */
 export function computeIrmark(govTalkMessageXml) {
   const root = parseXmlTree(govTalkMessageXml);
-  if (localName(root.name) !== "GovTalkMessage") throw new Error(`The root element is ${root.name}, not GovTalkMessage`);
+  if (localName(root.name) !== "GovTalkMessage") throw new Error("The root element is not GovTalkMessage");
   const body = childElement(root, "Body");
   if (!body) throw new Error("The GovTalk message has no Body to compute an IRmark over");
   // SHA-1 is the IRmark protocol's own required digest, not a security control this code chooses.
