@@ -568,8 +568,8 @@ async function doHmrcAuthorise(page, step, ctx) {
 // Login on the sandbox, the simulator's one form otherwise.
 // The simulator lane's canned user and code come from resolveCompaniesHouseSignInCredentials
 // itself; a real lane needs TEST_COMPANIES_HOUSE_USER_ID, TEST_COMPANIES_HOUSE_PASSWORD and
-// TEST_COMPANIES_HOUSE_TOTP_SECRET in the run's
-// environment, the same variables the behaviour tests read.
+// TEST_COMPANIES_HOUSE_TOTP_SECRET in the run's environment, the same variables the behaviour
+// tests read.
 async function doCompaniesHouseAuthorise(page, step, ctx) {
   const steps = await behaviourSteps();
   const capturePage = withoutDebugScreenshots(page);
