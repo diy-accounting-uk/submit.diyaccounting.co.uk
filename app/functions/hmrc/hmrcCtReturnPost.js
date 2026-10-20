@@ -171,7 +171,14 @@ export async function ingestHandler(event) {
       data: { correlationId: parsed.correlationId, transactionId, irmark: irmark.base32, pollIntervalSeconds },
     });
   } catch (error) {
-    logger.error({ message: "Unexpected error submitting the Company Tax Return", error: error.message, stack: error.stack });
+    // The request body carries the typed Gateway password, and an HTTP client error can quote
+    // its request, so neither the message nor the stack is logged here.
+    logger.error({
+      message: "Unexpected error submitting the Company Tax Return",
+      errorName: error?.name,
+      errorCode: error?.code,
+      upstreamStatus: error?.response?.status,
+    });
     await recordSubmissionFailure({
       failure: "internal-error",
       summary: "HMRC Company Tax Return submission failed unexpectedly",
