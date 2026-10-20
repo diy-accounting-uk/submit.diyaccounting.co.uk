@@ -290,50 +290,43 @@ function displayObligations(obligations) {
   const businessesWithObligations = (obligations || []).filter((business) => (business.obligationDetails || []).length > 0);
 
   if (businessesWithObligations.length === 0) {
-    tableContainer.innerHTML = '<p class="no-data">No obligations found for the specified National Insurance number.</p>';
+    tableContainer.replaceChildren(el("p", "no-data", "No obligations found for the specified National Insurance number."));
     return;
   }
 
-  tableContainer.innerHTML = businessesWithObligations
-    .map((business) => {
-      const rows = business.obligationDetails
-        .map(
-          (detail) => `
-            <tr>
-              <td class="date-column">${escapeHtml(detail.periodStartDate)}</td>
-              <td class="date-column">${escapeHtml(detail.periodEndDate)}</td>
-              <td class="date-column">${escapeHtml(detail.dueDate)}</td>
-              <td><span class="${detail.status === "fulfilled" ? "status-fulfilled" : "status-open"}">${escapeHtml(detail.status)}</span></td>
-              <td class="date-column">${escapeHtml(detail.receivedDate || "-")}</td>
-            </tr>
-          `,
-        )
-        .join("");
+  const nodes = businessesWithObligations.flatMap((business) => {
+    const headerRow = document.createElement("tr");
+    ["Period start", "Period end", "Due date", "Status", "Received"].forEach((heading) => headerRow.append(el("th", "", heading)));
+    const thead = document.createElement("thead");
+    thead.append(headerRow);
 
-      return `
-        <h4>${escapeHtml(business.typeOfBusiness)} (${escapeHtml(business.businessId)})</h4>
-        <table class="results-table">
-          <thead>
-            <tr>
-              <th>Period start</th>
-              <th>Period end</th>
-              <th>Due date</th>
-              <th>Status</th>
-              <th>Received</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      `;
-    })
-    .join("");
+    const tbody = document.createElement("tbody");
+    business.obligationDetails.forEach((detail) => {
+      const statusCell = document.createElement("td");
+      statusCell.append(el("span", detail.status === "fulfilled" ? "status-fulfilled" : "status-open", detail.status || ""));
+      const row = document.createElement("tr");
+      row.append(
+        el("td", "date-column", detail.periodStartDate || ""),
+        el("td", "date-column", detail.periodEndDate || ""),
+        el("td", "date-column", detail.dueDate || ""),
+        statusCell,
+        el("td", "date-column", detail.receivedDate || "-"),
+      );
+      tbody.append(row);
+    });
+
+    const table = el("table", "results-table");
+    table.append(thead, tbody);
+    return [el("h4", "", `${business.typeOfBusiness || ""} (${business.businessId || ""})`), table];
+  });
+  tableContainer.replaceChildren(...nodes);
 }
 
-function escapeHtml(text) {
-  if (!text) return "";
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
 }
 
 document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {

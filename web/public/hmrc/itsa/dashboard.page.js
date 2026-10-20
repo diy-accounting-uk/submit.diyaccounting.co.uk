@@ -75,11 +75,11 @@ function applyPickedBusinessToLinks(business) {
   document.getElementById("step8Link").href = isUkProperty ? "ukPropertyAdjustments.html" : "adjustments.html";
 }
 
-function escapeHtml(text) {
-  if (text === null || text === undefined) return "";
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
 }
 
 // The year's token cost is counted from the businesses HMRC listed, before the customer
@@ -91,26 +91,34 @@ function displayBusinessPicker(businesses) {
   const costLine = document.getElementById("yearTokenCost");
 
   if (!businesses || businesses.length === 0) {
-    list.innerHTML = '<p class="no-data">No businesses found for the specified National Insurance number.</p>';
+    list.replaceChildren(el("p", "no-data", "No businesses found for the specified National Insurance number."));
     costLine.textContent = "";
     document.getElementById("businessPickerResults").style.display = "block";
     return;
   }
 
   const stored = readPickedBusiness();
-  list.innerHTML = businesses
-    .map((business, index) => {
-      const checked = stored && stored.businessId === business.businessId ? "checked" : index === 0 && !stored ? "checked" : "";
-      const label = `${escapeHtml(business.tradingName || business.typeOfBusiness)} (${escapeHtml(business.typeOfBusiness)}, ${escapeHtml(business.businessId)})`;
-      return `
-        <div class="business-picker-option">
-          <input type="radio" name="pickedBusiness" id="business-${index}" value="${escapeHtml(business.businessId)}"
-            data-type-of-business="${escapeHtml(business.typeOfBusiness)}" ${checked} />
-          <label for="business-${index}">${label}</label>
-        </div>
-      `;
-    })
-    .join("");
+  list.replaceChildren(
+    ...businesses.map((business, index) => {
+      const checked = stored && stored.businessId === business.businessId ? true : index === 0 && !stored;
+      const radio = document.createElement("input");
+      radio.type = "radio";
+      radio.name = "pickedBusiness";
+      radio.id = `business-${index}`;
+      radio.value = business.businessId ?? "";
+      radio.dataset.typeOfBusiness = business.typeOfBusiness ?? "";
+      if (checked) radio.setAttribute("checked", "");
+      const label = el(
+        "label",
+        "",
+        `${business.tradingName || business.typeOfBusiness || ""} (${business.typeOfBusiness ?? ""}, ${business.businessId ?? ""})`,
+      );
+      label.htmlFor = `business-${index}`;
+      const option = el("div", "business-picker-option");
+      option.append(radio, label);
+      return option;
+    }),
+  );
 
   const yearTokens = businesses.length * TOKENS_PER_BUSINESS_YEAR + FINAL_DECLARATION_TOKENS;
   costLine.textContent = `This year costs ${yearTokens} tokens for the ${businesses.length} business${businesses.length === 1 ? "" : "es"} HMRC listed: ${TOKENS_PER_BUSINESS_YEAR} per business for the quarterly updates, plus ${FINAL_DECLARATION_TOKENS} for the final declaration.`;

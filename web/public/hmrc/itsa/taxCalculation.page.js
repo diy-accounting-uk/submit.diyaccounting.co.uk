@@ -48,11 +48,11 @@ async function runCalculationTrigger(calculationDetails, testScenario, runFraudP
   return await triggerCalculation(calculationDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
 }
 
-function escapeHtml(text) {
-  if (text === null || text === undefined) return "";
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
 }
 
 function displayCalculation(calculation, nino, taxYear, calculationType) {
@@ -104,11 +104,18 @@ function displayCalculation(calculation, nino, taxYear, calculationType) {
     ...messages.warnings.map((m) => ({ ...m, level: "warning" })),
     ...messages.info.map((m) => ({ ...m, level: "info" })),
   ];
-  messagesContainer.innerHTML = allMessages.length
-    ? `<h3>Messages</h3><ul id="calculationMessagesList">${allMessages
-        .map((m) => `<li class="status-message ${escapeHtml(m.level)}"><strong>${escapeHtml(m.id)}:</strong> ${escapeHtml(m.text)}</li>`)
-        .join("")}</ul>`
-    : "";
+  if (allMessages.length === 0) {
+    messagesContainer.replaceChildren();
+  } else {
+    const list = el("ul");
+    list.id = "calculationMessagesList";
+    allMessages.forEach((m) => {
+      const item = el("li", `status-message ${m.level}`);
+      item.append(el("strong", "", `${m.id ?? ""}:`), ` ${m.text ?? ""}`);
+      list.append(item);
+    });
+    messagesContainer.replaceChildren(el("h3", "", "Messages"), list);
+  }
 }
 
 const TAX_BREAKDOWN_VALUE_IDS = {
@@ -131,7 +138,7 @@ function renderTaxBreakdown(calc) {
 function renderBusinessProfitAndLoss(businessProfitAndLoss) {
   const container = document.getElementById("businessProfitAndLossTable");
   if (!businessProfitAndLoss || businessProfitAndLoss.length === 0) {
-    container.innerHTML = "";
+    container.replaceChildren();
     return;
   }
 
@@ -142,31 +149,26 @@ function renderBusinessProfitAndLoss(businessProfitAndLoss) {
     ["taxableProfitAfterIncomeTaxLossesDeduction", "Taxable profit after losses deducted"],
   ];
 
-  container.innerHTML = `
-    <table class="results-table">
-      <thead>
-        <tr>
-          <th>Business</th>
-          <th>Taxable profit</th>
-          ${lossFields.map(([, label]) => `<th>${escapeHtml(label)}</th>`).join("")}
-        </tr>
-      </thead>
-      <tbody>
-        ${businessProfitAndLoss
-          .map((entry) => {
-            const name = entry.incomeSourceName || entry.incomeSourceType || entry.incomeSourceId;
-            return `
-              <tr>
-                <td>${escapeHtml(name)} (${escapeHtml(entry.incomeSourceId)})</td>
-                <td class="field-amount">${escapeHtml(HmrcFieldTable.formatMoney(entry.taxableProfit))}</td>
-                ${lossFields.map(([key]) => `<td class="field-amount">${escapeHtml(HmrcFieldTable.formatMoney(entry[key]))}</td>`).join("")}
-              </tr>
-            `;
-          })
-          .join("")}
-      </tbody>
-    </table>
-  `;
+  const headerRow = document.createElement("tr");
+  ["Business", "Taxable profit", ...lossFields.map(([, label]) => label)].forEach((heading) => headerRow.append(el("th", "", heading)));
+  const thead = document.createElement("thead");
+  thead.append(headerRow);
+
+  const tbody = document.createElement("tbody");
+  businessProfitAndLoss.forEach((entry) => {
+    const name = entry.incomeSourceName || entry.incomeSourceType || entry.incomeSourceId;
+    const row = document.createElement("tr");
+    row.append(
+      el("td", "", `${name ?? ""} (${entry.incomeSourceId ?? ""})`),
+      el("td", "field-amount", HmrcFieldTable.formatMoney(entry.taxableProfit)),
+      ...lossFields.map(([key]) => el("td", "field-amount", HmrcFieldTable.formatMoney(entry[key]))),
+    );
+    tbody.append(row);
+  });
+
+  const table = el("table", "results-table");
+  table.append(thead, tbody);
+  container.replaceChildren(table);
 }
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, run) {

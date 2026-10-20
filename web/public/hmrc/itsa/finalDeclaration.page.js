@@ -74,11 +74,11 @@ const TAX_BREAKDOWN_VALUE_IDS = {
   "taxCalculation.totalTaxDeducted": "totalTaxDeductedAmount",
 };
 
-function escapeHtml(text) {
-  if (text === null || text === undefined) return "";
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
 }
 
 function displayCalculation(calculation) {
@@ -166,13 +166,13 @@ async function displayBusinessesAndLossPositions(calculation, nino, taxYear, acc
   const businesses = calculation?.inputs?.incomeSources?.businessIncomeSources || [];
 
   if (businesses.length === 0) {
-    container.innerHTML = '<p class="no-data">HMRC counted no businesses in this calculation.</p>';
+    container.replaceChildren(el("p", "no-data", "HMRC counted no businesses in this calculation."));
     document.getElementById("taxLiabilityAdjustmentLine").textContent = "";
     document.getElementById("unclaimedLossWarning").style.display = "none";
     return;
   }
 
-  container.innerHTML = '<p class="hint">Loading the loss position for each business...</p>';
+  container.replaceChildren(el("p", "hint", "Loading the loss position for each business..."));
 
   const profitAndLossByBusiness = {};
   (calculation?.calculation?.businessProfitAndLoss || []).forEach((entry) => {
@@ -190,32 +190,29 @@ async function displayBusinessesAndLossPositions(calculation, nino, taxYear, acc
 
   const anyUnclaimedLoss = rows.some((row) => row.hasLoss && !row.claims);
 
-  container.innerHTML = `
-    <table class="results-table">
-      <thead>
-        <tr>
-          <th>Business</th>
-          <th>Latest period end date</th>
-          <th>Loss position</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows
-          .map(({ business, hasLoss, claims }) => {
-            const claimText = describeClaims(claims);
-            const cellText = hasLoss && !claims ? "Loss shown, no claim recorded" : claimText;
-            return `
-              <tr>
-                <td>${escapeHtml(business.incomeSourceType)} (${escapeHtml(business.incomeSourceId)})</td>
-                <td>${escapeHtml(business.latestPeriodEndDate || "-")}</td>
-                <td>${hasLoss && !claims ? `<strong>${escapeHtml(cellText)}</strong>` : escapeHtml(cellText)}</td>
-              </tr>
-            `;
-          })
-          .join("")}
-      </tbody>
-    </table>
-  `;
+  const headerRow = document.createElement("tr");
+  ["Business", "Latest period end date", "Loss position"].forEach((heading) => headerRow.append(el("th", "", heading)));
+  const thead = document.createElement("thead");
+  thead.append(headerRow);
+
+  const tbody = document.createElement("tbody");
+  rows.forEach(({ business, hasLoss, claims }) => {
+    const cellText = hasLoss && !claims ? "Loss shown, no claim recorded" : describeClaims(claims);
+    const lossCell = document.createElement("td");
+    if (hasLoss && !claims) lossCell.append(el("strong", "", cellText ?? ""));
+    else lossCell.textContent = cellText ?? "";
+    const row = document.createElement("tr");
+    row.append(
+      el("td", "", `${business.incomeSourceType ?? ""} (${business.incomeSourceId ?? ""})`),
+      el("td", "", business.latestPeriodEndDate || "-"),
+      lossCell,
+    );
+    tbody.append(row);
+  });
+
+  const table = el("table", "results-table");
+  table.append(thead, tbody);
+  container.replaceChildren(table);
 
   document.getElementById("unclaimedLossWarning").style.display = anyUnclaimedLoss ? "block" : "none";
 

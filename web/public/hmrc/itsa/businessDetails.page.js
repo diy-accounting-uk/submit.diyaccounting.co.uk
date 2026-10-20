@@ -281,45 +281,40 @@ async function handleFormSubmission(event) {
   }
 }
 
+function el(tag, className, text) {
+  const node = document.createElement(tag);
+  if (className) node.className = className;
+  if (text !== undefined) node.textContent = text;
+  return node;
+}
+
 function displayBusinesses(businesses) {
   const tableContainer = document.getElementById("businessDetailsTable");
 
   if (!businesses || businesses.length === 0) {
-    tableContainer.innerHTML = '<p class="no-data">No businesses found for the specified National Insurance number.</p>';
+    tableContainer.replaceChildren(el("p", "no-data", "No businesses found for the specified National Insurance number."));
     return;
   }
 
-  let tableHtml = `
-    <table class="results-table">
-      <thead>
-        <tr>
-          <th>Business type</th>
-          <th>Trading name</th>
-          <th>Business ID</th>
-        </tr>
-      </thead>
-      <tbody>
-  `;
+  const headerRow = document.createElement("tr");
+  ["Business type", "Trading name", "Business ID"].forEach((heading) => headerRow.append(el("th", "", heading)));
+  const thead = document.createElement("thead");
+  thead.append(headerRow);
 
+  const tbody = document.createElement("tbody");
   businesses.forEach((business) => {
-    tableHtml += `
-      <tr>
-        <td>${escapeHtml(business.typeOfBusiness)}</td>
-        <td>${escapeHtml(business.tradingName || "-")}</td>
-        <td>${escapeHtml(business.businessId)}</td>
-      </tr>
-    `;
+    const row = document.createElement("tr");
+    row.append(
+      el("td", "", business.typeOfBusiness || ""),
+      el("td", "", business.tradingName || "-"),
+      el("td", "", business.businessId || ""),
+    );
+    tbody.append(row);
   });
 
-  tableHtml += "</tbody></table>";
-  tableContainer.innerHTML = tableHtml;
-}
-
-function escapeHtml(text) {
-  if (!text) return "";
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
+  const table = el("table", "results-table");
+  table.append(thead, tbody);
+  tableContainer.replaceChildren(table);
 }
 
 document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {
