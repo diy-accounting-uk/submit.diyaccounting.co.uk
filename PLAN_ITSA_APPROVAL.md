@@ -215,12 +215,6 @@ section is their board.
 - [ ] **IA2. Developer Hub email preferences.** The operator signs in to the Developer Hub and
   turns on the Income Tax (MTD) notices under Email preferences, so the 2027 update arrives.
   **Owner**: Operator. **Model**: none. **Size**: 0 files.
-- [ ] **IA3. The evidence pack's figures.** 14 days becomes 30 days in
-  `../private.diyaccounting.co.uk/hmrc/itsa/evidence/README.md` ("Before sending") and in the
-  "Before sending" line of both drafts; `ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` gains an "AI
-  assurance" row answered from this repository's record (PR gates, sandbox transcripts, the
-  evidence pack's check per claim). **Owner**: Claude Code. **Model**: Haiku. **Size**: 4 files
-  (private).
 - [ ] **IA11. The walkthrough videos as evidence (BACKLOG 17d).** The note to SDST pointed HMRC at the published ITSA recordings, so they are part of the application's evidence. Review the eight walkthrough videos for test-data improvements (HMRC's sandbox answered "No liabilities/payments/penalties found" for the three VAT read pages, so those show the search and not a result), de-duplicate the day-pass and HMRC-authorisation scenes that every recording repeats, and compress the full recordings; re-record what changes with the `site-video-capture` skill and republish with `video-publish`. All eight are public on the channel. **Owner**: Claude Code. **Model**: Sonnet. **Size**: the scene scripts under `videos/` and `web/public/videos/publish.json`.
 
 ### Blocked on HMRC's early-2027 update
