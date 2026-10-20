@@ -10,6 +10,10 @@ import {
   decideForContext,
   buildPrompt,
   limitDiff,
+  capDiff,
+  buildPromptWithReport,
+  buildDecisionArtifact,
+  DIFF_BYTE_BUDGET,
   SKIPPABLE_JOB_IDS,
   SKIPPABLE_JOBS,
 } from "../../../scripts/ci/select-jobs.mjs";
@@ -193,5 +197,66 @@ describe("limitDiff", () => {
 
   test("returns an empty diff unchanged", () => {
     expect(limitDiff("")).toBe("");
+  });
+});
+
+describe("diff byte budget", () => {
+  const fileDiff = (name, bytes) => `diff --git a/${name} b/${name}\n--- a/${name}\n+++ b/${name}\n+${"x".repeat(bytes)}\n`;
+  const names = ["app/a.js", "app/b.js", "app/c.js", "app/d.js"];
+  const perFile = Math.ceil(DIFF_BYTE_BUDGET / 2.5);
+  const bigDiff = names.map((name) => fileDiff(name, perFile)).join("");
+  const context = { eventName: "push", ref: "refs/heads/claude/ltd-x" };
+
+  test("a diff under the budget reaches the prompt unchanged", () => {
+    const diff = fileDiff("app/a.js", 100);
+    const { prompt, diffReport } = buildPromptWithReport({ context, diff, changedFiles: ["app/a.js"] });
+    expect(prompt).toContain(diff);
+    expect(prompt).not.toContain("diff omitted");
+    expect(prompt).not.toContain("The diff was cut to fit");
+    expect(diffReport.diffTruncated).toBe(false);
+    expect(diffReport.diffBytesOmitted).toBe(0);
+  });
+
+  test("a diff over the budget keeps every file name, the first diffs whole and marks the rest omitted", () => {
+    const { prompt, diffReport } = buildPromptWithReport({ context, diff: bigDiff, changedFiles: names });
+    for (const name of names) {
+      expect(prompt).toContain(`diff --git a/${name} b/${name}`);
+    }
+    expect(prompt).toContain(fileDiff("app/a.js", perFile));
+    expect(prompt).toContain(fileDiff("app/b.js", perFile));
+    expect(prompt).not.toContain(fileDiff("app/c.js", perFile));
+    expect(prompt).toMatch(/\[diff omitted: \d+ bytes\]/);
+    expect(prompt).toContain("The diff was cut to fit");
+    expect(diffReport.diffTruncated).toBe(true);
+    expect(diffReport.diffBytesIncluded + diffReport.diffBytesOmitted).toBe(Buffer.byteLength(bigDiff));
+  });
+
+  test("a file that does not fit is omitted and every later file is omitted too, even a small one", () => {
+    const diff = fileDiff("app/a.js", DIFF_BYTE_BUDGET) + fileDiff("app/b.js", 10);
+    const capped = capDiff(diff);
+    expect(capped.text).toContain("diff --git a/app/a.js b/app/a.js\n[diff omitted:");
+    expect(capped.text).toContain("diff --git a/app/b.js b/app/b.js\n[diff omitted:");
+    expect(capped.bytesIncluded).toBe(0);
+  });
+
+  test("the prompt stays within the budget plus its fixed text", () => {
+    const { prompt } = buildPromptWithReport({ context, diff: bigDiff, changedFiles: names });
+    expect(Buffer.byteLength(prompt)).toBeLessThan(DIFF_BYTE_BUDGET + 30000);
+  });
+
+  test("the decision artifact records a truncated diff and its byte counts", () => {
+    const { diffReport } = buildPromptWithReport({ context, diff: bigDiff, changedFiles: names });
+    const answer = decideForContext({ context, claudeOutputRaw: "" });
+    const artifact = buildDecisionArtifact({ context, answer, diffReport });
+    expect(artifact.diffTruncated).toBe(true);
+    expect(artifact.diffBytesIncluded).toBe(diffReport.diffBytesIncluded);
+    expect(artifact.diffBytesOmitted).toBe(diffReport.diffBytesOmitted);
+  });
+
+  test("the decision artifact reports an untruncated diff when no report exists", () => {
+    const answer = decideForContext({ context, claudeOutputRaw: "" });
+    const artifact = buildDecisionArtifact({ context, answer });
+    expect(artifact.diffTruncated).toBe(false);
+    expect(artifact.diffBytesOmitted).toBeNull();
   });
 });

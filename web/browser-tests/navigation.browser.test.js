@@ -158,6 +158,8 @@ test.describe("Navigation Browser Tests", () => {
         waitUntil: "domcontentloaded",
       });
 
+      await page.addScriptTag({ content: fs.readFileSync(path.join(process.cwd(), "web/public/auth/login.page.js"), "utf-8") });
+
       // Click Google login button
       await page.click(".google-btn");
       await setTimeout(100);

@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { servePageScripts } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -30,6 +31,7 @@ test.describe("usage.html - ITSA year token cost summary", () => {
         await route.continue();
       }
     });
+    await servePageScripts(page);
 
     const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/">');
 

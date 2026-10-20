@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { servePageScripts } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -57,6 +58,7 @@ test.describe("VAT submission OAuth callback error persistence", () => {
         await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
       }
     });
+    await servePageScripts(page);
 
     await page.route("**/submit.css", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/css", body: "" });

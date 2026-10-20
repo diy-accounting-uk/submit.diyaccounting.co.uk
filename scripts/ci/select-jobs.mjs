@@ -42,6 +42,7 @@
 // default status check of success() is applied unless you include one of these functions.")
 
 import fs from "node:fs";
+import path from "node:path";
 
 // One entry per job in test.yml already gated by `needs.changes.outputs.code == 'true'`. The id
 // is the workflow's own YAML job key, so a decision names something the workflow can act on
@@ -230,12 +231,65 @@ export function limitDiff(diff, maxCharactersPerFile = 60000) {
     .join("");
 }
 
-export function buildPrompt({ context, diff, changedFiles, jobs = SKIPPABLE_JOBS }) {
+// Haiku 4.5 on Bedrock takes 200,000 tokens, and the Claude Code CLI adds its own system prompt
+// and tool definitions (about 20,000 tokens) before the stdin prompt. Code and minified text
+// tokenise at 2.5 to 4 bytes per token, so 300,000 bytes of diff is at most about 120,000 tokens:
+// together with the file list, job catalogue and instructions (about 15,000 bytes) it leaves
+// more than 50,000 tokens for the answer and the turns that read further. A 117-file, 880,000
+// byte diff overflowed the context with no cap.
+export const DIFF_BYTE_BUDGET = 300000;
+
+// The file the prompt command leaves beside the context file, and the decide command reads, so
+// the decision artifact can say that its decision rested on a partial diff.
+export const DIFF_REPORT_FILE = "diff-truncation.json";
+
+// Spends `budget` bytes on the per-file sections of `diff`, in diff order. A section that does
+// not fit, and every section after it, keeps its header line and a note of its size.
+export function capDiff(diff, budget = DIFF_BYTE_BUDGET) {
+  const empty = { text: diff || "", diffTruncated: false, bytesIncluded: 0, bytesOmitted: 0 };
+  if (!diff) return empty;
+  const totalBytes = Buffer.byteLength(diff);
+  if (totalBytes <= budget) return { ...empty, bytesIncluded: totalBytes };
+  let remaining = budget;
+  let bytesIncluded = 0;
+  let bytesOmitted = 0;
+  const text = diff
+    .split(/(?=^diff --git )/m)
+    .map((section) => {
+      const bytes = Buffer.byteLength(section);
+      if (bytes <= remaining) {
+        remaining -= bytes;
+        bytesIncluded += bytes;
+        return section;
+      }
+      remaining = 0;
+      bytesOmitted += bytes;
+      return `${section.split("\n")[0]}\n[diff omitted: ${bytes} bytes]\n`;
+    })
+    .join("");
+  return { text, diffTruncated: true, bytesIncluded, bytesOmitted };
+}
+
+export function buildPrompt(input) {
+  return buildPromptWithReport(input).prompt;
+}
+
+export function buildPromptWithReport({ context, diff, changedFiles, jobs = SKIPPABLE_JOBS, diffBudget = DIFF_BYTE_BUDGET }) {
+  const capped = capDiff(diff, diffBudget);
+  const diffReport = {
+    diffTruncated: capped.diffTruncated,
+    diffBytesIncluded: capped.bytesIncluded,
+    diffBytesOmitted: capped.bytesOmitted,
+  };
+  const truncationNote = capped.diffTruncated
+    ? `\nThe diff was cut to fit: ${capped.bytesIncluded} bytes are included and ${capped.bytesOmitted} bytes are omitted. A file marked "[diff omitted]" did change; judge it from its name in the list above.\n`
+    : "";
   const jobList = jobs.map((job) => `- ${job.id}: ${job.description}`).join("\n");
   const changedFilesList =
     changedFiles.length > 0 ? changedFiles.map((f) => `- ${f}`).join("\n") : "(none listed - judge from the diff below)";
-  const diffBlock = diff && diff.trim().length > 0 ? diff : "(no diff available - treat every job as still needing to run)";
-  return `You are deciding which of this workflow's jobs listed below can be skipped for this run
+  const diffBlock =
+    capped.text && capped.text.trim().length > 0 ? capped.text : "(no diff available - treat every job as still needing to run)";
+  const prompt = `You are deciding which of this workflow's jobs listed below can be skipped for this run
 because this change has nothing left for them to prove. Skipping a job here means it has nothing
 this change could have broken; it never means the job is unimportant. When genuinely unsure, do
 not skip.
@@ -246,7 +300,7 @@ ${JSON.stringify(context, null, 2)}
 ## Changed files
 ${changedFilesList}
 
-## Diff since the last green run of this workflow on this branch
+## Diff since the last green run of this workflow on this branch${truncationNote}
 \`\`\`diff
 ${diffBlock}
 \`\`\`
@@ -262,6 +316,7 @@ Answer with ONLY a JSON object, no prose outside it, shaped exactly like:
 
 Include one decision per job in the list above. A job you do not mention is treated as not
 skipped. Return the bare JSON object with no markdown code fence.`;
+  return { prompt, diffReport };
 }
 
 function stripMarkdownCodeFence(str) {
@@ -356,8 +411,11 @@ export function decideForContext({ context, claudeOutputRaw, knownJobIds = SKIPP
   return { ...answer, reason: null, mode: resolvedMode, enforcedSkip };
 }
 
-export function buildDecisionArtifact({ modelId, promptHash, catalogue, context, answer }) {
+export function buildDecisionArtifact({ modelId, promptHash, catalogue, context, answer, diffReport }) {
   return {
+    diffTruncated: diffReport ? diffReport.diffTruncated === true : false,
+    diffBytesIncluded: diffReport ? diffReport.diffBytesIncluded : null,
+    diffBytesOmitted: diffReport ? diffReport.diffBytesOmitted : null,
     modelId: modelId || null,
     promptHash: promptHash || null,
     catalogue: catalogue || null,
@@ -407,7 +465,9 @@ function runPrompt(opts) {
           .filter(Boolean)
       : [];
   const catalogue = resolveCatalogue(opts.catalogue);
-  process.stdout.write(buildPrompt({ context, diff, changedFiles, jobs: JOB_CATALOGUES[catalogue] }));
+  const { prompt, diffReport } = buildPromptWithReport({ context, diff, changedFiles, jobs: JOB_CATALOGUES[catalogue] });
+  if (opts.context) fs.writeFileSync(path.join(path.dirname(opts.context), DIFF_REPORT_FILE), JSON.stringify(diffReport));
+  process.stdout.write(prompt);
 }
 
 function runDecide(opts) {
@@ -422,7 +482,9 @@ function runDecide(opts) {
     knownJobIds: JOB_ID_CATALOGUES[catalogue],
     mode: opts.mode,
   });
+  const diffReport = opts.context ? readJson(path.join(path.dirname(opts.context), DIFF_REPORT_FILE), null) : null;
   const artifact = buildDecisionArtifact({
+    diffReport,
     modelId: opts["model-id"],
     promptHash: opts["prompt-hash"],
     catalogue,

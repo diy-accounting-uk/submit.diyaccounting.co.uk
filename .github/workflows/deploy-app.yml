@@ -672,6 +672,7 @@ jobs:
               "/submit.css" "/submit.deployment-name.txt" "/submit.env" \
               "/submit.environment-name.txt" "/submit.js" "/submit.version.txt" \
               "/terms.html" "/site.webmanifest" "/developer-mode.js" \
+              "/about.page.js" "/bundles.page.js" "/diy-accounting-spreadsheets.page.js" "/guide.page.js" "/index.banner-hold.page.js" "/index.page.js" "/spreadsheets.page.js" "/usage.page.js" "/videos.page.js" "/videos-account.page.js" "/videos-accounting.page.js" "/videos-ch.page.js" "/videos-hmrc-itsa.page.js" "/videos-hmrc-vat.page.js" \
             --region us-east-1 \
             --query 'Invalidation.Id' --output text)
           echo "Invalidation created: ${INVALIDATION_ID}"

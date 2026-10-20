@@ -321,8 +321,8 @@
         <h2>Ready to Submit Your VAT Return?</h2>
         <p>Log in with your Google account to get started. You'll need your Government Gateway credentials when authorising with HMRC.</p>
         <div class="button-group">
-          <button type="button" class="btn" onclick="window.location.href = './'">Get Started</button>
-          <button type="button" class="btn btn-secondary" onclick="window.location.href = 'guide.html'">Read the Guide</button>
+          <button type="button" class="btn" id="getStartedBtn">Get Started</button>
+          <button type="button" class="btn btn-secondary" id="readGuideBtn">Read the Guide</button>
           <a class="btn btn-secondary" href="videos.html">Watch the walkthroughs</a>
         </div>
       </section>
@@ -346,34 +346,6 @@
     <script src="widgets/entitlement-status.js"></script>
     <script src="widgets/auth-status.js"></script>
     <script type="module" src="widgets/view-source-link.js"></script>
-    <script>
-      // Lightbox functionality for feature card images
-      (function () {
-        const lightbox = document.getElementById("lightbox");
-        const lightboxImg = document.getElementById("lightbox-image");
-        const featureImages = document.querySelectorAll(".feature-card img");
-
-        featureImages.forEach((img) => {
-          img.addEventListener("click", function () {
-            lightboxImg.src = this.src;
-            lightboxImg.alt = this.alt;
-            lightbox.classList.add("active");
-            document.body.style.overflow = "hidden";
-          });
-        });
-
-        lightbox.addEventListener("click", function () {
-          lightbox.classList.remove("active");
-          document.body.style.overflow = "";
-        });
-
-        document.addEventListener("keydown", function (e) {
-          if (e.key === "Escape" && lightbox.classList.contains("active")) {
-            lightbox.classList.remove("active");
-            document.body.style.overflow = "";
-          }
-        });
-      })();
-    </script>
+    <script src="about.page.js"></script>
   </body>
 </html>

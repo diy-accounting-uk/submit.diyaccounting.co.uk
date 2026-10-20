@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { servePageScripts } from "./hmrcFieldTableAssets.js";
 import { OBJECTIVE_DEFINITIONS } from "@app/functions/analytics/operatorSnapshotPublish.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -330,6 +331,7 @@ test.describe("Operator Dashboard", () => {
     await page.route("**/*.js", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
     });
+    await servePageScripts(page);
     await page.route("**/widgets/page-chrome.js*", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: pageChromeJsContent });
     });
