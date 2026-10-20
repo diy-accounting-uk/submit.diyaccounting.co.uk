@@ -32,6 +32,13 @@ function getTestDataBaseUri() {
   return process.env.COMPANIES_HOUSE_TEST_DATA_BASE_URI || DEFAULT_TEST_DATA_BASE_URI;
 }
 
+// The generator takes the sandbox REST key the way the REST API does: HTTP Basic, the key as the
+// user name and an empty password. It answers 401 "Empty Authorization header" to any other form.
+function testDataHeaders(apiKey) {
+  const basic = Buffer.from(`${apiKey}:`).toString("base64");
+  return { "Authorization": `Basic ${basic}`, "Content-Type": "application/json", "Accept": "application/json" };
+}
+
 export async function createTestCompany(apiKey, { baseUri = getTestDataBaseUri() } = {}) {
   if (!apiKey) {
     throw new Error("Missing COMPANIES_HOUSE_API_KEY");
@@ -40,7 +47,7 @@ export async function createTestCompany(apiKey, { baseUri = getTestDataBaseUri()
   const url = `${baseUri}/test-data/company`;
   const response = await fetch(url, {
     method: "POST",
-    headers: { "api_key": apiKey, "Content-Type": "application/json", "Accept": "application/json" },
+    headers: testDataHeaders(apiKey),
     body: JSON.stringify({}),
   });
 
@@ -71,7 +78,7 @@ export async function deleteTestCompany(apiKey, companyNumber, authCode, { baseU
   const url = `${baseUri}/test-data/company/${companyNumber}`;
   const response = await fetch(url, {
     method: "DELETE",
-    headers: { "api_key": apiKey, "Content-Type": "application/json", "Accept": "application/json" },
+    headers: testDataHeaders(apiKey),
     body: JSON.stringify({ auth_code: authCode }),
   });
 
