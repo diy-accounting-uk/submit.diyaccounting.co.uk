@@ -9,7 +9,14 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveHmrcFieldTableAssets, serveSiteStyles, screenshotPath, expectCleanFigures } from "./hmrcFieldTableAssets.js";
+import {
+  serveHmrcFieldTableAssets,
+  servePageScripts,
+  serveCarriedIdentifiers,
+  serveSiteStyles,
+  screenshotPath,
+  expectCleanFigures,
+} from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -227,6 +234,8 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
       }
     });
     await serveHmrcFieldTableAssets(page);
+    await servePageScripts(page);
+    await serveCarriedIdentifiers(page);
     await page.setViewportSize({ width: 1280, height: 900 });
 
     const html = viewVatReturnHtmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/vat/">').replace(

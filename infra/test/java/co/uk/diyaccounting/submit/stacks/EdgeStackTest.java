@@ -140,6 +140,22 @@ class EdgeStackTest {
     }
 
     @Test
+    void contentSecurityPolicyScriptSrcCarriesNoUnsafeInline() {
+        String templateJson = Template.fromStack(synthEdgeStack()).toJSON().toString();
+        java.util.regex.Matcher matcher =
+                java.util.regex.Pattern.compile("script-src [^;]*;").matcher(templateJson);
+        int policies = 0;
+        while (matcher.find()) {
+            if (!matcher.group().contains("'self'")) {
+                continue;
+            }
+            policies++;
+            assertFalse(matcher.group().contains("'unsafe-inline'"), matcher.group());
+        }
+        assertTrue(policies >= 3, "expected the three response headers policies, found " + policies);
+    }
+
+    @Test
     void contentSecurityPolicyAllowsGoogleDrivePickerAndTokenClient() {
         String templateJson = Template.fromStack(synthEdgeStack()).toJSON().toString();
         String[][] required = {

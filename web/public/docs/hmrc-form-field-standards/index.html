@@ -50,7 +50,7 @@
         </table>
       </div>
 
-      <form class="demo-form" onsubmit="return validateVAT(event)">
+      <form class="demo-form" id="form-vat">
         <div class="form-group" id="vat-form-group">
           <label class="form-label" for="vat-registration-number">
             VAT registration number
@@ -68,7 +68,7 @@
           >
         </div>
         <button type="submit" class="button">Validate</button>
-        <button type="button" class="button button--secondary" onclick="showError('vat')">Show Error State</button>
+        <button type="button" class="button button--secondary" id="show-error-vat">Show Error State</button>
       </form>
 
       <div class="code-block">
@@ -103,7 +103,7 @@
         </table>
       </div>
 
-      <form class="demo-form" onsubmit="return validateUTR(event)">
+      <form class="demo-form" id="form-utr">
         <div class="form-group" id="utr-form-group">
           <label class="form-label" for="utr">
             Self Assessment Unique Taxpayer Reference (UTR)
@@ -122,7 +122,7 @@
           >
         </div>
         <button type="submit" class="button">Validate</button>
-        <button type="button" class="button button--secondary" onclick="showError('utr')">Show Error State</button>
+        <button type="button" class="button button--secondary" id="show-error-utr">Show Error State</button>
       </form>
 
       <div class="code-block">
@@ -152,7 +152,7 @@
         <p class="warning">⚠️ Never use "AB 12 34 56 C" as an example — this belongs to a real person.</p>
       </div>
 
-      <form class="demo-form" onsubmit="return validateNINO(event)">
+      <form class="demo-form" id="form-nino">
         <div class="form-group" id="nino-form-group">
           <label class="form-label" for="national-insurance-number">
             National Insurance number
@@ -171,7 +171,7 @@
           >
         </div>
         <button type="submit" class="button">Validate</button>
-        <button type="button" class="button button--secondary" onclick="showError('nino')">Show Error State</button>
+        <button type="button" class="button button--secondary" id="show-error-nino">Show Error State</button>
       </form>
     </section>
 
@@ -186,7 +186,7 @@
         </table>
       </div>
 
-      <form class="demo-form" onsubmit="return validatePAYE(event)">
+      <form class="demo-form" id="form-paye">
         <div class="form-group" id="paye-form-group">
           <label class="form-label" for="employer-paye-reference">
             Employer PAYE reference
@@ -219,7 +219,7 @@
         </table>
       </div>
 
-      <form class="demo-form" onsubmit="return validateAccountsRef(event)">
+      <form class="demo-form" id="form-accounts-ref">
         <div class="form-group" id="accounts-form-group">
           <label class="form-label" for="accounts-office-reference">
             Accounts Office reference
@@ -253,7 +253,7 @@
         </table>
       </div>
 
-      <form class="demo-form" onsubmit="return validateEORI(event)">
+      <form class="demo-form" id="form-eori">
         <div class="form-group" id="eori-form-group">
           <label class="form-label" for="eori-number">
             EORI number
@@ -285,7 +285,7 @@
         </table>
       </div>
 
-      <form class="demo-form" onsubmit="return validateCurrency(event)">
+      <form class="demo-form" id="form-currency">
         <div class="form-group" id="currency-form-group">
           <label class="form-label" for="amount">
             How much did you pay?
@@ -401,7 +401,7 @@
         <p>Use three separate fields for memorable dates. This is more accessible and works better across devices than date pickers.</p>
       </div>
 
-      <form class="demo-form" onsubmit="return validateDate(event)">
+      <form class="demo-form" id="form-date">
         <fieldset class="form-fieldset" id="date-form-group">
           <legend class="form-legend">Date of birth</legend>
           <p id="dob-hint" class="form-hint">For example, 31 3 1980</p>
@@ -492,5 +492,6 @@
   </footer>
 
   <script src="validation.js"></script>
+  <script src="index.page.js"></script>
 </body>
 </html>

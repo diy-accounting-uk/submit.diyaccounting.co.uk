@@ -4,6 +4,7 @@
 // web/browser-tests/changeRegisteredOffice.browser.test.js
 
 import { test, expect } from "@playwright/test";
+import { servePageScripts } from "./hmrcFieldTableAssets.js";
 import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
@@ -114,6 +115,7 @@ test.describe("Change Registered Office Address page", () => {
     await page.route("**/*.js", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
     });
+    await servePageScripts(page);
   }
 
   async function loadPage(page) {
