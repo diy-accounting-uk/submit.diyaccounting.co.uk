@@ -91,8 +91,8 @@ The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarde
 - B34f: on main (PR #469 the build, PR #488 the harness case, PR #490 the share-class contexts); proven on the test service (run 38069747950: acknowledged at submit, PENDING on every poll)
 - B34e: on main (PR #471), with B34e2's validator fix
 - B34g1: ready (B34e's full accounts are on main); its ETS proof waits on O34g
-- B34g2a: ready (NEXT.md); the journey built on the simulator
-- B34g2b: blocked by B34g2a, B34g1 and O34g; the ETS filing from the page
+- B34g2a: on main (PR #511); the journey built and proven on the simulator, listed on ci and the local lanes
+- B34g2b: blocked by B34g1 and O34g; the ETS filing from the page
 
 ## Operator dates
 
@@ -517,8 +517,8 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 | CS-P1 | Filing under a customer's own presenter: the page option, storing no credentials, the credit-account explanation, skipping the Stripe checkout at the existing fee gate | ~5 | Sonnet | CS-11b | Blocked |
 | B34f | The dormant accounts case in the test-service harness; on main (PR #488, PR #490); proven on the test service (run 38069747950) | ~2 | Sonnet | — | — |
 | B34g1 | The ETS proof: the TPVS-proven return through `buildCt600SubmissionRequest` with the SDST test credentials and vendor ID, polled and deleted | ~1 | Sonnet | O34g | Blocked |
-| B34g2a | The CT600 filing journey on the simulator: Lambdas, page, activity, receipts, per the B34h design (NEXT.md B34g2a) | ~14 | Sonnet | — | Machine-only |
-| B34g2b | One ETS filing from the page, polled and deleted; then `prod` on the activity (NEXT.md B34g2b) | ~2 | Sonnet | B34g2a, B34g1, O34g | Blocked |
+| B34g2a | The CT600 filing journey on the simulator: Lambdas, page, activity, receipts, per the B34h design | ~14 | Sonnet | — | On main (PR #511) |
+| B34g2b | One ETS filing from the page, polled and deleted; then `prod` on the activity (NEXT.md B34g2b) | ~2 | Sonnet | B34g1, O34g | Blocked |
 
 
 ## Task detail
