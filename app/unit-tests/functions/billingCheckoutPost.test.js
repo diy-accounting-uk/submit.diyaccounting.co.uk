@@ -122,6 +122,7 @@ describe("billingCheckoutPost", () => {
   test("puts the whitelisted acquisition fields into the session metadata, trimmed and capped", async () => {
     const acquisition = {
       gclid: "  abc123  ",
+      msclkid: "  bing456  ",
       utmSource: "google",
       utmMedium: "cpc",
       utmCampaign: "c".repeat(500),
@@ -138,6 +139,7 @@ describe("billingCheckoutPost", () => {
       hashedSub: params.metadata.hashedSub,
       bundleId: "resident-pro",
       acq_gclid: "abc123",
+      acq_msclkid: "bing456",
       acq_utmSource: "google",
       acq_utmMedium: "cpc",
       acq_utmCampaign: "c".repeat(200),

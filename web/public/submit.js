@@ -131,7 +131,7 @@ function hasConsentChoice() {
 function isPaidVisit() {
   try {
     const params = new URLSearchParams(window.location.search);
-    if (params.has("gclid")) return true;
+    if (params.has("gclid") || params.has("msclkid")) return true;
     return Array.from(params.keys()).some((name) => name.startsWith("utm_"));
   } catch (error) {
     console.warn("Failed to read the URL for a paid visit:", error);

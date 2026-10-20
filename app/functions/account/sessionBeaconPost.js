@@ -14,7 +14,7 @@ const logger = createLogger({ source: "app/functions/account/sessionBeaconPost.j
 // Landing-attribution fields session-beacon.js carries from analytics.js's localStorage
 // capture. The beacon is sent only after consent, and carries them when the browser still
 // holds a valid stored landing.
-const ATTRIBUTION_DETAIL_KEYS = ["utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm", "gclid", "ref", "landedAt"];
+const ATTRIBUTION_DETAIL_KEYS = ["utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm", "gclid", "msclkid", "ref", "landedAt"];
 
 function extractAttribution(body) {
   const attribution = {};

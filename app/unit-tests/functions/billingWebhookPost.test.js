@@ -808,6 +808,7 @@ describe("billingWebhookPost", () => {
         hashedSub: "hashed_sub_value",
         bundleId: "resident-pro",
         acq_gclid: "abc123",
+        acq_msclkid: "bing456",
         acq_utmSource: "google",
         acq_landedAt: "2026-01-01T00:00:00.000Z",
         acq_unknownField: "ignored",
@@ -818,7 +819,7 @@ describe("billingWebhookPost", () => {
     await ingestHandler(buildWebhookEvent(checkoutPayload));
 
     const [, bundle] = mockPutBundleByHashedSub.mock.calls[0];
-    expect(bundle.acquisition).toEqual({ gclid: "abc123", utmSource: "google", landedAt: "2026-01-01T00:00:00.000Z" });
+    expect(bundle.acquisition).toEqual({ gclid: "abc123", msclkid: "bing456", utmSource: "google", landedAt: "2026-01-01T00:00:00.000Z" });
   });
 
   test("checkout.session.completed without acquisition metadata leaves the paid bundle untagged", async () => {

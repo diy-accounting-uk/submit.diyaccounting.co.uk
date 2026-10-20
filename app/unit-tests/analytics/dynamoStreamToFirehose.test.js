@@ -124,6 +124,7 @@ describe("projectFields whitelists", () => {
       acq_utm_content: null,
       acq_utm_term: null,
       acq_gclid: null,
+      acq_msclkid: null,
       acq_ref: null,
       acq_landed_at: null,
     });
@@ -142,6 +143,7 @@ describe("projectFields whitelists", () => {
         utmContent: "ad-1",
         utmTerm: "vat software",
         gclid: "g123",
+        msclkid: "m456",
         ref: "friend",
         landedAt: "2026-09-01T10:00:00.000Z",
         email: "leak@example.com",
@@ -155,6 +157,7 @@ describe("projectFields whitelists", () => {
       acq_utm_content: "ad-1",
       acq_utm_term: "vat software",
       acq_gclid: "g123",
+      acq_msclkid: "m456",
       acq_ref: "friend",
       acq_landed_at: "2026-09-01T10:00:00.000Z",
     });

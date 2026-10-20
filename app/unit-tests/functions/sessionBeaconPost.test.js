@@ -87,6 +87,7 @@ describe("sessionBeaconPost ingestHandler", () => {
         utmContent: "banner",
         utmTerm: "vat return",
         gclid: "abc123",
+        msclkid: "bing456",
         ref: "partner-42",
         landedAt: "2026-01-01T00:00:00.000Z",
       }),
@@ -99,6 +100,7 @@ describe("sessionBeaconPost ingestHandler", () => {
       utmContent: "banner",
       utmTerm: "vat return",
       gclid: "abc123",
+      msclkid: "bing456",
       ref: "partner-42",
       landedAt: "2026-01-01T00:00:00.000Z",
     });
@@ -110,6 +112,7 @@ describe("sessionBeaconPost ingestHandler", () => {
     const detail = mockPublishActivityEvent.mock.calls[0][0].detail;
     expect(detail.utmSource).toBeUndefined();
     expect(detail.gclid).toBeUndefined();
+    expect(detail.msclkid).toBeUndefined();
     expect(detail.ref).toBeUndefined();
     expect(detail.landedAt).toBeUndefined();
   });

@@ -487,7 +487,7 @@ describe("bundlePost ingestHandler", () => {
     const token = makeIdToken("user-first-acquisition");
     const event = buildEventWithToken(token, {
       bundleId: "day-guest",
-      acquisition: { utmSource: "google", utmMedium: "cpc", gclid: "abc123", landedAt: "2026-01-01T00:00:00.000Z" },
+      acquisition: { utmSource: "google", utmMedium: "cpc", gclid: "abc123", msclkid: "bing456", landedAt: "2026-01-01T00:00:00.000Z" },
     });
     event.headers["x-wait-time-ms"] = "30000";
 
@@ -500,6 +500,7 @@ describe("bundlePost ingestHandler", () => {
       utmSource: "google",
       utmMedium: "cpc",
       gclid: "abc123",
+      msclkid: "bing456",
       landedAt: "2026-01-01T00:00:00.000Z",
     });
   });

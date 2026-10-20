@@ -9,16 +9,17 @@
 -- dynamo_subscriptions subscription_id, which carries the hashed_sub that dynamo_bundles keys
 -- its acquisition columns on. dynamo_bundles holds one change record per write, and the bundle
 -- that carried the acquisition (a day pass) is not the paid bundle, so acquisition joins on
--- hashed_sub alone: the earliest record naming a source (utm_source, gclid or ref) wins, and a
+-- hashed_sub alone: the earliest record naming a source (utm_source, gclid, msclkid or ref) wins, and a
 -- landing-time-only record names none. Accounts with no sourced record report source 'unknown'.
 CREATE OR REPLACE VIEW v_paid_subscribers_by_channel AS
 WITH acquisition AS (
   SELECT hashed_sub,
          min_by(acq_utm_source, change_ts) AS utm_source,
          min_by(acq_gclid, change_ts)      AS gclid,
+         min_by(acq_msclkid, change_ts)    AS msclkid,
          min_by(acq_ref, change_ts)        AS ref
   FROM   dynamo_bundles
-  WHERE  acq_utm_source IS NOT NULL OR acq_gclid IS NOT NULL OR acq_ref IS NOT NULL
+  WHERE  acq_utm_source IS NOT NULL OR acq_gclid IS NOT NULL OR acq_msclkid IS NOT NULL OR acq_ref IS NOT NULL
   GROUP  BY hashed_sub),
 subscription_owner AS (
   SELECT subscription_id, arbitrary(hashed_sub) AS hashed_sub
@@ -46,6 +47,7 @@ paid_charges AS (
 SELECT date(c.month) AS month,
        coalesce(a.utm_source,
                 CASE WHEN a.gclid IS NOT NULL THEN 'google-ads'
+                     WHEN a.msclkid IS NOT NULL THEN 'bing-ads'
                      WHEN a.ref IS NOT NULL THEN 'ref:' || a.ref END,
                 'unknown') AS source,
        c.bundle_id,

@@ -59,6 +59,7 @@ function projectBundle(image) {
     acq_utm_content: acquisition.utmContent ?? null,
     acq_utm_term: acquisition.utmTerm ?? null,
     acq_gclid: acquisition.gclid ?? null,
+    acq_msclkid: acquisition.msclkid ?? null,
     acq_ref: acquisition.ref ?? null,
     acq_landed_at: acquisition.landedAt ?? null,
   };
