@@ -136,6 +136,8 @@ export default [
         checkAuthStatus: "readonly",
         updateLoginStatus: "readonly",
         formatGbp: "readonly",
+        formatGbpWhole: "readonly",
+        submitVat: "readonly",
         QRCode: "readonly",
         SwaggerUIBundle: "readonly",
         SwaggerUIStandalonePreset: "readonly",

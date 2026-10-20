@@ -1,0 +1,307 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
+function getIdToken() {
+  return localStorage.getItem("cognitoIdToken");
+}
+
+async function fetchReceipts() {
+  const idToken = getIdToken();
+  const unauthHint = document.getElementById("unauthenticatedHint");
+  const exportControls = document.getElementById("exportControls");
+  const table = document.getElementById("receiptsTable");
+  const tbody = table.querySelector("tbody");
+  const empty = document.getElementById("emptyState");
+
+  if (!idToken) {
+    unauthHint.style.display = "block";
+    exportControls.style.display = "none";
+    table.style.display = "none";
+    empty.style.display = "none";
+    return;
+  }
+
+  unauthHint.style.display = "none";
+
+  const res = await window.fetchWithIdToken("/api/v1/hmrc/receipt", {});
+  if (!res.ok) {
+    tbody.innerHTML = "";
+    table.style.display = "none";
+    empty.textContent = "Failed to load receipts";
+    empty.style.display = "block";
+    exportControls.style.display = "none";
+    return;
+  }
+  const json = await res.json();
+  const items = Array.isArray(json.receipts) ? json.receipts : [];
+  tbody.innerHTML = "";
+  if (items.length === 0) {
+    table.style.display = "none";
+    empty.textContent = "No receipts yet.";
+    empty.style.display = "block";
+    exportControls.style.display = "none";
+  } else {
+    empty.style.display = "none";
+    table.style.display = "table";
+    exportControls.style.display = "block";
+    for (const it of items) {
+      const tr = document.createElement("tr");
+
+      // Date cell
+      const date = new Date(it.timestamp);
+      const dateCell = document.createElement("td");
+      dateCell.textContent = isNaN(date.getTime()) ? it.timestamp : date.toLocaleString("en-GB");
+
+      // Receipt cell with clickable label and download icon
+      const receiptCell = document.createElement("td");
+      const receiptLabel = document.createElement("a");
+      receiptLabel.className = "receipt-label";
+      receiptLabel.href = "#";
+      receiptLabel.textContent = it.formBundleNumber || it.name || "Unknown";
+      receiptLabel.onclick = (e) => {
+        e.preventDefault();
+        viewReceipt(it.name);
+      };
+
+      const downloadIcon = document.createElement("a");
+      downloadIcon.className = "download-icon";
+      downloadIcon.href = "#";
+      downloadIcon.innerHTML = "⬇";
+      downloadIcon.title = "Download receipt";
+      downloadIcon.onclick = (e) => {
+        e.preventDefault();
+        downloadReceipt(it.name);
+      };
+
+      receiptCell.appendChild(receiptLabel);
+      receiptCell.appendChild(downloadIcon);
+
+      // Size cell
+      const sizeCell = document.createElement("td");
+      sizeCell.textContent = typeof it.size === "number" ? `${it.size} bytes` : "";
+
+      tr.appendChild(dateCell);
+      tr.appendChild(receiptCell);
+      tr.appendChild(sizeCell);
+      tbody.appendChild(tr);
+    }
+  }
+}
+
+async function viewReceipt(name) {
+  const res = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}`, {});
+  if (!res.ok) return alert("Failed to fetch receipt");
+  const text = await res.text();
+
+  try {
+    const receiptData = JSON.parse(text);
+    displayReceiptTable(receiptData, name);
+  } catch (e) {
+    // If not JSON, display as text
+    displayReceiptTable({ content: text }, name);
+  }
+}
+
+const RECEIPT_FIELD_NAMES = {
+  processingDate: "Processing date",
+  paymentIndicator: "Payment indicator",
+  formBundleNumber: "Form bundle number",
+  chargeRefNumber: "Charge reference number",
+  periodId: "Period ID",
+  calculationId: "Calculation ID",
+  correlationId: "Correlation ID",
+  taxYear: "Tax year",
+  periodStartDate: "Start date",
+  periodEndDate: "End date",
+  href: "Link",
+  rel: "Relation",
+};
+
+function receiptFieldName(key) {
+  if (RECEIPT_FIELD_NAMES[key]) return RECEIPT_FIELD_NAMES[key];
+  const words = key
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim()
+    .toLowerCase();
+  return words.charAt(0).toUpperCase() + words.slice(1);
+}
+
+// One entry per leaf value. Nested objects and arrays become "Parent: field" names.
+function flattenReceipt(value, path, labelPrefix, entries) {
+  if (Array.isArray(value)) {
+    value.forEach((item, index) => {
+      flattenReceipt(item, `${path}.${index}`, `${labelPrefix} ${index + 1}`, entries);
+    });
+  } else if (value && typeof value === "object") {
+    for (const [key, child] of Object.entries(value)) {
+      const label = receiptFieldName(key);
+      flattenReceipt(child, path ? `${path}.${key}` : key, labelPrefix ? `${labelPrefix}: ${label.toLowerCase()}` : label, entries);
+    }
+  } else {
+    entries.push({ field: path, label: labelPrefix, value });
+  }
+}
+
+function receiptRows(data) {
+  const entries = [];
+  if (Array.isArray(data)) {
+    flattenReceipt(data, "receipt", "Item", entries);
+  } else {
+    flattenReceipt(data, "", "", entries);
+  }
+  return entries;
+}
+
+function isHttpUrl(value) {
+  try {
+    const protocol = new URL(value).protocol;
+    return protocol === "https:" || protocol === "http:";
+  } catch {
+    return false;
+  }
+}
+
+function displayAssistMessages(container, messages, acknowledgedAt) {
+  container.replaceChildren();
+  if (!messages) return;
+  const section = document.createElement("section");
+  section.className = "assist-messages-section";
+
+  const heading = document.createElement("h4");
+  heading.textContent = "HMRC feedback";
+  section.appendChild(heading);
+
+  const status = document.createElement("p");
+  status.className = "assist-acknowledgement";
+  status.textContent = acknowledgedAt
+    ? `Acknowledged to HMRC on ${new Date(acknowledgedAt).toLocaleString("en-GB")}`
+    : "Not acknowledged to HMRC";
+  section.appendChild(status);
+
+  const messagesList = document.createElement("ol");
+  messagesList.className = "assist-messages-list";
+
+  for (const message of messages) {
+    const li = document.createElement("li");
+    li.className = "assist-message";
+
+    const title = document.createElement("strong");
+    title.textContent = message.title;
+    li.appendChild(title);
+
+    const body = document.createElement("p");
+    body.className = "assist-message-body";
+    body.textContent = message.body;
+    li.appendChild(body);
+
+    if (message.links && Array.isArray(message.links) && message.links.length > 0) {
+      const linksSection = document.createElement("div");
+      linksSection.className = "assist-message-links";
+      for (const link of message.links.filter((candidate) => isHttpUrl(candidate.url))) {
+        const a = document.createElement("a");
+        a.href = link.url;
+        a.target = "_blank";
+        a.rel = "noopener noreferrer";
+        a.className = "assist-message-link";
+        a.textContent = link.title;
+        linksSection.appendChild(a);
+      }
+      li.appendChild(linksSection);
+    }
+
+    if (message.path) {
+      const pathDiv = document.createElement("div");
+      pathDiv.className = "assist-message-path";
+      const pathLabel = document.createElement("em");
+      pathLabel.textContent = `Related to: ${message.path}`;
+      pathDiv.appendChild(pathLabel);
+      li.appendChild(pathDiv);
+    }
+
+    messagesList.appendChild(li);
+  }
+
+  section.appendChild(messagesList);
+  container.appendChild(section);
+}
+
+function displayReceiptTable(data, name) {
+  const receiptDisplay = document.getElementById("receiptDisplay");
+  const receiptContent = document.getElementById("receiptContent");
+
+  const isAssistReport = data && (data.kind === "vat-assist-report" || data.kind === "itsa-assist-report");
+  const hasMessages = isAssistReport && Array.isArray(data.messages) && data.messages.length > 0;
+  displayAssistMessages(document.getElementById("assistMessages"), hasMessages ? data.messages : null, data?.acknowledgedAt);
+
+  let dataToDisplay = data;
+  if (isAssistReport) {
+    const { messages, ...rest } = data;
+    dataToDisplay = rest;
+  }
+
+  const vatBoxes = Object.fromEntries(HmrcFieldTable.VAT_RETURN_BOXES.map((box) => [box.field, box]));
+  const dataRows = receiptRows(dataToDisplay).map((entry) => {
+    const isAmount = typeof entry.value === "number" && Number.isFinite(entry.value);
+    const box = vatBoxes[entry.field];
+    const row = { ...entry, kind: isAmount ? "money" : "text" };
+    return box ? { ...row, label: box.label, definition: box.definition, source: box.source } : row;
+  });
+  const rows = [{ field: "receiptName", label: "Receipt name", value: name, kind: "text" }, ...dataRows];
+
+  HmrcFieldTable.mountFieldTable(receiptContent, rows, { caption: "Receipt details" });
+
+  receiptDisplay.style.display = "block";
+  receiptDisplay.scrollIntoView({ behavior: "smooth" });
+}
+
+async function downloadReceipt(name) {
+  const res = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}`, {});
+  if (!res.ok) return alert("Failed to download receipt");
+  const blob = new Blob([await res.text()], { type: "application/json" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+function exportCsv(rows) {
+  const header = ["Date", "Form bundle", "Size"];
+  const lines = [header.join(",")];
+  for (const r of rows) lines.push(r.join(","));
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "receipts.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+document.getElementById("exportCsvBtn").addEventListener("click", async () => {
+  const res = await window.fetchWithIdToken("/api/v1/hmrc/receipt", {});
+  if (!res.ok) return alert("Failed to export CSV");
+  const json = await res.json();
+  const items = Array.isArray(json.receipts) ? json.receipts : [];
+  const rows = items.map((it) => [it.timestamp, it.formBundleNumber || "", it.size || ""]);
+  exportCsv(rows);
+});
+
+// Auto-refresh on page focus
+window.addEventListener("focus", () => {
+  fetchReceipts();
+});
+
+// Initialize page - wait for submit.js module to be ready
+function initPage() {
+  checkAuthStatus();
+  fetchReceipts();
+}
+
+if (window.__submitReady__) {
+  initPage();
+} else {
+  document.addEventListener("submit-ready", initPage, { once: true });
+}

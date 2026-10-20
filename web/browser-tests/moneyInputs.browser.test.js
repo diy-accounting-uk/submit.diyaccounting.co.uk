@@ -7,7 +7,7 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveMoneyInput } from "./hmrcFieldTableAssets.js";
+import { serveMoneyInput, servePageScripts } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -39,6 +39,7 @@ async function openPage(page, relativePath) {
     }
   });
   await serveMoneyInput(page);
+  if (relativePath === SHARE_CURRENCY_PAGE) await servePageScripts(page);
   const html = fs.readFileSync(path.join(process.cwd(), "web/public", relativePath), "utf-8");
   await page.route(url, async (route) => {
     await route.fulfill({ status: 200, contentType: "text/html", body: html });

@@ -8,8 +8,30 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { serveCarriedIdentifiers, servePageScripts } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
+
+// Loads the page through a real navigation so its page script runs as it does in the site: every
+// script is stubbed except the page script and the libraries it calls while it loads.
+async function openVatPage(page, htmlName, htmlContent, testDataGeneratorContent) {
+  const url = `http://localhost:3000/hmrc/vat/${htmlName}`;
+  await page.route("**/*.js", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+  });
+  await servePageScripts(page);
+  await serveCarriedIdentifiers(page);
+  await page.route("**/lib/test-data-generator.js", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/javascript", body: testDataGeneratorContent });
+  });
+  await page.addInitScript(() => {
+    window.booksImport = { mount() {} };
+  });
+  await page.route(url, async (route) => {
+    await route.fulfill({ status: 200, contentType: "text/html", body: htmlContent });
+  });
+  await page.goto(url, { waitUntil: "domcontentloaded" });
+}
 
 test.describe("Test Data Link Browser Tests", () => {
   let submitVatHtmlContent;
@@ -72,13 +94,7 @@ test.describe("Test Data Link Browser Tests", () => {
 
     test("should populate form when test data link is clicked", async ({ page }) => {
       // Set the page content with synthetic mode
-      await page.setContent(submitVatHtmlContent, {
-        baseURL: "http://localhost:3000/hmrc/vat/submitVat.html",
-        waitUntil: "domcontentloaded",
-      });
-
-      // Load the test data generator script
-      await page.addScriptTag({ content: testDataGeneratorContent });
+      await openVatPage(page, "submitVat.html", submitVatHtmlContent, testDataGeneratorContent);
 
       // Simulate synthetic mode initialization
       await page.evaluate(() => {
@@ -133,12 +149,7 @@ test.describe("Test Data Link Browser Tests", () => {
     });
 
     test("should populate form when test data link is clicked", async ({ page }) => {
-      await page.setContent(viewVatReturnHtmlContent, {
-        baseURL: "http://localhost:3000/hmrc/vat/viewVatReturn.html",
-        waitUntil: "domcontentloaded",
-      });
-
-      await page.addScriptTag({ content: testDataGeneratorContent });
+      await openVatPage(page, "viewVatReturn.html", viewVatReturnHtmlContent, testDataGeneratorContent);
 
       await page.evaluate(() => {
         const syntheticIndicator = document.getElementById("syntheticIndicator");
@@ -185,12 +196,7 @@ test.describe("Test Data Link Browser Tests", () => {
     });
 
     test("should populate form when test data link is clicked", async ({ page }) => {
-      await page.setContent(vatObligationsHtmlContent, {
-        baseURL: "http://localhost:3000/hmrc/vat/vatObligations.html",
-        waitUntil: "domcontentloaded",
-      });
-
-      await page.addScriptTag({ content: testDataGeneratorContent });
+      await openVatPage(page, "vatObligations.html", vatObligationsHtmlContent, testDataGeneratorContent);
 
       await page.evaluate(() => {
         const syntheticIndicator = document.getElementById("syntheticIndicator");

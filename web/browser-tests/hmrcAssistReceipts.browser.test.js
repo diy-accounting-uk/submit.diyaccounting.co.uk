@@ -9,7 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveHmrcFieldTableAssets } from "./hmrcFieldTableAssets.js";
+import { serveHmrcFieldTableAssets, servePageScripts } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -54,6 +54,7 @@ test.describe("Receipts page - HMRC Assist reports", () => {
         await route.continue();
       }
     });
+    await servePageScripts(page);
     await serveHmrcFieldTableAssets(page);
 
     const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/receipt/">');
