@@ -112,6 +112,14 @@ test.describe("Change Registered Office Address page", () => {
       await route.fulfill({ status: 200, contentType: "text/html", body: modifiedHtml });
     });
 
+    await page.route("**/submit.css", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "text/css",
+        body: fs.readFileSync(path.join(process.cwd(), "web/public/submit.css"), "utf-8"),
+      });
+    });
+
     await page.route("**/*.js", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
     });
@@ -203,6 +211,44 @@ test.describe("Change Registered Office Address page", () => {
     await expect(page.locator("#reviewCompanyNumber")).toContainText("00000001");
     await expect(page.locator("#reviewAddress")).toContainText("Bedford Road");
     await expect(page.locator("#reviewAddress")).toContainText("LS12 3AB");
+  });
+
+  async function reachReviewView(page) {
+    await setupRoutes(page);
+    await loadPage(page);
+    await lookUpCompany(page);
+    await fillInAddress(page);
+    await page.check("#acceptOfficeStatement");
+    await page.click("#continueBtn");
+    await delay(200);
+    await expect(page.locator("#reviewView")).toBeVisible();
+  }
+
+  async function firstPairOffsets(page) {
+    return page.evaluate(() => {
+      const dt = document.querySelector("#reviewAddress dt").getBoundingClientRect();
+      const dd = document.querySelector("#reviewAddress dd").getBoundingClientRect();
+      return { dtTop: dt.top, ddTop: dd.top, dtRight: dt.right, ddLeft: dd.left, dtBottom: dt.bottom };
+    });
+  }
+
+  test("review step shows each label beside its value at desktop width", async ({ page }) => {
+    setupPage(page);
+    await page.setViewportSize({ width: 1024, height: 800 });
+    await reachReviewView(page);
+
+    const pair = await firstPairOffsets(page);
+    expect(pair.ddTop).toBeCloseTo(pair.dtTop, 0);
+    expect(pair.ddLeft).toBeGreaterThanOrEqual(pair.dtRight);
+  });
+
+  test("review step stacks each label above its value at phone width", async ({ page }) => {
+    setupPage(page);
+    await page.setViewportSize({ width: 390, height: 800 });
+    await reachReviewView(page);
+
+    const pair = await firstPairOffsets(page);
+    expect(pair.ddTop).toBeGreaterThanOrEqual(pair.dtBottom);
   });
 
   test("shows the filing result after submitting from the review view", async ({ page }) => {

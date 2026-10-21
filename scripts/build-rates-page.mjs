@@ -481,6 +481,7 @@ const STYLES = `
         margin: 0 0 var(--spacing-md);
       }
       #ratesResults dl {
+        display: block;
         margin: 0;
       }
       .rates-result {

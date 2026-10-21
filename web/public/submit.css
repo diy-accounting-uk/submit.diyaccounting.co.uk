@@ -524,6 +524,35 @@ header::after {
   opacity: 0.8;
 }
 
+/* Definition lists: each label sits beside its value, one row per dt/dd pair. */
+dl {
+  display: grid;
+  grid-template-columns: fit-content(40%) 1fr;
+  column-gap: var(--spacing-md);
+  row-gap: var(--spacing-xs);
+  margin: 0 0 var(--spacing-md);
+}
+
+dt {
+  font-weight: var(--font-weight-bold);
+}
+
+dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  dl {
+    grid-template-columns: 1fr;
+    row-gap: 0;
+  }
+
+  dd {
+    margin-bottom: var(--spacing-xs);
+  }
+}
+
 @media (max-width: 600px) {
   .main-nav {
     flex-wrap: wrap;
