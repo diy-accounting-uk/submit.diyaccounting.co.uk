@@ -215,7 +215,6 @@ section is their board.
 - [ ] **IA2. Developer Hub email preferences.** The operator signs in to the Developer Hub and
   turns on the Income Tax (MTD) notices under Email preferences, so the 2027 update arrives.
   **Owner**: Operator. **Model**: none. **Size**: 0 files.
-- [ ] **IA11. Delete the nine superseded walkthrough videos.** The re-recordings are public and in the manifest (PR #519, merged as b82db5261; sync and embed checks clean). Remaining: on the operator's yes, delete t2P6cMZ0thY, 1TbGJA9Hk5w, m7IBPUd73sc, yuuQvyi1Dy4, FGUfWSI2e0E, -IwvLNi5VXs, VxIrxR-NFbM, XM2HbwVJ4fU and 1BWVtcAuCuo through the YouTube API (`.claude/skills/video-publish/SKILL.md`, "Re-publishing a changed recording"; 50 quota units each). No page, document or email in the corpus links them. **Owner**: Claude Code; the yes is the operator's. **Model**: Haiku. **Size**: 0 files.
 
 ### Blocked on HMRC's early-2027 update
 
