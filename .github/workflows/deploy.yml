@@ -2152,6 +2152,28 @@ jobs:
           path: target
           key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
 
+      # CloudFront bills each invalidation path. A set whose PublishStack does not exist yet is
+      # publishing to a new distribution that has cached nothing, so it invalidates nothing;
+      # a set that has published before invalidates /* once.
+      - name: Decide whether this publish invalidates the distribution
+        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
+        id: publish-invalidation
+        shell: bash
+        env:
+          PUBLISH_STACK_NAME: ${{ needs.names.outputs.deployment-name }}-app-PublishStack
+        run: |
+          set -euo pipefail
+          if ERROR=$(aws cloudformation describe-stacks --stack-name "$PUBLISH_STACK_NAME" --region us-east-1 2>&1 >/dev/null); then
+            echo "$PUBLISH_STACK_NAME exists; this publish invalidates /*."
+            echo "invalidate=true" >> "$GITHUB_OUTPUT"
+          elif echo "$ERROR" | grep -q 'does not exist'; then
+            echo "$PUBLISH_STACK_NAME does not exist; first publish onto a new distribution, no invalidation."
+            echo "invalidate=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::error::Cannot read $PUBLISH_STACK_NAME: $ERROR"
+            exit 1
+          fi
+
       - name: Build CDK and synthesize and deploy the PublishStack in the Application
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
         run: |
@@ -2182,6 +2204,7 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+          PUBLISH_INVALIDATES_DISTRIBUTION: ${{ steps.publish-invalidation.outputs.invalidate }}
           HTTP_API_URL: ${{ steps.lookup-api.outputs.http-api-url }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.public-url }}
           # Looked up from Cognito domain convention in names job

@@ -79,6 +79,7 @@ public class SubmitApplication {
         public String companiesHouseCsFeeWaivedCompanyNumbers;
         public String baseImageTag;
         public String selfDestructDelayHours;
+        public String publishInvalidatesDistribution;
         public String userPoolArn;
         public String userPoolClientId;
         public String diyaGlUserPoolClientId;
@@ -259,6 +260,12 @@ public class SubmitApplication {
                 "(from current time plus delay hours)");
         ZonedDateTime selfDestructStartDatetime = ZonedDateTime.parse(selfDestructStartDatetimeIso);
         infof("Self-destruct start datetime: %s", selfDestructStartDatetime);
+        // A deployment's first publish lands on a distribution that has cached nothing, so the
+        // deploy workflow sets this to false when the PublishStack does not exist yet.
+        boolean publishInvalidatesDistribution = Boolean.parseBoolean(envOr(
+                "PUBLISH_INVALIDATES_DISTRIBUTION",
+                appProps.publishInvalidatesDistribution,
+                "(from publishInvalidatesDistribution in cdk.json)"));
         var cloudTrailEnabled =
                 envOr("CLOUD_TRAIL_ENABLED", appProps.cloudTrailEnabled, "(from cloudTrailEnabled in cdk.json)");
         var httpApiUrl = envOr("HTTP_API_URL", appProps.httpApiUrl, "(from httpApiUrl in cdk.json)");
@@ -726,6 +733,7 @@ public class SubmitApplication {
                         .websiteHash(websiteHash)
                         .buildNumber(buildNumber)
                         .docRootPath(docRootPath)
+                        .invalidateDistribution(publishInvalidatesDistribution)
                         .build());
         // this.publishStack.addDependency(this.edgeStack);
 

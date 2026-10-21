@@ -3411,7 +3411,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-120 Provision the Publish stack
 
 - **Use when:** the main website's S3 asset deployment and CloudFront invalidation need synthesizing.
-- **Does:** PublishStack creates the S3 bucket deployment and CloudFront invalidation for the main website's web assets. It imports the CloudFront distribution by attributes rather than owning it.
+- **Does:** PublishStack creates the S3 bucket deployment for the main website's web assets. It invalidates `/*` when the set has published before and nothing on a set's first publish (`PUBLISH_INVALIDATES_DISTRIBUTION`, set by `deploy.yml`). It imports the CloudFront distribution by attributes rather than owning it.
 - **Run:** `npm run cdk:synth-application`
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/PublishStack.java`
 - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/PublishStack.java

@@ -27,75 +27,8 @@ import { fileURLToPath } from "url";
 const AWS_REGION = "eu-west-2";
 const AWS_REGION_UE1 = "us-east-1";
 
-// CloudFront invalidation paths - must match PublishStack.java lines 224-272
-const CLOUDFRONT_INVALIDATION_PATHS = [
-  "/activities/*",
-  "/auth/*",
-  "/companies-house/*",
-  "/docs/*",
-  "/errors/*",
-  "/hmrc/*",
-  "/images/*",
-  "/lib/*",
-  "/prefetch/*",
-  "/tests/*",
-  "/widgets/*",
-  "/about.html",
-  "/videos.html",
-  "/videos-hmrc-vat.html",
-  "/videos-hmrc-itsa.html",
-  "/videos-account.html",
-  "/videos-ch.html",
-  "/videos-accounting.html",
-  "/videos/*",
-  "/accessibility.html",
-  "/bundles.html",
-  "/faqs.toml",
-  "/guide.html",
-  "/help.html",
-  "/mcp.html",
-  "/diy-accounting-spreadsheets.html",
-  "/diy-accounting-limited.html",
-  "/spreadsheets.html",
-  "/mtd-calendar.html",
-  "/rates.html",
-  "/android-chrome-192.png",
-  "/android-chrome-512.png",
-  "/apple-touch-icon.png",
-  "/favicon.ico",
-  "/favicon.svg",
-  "/favicon-16.png",
-  "/favicon-32.png",
-  "/index.html",
-  "/privacy.html",
-  "/submit.catalogue.toml",
-  "/submit.build-number.txt",
-  "/submit.commit-hash.txt",
-  "/submit.css",
-  "/submit.deployment-name.txt",
-  "/submit.env",
-  "/submit.environment-name.txt",
-  "/submit.js",
-  "/submit.version.txt",
-  "/terms.html",
-  "/.well-known/security.txt",
-  "/site.webmanifest",
-  "/about.page.js",
-  "/bundles.page.js",
-  "/diy-accounting-spreadsheets.page.js",
-  "/guide.page.js",
-  "/index.banner-hold.page.js",
-  "/index.page.js",
-  "/spreadsheets.page.js",
-  "/usage.page.js",
-  "/videos.page.js",
-  "/videos-account.page.js",
-  "/videos-accounting.page.js",
-  "/videos-ch.page.js",
-  "/videos-hmrc-itsa.page.js",
-  "/videos-hmrc-vat.page.js",
-  "/developer-mode.js",
-];
+// A wildcard is one billed invalidation path, the same one PublishStack invalidates on a live set.
+const CLOUDFRONT_INVALIDATION_PATHS = ["/*"];
 
 // --- Helpers ---
 
@@ -476,9 +409,9 @@ function invalidateCloudFront(config) {
   }
 
   // Create invalidation
-  console.log(`Creating invalidation for ${CLOUDFRONT_INVALIDATION_PATHS.length} paths...`);
+  console.log(`Creating invalidation for ${CLOUDFRONT_INVALIDATION_PATHS.join(" ")}...`);
   const invalidationJson = runCapture(
-    `aws cloudfront create-invalidation --distribution-id ${distributionId} --paths ${CLOUDFRONT_INVALIDATION_PATHS.join(" ")} --region ${AWS_REGION_UE1} --output json`,
+    `aws cloudfront create-invalidation --distribution-id ${distributionId} --paths "${CLOUDFRONT_INVALIDATION_PATHS.join('" "')}" --region ${AWS_REGION_UE1} --output json`,
   );
   const invalidationId = JSON.parse(invalidationJson).Invalidation.Id;
   console.log(`  Invalidation created: ${invalidationId}`);

@@ -548,6 +548,37 @@ class SubmitApplicationCdkResourceTest {
     }
 
     @Test
+    void publishOntoAnExistingSetInvalidatesOneWildcardPath() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template.fromStack(submitApplication.publishStack)
+                .hasResourceProperties(
+                        "Custom::CDKBucketDeployment",
+                        Match.objectLike(Map.of(
+                                "DistributionId", Match.anyValue(), "DistributionPaths", List.of("/*"))));
+    }
+
+    @Test
+    @SetEnvironmentVariable(key = "PUBLISH_INVALIDATES_DISTRIBUTION", value = "false")
+    void firstPublishOfANewSetInvalidatesNothing() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template.fromStack(submitApplication.publishStack)
+                .hasResourceProperties(
+                        "Custom::CDKBucketDeployment",
+                        Match.objectLike(Map.of(
+                                "DistributionId", Match.absent(), "DistributionPaths", Match.absent())));
+    }
+
+    @Test
     @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
     void customAuthorizerLambdaCarriesTheMcpClientIdWhenSet() throws IOException {
         Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();

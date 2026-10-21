@@ -658,21 +658,7 @@ jobs:
           echo "Creating invalidation..."
           INVALIDATION_ID=$(aws cloudfront create-invalidation \
             --distribution-id "${DISTRIBUTION_ID}" \
-            --paths \
-              "/activities/*" "/auth/*" "/docs/*" "/errors/*" "/hmrc/*" \
-              "/images/*" "/lib/*" "/prefetch/*" "/tests/*" "/widgets/*" \
-              "/about.html" "/videos.html" "/videos/*" "/accessibility.html" "/bundles.html" "/faqs.toml" \
-              "/guide.html" "/help.html" "/mcp.html" \
-              "/diy-accounting-spreadsheets.html" "/diy-accounting-limited.html" "/spreadsheets.html" \
-              "/mtd-calendar.html" "/rates.html" \
-              "/android-chrome-192.png" "/android-chrome-512.png" "/apple-touch-icon.png" \
-              "/favicon.ico" "/favicon.svg" "/favicon-16.png" "/favicon-32.png" \
-              "/index.html" "/privacy.html" \
-              "/submit.catalogue.toml" "/submit.build-number.txt" "/submit.commit-hash.txt" \
-              "/submit.css" "/submit.deployment-name.txt" "/submit.env" \
-              "/submit.environment-name.txt" "/submit.js" "/submit.version.txt" \
-              "/terms.html" "/site.webmanifest" "/developer-mode.js" \
-              "/about.page.js" "/bundles.page.js" "/diy-accounting-spreadsheets.page.js" "/guide.page.js" "/index.banner-hold.page.js" "/index.page.js" "/spreadsheets.page.js" "/usage.page.js" "/videos.page.js" "/videos-account.page.js" "/videos-accounting.page.js" "/videos-ch.page.js" "/videos-hmrc-itsa.page.js" "/videos-hmrc-vat.page.js" \
+            --paths "/*" \
             --region us-east-1 \
             --query 'Invalidation.Id' --output text)
           echo "Invalidation created: ${INVALIDATION_ID}"
