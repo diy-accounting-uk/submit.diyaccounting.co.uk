@@ -49,7 +49,7 @@ vi.mock("@aws-sdk/client-s3", () => ({
 import {
   handler,
   buildWindowedSql,
-  buildActivityFastWindowSql,
+  buildFastWindowBatchSql,
   computeTrend,
   toObservationWindows,
   toActivityFastWindows,
@@ -65,10 +65,9 @@ import {
 } from "@app/functions/analytics/operatorSnapshotPublish.js";
 import { loadCatalogFromRoot, isActivityListedInEnvironment } from "@app/services/productCatalog.js";
 
-const FAST_WINDOW_OBSERVATION_COUNT = OBJECTIVE_DEFINITIONS.reduce(
-  (sum, objective) => sum + objective.observations.filter((observation) => observation.fastWindowView).length,
-  0,
-);
+const FAST_WINDOW_VIEW_COUNT = new Set(
+  OBJECTIVE_DEFINITIONS.flatMap((objective) => objective.observations.filter((o) => o.fastWindowView).map((o) => o.fastWindowView)),
+).size;
 
 function varchar(value) {
   return value === null ? {} : { VarCharValue: value };
@@ -80,6 +79,41 @@ function resultSetOf(header, row) {
 
 function resultSetOfRows(header, rows) {
   return { Rows: [{ Data: header.map(varchar) }, ...rows.map((row) => ({ Data: row.map(varchar) }))] };
+}
+
+// Every query succeeds. A fast-window batch query answers each of its o<i>_last_1h/1d/7d
+// columns with `fastValues` keyed by window ("1h", "1d", "7d"), read back from the SQL's own
+// aliases; any other query answers the windowed header with `windowedRow`.
+function mockFastWindowBatchAnswering(fastValues, windowedRow = ["10", "5", "30", "20"]) {
+  const sqlById = new Map();
+  let counter = 0;
+  mockAthenaSend.mockImplementation((command) => {
+    switch (command.constructor.name) {
+      case "StartQueryExecutionCommand": {
+        counter += 1;
+        const id = `qid-${counter}`;
+        sqlById.set(id, command.input.QueryString);
+        return Promise.resolve({ QueryExecutionId: id });
+      }
+      case "GetQueryExecutionCommand":
+        return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+      case "GetQueryResultsCommand": {
+        const sql = sqlById.get(command.input.QueryExecutionId);
+        const aliases = [...sql.matchAll(/AS (o\d+_last_(1h|1d|7d))/g)];
+        if (aliases.length === 0) {
+          return Promise.resolve({ ResultSet: resultSetOf(["last_30", "prev_30", "last_90", "prev_90"], windowedRow) });
+        }
+        return Promise.resolve({
+          ResultSet: resultSetOf(
+            aliases.map(([, alias]) => alias),
+            aliases.map(([, , window]) => fastValues[window]),
+          ),
+        });
+      }
+      default:
+        throw new Error(`unexpected command ${command.constructor.name}`);
+    }
+  });
 }
 
 function mockAllQueriesSucceedWith(windowedRow) {
@@ -362,7 +396,7 @@ describe("operatorSnapshotPublish", () => {
   });
 
   describe("buildSnapshot", () => {
-    test("runs one query per observation and carries a deep link on every row", async () => {
+    test("runs one windowed query per observation, one fast-window query per hourly view, and carries a deep link on every row", async () => {
       mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
 
       const context = {
@@ -376,9 +410,8 @@ describe("operatorSnapshotPublish", () => {
 
       const observationCount = OBJECTIVE_DEFINITIONS.reduce((sum, o) => sum + o.observations.length, 0);
       const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
-      // Every activity observation fires one more query than a plain windowed observation: its
-      // own fast-window (Last 1 hour/1 day/7 days) query alongside the 30/90-day one.
-      expect(startCalls).toHaveLength(observationCount + FAST_WINDOW_OBSERVATION_COUNT);
+      // The fast-window (Last 1 hour/1 day/7 days) observations share one query per hourly view.
+      expect(startCalls).toHaveLength(observationCount + FAST_WINDOW_VIEW_COUNT);
 
       expect(snapshot.environment).toBe("test");
       expect(snapshot.objectives).toHaveLength(10);
@@ -713,22 +746,41 @@ describe("operatorSnapshotPublish", () => {
     });
   });
 
-  describe("buildActivityFastWindowSql", () => {
-    test("builds the three no-trend aggregates against the hourly view", () => {
-      const sql = buildActivityFastWindowSql({
+  describe("buildFastWindowBatchSql", () => {
+    test("builds the three no-trend aggregates for every observation of one hourly view in one query", () => {
+      const sql = buildFastWindowBatchSql({
         fastWindowView: "v_activity_started_hourly",
         fastWindowColumn: "hour",
-        valueExpr: "starts",
-        aggregation: "sum",
-        where: "activity = 'submit-vat'",
+        observations: [
+          { valueExpr: "starts", aggregation: "sum", where: "activity = 'submit-vat'" },
+          { valueExpr: "starts", aggregation: "sum", where: "activity = 'bundle'" },
+        ],
       });
       expect(sql).toContain("FROM   v_activity_started_hourly");
-      expect(sql).toContain("sum(CASE WHEN hour > date_add('hour', -1, current_timestamp) THEN starts END) AS last_1h");
-      expect(sql).toContain("sum(CASE WHEN hour > date_add('day', -1, current_timestamp) THEN starts END) AS last_1d");
-      expect(sql).toContain("sum(CASE WHEN hour > date_add('day', -7, current_timestamp) THEN starts END) AS last_7d");
-      expect(sql).toContain("WHERE  activity = 'submit-vat'");
+      expect(sql).toContain(
+        "sum(CASE WHEN hour > date_add('hour', -1, current_timestamp) AND (activity = 'submit-vat') THEN starts END) AS o0_last_1h",
+      );
+      expect(sql).toContain("sum(CASE WHEN hour > date_add('day', -1, current_timestamp) AND (activity = 'submit-vat') THEN starts END) AS o0_last_1d");
+      expect(sql).toContain("sum(CASE WHEN hour > date_add('day', -7, current_timestamp) AND (activity = 'submit-vat') THEN starts END) AS o0_last_7d");
+      expect(sql).toContain("sum(CASE WHEN hour > date_add('hour', -1, current_timestamp) AND (activity = 'bundle') THEN starts END) AS o1_last_1h");
+      expect(sql).toContain("sum(CASE WHEN hour > date_add('day', -7, current_timestamp) AND (activity = 'bundle') THEN starts END) AS o1_last_7d");
+      expect(sql).not.toContain("WHERE");
       expect(sql).not.toContain("prev_");
       expect(sql).not.toContain("last_30");
+    });
+
+    test("adds no filter for an observation without a where clause", () => {
+      const sql = buildFastWindowBatchSql({
+        fastWindowView: "v_visitors_by_kind_hourly",
+        fastWindowColumn: "hour",
+        observations: [{ valueExpr: "sessions", aggregation: "sum" }],
+      });
+      expect(sql).toBe(
+        "SELECT sum(CASE WHEN hour > date_add('hour', -1, current_timestamp) THEN sessions END) AS o0_last_1h,\n" +
+          "       sum(CASE WHEN hour > date_add('day', -1, current_timestamp) THEN sessions END) AS o0_last_1d,\n" +
+          "       sum(CASE WHEN hour > date_add('day', -7, current_timestamp) THEN sessions END) AS o0_last_7d\n" +
+          "FROM   v_visitors_by_kind_hourly",
+      );
     });
   });
 
@@ -767,19 +819,8 @@ describe("operatorSnapshotPublish", () => {
       expect(snapshot.objectives[0].id).toBe("uptime");
     });
 
-    test("fastWindowOnly runs only the fast-window query and answers id plus the three windows, nothing else", async () => {
-      mockAthenaSend.mockImplementation((command) => {
-        switch (command.constructor.name) {
-          case "StartQueryExecutionCommand":
-            return Promise.resolve({ QueryExecutionId: "qid" });
-          case "GetQueryExecutionCommand":
-            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
-          case "GetQueryResultsCommand":
-            return Promise.resolve({ ResultSet: resultSetOf(["last_1h", "last_1d", "last_7d"], ["1", "3", "12"]) });
-          default:
-            throw new Error(`unexpected command ${command.constructor.name}`);
-        }
-      });
+    test("fastWindowOnly runs one fast-window query per hourly view and answers id plus the three windows, nothing else", async () => {
+      mockFastWindowBatchAnswering({ "1h": "1", "1d": "3", "7d": "12" });
 
       const context = {
         envName: "test",
@@ -797,8 +838,10 @@ describe("operatorSnapshotPublish", () => {
       });
 
       const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
-      const activityObjective = OBJECTIVE_DEFINITIONS.find((o) => o.id === "activity-started-and-completed");
-      expect(startCalls).toHaveLength(activityObjective.observations.length);
+      const sqlStatements = startCalls.map(([command]) => command.input.QueryString);
+      expect(sqlStatements).toHaveLength(2);
+      expect(sqlStatements.some((sql) => sql.includes("FROM   v_activity_started_hourly"))).toBe(true);
+      expect(sqlStatements.some((sql) => sql.includes("FROM   v_submissions_by_activity_hourly"))).toBe(true);
 
       const activities = patch.objectives.find((o) => o.id === "activity-started-and-completed");
       const observation = activities.observations.find((o) => o.id === "submit-vat::started");
@@ -810,21 +853,6 @@ describe("operatorSnapshotPublish", () => {
   });
 
   describe("visitor fast windows", () => {
-    function mockFastWindowQueriesAnswering(row) {
-      mockAthenaSend.mockImplementation((command) => {
-        switch (command.constructor.name) {
-          case "StartQueryExecutionCommand":
-            return Promise.resolve({ QueryExecutionId: "qid" });
-          case "GetQueryExecutionCommand":
-            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
-          case "GetQueryResultsCommand":
-            return Promise.resolve({ ResultSet: resultSetOf(["last_1h", "last_1d", "last_7d"], row) });
-          default:
-            throw new Error(`unexpected command ${command.constructor.name}`);
-        }
-      });
-    }
-
     const visitorIds = ["sessions-human", "sessions-operator", "sessions-bot", "sessions-synthetic"];
     const context = {
       envName: "test",
@@ -834,24 +862,22 @@ describe("operatorSnapshotPublish", () => {
       ga4PropertyId: null,
     };
 
-    test("each visitor kind's fast columns read the hourly view filtered to that kind", async () => {
-      mockFastWindowQueriesAnswering(["1", "3", "12"]);
+    test("every visitor kind's fast columns come from one query of the hourly view, each filtered to its kind", async () => {
+      mockFastWindowBatchAnswering({ "1h": "1", "1d": "3", "7d": "12" });
       await buildSnapshot({ workGroup: "wg", database: "db", context, objectiveIds: ["conversion-to-submission"], fastWindowOnly: true });
 
       const sqlStatements = mockAthenaSend.mock.calls
         .filter(([command]) => command.constructor.name === "StartQueryExecutionCommand")
         .map(([command]) => command.input.QueryString);
-      expect(sqlStatements).toHaveLength(visitorIds.length);
+      expect(sqlStatements).toHaveLength(1);
+      expect(sqlStatements[0]).toContain("FROM   v_visitors_by_kind_hourly");
       for (const kind of ["human", "operator", "bot", "synthetic"]) {
-        expect(
-          sqlStatements.some((sql) => sql.includes("FROM   v_visitors_by_kind_hourly") && sql.includes(`visitor_kind = '${kind}'`)),
-        ).toBe(true);
+        expect(sqlStatements[0]).toContain(`AND (visitor_kind = '${kind}') THEN sessions END`);
       }
-      expect(sqlStatements.every((sql) => sql.includes("sum(CASE WHEN hour >"))).toBe(true);
     });
 
     test("a fast-window-only run lists only the visitor observations that have a fast view", async () => {
-      mockFastWindowQueriesAnswering(["1", "3", "12"]);
+      mockFastWindowBatchAnswering({ "1h": "1", "1d": "3", "7d": "12" });
       const patch = await buildSnapshot({
         workGroup: "wg",
         database: "db",
@@ -871,7 +897,7 @@ describe("operatorSnapshotPublish", () => {
     });
 
     test("a visitor's fast columns are null when the hourly view has no rows", async () => {
-      mockFastWindowQueriesAnswering([null, null, null]);
+      mockFastWindowBatchAnswering({ "1h": null, "1d": null, "7d": null });
       const patch = await buildSnapshot({
         workGroup: "wg",
         database: "db",
@@ -883,6 +909,21 @@ describe("operatorSnapshotPublish", () => {
       const human = patch.objectives[0].observations.find((o) => o.id === "sessions-human");
       expect(human.last1h).toEqual({ value: null });
       expect(human.last7d).toEqual({ value: null });
+    });
+
+    test("a failing fast-window query leaves its observations unpatched and counts each one as failed", async () => {
+      mockQueriesWithOneFailing("v_visitors_by_kind_hourly", ["1", "1", "1", "1"]);
+      const patch = await buildSnapshot({
+        workGroup: "wg",
+        database: "db",
+        context,
+        objectiveIds: ["conversion-to-submission"],
+        fastWindowOnly: true,
+      });
+
+      const conversion = patch.objectives.find((o) => o.id === "conversion-to-submission");
+      expect(conversion.observations).toEqual(visitorIds.map((id) => ({ id })));
+      expect(patch.failedObservationCount).toBe(visitorIds.length);
     });
 
     test("mergeFastWindows patches the visitor observations of the conversion objective and leaves its other observations", () => {
@@ -1067,18 +1108,7 @@ describe("operatorSnapshotPublish", () => {
         }
         return Promise.resolve({});
       });
-      mockAthenaSend.mockImplementation((command) => {
-        switch (command.constructor.name) {
-          case "StartQueryExecutionCommand":
-            return Promise.resolve({ QueryExecutionId: "qid" });
-          case "GetQueryExecutionCommand":
-            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
-          case "GetQueryResultsCommand":
-            return Promise.resolve({ ResultSet: resultSetOf(["last_1h", "last_1d", "last_7d"], ["1", "3", "12"]) });
-          default:
-            throw new Error(`unexpected command ${command.constructor.name}`);
-        }
-      });
+      mockFastWindowBatchAnswering({ "1h": "1", "1d": "3", "7d": "12" });
 
       const result = await handler({ mode: "activity-only" });
 

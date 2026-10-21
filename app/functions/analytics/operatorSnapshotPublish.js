@@ -839,23 +839,84 @@ export function buildWindowedSql({ view, dayColumn, valueExpr, aggregation, wher
   );
 }
 
+const FAST_WINDOW_CUTOFFS = [
+  ["last_1h", "date_add('hour', -1, current_timestamp)"],
+  ["last_1d", "date_add('day', -1, current_timestamp)"],
+  ["last_7d", "date_add('day', -7, current_timestamp)"],
+];
+
 /**
  * The three fast, no-trend columns on the operator dashboard's Activities table (Last 1 hour,
  * Last 1 day, Last 7 days), computed against an hourly-grain view rather than
  * buildWindowedSql's `dayColumn`: a column truncated to a whole calendar day always reads as
  * "today" or "not today" against an hour-old cutoff, never a genuine trailing hour.
  *
- * @param {{fastWindowView: string, fastWindowColumn: string, valueExpr: string, aggregation: string, where?: string}} observation
+ * One query answers every observation that reads the same hourly view: observation `i` gets
+ * the columns `o<i>_last_1h`, `o<i>_last_1d` and `o<i>_last_7d`, and its `where` moves into
+ * its own CASE conditions. Each query lists and reads every object of the view's 8 days of
+ * partitions, so one query per observation (16 activities each way, every hour) read the
+ * same objects 16 times over.
+ *
+ * @param {{fastWindowView: string, fastWindowColumn: string, observations: Array<{valueExpr: string, aggregation: string, where?: string}>}} group
  * @returns {string}
  */
-export function buildActivityFastWindowSql({ fastWindowView, fastWindowColumn, valueExpr, aggregation, where }) {
-  const whereClause = where ? `\nWHERE  ${where}` : "";
-  return (
-    `SELECT ${aggregation}(CASE WHEN ${fastWindowColumn} > date_add('hour', -1, current_timestamp) THEN ${valueExpr} END) AS last_1h,\n` +
-    `       ${aggregation}(CASE WHEN ${fastWindowColumn} > date_add('day', -1, current_timestamp) THEN ${valueExpr} END) AS last_1d,\n` +
-    `       ${aggregation}(CASE WHEN ${fastWindowColumn} > date_add('day', -7, current_timestamp) THEN ${valueExpr} END) AS last_7d\n` +
-    `FROM   ${fastWindowView}${whereClause}`
-  );
+export function buildFastWindowBatchSql({ fastWindowView, fastWindowColumn, observations }) {
+  const columns = observations.flatMap(({ valueExpr, aggregation, where }, index) => {
+    const filter = where ? ` AND (${where})` : "";
+    return FAST_WINDOW_CUTOFFS.map(
+      ([alias, cutoff]) =>
+        `${aggregation}(CASE WHEN ${fastWindowColumn} > ${cutoff}${filter} THEN ${valueExpr} END) AS ${fastWindowColumnPrefix(index)}${alias}`,
+    );
+  });
+  return `SELECT ${columns.join(",\n       ")}\nFROM   ${fastWindowView}`;
+}
+
+function fastWindowColumnPrefix(index) {
+  return `o${index}_`;
+}
+
+/**
+ * Runs one buildFastWindowBatchSql query per distinct hourly view the observations read.
+ *
+ * @returns {Promise<{fastWindowsById: Map<string, object>, failedIds: Set<string>}>}
+ */
+async function runFastWindowQueries({ workGroup, database, observations }) {
+  const groups = new Map();
+  for (const observation of observations) {
+    const key = `${observation.fastWindowView}|${observation.fastWindowColumn}`;
+    if (!groups.has(key)) {
+      groups.set(key, {
+        fastWindowView: observation.fastWindowView,
+        fastWindowColumn: observation.fastWindowColumn,
+        observations: [],
+      });
+    }
+    groups.get(key).observations.push(observation);
+  }
+
+  const fastWindowsById = new Map();
+  const failedIds = new Set();
+  await mapInOrderWithConcurrency([...groups.values()], OBSERVATION_QUERY_CONCURRENCY, async (group) => {
+    try {
+      const rows = await runAthenaQuery({ workGroup, database, sql: buildFastWindowBatchSql(group) });
+      group.observations.forEach((observation, index) => {
+        const prefix = fastWindowColumnPrefix(index);
+        const row = rows[0]
+          ? Object.fromEntries(FAST_WINDOW_CUTOFFS.map(([alias]) => [alias, rows[0][`${prefix}${alias}`]]))
+          : undefined;
+        fastWindowsById.set(observation.id, toActivityFastWindows(row));
+      });
+    } catch (error) {
+      for (const observation of group.observations) failedIds.add(observation.id);
+      logger.warn({
+        message: "Fast-window query failed, publishing no fast windows for its observations",
+        view: group.fastWindowView,
+        observationIds: group.observations.map((observation) => observation.id),
+        error: error.message,
+      });
+    }
+  });
+  return { fastWindowsById, failedIds };
 }
 
 function toNumberOrNull(value) {
@@ -960,29 +1021,28 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
     ? OBJECTIVE_DEFINITIONS.filter((objective) => objectiveIds.includes(objective.id))
     : OBJECTIVE_DEFINITIONS;
 
+  const { fastWindowsById, failedIds } = await runFastWindowQueries({
+    workGroup,
+    database,
+    observations: objectiveDefinitions.flatMap((objective) => objective.observations.filter((observation) => observation.fastWindowView)),
+  });
+
   const objectives = [];
-  let failedObservationCount = 0;
   for (const objective of objectiveDefinitions) {
     const objectiveObservations = fastWindowOnly
       ? objective.observations.filter((observation) => observation.fastWindowView)
       : objective.observations;
     const observations = await mapInOrderWithConcurrency(objectiveObservations, OBSERVATION_QUERY_CONCURRENCY, async (observation) => {
       let windows = nullObservationWindows;
-      let fastWindows = {};
+      const fastWindows = fastWindowsById.get(observation.id) ?? {};
       try {
         if (!fastWindowOnly) {
           const sql = buildWindowedSql(observation);
           const rows = await runAthenaQuery({ workGroup, database, sql });
           windows = toObservationWindows(rows[0]);
         }
-
-        if (observation.fastWindowView) {
-          const fastSql = buildActivityFastWindowSql(observation);
-          const fastRows = await runAthenaQuery({ workGroup, database, sql: fastSql });
-          fastWindows = toActivityFastWindows(fastRows[0]);
-        }
       } catch (error) {
-        failedObservationCount += 1;
+        failedIds.add(observation.id);
         logger.warn({
           message: "Observation query failed, publishing null for it",
           observationId: observation.id,
@@ -1016,7 +1076,7 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
     environment: context.envName,
     objectives,
     ...(fastWindowOnly ? {} : { reinvestment: buildReinvestment(objectives) }),
-    failedObservationCount,
+    failedObservationCount: failedIds.size,
   };
 }
 
