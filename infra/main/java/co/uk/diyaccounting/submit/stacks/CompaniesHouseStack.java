@@ -1337,8 +1337,9 @@ public class CompaniesHouseStack extends Stack {
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHousePscVerificationStatementGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
-        Lambda.stackHealthAlarm(
+        Lambda.appStackHealthAlarm(
                 this,
+                props.envName(),
                 props.resourceNamePrefix(),
                 "companies-house",
                 List.of(

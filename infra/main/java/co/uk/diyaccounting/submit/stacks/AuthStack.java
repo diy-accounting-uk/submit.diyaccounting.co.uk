@@ -254,8 +254,9 @@ public class AuthStack extends Stack {
                 "Granted Security State Table read/write and AdminUserGlobalSignOut to %s",
                 this.customAuthorizerLambda.getFunctionName());
 
-        Lambda.stackHealthAlarm(
+        Lambda.appStackHealthAlarm(
                 this,
+                props.envName(),
                 props.resourceNamePrefix(),
                 "auth",
                 List.of(exchangeCognitoTokenLambdaUrlOrigin, customAuthorizerLambda));

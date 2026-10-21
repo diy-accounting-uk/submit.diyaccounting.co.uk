@@ -1874,8 +1874,9 @@ public class HmrcItsaStack extends Stack {
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcItsaAssistAcknowledgePostLambda.getFunctionName());
 
-        Lambda.stackHealthAlarm(
+        Lambda.appStackHealthAlarm(
                 this,
+                props.envName(),
                 props.resourceNamePrefix(),
                 "hmrc-itsa",
                 List.of(

@@ -1467,7 +1467,8 @@ public class AccountStack extends Stack {
                 "Created Session Sign-Out POST Lambda %s",
                 this.sessionSignOutPostLambda.getNode().getId());
 
-        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "account", healthCheckedFunctions);
+        Lambda.appStackHealthAlarm(
+                this, props.envName(), props.resourceNamePrefix(), "account", healthCheckedFunctions);
 
         cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.bundlePostLambda.getFunctionArn());

@@ -2428,8 +2428,9 @@ public class HmrcStack extends Stack {
                 .resources(List.of(activityBusArn))
                 .build());
 
-        Lambda.stackHealthAlarm(
+        Lambda.appStackHealthAlarm(
                 this,
+                props.envName(),
                 props.resourceNamePrefix(),
                 "hmrc",
                 List.of(

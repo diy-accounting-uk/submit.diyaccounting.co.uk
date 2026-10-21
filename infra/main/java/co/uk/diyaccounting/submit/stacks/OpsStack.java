@@ -415,7 +415,8 @@ public class OpsStack extends Stack {
         // Lambda is optional (needs a GitHub token ARN), and the Telegram forwarder moved to
         // ActivityStack, so this stack can have none.
         if (!healthCheckedFunctions.isEmpty()) {
-            Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "ops", healthCheckedFunctions);
+            Lambda.appStackHealthAlarm(
+                    this, props.envName(), props.resourceNamePrefix(), "ops", healthCheckedFunctions);
         }
 
         // ============================================================================

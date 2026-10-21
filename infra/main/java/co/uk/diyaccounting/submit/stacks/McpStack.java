@@ -216,7 +216,8 @@ public class McpStack extends Stack {
         this.oauthBlobKeySecret.grantRead(this.mcpOauthLambda);
         infof("Created MCP OAuth Lambda %s", this.mcpOauthLambda.getNode().getId());
 
-        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "mcp", List.of(mcpHttpApiLambda, mcpOauthApiLambda));
+        Lambda.appStackHealthAlarm(
+                this, props.envName(), props.resourceNamePrefix(), "mcp", List.of(mcpHttpApiLambda, mcpOauthApiLambda));
 
         cfnOutput(this, "McpHttpLambdaArn", this.mcpHttpLambda.getFunctionArn());
         cfnOutput(this, "McpOauthLambdaArn", this.mcpOauthLambda.getFunctionArn());

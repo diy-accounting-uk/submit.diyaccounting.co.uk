@@ -39,29 +39,15 @@ public class AsyncApiLambda extends ApiLambda {
     public final String workerLambdaAliasArn;
     public final Queue queue;
     public final Queue dlq;
+    private final AsyncApiLambdaProps asyncProps;
 
     public AsyncApiLambda(final Construct scope, AsyncApiLambdaProps props) {
         super(scope, props);
+        this.asyncProps = props;
 
         // 1. Create DLQ
         this.dlq = Queue.Builder.create(scope, props.idPrefix() + "-dlq")
                 .queueName(props.workerDeadLetterQueueName())
-                .build();
-
-        // The queue, DLQ and worker checks below are named like the per-function checks in
-        // Lambda, and for the same reason: they are terms of the owning stack's composite health
-        // alarm, so they carry the "check-" prefix that keeps them out of OpsStack's routing rule
-        // and the composite raises one alert for the pair. The alarm names take their queue and
-        // function names from props, not from the L2 getters, because the getters render as
-        // unresolved tokens and the name prefix has to be a synth-time literal.
-        Alarm dlqNotEmptyAlarm = Alarm.Builder.create(scope, props.idPrefix() + "-DlqAlarm")
-                .alarmName(CHECK_ALARM_NAME_PREFIX + props.workerDeadLetterQueueName() + "-not-empty")
-                .metric(this.dlq.metricApproximateNumberOfMessagesVisible())
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("SQS DLQ for " + props.ingestFunctionName() + " has items")
                 .build();
 
         // 2. Create Main Queue
@@ -120,8 +106,35 @@ public class AsyncApiLambda extends ApiLambda {
         this.workerLambdaAlias.addEventSource(
                 SqsEventSource.Builder.create(this.queue).batchSize(1).build());
 
-        Alarm workerErrorsAlarm = Alarm.Builder.create(scope, props.idPrefix() + "-WorkerErrorsAlarm")
-                .alarmName(CHECK_ALARM_NAME_PREFIX + props.workerFunctionName() + "-errors")
+        // Grant API Lambda permission to send messages to the queue
+        this.queue.grantSendMessages(this.ingestLambda);
+
+        // Pass queue URL to both lambdas
+        this.ingestLambda.addEnvironment("SQS_QUEUE_URL", this.queue.getQueueUrl());
+        this.workerLambda.addEnvironment("SQS_QUEUE_URL", this.queue.getQueueUrl());
+    }
+
+    @Override
+    protected void addFunctionChecks() {
+        super.addFunctionChecks();
+        // The queue, DLQ and worker checks below are named like the per-function checks in
+        // Lambda, and for the same reason: they are terms of the owning stack's composite health
+        // alarm, so they carry the "check-" prefix that keeps them out of OpsStack's routing rule
+        // and the composite raises one alert for the pair. The alarm names take their queue and
+        // function names from props, not from the L2 getters, because the getters render as
+        // unresolved tokens and the name prefix has to be a synth-time literal.
+        Alarm dlqNotEmptyAlarm = Alarm.Builder.create(this.scope, this.asyncProps.idPrefix() + "-DlqAlarm")
+                .alarmName(CHECK_ALARM_NAME_PREFIX + this.asyncProps.workerDeadLetterQueueName() + "-not-empty")
+                .metric(this.dlq.metricApproximateNumberOfMessagesVisible())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("SQS DLQ for " + this.asyncProps.ingestFunctionName() + " has items")
+                .build();
+
+        Alarm workerErrorsAlarm = Alarm.Builder.create(this.scope, this.asyncProps.idPrefix() + "-WorkerErrorsAlarm")
+                .alarmName(CHECK_ALARM_NAME_PREFIX + this.asyncProps.workerFunctionName() + "-errors")
                 .metric(this.workerLambda.metricErrors())
                 .threshold(1)
                 .evaluationPeriods(1)
@@ -132,8 +145,9 @@ public class AsyncApiLambda extends ApiLambda {
 
         // Message age alarm: a message stuck in the queue for >= 30 minutes indicates
         // the worker is stalled or backed up.
-        Alarm queueMessageAgeAlarm = Alarm.Builder.create(scope, props.idPrefix() + "-QueueMessageAgeAlarm")
-                .alarmName(CHECK_ALARM_NAME_PREFIX + props.workerQueueName() + "-message-age")
+        Alarm queueMessageAgeAlarm = Alarm.Builder.create(
+                        this.scope, this.asyncProps.idPrefix() + "-QueueMessageAgeAlarm")
+                .alarmName(CHECK_ALARM_NAME_PREFIX + this.asyncProps.workerQueueName() + "-message-age")
                 .metric(this.queue.metricApproximateAgeOfOldestMessage())
                 .threshold(Duration.minutes(30).toSeconds())
                 .evaluationPeriods(1)
@@ -144,12 +158,5 @@ public class AsyncApiLambda extends ApiLambda {
                 .build();
 
         this.healthChecks.addAll(List.of(dlqNotEmptyAlarm, workerErrorsAlarm, queueMessageAgeAlarm));
-
-        // Grant API Lambda permission to send messages to the queue
-        this.queue.grantSendMessages(this.ingestLambda);
-
-        // Pass queue URL to both lambdas
-        this.ingestLambda.addEnvironment("SQS_QUEUE_URL", this.queue.getQueueUrl());
-        this.workerLambda.addEnvironment("SQS_QUEUE_URL", this.queue.getQueueUrl());
     }
 }

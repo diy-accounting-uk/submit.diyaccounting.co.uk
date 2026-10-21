@@ -9,6 +9,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Token;
@@ -46,6 +47,9 @@ public class Lambda {
 
     public static final String HEALTH_ALARM_NAME_SUFFIX = "-stack-health";
 
+    /** Deployment sets in this environment carry no per-function checks. */
+    public static final String CI_ENV_NAME = "ci";
+
     /** How many checks every Lambda construct carries. */
     public static final int HEALTH_CHECK_COUNT = 2;
 
@@ -69,11 +73,15 @@ public class Lambda {
     public final ILogGroup logGroup;
     public final AbstractLambdaProps props;
 
+    /** The scope the function was built in; its checks are created there too. */
+    protected final Construct scope;
+
     /** The checks on this function, for the owning stack to fan into its health alarm. */
     public final List<IAlarm> healthChecks = new ArrayList<>();
 
     public Lambda(final Construct scope, AbstractLambdaProps props) {
         this.props = props;
+        this.scope = scope;
 
         // Create the lambda function
         var imageCodeProps = EcrImageCodeProps.builder()
@@ -152,22 +160,28 @@ public class Lambda {
                 this.ingestLambdaAlias.getAliasName(),
                 this.ingestLambdaVersion.getVersion(),
                 props.ingestProvisionedConcurrencyAliasArn());
+    }
 
+    /**
+     * Creates this function's own checks, in the scope the function was built in so their logical
+     * ids do not depend on which stack method asks for them.
+     */
+    protected void addFunctionChecks() {
         // Two checks per function, one per way a function can be broken: the invocation failed
         // (Errors), or it returned a response while logging something that went wrong (log
         // errors, which the handlers' caught-and-returned 500s produce without an Errors
         // datapoint).
         // 1) Errors >= 1 in a 5-minute period
-        Alarm errorsAlarm = Alarm.Builder.create(scope, props.idPrefix() + "-ErrorsAlarm")
-                .alarmName(CHECK_ALARM_NAME_PREFIX + props.ingestFunctionName() + "-errors")
+        Alarm errorsAlarm = Alarm.Builder.create(this.scope, this.props.idPrefix() + "-ErrorsAlarm")
+                .alarmName(CHECK_ALARM_NAME_PREFIX + this.props.ingestFunctionName() + "-errors")
                 .metric(this.ingestLambda
                         .metricErrors()
                         .with(MetricOptions.builder()
                                 .period(Duration.minutes(5))
                                 .build()))
                 .threshold(1)
-                .evaluationPeriods(props.errorsAlarmEvaluationPeriods())
-                .datapointsToAlarm(props.errorsAlarmDatapointsToAlarm())
+                .evaluationPeriods(this.props.errorsAlarmEvaluationPeriods())
+                .datapointsToAlarm(this.props.errorsAlarmDatapointsToAlarm())
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription("Lambda errors >= 1 for function " + this.ingestLambda.getFunctionName())
@@ -177,7 +191,7 @@ public class Lambda {
         // This avoids external scanners: we scan for common error terms in logs and emit a custom metric.
         String logErrorMetricNamespace = "Submit/LambdaLogs";
         String logErrorMetricName = this.ingestLambda.getFunctionName() + "-log-errors";
-        MetricFilter.Builder.create(scope, props.idPrefix() + "-LogErrorsMetricFilter")
+        MetricFilter.Builder.create(this.scope, this.props.idPrefix() + "-LogErrorsMetricFilter")
                 .logGroup(this.logGroup)
                 .filterPattern(FilterPattern.anyTerm(
                         "ERROR", "Error", "Exception", "Unhandled", "Task timed out", "SEVERE", "FATAL"))
@@ -194,12 +208,12 @@ public class Lambda {
                 .period(Duration.minutes(5))
                 .build();
 
-        Alarm logErrorsAlarm = Alarm.Builder.create(scope, props.idPrefix() + "-LogErrorsAlarm")
+        Alarm logErrorsAlarm = Alarm.Builder.create(this.scope, this.props.idPrefix() + "-LogErrorsAlarm")
                 // props.ingestFunctionName(), not this.ingestLambda.getFunctionName(): the latter
                 // renders as an unresolved Fn::Join/Ref token in the synthesized template (same
                 // physical value, but the composite alarm and its EventBridge routing both need a
                 // synth-time literal to match the name-prefix contract against).
-                .alarmName(CHECK_ALARM_NAME_PREFIX + props.ingestFunctionName() + "-log-errors")
+                .alarmName(CHECK_ALARM_NAME_PREFIX + this.props.ingestFunctionName() + "-log-errors")
                 .metric(logErrorMetric)
                 .threshold(1)
                 .evaluationPeriods(1)
@@ -210,6 +224,23 @@ public class Lambda {
                 .build();
 
         this.healthChecks.addAll(List.of(errorsAlarm, logErrorsAlarm));
+    }
+
+    /**
+     * The health alarm of a deployment-set stack. A ci set is short-lived and proved by its own
+     * behaviour tests, so its functions carry no checks, metric filters or composite at all; any
+     * other environment gets the full {@link #stackHealthAlarm}.
+     */
+    public static Optional<CompositeAlarm> appStackHealthAlarm(
+            final Construct scope,
+            String envName,
+            String resourceNamePrefix,
+            String stackShortName,
+            List<Lambda> functions) {
+        if (CI_ENV_NAME.equals(envName)) {
+            return Optional.empty();
+        }
+        return Optional.of(stackHealthAlarm(scope, resourceNamePrefix, stackShortName, functions));
     }
 
     /**
@@ -239,6 +270,9 @@ public class Lambda {
      */
     public static CompositeAlarm stackHealthAlarm(
             final Construct scope, String resourceNamePrefix, String stackShortName, List<Lambda> functions) {
+        for (Lambda function : functions) {
+            function.addFunctionChecks();
+        }
         // Build list of alarms with their estimated lengths
         var alarmInfos = new ArrayList<AlarmInfo>();
         for (Lambda function : functions) {

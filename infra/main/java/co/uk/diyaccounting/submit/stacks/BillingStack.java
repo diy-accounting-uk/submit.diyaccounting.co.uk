@@ -632,8 +632,9 @@ public class BillingStack extends Stack {
         // Billing Webhook POST Lambda has been moved to the env-level BillingWebhookStack
         // (always available, independent of app deployments).
 
-        Lambda.stackHealthAlarm(
+        Lambda.appStackHealthAlarm(
                 this,
+                props.envName(),
                 props.resourceNamePrefix(),
                 "billing",
                 List.of(

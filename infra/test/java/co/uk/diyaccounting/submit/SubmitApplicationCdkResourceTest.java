@@ -526,6 +526,49 @@ class SubmitApplicationCdkResourceTest {
     }
 
     @Test
+    @SetEnvironmentVariable(key = "ENVIRONMENT_NAME", value = "ci")
+    @SetEnvironmentVariable(key = "DEPLOYMENT_NAME", value = "ci-set1")
+    @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "ci-set1-cognito-mcp-client-id")
+    @SetEnvironmentVariable(key = "GITHUB_APP_ID", value = "123")
+    @SetEnvironmentVariable(key = "GITHUB_APP_INSTALLATION_ID", value = "456")
+    void ciDeploymentSetFunctionsCarryNoChecks() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+
+        for (var stack : List.of(
+                submitApplication.authStack,
+                submitApplication.hmrcStack,
+                submitApplication.hmrcItsaStack,
+                submitApplication.companiesHouseStack,
+                submitApplication.accountStack,
+                submitApplication.billingStack,
+                submitApplication.diyaGlStack,
+                submitApplication.mcpStack,
+                submitApplication.opsStack)) {
+            Template template = Template.fromStack(stack);
+            org.junit.jupiter.api.Assertions.assertFalse(
+                    template.findResources("AWS::Lambda::Function").isEmpty(),
+                    stack.getStackName() + " builds no Lambda function");
+            template.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 0);
+            template.resourcePropertiesCountIs(
+                    "AWS::CloudWatch::Alarm",
+                    Match.objectLike(
+                            Map.of("AlarmName", Match.stringLikeRegexp("^" + Lambda.CHECK_ALARM_NAME_PREFIX + ".*"))),
+                    0);
+            template.resourcePropertiesCountIs(
+                    "AWS::Logs::MetricFilter",
+                    Match.objectLike(Map.of(
+                            "MetricTransformations",
+                            List.of(Match.objectLike(Map.of("MetricNamespace", "Submit/LambdaLogs"))))),
+                    0);
+        }
+    }
+
+    @Test
     @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
     void mcpUserPoolClientIdJoinsTheBooksAuthoriserAudienceWhenSet() throws IOException {
         Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
