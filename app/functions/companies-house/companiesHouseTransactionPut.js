@@ -30,10 +30,6 @@ import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseTransactionPut.js" });
 
-// The sandbox validates a filing while it answers the close request and has taken longer than 20
-// seconds. The Lambda timeout is 28 seconds, so the wait stays below that.
-export const CLOSE_TRANSACTION_TIMEOUT_MS = 26000;
-
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 // No HEAD registration here: this path is shared with companiesHouseTransactionGet.js (GET and
@@ -177,7 +173,6 @@ export async function closeTransaction(accessToken, transactionId) {
   const chResponse = await companiesHouseFilingRequest("PUT", `/transactions/${transactionId}`, {
     accessToken,
     body: { status: "closed" },
-    timeoutMs: CLOSE_TRANSACTION_TIMEOUT_MS,
   });
 
   if (!chResponse.ok && chResponse.status !== 422 && chResponse.status !== 403) {

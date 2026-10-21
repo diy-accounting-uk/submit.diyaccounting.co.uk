@@ -129,14 +129,16 @@
         {
           "action": "type",
           "target": "#premises",
-          "text": "1",
+          "text": "13",
           "caption": "Enter the new address, one field at a time.",
           "headline": "Enter the new address",
           "keyWord": "address"
         },
-        { "action": "fill", "target": "#addressLine1", "value": "Example Street" },
-        { "action": "fill", "target": "#locality", "value": "Example City" },
-        { "action": "fill", "target": "#postalCode", "value": "AB1 2CD" },
+        { "action": "fill", "target": "#addressLine1", "value": "Bedford Road" },
+        { "action": "fill", "target": "#locality", "value": "Leeds" },
+        { "action": "fill", "target": "#region", "value": "West Yorkshire" },
+        { "action": "fill", "target": "#postalCode", "value": "LS12 3AB" },
+        { "action": "select", "target": "#country", "value": "England" },
         {
           "action": "click",
           "target": "#acceptOfficeStatement",

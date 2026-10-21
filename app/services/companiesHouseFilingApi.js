@@ -20,6 +20,10 @@ import { BundleAuthorizationError, BundleEntitlementError } from "./bundleManage
 
 const logger = createLogger({ source: "app/services/companiesHouseFilingApi.js" });
 
+// The sandbox has taken more than 20 seconds to answer a filing request. The Lambda timeout is 28
+// seconds, so the wait stays below that.
+export const FILING_REQUEST_TIMEOUT_MS = 26000;
+
 let secretsClient = null;
 let cachedCompaniesHouseClientSecret;
 
@@ -74,7 +78,7 @@ export function extractCompaniesHouseAccessTokenFromLambdaEvent(event) {
   return extractBearerTokenFromAuthHeaderInLambdaEvent(event);
 }
 
-export async function companiesHouseFilingRequest(method, path, { accessToken, body, timeoutMs = DEFAULT_TIMEOUTS.SHORT } = {}) {
+export async function companiesHouseFilingRequest(method, path, { accessToken, body, timeoutMs = FILING_REQUEST_TIMEOUT_MS } = {}) {
   const baseUrl = getFilingBaseUrl();
   const requestUrl = `${baseUrl}${path}`;
   const headers = {
