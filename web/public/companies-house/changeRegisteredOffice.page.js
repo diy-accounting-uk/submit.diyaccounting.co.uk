@@ -211,7 +211,13 @@ async function runFilingSequence() {
       savePendingFiling();
     }
 
-    await window.closeCompaniesHouseTransaction(filing.transactionId);
+    try {
+      await window.closeCompaniesHouseTransaction(filing.transactionId);
+    } catch (closeError) {
+      // A 504 means Companies House did not answer in time; the transaction may still be processing,
+      // so read it back instead of failing the filing.
+      if (closeError.status !== 504) throw closeError;
+    }
     const transaction = await pollTransactionUntilSettled(filing.transactionId);
 
     renderFilingResult(transaction);

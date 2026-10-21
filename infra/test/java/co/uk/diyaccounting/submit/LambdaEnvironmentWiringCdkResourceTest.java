@@ -166,6 +166,7 @@ class LambdaEnvironmentWiringCdkResourceTest {
                         .companiesHouseBaseUri("https://api.company-information.service.gov.uk")
                         .companiesHouseApiKeyArn("")
                         .companiesHouseFilingBaseUri("https://api-sandbox.company-information.service.gov.uk")
+                        .companiesHouseFilingApiKeyArn("")
                         .companiesHouseIdentityBaseUri("https://identity-sandbox.company-information.service.gov.uk")
                         .companiesHouseClientId("test-companies-house-client-id")
                         .companiesHouseClientSecretArn("")

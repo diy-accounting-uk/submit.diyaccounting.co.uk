@@ -14,8 +14,10 @@ import {
   http400BadRequestResponse,
   http404NotFoundResponse,
   http401UnauthorizedResponse,
+  http504GatewayTimeoutResponse,
   buildValidationError,
 } from "../../lib/httpResponseHelper.js";
+import { HttpTimeoutError } from "../../lib/httpFetch.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
@@ -88,7 +90,22 @@ export async function ingestHandler(event) {
     });
   }
 
-  const { chResponse, eligibility } = await getRegisteredEmailEligibility(accessToken, companyNumber);
+  let chResponse;
+  let eligibility;
+  try {
+    ({ chResponse, eligibility } = await getRegisteredEmailEligibility(accessToken, companyNumber));
+  } catch (error) {
+    if (!(error instanceof HttpTimeoutError)) {
+      throw error;
+    }
+    logger.warn({ message: "Companies House did not answer the eligibility check in time", companyNumber, timeoutMs: error.timeoutMs });
+    return http504GatewayTimeoutResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: "Companies House did not answer the eligibility check in time",
+      error: { companyNumber },
+    });
+  }
 
   if (chResponse.status === 404) {
     return http404NotFoundResponse({

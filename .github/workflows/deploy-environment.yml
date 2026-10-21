@@ -236,6 +236,21 @@ jobs:
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
 
+      - name: Create secret in AWS from secrets.COMPANIES_HOUSE_SANDBOX_API_KEY
+        env:
+          COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+        run: |
+          # The sandbox REST key reads the sandbox test companies for the registered office address
+          # lookup on ci. Prod has no sandbox key and leaves the secret unset.
+          if [ -z "${COMPANIES_HOUSE_SANDBOX_API_KEY}" ]; then
+            echo "::notice::COMPANIES_HOUSE_SANDBOX_API_KEY is not set on this environment; skipping the secret"
+            exit 0
+          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/companies-house/sandbox_api_key" \
+            "${COMPANIES_HOUSE_SANDBOX_API_KEY}"
+
       - name: Create secret in AWS from secrets.COMPANIES_HOUSE_CLIENT_SECRET
         env:
           COMPANIES_HOUSE_CLIENT_SECRET: ${{ secrets.COMPANIES_HOUSE_CLIENT_SECRET }}

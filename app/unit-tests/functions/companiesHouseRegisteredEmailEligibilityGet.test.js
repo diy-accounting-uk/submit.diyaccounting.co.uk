@@ -136,6 +136,26 @@ describe("companiesHouseRegisteredEmailEligibilityGet ingestHandler", () => {
     expect(body.eligibilityStatusCode).toBe("INVALID_NO_REGISTERED_EMAIL_ADDRESS_EXISTS");
   });
 
+  test("answers 504 when Companies House does not answer the eligibility check in time", async () => {
+    mockFetch.mockRejectedValueOnce(Object.assign(new Error("aborted"), { name: "AbortError" }));
+    const response = await companiesHouseRegisteredEmailEligibilityGetHandler(buildEvent());
+    expect(response.statusCode).toBe(504);
+    expect(parseResponseBody(response).companyNumber).toBe("00000001");
+  });
+
+  test("waits 26 seconds for the eligibility check, longer than the 20 second default", async () => {
+    const timerSpy = vi.spyOn(globalThis, "setTimeout");
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ eligibility_status_code: "COMPANY_VALID_FOR_SERVICE" }),
+      headers: { get: () => null, forEach: () => {} },
+    });
+    await companiesHouseRegisteredEmailEligibilityGetHandler(buildEvent());
+    expect(timerSpy.mock.calls.map((call) => call[1])).toContain(26000);
+    timerSpy.mockRestore();
+  });
+
   test("rejects a malformed company number with 400", async () => {
     const response = await companiesHouseRegisteredEmailEligibilityGetHandler(
       buildEvent({ pathParameters: { companyNumber: "bad-number" } }),

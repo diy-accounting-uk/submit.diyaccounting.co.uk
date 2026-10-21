@@ -139,7 +139,7 @@ Values never leave GitHub. `deploy-environment.yml` copies the environment secre
 
 Other consumers: `HMRC_SANDBOX_CLIENT_SECRET` is also read by `test.yml`, `probe-test.yml`, `generate-pass.yml`, `create-hmrc-test-user.yml`, `video-capture.yml` and `deploy-app.yml`.
 
-Read on `ci`, not yet set: `COMPANIES_HOUSE_SANDBOX_API_KEY`, `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET` (`deploy.yml`, `probe-test.yml`, `video-capture.yml`, for the Companies House sandbox filing suites).
+Read on `ci`: `COMPANIES_HOUSE_SANDBOX_API_KEY` (also written by `deploy-environment.yml` to `ci/submit/companies-house/sandbox_api_key` for the registered office read), `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET` (`deploy.yml`, `probe-test.yml`, `video-capture.yml`, for the Companies House sandbox filing suites).
 
 ### Getting the values
 

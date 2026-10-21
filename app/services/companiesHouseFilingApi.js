@@ -8,7 +8,7 @@
 // read-only lookup.
 
 import { createLogger, context } from "../lib/logger.js";
-import { fetchJsonWithTimeout, DEFAULT_TIMEOUTS } from "../lib/httpFetch.js";
+import { fetchJsonWithTimeout } from "../lib/httpFetch.js";
 import {
   http401UnauthorizedResponse,
   http403ForbiddenResponse,
@@ -19,6 +19,10 @@ import {
 import { BundleAuthorizationError, BundleEntitlementError } from "./bundleManagement.js";
 
 const logger = createLogger({ source: "app/services/companiesHouseFilingApi.js" });
+
+// The sandbox has taken more than 20 seconds to answer a filing request. The Lambda timeout is 28
+// seconds, so the wait stays below that.
+export const FILING_REQUEST_TIMEOUT_MS = 26000;
 
 let secretsClient = null;
 let cachedCompaniesHouseClientSecret;
@@ -74,7 +78,7 @@ export function extractCompaniesHouseAccessTokenFromLambdaEvent(event) {
   return extractBearerTokenFromAuthHeaderInLambdaEvent(event);
 }
 
-export async function companiesHouseFilingRequest(method, path, { accessToken, body } = {}) {
+export async function companiesHouseFilingRequest(method, path, { accessToken, body, timeoutMs = FILING_REQUEST_TIMEOUT_MS } = {}) {
   const baseUrl = getFilingBaseUrl();
   const requestUrl = `${baseUrl}${path}`;
   const headers = {
@@ -96,7 +100,7 @@ export async function companiesHouseFilingRequest(method, path, { accessToken, b
   const result = await fetchJsonWithTimeout(
     requestUrl,
     { method, headers, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) },
-    DEFAULT_TIMEOUTS.SHORT,
+    timeoutMs,
   );
 
   logger.info({ message: `Response from ${method} ${requestUrl}`, url: requestUrl, status: result.status });

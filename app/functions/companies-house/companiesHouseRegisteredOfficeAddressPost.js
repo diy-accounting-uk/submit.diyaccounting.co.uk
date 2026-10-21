@@ -194,7 +194,12 @@ export async function putRegisteredOfficeAddress(accessToken, parameters) {
   });
 
   if (!chResponse.ok) {
-    logger.warn({ message: "Companies House registered office address filing failed", transactionId, status: chResponse.status });
+    logger.warn({
+      message: "Companies House registered office address filing failed",
+      transactionId,
+      status: chResponse.status,
+      responseBody: chResponse.data,
+    });
     return { chResponse, resource: null };
   }
 

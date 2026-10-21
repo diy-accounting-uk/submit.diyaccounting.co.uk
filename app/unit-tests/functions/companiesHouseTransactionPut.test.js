@@ -185,6 +185,24 @@ describe("companiesHouseTransactionPut ingestHandler", () => {
     expect(body.message).toContain("already closed");
   });
 
+  test("answers 504 when Companies House does not answer the close request in time", async () => {
+    const abort = Object.assign(new Error("aborted"), { name: "AbortError" });
+    mockFetch.mockRejectedValueOnce(abort);
+    const response = await companiesHouseTransactionPutHandler(buildEvent());
+    expect(response.statusCode).toBe(504);
+    const body = parseResponseBody(response);
+    expect(body.transactionId).toBe("017100005912");
+    expect(body.message).toContain("still be processing");
+  });
+
+  test("waits 26 seconds for the close request, longer than the 20 second default", async () => {
+    const timerSpy = vi.spyOn(globalThis, "setTimeout");
+    mockChResponse(mockFetch, { ok: true, status: 204, body: {} });
+    await companiesHouseTransactionPutHandler(buildEvent());
+    expect(timerSpy.mock.calls.map((call) => call[1])).toContain(26000);
+    timerSpy.mockRestore();
+  });
+
   test("maps a 401 from Companies House to our 401", async () => {
     mockChResponse(mockFetch, { ok: false, status: 401, body: { errors: [{ error: "invalid-token" }] } });
     const response = await companiesHouseTransactionPutHandler(buildEvent());

@@ -12,8 +12,10 @@ import {
   http409ConflictResponse,
   http422UnprocessableEntityResponse,
   http500ServerErrorResponse,
+  http504GatewayTimeoutResponse,
   http401UnauthorizedResponse,
 } from "../../lib/httpResponseHelper.js";
+import { HttpTimeoutError } from "../../lib/httpFetch.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
@@ -95,7 +97,21 @@ export async function ingestHandler(event) {
     });
   }
 
-  const { chResponse } = await closeTransaction(accessToken, transactionId);
+  let chResponse;
+  try {
+    ({ chResponse } = await closeTransaction(accessToken, transactionId));
+  } catch (error) {
+    if (!(error instanceof HttpTimeoutError)) {
+      throw error;
+    }
+    logger.warn({ message: "Companies House did not answer the transaction close in time", transactionId, timeoutMs: error.timeoutMs });
+    return http504GatewayTimeoutResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: "Companies House did not answer the close request in time; the transaction may still be processing",
+      error: { transactionId },
+    });
+  }
 
   // Neither filing this route closes is chargeable, so a 202 always means we built the wrong
   // transaction - treat it as an error rather than a filing outcome the page could act on.
