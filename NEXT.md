@@ -38,6 +38,8 @@ step.
 
 ## In flight
 
+- [ ] **SEC10. Dependabot alerts 137 to 150 (published 2026-10-20 23:12 UTC).** Runtime: `@modelcontextprotocol/sdk` 1.31.0 pinned in `package.json` (line 472) and `mcp/package.json` (line 37), fixed in 1.32.0 (alerts 138 to 141, 144, 145, 147, 150; five high); `hono` 4.13.8 in `mcp/package-lock.json`, fixed in 4.13.11 (137). Development: `vite` 8.2.2 in the root lockfile, fixed in 8.2.4 (146, 148, 149); `follow-redirects` 1.16.0, fixed in 1.16.1 (142, 143). In flight: the dependency agent in `.claude/worktrees/sec-deps` on `claude/ops-sec-deps`. **Source**: Dependabot. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
 ## Machine-only
 
 - [ ] **AL2. Close issue #513 (`prod-env-ga4-daily-pull-errors`) when the alarm reads OK.** The 07:20 UTC errors on 2026-10-20 were one request's BigQuery `backendError` retries (request 8f0d5fc2-dd2f-4884-a8d2-e9827e25a011); the hourly runs since are clean; `app/lib/bigQueryRetry.js` retries a transient job once in both GA4 pulls (PR #514). The 24-hour datapoint ages out about 07:21 UTC on 2026-10-21; then read `aws --profile diya-submit-prod cloudwatch describe-alarms --alarm-names prod-env-ga4-daily-pull-errors` and close #513 with that evidence. **Source**: issue #513. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
