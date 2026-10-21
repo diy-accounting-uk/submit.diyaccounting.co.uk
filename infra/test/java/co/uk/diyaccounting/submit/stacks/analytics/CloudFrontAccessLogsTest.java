@@ -100,20 +100,19 @@ class CloudFrontAccessLogsTest {
                                 "Name",
                                 "cloudfront_requests",
                                 "Parameters",
-                                Match.objectLike(
-                                        Map.of(
-                                                "classification",
-                                                "parquet",
-                                                "projection.enabled",
-                                                "true",
-                                                "projection.day_prefix.type",
-                                                "date",
-                                                "projection.day_prefix.format",
-                                                "'year='yyyy/'month='MM/'day='dd",
-                                                "projection.day_prefix.range",
-                                                "year=2026/month=09/day=26,NOW",
-                                                "storage.location.template",
-                                                Match.stringLikeRegexp(".*raw/cloudfront/\\$\\{day_prefix\\}/"))),
+                                Match.objectLike(Map.of(
+                                        "classification",
+                                        "parquet",
+                                        "projection.enabled",
+                                        "true",
+                                        "projection.day_prefix.type",
+                                        "date",
+                                        "projection.day_prefix.format",
+                                        "'year='yyyy/'month='MM/'day='dd",
+                                        "projection.day_prefix.range",
+                                        "year=2026/month=09/day=26,NOW",
+                                        "storage.location.template",
+                                        Match.stringLikeRegexp(".*raw/cloudfront/\\$\\{day_prefix\\}/"))),
                                 "PartitionKeys",
                                 List.of(Map.of("Name", "day_prefix", "Type", "string")))))));
 

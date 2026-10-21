@@ -63,11 +63,13 @@ class EdgeStackTest {
         template.resourceCountIs("AWS::DynamoDB::Table", 0);
         template.hasResourceProperties(
                 "AWS::CloudFront::Distribution",
-                Match.objectLike(Map.of("DistributionConfig", Match.not(Match.objectLike(Map.of("WebACLId", Match.anyValue()))))));
+                Match.objectLike(Map.of(
+                        "DistributionConfig", Match.not(Match.objectLike(Map.of("WebACLId", Match.anyValue()))))));
         // The certificate alarm and its forwarding rule stay on every set.
         template.resourceCountIs("AWS::Events::Rule", 1);
         template.hasResourceProperties(
-                "AWS::CloudWatch::Alarm", Match.objectLike(Map.of("AlarmName", Match.stringLikeRegexp(".*-cert-expiring"))));
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of("AlarmName", Match.stringLikeRegexp(".*-cert-expiring"))));
     }
 
     @Test

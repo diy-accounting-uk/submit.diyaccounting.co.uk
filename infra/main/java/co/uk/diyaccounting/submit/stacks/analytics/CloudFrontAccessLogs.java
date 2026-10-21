@@ -164,7 +164,8 @@ public class CloudFrontAccessLogs {
         // names a date range needs no partition list refresh, whatever distribution wrote that
         // day's rows. One date-typed key, day_prefix, holds the whole year=/month=/day= path:
         // a date projection's range can end at NOW, so a query lists only the days that exist,
-        // where three integer keys (2026 to 2035) listed 3,720 prefixes per unbounded query. distribution_id is deliberately not a partition key (see the class
+        // where three integer keys (2026 to 2035) listed 3,720 prefixes per unbounded query. distribution_id is
+        // deliberately not a partition key (see the class
         // comment): EdgeStack's delivery writes every deployment's logs to the same
         // year=.../month=.../day=.../ tree, so this table's date range already covers every
         // release without listing distribution IDs anywhere.

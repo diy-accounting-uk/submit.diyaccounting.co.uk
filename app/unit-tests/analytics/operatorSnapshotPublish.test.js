@@ -232,7 +232,9 @@ describe("operatorSnapshotPublish", () => {
           { valueExpr: "failure_rate", aggregation: "avg", where: "workflow = 'deploy'" },
         ],
       });
-      expect(sql).toContain("sum(CASE WHEN day > date_add('day', -30, current_date) AND (workflow = 'deploy') THEN runs END) AS o0_last_30");
+      expect(sql).toContain(
+        "sum(CASE WHEN day > date_add('day', -30, current_date) AND (workflow = 'deploy') THEN runs END) AS o0_last_30",
+      );
       expect(sql).toContain(
         "avg(CASE WHEN day > date_add('day', -180, current_date) AND day <= date_add('day', -90, current_date) AND (workflow = 'deploy') THEN failure_rate END) AS o1_prev_90",
       );
@@ -769,10 +771,18 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).toContain(
         "sum(CASE WHEN hour > date_add('hour', -1, current_timestamp) AND (activity = 'submit-vat') THEN starts END) AS o0_last_1h",
       );
-      expect(sql).toContain("sum(CASE WHEN hour > date_add('day', -1, current_timestamp) AND (activity = 'submit-vat') THEN starts END) AS o0_last_1d");
-      expect(sql).toContain("sum(CASE WHEN hour > date_add('day', -7, current_timestamp) AND (activity = 'submit-vat') THEN starts END) AS o0_last_7d");
-      expect(sql).toContain("sum(CASE WHEN hour > date_add('hour', -1, current_timestamp) AND (activity = 'bundle') THEN starts END) AS o1_last_1h");
-      expect(sql).toContain("sum(CASE WHEN hour > date_add('day', -7, current_timestamp) AND (activity = 'bundle') THEN starts END) AS o1_last_7d");
+      expect(sql).toContain(
+        "sum(CASE WHEN hour > date_add('day', -1, current_timestamp) AND (activity = 'submit-vat') THEN starts END) AS o0_last_1d",
+      );
+      expect(sql).toContain(
+        "sum(CASE WHEN hour > date_add('day', -7, current_timestamp) AND (activity = 'submit-vat') THEN starts END) AS o0_last_7d",
+      );
+      expect(sql).toContain(
+        "sum(CASE WHEN hour > date_add('hour', -1, current_timestamp) AND (activity = 'bundle') THEN starts END) AS o1_last_1h",
+      );
+      expect(sql).toContain(
+        "sum(CASE WHEN hour > date_add('day', -7, current_timestamp) AND (activity = 'bundle') THEN starts END) AS o1_last_7d",
+      );
       expect(sql).not.toContain("WHERE");
       expect(sql).not.toContain("prev_");
       expect(sql).not.toContain("last_30");

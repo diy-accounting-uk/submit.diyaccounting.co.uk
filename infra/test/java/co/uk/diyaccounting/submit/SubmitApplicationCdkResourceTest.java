@@ -714,8 +714,8 @@ class SubmitApplicationCdkResourceTest {
         Template.fromStack(submitApplication.publishStack)
                 .hasResourceProperties(
                         "Custom::CDKBucketDeployment",
-                        Match.objectLike(Map.of(
-                                "DistributionId", Match.anyValue(), "DistributionPaths", List.of("/*"))));
+                        Match.objectLike(
+                                Map.of("DistributionId", Match.anyValue(), "DistributionPaths", List.of("/*"))));
     }
 
     @Test
@@ -730,8 +730,8 @@ class SubmitApplicationCdkResourceTest {
         Template.fromStack(submitApplication.publishStack)
                 .hasResourceProperties(
                         "Custom::CDKBucketDeployment",
-                        Match.objectLike(Map.of(
-                                "DistributionId", Match.absent(), "DistributionPaths", Match.absent())));
+                        Match.objectLike(
+                                Map.of("DistributionId", Match.absent(), "DistributionPaths", Match.absent())));
     }
 
     @Test
