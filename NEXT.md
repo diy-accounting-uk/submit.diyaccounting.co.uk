@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-95261ee** (PR #523, last-known-good since 19:24 UTC on 2026-10-21; the only prod set). The site's `script-src` carries no `'unsafe-inline'`.
-**ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-20 10:46 UTC; the pointer last written 11:36 UTC on 2026-10-21). Its self-destruct fires every four hours from creation and skips while the set is last-known-good inside the 12 h window from the pointer's last write, so it goes at the 02:46 UTC firing on 2026-10-22 unless a branch deploy renews it first.
+**ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-20 10:46 UTC; the pointer last written 18:47 UTC on 2026-10-21). Its self-destruct fires every four hours from creation and skips while the set is last-known-good inside the 12 h window from the pointer's last write, so it goes at the 10:46 UTC firing on 2026-10-22 unless a branch deploy renews it first.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -41,8 +41,6 @@ step.
 ## Machine-only
 
 - [ ] **UX2. Show each label beside its value in definition lists.** The page stylesheet `web/public/submit.css` has no `dl`, `dt` or `dd` rule, so every label sits on its own line above its value. Seen on the Review step of `web/public/companies-house/changeRegisteredOffice.html` (`#reviewAddress`, line 123, and `#currentAddressList`, line 67, both filled by `renderAddressList` in `changeRegisteredOffice.page.js` line 44; operator screenshot, 2026-10-21). The same markup is in `companies-house/companySearch.html` (`#companyProfile`), `hmrc/itsa/selfEmploymentPeriod.html`, `hmrc/itsa/ukPropertyPeriod.html`, `hmrc/itsa/taxLiabilityAdjustments.html`, `rates.html` and `mcp.html`. Fix: one two-column `dl` rule in `submit.css` (label column, value column, one row per pair; one column below the phone breakpoint), checked on each page above. A browser test in `web/browser-tests/` asserts that a `dt` and its `dd` share a row on the office Review step. Then re-record `change-registered-office` and replace c47MLAUU0g4 through `.claude/skills/video-publish/SKILL.md`; other videos that show a changed page are re-recorded in the same pass. **Source**: operator, 2026-10-21. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
-- [ ] **AL2. Close issue #513 (`prod-env-ga4-daily-pull-errors`) when the alarm reads OK.** `prod-env-ga4-daily-pull` errored in the hours from 07:00 to 10:59 UTC on 2026-10-20 (11 errors, BigQuery `backendError` retries; request 8f0d5fc2-dd2f-4884-a8d2-e9827e25a011) and not since; `app/lib/bigQueryRetry.js` retries a transient job once in both GA4 pulls (PR #514). The alarm's datapoint is one day long (period 86400 s, aligned at 07:21 UTC), so the window that ends at 07:21 UTC on 2026-10-21 still holds those errors and it read ALARM at 07:44 UTC. It reads OK after the window that ends at 07:21 UTC on 2026-10-22; then close #513 with that evidence. **Source**: issue #513. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 ## Machine-ask
 
