@@ -434,14 +434,13 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void allFourLookupLambdasAndTheRegisteredOfficeAddressReadGetTheApiKeyArnEnvVarAndGrantWhenTheArnIsConfigured() {
+    void allFourLookupLambdasGetTheApiKeyArnEnvVarAndGrantWhenTheArnIsConfigured() {
         CompaniesHouseStack stack = synthCompaniesHouseStack(API_KEY_ARN);
         Template template = Template.fromStack(stack);
 
         for (String functionName : List.of(
                 stack.companiesHouseSearchGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
-                stack.companiesHouseRegisteredOfficeAddressGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseOfficersGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscGetLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
@@ -451,8 +450,9 @@ class CompaniesHouseStackTest {
             assertEquals(API_KEY_ARN, env.get("COMPANIES_HOUSE_API_KEY_ARN"));
         }
 
-        // The wildcard suffix Secrets Manager requires, granted to all five API-key Lambda roles
-        // (search, company, registered office address read, officers, PSCs) and no others.
+        // The wildcard suffix Secrets Manager requires, granted to the four lookup Lambda roles
+        // (search, company, officers, PSCs) and no others; the registered office address read takes
+        // the filing key with the filing base URI.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -464,12 +464,13 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
-                5);
+                4);
     }
 
     @Test
     void theRegisteredOfficeAddressReadUsesTheFilingBaseUriAndTheFilingApiKeyWhenConfigured() {
-        String filingApiKeyArn = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/companies-house/sandbox_api_key";
+        String filingApiKeyArn =
+                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/companies-house/sandbox_api_key";
         CompaniesHouseStack stack = synthCompaniesHouseStack(API_KEY_ARN, "", "", "", filingApiKeyArn);
         Template template = Template.fromStack(stack);
 
@@ -482,7 +483,8 @@ class CompaniesHouseStackTest {
                                 stack.companiesHouseRegisteredOfficeAddressGetLambdaProps.ingestFunctionName())));
         assertEquals(1, officeRead.size());
         var officeEnv = environmentVariablesOf(officeRead);
-        assertEquals("https://api-sandbox.company-information.service.gov.uk", officeEnv.get("COMPANIES_HOUSE_BASE_URI"));
+        assertEquals(
+                "https://api-sandbox.company-information.service.gov.uk", officeEnv.get("COMPANIES_HOUSE_BASE_URI"));
         assertEquals(filingApiKeyArn, officeEnv.get("COMPANIES_HOUSE_API_KEY_ARN"));
 
         var companyRead = template.findResources(
@@ -501,7 +503,10 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action", "secretsmanager:GetSecretValue", "Resource", filingApiKeyArn + "-*")))))))),
+                                        "Action",
+                                        "secretsmanager:GetSecretValue",
+                                        "Resource",
+                                        filingApiKeyArn + "-*")))))))),
                 1);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
@@ -510,7 +515,10 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action", "secretsmanager:GetSecretValue", "Resource", API_KEY_ARN + "-*")))))))),
+                                        "Action",
+                                        "secretsmanager:GetSecretValue",
+                                        "Resource",
+                                        API_KEY_ARN + "-*")))))))),
                 4);
     }
 

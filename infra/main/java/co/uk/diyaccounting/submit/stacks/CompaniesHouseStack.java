@@ -503,12 +503,11 @@ public class CompaniesHouseStack extends Stack {
         // House user token. The change filing runs against the filing base URI, so the read that
         // supplies its reference etag goes there too, with the key issued for that API. On ci the
         // filing base is the sandbox, where the test companies exist and the live register does not
-        // know them; on prod the filing base is the live API and the key falls back to the live key.
+        // know them; on prod the filing base is the live API and its filing key is the live key.
         var officeReadBaseUri = StringUtils.isNotBlank(props.companiesHouseFilingBaseUri())
                 ? props.companiesHouseFilingBaseUri()
                 : props.companiesHouseBaseUri();
         var officeReadApiKeyArn = StringUtils.isNotBlank(props.companiesHouseFilingBaseUri())
-                        && StringUtils.isNotBlank(props.companiesHouseFilingApiKeyArn())
                 ? props.companiesHouseFilingApiKeyArn()
                 : props.companiesHouseApiKeyArn();
         var companiesHouseRegisteredOfficeAddressGetLambdaEnv = new PopulatedMap<String, String>()
