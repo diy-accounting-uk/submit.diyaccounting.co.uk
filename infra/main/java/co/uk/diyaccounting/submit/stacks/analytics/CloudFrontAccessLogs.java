@@ -46,6 +46,15 @@ public class CloudFrontAccessLogs {
     private static final String RAW_PREFIX = "raw/cloudfront/";
     private static final String TABLE_NAME = "cloudfront_requests";
 
+    /** Partition key whose value is the day's path, e.g. {@code year=2026/month=10/day=21}. */
+    public static final String DAY_PREFIX_KEY = "day_prefix";
+
+    // A Java DateTimeFormatter pattern: the quoted parts are literal text of the S3 path.
+    static final String DAY_PREFIX_FORMAT = "'year='yyyy/'month='MM/'day='dd";
+
+    // The first day the delivery wrote under year=.../month=.../day=... in ci and prod.
+    static final String FIRST_DAY_PREFIX = "year=2026/month=09/day=26";
+
     // Standard CloudFront access-log (v2) field set. c_ip is personal data under UK GDPR; the
     // table description below says so and no view built on this table may select it.
     private static final List<String> FIELD_ORDER = List.of(
@@ -151,9 +160,11 @@ public class CloudFrontAccessLogs {
         // ============================================================================
         // Glue catalog: cloudfront_requests over raw/cloudfront/, partition projection
         // ============================================================================
-        // No crawler: projection computes year/month/day partitions from a formula, so a query
-        // that names a date range needs no partition list refresh, whatever distribution wrote
-        // that day's rows. distribution_id is deliberately not a partition key (see the class
+        // No crawler: projection computes the day partitions from a formula, so a query that
+        // names a date range needs no partition list refresh, whatever distribution wrote that
+        // day's rows. One date-typed key, day_prefix, holds the whole year=/month=/day= path:
+        // a date projection's range can end at NOW, so a query lists only the days that exist,
+        // where three integer keys (2026 to 2035) listed 3,720 prefixes per unbounded query. distribution_id is deliberately not a partition key (see the class
         // comment): EdgeStack's delivery writes every deployment's logs to the same
         // year=.../month=.../day=.../ tree, so this table's date range already covers every
         // release without listing distribution IDs anywhere.
@@ -163,15 +174,12 @@ public class CloudFrontAccessLogs {
         tableParameters.put("classification", "parquet");
         tableParameters.put("has_encrypted_data", "false");
         tableParameters.put("projection.enabled", "true");
-        tableParameters.put("projection.year.type", "integer");
-        tableParameters.put("projection.year.range", "2026,2035");
-        tableParameters.put("projection.month.type", "integer");
-        tableParameters.put("projection.month.range", "1,12");
-        tableParameters.put("projection.month.digits", "2");
-        tableParameters.put("projection.day.type", "integer");
-        tableParameters.put("projection.day.range", "1,31");
-        tableParameters.put("projection.day.digits", "2");
-        tableParameters.put("storage.location.template", location + "year=${year}/month=${month}/day=${day}/");
+        tableParameters.put("projection." + DAY_PREFIX_KEY + ".type", "date");
+        tableParameters.put("projection." + DAY_PREFIX_KEY + ".format", DAY_PREFIX_FORMAT);
+        tableParameters.put("projection." + DAY_PREFIX_KEY + ".range", FIRST_DAY_PREFIX + ",NOW");
+        tableParameters.put("projection." + DAY_PREFIX_KEY + ".interval", "1");
+        tableParameters.put("projection." + DAY_PREFIX_KEY + ".interval.unit", "DAYS");
+        tableParameters.put("storage.location.template", location + "${" + DAY_PREFIX_KEY + "}/");
 
         this.table = CfnTable.Builder.create(scope, prefix + "-CloudFrontRequestsTable")
                 .catalogId(account)
@@ -183,19 +191,10 @@ public class CloudFrontAccessLogs {
                                 + "and must be excluded from every view built on this table.")
                         .tableType("EXTERNAL_TABLE")
                         .parameters(tableParameters)
-                        .partitionKeys(List.of(
-                                CfnTable.ColumnProperty.builder()
-                                        .name("year")
-                                        .type("int")
-                                        .build(),
-                                CfnTable.ColumnProperty.builder()
-                                        .name("month")
-                                        .type("int")
-                                        .build(),
-                                CfnTable.ColumnProperty.builder()
-                                        .name("day")
-                                        .type("int")
-                                        .build()))
+                        .partitionKeys(List.of(CfnTable.ColumnProperty.builder()
+                                .name(DAY_PREFIX_KEY)
+                                .type("string")
+                                .build()))
                         .storageDescriptor(CfnTable.StorageDescriptorProperty.builder()
                                 .location(location)
                                 .inputFormat("org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat")

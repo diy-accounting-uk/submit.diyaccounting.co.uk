@@ -48,7 +48,7 @@ vi.mock("@aws-sdk/client-s3", () => ({
 
 import {
   handler,
-  buildWindowedSql,
+  buildWindowedBatchSql,
   buildFastWindowBatchSql,
   computeTrend,
   toObservationWindows,
@@ -64,6 +64,10 @@ import {
   OBJECTIVE_DEFINITIONS,
 } from "@app/functions/analytics/operatorSnapshotPublish.js";
 import { loadCatalogFromRoot, isActivityListedInEnvironment } from "@app/services/productCatalog.js";
+
+const WINDOWED_QUERY_COUNT = new Set(
+  OBJECTIVE_DEFINITIONS.flatMap((objective) => objective.observations.map((o) => `${o.view}|${o.dayColumn}`)),
+).size;
 
 const FAST_WINDOW_VIEW_COUNT = new Set(
   OBJECTIVE_DEFINITIONS.flatMap((objective) => objective.observations.filter((o) => o.fastWindowView).map((o) => o.fastWindowView)),
@@ -81,35 +85,56 @@ function resultSetOfRows(header, rows) {
   return { Rows: [{ Data: header.map(varchar) }, ...rows.map((row) => ({ Data: row.map(varchar) }))] };
 }
 
-// Every query succeeds. A fast-window batch query answers each of its o<i>_last_1h/1d/7d
-// columns with `fastValues` keyed by window ("1h", "1d", "7d"), read back from the SQL's own
-// aliases; any other query answers the windowed header with `windowedRow`.
-function mockFastWindowBatchAnswering(fastValues, windowedRow = ["10", "5", "30", "20"]) {
+const WINDOWED_COLUMN_POSITION = { last_30: 0, prev_30: 1, last_90: 2, prev_90: 3 };
+
+// Answers one batch query the way Athena would: one column per `AS o<i>_<column>` alias in its
+// SQL. A windowed column (last_30, prev_30, last_90, prev_90) takes its value by position from
+// windowedRowFor(line, sql), the row chosen for the SQL line that defines it; o<i>_data_since
+// answers null; a fast-window column (last_1h, last_1d, last_7d) takes fastValues["1h"|"1d"|"7d"].
+// SQL with no such alias answers the plain windowed header with windowedRowFor(sql, sql).
+function resultSetForSql(sql, windowedRowFor, fastValues) {
+  const aliasLines = sql.split("\n").filter((line) => /AS o\d+_\w+,?$/.test(line));
+  if (aliasLines.length === 0) {
+    return resultSetOf(["last_30", "prev_30", "last_90", "prev_90"], windowedRowFor(sql, sql));
+  }
+  const header = [];
+  const row = [];
+  for (const line of aliasLines) {
+    const [, alias, column] = line.match(/AS (o\d+_(\w+)),?$/);
+    header.push(alias);
+    if (column in WINDOWED_COLUMN_POSITION) {
+      row.push(windowedRowFor(line, sql)[WINDOWED_COLUMN_POSITION[column]]);
+    } else if (column.startsWith("last_")) {
+      row.push(fastValues[column.slice("last_".length)]);
+    } else {
+      row.push(null);
+    }
+  }
+  return resultSetOf(header, row);
+}
+
+// Every query succeeds and answers through resultSetForSql, except one whose SQL contains
+// `failingFragment` (e.g. a missing Glue table): that one runs to a terminal FAILED state, the
+// same shape Athena answers a TABLE_NOT_FOUND query with.
+function mockQueries({ windowedRowFor, fastValues = { "1h": null, "1d": null, "7d": null }, failingFragment }) {
   const sqlById = new Map();
   let counter = 0;
   mockAthenaSend.mockImplementation((command) => {
     switch (command.constructor.name) {
       case "StartQueryExecutionCommand": {
         counter += 1;
-        const id = `qid-${counter}`;
-        sqlById.set(id, command.input.QueryString);
+        const sql = command.input.QueryString;
+        const id = failingFragment && sql.includes(failingFragment) ? `failing-${counter}` : `qid-${counter}`;
+        sqlById.set(id, sql);
         return Promise.resolve({ QueryExecutionId: id });
       }
       case "GetQueryExecutionCommand":
-        return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
-      case "GetQueryResultsCommand": {
-        const sql = sqlById.get(command.input.QueryExecutionId);
-        const aliases = [...sql.matchAll(/AS (o\d+_last_(1h|1d|7d))/g)];
-        if (aliases.length === 0) {
-          return Promise.resolve({ ResultSet: resultSetOf(["last_30", "prev_30", "last_90", "prev_90"], windowedRow) });
+        if (command.input.QueryExecutionId.startsWith("failing-")) {
+          return Promise.resolve({ QueryExecution: { Status: { State: "FAILED", StateChangeReason: "TABLE_NOT_FOUND" } } });
         }
-        return Promise.resolve({
-          ResultSet: resultSetOf(
-            aliases.map(([, alias]) => alias),
-            aliases.map(([, , window]) => fastValues[window]),
-          ),
-        });
-      }
+        return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+      case "GetQueryResultsCommand":
+        return Promise.resolve({ ResultSet: resultSetForSql(sqlById.get(command.input.QueryExecutionId), windowedRowFor, fastValues) });
       default:
         throw new Error(`unexpected command ${command.constructor.name}`);
     }
@@ -117,71 +142,27 @@ function mockFastWindowBatchAnswering(fastValues, windowedRow = ["10", "5", "30"
 }
 
 function mockAllQueriesSucceedWith(windowedRow) {
-  let counter = 0;
-  mockAthenaSend.mockImplementation((command) => {
-    switch (command.constructor.name) {
-      case "StartQueryExecutionCommand": {
-        counter += 1;
-        return Promise.resolve({ QueryExecutionId: `qid-${counter}` });
-      }
-      case "GetQueryExecutionCommand":
-        return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
-      case "GetQueryResultsCommand":
-        return Promise.resolve({ ResultSet: resultSetOf(["last_30", "prev_30", "last_90", "prev_90"], windowedRow) });
-      default:
-        throw new Error(`unexpected command ${command.constructor.name}`);
-    }
-  });
+  mockQueries({ windowedRowFor: () => windowedRow });
 }
 
-// Every other query succeeds with `row`; the one whose SQL names `failingViewFragment` (e.g. a
-// missing Glue table) runs to a terminal FAILED state instead, the same shape Athena answers a
-// TABLE_NOT_FOUND query with.
-function mockQueriesWithOneFailing(failingViewFragment, row) {
-  mockAthenaSend.mockImplementation((command) => {
-    switch (command.constructor.name) {
-      case "StartQueryExecutionCommand": {
-        const failing = command.input.QueryString.includes(failingViewFragment);
-        return Promise.resolve({ QueryExecutionId: failing ? "failing-qid" : "qid" });
-      }
-      case "GetQueryExecutionCommand": {
-        if (command.input.QueryExecutionId === "failing-qid") {
-          return Promise.resolve({
-            QueryExecution: { Status: { State: "FAILED", StateChangeReason: "TABLE_NOT_FOUND" } },
-          });
-        }
-        return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
-      }
-      case "GetQueryResultsCommand":
-        return Promise.resolve({ ResultSet: resultSetOf(["last_30", "prev_30", "last_90", "prev_90"], row) });
-      default:
-        throw new Error(`unexpected command ${command.constructor.name}`);
-    }
-  });
+function mockQueriesWithOneFailing(failingFragment, windowedRow) {
+  mockQueries({ windowedRowFor: () => windowedRow, failingFragment });
 }
 
-// Every query succeeds; the row it answers with is looked up by the first key in `rowsByFragment`
-// whose text appears in the query's SQL (e.g. an observation's own valueExpr), falling back to
-// `defaultRow` for every other observation.
+// Each windowed column answers the row of the first key in `rowsByFragment` that its own SQL
+// line contains (e.g. an observation's own valueExpr), or `defaultRow`.
 function mockQueriesWithRowsByFragment(rowsByFragment, defaultRow) {
   const fragments = Object.keys(rowsByFragment);
-  mockAthenaSend.mockImplementation((command) => {
-    switch (command.constructor.name) {
-      case "StartQueryExecutionCommand": {
-        const fragment = fragments.find((key) => command.input.QueryString.includes(key));
-        return Promise.resolve({ QueryExecutionId: fragment ? `qid-${fragment}` : "qid-default" });
-      }
-      case "GetQueryExecutionCommand":
-        return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
-      case "GetQueryResultsCommand": {
-        const fragment = fragments.find((key) => command.input.QueryExecutionId === `qid-${key}`);
-        const row = fragment ? rowsByFragment[fragment] : defaultRow;
-        return Promise.resolve({ ResultSet: resultSetOf(["last_30", "prev_30", "last_90", "prev_90"], row) });
-      }
-      default:
-        throw new Error(`unexpected command ${command.constructor.name}`);
-    }
+  mockQueries({
+    windowedRowFor: (line) => {
+      const fragment = fragments.find((key) => line.includes(key));
+      return fragment ? rowsByFragment[fragment] : defaultRow;
+    },
   });
+}
+
+function mockFastWindowBatchAnswering(fastValues, windowedRow = ["10", "5", "30", "20"]) {
+  mockQueries({ windowedRowFor: () => windowedRow, fastValues });
 }
 
 describe("operatorSnapshotPublish", () => {
@@ -211,58 +192,72 @@ describe("operatorSnapshotPublish", () => {
     vi.restoreAllMocks();
   });
 
-  describe("buildWindowedSql", () => {
-    test("adds the earliest day only when asked", () => {
-      const observation = { view: "v", dayColumn: "day", valueExpr: "n", aggregation: "sum" };
-      expect(buildWindowedSql(observation)).not.toContain("data_since");
-      expect(buildWindowedSql({ ...observation, reportDataSince: true })).toContain("cast(min(day) AS varchar) AS data_since");
+  describe("buildWindowedBatchSql", () => {
+    test("adds an observation's earliest day only when asked, filtered by its where clause", () => {
+      const sql = buildWindowedBatchSql({
+        view: "v",
+        dayColumn: "day",
+        observations: [
+          { valueExpr: "n", aggregation: "sum" },
+          { valueExpr: "n", aggregation: "sum", reportDataSince: true },
+          { valueExpr: "n", aggregation: "sum", where: "kind = 'a'", reportDataSince: true },
+        ],
+      });
+      expect(sql).not.toContain("o0_data_since");
+      expect(sql).toContain("cast(min(day) AS varchar) AS o1_data_since");
+      expect(sql).toContain("cast(min(CASE WHEN kind = 'a' THEN day END) AS varchar) AS o2_data_since");
     });
 
     test("builds the four conditional aggregates without a filter", () => {
-      const sql = buildWindowedSql({
+      const sql = buildWindowedBatchSql({
         view: "v_availability_sli_daily",
         dayColumn: "day",
-        valueExpr: "pass_rate",
-        aggregation: "avg",
+        observations: [{ valueExpr: "pass_rate", aggregation: "avg" }],
       });
-      expect(sql).toContain("FROM   v_availability_sli_daily");
-      expect(sql).not.toContain("WHERE");
-      expect(sql).toContain("avg(CASE WHEN day > date_add('day', -30, current_date) THEN pass_rate END) AS last_30");
-      expect(sql).toContain("prev_90");
+      expect(sql).toBe(
+        "SELECT avg(CASE WHEN day > date_add('day', -30, current_date) THEN pass_rate END) AS o0_last_30,\n" +
+          "       avg(CASE WHEN day > date_add('day', -60, current_date) AND day <= date_add('day', -30, current_date) THEN pass_rate END) AS o0_prev_30,\n" +
+          "       avg(CASE WHEN day > date_add('day', -90, current_date) THEN pass_rate END) AS o0_last_90,\n" +
+          "       avg(CASE WHEN day > date_add('day', -180, current_date) AND day <= date_add('day', -90, current_date) THEN pass_rate END) AS o0_prev_90\n" +
+          "FROM   v_availability_sli_daily",
+      );
     });
 
-    test("appends a WHERE clause when the observation names one", () => {
-      const sql = buildWindowedSql({
+    test("answers every observation of one view in one query, each filtered inside its own CASE", () => {
+      const sql = buildWindowedBatchSql({
         view: "v_dora_runs_daily",
         dayColumn: "day",
-        valueExpr: "runs",
-        aggregation: "sum",
-        where: "workflow = 'deploy'",
+        observations: [
+          { valueExpr: "runs", aggregation: "sum", where: "workflow = 'deploy'" },
+          { valueExpr: "failure_rate", aggregation: "avg", where: "workflow = 'deploy'" },
+        ],
       });
-      expect(sql).toContain("WHERE  workflow = 'deploy'");
+      expect(sql).toContain("sum(CASE WHEN day > date_add('day', -30, current_date) AND (workflow = 'deploy') THEN runs END) AS o0_last_30");
+      expect(sql).toContain(
+        "avg(CASE WHEN day > date_add('day', -180, current_date) AND day <= date_add('day', -90, current_date) AND (workflow = 'deploy') THEN failure_rate END) AS o1_prev_90",
+      );
+      expect(sql).not.toContain("WHERE");
     });
 
     test("counts matching rows with a literal value expression, as the security observations do", () => {
-      const sql = buildWindowedSql({
+      const sql = buildWindowedBatchSql({
         view: "security_hub_findings",
         dayColumn: "dt",
-        valueExpr: "1",
-        aggregation: "count",
-        where: "finding_id IS NOT NULL AND severity_label = 'CRITICAL'",
+        observations: [{ valueExpr: "1", aggregation: "count", where: "finding_id IS NOT NULL AND severity_label = 'CRITICAL'" }],
       });
       expect(sql).toContain("FROM   security_hub_findings");
-      expect(sql).toContain("count(CASE WHEN dt > date_add('day', -30, current_date) THEN 1 END) AS last_30");
-      expect(sql).toContain("WHERE  finding_id IS NOT NULL AND severity_label = 'CRITICAL'");
+      expect(sql).toContain(
+        "count(CASE WHEN dt > date_add('day', -30, current_date) AND (finding_id IS NOT NULL AND severity_label = 'CRITICAL') THEN 1 END) AS o0_last_30",
+      );
     });
 
     test("runs against a monthly or quarterly grain column exactly as it would a daily one", () => {
-      const sql = buildWindowedSql({
+      const sql = buildWindowedBatchSql({
         view: "v_cost_vs_target_monthly",
         dayColumn: "month",
-        valueExpr: "variance_usd",
-        aggregation: "avg",
+        observations: [{ valueExpr: "variance_usd", aggregation: "avg" }],
       });
-      expect(sql).toContain("avg(CASE WHEN month > date_add('day', -30, current_date) THEN variance_usd END) AS last_30");
+      expect(sql).toContain("avg(CASE WHEN month > date_add('day', -30, current_date) THEN variance_usd END) AS o0_last_30");
     });
   });
 
@@ -396,7 +391,7 @@ describe("operatorSnapshotPublish", () => {
   });
 
   describe("buildSnapshot", () => {
-    test("runs one windowed query per observation, one fast-window query per hourly view, and carries a deep link on every row", async () => {
+    test("runs one windowed query per view, one fast-window query per hourly view, and carries a deep link on every row", async () => {
       mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
 
       const context = {
@@ -408,10 +403,8 @@ describe("operatorSnapshotPublish", () => {
       };
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
-      const observationCount = OBJECTIVE_DEFINITIONS.reduce((sum, o) => sum + o.observations.length, 0);
       const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
-      // The fast-window (Last 1 hour/1 day/7 days) observations share one query per hourly view.
-      expect(startCalls).toHaveLength(observationCount + FAST_WINDOW_VIEW_COUNT);
+      expect(startCalls).toHaveLength(WINDOWED_QUERY_COUNT + FAST_WINDOW_VIEW_COUNT);
 
       expect(snapshot.environment).toBe("test");
       expect(snapshot.objectives).toHaveLength(10);
@@ -547,10 +540,10 @@ describe("operatorSnapshotPublish", () => {
         .filter(([command]) => command.constructor.name === "StartQueryExecutionCommand")
         .map(([command]) => command.input.QueryString);
       expect(
-        queries.some((q) => q.includes("THEN revenue_gbp END") && q.includes("FROM   v_revenue_daily\nWHERE  product = 'donation-paypal'")),
+        queries.some((q) => q.includes("FROM   v_revenue_daily") && q.includes("AND (product = 'donation-paypal') THEN revenue_gbp END")),
       ).toBe(true);
       expect(
-        queries.some((q) => q.includes("THEN charges END") && q.includes("FROM   v_revenue_daily\nWHERE  product = 'donation-paypal'")),
+        queries.some((q) => q.includes("FROM   v_revenue_daily") && q.includes("AND (product = 'donation-paypal') THEN charges END")),
       ).toBe(true);
     });
 
@@ -583,6 +576,20 @@ describe("operatorSnapshotPublish", () => {
       }
 
       expect(snapshot.failedObservationCount).toBe(1);
+    });
+
+    test("a failing view query answers null for every observation of that view and counts each one", async () => {
+      mockQueriesWithOneFailing("FROM   v_dora_runs_daily", ["10", "5", "30", "20"]);
+
+      const context = { envName: "test", region: "eu-west-2", athenaWorkGroupName: "wg", githubRepo: "r", ga4PropertyId: null };
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
+
+      const uptime = snapshot.objectives.find((o) => o.id === "uptime");
+      for (const id of ["deploy-frequency", "deploy-failure-rate"]) {
+        expect(uptime.observations.find((o) => o.id === id).last30).toEqual({ value: null, trend: null });
+      }
+      expect(uptime.observations.find((o) => o.id === "probe-pass-rate").last30.value).toBe(10);
+      expect(snapshot.failedObservationCount).toBe(2);
     });
 
     test("the company-accounts observation set reads turnover, profit and the balance sheet lines", async () => {
@@ -620,7 +627,9 @@ describe("operatorSnapshotPublish", () => {
     });
 
     test("the company-accounts observation set answers every value as null while the book pull job is off", async () => {
-      mockQueriesWithRowsByFragment({ "FROM   company_accounts": [null, null, null, null] }, ["1", "1", "1", "1"]);
+      mockQueries({
+        windowedRowFor: (line, sql) => (sql.includes("FROM   company_accounts") ? [null, null, null, null] : ["1", "1", "1", "1"]),
+      });
 
       const context = {
         envName: "test",
@@ -689,10 +698,10 @@ describe("operatorSnapshotPublish", () => {
 
     test("the revenue observation sums only the days after the 30-day cutoff into its trailing window", () => {
       const revenue = OBJECTIVE_DEFINITIONS.flatMap((o) => o.observations).find((o) => o.id === "revenue-gbp");
-      const sql = buildWindowedSql(revenue);
+      const sql = buildWindowedBatchSql({ view: revenue.view, dayColumn: revenue.dayColumn, observations: [revenue] });
       const trailingColumn = sql.split("\n")[0];
 
-      expect(trailingColumn).toBe("SELECT sum(CASE WHEN day > date_add('day', -30, current_date) THEN revenue_gbp END) AS last_30,");
+      expect(trailingColumn).toBe("SELECT sum(CASE WHEN day > date_add('day', -30, current_date) THEN revenue_gbp END) AS o0_last_30,");
       expect(sql).toContain("FROM   v_revenue_daily");
       expect(sql).not.toContain("WHERE");
     });

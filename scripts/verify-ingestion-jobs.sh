@@ -86,18 +86,19 @@ run_athena_query() {
     | jq -r '.ResultSet.Rows[1:][] | [.Data[].VarCharValue] | @tsv'
 }
 
-# Builds the OR-of-tuples predicate for a year/month/day-partitioned table over DATES.
-build_ymd_predicate() {
-  local out="" d rest y m dd
+# The S3 path segment of one YYYY-MM-DD date in the year=/month=/day= layout.
+day_prefix_of() {
+  local d="$1" rest
+  rest="${d#*-}"
+  printf 'year=%s/month=%s/day=%s' "${d%%-*}" "${rest%%-*}" "${rest#*-}"
+}
+
+# Builds the day_prefix IN (...) list for a day_prefix-partitioned table over DATES.
+build_day_prefix_list() {
+  local out="" d
   for d in "${DATES[@]}"; do
-    y="${d%%-*}"
-    rest="${d#*-}"
-    m="${rest%%-*}"
-    dd="${rest#*-}"
-    m=$((10#${m}))
-    dd=$((10#${dd}))
-    if [ -n "${out}" ]; then out="${out} OR "; fi
-    out="${out}(year=${y} AND month=${m} AND day=${dd})"
+    if [ -n "${out}" ]; then out="${out},"; fi
+    out="${out}'$(day_prefix_of "${d}")'"
   done
   printf '%s' "${out}"
 }
@@ -117,10 +118,10 @@ OVERALL_STATUS=0
 # Checks one Glue table. Arguments:
 #   $1 label            display name for the report
 #   $2 table            Glue table name to query
-#   $3 style             "dt" or "ymd"
+#   $3 style             "dt" or "day_prefix"
 #   $4 s3_prefix_prefix  s3 key prefix up to and including the partition, e.g.
 #                        "curated/stripe/stripe_charges/dt=" (style dt) or
-#                        "curated/activity-events/" (style ymd, day appended as year=Y/month=M/day=D/)
+#                        "raw/cloudfront/" (style day_prefix, day appended as year=Y/month=M/day=D/)
 #   $5 required          "required" if the phase-1 verification criterion needs this non-zero
 check_source() {
   local label="$1" table="$2" style="$3" s3_prefix_prefix="$4" required="$5"
@@ -132,9 +133,7 @@ check_source() {
   if [ "${style}" = "dt" ]; then
     query="SELECT cast(dt AS varchar), count(*) FROM ${DATABASE}.${table} WHERE dt IN ($(build_dt_list)) GROUP BY dt ORDER BY dt"
   else
-    local where
-    where="$(build_ymd_predicate)"
-    query="SELECT year, month, day, count(*) FROM ${DATABASE}.${table} WHERE ${where} GROUP BY year, month, day ORDER BY year, month, day"
+    query="SELECT day_prefix, count(*) FROM ${DATABASE}.${table} WHERE day_prefix IN ($(build_day_prefix_list)) GROUP BY day_prefix ORDER BY day_prefix"
   fi
 
   if ! counts_tsv="$(run_athena_query "${query}")"; then
@@ -151,9 +150,11 @@ check_source() {
       COUNT_VALS+=("${count}")
     done <<< "${counts_tsv}"
   else
-    while IFS=$'\t' read -r y m d count; do
-      [ -z "${y}" ] && continue
-      printf -v day '%04d-%02d-%02d' "${y}" "${m}" "${d}"
+    local day_prefix
+    while IFS=$'\t' read -r day_prefix count; do
+      [ -z "${day_prefix}" ] && continue
+      [[ "${day_prefix}" =~ ^year=([0-9]{4})/month=([0-9]{2})/day=([0-9]{2})$ ]] || continue
+      day="${BASH_REMATCH[1]}-${BASH_REMATCH[2]}-${BASH_REMATCH[3]}"
       COUNT_DAYS+=("${day}")
       COUNT_VALS+=("${count}")
     done <<< "${counts_tsv}"
@@ -162,16 +163,11 @@ check_source() {
   local any_partition=false
   local any_nonzero=false
   for d in "${DATES[@]}"; do
-    local prefix count exists rest
+    local prefix count exists
     if [ "${style}" = "dt" ]; then
       prefix="${s3_prefix_prefix}${d}/"
     else
-      local y m dd
-      y="${d%%-*}"
-      rest="${d#*-}"
-      m="${rest%%-*}"
-      dd="${rest#*-}"
-      prefix="${s3_prefix_prefix}year=${y}/month=${m}/day=${dd}/"
+      prefix="${s3_prefix_prefix}$(day_prefix_of "${d}")/"
     fi
 
     count=""
@@ -212,16 +208,16 @@ check_source() {
   echo ""
 }
 
-check_source "Activity events"        "activity_events_all"  "ymd" "curated/activity-events/"        "required"
-check_source "Table changes: receipts"      "dynamo_receipts"      "ymd" "curated/tables/receipts/"        "optional"
-check_source "Table changes: bundles"       "dynamo_bundles"       "ymd" "curated/tables/bundles/"         "optional"
-check_source "Table changes: subscriptions" "dynamo_subscriptions" "ymd" "curated/tables/subscriptions/"   "optional"
-check_source "Table changes: passes"        "dynamo_passes"        "ymd" "curated/tables/passes/"          "optional"
+check_source "Activity events"        "activity_events_all"  "dt"  "curated/activity-events/dt="     "required"
+check_source "Table changes: receipts"      "dynamo_receipts"      "dt"  "curated/tables/receipts/dt="     "optional"
+check_source "Table changes: bundles"       "dynamo_bundles"       "dt"  "curated/tables/bundles/dt="      "optional"
+check_source "Table changes: subscriptions" "dynamo_subscriptions" "dt"  "curated/tables/subscriptions/dt=" "optional"
+check_source "Table changes: passes"        "dynamo_passes"        "dt"  "curated/tables/passes/dt="       "optional"
 check_source "Stripe charges"         "stripe_charges"       "dt"  "curated/stripe/stripe_charges/dt="        "optional"
 check_source "Stripe subscriptions"   "stripe_subscriptions" "dt"  "curated/stripe/stripe_subscriptions/dt="  "required"
 check_source "PayPal receipts"        "paypal_donations"     "dt"  "curated/paypal/paypal_donations/dt="     "optional"
 check_source "GA4 traffic"            "ga4_traffic"           "dt"  "curated/ga4/report=traffic/dt="           "required"
-check_source "CloudFront requests"    "cloudfront_requests"  "ymd" "raw/cloudfront/"                                    "required"
+check_source "CloudFront requests"    "cloudfront_requests"  "day_prefix" "raw/cloudfront/"                                    "required"
 
 if [ "${OVERALL_STATUS}" -eq 0 ]; then
   echo "PASS: every source has at least one partition in the last seven days, and every required source shows a non-zero day."
