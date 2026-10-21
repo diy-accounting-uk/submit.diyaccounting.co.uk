@@ -21,6 +21,10 @@ import software.amazon.awscdk.assertions.Template;
 class EdgeStackTest {
 
     private static EdgeStack synthEdgeStack() {
+        return synthEdgeStack("docs");
+    }
+
+    private static EdgeStack synthEdgeStack(final String envName) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -33,7 +37,7 @@ class EdgeStackTest {
                                 .region("us-east-1")
                                 .build())
                         .crossRegionReferences(true)
-                        .envName("docs")
+                        .envName(envName)
                         .deploymentName("docs")
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                         .cloudTrailEnabled("false")
@@ -45,6 +49,35 @@ class EdgeStackTest {
                         .apiGatewayUrl("https://abc123def.execute-api.eu-west-2.amazonaws.com")
                         .baseImageTag("latest")
                         .build());
+    }
+
+    @Test
+    void ciDeploymentSetHasNoWafResources() {
+        Template template = Template.fromStack(synthEdgeStack("ci"));
+
+        template.resourceCountIs("AWS::WAFv2::WebACL", 0);
+        template.resourceCountIs("AWS::WAFv2::IPSet", 0);
+        template.resourceCountIs("AWS::WAFv2::RegexPatternSet", 0);
+        template.resourceCountIs("AWS::WAFv2::LoggingConfiguration", 0);
+        template.resourceCountIs("AWS::Logs::SubscriptionFilter", 0);
+        template.resourceCountIs("AWS::DynamoDB::Table", 0);
+        template.hasResourceProperties(
+                "AWS::CloudFront::Distribution",
+                Match.objectLike(Map.of("DistributionConfig", Match.not(Match.objectLike(Map.of("WebACLId", Match.anyValue()))))));
+        // The certificate alarm and its forwarding rule stay on every set.
+        template.resourceCountIs("AWS::Events::Rule", 1);
+        template.hasResourceProperties(
+                "AWS::CloudWatch::Alarm", Match.objectLike(Map.of("AlarmName", Match.stringLikeRegexp(".*-cert-expiring"))));
+    }
+
+    @Test
+    void nonCiDeploymentSetHasWebAclAttachedToTheDistribution() {
+        Template template = Template.fromStack(synthEdgeStack("prod"));
+
+        template.resourceCountIs("AWS::WAFv2::WebACL", 1);
+        template.hasResourceProperties(
+                "AWS::CloudFront::Distribution",
+                Match.objectLike(Map.of("DistributionConfig", Match.objectLike(Map.of("WebACLId", Match.anyValue())))));
     }
 
     @Test

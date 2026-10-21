@@ -208,511 +208,6 @@ public class EdgeStack extends Stack {
         var cert =
                 Certificate.fromCertificateArn(this, props.resourceNamePrefix() + "-WebCert", props.certificateArn());
 
-        // ============================================================================
-        // Sensitive-path scan detection (issue #9 phase 9.1) - regex pattern set
-        // ============================================================================
-        // Anchored patterns only: "^/\.env" must never match "/submit.env", which the publish
-        // step writes as a real asset (see the SubmitApplicationCdkResourceTest verification of
-        // this and scripts/verify-waf-false-positives.sh for the deployed check).
-        CfnRegexPatternSet sensitivePathsRegexSet = CfnRegexPatternSet.Builder.create(
-                        this, props.resourceNamePrefix() + "-SensitivePathsRegexSet")
-                .name(props.resourceNamePrefix() + "-sensitive-paths")
-                .scope("CLOUDFRONT")
-                .description("URI paths that only a vulnerability scanner requests, blocked before they reach any"
-                        + " origin")
-                // Consolidated via alternation, not one entry per path: WAFv2 caps a
-                // RegexPatternSet at 10 patterns (NUM_PATTERNS_IN_REGEX_PATTERN_SET), and the
-                // original one-entry-per-path list of 13 exceeded it, failing CREATE for this
-                // resource on every deploy. Four entries here, matching the same paths, with
-                // headroom for more.
-                .regularExpressionList(List.of(
-                        "^/\\.(env|git/|aws/|ssh/)",
-                        "^/(wp-admin|wp-login|xmlrpc\\.php|phpmyadmin|vendor/|actuator|server-status)",
-                        "^/config\\.(json|php|yml|yaml)$",
-                        "\\.php$"))
-                .build();
-
-        // ============================================================================
-        // Manual IP block list (issue #9 phase 9.3)
-        // ============================================================================
-        // Addresses come from cdk-application/cdk.json's wafManualBlockIps context key, a
-        // comma-separated list that defaults to empty. A deploy always resets the IP sets to
-        // exactly this list, which is deliberate:
-        // ../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md section 7.5
-        // tells an operator to add a hand-applied block to cdk.json too, or the next deploy drops
-        // it. Two sets, not one, because CfnIPSet requires one ipAddressVersion per set and about
-        // half of the traffic arrives over IPv6.
-        List<String> manualBlockAddresses = new ArrayList<>();
-        if (props.wafManualBlockIps() != null && !props.wafManualBlockIps().isBlank()) {
-            for (String address : props.wafManualBlockIps().split(",")) {
-                var trimmed = address.trim();
-                if (!trimmed.isEmpty()) {
-                    manualBlockAddresses.add(trimmed);
-                }
-            }
-        }
-        List<String> manualBlockV4 = manualBlockAddresses.stream()
-                .filter(address -> !address.contains(":"))
-                .toList();
-        List<String> manualBlockV6 = manualBlockAddresses.stream()
-                .filter(address -> address.contains(":"))
-                .toList();
-
-        CfnIPSet wafManualBlockIpv4Set = CfnIPSet.Builder.create(
-                        this, props.resourceNamePrefix() + "-WafManualBlockIPv4Set")
-                .name(props.resourceNamePrefix() + "-waf-manual-block-v4")
-                .scope("CLOUDFRONT")
-                .ipAddressVersion("IPV4")
-                .addresses(manualBlockV4)
-                .description("Hand-applied IPv4 block list, see RUNBOOK_INFORMATION_SECURITY.md section 7.5")
-                .build();
-
-        CfnIPSet wafManualBlockIpv6Set = CfnIPSet.Builder.create(
-                        this, props.resourceNamePrefix() + "-WafManualBlockIPv6Set")
-                .name(props.resourceNamePrefix() + "-waf-manual-block-v6")
-                .scope("CLOUDFRONT")
-                .ipAddressVersion("IPV6")
-                .addresses(manualBlockV6)
-                .description("Hand-applied IPv6 block list, see RUNBOOK_INFORMATION_SECURITY.md section 7.5")
-                .build();
-
-        // AWS WAF WebACL for CloudFront protection against common attacks and rate limiting
-        CfnWebACL webAcl = CfnWebACL.Builder.create(this, props.resourceNamePrefix() + "-WebAcl")
-                .name(props.resourceNamePrefix() + "-waf")
-                .scope("CLOUDFRONT")
-                .defaultAction(CfnWebACL.DefaultActionProperty.builder()
-                        .allow(CfnWebACL.AllowActionProperty.builder().build())
-                        .build())
-                .rules(List.of(
-                        // Sensitive-path scan rule - blocks and signals in the same evaluation,
-                        // ahead of every other rule so a WAF log record shows this rule's id.
-                        CfnWebACL.RuleProperty.builder()
-                                .name("SensitivePathScan")
-                                .priority(0)
-                                .statement(CfnWebACL.StatementProperty.builder()
-                                        .regexPatternSetReferenceStatement(
-                                                CfnWebACL.RegexPatternSetReferenceStatementProperty.builder()
-                                                        .arn(sensitivePathsRegexSet.getAttrArn())
-                                                        .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
-                                                                .uriPath(Map.of())
-                                                                .build())
-                                                        .textTransformations(List.of(
-                                                                CfnWebACL.TextTransformationProperty.builder()
-                                                                        .priority(0)
-                                                                        .type("URL_DECODE")
-                                                                        .build(),
-                                                                CfnWebACL.TextTransformationProperty.builder()
-                                                                        .priority(1)
-                                                                        .type("LOWERCASE")
-                                                                        .build()))
-                                                        .build())
-                                        .build())
-                                .action(CfnWebACL.RuleActionProperty.builder()
-                                        .block(CfnWebACL.BlockActionProperty.builder()
-                                                .build())
-                                        .build())
-                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
-                                        .cloudWatchMetricsEnabled(true)
-                                        .metricName("SensitivePathScan")
-                                        .sampledRequestsEnabled(true)
-                                        .build())
-                                .build(),
-                        // Rate limiting rule - 2000 requests per 5 minutes per IP
-                        CfnWebACL.RuleProperty.builder()
-                                .name("RateLimitRule")
-                                .priority(1)
-                                .statement(CfnWebACL.StatementProperty.builder()
-                                        .rateBasedStatement(CfnWebACL.RateBasedStatementProperty.builder()
-                                                .limit(2000L) // requests per 5 minutes
-                                                .aggregateKeyType("IP")
-                                                .scopeDownStatement(CfnWebACL.StatementProperty.builder()
-                                                        .notStatement(CfnWebACL.NotStatementProperty.builder()
-                                                                .statement(mcpRouteUriPrefixStatement())
-                                                                .build())
-                                                        .build())
-                                                .build())
-                                        .build())
-                                .action(CfnWebACL.RuleActionProperty.builder()
-                                        .block(CfnWebACL.BlockActionProperty.builder()
-                                                .build())
-                                        .build())
-                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
-                                        .cloudWatchMetricsEnabled(true)
-                                        .metricName("RateLimitRule")
-                                        .sampledRequestsEnabled(true)
-                                        .build())
-                                .build(),
-                        // AWS managed rule for known bad inputs
-                        CfnWebACL.RuleProperty.builder()
-                                .name("AWSManagedRulesKnownBadInputsRuleSet")
-                                .priority(2)
-                                .statement(CfnWebACL.StatementProperty.builder()
-                                        .managedRuleGroupStatement(CfnWebACL.ManagedRuleGroupStatementProperty.builder()
-                                                .name("AWSManagedRulesKnownBadInputsRuleSet")
-                                                .vendorName("AWS")
-                                                .ruleActionOverrides(
-                                                        List.of()) // Empty override list to prevent conflicts
-                                                .build())
-                                        .build())
-                                .overrideAction(CfnWebACL.OverrideActionProperty.builder()
-                                        .none(Map.of())
-                                        .build())
-                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
-                                        .cloudWatchMetricsEnabled(true)
-                                        .metricName("AWSManagedRulesKnownBadInputsRuleSet")
-                                        .sampledRequestsEnabled(true)
-                                        .build())
-                                .build(),
-                        // AWS managed rule for common rule set (SQL injection, XSS, etc.)
-                        CfnWebACL.RuleProperty.builder()
-                                .name("AWSManagedRulesCommonRuleSet")
-                                .priority(3)
-                                .statement(CfnWebACL.StatementProperty.builder()
-                                        .managedRuleGroupStatement(CfnWebACL.ManagedRuleGroupStatementProperty.builder()
-                                                .name("AWSManagedRulesCommonRuleSet")
-                                                .vendorName("AWS")
-                                                // SizeRestrictions_BODY counts instead of blocking, because it
-                                                // blocks any body CloudFront cannot fully inspect - 8KB - and a
-                                                // DIYA-GL book write carries a zip up to DIYA_GL_MAX_BYTES (2MB).
-                                                // Every other route keeps the same 8KB block through
-                                                // OversizedBodyOutsideBookWrite below; a book write's real size
-                                                // limit is diyaGlPut.js, the only place that sees the whole body.
-                                                // EC2MetaDataSSRF_BODY, EC2MetaDataSSRF_QUERYARGUMENTS, GenericRFI_BODY
-                                                // and GenericRFI_QUERYARGUMENTS count instead of blocking, because
-                                                // they block an IPv4 loopback redirect URI in the hosted MCP's OAuth
-                                                // requests: the registration body, the authorize query and the token
-                                                // body. Every other route keeps those blocks through
-                                                // LoopbackUriRulesOutsideMcpOauth below.
-                                                .ruleActionOverrides(List.of(
-                                                        CfnWebACL.RuleActionOverrideProperty.builder()
-                                                                .name("SizeRestrictions_BODY")
-                                                                .actionToUse(CfnWebACL.RuleActionProperty.builder()
-                                                                        .count(
-                                                                                CfnWebACL.CountActionProperty.builder()
-                                                                                        .build())
-                                                                        .build())
-                                                                .build(),
-                                                        CfnWebACL.RuleActionOverrideProperty.builder()
-                                                                .name("EC2MetaDataSSRF_BODY")
-                                                                .actionToUse(CfnWebACL.RuleActionProperty.builder()
-                                                                        .count(
-                                                                                CfnWebACL.CountActionProperty.builder()
-                                                                                        .build())
-                                                                        .build())
-                                                                .build(),
-                                                        CfnWebACL.RuleActionOverrideProperty.builder()
-                                                                .name("EC2MetaDataSSRF_QUERYARGUMENTS")
-                                                                .actionToUse(CfnWebACL.RuleActionProperty.builder()
-                                                                        .count(
-                                                                                CfnWebACL.CountActionProperty.builder()
-                                                                                        .build())
-                                                                        .build())
-                                                                .build(),
-                                                        CfnWebACL.RuleActionOverrideProperty.builder()
-                                                                .name("GenericRFI_BODY")
-                                                                .actionToUse(CfnWebACL.RuleActionProperty.builder()
-                                                                        .count(
-                                                                                CfnWebACL.CountActionProperty.builder()
-                                                                                        .build())
-                                                                        .build())
-                                                                .build(),
-                                                        CfnWebACL.RuleActionOverrideProperty.builder()
-                                                                .name("GenericRFI_QUERYARGUMENTS")
-                                                                .actionToUse(CfnWebACL.RuleActionProperty.builder()
-                                                                        .count(
-                                                                                CfnWebACL.CountActionProperty.builder()
-                                                                                        .build())
-                                                                        .build())
-                                                                .build()))
-                                                .build())
-                                        .build())
-                                .overrideAction(CfnWebACL.OverrideActionProperty.builder()
-                                        .none(Map.of())
-                                        .build())
-                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
-                                        .cloudWatchMetricsEnabled(true)
-                                        .metricName("AWSManagedRulesCommonRuleSet")
-                                        .sampledRequestsEnabled(true)
-                                        .build())
-                                .build(),
-                        // Manual IP block list (issue #9 phase 9.3) - sits after the managed
-                        // groups so its own BlockedRequests metric counts only what they let
-                        // through, which is what keeps the metric readable.
-                        CfnWebACL.RuleProperty.builder()
-                                .name("WafManualBlock")
-                                .priority(4)
-                                .statement(CfnWebACL.StatementProperty.builder()
-                                        .orStatement(CfnWebACL.OrStatementProperty.builder()
-                                                .statements(List.of(
-                                                        CfnWebACL.StatementProperty.builder()
-                                                                .ipSetReferenceStatement(
-                                                                        CfnWebACL.IPSetReferenceStatementProperty
-                                                                                .builder()
-                                                                                .arn(wafManualBlockIpv4Set.getAttrArn())
-                                                                                .build())
-                                                                .build(),
-                                                        CfnWebACL.StatementProperty.builder()
-                                                                .ipSetReferenceStatement(
-                                                                        CfnWebACL.IPSetReferenceStatementProperty
-                                                                                .builder()
-                                                                                .arn(wafManualBlockIpv6Set.getAttrArn())
-                                                                                .build())
-                                                                .build()))
-                                                .build())
-                                        .build())
-                                .action(CfnWebACL.RuleActionProperty.builder()
-                                        .block(CfnWebACL.BlockActionProperty.builder()
-                                                .build())
-                                        .build())
-                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
-                                        .cloudWatchMetricsEnabled(true)
-                                        .metricName("WafManualBlock")
-                                        .sampledRequestsEnabled(true)
-                                        .build())
-                                .build(),
-                        // Replaces SizeRestrictions_BODY everywhere except a DIYA-GL book write.
-                        // oversizeHandling MATCH means "the body is larger than CloudFront let WAF
-                        // see", which is the same 8KB the managed rule enforced, so no other route
-                        // loses that protection. A PUT under /api/v1/diya-gl/* or its permanent
-                        // second path /api/v1/books/* is the one request shape that legitimately
-                        // carries megabytes, and it is authenticated by the books JWT authoriser
-                        // before diyaGlPut.js checks the decoded size against DIYA_GL_MAX_BYTES.
-                        CfnWebACL.RuleProperty.builder()
-                                .name("OversizedBodyOutsideBookWrite")
-                                .priority(5)
-                                .statement(CfnWebACL.StatementProperty.builder()
-                                        .andStatement(CfnWebACL.AndStatementProperty.builder()
-                                                .statements(List.of(
-                                                        CfnWebACL.StatementProperty.builder()
-                                                                .sizeConstraintStatement(
-                                                                        CfnWebACL.SizeConstraintStatementProperty
-                                                                                .builder()
-                                                                                .fieldToMatch(
-                                                                                        CfnWebACL.FieldToMatchProperty
-                                                                                                .builder()
-                                                                                                .body(
-                                                                                                        CfnWebACL
-                                                                                                                .BodyProperty
-                                                                                                                .builder()
-                                                                                                                .oversizeHandling(
-                                                                                                                        "MATCH")
-                                                                                                                .build())
-                                                                                                .build())
-                                                                                .comparisonOperator("GT")
-                                                                                .size(8192L)
-                                                                                .textTransformations(
-                                                                                        List.of(
-                                                                                                CfnWebACL
-                                                                                                        .TextTransformationProperty
-                                                                                                        .builder()
-                                                                                                        .priority(0)
-                                                                                                        .type("NONE")
-                                                                                                        .build()))
-                                                                                .build())
-                                                                .build(),
-                                                        CfnWebACL.StatementProperty.builder()
-                                                                .notStatement(CfnWebACL.NotStatementProperty.builder()
-                                                                        .statement(
-                                                                                CfnWebACL.StatementProperty.builder()
-                                                                                        .andStatement(
-                                                                                                CfnWebACL
-                                                                                                        .AndStatementProperty
-                                                                                                        .builder()
-                                                                                                        .statements(
-                                                                                                                List.of(
-                                                                                                                        diyaGlRouteUriPrefixStatement(),
-                                                                                                                        putMethodStatement()))
-                                                                                                        .build())
-                                                                                        .build())
-                                                                        .build())
-                                                                .build()))
-                                                .build())
-                                        .build())
-                                .action(CfnWebACL.RuleActionProperty.builder()
-                                        .block(CfnWebACL.BlockActionProperty.builder()
-                                                .build())
-                                        .build())
-                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
-                                        .cloudWatchMetricsEnabled(true)
-                                        .metricName("OversizedBodyOutsideBookWrite")
-                                        .sampledRequestsEnabled(true)
-                                        .build())
-                                .build(),
-                        // The common rule set labels a request awswaf:managed:aws:core-rule-set:
-                        // EC2MetaDataSSRF_Body, EC2MetaDataSSRF_QueryArguments, GenericRFI_Body or
-                        // GenericRFI_QueryArguments when a body or query argument holds an address or
-                        // URL the rule treats as a metadata-service or remote-include target; those
-                        // rules only count above. This rule blocks those labels on every path except
-                        // POST /mcp/oauth/register, GET /mcp/oauth/authorize and POST /mcp/oauth/token,
-                        // where an MCP client sends its loopback redirect URI (http://localhost or
-                        // http://127.0.0.1 with a port). The three handlers validate the URI shape,
-                        // compare it with the registration and redirect to it; none fetches it, so
-                        // the SSRF and RFI the rules guard against have no path there.
-                        CfnWebACL.RuleProperty.builder()
-                                .name("LoopbackUriRulesOutsideMcpOauth")
-                                .priority(7)
-                                .statement(CfnWebACL.StatementProperty.builder()
-                                        .andStatement(CfnWebACL.AndStatementProperty.builder()
-                                                .statements(List.of(
-                                                        CfnWebACL.StatementProperty.builder()
-                                                                .orStatement(CfnWebACL.OrStatementProperty.builder()
-                                                                        .statements(
-                                                                                List.of(
-                                                                                        coreRuleSetLabelStatement(
-                                                                                                "EC2MetaDataSSRF_Body"),
-                                                                                        coreRuleSetLabelStatement(
-                                                                                                "EC2MetaDataSSRF_QueryArguments"),
-                                                                                        coreRuleSetLabelStatement(
-                                                                                                "GenericRFI_Body"),
-                                                                                        coreRuleSetLabelStatement(
-                                                                                                "GenericRFI_QueryArguments")))
-                                                                        .build())
-                                                                .build(),
-                                                        CfnWebACL.StatementProperty.builder()
-                                                                .notStatement(CfnWebACL.NotStatementProperty.builder()
-                                                                        .statement(
-                                                                                CfnWebACL.StatementProperty.builder()
-                                                                                        .orStatement(
-                                                                                                CfnWebACL
-                                                                                                        .OrStatementProperty
-                                                                                                        .builder()
-                                                                                                        .statements(
-                                                                                                                List.of(
-                                                                                                                        exactUriPathStatement(
-                                                                                                                                "/mcp/oauth/register"),
-                                                                                                                        exactUriPathStatement(
-                                                                                                                                "/mcp/oauth/authorize"),
-                                                                                                                        exactUriPathStatement(
-                                                                                                                                "/mcp/oauth/token")))
-                                                                                                        .build())
-                                                                                        .build())
-                                                                        .build())
-                                                                .build()))
-                                                .build())
-                                        .build())
-                                .action(CfnWebACL.RuleActionProperty.builder()
-                                        .block(CfnWebACL.BlockActionProperty.builder()
-                                                .build())
-                                        .build())
-                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
-                                        .cloudWatchMetricsEnabled(true)
-                                        .metricName("LoopbackUriRulesOutsideMcpOauth")
-                                        .sampledRequestsEnabled(true)
-                                        .build())
-                                .build(),
-                        // Every Claude user reaches /mcp and the OAuth metadata paths from the same
-                        // address block, so these paths are counted per bearer token, not per IP.
-                        CfnWebACL.RuleProperty.builder()
-                                .name("McpRateLimitRule")
-                                .priority(6)
-                                .statement(CfnWebACL.StatementProperty.builder()
-                                        .rateBasedStatement(CfnWebACL.RateBasedStatementProperty.builder()
-                                                .limit(2000L) // requests per 5 minutes per Authorization header value
-                                                .aggregateKeyType("CUSTOM_KEYS")
-                                                .customKeys(
-                                                        List.of(CfnWebACL.RateBasedStatementCustomKeyProperty.builder()
-                                                                .header(CfnWebACL.RateLimitHeaderProperty.builder()
-                                                                        .name("authorization")
-                                                                        .textTransformations(List.of(
-                                                                                CfnWebACL.TextTransformationProperty
-                                                                                        .builder()
-                                                                                        .priority(0)
-                                                                                        .type("NONE")
-                                                                                        .build()))
-                                                                        .build())
-                                                                .build()))
-                                                .scopeDownStatement(mcpRouteUriPrefixStatement())
-                                                .build())
-                                        .build())
-                                .action(CfnWebACL.RuleActionProperty.builder()
-                                        .block(CfnWebACL.BlockActionProperty.builder()
-                                                .build())
-                                        .build())
-                                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
-                                        .cloudWatchMetricsEnabled(true)
-                                        .metricName("McpRateLimitRule")
-                                        .sampledRequestsEnabled(true)
-                                        .build())
-                                .build()))
-                .description(
-                        "WAF WebACL for OIDC provider CloudFront distribution - provides rate limiting and protection against common attacks")
-                .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
-                        .cloudWatchMetricsEnabled(true)
-                        .metricName(props.resourceNamePrefix() + "-waf")
-                        .sampledRequestsEnabled(true)
-                        .build())
-                .build();
-
-        // ============================================================================
-        // WAF Security Alarms - Phase 1.2
-        // ============================================================================
-        // Note: These alarms are created in us-east-1 (CloudFront region). Alarm state
-        // changes are forwarded to the eu-west-2 default event bus below, where OpsStack's
-        // AlarmStateChangeRule picks them up and routes them to the Telegram forwarder.
-
-        // Rate Limit Rule alarm - indicates potential DDoS or automated abuse
-        Alarm rateLimitAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-RateLimitAlarm")
-                .alarmName(props.resourceNamePrefix() + "-waf-rate-limit")
-                .alarmDescription("WAF rate limiting triggered (50+ blocks in 5min) - possible DDoS or automated abuse")
-                .metric(Metric.Builder.create()
-                        .namespace("AWS/WAFV2")
-                        .metricName("BlockedRequests")
-                        .dimensionsMap(Map.of(
-                                "WebACL", props.resourceNamePrefix() + "-waf",
-                                "Region", "Global",
-                                "Rule", "RateLimitRule"))
-                        .statistic("Sum")
-                        .period(software.amazon.awscdk.Duration.minutes(5))
-                        .build())
-                .threshold(50)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .build();
-
-        // Common Rule Set alarm - SQL injection, XSS attacks
-        Alarm commonRuleAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-CommonRuleAlarm")
-                .alarmName(props.resourceNamePrefix() + "-waf-attack-signatures")
-                .alarmDescription(
-                        "WAF detected attack patterns (SQLi/XSS) - 5+ blocks in 5min - review sampled requests")
-                .metric(Metric.Builder.create()
-                        .namespace("AWS/WAFV2")
-                        .metricName("BlockedRequests")
-                        .dimensionsMap(Map.of(
-                                "WebACL", props.resourceNamePrefix() + "-waf",
-                                "Region", "Global",
-                                "Rule", "AWSManagedRulesCommonRuleSet"))
-                        .statistic("Sum")
-                        .period(software.amazon.awscdk.Duration.minutes(5))
-                        .build())
-                .threshold(5)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .build();
-
-        // Known Bad Inputs alarm
-        Alarm badInputsAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-BadInputsAlarm")
-                .alarmName(props.resourceNamePrefix() + "-waf-known-bad-inputs")
-                .alarmDescription("WAF blocked known bad inputs (5+ in 5min) - review sampled requests in WAF console")
-                .metric(Metric.Builder.create()
-                        .namespace("AWS/WAFV2")
-                        .metricName("BlockedRequests")
-                        .dimensionsMap(Map.of(
-                                "WebACL", props.resourceNamePrefix() + "-waf",
-                                "Region", "Global",
-                                "Rule", "AWSManagedRulesKnownBadInputsRuleSet"))
-                        .statistic("Sum")
-                        .period(software.amazon.awscdk.Duration.minutes(5))
-                        .build())
-                .threshold(5)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .build();
-
-        infof("Created WAF security alarms: rate-limit, attack-signatures, known-bad-inputs");
-
         // Certificate expiry alarm - ACM auto-renews but gives no warning if renewal fails.
         // The cert lives in us-east-1 (required for CloudFront), so this alarm does too; its
         // state changes are picked up by the WafAlarmForwardRule below like the WAF alarms.
@@ -759,151 +254,10 @@ public class EdgeStack extends Stack {
 
         infof("Created cross-region rule forwarding WAF alarm state changes to eu-west-2 default bus");
 
-        // ============================================================================
-        // WAF manual-block alarm (issue #9 phase 9.3)
-        // ============================================================================
-        // Confirms a hand-applied block in cdk-application/cdk.json's wafManualBlockIps is
-        // actually stopping traffic, and shows when an attacker has stopped, following the same
-        // shape as the three WAF alarms above.
-        Alarm wafManualBlockAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-WafManualBlockAlarm")
-                .alarmName(props.resourceNamePrefix() + "-waf-manual-block")
-                .alarmDescription("WAF blocked a request from a manually blocked IP (see wafManualBlockIps in"
-                        + " cdk-application/cdk.json)")
-                .metric(Metric.Builder.create()
-                        .namespace("AWS/WAFV2")
-                        .metricName("BlockedRequests")
-                        .dimensionsMap(Map.of(
-                                "WebACL", props.resourceNamePrefix() + "-waf",
-                                "Region", "Global",
-                                "Rule", "WafManualBlock"))
-                        .statistic("Sum")
-                        .period(Duration.minutes(5))
-                        .build())
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .build();
+        // The WAF web ACL, its alarms, log group and scan-detect Lambda exist only where the
+        // distribution can be live: a ci deployment set is never public traffic, so it gets none.
+        String webAclArn = "ci".equals(props.envName()) ? null : createWaf(props);
 
-        // ============================================================================
-        // WAF logging and sensitive-path scan detection (issue #9 phase 9.1)
-        // ============================================================================
-        // Blocks only: the loggingFilter below drops every ALLOWed request before it reaches this
-        // log group, which keeps volume and cost near zero. redactedFields keeps tokens out of a
-        // log group that is not the application's own.
-        var wafLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-WafLogGroup")
-                // The "aws-waf-logs-" prefix is required by WAF; anything else fails at deploy.
-                .logGroupName("aws-waf-logs-" + props.resourceNamePrefix())
-                .retention(RetentionDays.ONE_MONTH)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
-
-        // loggingFilter and redactedFields are untyped (Object) on the L1 CfnLoggingConfiguration
-        // construct, so CDK never Pascal-cases them the way it does every strongly-typed nested
-        // property elsewhere in this file: whatever keys go in are the keys CloudFormation gets.
-        // The WAFv2 PutLoggingConfiguration API this resource calls requires exactly the
-        // PascalCase shape below (confirmed against the synthesized template, not just the docs),
-        // so these are built as plain maps rather than the *Property.builder() helpers, which
-        // would silently emit their JSII-interface camelCase names instead.
-        // The redactedFields(List<Object>) builder overload does not marshal Map elements
-        // correctly through JSII — confirmed against the synthesized template: every entry came
-        // out as {} regardless of whether the Maps were built with Map.of(...) or HashMap.
-        // loggingFilter's nested Lists-of-Maps serialize fine because the whole graph goes through
-        // as one top-level Object; only the direct List<Object> parameter is affected. Bypassing it
-        // with the L1 escape hatch (addPropertyOverride), which serializes correctly.
-        var wafLoggingConfig = CfnLoggingConfiguration.Builder.create(
-                        this, props.resourceNamePrefix() + "-WafLoggingConfig")
-                .resourceArn(webAcl.getAttrArn())
-                .logDestinationConfigs(List.of(wafLogGroup.getLogGroupArn()))
-                .loggingFilter(Map.of(
-                        "DefaultBehavior",
-                        "DROP",
-                        "Filters",
-                        List.of(Map.of(
-                                "Behavior",
-                                "KEEP",
-                                "Requirement",
-                                "MEETS_ANY",
-                                "Conditions",
-                                List.of(Map.of("ActionCondition", Map.of("Action", "BLOCK")))))))
-                .build();
-        wafLoggingConfig.addPropertyOverride(
-                "RedactedFields",
-                List.of(
-                        redactedSingleHeader("authorization"),
-                        redactedSingleHeader("x-authorization"),
-                        redactedSingleHeader("cookie")));
-
-        // The detect Lambda reads the WAF block log via a subscription filter and turns each
-        // blocked record into one ActivityEvent, published cross-region onto the eu-west-2
-        // activity bus (this stack, like the whole edge, is us-east-1).
-        var wafScanDetectFunctionName = props.resourceNamePrefix() + "-waf-scan-detect";
-        var wafScanBurstsTableName = props.resourceNamePrefix() + "-waf-scan-bursts";
-        var wafScanDetectEnv = new PopulatedMap<String, String>()
-                .with("ENVIRONMENT_NAME", props.envName())
-                .with("DEPLOYMENT_NAME", props.deploymentName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
-                .with("ACTIVITY_BUS_REGION", "eu-west-2")
-                .with("WAF_SCAN_BURST_DYNAMODB_TABLE_NAME", wafScanBurstsTableName);
-
-        var wafScanDetectLambda = new Lambda(
-                this,
-                LambdaProps.builder()
-                        .idPrefix(wafScanDetectFunctionName)
-                        .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ue1EcrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ue1EcrRepositoryArn)
-                        .ingestFunctionName(wafScanDetectFunctionName)
-                        .ingestHandler("app/functions/security/wafScanDetect.handler")
-                        .ingestLambdaArn("arn:aws:lambda:us-east-1:" + this.getAccount() + ":function:"
-                                + wafScanDetectFunctionName)
-                        .ingestProvisionedConcurrencyAliasArn("arn:aws:lambda:us-east-1:" + this.getAccount()
-                                + ":function:" + wafScanDetectFunctionName + ":live")
-                        .ingestProvisionedConcurrency(0)
-                        .ingestLambdaTimeout(Duration.seconds(30))
-                        .provisionedConcurrencyAliasName("live")
-                        .environment(wafScanDetectEnv)
-                        .build());
-
-        // Cross-region PutEvents: the activity bus lives in eu-west-2, this Lambda runs in
-        // us-east-1. Scoped to this environment's own activity bus, not every bus in the account.
-        String activityBusArn =
-                "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/" + props.sharedNames().activityBusName;
-        wafScanDetectLambda.ingestLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                .actions(List.of("events:PutEvents"))
-                .resources(List.of(activityBusArn))
-                .build());
-
-        SubscriptionFilter.Builder.create(this, props.resourceNamePrefix() + "-WafScanDetectSubscription")
-                .logGroup(wafLogGroup)
-                .destination(new LambdaDestination(wafScanDetectLambda.ingestLambda))
-                .filterPattern(FilterPattern.literal("{ $.terminatingRuleId = \"SensitivePathScan\" }"))
-                .build();
-
-        // Burst-window table for wafScanDetect.js: one item per client IP, so a scan whose
-        // requests land in separate CloudWatch Logs deliveries (the subscription filter can split
-        // a fast burst across a few deliveries a few seconds apart) still sends one Telegram
-        // message per real-world burst rather than one per delivery. DESTROY, unlike DataStack's
-        // persistent tables, because this stack (like every application-tier stack) is
-        // per-deployment: a fresh WAF gets a fresh table, and none of this state needs to outlive
-        // its own deployment.
-        var wafScanBurstsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-WafScanBurstsTable")
-                .tableName(wafScanBurstsTableName)
-                .partitionKey(Attribute.builder()
-                        .name("clientIp")
-                        .type(AttributeType.STRING)
-                        .build())
-                .billingMode(BillingMode.PAY_PER_REQUEST)
-                .timeToLiveAttribute("ttl")
-                .removalPolicy(RemovalPolicy.DESTROY)
-                .build();
-        wafScanBurstsTable.grant(wafScanDetectLambda.ingestLambda, "dynamodb:UpdateItem");
-
-        infof(
-                "Created WAF logging (blocks only), scan-detect Lambda %s subscribed to it, and its burst table %s",
-                wafScanDetectLambda.ingestLambda.getNode().getId(), wafScanBurstsTableName);
-
-        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "edge", List.of(wafScanDetectLambda));
 
         // Create the origin bucket — GENERATE_IF_NEEDED produces a unique-per-stack physical name
         // that CDK can resolve cross-environment (SelfDestructStack is in eu-west-2, EdgeStack is us-east-1)
@@ -1285,7 +639,7 @@ public class EdgeStack extends Stack {
                 .defaultRootObject("index.html")
                 .enableIpv6(true)
                 .sslSupportMethod(SSLMethod.SNI)
-                .webAclId(webAcl.getAttrArn())
+                .webAclId(webAclArn)
                 // IMPORTANT: Do NOT configure errorResponses here!
                 // CloudFront error responses apply GLOBALLY to ALL origins (S3 AND API Gateway).
                 // This breaks API routes which must return JSON errors, not HTML error pages.
@@ -1375,21 +729,12 @@ public class EdgeStack extends Stack {
         // Outputs
         cfnOutput(this, "BaseUrl", props.sharedNames().baseUrl);
         cfnOutput(this, "CertificateArn", cert.getCertificateArn());
-        cfnOutput(this, "WebAclId", webAcl.getAttrArn());
         cfnOutput(this, "WebDistributionDomainName", this.distribution.getDomainName());
         cfnOutput(this, "DistributionId", this.distribution.getDistributionId());
         cfnOutput(this, "AliasRecord", this.aliasRecordDomainName);
         cfnOutput(this, "AliasRecordV6", this.aliasRecordV6DomainName);
         cfnOutput(this, "OriginBucketName", this.originBucket.getBucketName());
-        cfnOutput(this, "WafRateLimitAlarmArn", rateLimitAlarm.getAlarmArn());
-        cfnOutput(this, "WafAttackSignaturesAlarmArn", commonRuleAlarm.getAlarmArn());
-        cfnOutput(this, "WafBadInputsAlarmArn", badInputsAlarm.getAlarmArn());
         cfnOutput(this, "CertExpiryAlarmArn", certExpiryAlarm.getAlarmArn());
-        cfnOutput(this, "SensitivePathsRegexSetArn", sensitivePathsRegexSet.getAttrArn());
-        cfnOutput(this, "WafScanDetectLambdaArn", wafScanDetectLambda.ingestLambda.getFunctionArn());
-        cfnOutput(this, "WafManualBlockIpv4SetArn", wafManualBlockIpv4Set.getAttrArn());
-        cfnOutput(this, "WafManualBlockIpv6SetArn", wafManualBlockIpv6Set.getAttrArn());
-        cfnOutput(this, "WafManualBlockAlarmArn", wafManualBlockAlarm.getAlarmArn());
 
         infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
     }
@@ -1521,5 +866,670 @@ public class EdgeStack extends Stack {
             return withoutProtocol;
         }
         return url; // fallback if format unexpected
+    }
+
+    private String createWaf(final EdgeStackProps props) {
+            // ============================================================================
+            // Sensitive-path scan detection (issue #9 phase 9.1) - regex pattern set
+            // ============================================================================
+            // Anchored patterns only: "^/\.env" must never match "/submit.env", which the publish
+            // step writes as a real asset (see the SubmitApplicationCdkResourceTest verification of
+            // this and scripts/verify-waf-false-positives.sh for the deployed check).
+            CfnRegexPatternSet sensitivePathsRegexSet = CfnRegexPatternSet.Builder.create(
+                            this, props.resourceNamePrefix() + "-SensitivePathsRegexSet")
+                    .name(props.resourceNamePrefix() + "-sensitive-paths")
+                    .scope("CLOUDFRONT")
+                    .description("URI paths that only a vulnerability scanner requests, blocked before they reach any"
+                            + " origin")
+                    // Consolidated via alternation, not one entry per path: WAFv2 caps a
+                    // RegexPatternSet at 10 patterns (NUM_PATTERNS_IN_REGEX_PATTERN_SET), and the
+                    // original one-entry-per-path list of 13 exceeded it, failing CREATE for this
+                    // resource on every deploy. Four entries here, matching the same paths, with
+                    // headroom for more.
+                    .regularExpressionList(List.of(
+                            "^/\\.(env|git/|aws/|ssh/)",
+                            "^/(wp-admin|wp-login|xmlrpc\\.php|phpmyadmin|vendor/|actuator|server-status)",
+                            "^/config\\.(json|php|yml|yaml)$",
+                            "\\.php$"))
+                    .build();
+
+            // ============================================================================
+            // Manual IP block list (issue #9 phase 9.3)
+            // ============================================================================
+            // Addresses come from cdk-application/cdk.json's wafManualBlockIps context key, a
+            // comma-separated list that defaults to empty. A deploy always resets the IP sets to
+            // exactly this list, which is deliberate:
+            // ../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md section 7.5
+            // tells an operator to add a hand-applied block to cdk.json too, or the next deploy drops
+            // it. Two sets, not one, because CfnIPSet requires one ipAddressVersion per set and about
+            // half of the traffic arrives over IPv6.
+            List<String> manualBlockAddresses = new ArrayList<>();
+            if (props.wafManualBlockIps() != null && !props.wafManualBlockIps().isBlank()) {
+                for (String address : props.wafManualBlockIps().split(",")) {
+                    var trimmed = address.trim();
+                    if (!trimmed.isEmpty()) {
+                        manualBlockAddresses.add(trimmed);
+                    }
+                }
+            }
+            List<String> manualBlockV4 = manualBlockAddresses.stream()
+                    .filter(address -> !address.contains(":"))
+                    .toList();
+            List<String> manualBlockV6 = manualBlockAddresses.stream()
+                    .filter(address -> address.contains(":"))
+                    .toList();
+
+            CfnIPSet wafManualBlockIpv4Set = CfnIPSet.Builder.create(
+                            this, props.resourceNamePrefix() + "-WafManualBlockIPv4Set")
+                    .name(props.resourceNamePrefix() + "-waf-manual-block-v4")
+                    .scope("CLOUDFRONT")
+                    .ipAddressVersion("IPV4")
+                    .addresses(manualBlockV4)
+                    .description("Hand-applied IPv4 block list, see RUNBOOK_INFORMATION_SECURITY.md section 7.5")
+                    .build();
+
+            CfnIPSet wafManualBlockIpv6Set = CfnIPSet.Builder.create(
+                            this, props.resourceNamePrefix() + "-WafManualBlockIPv6Set")
+                    .name(props.resourceNamePrefix() + "-waf-manual-block-v6")
+                    .scope("CLOUDFRONT")
+                    .ipAddressVersion("IPV6")
+                    .addresses(manualBlockV6)
+                    .description("Hand-applied IPv6 block list, see RUNBOOK_INFORMATION_SECURITY.md section 7.5")
+                    .build();
+
+            // AWS WAF WebACL for CloudFront protection against common attacks and rate limiting
+            CfnWebACL webAcl = CfnWebACL.Builder.create(this, props.resourceNamePrefix() + "-WebAcl")
+                    .name(props.resourceNamePrefix() + "-waf")
+                    .scope("CLOUDFRONT")
+                    .defaultAction(CfnWebACL.DefaultActionProperty.builder()
+                            .allow(CfnWebACL.AllowActionProperty.builder().build())
+                            .build())
+                    .rules(List.of(
+                            // Sensitive-path scan rule - blocks and signals in the same evaluation,
+                            // ahead of every other rule so a WAF log record shows this rule's id.
+                            CfnWebACL.RuleProperty.builder()
+                                    .name("SensitivePathScan")
+                                    .priority(0)
+                                    .statement(CfnWebACL.StatementProperty.builder()
+                                            .regexPatternSetReferenceStatement(
+                                                    CfnWebACL.RegexPatternSetReferenceStatementProperty.builder()
+                                                            .arn(sensitivePathsRegexSet.getAttrArn())
+                                                            .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
+                                                                    .uriPath(Map.of())
+                                                                    .build())
+                                                            .textTransformations(List.of(
+                                                                    CfnWebACL.TextTransformationProperty.builder()
+                                                                            .priority(0)
+                                                                            .type("URL_DECODE")
+                                                                            .build(),
+                                                                    CfnWebACL.TextTransformationProperty.builder()
+                                                                            .priority(1)
+                                                                            .type("LOWERCASE")
+                                                                            .build()))
+                                                            .build())
+                                            .build())
+                                    .action(CfnWebACL.RuleActionProperty.builder()
+                                            .block(CfnWebACL.BlockActionProperty.builder()
+                                                    .build())
+                                            .build())
+                                    .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                            .cloudWatchMetricsEnabled(true)
+                                            .metricName("SensitivePathScan")
+                                            .sampledRequestsEnabled(true)
+                                            .build())
+                                    .build(),
+                            // Rate limiting rule - 2000 requests per 5 minutes per IP
+                            CfnWebACL.RuleProperty.builder()
+                                    .name("RateLimitRule")
+                                    .priority(1)
+                                    .statement(CfnWebACL.StatementProperty.builder()
+                                            .rateBasedStatement(CfnWebACL.RateBasedStatementProperty.builder()
+                                                    .limit(2000L) // requests per 5 minutes
+                                                    .aggregateKeyType("IP")
+                                                    .scopeDownStatement(CfnWebACL.StatementProperty.builder()
+                                                            .notStatement(CfnWebACL.NotStatementProperty.builder()
+                                                                    .statement(mcpRouteUriPrefixStatement())
+                                                                    .build())
+                                                            .build())
+                                                    .build())
+                                            .build())
+                                    .action(CfnWebACL.RuleActionProperty.builder()
+                                            .block(CfnWebACL.BlockActionProperty.builder()
+                                                    .build())
+                                            .build())
+                                    .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                            .cloudWatchMetricsEnabled(true)
+                                            .metricName("RateLimitRule")
+                                            .sampledRequestsEnabled(true)
+                                            .build())
+                                    .build(),
+                            // AWS managed rule for known bad inputs
+                            CfnWebACL.RuleProperty.builder()
+                                    .name("AWSManagedRulesKnownBadInputsRuleSet")
+                                    .priority(2)
+                                    .statement(CfnWebACL.StatementProperty.builder()
+                                            .managedRuleGroupStatement(CfnWebACL.ManagedRuleGroupStatementProperty.builder()
+                                                    .name("AWSManagedRulesKnownBadInputsRuleSet")
+                                                    .vendorName("AWS")
+                                                    .ruleActionOverrides(
+                                                            List.of()) // Empty override list to prevent conflicts
+                                                    .build())
+                                            .build())
+                                    .overrideAction(CfnWebACL.OverrideActionProperty.builder()
+                                            .none(Map.of())
+                                            .build())
+                                    .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                            .cloudWatchMetricsEnabled(true)
+                                            .metricName("AWSManagedRulesKnownBadInputsRuleSet")
+                                            .sampledRequestsEnabled(true)
+                                            .build())
+                                    .build(),
+                            // AWS managed rule for common rule set (SQL injection, XSS, etc.)
+                            CfnWebACL.RuleProperty.builder()
+                                    .name("AWSManagedRulesCommonRuleSet")
+                                    .priority(3)
+                                    .statement(CfnWebACL.StatementProperty.builder()
+                                            .managedRuleGroupStatement(CfnWebACL.ManagedRuleGroupStatementProperty.builder()
+                                                    .name("AWSManagedRulesCommonRuleSet")
+                                                    .vendorName("AWS")
+                                                    // SizeRestrictions_BODY counts instead of blocking, because it
+                                                    // blocks any body CloudFront cannot fully inspect - 8KB - and a
+                                                    // DIYA-GL book write carries a zip up to DIYA_GL_MAX_BYTES (2MB).
+                                                    // Every other route keeps the same 8KB block through
+                                                    // OversizedBodyOutsideBookWrite below; a book write's real size
+                                                    // limit is diyaGlPut.js, the only place that sees the whole body.
+                                                    // EC2MetaDataSSRF_BODY, EC2MetaDataSSRF_QUERYARGUMENTS, GenericRFI_BODY
+                                                    // and GenericRFI_QUERYARGUMENTS count instead of blocking, because
+                                                    // they block an IPv4 loopback redirect URI in the hosted MCP's OAuth
+                                                    // requests: the registration body, the authorize query and the token
+                                                    // body. Every other route keeps those blocks through
+                                                    // LoopbackUriRulesOutsideMcpOauth below.
+                                                    .ruleActionOverrides(List.of(
+                                                            CfnWebACL.RuleActionOverrideProperty.builder()
+                                                                    .name("SizeRestrictions_BODY")
+                                                                    .actionToUse(CfnWebACL.RuleActionProperty.builder()
+                                                                            .count(
+                                                                                    CfnWebACL.CountActionProperty.builder()
+                                                                                            .build())
+                                                                            .build())
+                                                                    .build(),
+                                                            CfnWebACL.RuleActionOverrideProperty.builder()
+                                                                    .name("EC2MetaDataSSRF_BODY")
+                                                                    .actionToUse(CfnWebACL.RuleActionProperty.builder()
+                                                                            .count(
+                                                                                    CfnWebACL.CountActionProperty.builder()
+                                                                                            .build())
+                                                                            .build())
+                                                                    .build(),
+                                                            CfnWebACL.RuleActionOverrideProperty.builder()
+                                                                    .name("EC2MetaDataSSRF_QUERYARGUMENTS")
+                                                                    .actionToUse(CfnWebACL.RuleActionProperty.builder()
+                                                                            .count(
+                                                                                    CfnWebACL.CountActionProperty.builder()
+                                                                                            .build())
+                                                                            .build())
+                                                                    .build(),
+                                                            CfnWebACL.RuleActionOverrideProperty.builder()
+                                                                    .name("GenericRFI_BODY")
+                                                                    .actionToUse(CfnWebACL.RuleActionProperty.builder()
+                                                                            .count(
+                                                                                    CfnWebACL.CountActionProperty.builder()
+                                                                                            .build())
+                                                                            .build())
+                                                                    .build(),
+                                                            CfnWebACL.RuleActionOverrideProperty.builder()
+                                                                    .name("GenericRFI_QUERYARGUMENTS")
+                                                                    .actionToUse(CfnWebACL.RuleActionProperty.builder()
+                                                                            .count(
+                                                                                    CfnWebACL.CountActionProperty.builder()
+                                                                                            .build())
+                                                                            .build())
+                                                                    .build()))
+                                                    .build())
+                                            .build())
+                                    .overrideAction(CfnWebACL.OverrideActionProperty.builder()
+                                            .none(Map.of())
+                                            .build())
+                                    .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                            .cloudWatchMetricsEnabled(true)
+                                            .metricName("AWSManagedRulesCommonRuleSet")
+                                            .sampledRequestsEnabled(true)
+                                            .build())
+                                    .build(),
+                            // Manual IP block list (issue #9 phase 9.3) - sits after the managed
+                            // groups so its own BlockedRequests metric counts only what they let
+                            // through, which is what keeps the metric readable.
+                            CfnWebACL.RuleProperty.builder()
+                                    .name("WafManualBlock")
+                                    .priority(4)
+                                    .statement(CfnWebACL.StatementProperty.builder()
+                                            .orStatement(CfnWebACL.OrStatementProperty.builder()
+                                                    .statements(List.of(
+                                                            CfnWebACL.StatementProperty.builder()
+                                                                    .ipSetReferenceStatement(
+                                                                            CfnWebACL.IPSetReferenceStatementProperty
+                                                                                    .builder()
+                                                                                    .arn(wafManualBlockIpv4Set.getAttrArn())
+                                                                                    .build())
+                                                                    .build(),
+                                                            CfnWebACL.StatementProperty.builder()
+                                                                    .ipSetReferenceStatement(
+                                                                            CfnWebACL.IPSetReferenceStatementProperty
+                                                                                    .builder()
+                                                                                    .arn(wafManualBlockIpv6Set.getAttrArn())
+                                                                                    .build())
+                                                                    .build()))
+                                                    .build())
+                                            .build())
+                                    .action(CfnWebACL.RuleActionProperty.builder()
+                                            .block(CfnWebACL.BlockActionProperty.builder()
+                                                    .build())
+                                            .build())
+                                    .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                            .cloudWatchMetricsEnabled(true)
+                                            .metricName("WafManualBlock")
+                                            .sampledRequestsEnabled(true)
+                                            .build())
+                                    .build(),
+                            // Replaces SizeRestrictions_BODY everywhere except a DIYA-GL book write.
+                            // oversizeHandling MATCH means "the body is larger than CloudFront let WAF
+                            // see", which is the same 8KB the managed rule enforced, so no other route
+                            // loses that protection. A PUT under /api/v1/diya-gl/* or its permanent
+                            // second path /api/v1/books/* is the one request shape that legitimately
+                            // carries megabytes, and it is authenticated by the books JWT authoriser
+                            // before diyaGlPut.js checks the decoded size against DIYA_GL_MAX_BYTES.
+                            CfnWebACL.RuleProperty.builder()
+                                    .name("OversizedBodyOutsideBookWrite")
+                                    .priority(5)
+                                    .statement(CfnWebACL.StatementProperty.builder()
+                                            .andStatement(CfnWebACL.AndStatementProperty.builder()
+                                                    .statements(List.of(
+                                                            CfnWebACL.StatementProperty.builder()
+                                                                    .sizeConstraintStatement(
+                                                                            CfnWebACL.SizeConstraintStatementProperty
+                                                                                    .builder()
+                                                                                    .fieldToMatch(
+                                                                                            CfnWebACL.FieldToMatchProperty
+                                                                                                    .builder()
+                                                                                                    .body(
+                                                                                                            CfnWebACL
+                                                                                                                    .BodyProperty
+                                                                                                                    .builder()
+                                                                                                                    .oversizeHandling(
+                                                                                                                            "MATCH")
+                                                                                                                    .build())
+                                                                                                    .build())
+                                                                                    .comparisonOperator("GT")
+                                                                                    .size(8192L)
+                                                                                    .textTransformations(
+                                                                                            List.of(
+                                                                                                    CfnWebACL
+                                                                                                            .TextTransformationProperty
+                                                                                                            .builder()
+                                                                                                            .priority(0)
+                                                                                                            .type("NONE")
+                                                                                                            .build()))
+                                                                                    .build())
+                                                                    .build(),
+                                                            CfnWebACL.StatementProperty.builder()
+                                                                    .notStatement(CfnWebACL.NotStatementProperty.builder()
+                                                                            .statement(
+                                                                                    CfnWebACL.StatementProperty.builder()
+                                                                                            .andStatement(
+                                                                                                    CfnWebACL
+                                                                                                            .AndStatementProperty
+                                                                                                            .builder()
+                                                                                                            .statements(
+                                                                                                                    List.of(
+                                                                                                                            diyaGlRouteUriPrefixStatement(),
+                                                                                                                            putMethodStatement()))
+                                                                                                            .build())
+                                                                                            .build())
+                                                                            .build())
+                                                                    .build()))
+                                                    .build())
+                                            .build())
+                                    .action(CfnWebACL.RuleActionProperty.builder()
+                                            .block(CfnWebACL.BlockActionProperty.builder()
+                                                    .build())
+                                            .build())
+                                    .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                            .cloudWatchMetricsEnabled(true)
+                                            .metricName("OversizedBodyOutsideBookWrite")
+                                            .sampledRequestsEnabled(true)
+                                            .build())
+                                    .build(),
+                            // The common rule set labels a request awswaf:managed:aws:core-rule-set:
+                            // EC2MetaDataSSRF_Body, EC2MetaDataSSRF_QueryArguments, GenericRFI_Body or
+                            // GenericRFI_QueryArguments when a body or query argument holds an address or
+                            // URL the rule treats as a metadata-service or remote-include target; those
+                            // rules only count above. This rule blocks those labels on every path except
+                            // POST /mcp/oauth/register, GET /mcp/oauth/authorize and POST /mcp/oauth/token,
+                            // where an MCP client sends its loopback redirect URI (http://localhost or
+                            // http://127.0.0.1 with a port). The three handlers validate the URI shape,
+                            // compare it with the registration and redirect to it; none fetches it, so
+                            // the SSRF and RFI the rules guard against have no path there.
+                            CfnWebACL.RuleProperty.builder()
+                                    .name("LoopbackUriRulesOutsideMcpOauth")
+                                    .priority(7)
+                                    .statement(CfnWebACL.StatementProperty.builder()
+                                            .andStatement(CfnWebACL.AndStatementProperty.builder()
+                                                    .statements(List.of(
+                                                            CfnWebACL.StatementProperty.builder()
+                                                                    .orStatement(CfnWebACL.OrStatementProperty.builder()
+                                                                            .statements(
+                                                                                    List.of(
+                                                                                            coreRuleSetLabelStatement(
+                                                                                                    "EC2MetaDataSSRF_Body"),
+                                                                                            coreRuleSetLabelStatement(
+                                                                                                    "EC2MetaDataSSRF_QueryArguments"),
+                                                                                            coreRuleSetLabelStatement(
+                                                                                                    "GenericRFI_Body"),
+                                                                                            coreRuleSetLabelStatement(
+                                                                                                    "GenericRFI_QueryArguments")))
+                                                                            .build())
+                                                                    .build(),
+                                                            CfnWebACL.StatementProperty.builder()
+                                                                    .notStatement(CfnWebACL.NotStatementProperty.builder()
+                                                                            .statement(
+                                                                                    CfnWebACL.StatementProperty.builder()
+                                                                                            .orStatement(
+                                                                                                    CfnWebACL
+                                                                                                            .OrStatementProperty
+                                                                                                            .builder()
+                                                                                                            .statements(
+                                                                                                                    List.of(
+                                                                                                                            exactUriPathStatement(
+                                                                                                                                    "/mcp/oauth/register"),
+                                                                                                                            exactUriPathStatement(
+                                                                                                                                    "/mcp/oauth/authorize"),
+                                                                                                                            exactUriPathStatement(
+                                                                                                                                    "/mcp/oauth/token")))
+                                                                                                            .build())
+                                                                                            .build())
+                                                                            .build())
+                                                                    .build()))
+                                                    .build())
+                                            .build())
+                                    .action(CfnWebACL.RuleActionProperty.builder()
+                                            .block(CfnWebACL.BlockActionProperty.builder()
+                                                    .build())
+                                            .build())
+                                    .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                            .cloudWatchMetricsEnabled(true)
+                                            .metricName("LoopbackUriRulesOutsideMcpOauth")
+                                            .sampledRequestsEnabled(true)
+                                            .build())
+                                    .build(),
+                            // Every Claude user reaches /mcp and the OAuth metadata paths from the same
+                            // address block, so these paths are counted per bearer token, not per IP.
+                            CfnWebACL.RuleProperty.builder()
+                                    .name("McpRateLimitRule")
+                                    .priority(6)
+                                    .statement(CfnWebACL.StatementProperty.builder()
+                                            .rateBasedStatement(CfnWebACL.RateBasedStatementProperty.builder()
+                                                    .limit(2000L) // requests per 5 minutes per Authorization header value
+                                                    .aggregateKeyType("CUSTOM_KEYS")
+                                                    .customKeys(
+                                                            List.of(CfnWebACL.RateBasedStatementCustomKeyProperty.builder()
+                                                                    .header(CfnWebACL.RateLimitHeaderProperty.builder()
+                                                                            .name("authorization")
+                                                                            .textTransformations(List.of(
+                                                                                    CfnWebACL.TextTransformationProperty
+                                                                                            .builder()
+                                                                                            .priority(0)
+                                                                                            .type("NONE")
+                                                                                            .build()))
+                                                                            .build())
+                                                                    .build()))
+                                                    .scopeDownStatement(mcpRouteUriPrefixStatement())
+                                                    .build())
+                                            .build())
+                                    .action(CfnWebACL.RuleActionProperty.builder()
+                                            .block(CfnWebACL.BlockActionProperty.builder()
+                                                    .build())
+                                            .build())
+                                    .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                                            .cloudWatchMetricsEnabled(true)
+                                            .metricName("McpRateLimitRule")
+                                            .sampledRequestsEnabled(true)
+                                            .build())
+                                    .build()))
+                    .description(
+                            "WAF WebACL for OIDC provider CloudFront distribution - provides rate limiting and protection against common attacks")
+                    .visibilityConfig(CfnWebACL.VisibilityConfigProperty.builder()
+                            .cloudWatchMetricsEnabled(true)
+                            .metricName(props.resourceNamePrefix() + "-waf")
+                            .sampledRequestsEnabled(true)
+                            .build())
+                    .build();
+
+            // ============================================================================
+            // WAF Security Alarms - Phase 1.2
+            // ============================================================================
+            // Note: These alarms are created in us-east-1 (CloudFront region). Alarm state
+            // changes are forwarded to the eu-west-2 default event bus below, where OpsStack's
+            // AlarmStateChangeRule picks them up and routes them to the Telegram forwarder.
+
+            // Rate Limit Rule alarm - indicates potential DDoS or automated abuse
+            Alarm rateLimitAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-RateLimitAlarm")
+                    .alarmName(props.resourceNamePrefix() + "-waf-rate-limit")
+                    .alarmDescription("WAF rate limiting triggered (50+ blocks in 5min) - possible DDoS or automated abuse")
+                    .metric(Metric.Builder.create()
+                            .namespace("AWS/WAFV2")
+                            .metricName("BlockedRequests")
+                            .dimensionsMap(Map.of(
+                                    "WebACL", props.resourceNamePrefix() + "-waf",
+                                    "Region", "Global",
+                                    "Rule", "RateLimitRule"))
+                            .statistic("Sum")
+                            .period(software.amazon.awscdk.Duration.minutes(5))
+                            .build())
+                    .threshold(50)
+                    .evaluationPeriods(1)
+                    .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                    .treatMissingData(TreatMissingData.NOT_BREACHING)
+                    .build();
+
+            // Common Rule Set alarm - SQL injection, XSS attacks
+            Alarm commonRuleAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-CommonRuleAlarm")
+                    .alarmName(props.resourceNamePrefix() + "-waf-attack-signatures")
+                    .alarmDescription(
+                            "WAF detected attack patterns (SQLi/XSS) - 5+ blocks in 5min - review sampled requests")
+                    .metric(Metric.Builder.create()
+                            .namespace("AWS/WAFV2")
+                            .metricName("BlockedRequests")
+                            .dimensionsMap(Map.of(
+                                    "WebACL", props.resourceNamePrefix() + "-waf",
+                                    "Region", "Global",
+                                    "Rule", "AWSManagedRulesCommonRuleSet"))
+                            .statistic("Sum")
+                            .period(software.amazon.awscdk.Duration.minutes(5))
+                            .build())
+                    .threshold(5)
+                    .evaluationPeriods(1)
+                    .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                    .treatMissingData(TreatMissingData.NOT_BREACHING)
+                    .build();
+
+            // Known Bad Inputs alarm
+            Alarm badInputsAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-BadInputsAlarm")
+                    .alarmName(props.resourceNamePrefix() + "-waf-known-bad-inputs")
+                    .alarmDescription("WAF blocked known bad inputs (5+ in 5min) - review sampled requests in WAF console")
+                    .metric(Metric.Builder.create()
+                            .namespace("AWS/WAFV2")
+                            .metricName("BlockedRequests")
+                            .dimensionsMap(Map.of(
+                                    "WebACL", props.resourceNamePrefix() + "-waf",
+                                    "Region", "Global",
+                                    "Rule", "AWSManagedRulesKnownBadInputsRuleSet"))
+                            .statistic("Sum")
+                            .period(software.amazon.awscdk.Duration.minutes(5))
+                            .build())
+                    .threshold(5)
+                    .evaluationPeriods(1)
+                    .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                    .treatMissingData(TreatMissingData.NOT_BREACHING)
+                    .build();
+
+            infof("Created WAF security alarms: rate-limit, attack-signatures, known-bad-inputs");
+
+            // ============================================================================
+            // WAF manual-block alarm (issue #9 phase 9.3)
+            // ============================================================================
+            // Confirms a hand-applied block in cdk-application/cdk.json's wafManualBlockIps is
+            // actually stopping traffic, and shows when an attacker has stopped, following the same
+            // shape as the three WAF alarms above.
+            Alarm wafManualBlockAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-WafManualBlockAlarm")
+                    .alarmName(props.resourceNamePrefix() + "-waf-manual-block")
+                    .alarmDescription("WAF blocked a request from a manually blocked IP (see wafManualBlockIps in"
+                            + " cdk-application/cdk.json)")
+                    .metric(Metric.Builder.create()
+                            .namespace("AWS/WAFV2")
+                            .metricName("BlockedRequests")
+                            .dimensionsMap(Map.of(
+                                    "WebACL", props.resourceNamePrefix() + "-waf",
+                                    "Region", "Global",
+                                    "Rule", "WafManualBlock"))
+                            .statistic("Sum")
+                            .period(Duration.minutes(5))
+                            .build())
+                    .threshold(1)
+                    .evaluationPeriods(1)
+                    .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                    .treatMissingData(TreatMissingData.NOT_BREACHING)
+                    .build();
+
+            // ============================================================================
+            // WAF logging and sensitive-path scan detection (issue #9 phase 9.1)
+            // ============================================================================
+            // Blocks only: the loggingFilter below drops every ALLOWed request before it reaches this
+            // log group, which keeps volume and cost near zero. redactedFields keeps tokens out of a
+            // log group that is not the application's own.
+            var wafLogGroup = LogGroup.Builder.create(this, props.resourceNamePrefix() + "-WafLogGroup")
+                    // The "aws-waf-logs-" prefix is required by WAF; anything else fails at deploy.
+                    .logGroupName("aws-waf-logs-" + props.resourceNamePrefix())
+                    .retention(RetentionDays.ONE_MONTH)
+                    .removalPolicy(RemovalPolicy.DESTROY)
+                    .build();
+
+            // loggingFilter and redactedFields are untyped (Object) on the L1 CfnLoggingConfiguration
+            // construct, so CDK never Pascal-cases them the way it does every strongly-typed nested
+            // property elsewhere in this file: whatever keys go in are the keys CloudFormation gets.
+            // The WAFv2 PutLoggingConfiguration API this resource calls requires exactly the
+            // PascalCase shape below (confirmed against the synthesized template, not just the docs),
+            // so these are built as plain maps rather than the *Property.builder() helpers, which
+            // would silently emit their JSII-interface camelCase names instead.
+            // The redactedFields(List<Object>) builder overload does not marshal Map elements
+            // correctly through JSII — confirmed against the synthesized template: every entry came
+            // out as {} regardless of whether the Maps were built with Map.of(...) or HashMap.
+            // loggingFilter's nested Lists-of-Maps serialize fine because the whole graph goes through
+            // as one top-level Object; only the direct List<Object> parameter is affected. Bypassing it
+            // with the L1 escape hatch (addPropertyOverride), which serializes correctly.
+            var wafLoggingConfig = CfnLoggingConfiguration.Builder.create(
+                            this, props.resourceNamePrefix() + "-WafLoggingConfig")
+                    .resourceArn(webAcl.getAttrArn())
+                    .logDestinationConfigs(List.of(wafLogGroup.getLogGroupArn()))
+                    .loggingFilter(Map.of(
+                            "DefaultBehavior",
+                            "DROP",
+                            "Filters",
+                            List.of(Map.of(
+                                    "Behavior",
+                                    "KEEP",
+                                    "Requirement",
+                                    "MEETS_ANY",
+                                    "Conditions",
+                                    List.of(Map.of("ActionCondition", Map.of("Action", "BLOCK")))))))
+                    .build();
+            wafLoggingConfig.addPropertyOverride(
+                    "RedactedFields",
+                    List.of(
+                            redactedSingleHeader("authorization"),
+                            redactedSingleHeader("x-authorization"),
+                            redactedSingleHeader("cookie")));
+
+            // The detect Lambda reads the WAF block log via a subscription filter and turns each
+            // blocked record into one ActivityEvent, published cross-region onto the eu-west-2
+            // activity bus (this stack, like the whole edge, is us-east-1).
+            var wafScanDetectFunctionName = props.resourceNamePrefix() + "-waf-scan-detect";
+            var wafScanBurstsTableName = props.resourceNamePrefix() + "-waf-scan-bursts";
+            var wafScanDetectEnv = new PopulatedMap<String, String>()
+                    .with("ENVIRONMENT_NAME", props.envName())
+                    .with("DEPLOYMENT_NAME", props.deploymentName())
+                    .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                    .with("ACTIVITY_BUS_REGION", "eu-west-2")
+                    .with("WAF_SCAN_BURST_DYNAMODB_TABLE_NAME", wafScanBurstsTableName);
+
+            var wafScanDetectLambda = new Lambda(
+                    this,
+                    LambdaProps.builder()
+                            .idPrefix(wafScanDetectFunctionName)
+                            .baseImageTag(props.baseImageTag())
+                            .ecrRepositoryName(props.sharedNames().ue1EcrRepositoryName)
+                            .ecrRepositoryArn(props.sharedNames().ue1EcrRepositoryArn)
+                            .ingestFunctionName(wafScanDetectFunctionName)
+                            .ingestHandler("app/functions/security/wafScanDetect.handler")
+                            .ingestLambdaArn("arn:aws:lambda:us-east-1:" + this.getAccount() + ":function:"
+                                    + wafScanDetectFunctionName)
+                            .ingestProvisionedConcurrencyAliasArn("arn:aws:lambda:us-east-1:" + this.getAccount()
+                                    + ":function:" + wafScanDetectFunctionName + ":live")
+                            .ingestProvisionedConcurrency(0)
+                            .ingestLambdaTimeout(Duration.seconds(30))
+                            .provisionedConcurrencyAliasName("live")
+                            .environment(wafScanDetectEnv)
+                            .build());
+
+            // Cross-region PutEvents: the activity bus lives in eu-west-2, this Lambda runs in
+            // us-east-1. Scoped to this environment's own activity bus, not every bus in the account.
+            String activityBusArn =
+                    "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/" + props.sharedNames().activityBusName;
+            wafScanDetectLambda.ingestLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .actions(List.of("events:PutEvents"))
+                    .resources(List.of(activityBusArn))
+                    .build());
+
+            SubscriptionFilter.Builder.create(this, props.resourceNamePrefix() + "-WafScanDetectSubscription")
+                    .logGroup(wafLogGroup)
+                    .destination(new LambdaDestination(wafScanDetectLambda.ingestLambda))
+                    .filterPattern(FilterPattern.literal("{ $.terminatingRuleId = \"SensitivePathScan\" }"))
+                    .build();
+
+            // Burst-window table for wafScanDetect.js: one item per client IP, so a scan whose
+            // requests land in separate CloudWatch Logs deliveries (the subscription filter can split
+            // a fast burst across a few deliveries a few seconds apart) still sends one Telegram
+            // message per real-world burst rather than one per delivery. DESTROY, unlike DataStack's
+            // persistent tables, because this stack (like every application-tier stack) is
+            // per-deployment: a fresh WAF gets a fresh table, and none of this state needs to outlive
+            // its own deployment.
+            var wafScanBurstsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-WafScanBurstsTable")
+                    .tableName(wafScanBurstsTableName)
+                    .partitionKey(Attribute.builder()
+                            .name("clientIp")
+                            .type(AttributeType.STRING)
+                            .build())
+                    .billingMode(BillingMode.PAY_PER_REQUEST)
+                    .timeToLiveAttribute("ttl")
+                    .removalPolicy(RemovalPolicy.DESTROY)
+                    .build();
+            wafScanBurstsTable.grant(wafScanDetectLambda.ingestLambda, "dynamodb:UpdateItem");
+
+            infof(
+                    "Created WAF logging (blocks only), scan-detect Lambda %s subscribed to it, and its burst table %s",
+                    wafScanDetectLambda.ingestLambda.getNode().getId(), wafScanBurstsTableName);
+
+            Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "edge", List.of(wafScanDetectLambda));
+
+            cfnOutput(this, "WebAclId", webAcl.getAttrArn());
+            cfnOutput(this, "WafRateLimitAlarmArn", rateLimitAlarm.getAlarmArn());
+            cfnOutput(this, "WafAttackSignaturesAlarmArn", commonRuleAlarm.getAlarmArn());
+            cfnOutput(this, "WafBadInputsAlarmArn", badInputsAlarm.getAlarmArn());
+            cfnOutput(this, "SensitivePathsRegexSetArn", sensitivePathsRegexSet.getAttrArn());
+            cfnOutput(this, "WafScanDetectLambdaArn", wafScanDetectLambda.ingestLambda.getFunctionArn());
+            cfnOutput(this, "WafManualBlockIpv4SetArn", wafManualBlockIpv4Set.getAttrArn());
+            cfnOutput(this, "WafManualBlockIpv6SetArn", wafManualBlockIpv6Set.getAttrArn());
+            cfnOutput(this, "WafManualBlockAlarmArn", wafManualBlockAlarm.getAlarmArn());
+
+            return webAcl.getAttrArn();
     }
 }
