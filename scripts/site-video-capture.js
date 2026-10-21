@@ -736,6 +736,9 @@ async function main() {
       }
 
       if (offCamera) {
+        // An off-camera scene's navigations reinstall the overlay without its suppress rules, and the
+        // next on-camera scene may start on that document with no navigation of its own.
+        if (script.suppress?.length) await overlaySuppress(page, script.suppress);
         if (capture) capture.resume();
         pausedMs += Date.now() - offCameraStartedAt;
       }
