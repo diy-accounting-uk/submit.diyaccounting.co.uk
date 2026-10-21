@@ -42,7 +42,7 @@ step.
 
 ## Machine-only
 
-- [ ] **AL2. Close issue #513 (`prod-env-ga4-daily-pull-errors`) when the alarm reads OK.** The 07:20 UTC errors on 2026-10-20 were one request's BigQuery `backendError` retries (request 8f0d5fc2-dd2f-4884-a8d2-e9827e25a011); the hourly runs since are clean; `app/lib/bigQueryRetry.js` retries a transient job once in both GA4 pulls (PR #514). The 24-hour datapoint ages out about 07:21 UTC on 2026-10-21; then read `aws --profile diya-submit-prod cloudwatch describe-alarms --alarm-names prod-env-ga4-daily-pull-errors` and close #513 with that evidence. **Source**: issue #513. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+- [ ] **AL2. Close issue #513 (`prod-env-ga4-daily-pull-errors`) when the alarm reads OK.** `prod-env-ga4-daily-pull` errored in the hours from 07:00 to 10:59 UTC on 2026-10-20 (11 errors, BigQuery `backendError` retries; request 8f0d5fc2-dd2f-4884-a8d2-e9827e25a011) and not since; `app/lib/bigQueryRetry.js` retries a transient job once in both GA4 pulls (PR #514). The alarm's datapoint is one day long (period 86400 s, aligned at 07:21 UTC), so the window that ends at 07:21 UTC on 2026-10-21 still holds those errors and it read ALARM at 07:44 UTC. It reads OK after the window that ends at 07:21 UTC on 2026-10-22; then close #513 with that evidence. **Source**: issue #513. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 ## Machine-ask
 
