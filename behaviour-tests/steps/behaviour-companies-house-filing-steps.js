@@ -238,6 +238,17 @@ async function signInWithGovUkOneLogin(page, { userId, password, totpSecret }, s
   await handleCompaniesHouseAuthenticatorChallenge(page, totpSecret, screenshotPath);
 }
 
+const passkeySkipSelector = 'button[name="createPasskeyOption"]:has-text("Skip for now")';
+
+// GOV.UK One Login offers a passkey after the authenticator code. The page is skipped, not set up.
+async function skipPasskeyOfferIfShown(page, screenshotPath) {
+  const reached = page.locator(`#auth_code, #is_auth_confirmed, ${passkeySkipSelector}`).first();
+  await reached.waitFor({ state: "visible", timeout: 30000 });
+  if (await page.locator(passkeySkipSelector).count()) {
+    await loggedClick(page, passkeySkipSelector, "Skip setting up a passkey", { screenshotPath });
+  }
+}
+
 // A scope that names a company adds this page between One Login and the permission page.
 async function enterCompanyAuthCodeIfAsked(page, companyAuthCode, screenshotPath) {
   await page.locator("#auth_code, #is_auth_confirmed").first().waitFor({ state: "visible", timeout: 30000 });
@@ -251,11 +262,28 @@ async function enterCompanyAuthCodeIfAsked(page, companyAuthCode, screenshotPath
   await loggedClick(page, "#submit", "Continue after the company authentication code", { screenshotPath });
 }
 
+// Names the page a timeout stopped on: the path and main heading only, because the query string carries codes.
+async function describeCurrentPage(page) {
+  const { origin, pathname } = new URL(page.url());
+  const heading = await page
+    .locator("h1")
+    .first()
+    .innerText({ timeout: 2000 })
+    .catch(() => "(no heading)");
+  return `${origin}${pathname} heading "${heading.replace(/\s+/g, " ").trim().slice(0, 120)}"`;
+}
+
 async function authoriseOnRealSandbox(page, credentials, screenshotPath) {
-  await signInWithGovUkOneLogin(page, credentials, screenshotPath);
-  await enterCompanyAuthCodeIfAsked(page, credentials.companyAuthCode, screenshotPath);
-  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-authorise-application.png` });
-  await loggedClick(page, "#is_auth_confirmed", "Allow access", { screenshotPath });
+  try {
+    await signInWithGovUkOneLogin(page, credentials, screenshotPath);
+    await skipPasskeyOfferIfShown(page, screenshotPath);
+    await enterCompanyAuthCodeIfAsked(page, credentials.companyAuthCode, screenshotPath);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-authorise-application.png` });
+    await loggedClick(page, "#is_auth_confirmed", "Allow access", { screenshotPath });
+  } catch (error) {
+    console.error(`Companies House sign-in stopped on ${await describeCurrentPage(page)}: ${error.message.split("\n")[0]}`);
+    throw error;
+  }
 }
 
 async function authoriseOnSimulator(page, { userId, password, companyAuthCode }, screenshotPath) {
