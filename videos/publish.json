@@ -927,7 +927,7 @@
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": 38069773066,
+      "sourceRun": 39535763031,
       "sourceArtifact": "video-itsa-year-ci",
       "videoFile": "target/videos/video-itsa-year-ci/itsa-year.mp4",
       "captionFile": "target/videos/video-itsa-year-ci/itsa-year.vtt",
@@ -935,7 +935,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video walks a whole tax year: signing in, taking out Resident, picking a business, filing a quarterly update for a self-employment business and for a UK property business, then the annual submission, adjustments, losses and claims, the tax calculation and the final declaration HMRC accepts. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA", "final declaration"],
       "categoryId": "27",
-      "videoId": "XM2HbwVJ4fU",
+      "videoId": null,
       "walkthrough": [
         {
           "scene": "business-picker",
@@ -1403,7 +1403,7 @@
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": 38070936015,
+      "sourceRun": 39537595626,
       "sourceArtifact": "video-itsa-year-part-ci",
       "videoFile": "target/videos/video-itsa-year-part-ci/itsa-year-part.mp4",
       "captionFile": "target/videos/video-itsa-year-part-ci/itsa-year-part.vtt",
@@ -1411,7 +1411,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video walks the first part of a tax year: signing in, taking out Resident, picking a business, filing a quarterly update for a self-employment business and for a UK property business, then the annual submission and the year-end adjustments HMRC accepts. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "1BWVtcAuCuo",
+      "videoId": null,
       "walkthrough": [
         {
           "scene": "business-picker",
