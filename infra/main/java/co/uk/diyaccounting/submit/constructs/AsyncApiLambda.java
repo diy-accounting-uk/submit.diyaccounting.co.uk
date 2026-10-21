@@ -12,6 +12,7 @@ import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
+import software.amazon.awscdk.services.cloudwatch.IAlarm;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
@@ -30,7 +31,7 @@ import software.constructs.Construct;
 
 public class AsyncApiLambda extends ApiLambda {
 
-    /** How many checks this construct adds on top of the ones every Lambda carries. */
+    /** How many checks this construct adds under {@link Lambda#stackHealthAlarm}. */
     public static final int ASYNC_HEALTH_CHECK_COUNT = 3;
 
     public final Function workerLambda;
@@ -123,16 +124,7 @@ public class AsyncApiLambda extends ApiLambda {
         // and the composite raises one alert for the pair. The alarm names take their queue and
         // function names from props, not from the L2 getters, because the getters render as
         // unresolved tokens and the name prefix has to be a synth-time literal.
-        Alarm dlqNotEmptyAlarm = Alarm.Builder.create(this.scope, this.asyncProps.idPrefix() + "-DlqAlarm")
-                .alarmName(CHECK_ALARM_NAME_PREFIX + this.asyncProps.workerDeadLetterQueueName() + "-not-empty")
-                .metric(this.dlq.metricApproximateNumberOfMessagesVisible())
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("SQS DLQ for " + this.asyncProps.ingestFunctionName() + " has items")
-                .build();
-
+        Alarm dlqNotEmptyAlarm = dlqNotEmptyAlarm();
         Alarm workerErrorsAlarm = Alarm.Builder.create(this.scope, this.asyncProps.idPrefix() + "-WorkerErrorsAlarm")
                 .alarmName(CHECK_ALARM_NAME_PREFIX + this.asyncProps.workerFunctionName() + "-errors")
                 .metric(this.workerLambda.metricErrors())
@@ -142,11 +134,31 @@ public class AsyncApiLambda extends ApiLambda {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription("Worker Lambda errors for " + this.workerLambda.getFunctionName())
                 .build();
+        Alarm queueMessageAgeAlarm = queueMessageAgeAlarm();
+        this.healthChecks.addAll(List.of(dlqNotEmptyAlarm, workerErrorsAlarm, queueMessageAgeAlarm));
+    }
 
-        // Message age alarm: a message stuck in the queue for >= 30 minutes indicates
-        // the worker is stalled or backed up.
-        Alarm queueMessageAgeAlarm = Alarm.Builder.create(
-                        this.scope, this.asyncProps.idPrefix() + "-QueueMessageAgeAlarm")
+    /** The worker logs to the ingest function's log group, so its errors need no check of their own here. */
+    @Override
+    protected List<IAlarm> addQueueChecks() {
+        return List.of(dlqNotEmptyAlarm(), queueMessageAgeAlarm());
+    }
+
+    private Alarm dlqNotEmptyAlarm() {
+        return Alarm.Builder.create(this.scope, this.asyncProps.idPrefix() + "-DlqAlarm")
+                .alarmName(CHECK_ALARM_NAME_PREFIX + this.asyncProps.workerDeadLetterQueueName() + "-not-empty")
+                .metric(this.dlq.metricApproximateNumberOfMessagesVisible())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("SQS DLQ for " + this.asyncProps.ingestFunctionName() + " has items")
+                .build();
+    }
+
+    // A message stuck in the queue for >= 30 minutes indicates the worker is stalled or backed up.
+    private Alarm queueMessageAgeAlarm() {
+        return Alarm.Builder.create(this.scope, this.asyncProps.idPrefix() + "-QueueMessageAgeAlarm")
                 .alarmName(CHECK_ALARM_NAME_PREFIX + this.asyncProps.workerQueueName() + "-message-age")
                 .metric(this.queue.metricApproximateAgeOfOldestMessage())
                 .threshold(Duration.minutes(30).toSeconds())
@@ -156,7 +168,5 @@ public class AsyncApiLambda extends ApiLambda {
                 .alarmDescription(
                         "SQS message age >= 30 minutes for queue " + this.queue.getQueueName() + " (worker stalled)")
                 .build();
-
-        this.healthChecks.addAll(List.of(dlqNotEmptyAlarm, workerErrorsAlarm, queueMessageAgeAlarm));
     }
 }

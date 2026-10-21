@@ -31,6 +31,10 @@ describe("alarmFamilyKey", () => {
     expect(alarmFamilyKey("prod-9050bb5-app-cognito-token-post-health")).toBe("prod-app-cognito-token-post-health");
   });
 
+  test("drops the deployment slug from a deployment set's shared invocation-errors alarm", () => {
+    expect(alarmFamilyKey("prod-b4ed822-app-lambda-errors")).toBe("prod-app-lambda-errors");
+  });
+
   test("leaves an environment-scoped alarm name unchanged", () => {
     expect(alarmFamilyKey("prod-env-salt-secret-unexpected-read")).toBe("prod-env-salt-secret-unexpected-read");
   });

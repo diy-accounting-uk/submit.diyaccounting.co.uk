@@ -97,6 +97,22 @@ describe("resolveAlarmEvidence", () => {
     ]);
   });
 
+  test("rule 15: a deployment set's shared invocation-errors alarm widens to the deployment's Lambda prefix", () => {
+    const evidence = resolveAlarmEvidence({
+      alarmName: "prod-b4ed822-app-lambda-errors",
+      familyKey: alarmFamilyKey("prod-b4ed822-app-lambda-errors"),
+      env: "prod",
+      deployment: "prod-b4ed822",
+      namespace: "Submit/LambdaLogs",
+      metricName: "prod-b4ed822-app-lambda-errors",
+      dimensions: {},
+      compositeChildFunctionNames: [],
+    });
+
+    expect(evidence.ruleId).toBe(15);
+    expect(evidence.logGroupNamePrefixes).toEqual(["/aws/lambda/prod-b4ed822-app-"]);
+  });
+
   test("rule 4: prod-0f68ed8-app-api-5xx includes both the API access log and the deployment's Lambda prefix", () => {
     const evidence = resolveAlarmEvidence({
       alarmName: "prod-0f68ed8-app-api-5xx",
@@ -418,6 +434,15 @@ describe("extractCompositeChildFunctionNames", () => {
       'OR ALARM("arn:aws:cloudwatch:eu-west-2:367191799875:alarm:check-prod-0f68ed8-app-hmrc-vat-return-post-async-queue-message-age")';
 
     expect(extractCompositeChildFunctionNames(alarmRule)).toEqual(["prod-0f68ed8-app-hmrc-vat-return-post"]);
+  });
+
+  test("reads a REST resource's shared log-errors child as the name prefix of the functions under it", () => {
+    const alarmRule =
+      'ALARM("arn:aws:cloudwatch:eu-west-2:972912397388:alarm:check-prod-b4ed822-app-pass-log-errors") ' +
+      'OR ALARM("arn:aws:cloudwatch:eu-west-2:972912397388:alarm:check-prod-b4ed822-app-support-ticket-post-log-errors") ' +
+      'OR ALARM("arn:aws:cloudwatch:eu-west-2:972912397388:alarm:check-prod-b4ed822-app-bundle-post-dlq-not-empty")';
+
+    expect(extractCompositeChildFunctionNames(alarmRule)).toEqual(["prod-b4ed822-app-pass", "prod-b4ed822-app-support-ticket-post"]);
   });
 
   test("returns [] for an empty or missing AlarmRule", () => {

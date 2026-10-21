@@ -76,31 +76,101 @@ class SubmitApplicationCdkResourceTest {
         infof("Created stack:", submitApplication.authStack.getStackName());
         Template authStackTemplate = Template.fromStack(submitApplication.authStack);
         authStackTemplate.resourceCountIs("AWS::Lambda::Function", 2);
-        assertStackHealthAlarm(authStackTemplate, 2, 0, routedPrefixes);
+        assertGroupedStackHealthAlarm(
+                authStackTemplate, List.of("cognito-token-post", "custom-authorizer"), 0, routedPrefixes);
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
         hmrcStackTemplate.resourceCountIs("AWS::Lambda::Function", 46);
-        assertStackHealthAlarm(hmrcStackTemplate, 24, 22, routedPrefixes);
-        // The HmrcStack has 46 Lambdas × 2 checks + async checks, totaling ~136 alarms,
-        // which would create a rule exceeding 10240 chars. Verify it uses group composites.
-        int hmrcCompositeCount = hmrcStackTemplate
-                .findResources("AWS::CloudWatch::CompositeAlarm")
-                .size();
-        org.junit.jupiter.api.Assertions.assertTrue(
-                hmrcCompositeCount > 1,
-                "HmrcStack should have multiple CompositeAlarms (top-level + groups) due to rule length, but found "
-                        + hmrcCompositeCount);
+        // Every HMRC caller keeps a log-errors alarm of its own; the receipt read is the only
+        // function under /api/v1/hmrc here that does not call HMRC.
+        assertGroupedStackHealthAlarm(
+                hmrcStackTemplate,
+                List.of(
+                        "hmrc-itsa-bsas-se-adjust-post",
+                        "hmrc-itsa-bsas-se-get",
+                        "hmrc-itsa-bsas-trigger-post",
+                        "hmrc-itsa-business-details-get",
+                        "hmrc-itsa-calculation-get",
+                        "hmrc-itsa-calculation-trigger-post",
+                        "hmrc-itsa-crystallisation-get",
+                        "hmrc-itsa-final-declaration-post",
+                        "hmrc-itsa-obligations-get",
+                        "hmrc-itsa-se-annual-get",
+                        "hmrc-itsa-se-annual-put",
+                        "hmrc-itsa-se-period-get",
+                        "hmrc-itsa-se-period-post",
+                        "hmrc-itsa-se-period-put",
+                        "hmrc-itsa-se-periods-get",
+                        "hmrc-itsa-status-get",
+                        "hmrc-receipt-get",
+                        "hmrc-token-post",
+                        "hmrc-vat-liabilities-get",
+                        "hmrc-vat-obligation-get",
+                        "hmrc-vat-payments-get",
+                        "hmrc-vat-penalties-get",
+                        "hmrc-vat-return-get",
+                        "hmrc-vat-return-post"),
+                22,
+                routedPrefixes);
 
         infof("Created stack:", submitApplication.hmrcItsaStack.getStackName());
         Template hmrcItsaStackTemplate = Template.fromStack(submitApplication.hmrcItsaStack);
         hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 36);
-        assertStackHealthAlarm(hmrcItsaStackTemplate, 18, 18, routedPrefixes);
+        // The four assist functions call no external API and share the /api/v1/hmrc alarm.
+        assertGroupedStackHealthAlarm(
+                hmrcItsaStackTemplate,
+                List.of(
+                        "hmrc",
+                        "hmrc-itsa-bsas-uk-property-adjust-post",
+                        "hmrc-itsa-bsas-uk-property-get",
+                        "hmrc-itsa-losses-and-claims-delete",
+                        "hmrc-itsa-losses-and-claims-get",
+                        "hmrc-itsa-losses-and-claims-put",
+                        "hmrc-itsa-tax-liability-adjust-delete",
+                        "hmrc-itsa-tax-liability-adjust-get",
+                        "hmrc-itsa-tax-liability-adjust-put",
+                        "hmrc-itsa-uk-property-annual-get",
+                        "hmrc-itsa-uk-property-annual-put",
+                        "hmrc-itsa-uk-property-period-get",
+                        "hmrc-itsa-uk-property-period-post",
+                        "hmrc-itsa-uk-property-period-put",
+                        "hmrc-itsa-uk-property-periods-get"),
+                18,
+                routedPrefixes);
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
         companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 24);
-        assertStackHealthAlarm(companiesHouseStackTemplate, 24, 0, routedPrefixes);
+        // The two previews call no external API and share the /api/v1/companies-house alarm.
+        assertGroupedStackHealthAlarm(
+                companiesHouseStackTemplate,
+                List.of(
+                        "companies-house",
+                        "companies-house-accounts-get",
+                        "companies-house-accounts-post",
+                        "companies-house-company-get",
+                        "companies-house-confirmation-statement-get",
+                        "companies-house-confirmation-statement-post",
+                        "companies-house-email-address-post",
+                        "companies-house-email-eligibility-get",
+                        "companies-house-filing-data-post",
+                        "companies-house-office-address-get",
+                        "companies-house-office-address-post",
+                        "companies-house-officers-get",
+                        "companies-house-psc-get",
+                        "companies-house-psc-verification-statement-get",
+                        "companies-house-psc-verification-statement-post",
+                        "companies-house-search-get",
+                        "companies-house-token-post",
+                        "companies-house-transaction-get",
+                        "companies-house-transaction-post",
+                        "companies-house-transaction-put",
+                        "hmrc-ct-return-get",
+                        "hmrc-ct-return-post",
+                        "hmrc-ct-return-preview-post"),
+                0,
+                routedPrefixes);
 
         // Every route that can carry a clientId resolves it via enforceBundles -> getClient(),
         // which needs the practice clients table name on the Lambda's own environment. Regression
@@ -129,7 +199,22 @@ class SubmitApplicationCdkResourceTest {
         // sessionSignOutPost(1), activityStartedPost(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
         accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 23);
-        assertStackHealthAlarm(accountStackTemplate, 21, 2, routedPrefixes);
+        assertGroupedStackHealthAlarm(
+                accountStackTemplate,
+                List.of(
+                        "activity-started-post",
+                        "bundle",
+                        "bundle-capacity-reconcile",
+                        "interest-post",
+                        "operator-snapshot-get",
+                        "pass",
+                        "practice",
+                        "practice-client-authorisation-get",
+                        "practice-client-authorisation-invite-delete",
+                        "practice-client-authorisation-invite-post",
+                        "session"),
+                2,
+                routedPrefixes);
 
         // Regression guard: bundleGet performs lazy token refresh via dynamodb:UpdateItem on the
         // bundles table (see app/functions/account/bundleGet.js resetTokens). Its grant on
@@ -181,7 +266,35 @@ class SubmitApplicationCdkResourceTest {
         // billingWebhookPost moved to env-level BillingWebhookStack
         Template billingStackTemplate = Template.fromStack(submitApplication.billingStack);
         billingStackTemplate.resourceCountIs("AWS::Lambda::Function", 5);
-        assertStackHealthAlarm(billingStackTemplate, 5, 0, routedPrefixes);
+        assertGroupedStackHealthAlarm(
+                billingStackTemplate,
+                List.of(
+                        "billing-activity-checkout-post",
+                        "billing-checkout-post",
+                        "billing-checkout-session-get",
+                        "billing-portal-get",
+                        "billing-recover-post"),
+                0,
+                routedPrefixes);
+
+        assertGroupedStackHealthAlarm(
+                Template.fromStack(submitApplication.diyaGlStack),
+                List.of("diya-gl", "practice-client-book-move-post"),
+                0,
+                routedPrefixes);
+
+        // One invocation-errors alarm covers the whole deployment set and is routed directly.
+        opsStackTemplateForRouting.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName",
+                        "tt-witheight-app" + Lambda.DEPLOYMENT_ERRORS_SUFFIX,
+                        "Namespace",
+                        Lambda.LOG_METRIC_NAMESPACE,
+                        "MetricName",
+                        "tt-witheight-app" + Lambda.DEPLOYMENT_ERRORS_SUFFIX)));
+        org.junit.jupiter.api.Assertions.assertTrue(
+                startsWithAny("tt-witheight-app" + Lambda.DEPLOYMENT_ERRORS_SUFFIX, routedPrefixes));
 
         infof("Created stack:", submitApplication.apiStack.getStackName());
         Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
@@ -970,6 +1083,66 @@ class SubmitApplicationCdkResourceTest {
                 });
         org.junit.jupiter.api.Assertions.assertTrue(
                 found, "expected " + functionName + " to have the " + variableName + " environment variable");
+    }
+
+    /**
+     * Asserts a deployment-set stack's grouped health-alarm shape: its {@code check-} alarms are
+     * exactly one {@code -log-errors} alarm per name in {@code expectedLogErrorsNames} (after the
+     * {@code tt-witheight-app-} prefix) plus the DLQ and message-age checks of each async pair;
+     * every function's log group feeds the deployment's shared invocation-errors metric; and the
+     * composite covers every check.
+     */
+    @SuppressWarnings("unchecked")
+    static void assertGroupedStackHealthAlarm(
+            Template template,
+            List<String> expectedLogErrorsNames,
+            int expectedAsyncPairs,
+            List<String> routedPrefixes) {
+        var logErrorsNames = new ArrayList<String>();
+        int queueChecks = 0;
+        for (Map<String, Object> alarm :
+                template.findResources("AWS::CloudWatch::Alarm").values()) {
+            String name = String.valueOf(((Map<String, Object>) alarm.get("Properties")).get("AlarmName"));
+            if (!name.startsWith(Lambda.CHECK_ALARM_NAME_PREFIX)) continue;
+            if (name.endsWith("-not-empty") || name.endsWith("-message-age")) {
+                queueChecks++;
+                continue;
+            }
+            org.junit.jupiter.api.Assertions.assertTrue(
+                    name.endsWith("-log-errors"), "Unexpected per-function check " + name + " on a grouped stack");
+            logErrorsNames.add(name.substring(
+                    (Lambda.CHECK_ALARM_NAME_PREFIX + "tt-witheight-app-").length(),
+                    name.length() - "-log-errors".length()));
+        }
+        java.util.Collections.sort(logErrorsNames);
+        var expected = new ArrayList<>(expectedLogErrorsNames);
+        java.util.Collections.sort(expected);
+        assertEquals(expected, logErrorsNames);
+        assertEquals(2 * expectedAsyncPairs, queueChecks, "DLQ and message-age checks per async pair");
+
+        var logErrorsLogGroups = new java.util.HashSet<String>();
+        var invocationErrorsLogGroups = new java.util.HashSet<String>();
+        for (Map<String, Object> filter :
+                template.findResources("AWS::Logs::MetricFilter").values()) {
+            Map<String, Object> props = (Map<String, Object>) filter.get("Properties");
+            Map<String, Object> transformation =
+                    ((List<Map<String, Object>>) props.get("MetricTransformations")).get(0);
+            if (!Lambda.LOG_METRIC_NAMESPACE.equals(transformation.get("MetricNamespace"))) continue;
+            String logGroup = String.valueOf(props.get("LogGroupName"));
+            String metricName = String.valueOf(transformation.get("MetricName"));
+            if (metricName.equals("tt-witheight-app" + Lambda.DEPLOYMENT_ERRORS_SUFFIX)) {
+                invocationErrorsLogGroups.add(logGroup);
+            } else {
+                logErrorsLogGroups.add(logGroup);
+            }
+        }
+        org.junit.jupiter.api.Assertions.assertFalse(logErrorsLogGroups.isEmpty());
+        assertEquals(
+                logErrorsLogGroups,
+                invocationErrorsLogGroups,
+                "Every function log group with a log-errors filter also feeds the shared invocation-errors metric");
+
+        assertStackHealthAlarm(template, null, expectedAsyncPairs, routedPrefixes);
     }
 
     /**

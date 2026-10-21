@@ -8,6 +8,7 @@ package co.uk.diyaccounting.submit.constructs;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Optional;
 import software.amazon.awscdk.Duration;
@@ -50,7 +51,20 @@ public class Lambda {
     /** Deployment sets in this environment carry no per-function checks. */
     public static final String CI_ENV_NAME = "ci";
 
-    /** How many checks every Lambda construct carries. */
+    /** The namespace of the metrics the Lambda log metric filters publish. */
+    public static final String LOG_METRIC_NAMESPACE = "Submit/LambdaLogs";
+
+    /** A deployment set's shared invocation-errors metric and alarm are named {@code <prefix>-lambda-errors}. */
+    public static final String DEPLOYMENT_ERRORS_SUFFIX = "-lambda-errors";
+
+    /** The lines the Node.js runtime writes for an invocation that Lambda counts as an error. */
+    static final String[] INVOCATION_ERROR_LOG_TERMS = {
+        "Invoke Error", "Uncaught Exception", "Unhandled Promise Rejection", "Task timed out", "Runtime exited"
+    };
+
+    private static final String REST_PATH_PREFIX = "/api/v1/";
+
+    /** How many checks a Lambda construct carries under {@link #stackHealthAlarm}. */
     public static final int HEALTH_CHECK_COUNT = 2;
 
     /** CloudWatch accepts at most this many operands in one composite alarm rule. */
@@ -189,47 +203,124 @@ public class Lambda {
 
         // 2) Log-based error detection using a CloudWatch Logs Metric Filter
         // This avoids external scanners: we scan for common error terms in logs and emit a custom metric.
-        String logErrorMetricNamespace = "Submit/LambdaLogs";
         String logErrorMetricName = this.ingestLambda.getFunctionName() + "-log-errors";
-        MetricFilter.Builder.create(this.scope, this.props.idPrefix() + "-LogErrorsMetricFilter")
-                .logGroup(this.logGroup)
-                .filterPattern(FilterPattern.anyTerm(
-                        "ERROR", "Error", "Exception", "Unhandled", "Task timed out", "SEVERE", "FATAL"))
-                .metricNamespace(logErrorMetricNamespace)
-                .metricName(logErrorMetricName)
-                .metricValue("1")
-                .defaultValue(0)
-                .build();
-
-        Metric logErrorMetric = Metric.Builder.create()
-                .namespace(logErrorMetricNamespace)
-                .metricName(logErrorMetricName)
-                .statistic("Sum")
-                .period(Duration.minutes(5))
-                .build();
-
-        Alarm logErrorsAlarm = Alarm.Builder.create(this.scope, this.props.idPrefix() + "-LogErrorsAlarm")
-                // props.ingestFunctionName(), not this.ingestLambda.getFunctionName(): the latter
-                // renders as an unresolved Fn::Join/Ref token in the synthesized template (same
-                // physical value, but the composite alarm and its EventBridge routing both need a
-                // synth-time literal to match the name-prefix contract against).
-                .alarmName(CHECK_ALARM_NAME_PREFIX + this.props.ingestFunctionName() + "-log-errors")
-                .metric(logErrorMetric)
-                .threshold(1)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("Detected >= 1 error-like log line in the last 5 minutes for function "
-                        + this.ingestLambda.getFunctionName())
-                .build();
+        addLogErrorsMetricFilter(logErrorMetricName);
+        // props.ingestFunctionName(), not this.ingestLambda.getFunctionName(): the latter
+        // renders as an unresolved Fn::Join/Ref token in the synthesized template (same
+        // physical value, but the composite alarm and its EventBridge routing both need a
+        // synth-time literal to match the name-prefix contract against).
+        Alarm logErrorsAlarm = logErrorsAlarm(
+                this.scope,
+                this.props.idPrefix() + "-LogErrorsAlarm",
+                CHECK_ALARM_NAME_PREFIX + this.props.ingestFunctionName() + "-log-errors",
+                logErrorMetricName,
+                "Detected >= 1 error-like log line in the last 5 minutes for function "
+                        + this.ingestLambda.getFunctionName());
 
         this.healthChecks.addAll(List.of(errorsAlarm, logErrorsAlarm));
     }
 
+    /** Counts this function's error-like log lines into the named metric. */
+    private void addLogErrorsMetricFilter(String metricName) {
+        MetricFilter.Builder.create(this.scope, this.props.idPrefix() + "-LogErrorsMetricFilter")
+                .logGroup(this.logGroup)
+                .filterPattern(FilterPattern.anyTerm(
+                        "ERROR", "Error", "Exception", "Unhandled", "Task timed out", "SEVERE", "FATAL"))
+                .metricNamespace(LOG_METRIC_NAMESPACE)
+                .metricName(metricName)
+                .metricValue("1")
+                .defaultValue(0)
+                .build();
+    }
+
+    /**
+     * Counts this function's failed invocations into the deployment set's shared metric. The
+     * Node.js runtime writes one of these lines for every invocation that Lambda counts in its
+     * own Errors metric: an unhandled error, a crash or a timeout.
+     */
+    private void addInvocationErrorsMetricFilter(String resourceNamePrefix) {
+        MetricFilter.Builder.create(this.scope, this.props.idPrefix() + "-InvocationErrorsMetricFilter")
+                .logGroup(this.logGroup)
+                .filterPattern(FilterPattern.anyTerm(INVOCATION_ERROR_LOG_TERMS))
+                .metricNamespace(LOG_METRIC_NAMESPACE)
+                .metricName(resourceNamePrefix + DEPLOYMENT_ERRORS_SUFFIX)
+                .metricValue("1")
+                .defaultValue(0)
+                .build();
+    }
+
+    /** The checks on this function's queues; a plain function has none. */
+    protected List<IAlarm> addQueueChecks() {
+        return List.of();
+    }
+
+    private static Alarm logErrorsAlarm(
+            Construct scope, String id, String alarmName, String metricName, String description) {
+        return Alarm.Builder.create(scope, id)
+                .alarmName(alarmName)
+                .metric(Metric.Builder.create()
+                        .namespace(LOG_METRIC_NAMESPACE)
+                        .metricName(metricName)
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription(description)
+                .build();
+    }
+
+    /**
+     * The one invocation-errors alarm of a deployment set. Every function the set's stacks pass to
+     * {@link #appStackHealthAlarm} counts its failed invocations into one metric, so one alarm on
+     * one metric covers them all. Lambda's own per-function Errors metric cannot do this: an alarm
+     * sums at most 10 metrics, and an alarm over a Metrics Insights query is billed per metric it
+     * reads. A ci set has no such alarm. The name carries the deployment prefix, so OpsStack's
+     * rule routes it directly.
+     */
+    public static Optional<Alarm> deploymentErrorsAlarm(
+            final Construct scope, String envName, String resourceNamePrefix) {
+        if (CI_ENV_NAME.equals(envName)) {
+            return Optional.empty();
+        }
+        String name = resourceNamePrefix + DEPLOYMENT_ERRORS_SUFFIX;
+        return Optional.of(Alarm.Builder.create(scope, "DeploymentLambdaErrorsAlarm")
+                .alarmName(name)
+                .metric(Metric.Builder.create()
+                        .namespace(LOG_METRIC_NAMESPACE)
+                        .metricName(name)
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("A Lambda function of " + resourceNamePrefix
+                        + " failed an invocation (unhandled error, crash or timeout) in the last 5 minutes."
+                        + " The per-function Errors graphs on the dashboard name the function.")
+                .build());
+    }
+
     /**
      * The health alarm of a deployment-set stack. A ci set is short-lived and proved by its own
-     * behaviour tests, so its functions carry no checks, metric filters or composite at all; any
-     * other environment gets the full {@link #stackHealthAlarm}.
+     * behaviour tests, so its functions carry no checks, metric filters or composite at all.
+     *
+     * <p>Any other environment gets three kinds of check, fanned into the stack's composite:
+     *
+     * <ul>
+     *   <li>invocation errors: each function feeds the set's shared metric, which {@link
+     *       #deploymentErrorsAlarm} watches;
+     *   <li>error-like log lines: one alarm per REST resource ({@code /api/v1/<resource>}) for the
+     *       functions under it, and one alarm of its own for every function that calls an external
+     *       API ({@link AbstractLambdaProps#callsExternalApi()}) or serves no REST resource;
+     *   <li>queue checks: the DLQ and message-age alarms of every async pair.
+     * </ul>
+     *
+     * <p>A shared alarm is named after the longest name prefix its functions have in common, so
+     * the name read out of the composite's rule is also a log group prefix that holds them all.
      */
     public static Optional<CompositeAlarm> appStackHealthAlarm(
             final Construct scope,
@@ -240,7 +331,98 @@ public class Lambda {
         if (CI_ENV_NAME.equals(envName)) {
             return Optional.empty();
         }
-        return Optional.of(stackHealthAlarm(scope, resourceNamePrefix, stackShortName, functions));
+        var logErrorsGroups = new LinkedHashMap<String, List<Lambda>>();
+        for (Lambda function : functions) {
+            function.addInvocationErrorsMetricFilter(resourceNamePrefix);
+            logErrorsGroups
+                    .computeIfAbsent(function.logErrorsGroupKey(), key -> new ArrayList<>())
+                    .add(function);
+        }
+        var checks = new ArrayList<IAlarm>();
+        for (List<Lambda> members : logErrorsGroups.values()) {
+            if (members.size() == 1) {
+                Lambda function = members.get(0);
+                String metricName = function.props.ingestFunctionName() + "-log-errors";
+                function.addLogErrorsMetricFilter(metricName);
+                checks.add(logErrorsAlarm(
+                        function.scope,
+                        function.props.idPrefix() + "-LogErrorsAlarm",
+                        CHECK_ALARM_NAME_PREFIX + metricName,
+                        metricName,
+                        "Detected >= 1 error-like log line in the last 5 minutes for function "
+                                + function.props.ingestFunctionName()));
+                continue;
+            }
+            String label = commonNameLabel(resourceNamePrefix, members);
+            String metricName = resourceNamePrefix + "-" + label + "-log-errors";
+            var memberNames = new ArrayList<String>();
+            for (Lambda member : members) {
+                member.addLogErrorsMetricFilter(metricName);
+                memberNames.add(member.props.ingestFunctionName());
+            }
+            checks.add(logErrorsAlarm(
+                    scope,
+                    "LogErrorsAlarm-" + label,
+                    CHECK_ALARM_NAME_PREFIX + metricName,
+                    metricName,
+                    "Detected >= 1 error-like log line in the last 5 minutes in one of the functions "
+                            + String.join(", ", memberNames)));
+        }
+        for (Lambda function : functions) {
+            checks.addAll(function.addQueueChecks());
+        }
+        return Optional.of(compositeHealthAlarm(scope, resourceNamePrefix, stackShortName, checks));
+    }
+
+    /**
+     * The functions under one REST resource share a log-errors alarm. A function that calls an
+     * external API, or serves no REST resource, is a group of its own.
+     */
+    private String logErrorsGroupKey() {
+        String own = "function:" + this.props.ingestFunctionName();
+        if (this.props.callsExternalApi() || !(this.props instanceof AbstractApiLambdaProps apiProps)) {
+            return own;
+        }
+        String path = apiProps.urlPath();
+        if (!path.startsWith(REST_PATH_PREFIX)) {
+            return own;
+        }
+        return "resource:" + path.substring(REST_PATH_PREFIX.length()).split("/")[0];
+    }
+
+    /**
+     * The longest whole-word prefix the functions' names share after the deployment prefix, e.g.
+     * {@code pass} for {@code pass-get} and {@code pass-admin-post}.
+     */
+    private static String commonNameLabel(String resourceNamePrefix, List<Lambda> members) {
+        List<String> common = null;
+        for (Lambda member : members) {
+            String name = member.props.ingestFunctionName();
+            if (!name.startsWith(resourceNamePrefix + "-")) {
+                throw new IllegalStateException("Function " + name + " does not start with " + resourceNamePrefix);
+            }
+            List<String> words =
+                    List.of(name.substring(resourceNamePrefix.length() + 1).split("-"));
+            if (common == null) {
+                common = words;
+                continue;
+            }
+            int shared = 0;
+            while (shared < common.size()
+                    && shared < words.size()
+                    && common.get(shared).equals(words.get(shared))) {
+                shared++;
+            }
+            common = common.subList(0, shared);
+        }
+        if (common == null || common.isEmpty()) {
+            var names = new ArrayList<String>();
+            members.forEach(member -> names.add(member.props.ingestFunctionName()));
+            throw new IllegalStateException("The functions under one REST resource share no name prefix, so their"
+                    + " log-errors alarm has no log group prefix to name: " + names
+                    + ". Rename them to share one, or mark the odd one callsExternalApi.");
+        }
+        return String.join("-", common);
     }
 
     /**
@@ -270,16 +452,20 @@ public class Lambda {
      */
     public static CompositeAlarm stackHealthAlarm(
             final Construct scope, String resourceNamePrefix, String stackShortName, List<Lambda> functions) {
+        var checks = new ArrayList<IAlarm>();
         for (Lambda function : functions) {
             function.addFunctionChecks();
+            checks.addAll(function.healthChecks);
         }
+        return compositeHealthAlarm(scope, resourceNamePrefix, stackShortName, checks);
+    }
+
+    private static CompositeAlarm compositeHealthAlarm(
+            final Construct scope, String resourceNamePrefix, String stackShortName, List<IAlarm> checks) {
         // Build list of alarms with their estimated lengths
         var alarmInfos = new ArrayList<AlarmInfo>();
-        for (Lambda function : functions) {
-            for (IAlarm alarm : function.healthChecks) {
-                String alarmName = alarm.getAlarmName();
-                alarmInfos.add(new AlarmInfo(alarm, alarmName));
-            }
+        for (IAlarm alarm : checks) {
+            alarmInfos.add(new AlarmInfo(alarm, alarm.getAlarmName()));
         }
 
         // Calculate estimated total rule length if all alarms were in one composite
@@ -293,13 +479,13 @@ public class Lambda {
 
         if (totalEstimatedLength <= ALARM_RULE_CHUNK_TARGET_CHARS) {
             // Rule fits in a single composite
-            var checks = new ArrayList<IAlarmRule>();
+            var rules = new ArrayList<IAlarmRule>();
             for (AlarmInfo info : alarmInfos) {
-                checks.add(info.alarm);
+                rules.add(info.alarm);
             }
             return CompositeAlarm.Builder.create(scope, "StackHealthAlarm")
                     .compositeAlarmName(resourceNamePrefix + "-" + stackShortName + HEALTH_ALARM_NAME_SUFFIX)
-                    .alarmRule(anyOf(checks))
+                    .alarmRule(anyOf(rules))
                     .alarmDescription("A health check failed in " + stackShortName + ": one of its Lambda functions "
                             + "reported errors or error-like log lines, or one of its async pairs has a stuck queue "
                             + "or a failing worker. The alarm state reason names the check that tripped.")

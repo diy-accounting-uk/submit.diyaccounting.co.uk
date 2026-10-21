@@ -148,6 +148,7 @@ public class McpStack extends Stack {
                         .ecrRepositoryName(sharedNames.ecrRepositoryName)
                         .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
                         .ingestFunctionName(sharedNames.mcpHttpIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(sharedNames.mcpHttpIngestLambdaHandler)
                         .ingestLambdaArn(sharedNames.mcpHttpIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -189,6 +190,7 @@ public class McpStack extends Stack {
                         .ecrRepositoryName(sharedNames.ecrRepositoryName)
                         .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
                         .ingestFunctionName(sharedNames.mcpOauthIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(sharedNames.mcpOauthIngestLambdaHandler)
                         .ingestLambdaArn(sharedNames.mcpOauthIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(

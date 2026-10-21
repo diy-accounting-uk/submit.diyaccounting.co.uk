@@ -280,6 +280,7 @@ public class BillingStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().billingCheckoutPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().billingCheckoutPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().billingCheckoutPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -378,6 +379,7 @@ public class BillingStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().billingActivityCheckoutPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().billingActivityCheckoutPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().billingActivityCheckoutPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -451,6 +453,7 @@ public class BillingStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().billingCheckoutSessionGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().billingCheckoutSessionGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().billingCheckoutSessionGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -530,6 +533,7 @@ public class BillingStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().billingPortalGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().billingPortalGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().billingPortalGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(

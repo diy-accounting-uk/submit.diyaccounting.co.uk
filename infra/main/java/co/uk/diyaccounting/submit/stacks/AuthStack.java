@@ -150,6 +150,7 @@ public class AuthStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().cognitoTokenPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().cognitoTokenPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().cognitoTokenPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(

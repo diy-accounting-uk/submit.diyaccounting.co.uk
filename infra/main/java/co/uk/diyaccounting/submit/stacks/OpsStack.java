@@ -245,6 +245,7 @@ public class OpsStack extends Stack {
                             .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                             .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                             .ingestFunctionName(props.sharedNames().alarmToGithubIssueLambdaFunctionName)
+                            .callsExternalApi(true)
                             .ingestHandler(props.sharedNames().alarmToGithubIssueLambdaHandler)
                             .ingestLambdaArn(props.sharedNames().alarmToGithubIssueLambdaArn)
                             .ingestProvisionedConcurrencyAliasArn(
@@ -351,6 +352,7 @@ public class OpsStack extends Stack {
                             .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                             .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                             .ingestFunctionName(props.sharedNames().alarmSmsForwardLambdaFunctionName)
+                            .callsExternalApi(true)
                             .ingestHandler(props.sharedNames().alarmSmsForwardLambdaHandler)
                             .ingestLambdaArn(props.sharedNames().alarmSmsForwardLambdaArn)
                             .ingestProvisionedConcurrencyAliasArn(
@@ -418,6 +420,7 @@ public class OpsStack extends Stack {
             Lambda.appStackHealthAlarm(
                     this, props.envName(), props.resourceNamePrefix(), "ops", healthCheckedFunctions);
         }
+        Lambda.deploymentErrorsAlarm(this, props.envName(), props.resourceNamePrefix());
 
         // ============================================================================
         // Default Bus Rules: CloudFormation + CloudWatch → Telegram Forwarder
