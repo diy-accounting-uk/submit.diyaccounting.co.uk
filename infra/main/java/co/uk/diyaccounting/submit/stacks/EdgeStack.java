@@ -1518,7 +1518,7 @@ public class EdgeStack extends Stack {
                     "Created WAF logging (blocks only), scan-detect Lambda %s subscribed to it, and its burst table %s",
                     wafScanDetectLambda.ingestLambda.getNode().getId(), wafScanBurstsTableName);
 
-            Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "edge", List.of(wafScanDetectLambda));
+            Lambda.appStackHealthAlarm(this, props.envName(), props.resourceNamePrefix(), "edge", List.of(wafScanDetectLambda));
 
             cfnOutput(this, "WebAclId", webAcl.getAttrArn());
             cfnOutput(this, "WafRateLimitAlarmArn", rateLimitAlarm.getAlarmArn());

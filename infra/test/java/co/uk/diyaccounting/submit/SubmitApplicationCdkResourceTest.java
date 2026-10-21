@@ -463,7 +463,7 @@ class SubmitApplicationCdkResourceTest {
         Template edgeStackTemplate = Template.fromStack(submitApplication.edgeStack);
         edgeStackTemplate.resourceCountIs("AWS::CloudFront::Distribution", 1);
         // The WAF scan-detect Lambda is this stack's only Lambda construct.
-        assertStackHealthAlarm(edgeStackTemplate, 1, 0, routedPrefixes);
+        assertGroupedStackHealthAlarm(edgeStackTemplate, List.of("waf-scan-detect"), 0, routedPrefixes);
 
         // Access logs reach the analytics lake only through the v2 Parquet delivery below; the
         // distribution itself must carry no classic standard-logging configuration.
@@ -583,7 +583,7 @@ class SubmitApplicationCdkResourceTest {
             // Only the self-destruct function: its log group belongs to the environment stack.
             Template selfDestructStackTemplate = Template.fromStack(submitApplication.selfDestructStack);
             selfDestructStackTemplate.resourceCountIs("AWS::Lambda::Function", 1);
-            assertStackHealthAlarm(selfDestructStackTemplate, 1, 0, routedPrefixes);
+            assertGroupedStackHealthAlarm(selfDestructStackTemplate, List.of("self-destruct"), 0, routedPrefixes);
         }
 
         // Every Lambda function in every app stack must route its logs to an explicit, retained log
