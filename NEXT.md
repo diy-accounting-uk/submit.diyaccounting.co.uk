@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-dd0443b** (PR #522, last-known-good since 12:51 UTC on 2026-10-21; the only prod set). The site's `script-src` carries no `'unsafe-inline'`.
+**Prod runs deployment prod-95261ee** (PR #523, last-known-good since 19:24 UTC on 2026-10-21; the only prod set). The site's `script-src` carries no `'unsafe-inline'`.
 **ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-20 10:46 UTC; the pointer last written 11:36 UTC on 2026-10-21). Its self-destruct fires every four hours from creation and skips while the set is last-known-good inside the 12 h window from the pointer's last write, so it goes at the 02:46 UTC firing on 2026-10-22 unless a branch deploy renews it first.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -40,7 +40,7 @@ step.
 
 ## Machine-only
 
-- [ ] **V4. Publish the change-registered-office video.** Capture 39625208433 (ci, 2026-10-21) is green; Companies House accepted the change. Next: upload unlisted through `.claude/skills/video-publish/SKILL.md`, the public flip after the operator's review, then delete ERMFEKNdV_0 once the new one is public. **Source**: UX1 (PR #475). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
+- [ ] **V4. Publish the change-registered-office video.** Capture 39625208433 is uploaded unlisted as https://youtu.be/c47MLAUU0g4 (PR #523). Next: the operator watches it; on their yes, `npm run video:publish -- --public`, then delete ERMFEKNdV_0. **Source**: UX1 (PR #475). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
 
 - [ ] **AL2. Close issue #513 (`prod-env-ga4-daily-pull-errors`) when the alarm reads OK.** `prod-env-ga4-daily-pull` errored in the hours from 07:00 to 10:59 UTC on 2026-10-20 (11 errors, BigQuery `backendError` retries; request 8f0d5fc2-dd2f-4884-a8d2-e9827e25a011) and not since; `app/lib/bigQueryRetry.js` retries a transient job once in both GA4 pulls (PR #514). The alarm's datapoint is one day long (period 86400 s, aligned at 07:21 UTC), so the window that ends at 07:21 UTC on 2026-10-21 still holds those errors and it read ALARM at 07:44 UTC. It reads OK after the window that ends at 07:21 UTC on 2026-10-22; then close #513 with that evidence. **Source**: issue #513. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
