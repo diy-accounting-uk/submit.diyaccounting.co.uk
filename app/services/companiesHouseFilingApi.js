@@ -74,7 +74,7 @@ export function extractCompaniesHouseAccessTokenFromLambdaEvent(event) {
   return extractBearerTokenFromAuthHeaderInLambdaEvent(event);
 }
 
-export async function companiesHouseFilingRequest(method, path, { accessToken, body } = {}) {
+export async function companiesHouseFilingRequest(method, path, { accessToken, body, timeoutMs = DEFAULT_TIMEOUTS.SHORT } = {}) {
   const baseUrl = getFilingBaseUrl();
   const requestUrl = `${baseUrl}${path}`;
   const headers = {
@@ -96,7 +96,7 @@ export async function companiesHouseFilingRequest(method, path, { accessToken, b
   const result = await fetchJsonWithTimeout(
     requestUrl,
     { method, headers, ...(body !== undefined ? { body: JSON.stringify(body) } : {}) },
-    DEFAULT_TIMEOUTS.SHORT,
+    timeoutMs,
   );
 
   logger.info({ message: `Response from ${method} ${requestUrl}`, url: requestUrl, status: result.status });

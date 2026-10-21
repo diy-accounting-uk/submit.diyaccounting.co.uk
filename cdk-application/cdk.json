@@ -36,6 +36,7 @@
     "companiesHouseApiKeyArn": "",
     "_comment_companiesHouseFiling": "Filing OAuth config is per-environment, from .env.ci/.env.prod - these defaults stay blank",
     "companiesHouseFilingBaseUri": "",
+    "companiesHouseFilingApiKeyArn": "",
     "companiesHouseIdentityBaseUri": "",
     "companiesHouseClientId": "",
     "companiesHouseClientSecretArn": "",

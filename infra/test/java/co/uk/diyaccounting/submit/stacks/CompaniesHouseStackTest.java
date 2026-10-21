@@ -51,6 +51,20 @@ class CompaniesHouseStackTest {
             String companiesHouseClientSecretArn,
             String companiesHousePresenterIdArn,
             String companiesHousePresenterCodeArn) {
+        return synthCompaniesHouseStack(
+                companiesHouseApiKeyArn,
+                companiesHouseClientSecretArn,
+                companiesHousePresenterIdArn,
+                companiesHousePresenterCodeArn,
+                "");
+    }
+
+    private static CompaniesHouseStack synthCompaniesHouseStack(
+            String companiesHouseApiKeyArn,
+            String companiesHouseClientSecretArn,
+            String companiesHousePresenterIdArn,
+            String companiesHousePresenterCodeArn,
+            String companiesHouseFilingApiKeyArn) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -72,6 +86,7 @@ class CompaniesHouseStackTest {
                         .companiesHouseBaseUri("https://api.company-information.service.gov.uk")
                         .companiesHouseApiKeyArn(companiesHouseApiKeyArn)
                         .companiesHouseFilingBaseUri("https://api-sandbox.company-information.service.gov.uk")
+                        .companiesHouseFilingApiKeyArn(companiesHouseFilingApiKeyArn)
                         .companiesHouseIdentityBaseUri("https://identity-sandbox.company-information.service.gov.uk")
                         .companiesHouseClientId("test-companies-house-client-id")
                         .companiesHouseClientSecretArn(companiesHouseClientSecretArn)
@@ -112,6 +127,7 @@ class CompaniesHouseStackTest {
                         .companiesHouseBaseUri("https://api.company-information.service.gov.uk")
                         .companiesHouseApiKeyArn("")
                         .companiesHouseFilingBaseUri("https://api-sandbox.company-information.service.gov.uk")
+                        .companiesHouseFilingApiKeyArn("")
                         .companiesHouseIdentityBaseUri("https://identity-sandbox.company-information.service.gov.uk")
                         .companiesHouseClientId("test-companies-house-client-id")
                         .companiesHouseClientSecretArn("")
@@ -148,6 +164,7 @@ class CompaniesHouseStackTest {
                         .companiesHouseBaseUri("https://api.company-information.service.gov.uk")
                         .companiesHouseApiKeyArn("")
                         .companiesHouseFilingBaseUri("")
+                        .companiesHouseFilingApiKeyArn("")
                         .companiesHouseIdentityBaseUri("")
                         .companiesHouseClientId("")
                         .companiesHouseClientSecretArn("")
@@ -389,7 +406,11 @@ class CompaniesHouseStackTest {
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());
             var env = environmentVariablesOf(functions);
-            assertEquals("https://api.company-information.service.gov.uk", env.get("COMPANIES_HOUSE_BASE_URI"));
+            assertEquals(
+                    functionName.equals(stack.companiesHouseRegisteredOfficeAddressGetLambdaProps.ingestFunctionName())
+                            ? "https://api-sandbox.company-information.service.gov.uk"
+                            : "https://api.company-information.service.gov.uk",
+                    env.get("COMPANIES_HOUSE_BASE_URI"));
             assertFalse(
                     env.containsKey("COMPANIES_HOUSE_API_KEY_ARN"),
                     "COMPANIES_HOUSE_API_KEY_ARN must not be set when the ARN is blank");
@@ -444,6 +465,53 @@ class CompaniesHouseStackTest {
                                         "Resource",
                                         API_KEY_ARN + "-*")))))))),
                 5);
+    }
+
+    @Test
+    void theRegisteredOfficeAddressReadUsesTheFilingBaseUriAndTheFilingApiKeyWhenConfigured() {
+        String filingApiKeyArn = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/companies-house/sandbox_api_key";
+        CompaniesHouseStack stack = synthCompaniesHouseStack(API_KEY_ARN, "", "", "", filingApiKeyArn);
+        Template template = Template.fromStack(stack);
+
+        var officeRead = template.findResources(
+                "AWS::Lambda::Function",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "FunctionName",
+                                stack.companiesHouseRegisteredOfficeAddressGetLambdaProps.ingestFunctionName())));
+        assertEquals(1, officeRead.size());
+        var officeEnv = environmentVariablesOf(officeRead);
+        assertEquals("https://api-sandbox.company-information.service.gov.uk", officeEnv.get("COMPANIES_HOUSE_BASE_URI"));
+        assertEquals(filingApiKeyArn, officeEnv.get("COMPANIES_HOUSE_API_KEY_ARN"));
+
+        var companyRead = template.findResources(
+                "AWS::Lambda::Function",
+                Map.of(
+                        "Properties",
+                        Map.of("FunctionName", stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName())));
+        var companyEnv = environmentVariablesOf(companyRead);
+        assertEquals("https://api.company-information.service.gov.uk", companyEnv.get("COMPANIES_HOUSE_BASE_URI"));
+        assertEquals(API_KEY_ARN, companyEnv.get("COMPANIES_HOUSE_API_KEY_ARN"));
+
+        template.resourcePropertiesCountIs(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action", "secretsmanager:GetSecretValue", "Resource", filingApiKeyArn + "-*")))))))),
+                1);
+        template.resourcePropertiesCountIs(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action", "secretsmanager:GetSecretValue", "Resource", API_KEY_ARN + "-*")))))))),
+                4);
     }
 
     @Test

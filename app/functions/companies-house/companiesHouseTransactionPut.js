@@ -12,8 +12,10 @@ import {
   http409ConflictResponse,
   http422UnprocessableEntityResponse,
   http500ServerErrorResponse,
+  http504GatewayTimeoutResponse,
   http401UnauthorizedResponse,
 } from "../../lib/httpResponseHelper.js";
+import { HttpTimeoutError } from "../../lib/httpFetch.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
@@ -27,6 +29,10 @@ import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseTransactionPut.js" });
+
+// The sandbox validates a filing while it answers the close request and has taken longer than 20
+// seconds. The Lambda timeout is 28 seconds, so the wait stays below that.
+export const CLOSE_TRANSACTION_TIMEOUT_MS = 26000;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -95,7 +101,21 @@ export async function ingestHandler(event) {
     });
   }
 
-  const { chResponse } = await closeTransaction(accessToken, transactionId);
+  let chResponse;
+  try {
+    ({ chResponse } = await closeTransaction(accessToken, transactionId));
+  } catch (error) {
+    if (!(error instanceof HttpTimeoutError)) {
+      throw error;
+    }
+    logger.warn({ message: "Companies House did not answer the transaction close in time", transactionId, timeoutMs: error.timeoutMs });
+    return http504GatewayTimeoutResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: "Companies House did not answer the close request in time; the transaction may still be processing",
+      error: { transactionId },
+    });
+  }
 
   // Neither filing this route closes is chargeable, so a 202 always means we built the wrong
   // transaction - treat it as an error rather than a filing outcome the page could act on.
@@ -157,6 +177,7 @@ export async function closeTransaction(accessToken, transactionId) {
   const chResponse = await companiesHouseFilingRequest("PUT", `/transactions/${transactionId}`, {
     accessToken,
     body: { status: "closed" },
+    timeoutMs: CLOSE_TRANSACTION_TIMEOUT_MS,
   });
 
   if (!chResponse.ok && chResponse.status !== 422 && chResponse.status !== 403) {

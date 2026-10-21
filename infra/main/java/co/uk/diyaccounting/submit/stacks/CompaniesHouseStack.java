@@ -177,6 +177,8 @@ public class CompaniesHouseStack extends Stack {
 
         String companiesHouseFilingBaseUri();
 
+        String companiesHouseFilingApiKeyArn();
+
         String companiesHouseIdentityBaseUri();
 
         String companiesHouseClientId();
@@ -497,16 +499,25 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseTransactionPutLambda, bundlesTable, region, account, props, activityBusArn, false);
 
-        // Registered office address read: the API-key public register client, same setting as
-        // the two lookup Lambdas above - it needs no Companies House user token.
+        // Registered office address read: the API-key public register client, needing no Companies
+        // House user token. The change filing runs against the filing base URI, so the read that
+        // supplies its reference etag goes there too, with the key issued for that API. On ci the
+        // filing base is the sandbox, where the test companies exist and the live register does not
+        // know them; on prod the filing base is the live API and the key falls back to the live key.
+        var officeReadBaseUri = StringUtils.isNotBlank(props.companiesHouseFilingBaseUri())
+                ? props.companiesHouseFilingBaseUri()
+                : props.companiesHouseBaseUri();
+        var officeReadApiKeyArn = StringUtils.isNotBlank(props.companiesHouseFilingBaseUri())
+                        && StringUtils.isNotBlank(props.companiesHouseFilingApiKeyArn())
+                ? props.companiesHouseFilingApiKeyArn()
+                : props.companiesHouseApiKeyArn();
         var companiesHouseRegisteredOfficeAddressGetLambdaEnv = new PopulatedMap<String, String>()
-                .with("COMPANIES_HOUSE_BASE_URI", props.companiesHouseBaseUri())
+                .with("COMPANIES_HOUSE_BASE_URI", officeReadBaseUri)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
-        if (StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
-            companiesHouseRegisteredOfficeAddressGetLambdaEnv.with(
-                    "COMPANIES_HOUSE_API_KEY_ARN", props.companiesHouseApiKeyArn());
+        if (StringUtils.isNotBlank(officeReadApiKeyArn)) {
+            companiesHouseRegisteredOfficeAddressGetLambdaEnv.with("COMPANIES_HOUSE_API_KEY_ARN", officeReadApiKeyArn);
         }
         var companiesHouseRegisteredOfficeAddressGetLambdaUrlOrigin = new ApiLambda(
                 this,
@@ -548,7 +559,8 @@ public class CompaniesHouseStack extends Stack {
                 account,
                 props,
                 activityBusArn,
-                true);
+                false);
+        grantSecretRead(this.companiesHouseRegisteredOfficeAddressGetLambda, officeReadApiKeyArn);
 
         var companiesHouseRegisteredOfficeAddressPostLambdaEnv = filingLambdaEnv(props);
         var companiesHouseRegisteredOfficeAddressPostLambdaUrlOrigin = new ApiLambda(
@@ -1457,19 +1469,24 @@ public class CompaniesHouseStack extends Stack {
                 .build());
 
         // Grant access to the Companies House API key in Secrets Manager
-        if (grantApiKeyAccess && StringUtils.isNotBlank(props.companiesHouseApiKeyArn())) {
-            String secretArnWithWildcard = props.companiesHouseApiKeyArn().endsWith("-*")
-                    ? props.companiesHouseApiKeyArn()
-                    : props.companiesHouseApiKeyArn() + "-*";
-            fn.addToRolePolicy(PolicyStatement.Builder.create()
-                    .effect(Effect.ALLOW)
-                    .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(secretArnWithWildcard))
-                    .build());
-            infof(
-                    "Granted Secrets Manager access to %s for secret %s (with wildcard: %s)",
-                    fn.getFunctionName(), props.companiesHouseApiKeyArn(), secretArnWithWildcard);
+        if (grantApiKeyAccess) {
+            grantSecretRead(fn, props.companiesHouseApiKeyArn());
         }
+    }
+
+    private static void grantSecretRead(Function fn, String secretArn) {
+        if (StringUtils.isBlank(secretArn)) {
+            return;
+        }
+        String secretArnWithWildcard = secretArn.endsWith("-*") ? secretArn : secretArn + "-*";
+        fn.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("secretsmanager:GetSecretValue"))
+                .resources(List.of(secretArnWithWildcard))
+                .build());
+        infof(
+                "Granted Secrets Manager access to %s for secret %s (with wildcard: %s)",
+                fn.getFunctionName(), secretArn, secretArnWithWildcard);
     }
 
     // Shared environment for the six OAuth filing Lambdas: the bundles table, activity bus and

@@ -68,6 +68,7 @@ public class SubmitApplication {
         public String companiesHouseBaseUri;
         public String companiesHouseApiKeyArn;
         public String companiesHouseFilingBaseUri;
+        public String companiesHouseFilingApiKeyArn;
         public String companiesHouseIdentityBaseUri;
         public String companiesHouseClientId;
         public String companiesHouseClientSecretArn;
@@ -213,6 +214,10 @@ public class SubmitApplication {
                 "COMPANIES_HOUSE_FILING_BASE_URI",
                 appProps.companiesHouseFilingBaseUri,
                 "(from companiesHouseFilingBaseUri in cdk.json)");
+        var companiesHouseFilingApiKeyArn = envOr(
+                "COMPANIES_HOUSE_FILING_API_KEY_ARN",
+                appProps.companiesHouseFilingApiKeyArn,
+                "(from companiesHouseFilingApiKeyArn in cdk.json)");
         var companiesHouseIdentityBaseUri = envOr(
                 "COMPANIES_HOUSE_IDENTITY_BASE_URI",
                 appProps.companiesHouseIdentityBaseUri,
@@ -424,6 +429,8 @@ public class SubmitApplication {
                         .companiesHouseApiKeyArn(companiesHouseApiKeyArn != null ? companiesHouseApiKeyArn : "")
                         .companiesHouseFilingBaseUri(
                                 companiesHouseFilingBaseUri != null ? companiesHouseFilingBaseUri : "")
+                        .companiesHouseFilingApiKeyArn(
+                                companiesHouseFilingApiKeyArn != null ? companiesHouseFilingApiKeyArn : "")
                         .companiesHouseIdentityBaseUri(
                                 companiesHouseIdentityBaseUri != null ? companiesHouseIdentityBaseUri : "")
                         .companiesHouseClientId(companiesHouseClientId != null ? companiesHouseClientId : "")
