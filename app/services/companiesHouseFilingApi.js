@@ -8,7 +8,7 @@
 // read-only lookup.
 
 import { createLogger, context } from "../lib/logger.js";
-import { fetchJsonWithTimeout, DEFAULT_TIMEOUTS } from "../lib/httpFetch.js";
+import { fetchJsonWithTimeout } from "../lib/httpFetch.js";
 import {
   http401UnauthorizedResponse,
   http403ForbiddenResponse,
