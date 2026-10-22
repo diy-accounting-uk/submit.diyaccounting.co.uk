@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-11af06b** (PR #528, deploy 39755050805 green on 2026-10-22). The site's `script-src` carries no `'unsafe-inline'`.
+**Prod runs deployment prod-7cf71b6** (PR #529, deploy 39808661362 attempt 2 green on 2026-10-22). The site's `script-src` carries no `'unsafe-inline'`.
 **ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-20 10:46 UTC; the pointer last written 18:47 UTC on 2026-10-21). Its self-destruct fires every four hours from creation and skips while the set is last-known-good inside the 12 h window from the pointer's last write, so it goes at the 10:46 UTC firing on 2026-10-22 unless a branch deploy renews it first.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -37,8 +37,6 @@ names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `
 step.
 
 ## In flight
-
-- [ ] **COST2. Group the prod queue alarms of the async functions.** Each prod set holds 84 per-queue `check-` alarms for its 42 async function pairs (`check-<deployment>-app-<fn>-not-empty` on the DLQ's `ApproximateNumberOfMessagesVisible` and `-message-age` on the work queue's `ApproximateAgeOfOldestMessage`), built in `infra/main/java/co/uk/diyaccounting/submit/constructs/AsyncApiLambda.java` lines ~150 and ~163; 84 at $0.0951 is about $8 a month, the largest alarm cost left after PR #525. Proposal: per app stack, one DLQ alarm on the SUM and one age alarm on the MAX of that stack's queues by metric math (a math alarm reads at most 10 metrics, so a stack with more than 10 queues gets one alarm per group of 10); a function that calls an external API keeps its own pair, as COST1c kept its `-log-errors`. Update `app/lib/alarmName.js` (`alarmFamilyKey`), `app/data/alarm-remedies.json` and their tests for the new names, and the CDK resource test (`assertGroupedStackHealthAlarm` counts queue checks per async pair). Expected saving: about $5 to $7 a month. Risk: a grouped alarm names the stack, not the queue, so triage reads the queue metrics on the dashboard. Approved by the operator (2026-10-22): the grouping, and every function that calls an outside service keeps its own pair. Merged in PR #529 (7cf71b647). Main's prod deploy 39808661362 failed: its HmrcItsaStack job lost its OIDC token at 17:20 UTC after 60 minutes, while CloudFormation held `QueueDlqAlarmhmrcitsa4FEA1528` (`check-prod-7cf71b6-app-hmrc-itsa-dlq-not-empty`) in CREATE_IN_PROGRESS from 16:21 with no PutMetricAlarm call in CloudTrail. The alarm created at 18:21 UTC, two hours on, and the stack completed; AccountStack's grouped DLQ alarm of the same shape created in seconds. Live prod stays prod-11af06b. destroy-prod run 39831291448 is removing prod-7cf71b6. Next: when it is green and no prod-7cf71b6 stack stands, Claude Code re-runs deploy 39808661362 (`gh run rerun 39808661362`); if HmrcItsaStack holds the same alarm past 30 minutes again, split the grouped alarm change out of HmrcItsaStack. Result: 84 to 76 queue alarms per prod set, because 36 of the 42 async functions call outside services and keep their pair. **Source**: operator, 2026-10-22 (COST1c's remaining alarm cost). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
 
 ## Machine-only
 
