@@ -2170,7 +2170,7 @@
           "step": 0,
           "headline": "Open the activity",
           "caption": "Open Change Registered Office Address to find the company.",
-          "startSeconds": 19,
+          "startSeconds": 21,
           "thumb": "videos/change-registered-office/company-lookup-0-thumb.webp",
           "full": "videos/change-registered-office/company-lookup-0.webp"
         },
@@ -2179,7 +2179,7 @@
           "step": 2,
           "headline": "Enter the company number",
           "caption": "Type the company number.",
-          "startSeconds": 27,
+          "startSeconds": 29,
           "thumb": "videos/change-registered-office/company-lookup-2-thumb.webp",
           "full": "videos/change-registered-office/company-lookup-2.webp"
         },
@@ -2188,7 +2188,7 @@
           "step": 3,
           "headline": "Look up the address",
           "caption": "This looks up the current address at Companies House.",
-          "startSeconds": 33,
+          "startSeconds": 34,
           "thumb": "videos/change-registered-office/company-lookup-3-thumb.webp",
           "full": "videos/change-registered-office/company-lookup-3.webp"
         },
@@ -2197,7 +2197,7 @@
           "step": 5,
           "headline": "The address on file",
           "caption": "This is the address on file today.",
-          "startSeconds": 39,
+          "startSeconds": 41,
           "thumb": "videos/change-registered-office/company-lookup-5-thumb.webp",
           "full": "videos/change-registered-office/company-lookup-5.webp"
         },
@@ -2205,7 +2205,7 @@
           "scene": "new-address",
           "headline": "The new address",
           "caption": "Confirm the address is one the company can be reached at. Review before anything is filed.",
-          "startSeconds": 46,
+          "startSeconds": 47,
           "thumb": "videos/change-registered-office/new-address-thumb.webp",
           "full": "videos/change-registered-office/new-address.webp"
         },
@@ -2213,7 +2213,7 @@
           "scene": "review",
           "headline": "Review",
           "caption": "File the change with Companies House's sandbox. Sign in to Companies House and say yes once.",
-          "startSeconds": 74,
+          "startSeconds": 76,
           "thumb": "videos/change-registered-office/review-thumb.webp",
           "full": "videos/change-registered-office/review.webp"
         },
@@ -2221,7 +2221,7 @@
           "scene": "result",
           "headline": "The outcome",
           "caption": "Companies House settles on an outcome.",
-          "startSeconds": 156,
+          "startSeconds": 165,
           "thumb": "videos/change-registered-office/result-thumb.webp",
           "full": "videos/change-registered-office/result.webp"
         }
