@@ -391,7 +391,7 @@ public class DiyaGlStack extends Stack {
                 diyaGlDeleteApiLambda,
                 practiceClientBookMovePostApiLambda));
 
-        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "diya-gl", healthCheckedLambdas);
+        Lambda.appStackHealthAlarm(this, props.envName(), props.resourceNamePrefix(), "diya-gl", healthCheckedLambdas);
 
         cfnOutput(this, "DiyaGlListGetLambdaArn", this.diyaGlListGetLambda.getFunctionArn());
         cfnOutput(this, "DiyaGlVersionGetLambdaArn", this.diyaGlVersionGetLambda.getFunctionArn());

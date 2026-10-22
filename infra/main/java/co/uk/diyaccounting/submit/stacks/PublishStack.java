@@ -78,6 +78,8 @@ public class PublishStack extends Stack {
 
         String docRootPath();
 
+        boolean invalidateDistribution();
+
         static ImmutablePublishStackProps.Builder builder() {
             return ImmutablePublishStackProps.builder();
         }
@@ -109,13 +111,6 @@ public class PublishStack extends Stack {
         Tags.of(this).add("MonitoringEnabled", "true");
 
         // Use Resources from the passed props
-
-        DistributionAttributes distributionAttributes = DistributionAttributes.builder()
-                .domainName(props.sharedNames().deploymentDomainName)
-                .distributionId(props.distributionId())
-                .build();
-        IDistribution distribution = Distribution.fromDistributionAttributes(
-                this, props.resourceNamePrefix() + "-ImportedWebDist", distributionAttributes);
 
         IBucket originBucket =
                 Bucket.fromBucketName(this, props.resourceNamePrefix() + "-WebBucket", props.originBucketName());
@@ -201,7 +196,7 @@ public class PublishStack extends Stack {
                         "/aws/lambda/" + props.resourceNamePrefix() + "-web-deployment")
                 .logGroup();
 
-        // Deploy the web website files to the web website bucket and invalidate distribution
+        // Deploy the web website files to the web website bucket
         // Resolve the document root path from props to avoid path mismatches between generation and deployment
         var publicDir = Paths.get(props.docRootPath()).toAbsolutePath().normalize();
         infof("Using public doc root: %s".formatted(publicDir));
@@ -215,85 +210,29 @@ public class PublishStack extends Stack {
                                 "auth/login-mock-addon.js",
                                 "auth/login-native-addon.js"))
                         .build());
-        this.webDeployment = BucketDeployment.Builder.create(
+        var webDeploymentBuilder = BucketDeployment.Builder.create(
                         this, props.resourceNamePrefix() + "-DocRootToWebOriginDeployment")
                 .sources(List.of(webDocRootSource))
                 .destinationBucket(originBucket)
-                .distribution(distribution)
-                .distributionPaths(List.of(
-                        "/activities/*",
-                        "/auth/*",
-                        "/companies-house/*",
-                        "/docs/*",
-                        "/errors/*",
-                        "/hmrc/*",
-                        "/images/*",
-                        "/lib/*",
-                        "/prefetch/*",
-                        "/tests/*",
-                        "/widgets/*",
-                        "/about.html",
-                        "/videos.html",
-                        "/videos-hmrc-vat.html",
-                        "/videos-hmrc-itsa.html",
-                        "/videos-account.html",
-                        "/videos-ch.html",
-                        "/videos-accounting.html",
-                        "/videos/*",
-                        "/accessibility.html",
-                        "/bundles.html",
-                        "/faqs.toml",
-                        "/guide.html",
-                        "/help.html",
-                        "/mcp.html",
-                        "/diy-accounting-spreadsheets.html",
-                        "/diy-accounting-limited.html",
-                        "/spreadsheets.html",
-                        "/mtd-calendar.html",
-                        "/rates.html",
-                        "/android-chrome-192.png",
-                        "/android-chrome-512.png",
-                        "/apple-touch-icon.png",
-                        "/favicon.ico",
-                        "/favicon.svg",
-                        "/favicon-16.png",
-                        "/favicon-32.png",
-                        "/index.html",
-                        "/privacy.html",
-                        "/submit.catalogue.toml",
-                        "/submit.build-number.txt",
-                        "/submit.commit-hash.txt",
-                        "/submit.css",
-                        "/submit.deployment-name.txt",
-                        "/submit.env",
-                        "/submit.environment-name.txt",
-                        "/submit.js",
-                        "/submit.version.txt",
-                        "/terms.html",
-                        "/.well-known/security.txt",
-                        "/site.webmanifest",
-                        "/about.page.js",
-                        "/bundles.page.js",
-                        "/diy-accounting-spreadsheets.page.js",
-                        "/guide.page.js",
-                        "/index.banner-hold.page.js",
-                        "/index.page.js",
-                        "/spreadsheets.page.js",
-                        "/usage.page.js",
-                        "/videos.page.js",
-                        "/videos-account.page.js",
-                        "/videos-accounting.page.js",
-                        "/videos-ch.page.js",
-                        "/videos-hmrc-itsa.page.js",
-                        "/videos-hmrc-vat.page.js",
-                        "/developer-mode.js"))
                 .retainOnDelete(true)
                 .logGroup(webDeploymentLogGroup)
                 .expires(Expiration.after(Duration.minutes(5)))
                 .prune(false)
                 .memoryLimit(1024)
-                .ephemeralStorageSize(Size.gibibytes(2))
-                .build();
+                .ephemeralStorageSize(Size.gibibytes(2));
+        // CloudFront bills each invalidation path, and a wildcard counts as one path. A new
+        // distribution has cached nothing, so its first publish invalidates nothing.
+        if (props.invalidateDistribution()) {
+            IDistribution distribution = Distribution.fromDistributionAttributes(
+                    this,
+                    props.resourceNamePrefix() + "-ImportedWebDist",
+                    DistributionAttributes.builder()
+                            .domainName(props.sharedNames().deploymentDomainName)
+                            .distributionId(props.distributionId())
+                            .build());
+            webDeploymentBuilder.distribution(distribution).distributionPaths(List.of("/*"));
+        }
+        this.webDeployment = webDeploymentBuilder.build();
 
         // Outputs
         cfnOutput(this, "BaseUrl", props.sharedNames().baseUrl);

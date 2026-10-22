@@ -208,6 +208,666 @@ public class EdgeStack extends Stack {
         var cert =
                 Certificate.fromCertificateArn(this, props.resourceNamePrefix() + "-WebCert", props.certificateArn());
 
+        // Certificate expiry alarm - ACM auto-renews but gives no warning if renewal fails.
+        // The cert lives in us-east-1 (required for CloudFront), so this alarm does too; its
+        // state changes are picked up by the WafAlarmForwardRule below like the WAF alarms.
+        Alarm certExpiryAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-CertExpiryAlarm")
+                .alarmName(props.resourceNamePrefix() + "-cert-expiring")
+                .alarmDescription("ACM certificate expires within 30 days")
+                .metric(Metric.Builder.create()
+                        .namespace("AWS/CertificateManager")
+                        .metricName("DaysToExpiry")
+                        .dimensionsMap(Map.of("CertificateArn", cert.getCertificateArn()))
+                        .statistic("Minimum")
+                        .period(software.amazon.awscdk.Duration.days(1))
+                        .build())
+                .threshold(30)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
+        // ============================================================================
+        // Cross-Region Alarm Forwarding to OpsStack (eu-west-2)
+        // ============================================================================
+        // CloudWatch alarm state-change events are regional, so the WAF alarms above
+        // (us-east-1, required for CloudFront) never reach OpsStack's AlarmStateChangeRule
+        // (eu-west-2 default bus). This rule forwards them across the account's default
+        // event bus in eu-west-2, where that existing rule forwards to the Telegram Lambda.
+        // The targets.EventBus construct creates the IAM role EventBridge needs to put
+        // events onto the cross-region bus.
+        IEventBus opsDefaultBus = EventBus.fromEventBusArn(
+                this,
+                props.resourceNamePrefix() + "-OpsDefaultBus",
+                "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/default");
+
+        Rule.Builder.create(this, props.resourceNamePrefix() + "-WafAlarmForwardRule")
+                .ruleName(props.resourceNamePrefix() + "-waf-alarm-forward")
+                .description(
+                        "Forward CloudWatch alarm state changes to the eu-west-2 default event bus for Telegram alerting")
+                .eventPattern(EventPattern.builder()
+                        .source(List.of("aws.cloudwatch"))
+                        .detailType(List.of("CloudWatch Alarm State Change"))
+                        .build())
+                .targets(List.of(new software.amazon.awscdk.services.events.targets.EventBus(opsDefaultBus)))
+                .build();
+
+        infof("Created cross-region rule forwarding WAF alarm state changes to eu-west-2 default bus");
+
+        // The WAF web ACL, its alarms, log group and scan-detect Lambda exist only where the
+        // distribution can be live: a ci deployment set is never public traffic, so it gets none.
+        String webAclArn = "ci".equals(props.envName()) ? null : createWaf(props);
+
+        // Create the origin bucket — GENERATE_IF_NEEDED produces a unique-per-stack physical name
+        // that CDK can resolve cross-environment (SelfDestructStack is in eu-west-2, EdgeStack is us-east-1)
+        this.originBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")
+                .bucketName(PhysicalName.GENERATE_IF_NEEDED)
+                .versioned(false)
+                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
+                .encryption(BucketEncryption.S3_MANAGED)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                // .autoDeleteObjects(true)
+                .build();
+        infof("Created origin bucket %s", this.originBucket.getNode().getId());
+
+        this.originBucket.addToResourcePolicy(PolicyStatement.Builder.create()
+                .sid("AllowCloudFrontReadViaOAC")
+                .principals(List.of(new ServicePrincipal("cloudfront.amazonaws.com")))
+                .actions(List.of("s3:GetObject"))
+                .resources(List.of(this.originBucket.getBucketArn() + "/*"))
+                .conditions(Map.of(
+                        // Limit to distributions in your account (no distribution ARN token needed)
+                        "StringEquals", Map.of("AWS:SourceAccount", this.getAccount()),
+                        "ArnLike",
+                                Map.of(
+                                        "AWS:SourceArn",
+                                        "arn:aws:cloudfront::" + this.getAccount() + ":distribution/*")))
+                .build());
+
+        S3OriginAccessControl oac = S3OriginAccessControl.Builder.create(this, "MyOAC")
+                .signing(Signing.SIGV4_ALWAYS) // NEVER // SIGV4_NO_OVERRIDE
+                .build();
+
+        IOrigin localOrigin = S3BucketOrigin.withOriginAccessControl(
+                this.originBucket,
+                S3BucketOriginWithOACProps.builder().originAccessControl(oac).build());
+        // infof("Created BucketOrigin with bucket: %s", this.originBucket.getBucketName());
+
+        // Define a custom Response Headers Policy with CSP that allows AWS RUM client + dataplane
+        ResponseHeadersPolicy webResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
+                        this, props.resourceNamePrefix() + "-WHP")
+                .responseHeadersPolicyName(props.resourceNamePrefix() + "-whp")
+                .comment("CORS + security headers with CSP allowing CloudWatch RUM client & dataplane")
+                .corsBehavior(ResponseHeadersCorsBehavior.builder()
+                        .accessControlAllowCredentials(false)
+                        .accessControlAllowHeaders(List.of("*"))
+                        .accessControlAllowMethods(List.of("GET", "HEAD", "OPTIONS"))
+                        .accessControlAllowOrigins(List.of("*"))
+                        .accessControlExposeHeaders(List.of())
+                        .accessControlMaxAge(software.amazon.awscdk.Duration.seconds(600))
+                        .originOverride(true)
+                        .build())
+                .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
+                        .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
+                                .contentSecurityPolicy("default-src 'self'; "
+                                        + "script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com; "
+                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com; "
+                                        // Wildcard, not just https://www.google-analytics.com: GA4's /g/collect
+                                        // beacon lands on a region-specific subdomain (e.g.
+                                        // region1.google-analytics.com),
+                                        // which the literal host doesn't match and CSP then silently drops the pixel.
+                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.googleusercontent.com https://ssl.gstatic.com https://www.gstatic.com https://i.ytimg.com; "
+                                        + "style-src 'self' 'unsafe-inline' https://www.gstatic.com; "
+                                        + "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com https://apis.google.com https://docs.google.com; "
+                                        + "frame-ancestors 'none'; "
+                                        + "form-action 'self';")
+                                .override(true)
+                                .build())
+                        .strictTransportSecurity(ResponseHeadersStrictTransportSecurity.builder()
+                                .accessControlMaxAge(software.amazon.awscdk.Duration.days(365))
+                                .includeSubdomains(true)
+                                .override(true)
+                                .build())
+                        .contentTypeOptions(ResponseHeadersContentTypeOptions.builder()
+                                .override(true)
+                                .build())
+                        .frameOptions(ResponseHeadersFrameOptions.builder()
+                                .frameOption(HeadersFrameOption.DENY)
+                                .override(true)
+                                .build())
+                        .referrerPolicy(ResponseHeadersReferrerPolicy.builder()
+                                .referrerPolicy(
+                                        software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy
+                                                .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                                .override(true)
+                                .build())
+                        .xssProtection(ResponseHeadersXSSProtection.builder()
+                                .protection(true)
+                                .modeBlock(true)
+                                .override(true)
+                                .build())
+                        .build())
+                // Custom headers for security policies not covered by securityHeadersBehavior
+                .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
+                        .customHeaders(List.of(
+                                ResponseCustomHeader.builder()
+                                        .header("Permissions-Policy")
+                                        .value("camera=(), microphone=(), geolocation=()")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Opener-Policy")
+                                        .value("same-origin-allow-popups")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Embedder-Policy")
+                                        // Security scanner please leave
+                                        .value("unsafe-none")
+                                        // Necessary for the YouTube iframe to load
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Resource-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Server")
+                                        .value("DIY-Accounting")
+                                        .override(true)
+                                        .build()))
+                        .build())
+                .build();
+
+        // CORS for the whole shared HttpApi (/api/v1/*, DIYA-GL routes included) is decided one
+        // layer down: ApiStack's own HttpApi.corsPreflight (booksAllowedOrigins) answers for every
+        // route, and the DIYA-GL routes additionally echo their own per-request origin
+        // (DIYA_GL_ALLOWED_ORIGINS, see diyaGlCors.js). No corsBehavior here at all, so CloudFront
+        // passes whichever of those the origin already sent straight through, instead of
+        // overwriting an already-correct, origin-restricted header with a CloudFront-level one.
+        ResponseHeadersPolicy diyaGlApiResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
+                        this, props.resourceNamePrefix() + "-DiyaGlWHP")
+                .responseHeadersPolicyName(props.resourceNamePrefix() + "-diya-gl-whp")
+                .comment("Security headers for /api/v1/* API routes, with no CORS override")
+                .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
+                        .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
+                                .contentSecurityPolicy("default-src 'self'; "
+                                        + "script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com; "
+                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com; "
+                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.googleusercontent.com https://ssl.gstatic.com https://www.gstatic.com https://i.ytimg.com; "
+                                        + "style-src 'self' 'unsafe-inline' https://www.gstatic.com; "
+                                        + "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com https://apis.google.com https://docs.google.com; "
+                                        + "frame-ancestors 'none'; "
+                                        + "form-action 'self';")
+                                .override(true)
+                                .build())
+                        .strictTransportSecurity(ResponseHeadersStrictTransportSecurity.builder()
+                                .accessControlMaxAge(software.amazon.awscdk.Duration.days(365))
+                                .includeSubdomains(true)
+                                .override(true)
+                                .build())
+                        .contentTypeOptions(ResponseHeadersContentTypeOptions.builder()
+                                .override(true)
+                                .build())
+                        .frameOptions(ResponseHeadersFrameOptions.builder()
+                                .frameOption(HeadersFrameOption.DENY)
+                                .override(true)
+                                .build())
+                        .referrerPolicy(ResponseHeadersReferrerPolicy.builder()
+                                .referrerPolicy(
+                                        software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy
+                                                .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                                .override(true)
+                                .build())
+                        .xssProtection(ResponseHeadersXSSProtection.builder()
+                                .protection(true)
+                                .modeBlock(true)
+                                .override(true)
+                                .build())
+                        .build())
+                .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
+                        .customHeaders(List.of(
+                                ResponseCustomHeader.builder()
+                                        .header("Permissions-Policy")
+                                        .value("camera=(), microphone=(), geolocation=()")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Opener-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Embedder-Policy")
+                                        .value("unsafe-none")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Resource-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Server")
+                                        .value("DIY-Accounting")
+                                        .override(true)
+                                        .build()))
+                        .build())
+                .build();
+
+        // The consent page answers its form POST with a redirect to the Cognito hosted UI, so it
+        // sends its own CSP with that origin in form-action. override(false) lets that header stand;
+        // responses without a CSP still take this one.
+        ResponseHeadersPolicy mcpResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
+                        this, props.resourceNamePrefix() + "-McpWHP")
+                .responseHeadersPolicyName(props.resourceNamePrefix() + "-mcp-whp")
+                .comment("Security headers for the hosted MCP routes; the facade's own CSP stands where it sends one")
+                .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
+                        .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
+                                .contentSecurityPolicy("default-src 'self'; "
+                                        + "script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com; "
+                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com; "
+                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.googleusercontent.com https://ssl.gstatic.com https://www.gstatic.com https://i.ytimg.com; "
+                                        + "style-src 'self' 'unsafe-inline' https://www.gstatic.com; "
+                                        + "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com https://apis.google.com https://docs.google.com; "
+                                        + "frame-ancestors 'none'; "
+                                        + "form-action 'self';")
+                                .override(false)
+                                .build())
+                        .strictTransportSecurity(ResponseHeadersStrictTransportSecurity.builder()
+                                .accessControlMaxAge(software.amazon.awscdk.Duration.days(365))
+                                .includeSubdomains(true)
+                                .override(true)
+                                .build())
+                        .contentTypeOptions(ResponseHeadersContentTypeOptions.builder()
+                                .override(true)
+                                .build())
+                        .frameOptions(ResponseHeadersFrameOptions.builder()
+                                .frameOption(HeadersFrameOption.DENY)
+                                .override(true)
+                                .build())
+                        .referrerPolicy(ResponseHeadersReferrerPolicy.builder()
+                                .referrerPolicy(
+                                        software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy
+                                                .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
+                                .override(true)
+                                .build())
+                        .xssProtection(ResponseHeadersXSSProtection.builder()
+                                .protection(true)
+                                .modeBlock(true)
+                                .override(true)
+                                .build())
+                        .build())
+                .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
+                        .customHeaders(List.of(
+                                ResponseCustomHeader.builder()
+                                        .header("Permissions-Policy")
+                                        .value("camera=(), microphone=(), geolocation=()")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Opener-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Embedder-Policy")
+                                        .value("unsafe-none")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Cross-Origin-Resource-Policy")
+                                        .value("same-origin")
+                                        .override(true)
+                                        .build(),
+                                ResponseCustomHeader.builder()
+                                        .header("Server")
+                                        .value("DIY-Accounting")
+                                        .override(true)
+                                        .build()))
+                        .build())
+                .build();
+
+        // Custom error pages are served as static files via CloudFront error responses
+        // This replaces Lambda@Edge which has problematic deletion behavior in CI/CD
+        // API routes (/api/*) return JSON errors - CloudFront error responses only apply to S3 origin errors
+        BehaviorOptions localBehaviorOptions = BehaviorOptions.builder()
+                .origin(localOrigin)
+                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+                .responseHeadersPolicy(webResponseHeadersPolicy)
+                .compress(true)
+                .build();
+
+        // Create a custom cache policy for test reports and docs with short TTL
+        CachePolicy testsAndDocsCachePolicy = CachePolicy.Builder.create(this, props.resourceNamePrefix() + "-TestsCP")
+                .cachePolicyName(props.resourceNamePrefix() + "-tests-cp")
+                .comment("Short TTL cache policy for test reports and results")
+                .minTtl(software.amazon.awscdk.Duration.seconds(0))
+                .defaultTtl(software.amazon.awscdk.Duration.seconds(60))
+                .maxTtl(software.amazon.awscdk.Duration.seconds(300))
+                .build();
+
+        // Behaviour options for /tests/* and /docs/* paths with short TTL
+        BehaviorOptions testsAndDocsBehaviorOptions = BehaviorOptions.builder()
+                .origin(localOrigin)
+                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
+                .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
+                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+                .responseHeadersPolicy(webResponseHeadersPolicy)
+                .cachePolicy(testsAndDocsCachePolicy)
+                .compress(true)
+                .build();
+
+        // Create a custom OriginRequestPolicy for API Gateway that forwards HMRC fraud prevention headers
+        // These Gov-Client-* headers are sent by the browser and must reach the Lambda functions
+        // Note: CloudFront limits custom OriginRequestPolicy to 10 headers maximum
+        OriginRequestPolicy fraudPreventionHeadersPolicy = OriginRequestPolicy.Builder.create(
+                        this, props.resourceNamePrefix() + "-FraudPreventionORP")
+                .originRequestPolicyName(props.resourceNamePrefix() + "-fraud-prevention-orp")
+                .comment(
+                        "Origin request policy that forwards HMRC fraud prevention headers (Gov-Client-*) to API Gateway")
+                // Forward ALL viewer headers plus CloudFront-Viewer-Address (contains client ip:port)
+                // needed for Gov-Client-Public-Port HMRC fraud prevention header, and
+                // CloudFront-Viewer-Country (issue #9 phase 9.1, on issue #10's behalf: its
+                // mid-session country check in customAuthorizer.js needs this header, and this
+                // origin request policy is the only place that can add it).
+                // all() forwards ALL viewer headers including Host. API Gateway HTTP API v2
+                // routes by path, not Host, so this should be safe. If 403 errors occur,
+                // fall back to denyList("Host") and use API Gateway custom domain instead.
+                .headerBehavior(
+                        OriginRequestHeaderBehavior.all("CloudFront-Viewer-Address", "CloudFront-Viewer-Country"))
+                .queryStringBehavior(OriginRequestQueryStringBehavior.all())
+                // Forward all cookies to support authentication
+                .cookieBehavior(OriginRequestCookieBehavior.all())
+                .build();
+
+        // Create additional behaviours for the API Gateway Lambda origins. /api/v1/*, the DIYA-GL
+        // storage routes' /api/v1/diya-gl/* and their permanent second prefix /api/v1/books/* all
+        // share the same response-headers policy: no CORS override on any of them, since API
+        // Gateway's own HttpApi.corsPreflight allow list (and, for the DIYA-GL routes,
+        // diyaGlCors.js's per-request echo) already decide the header correctly. The path patterns
+        // stay as separate CloudFront behaviours so a future security-header change scoped to one
+        // of them doesn't have to touch the others.
+        HashMap<String, BehaviorOptions> additionalBehaviors = new HashMap<String, BehaviorOptions>();
+        BehaviorOptions apiGatewayBehavior = createBehaviorOptionsForApiGateway(
+                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
+        additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
+        infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());
+
+        BehaviorOptions diyaGlApiGatewayBehavior = createBehaviorOptionsForApiGateway(
+                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
+        additionalBehaviors.put("/api/v1/diya-gl/*", diyaGlApiGatewayBehavior);
+        infof("Added API Gateway behavior for /api/v1/diya-gl/* pointing to %s", props.apiGatewayUrl());
+
+        // Serves the old prefix alongside the new one permanently: the spreadsheets site's
+        // cloud.js, including copies held by installed service workers, calls this path and
+        // never switches to the new one.
+        BehaviorOptions booksApiGatewayBehavior = createBehaviorOptionsForApiGateway(
+                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
+        additionalBehaviors.put("/api/v1/books/*", booksApiGatewayBehavior);
+        infof("Added API Gateway behavior for /api/v1/books/* pointing to %s", props.apiGatewayUrl());
+
+        // The hosted MCP endpoint, its OAuth facade and the OAuth discovery documents reach the
+        // same API Gateway origin with caching off. The origin request policy forwards every
+        // viewer header, which carries Authorization, Mcp-Session-Id, MCP-Protocol-Version,
+        // Origin and Accept.
+        for (String mcpPathPattern : List.of("/mcp", "/mcp/*", "/.well-known/oauth-*")) {
+            additionalBehaviors.put(
+                    mcpPathPattern,
+                    createBehaviorOptionsForApiGateway(
+                            props.apiGatewayUrl(), mcpResponseHeadersPolicy, fraudPreventionHeadersPolicy));
+            infof("Added API Gateway behavior for %s pointing to %s", mcpPathPattern, props.apiGatewayUrl());
+        }
+
+        // Add behaviour for /tests/* and /docs/* with short TTL cache policy
+        additionalBehaviors.put("/tests/*", testsAndDocsBehaviorOptions);
+        infof("Added /tests/* behavior with short TTL cache policy");
+        additionalBehaviors.put("/docs/*", testsAndDocsBehaviorOptions);
+        infof("Added /docs/* behavior with short TTL cache policy");
+
+        // CloudFront distribution for the web origin and all the URL Lambdas.
+        this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
+                .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
+                .additionalBehaviors(additionalBehaviors)
+                // Use only the deployment-scoped domain to avoid alias conflicts with existing distributions
+                .domainNames(List.of(props.sharedNames().deploymentDomainName))
+                .certificate(cert)
+                .defaultRootObject("index.html")
+                .enableIpv6(true)
+                .sslSupportMethod(SSLMethod.SNI)
+                .webAclId(webAclArn)
+                // IMPORTANT: Do NOT configure errorResponses here!
+                // CloudFront error responses apply GLOBALLY to ALL origins (S3 AND API Gateway).
+                // This breaks API routes which must return JSON errors, not HTML error pages.
+                // For static content (S3), accept default CloudFront error behavior.
+                // For API routes (/api/*), Lambda functions return proper JSON error responses.
+                .build();
+        Tags.of(this.distribution).add("OriginFor", props.sharedNames().deploymentDomainName);
+
+        // 2. Compute the CloudFront distribution ARN for the delivery source
+        String distributionArn = Stack.of(this)
+                .formatArn(ArnComponents.builder()
+                        .service("cloudfront")
+                        .region("") // CloudFront is global
+                        .resource("distribution")
+                        .resourceName(this.distribution.getDistributionId())
+                        .build());
+
+        // CloudFront access logs, v2 delivery: lands Parquet directly in the shared analytics
+        // lake so Athena can query it without a crawler. This is set up here rather than in
+        // AnalyticsStack because only this app stack knows this deployment's distribution ARN;
+        // the lake bucket's resource policy (granted in CloudFrontAccessLogs) accepts writes from
+        // every deployment's distribution. The suffix path below carries no distribution
+        // identifier, so every deployment's delivery writes into the same date-partitioned tree
+        // and a release doesn't start history over (see CloudFrontAccessLogs' class comment).
+        IBucket analyticsLakeBucket = Bucket.fromBucketName(
+                this,
+                props.resourceNamePrefix() + "-AnalyticsLakeBucketRef",
+                props.sharedNames().analyticsLakeBucketName);
+
+        CfnDeliveryDestination cfAccessLogsDestination = new CfnDeliveryDestination(
+                this,
+                props.resourceNamePrefix() + "-CfAccessLogsDestination",
+                CfnDeliveryDestinationProps.builder()
+                        .name(props.resourceNamePrefix() + "-cf-access-logs-dest")
+                        .deliveryDestinationType("S3")
+                        // A bare bucket ARN makes the service prepend AWSLogs/<account>/CloudFront/ to
+                        // every key; the prefix on the ARN keeps the objects under the lake's own path.
+                        .destinationResourceArn(analyticsLakeBucket.getBucketArn() + "/raw/cloudfront")
+                        .outputFormat("parquet")
+                        .build());
+
+        String cfAccessLogsSourceName = props.resourceNamePrefix() + "-cf-access-logs-src";
+        CfnDeliverySource cfAccessLogsSource = new CfnDeliverySource(
+                this,
+                props.resourceNamePrefix() + "-CfAccessLogsSource",
+                CfnDeliverySourceProps.builder()
+                        .name(cfAccessLogsSourceName)
+                        .logType("ACCESS_LOGS") // required for CloudFront
+                        .resourceArn(distributionArn)
+                        .build());
+
+        CfnDelivery cfAccessLogsDelivery = new CfnDelivery(
+                this,
+                props.resourceNamePrefix() + "-CfAccessLogsDelivery",
+                CfnDeliveryProps.builder()
+                        // *** must exactly match the Name above ***
+                        .deliverySourceName(cfAccessLogsSourceName)
+                        .deliveryDestinationArn(cfAccessLogsDestination.getAttrArn())
+                        // Date only, deliberately no {distributionid}: AWS supports any subset of
+                        // its partitioning variables (a distribution ID is not mandatory), and
+                        // every deployment's distribution writing to the same date tree is what
+                        // lets a 30-day query span a release. With the Hive option on this
+                        // renders as year=.../month=.../day=... itself.
+                        .s3SuffixPath("{yyyy}/{MM}/{dd}/")
+                        .s3EnableHiveCompatiblePath(true)
+                        .build());
+        // *** enforce creation order so source exists before delivery ***
+        cfAccessLogsDelivery.addResourceDependency(cfAccessLogsSource);
+
+        // Grant CloudFront access to the origin lambdas
+        this.distributionInvokeFnUrl = Permission.builder()
+                .principal(new ServicePrincipal("cloudfront.amazonaws.com"))
+                .action("lambda:InvokeFunctionUrl")
+                .functionUrlAuthType(FunctionUrlAuthType.NONE)
+                .sourceArn(this.distribution.getDistributionArn())
+                .build();
+
+        // Idempotent UPSERT of Route53 A/AAAA alias to CloudFront (replaces deprecated deleteExisting)
+        co.uk.diyaccounting.submit.utils.Route53AliasUpsert.upsertAliasToCloudFront(
+                this, "AliasRecord", zone, recordName, this.distribution.getDomainName());
+        // Capture the FQDN for outputs
+        this.aliasRecordDomainName = (recordName == null || recordName.isBlank())
+                ? zone.getZoneName()
+                : (recordName + "." + zone.getZoneName());
+        this.aliasRecordV6DomainName = this.aliasRecordDomainName;
+
+        // Outputs
+        cfnOutput(this, "BaseUrl", props.sharedNames().baseUrl);
+        cfnOutput(this, "CertificateArn", cert.getCertificateArn());
+        cfnOutput(this, "WebDistributionDomainName", this.distribution.getDomainName());
+        cfnOutput(this, "DistributionId", this.distribution.getDistributionId());
+        cfnOutput(this, "AliasRecord", this.aliasRecordDomainName);
+        cfnOutput(this, "AliasRecordV6", this.aliasRecordV6DomainName);
+        cfnOutput(this, "OriginBucketName", this.originBucket.getBucketName());
+        cfnOutput(this, "CertExpiryAlarmArn", certExpiryAlarm.getAlarmArn());
+
+        infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
+    }
+
+    public BehaviorOptions createBehaviorOptionsForApiGateway(
+            String apiGatewayUrl,
+            ResponseHeadersPolicy responseHeadersPolicy,
+            OriginRequestPolicy originRequestPolicy) {
+        // Extract the host from the API Gateway URL (e.g., "https://abc123.execute-api.us-east-1.amazonaws.com/" ->
+        // "abc123.execute-api.us-east-1.amazonaws.com")
+        var apiGatewayHost = getHostFromUrl(apiGatewayUrl);
+        var origin = HttpOrigin.Builder.create(apiGatewayHost)
+                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
+                .build();
+        return BehaviorOptions.builder()
+                .origin(origin)
+                .allowedMethods(AllowedMethods.ALLOW_ALL)
+                .cachePolicy(CachePolicy.CACHING_DISABLED)
+                .originRequestPolicy(originRequestPolicy)
+                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
+                .responseHeadersPolicy(responseHeadersPolicy)
+                .build();
+    }
+
+    /**
+     * Matches every DIYA-GL storage route under either prefix: the new {@code /api/v1/diya-gl}
+     * and the old {@code /api/v1/books}, both served permanently.
+     */
+    private static CfnWebACL.StatementProperty diyaGlRouteUriPrefixStatement() {
+        return CfnWebACL.StatementProperty.builder()
+                .orStatement(CfnWebACL.OrStatementProperty.builder()
+                        .statements(List.of(
+                                uriPathStartsWithStatement("/api/v1/diya-gl"),
+                                uriPathStartsWithStatement("/api/v1/books")))
+                        .build())
+                .build();
+    }
+
+    /** Matches the hosted MCP endpoint, its OAuth facade and the OAuth discovery documents. */
+    private static CfnWebACL.StatementProperty mcpRouteUriPrefixStatement() {
+        return CfnWebACL.StatementProperty.builder()
+                .orStatement(CfnWebACL.OrStatementProperty.builder()
+                        .statements(List.of(
+                                uriPathStartsWithStatement("/mcp"), uriPathStartsWithStatement("/.well-known/oauth-")))
+                        .build())
+                .build();
+    }
+
+    /** Matches a request the common rule set labelled with the named rule's label. */
+    private static CfnWebACL.StatementProperty coreRuleSetLabelStatement(String ruleName) {
+        return CfnWebACL.StatementProperty.builder()
+                .labelMatchStatement(CfnWebACL.LabelMatchStatementProperty.builder()
+                        .scope("LABEL")
+                        .key("awswaf:managed:aws:core-rule-set:" + ruleName)
+                        .build())
+                .build();
+    }
+
+    /** Matches exactly the given URI path. */
+    private static CfnWebACL.StatementProperty exactUriPathStatement(String path) {
+        return CfnWebACL.StatementProperty.builder()
+                .byteMatchStatement(CfnWebACL.ByteMatchStatementProperty.builder()
+                        .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
+                                .uriPath(Map.of())
+                                .build())
+                        .positionalConstraint("EXACTLY")
+                        .searchString(path)
+                        .textTransformations(List.of(CfnWebACL.TextTransformationProperty.builder()
+                                .priority(0)
+                                .type("NONE")
+                                .build()))
+                        .build())
+                .build();
+    }
+
+    private static CfnWebACL.StatementProperty uriPathStartsWithStatement(String prefix) {
+        return CfnWebACL.StatementProperty.builder()
+                .byteMatchStatement(CfnWebACL.ByteMatchStatementProperty.builder()
+                        .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
+                                .uriPath(Map.of())
+                                .build())
+                        .positionalConstraint("STARTS_WITH")
+                        .searchString(prefix)
+                        .textTransformations(List.of(
+                                CfnWebACL.TextTransformationProperty.builder()
+                                        .priority(0)
+                                        .type("URL_DECODE")
+                                        .build(),
+                                CfnWebACL.TextTransformationProperty.builder()
+                                        .priority(1)
+                                        .type("LOWERCASE")
+                                        .build()))
+                        .build())
+                .build();
+    }
+
+    private static CfnWebACL.StatementProperty putMethodStatement() {
+        return CfnWebACL.StatementProperty.builder()
+                .byteMatchStatement(CfnWebACL.ByteMatchStatementProperty.builder()
+                        .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
+                                .method(Map.of())
+                                .build())
+                        .positionalConstraint("EXACTLY")
+                        .searchString("PUT")
+                        .textTransformations(List.of(CfnWebACL.TextTransformationProperty.builder()
+                                .priority(0)
+                                .type("NONE")
+                                .build()))
+                        .build())
+                .build();
+    }
+
+    private static Map<String, Object> redactedSingleHeader(String headerName) {
+        Map<String, Object> singleHeader = new HashMap<>();
+        singleHeader.put("Name", headerName);
+        Map<String, Object> fieldToMatch = new HashMap<>();
+        fieldToMatch.put("SingleHeader", singleHeader);
+        return fieldToMatch;
+    }
+
+    private String getHostFromUrl(String url) {
+        // Extract host from URL (e.g., "https://example.com/path" -> "example.com")
+        if (url.startsWith("https://")) {
+            String withoutProtocol = url.substring(8);
+            int slashIndex = withoutProtocol.indexOf('/');
+            if (slashIndex > 0) {
+                return withoutProtocol.substring(0, slashIndex);
+            }
+            return withoutProtocol;
+        }
+        return url; // fallback if format unexpected
+    }
+
+    private String createWaf(final EdgeStackProps props) {
         // ============================================================================
         // Sensitive-path scan detection (issue #9 phase 9.1) - regex pattern set
         // ============================================================================
@@ -713,52 +1373,6 @@ public class EdgeStack extends Stack {
 
         infof("Created WAF security alarms: rate-limit, attack-signatures, known-bad-inputs");
 
-        // Certificate expiry alarm - ACM auto-renews but gives no warning if renewal fails.
-        // The cert lives in us-east-1 (required for CloudFront), so this alarm does too; its
-        // state changes are picked up by the WafAlarmForwardRule below like the WAF alarms.
-        Alarm certExpiryAlarm = Alarm.Builder.create(this, props.resourceNamePrefix() + "-CertExpiryAlarm")
-                .alarmName(props.resourceNamePrefix() + "-cert-expiring")
-                .alarmDescription("ACM certificate expires within 30 days")
-                .metric(Metric.Builder.create()
-                        .namespace("AWS/CertificateManager")
-                        .metricName("DaysToExpiry")
-                        .dimensionsMap(Map.of("CertificateArn", cert.getCertificateArn()))
-                        .statistic("Minimum")
-                        .period(software.amazon.awscdk.Duration.days(1))
-                        .build())
-                .threshold(30)
-                .evaluationPeriods(1)
-                .comparisonOperator(ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .build();
-
-        // ============================================================================
-        // Cross-Region Alarm Forwarding to OpsStack (eu-west-2)
-        // ============================================================================
-        // CloudWatch alarm state-change events are regional, so the WAF alarms above
-        // (us-east-1, required for CloudFront) never reach OpsStack's AlarmStateChangeRule
-        // (eu-west-2 default bus). This rule forwards them across the account's default
-        // event bus in eu-west-2, where that existing rule forwards to the Telegram Lambda.
-        // The targets.EventBus construct creates the IAM role EventBridge needs to put
-        // events onto the cross-region bus.
-        IEventBus opsDefaultBus = EventBus.fromEventBusArn(
-                this,
-                props.resourceNamePrefix() + "-OpsDefaultBus",
-                "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/default");
-
-        Rule.Builder.create(this, props.resourceNamePrefix() + "-WafAlarmForwardRule")
-                .ruleName(props.resourceNamePrefix() + "-waf-alarm-forward")
-                .description(
-                        "Forward CloudWatch alarm state changes to the eu-west-2 default event bus for Telegram alerting")
-                .eventPattern(EventPattern.builder()
-                        .source(List.of("aws.cloudwatch"))
-                        .detailType(List.of("CloudWatch Alarm State Change"))
-                        .build())
-                .targets(List.of(new software.amazon.awscdk.services.events.targets.EventBus(opsDefaultBus)))
-                .build();
-
-        infof("Created cross-region rule forwarding WAF alarm state changes to eu-west-2 default bus");
-
         // ============================================================================
         // WAF manual-block alarm (issue #9 phase 9.3)
         // ============================================================================
@@ -903,623 +1517,19 @@ public class EdgeStack extends Stack {
                 "Created WAF logging (blocks only), scan-detect Lambda %s subscribed to it, and its burst table %s",
                 wafScanDetectLambda.ingestLambda.getNode().getId(), wafScanBurstsTableName);
 
-        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "edge", List.of(wafScanDetectLambda));
+        Lambda.appStackHealthAlarm(
+                this, props.envName(), props.resourceNamePrefix(), "edge", List.of(wafScanDetectLambda));
 
-        // Create the origin bucket — GENERATE_IF_NEEDED produces a unique-per-stack physical name
-        // that CDK can resolve cross-environment (SelfDestructStack is in eu-west-2, EdgeStack is us-east-1)
-        this.originBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-OriginBucket")
-                .bucketName(PhysicalName.GENERATE_IF_NEEDED)
-                .versioned(false)
-                .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
-                .encryption(BucketEncryption.S3_MANAGED)
-                .removalPolicy(RemovalPolicy.DESTROY)
-                // .autoDeleteObjects(true)
-                .build();
-        infof("Created origin bucket %s", this.originBucket.getNode().getId());
-
-        this.originBucket.addToResourcePolicy(PolicyStatement.Builder.create()
-                .sid("AllowCloudFrontReadViaOAC")
-                .principals(List.of(new ServicePrincipal("cloudfront.amazonaws.com")))
-                .actions(List.of("s3:GetObject"))
-                .resources(List.of(this.originBucket.getBucketArn() + "/*"))
-                .conditions(Map.of(
-                        // Limit to distributions in your account (no distribution ARN token needed)
-                        "StringEquals", Map.of("AWS:SourceAccount", this.getAccount()),
-                        "ArnLike",
-                                Map.of(
-                                        "AWS:SourceArn",
-                                        "arn:aws:cloudfront::" + this.getAccount() + ":distribution/*")))
-                .build());
-
-        S3OriginAccessControl oac = S3OriginAccessControl.Builder.create(this, "MyOAC")
-                .signing(Signing.SIGV4_ALWAYS) // NEVER // SIGV4_NO_OVERRIDE
-                .build();
-
-        IOrigin localOrigin = S3BucketOrigin.withOriginAccessControl(
-                this.originBucket,
-                S3BucketOriginWithOACProps.builder().originAccessControl(oac).build());
-        // infof("Created BucketOrigin with bucket: %s", this.originBucket.getBucketName());
-
-        // Define a custom Response Headers Policy with CSP that allows AWS RUM client + dataplane
-        ResponseHeadersPolicy webResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
-                        this, props.resourceNamePrefix() + "-WHP")
-                .responseHeadersPolicyName(props.resourceNamePrefix() + "-whp")
-                .comment("CORS + security headers with CSP allowing CloudWatch RUM client & dataplane")
-                .corsBehavior(ResponseHeadersCorsBehavior.builder()
-                        .accessControlAllowCredentials(false)
-                        .accessControlAllowHeaders(List.of("*"))
-                        .accessControlAllowMethods(List.of("GET", "HEAD", "OPTIONS"))
-                        .accessControlAllowOrigins(List.of("*"))
-                        .accessControlExposeHeaders(List.of())
-                        .accessControlMaxAge(software.amazon.awscdk.Duration.seconds(600))
-                        .originOverride(true)
-                        .build())
-                .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
-                        .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
-                                .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com; "
-                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com; "
-                                        // Wildcard, not just https://www.google-analytics.com: GA4's /g/collect
-                                        // beacon lands on a region-specific subdomain (e.g.
-                                        // region1.google-analytics.com),
-                                        // which the literal host doesn't match and CSP then silently drops the pixel.
-                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.googleusercontent.com https://ssl.gstatic.com https://www.gstatic.com https://i.ytimg.com; "
-                                        + "style-src 'self' 'unsafe-inline' https://www.gstatic.com; "
-                                        + "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com https://apis.google.com https://docs.google.com; "
-                                        + "frame-ancestors 'none'; "
-                                        + "form-action 'self';")
-                                .override(true)
-                                .build())
-                        .strictTransportSecurity(ResponseHeadersStrictTransportSecurity.builder()
-                                .accessControlMaxAge(software.amazon.awscdk.Duration.days(365))
-                                .includeSubdomains(true)
-                                .override(true)
-                                .build())
-                        .contentTypeOptions(ResponseHeadersContentTypeOptions.builder()
-                                .override(true)
-                                .build())
-                        .frameOptions(ResponseHeadersFrameOptions.builder()
-                                .frameOption(HeadersFrameOption.DENY)
-                                .override(true)
-                                .build())
-                        .referrerPolicy(ResponseHeadersReferrerPolicy.builder()
-                                .referrerPolicy(
-                                        software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy
-                                                .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
-                                .override(true)
-                                .build())
-                        .xssProtection(ResponseHeadersXSSProtection.builder()
-                                .protection(true)
-                                .modeBlock(true)
-                                .override(true)
-                                .build())
-                        .build())
-                // Custom headers for security policies not covered by securityHeadersBehavior
-                .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
-                        .customHeaders(List.of(
-                                ResponseCustomHeader.builder()
-                                        .header("Permissions-Policy")
-                                        .value("camera=(), microphone=(), geolocation=()")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Opener-Policy")
-                                        .value("same-origin-allow-popups")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Embedder-Policy")
-                                        // Security scanner please leave
-                                        .value("unsafe-none")
-                                        // Necessary for the YouTube iframe to load
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Resource-Policy")
-                                        .value("same-origin")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Server")
-                                        .value("DIY-Accounting")
-                                        .override(true)
-                                        .build()))
-                        .build())
-                .build();
-
-        // CORS for the whole shared HttpApi (/api/v1/*, DIYA-GL routes included) is decided one
-        // layer down: ApiStack's own HttpApi.corsPreflight (booksAllowedOrigins) answers for every
-        // route, and the DIYA-GL routes additionally echo their own per-request origin
-        // (DIYA_GL_ALLOWED_ORIGINS, see diyaGlCors.js). No corsBehavior here at all, so CloudFront
-        // passes whichever of those the origin already sent straight through, instead of
-        // overwriting an already-correct, origin-restricted header with a CloudFront-level one.
-        ResponseHeadersPolicy diyaGlApiResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
-                        this, props.resourceNamePrefix() + "-DiyaGlWHP")
-                .responseHeadersPolicyName(props.resourceNamePrefix() + "-diya-gl-whp")
-                .comment("Security headers for /api/v1/* API routes, with no CORS override")
-                .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
-                        .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
-                                .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com; "
-                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com; "
-                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.googleusercontent.com https://ssl.gstatic.com https://www.gstatic.com https://i.ytimg.com; "
-                                        + "style-src 'self' 'unsafe-inline' https://www.gstatic.com; "
-                                        + "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com https://apis.google.com https://docs.google.com; "
-                                        + "frame-ancestors 'none'; "
-                                        + "form-action 'self';")
-                                .override(true)
-                                .build())
-                        .strictTransportSecurity(ResponseHeadersStrictTransportSecurity.builder()
-                                .accessControlMaxAge(software.amazon.awscdk.Duration.days(365))
-                                .includeSubdomains(true)
-                                .override(true)
-                                .build())
-                        .contentTypeOptions(ResponseHeadersContentTypeOptions.builder()
-                                .override(true)
-                                .build())
-                        .frameOptions(ResponseHeadersFrameOptions.builder()
-                                .frameOption(HeadersFrameOption.DENY)
-                                .override(true)
-                                .build())
-                        .referrerPolicy(ResponseHeadersReferrerPolicy.builder()
-                                .referrerPolicy(
-                                        software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy
-                                                .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
-                                .override(true)
-                                .build())
-                        .xssProtection(ResponseHeadersXSSProtection.builder()
-                                .protection(true)
-                                .modeBlock(true)
-                                .override(true)
-                                .build())
-                        .build())
-                .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
-                        .customHeaders(List.of(
-                                ResponseCustomHeader.builder()
-                                        .header("Permissions-Policy")
-                                        .value("camera=(), microphone=(), geolocation=()")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Opener-Policy")
-                                        .value("same-origin")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Embedder-Policy")
-                                        .value("unsafe-none")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Resource-Policy")
-                                        .value("same-origin")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Server")
-                                        .value("DIY-Accounting")
-                                        .override(true)
-                                        .build()))
-                        .build())
-                .build();
-
-        // The consent page answers its form POST with a redirect to the Cognito hosted UI, so it
-        // sends its own CSP with that origin in form-action. override(false) lets that header stand;
-        // responses without a CSP still take this one.
-        ResponseHeadersPolicy mcpResponseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
-                        this, props.resourceNamePrefix() + "-McpWHP")
-                .responseHeadersPolicyName(props.resourceNamePrefix() + "-mcp-whp")
-                .comment("Security headers for the hosted MCP routes; the facade's own CSP stands where it sends one")
-                .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
-                        .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
-                                .contentSecurityPolicy("default-src 'self'; "
-                                        + "script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com; "
-                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://www.googleapis.com https://oauth2.googleapis.com https://accounts.google.com; "
-                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com https://www.googleadservices.com https://googleads.g.doubleclick.net https://*.googleusercontent.com https://ssl.gstatic.com https://www.gstatic.com https://i.ytimg.com; "
-                                        + "style-src 'self' 'unsafe-inline' https://www.gstatic.com; "
-                                        + "frame-src 'self' https://www.youtube-nocookie.com https://accounts.google.com https://apis.google.com https://docs.google.com; "
-                                        + "frame-ancestors 'none'; "
-                                        + "form-action 'self';")
-                                .override(false)
-                                .build())
-                        .strictTransportSecurity(ResponseHeadersStrictTransportSecurity.builder()
-                                .accessControlMaxAge(software.amazon.awscdk.Duration.days(365))
-                                .includeSubdomains(true)
-                                .override(true)
-                                .build())
-                        .contentTypeOptions(ResponseHeadersContentTypeOptions.builder()
-                                .override(true)
-                                .build())
-                        .frameOptions(ResponseHeadersFrameOptions.builder()
-                                .frameOption(HeadersFrameOption.DENY)
-                                .override(true)
-                                .build())
-                        .referrerPolicy(ResponseHeadersReferrerPolicy.builder()
-                                .referrerPolicy(
-                                        software.amazon.awscdk.services.cloudfront.HeadersReferrerPolicy
-                                                .STRICT_ORIGIN_WHEN_CROSS_ORIGIN)
-                                .override(true)
-                                .build())
-                        .xssProtection(ResponseHeadersXSSProtection.builder()
-                                .protection(true)
-                                .modeBlock(true)
-                                .override(true)
-                                .build())
-                        .build())
-                .customHeadersBehavior(ResponseCustomHeadersBehavior.builder()
-                        .customHeaders(List.of(
-                                ResponseCustomHeader.builder()
-                                        .header("Permissions-Policy")
-                                        .value("camera=(), microphone=(), geolocation=()")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Opener-Policy")
-                                        .value("same-origin")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Embedder-Policy")
-                                        .value("unsafe-none")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Cross-Origin-Resource-Policy")
-                                        .value("same-origin")
-                                        .override(true)
-                                        .build(),
-                                ResponseCustomHeader.builder()
-                                        .header("Server")
-                                        .value("DIY-Accounting")
-                                        .override(true)
-                                        .build()))
-                        .build())
-                .build();
-
-        // Custom error pages are served as static files via CloudFront error responses
-        // This replaces Lambda@Edge which has problematic deletion behavior in CI/CD
-        // API routes (/api/*) return JSON errors - CloudFront error responses only apply to S3 origin errors
-        BehaviorOptions localBehaviorOptions = BehaviorOptions.builder()
-                .origin(localOrigin)
-                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
-                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
-                .responseHeadersPolicy(webResponseHeadersPolicy)
-                .compress(true)
-                .build();
-
-        // Create a custom cache policy for test reports and docs with short TTL
-        CachePolicy testsAndDocsCachePolicy = CachePolicy.Builder.create(this, props.resourceNamePrefix() + "-TestsCP")
-                .cachePolicyName(props.resourceNamePrefix() + "-tests-cp")
-                .comment("Short TTL cache policy for test reports and results")
-                .minTtl(software.amazon.awscdk.Duration.seconds(0))
-                .defaultTtl(software.amazon.awscdk.Duration.seconds(60))
-                .maxTtl(software.amazon.awscdk.Duration.seconds(300))
-                .build();
-
-        // Behaviour options for /tests/* and /docs/* paths with short TTL
-        BehaviorOptions testsAndDocsBehaviorOptions = BehaviorOptions.builder()
-                .origin(localOrigin)
-                .allowedMethods(AllowedMethods.ALLOW_GET_HEAD_OPTIONS)
-                .originRequestPolicy(OriginRequestPolicy.CORS_S3_ORIGIN)
-                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
-                .responseHeadersPolicy(webResponseHeadersPolicy)
-                .cachePolicy(testsAndDocsCachePolicy)
-                .compress(true)
-                .build();
-
-        // Create a custom OriginRequestPolicy for API Gateway that forwards HMRC fraud prevention headers
-        // These Gov-Client-* headers are sent by the browser and must reach the Lambda functions
-        // Note: CloudFront limits custom OriginRequestPolicy to 10 headers maximum
-        OriginRequestPolicy fraudPreventionHeadersPolicy = OriginRequestPolicy.Builder.create(
-                        this, props.resourceNamePrefix() + "-FraudPreventionORP")
-                .originRequestPolicyName(props.resourceNamePrefix() + "-fraud-prevention-orp")
-                .comment(
-                        "Origin request policy that forwards HMRC fraud prevention headers (Gov-Client-*) to API Gateway")
-                // Forward ALL viewer headers plus CloudFront-Viewer-Address (contains client ip:port)
-                // needed for Gov-Client-Public-Port HMRC fraud prevention header, and
-                // CloudFront-Viewer-Country (issue #9 phase 9.1, on issue #10's behalf: its
-                // mid-session country check in customAuthorizer.js needs this header, and this
-                // origin request policy is the only place that can add it).
-                // all() forwards ALL viewer headers including Host. API Gateway HTTP API v2
-                // routes by path, not Host, so this should be safe. If 403 errors occur,
-                // fall back to denyList("Host") and use API Gateway custom domain instead.
-                .headerBehavior(
-                        OriginRequestHeaderBehavior.all("CloudFront-Viewer-Address", "CloudFront-Viewer-Country"))
-                .queryStringBehavior(OriginRequestQueryStringBehavior.all())
-                // Forward all cookies to support authentication
-                .cookieBehavior(OriginRequestCookieBehavior.all())
-                .build();
-
-        // Create additional behaviours for the API Gateway Lambda origins. /api/v1/*, the DIYA-GL
-        // storage routes' /api/v1/diya-gl/* and their permanent second prefix /api/v1/books/* all
-        // share the same response-headers policy: no CORS override on any of them, since API
-        // Gateway's own HttpApi.corsPreflight allow list (and, for the DIYA-GL routes,
-        // diyaGlCors.js's per-request echo) already decide the header correctly. The path patterns
-        // stay as separate CloudFront behaviours so a future security-header change scoped to one
-        // of them doesn't have to touch the others.
-        HashMap<String, BehaviorOptions> additionalBehaviors = new HashMap<String, BehaviorOptions>();
-        BehaviorOptions apiGatewayBehavior = createBehaviorOptionsForApiGateway(
-                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
-        additionalBehaviors.put("/api/v1/*", apiGatewayBehavior);
-        infof("Added API Gateway behavior for /api/v1/* pointing to %s", props.apiGatewayUrl());
-
-        BehaviorOptions diyaGlApiGatewayBehavior = createBehaviorOptionsForApiGateway(
-                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
-        additionalBehaviors.put("/api/v1/diya-gl/*", diyaGlApiGatewayBehavior);
-        infof("Added API Gateway behavior for /api/v1/diya-gl/* pointing to %s", props.apiGatewayUrl());
-
-        // Serves the old prefix alongside the new one permanently: the spreadsheets site's
-        // cloud.js, including copies held by installed service workers, calls this path and
-        // never switches to the new one.
-        BehaviorOptions booksApiGatewayBehavior = createBehaviorOptionsForApiGateway(
-                props.apiGatewayUrl(), diyaGlApiResponseHeadersPolicy, fraudPreventionHeadersPolicy);
-        additionalBehaviors.put("/api/v1/books/*", booksApiGatewayBehavior);
-        infof("Added API Gateway behavior for /api/v1/books/* pointing to %s", props.apiGatewayUrl());
-
-        // The hosted MCP endpoint, its OAuth facade and the OAuth discovery documents reach the
-        // same API Gateway origin with caching off. The origin request policy forwards every
-        // viewer header, which carries Authorization, Mcp-Session-Id, MCP-Protocol-Version,
-        // Origin and Accept.
-        for (String mcpPathPattern : List.of("/mcp", "/mcp/*", "/.well-known/oauth-*")) {
-            additionalBehaviors.put(
-                    mcpPathPattern,
-                    createBehaviorOptionsForApiGateway(
-                            props.apiGatewayUrl(), mcpResponseHeadersPolicy, fraudPreventionHeadersPolicy));
-            infof("Added API Gateway behavior for %s pointing to %s", mcpPathPattern, props.apiGatewayUrl());
-        }
-
-        // Add behaviour for /tests/* and /docs/* with short TTL cache policy
-        additionalBehaviors.put("/tests/*", testsAndDocsBehaviorOptions);
-        infof("Added /tests/* behavior with short TTL cache policy");
-        additionalBehaviors.put("/docs/*", testsAndDocsBehaviorOptions);
-        infof("Added /docs/* behavior with short TTL cache policy");
-
-        // CloudFront distribution for the web origin and all the URL Lambdas.
-        this.distribution = Distribution.Builder.create(this, props.resourceNamePrefix() + "-WebDist")
-                .defaultBehavior(localBehaviorOptions) // props.webBehaviorOptions)
-                .additionalBehaviors(additionalBehaviors)
-                // Use only the deployment-scoped domain to avoid alias conflicts with existing distributions
-                .domainNames(List.of(props.sharedNames().deploymentDomainName))
-                .certificate(cert)
-                .defaultRootObject("index.html")
-                .enableIpv6(true)
-                .sslSupportMethod(SSLMethod.SNI)
-                .webAclId(webAcl.getAttrArn())
-                // IMPORTANT: Do NOT configure errorResponses here!
-                // CloudFront error responses apply GLOBALLY to ALL origins (S3 AND API Gateway).
-                // This breaks API routes which must return JSON errors, not HTML error pages.
-                // For static content (S3), accept default CloudFront error behavior.
-                // For API routes (/api/*), Lambda functions return proper JSON error responses.
-                .build();
-        Tags.of(this.distribution).add("OriginFor", props.sharedNames().deploymentDomainName);
-
-        // 2. Compute the CloudFront distribution ARN for the delivery source
-        String distributionArn = Stack.of(this)
-                .formatArn(ArnComponents.builder()
-                        .service("cloudfront")
-                        .region("") // CloudFront is global
-                        .resource("distribution")
-                        .resourceName(this.distribution.getDistributionId())
-                        .build());
-
-        // CloudFront access logs, v2 delivery: lands Parquet directly in the shared analytics
-        // lake so Athena can query it without a crawler. This is set up here rather than in
-        // AnalyticsStack because only this app stack knows this deployment's distribution ARN;
-        // the lake bucket's resource policy (granted in CloudFrontAccessLogs) accepts writes from
-        // every deployment's distribution. The suffix path below carries no distribution
-        // identifier, so every deployment's delivery writes into the same date-partitioned tree
-        // and a release doesn't start history over (see CloudFrontAccessLogs' class comment).
-        IBucket analyticsLakeBucket = Bucket.fromBucketName(
-                this,
-                props.resourceNamePrefix() + "-AnalyticsLakeBucketRef",
-                props.sharedNames().analyticsLakeBucketName);
-
-        CfnDeliveryDestination cfAccessLogsDestination = new CfnDeliveryDestination(
-                this,
-                props.resourceNamePrefix() + "-CfAccessLogsDestination",
-                CfnDeliveryDestinationProps.builder()
-                        .name(props.resourceNamePrefix() + "-cf-access-logs-dest")
-                        .deliveryDestinationType("S3")
-                        // A bare bucket ARN makes the service prepend AWSLogs/<account>/CloudFront/ to
-                        // every key; the prefix on the ARN keeps the objects under the lake's own path.
-                        .destinationResourceArn(analyticsLakeBucket.getBucketArn() + "/raw/cloudfront")
-                        .outputFormat("parquet")
-                        .build());
-
-        String cfAccessLogsSourceName = props.resourceNamePrefix() + "-cf-access-logs-src";
-        CfnDeliverySource cfAccessLogsSource = new CfnDeliverySource(
-                this,
-                props.resourceNamePrefix() + "-CfAccessLogsSource",
-                CfnDeliverySourceProps.builder()
-                        .name(cfAccessLogsSourceName)
-                        .logType("ACCESS_LOGS") // required for CloudFront
-                        .resourceArn(distributionArn)
-                        .build());
-
-        CfnDelivery cfAccessLogsDelivery = new CfnDelivery(
-                this,
-                props.resourceNamePrefix() + "-CfAccessLogsDelivery",
-                CfnDeliveryProps.builder()
-                        // *** must exactly match the Name above ***
-                        .deliverySourceName(cfAccessLogsSourceName)
-                        .deliveryDestinationArn(cfAccessLogsDestination.getAttrArn())
-                        // Date only, deliberately no {distributionid}: AWS supports any subset of
-                        // its partitioning variables (a distribution ID is not mandatory), and
-                        // every deployment's distribution writing to the same date tree is what
-                        // lets a 30-day query span a release. With the Hive option on this
-                        // renders as year=.../month=.../day=... itself.
-                        .s3SuffixPath("{yyyy}/{MM}/{dd}/")
-                        .s3EnableHiveCompatiblePath(true)
-                        .build());
-        // *** enforce creation order so source exists before delivery ***
-        cfAccessLogsDelivery.addResourceDependency(cfAccessLogsSource);
-
-        // Grant CloudFront access to the origin lambdas
-        this.distributionInvokeFnUrl = Permission.builder()
-                .principal(new ServicePrincipal("cloudfront.amazonaws.com"))
-                .action("lambda:InvokeFunctionUrl")
-                .functionUrlAuthType(FunctionUrlAuthType.NONE)
-                .sourceArn(this.distribution.getDistributionArn())
-                .build();
-
-        // Idempotent UPSERT of Route53 A/AAAA alias to CloudFront (replaces deprecated deleteExisting)
-        co.uk.diyaccounting.submit.utils.Route53AliasUpsert.upsertAliasToCloudFront(
-                this, "AliasRecord", zone, recordName, this.distribution.getDomainName());
-        // Capture the FQDN for outputs
-        this.aliasRecordDomainName = (recordName == null || recordName.isBlank())
-                ? zone.getZoneName()
-                : (recordName + "." + zone.getZoneName());
-        this.aliasRecordV6DomainName = this.aliasRecordDomainName;
-
-        // Outputs
-        cfnOutput(this, "BaseUrl", props.sharedNames().baseUrl);
-        cfnOutput(this, "CertificateArn", cert.getCertificateArn());
         cfnOutput(this, "WebAclId", webAcl.getAttrArn());
-        cfnOutput(this, "WebDistributionDomainName", this.distribution.getDomainName());
-        cfnOutput(this, "DistributionId", this.distribution.getDistributionId());
-        cfnOutput(this, "AliasRecord", this.aliasRecordDomainName);
-        cfnOutput(this, "AliasRecordV6", this.aliasRecordV6DomainName);
-        cfnOutput(this, "OriginBucketName", this.originBucket.getBucketName());
         cfnOutput(this, "WafRateLimitAlarmArn", rateLimitAlarm.getAlarmArn());
         cfnOutput(this, "WafAttackSignaturesAlarmArn", commonRuleAlarm.getAlarmArn());
         cfnOutput(this, "WafBadInputsAlarmArn", badInputsAlarm.getAlarmArn());
-        cfnOutput(this, "CertExpiryAlarmArn", certExpiryAlarm.getAlarmArn());
         cfnOutput(this, "SensitivePathsRegexSetArn", sensitivePathsRegexSet.getAttrArn());
         cfnOutput(this, "WafScanDetectLambdaArn", wafScanDetectLambda.ingestLambda.getFunctionArn());
         cfnOutput(this, "WafManualBlockIpv4SetArn", wafManualBlockIpv4Set.getAttrArn());
         cfnOutput(this, "WafManualBlockIpv6SetArn", wafManualBlockIpv6Set.getAttrArn());
         cfnOutput(this, "WafManualBlockAlarmArn", wafManualBlockAlarm.getAlarmArn());
 
-        infof("EdgeStack %s created successfully for %s", this.getNode().getId(), props.sharedNames().baseUrl);
-    }
-
-    public BehaviorOptions createBehaviorOptionsForApiGateway(
-            String apiGatewayUrl,
-            ResponseHeadersPolicy responseHeadersPolicy,
-            OriginRequestPolicy originRequestPolicy) {
-        // Extract the host from the API Gateway URL (e.g., "https://abc123.execute-api.us-east-1.amazonaws.com/" ->
-        // "abc123.execute-api.us-east-1.amazonaws.com")
-        var apiGatewayHost = getHostFromUrl(apiGatewayUrl);
-        var origin = HttpOrigin.Builder.create(apiGatewayHost)
-                .protocolPolicy(OriginProtocolPolicy.HTTPS_ONLY)
-                .build();
-        return BehaviorOptions.builder()
-                .origin(origin)
-                .allowedMethods(AllowedMethods.ALLOW_ALL)
-                .cachePolicy(CachePolicy.CACHING_DISABLED)
-                .originRequestPolicy(originRequestPolicy)
-                .viewerProtocolPolicy(ViewerProtocolPolicy.REDIRECT_TO_HTTPS)
-                .responseHeadersPolicy(responseHeadersPolicy)
-                .build();
-    }
-
-    /**
-     * Matches every DIYA-GL storage route under either prefix: the new {@code /api/v1/diya-gl}
-     * and the old {@code /api/v1/books}, both served permanently.
-     */
-    private static CfnWebACL.StatementProperty diyaGlRouteUriPrefixStatement() {
-        return CfnWebACL.StatementProperty.builder()
-                .orStatement(CfnWebACL.OrStatementProperty.builder()
-                        .statements(List.of(
-                                uriPathStartsWithStatement("/api/v1/diya-gl"),
-                                uriPathStartsWithStatement("/api/v1/books")))
-                        .build())
-                .build();
-    }
-
-    /** Matches the hosted MCP endpoint, its OAuth facade and the OAuth discovery documents. */
-    private static CfnWebACL.StatementProperty mcpRouteUriPrefixStatement() {
-        return CfnWebACL.StatementProperty.builder()
-                .orStatement(CfnWebACL.OrStatementProperty.builder()
-                        .statements(List.of(
-                                uriPathStartsWithStatement("/mcp"), uriPathStartsWithStatement("/.well-known/oauth-")))
-                        .build())
-                .build();
-    }
-
-    /** Matches a request the common rule set labelled with the named rule's label. */
-    private static CfnWebACL.StatementProperty coreRuleSetLabelStatement(String ruleName) {
-        return CfnWebACL.StatementProperty.builder()
-                .labelMatchStatement(CfnWebACL.LabelMatchStatementProperty.builder()
-                        .scope("LABEL")
-                        .key("awswaf:managed:aws:core-rule-set:" + ruleName)
-                        .build())
-                .build();
-    }
-
-    /** Matches exactly the given URI path. */
-    private static CfnWebACL.StatementProperty exactUriPathStatement(String path) {
-        return CfnWebACL.StatementProperty.builder()
-                .byteMatchStatement(CfnWebACL.ByteMatchStatementProperty.builder()
-                        .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
-                                .uriPath(Map.of())
-                                .build())
-                        .positionalConstraint("EXACTLY")
-                        .searchString(path)
-                        .textTransformations(List.of(CfnWebACL.TextTransformationProperty.builder()
-                                .priority(0)
-                                .type("NONE")
-                                .build()))
-                        .build())
-                .build();
-    }
-
-    private static CfnWebACL.StatementProperty uriPathStartsWithStatement(String prefix) {
-        return CfnWebACL.StatementProperty.builder()
-                .byteMatchStatement(CfnWebACL.ByteMatchStatementProperty.builder()
-                        .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
-                                .uriPath(Map.of())
-                                .build())
-                        .positionalConstraint("STARTS_WITH")
-                        .searchString(prefix)
-                        .textTransformations(List.of(
-                                CfnWebACL.TextTransformationProperty.builder()
-                                        .priority(0)
-                                        .type("URL_DECODE")
-                                        .build(),
-                                CfnWebACL.TextTransformationProperty.builder()
-                                        .priority(1)
-                                        .type("LOWERCASE")
-                                        .build()))
-                        .build())
-                .build();
-    }
-
-    private static CfnWebACL.StatementProperty putMethodStatement() {
-        return CfnWebACL.StatementProperty.builder()
-                .byteMatchStatement(CfnWebACL.ByteMatchStatementProperty.builder()
-                        .fieldToMatch(CfnWebACL.FieldToMatchProperty.builder()
-                                .method(Map.of())
-                                .build())
-                        .positionalConstraint("EXACTLY")
-                        .searchString("PUT")
-                        .textTransformations(List.of(CfnWebACL.TextTransformationProperty.builder()
-                                .priority(0)
-                                .type("NONE")
-                                .build()))
-                        .build())
-                .build();
-    }
-
-    private static Map<String, Object> redactedSingleHeader(String headerName) {
-        Map<String, Object> singleHeader = new HashMap<>();
-        singleHeader.put("Name", headerName);
-        Map<String, Object> fieldToMatch = new HashMap<>();
-        fieldToMatch.put("SingleHeader", singleHeader);
-        return fieldToMatch;
-    }
-
-    private String getHostFromUrl(String url) {
-        // Extract host from URL (e.g., "https://example.com/path" -> "example.com")
-        if (url.startsWith("https://")) {
-            String withoutProtocol = url.substring(8);
-            int slashIndex = withoutProtocol.indexOf('/');
-            if (slashIndex > 0) {
-                return withoutProtocol.substring(0, slashIndex);
-            }
-            return withoutProtocol;
-        }
-        return url; // fallback if format unexpected
+        return webAcl.getAttrArn();
     }
 }

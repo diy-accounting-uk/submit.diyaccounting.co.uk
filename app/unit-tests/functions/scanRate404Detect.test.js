@@ -149,13 +149,13 @@ describe("functions/security/scanRate404Detect", () => {
       expect(sql).toContain("cs_host");
       expect(sql).not.toContain("distribution_id");
       expect(sql).toContain("NOT LIKE '%DIYAccountingProbe%'");
-      expect(sql).toContain("year  = 2026 AND month = 8 AND day = 31");
+      expect(sql).toContain("day_prefix = 'year=2026/month=08/day=31'");
       expect(sql).toContain("HAVING   count(*) > 20");
     });
 
-    test("references only columns present in the Glue table plus its date partition keys", () => {
-      const sql = buildQuery(baseParams);
-      const tableColumns = new Set([...tableColumnsFromJava(), "year", "month", "day"]);
+    test("references only columns present in the Glue table plus its date partition key", () => {
+      const sql = buildQuery(baseParams).replace(/'[^']*'/g, "''");
+      const tableColumns = new Set([...tableColumnsFromJava(), "day_prefix"]);
 
       const identifiers = new Set(
         [...sql.matchAll(/"([a-z_]+)"|\b([a-z][a-z0-9_]*)\b/g)]

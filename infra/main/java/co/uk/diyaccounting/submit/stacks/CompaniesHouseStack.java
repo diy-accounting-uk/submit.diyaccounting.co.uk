@@ -276,6 +276,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().companiesHouseSearchGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseSearchGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseSearchGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -318,6 +319,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().companiesHouseCompanyGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseCompanyGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseCompanyGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -371,6 +373,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().companiesHouseTokenPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseTokenPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseTokenPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -412,6 +415,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().companiesHouseTransactionPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseTransactionPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseTransactionPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -444,6 +448,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().companiesHouseTransactionGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseTransactionGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseTransactionGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -476,6 +481,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().companiesHouseTransactionPutIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseTransactionPutIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseTransactionPutIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -527,6 +533,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().companiesHouseRegisteredOfficeAddressGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseRegisteredOfficeAddressGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseRegisteredOfficeAddressGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -571,6 +578,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().companiesHouseRegisteredOfficeAddressPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseRegisteredOfficeAddressPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseRegisteredOfficeAddressPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -615,6 +623,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().companiesHouseRegisteredEmailEligibilityGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(
                                 props.sharedNames().companiesHouseRegisteredEmailEligibilityGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseRegisteredEmailEligibilityGetIngestLambdaArn)
@@ -660,6 +669,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().companiesHouseRegisteredEmailAddressPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseRegisteredEmailAddressPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseRegisteredEmailAddressPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -756,6 +766,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().companiesHouseAccountsPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseAccountsPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseAccountsPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -799,6 +810,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().companiesHouseAccountsGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseAccountsGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseAccountsGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -877,6 +889,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcCtReturnPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcCtReturnPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcCtReturnPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -914,6 +927,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcCtReturnGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcCtReturnGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcCtReturnGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -961,6 +975,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().companiesHouseOfficersGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseOfficersGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseOfficersGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -1000,6 +1015,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().companiesHousePscGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHousePscGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHousePscGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -1034,6 +1050,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().companiesHouseFilingDataPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseFilingDataPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseFilingDataPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1135,6 +1152,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().companiesHouseConfirmationStatementPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseConfirmationStatementPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseConfirmationStatementPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1189,6 +1207,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().companiesHouseConfirmationStatementGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHouseConfirmationStatementGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHouseConfirmationStatementGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1246,6 +1265,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().companiesHousePscVerificationStatementPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(
                                 props.sharedNames().companiesHousePscVerificationStatementPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHousePscVerificationStatementPostIngestLambdaArn)
@@ -1300,6 +1320,7 @@ public class CompaniesHouseStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().companiesHousePscVerificationStatementGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().companiesHousePscVerificationStatementGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().companiesHousePscVerificationStatementGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1337,8 +1358,9 @@ public class CompaniesHouseStack extends Stack {
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHousePscVerificationStatementGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
-        Lambda.stackHealthAlarm(
+        Lambda.appStackHealthAlarm(
                 this,
+                props.envName(),
                 props.resourceNamePrefix(),
                 "companies-house",
                 List.of(

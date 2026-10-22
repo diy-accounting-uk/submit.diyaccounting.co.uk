@@ -18,12 +18,14 @@
 
 const FAMILY_KEY_PATTERN = /^(ci|prod)-(app|env)-(.+)$/;
 
-// Every function alarm the ~100 "check-" prefixed per-function checks that
-// feed a "-stack-health" composite is named "check-{function}-{suffix}"
-// (see infra/main/java/co/uk/diyaccounting/submit/constructs/Lambda.java).
-// A composite's AlarmRule chains these as ALARM("arn:...:alarm:check-...").
-// The queue-backed suffixes name a DLQ or queue depth, not a Lambda log
-// group, so they are dropped.
+// Every "check-" alarm that feeds a "-stack-health" composite is named
+// "check-{name}-{suffix}" (see
+// infra/main/java/co/uk/diyaccounting/submit/constructs/Lambda.java). {name}
+// is one function, or, for the log-errors alarm a REST resource's functions
+// share, the name prefix they have in common, so it is a log group prefix
+// either way. A composite's AlarmRule chains these as
+// ALARM("arn:...:alarm:check-..."). The queue-backed suffixes name a DLQ or
+// queue depth, not a Lambda log group, so they are dropped.
 const COMPOSITE_CHILD_PATTERN = /alarm:check-([A-Za-z0-9-]+?)-(errors|log-errors|not-empty|message-age)"/g;
 const LOG_GROUP_QUEUE_SUFFIXES = new Set(["not-empty", "message-age"]);
 

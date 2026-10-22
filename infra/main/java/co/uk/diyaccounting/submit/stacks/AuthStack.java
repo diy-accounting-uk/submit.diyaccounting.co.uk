@@ -150,6 +150,7 @@ public class AuthStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().cognitoTokenPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().cognitoTokenPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().cognitoTokenPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -254,8 +255,9 @@ public class AuthStack extends Stack {
                 "Granted Security State Table read/write and AdminUserGlobalSignOut to %s",
                 this.customAuthorizerLambda.getFunctionName());
 
-        Lambda.stackHealthAlarm(
+        Lambda.appStackHealthAlarm(
                 this,
+                props.envName(),
                 props.resourceNamePrefix(),
                 "auth",
                 List.of(exchangeCognitoTokenLambdaUrlOrigin, customAuthorizerLambda));

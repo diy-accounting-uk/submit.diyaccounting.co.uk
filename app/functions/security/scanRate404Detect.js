@@ -11,8 +11,8 @@
 // re-reports its window on the next attempt rather than losing it.
 //
 // The table is partitioned by date only (CloudFrontAccessLogs.java): every deployment in this
-// environment writes into the same year=.../month=.../day=.../ tree, so one query per date
-// already covers every deployment's rows. cs_host tells them apart, so the query groups by host
+// environment writes into the same year=.../month=.../day=.../ tree, so one query per date, which
+// names its one day_prefix partition, already covers every deployment's rows. cs_host tells them apart, so the query groups by host
 // rather than filtering to one.
 
 import { SSMClient, GetParameterCommand, PutParameterCommand } from "@aws-sdk/client-ssm";
@@ -114,9 +114,10 @@ export function datesInWindow(startExclusive, endInclusive) {
 }
 
 /**
- * The Athena SQL for one date's slice of the window. `year`/`month`/`day` are the table's
- * int-typed partition-projection columns, so they compare as plain numbers; every other column
- * in cloudfront_requests, including `date` and `time`, is string-typed, and `"date"`/`"time"`
+ * The Athena SQL for one date's slice of the window. `day_prefix` is the table's one
+ * partition-projection key, the day's S3 path (`year=2026/month=08/day=31`), so the query lists
+ * and reads that one day's objects only. Every other column in cloudfront_requests, including
+ * `date` and `time`, is string-typed, and `"date"`/`"time"`
  * stay double-quoted because both are Athena reserved words. Grouped by `cs_host` rather than
  * filtered to one host: the table has no distribution-id column, and cs_host carries every
  * deployment's own hostname (CloudFrontAccessLogs.java), so one query already covers all of
@@ -126,13 +127,13 @@ export function datesInWindow(startExclusive, endInclusive) {
  * @returns {string}
  */
 export function buildQuery({ dateStr, startExclusive, endInclusive, threshold }) {
-  const [year, month, day] = dateStr.split("-").map((part) => Number(part));
+  const [year, month, day] = dateStr.split("-");
   return `SELECT   cs_host,
          c_ip,
          substr(concat("date", 'T', "time"), 1, 16) AS minute,
          count(*)                                   AS hits
 FROM     cloudfront_requests
-WHERE    year  = ${year} AND month = ${month} AND day = ${day}
+WHERE    day_prefix = 'year=${year}/month=${month}/day=${day}'
   AND    sc_status = '404'
   AND    concat("date", 'T', "time") >  '${formatMinute(startExclusive)}'
   AND    concat("date", 'T', "time") <= '${formatMinute(endInclusive)}'

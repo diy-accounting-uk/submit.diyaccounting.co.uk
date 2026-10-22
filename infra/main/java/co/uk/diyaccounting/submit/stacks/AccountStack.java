@@ -770,6 +770,7 @@ public class AccountStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().practiceClientAuthorisationInvitePostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().practiceClientAuthorisationInvitePostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().practiceClientAuthorisationInvitePostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -809,6 +810,7 @@ public class AccountStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().practiceClientAuthorisationGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().practiceClientAuthorisationGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().practiceClientAuthorisationGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -843,6 +845,7 @@ public class AccountStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().practiceClientAuthorisationInviteDeleteIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().practiceClientAuthorisationInviteDeleteIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().practiceClientAuthorisationInviteDeleteIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -899,6 +902,7 @@ public class AccountStack extends Stack {
                             .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                             .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                             .ingestFunctionName(props.sharedNames().supportTicketPostIngestLambdaFunctionName)
+                            .callsExternalApi(true)
                             .ingestHandler(props.sharedNames().supportTicketPostIngestLambdaHandler)
                             .ingestLambdaArn(props.sharedNames().supportTicketPostIngestLambdaArn)
                             .ingestProvisionedConcurrencyAliasArn(
@@ -1467,7 +1471,8 @@ public class AccountStack extends Stack {
                 "Created Session Sign-Out POST Lambda %s",
                 this.sessionSignOutPostLambda.getNode().getId());
 
-        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "account", healthCheckedFunctions);
+        Lambda.appStackHealthAlarm(
+                this, props.envName(), props.resourceNamePrefix(), "account", healthCheckedFunctions);
 
         cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
         cfnOutput(this, "RequestBundlesLambdaArn", this.bundlePostLambda.getFunctionArn());

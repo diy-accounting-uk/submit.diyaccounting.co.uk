@@ -173,6 +173,12 @@
     "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
   },
   {
+    "family": "prod-app-lambda-errors",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
     "family": "prod-app-ops-stack-health",
     "remedy": "close-when-gone",
     "budgetPerDay": 2,

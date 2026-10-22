@@ -95,6 +95,14 @@ public interface AbstractLambdaProps {
         return Optional.empty();
     }
 
+    // True for a function that calls a service outside this deployment over HTTP (HMRC, Stripe,
+    // Companies House, GitHub, a token endpoint, SMS). On a deployment set its error-like log
+    // lines raise an alarm of its own; every other function shares one with its REST resource.
+    @Value.Default
+    default boolean callsExternalApi() {
+        return false;
+    }
+
     // Evaluation tolerance for the errors alarm. Defaults reproduce the
     // original single-datapoint behaviour (one breaching 5-minute period trips the alarm). A
     // construct expected to see brief, harmless bursts around its own deploy (e.g. a Lambda that

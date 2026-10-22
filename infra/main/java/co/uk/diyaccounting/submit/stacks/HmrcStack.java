@@ -393,6 +393,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcTokenPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcTokenPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcTokenPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -489,6 +490,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcVatReturnPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcVatReturnPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatReturnPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -579,6 +581,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcVatObligationGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcVatObligationGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatObligationGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -665,6 +668,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcVatLiabilitiesGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcVatLiabilitiesGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatLiabilitiesGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -747,6 +751,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcVatPaymentsGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcVatPaymentsGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatPaymentsGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -829,6 +834,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcVatPenaltiesGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcVatPenaltiesGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatPenaltiesGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -911,6 +917,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcVatReturnGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcVatReturnGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatReturnGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -992,6 +999,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcItsaBusinessDetailsGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaBusinessDetailsGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaBusinessDetailsGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1076,6 +1084,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcItsaObligationsGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaObligationsGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaObligationsGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -1160,6 +1169,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().hmrcItsaSelfEmploymentPeriodPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1250,6 +1260,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1338,6 +1349,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcItsaSelfEmploymentPeriodGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1425,6 +1437,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1512,6 +1525,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentAnnualGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1599,6 +1613,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1687,6 +1702,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().hmrcItsaCrystallisationObligationsGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaCrystallisationObligationsGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaCrystallisationObligationsGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1779,6 +1795,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcItsaStatusGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaStatusGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaStatusGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -1861,6 +1878,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcItsaBsasTriggerPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaBsasTriggerPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaBsasTriggerPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -1944,6 +1962,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaBsasSelfEmploymentGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -2031,6 +2050,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
                                 props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -2125,6 +2145,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcItsaCalculationTriggerPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaCalculationTriggerPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaCalculationTriggerPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -2211,6 +2232,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcItsaCalculationGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaCalculationGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaCalculationGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
@@ -2294,6 +2316,7 @@ public class HmrcStack extends Stack {
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -2428,8 +2451,9 @@ public class HmrcStack extends Stack {
                 .resources(List.of(activityBusArn))
                 .build());
 
-        Lambda.stackHealthAlarm(
+        Lambda.appStackHealthAlarm(
                 this,
+                props.envName(),
                 props.resourceNamePrefix(),
                 "hmrc",
                 List.of(

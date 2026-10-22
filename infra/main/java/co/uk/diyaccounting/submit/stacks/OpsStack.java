@@ -245,6 +245,7 @@ public class OpsStack extends Stack {
                             .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                             .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                             .ingestFunctionName(props.sharedNames().alarmToGithubIssueLambdaFunctionName)
+                            .callsExternalApi(true)
                             .ingestHandler(props.sharedNames().alarmToGithubIssueLambdaHandler)
                             .ingestLambdaArn(props.sharedNames().alarmToGithubIssueLambdaArn)
                             .ingestProvisionedConcurrencyAliasArn(
@@ -351,6 +352,7 @@ public class OpsStack extends Stack {
                             .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                             .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                             .ingestFunctionName(props.sharedNames().alarmSmsForwardLambdaFunctionName)
+                            .callsExternalApi(true)
                             .ingestHandler(props.sharedNames().alarmSmsForwardLambdaHandler)
                             .ingestLambdaArn(props.sharedNames().alarmSmsForwardLambdaArn)
                             .ingestProvisionedConcurrencyAliasArn(
@@ -415,8 +417,10 @@ public class OpsStack extends Stack {
         // Lambda is optional (needs a GitHub token ARN), and the Telegram forwarder moved to
         // ActivityStack, so this stack can have none.
         if (!healthCheckedFunctions.isEmpty()) {
-            Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "ops", healthCheckedFunctions);
+            Lambda.appStackHealthAlarm(
+                    this, props.envName(), props.resourceNamePrefix(), "ops", healthCheckedFunctions);
         }
+        Lambda.deploymentErrorsAlarm(this, props.envName(), props.resourceNamePrefix());
 
         // ============================================================================
         // Default Bus Rules: CloudFormation + CloudWatch → Telegram Forwarder
