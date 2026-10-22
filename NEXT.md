@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-6ebe181** (PR #527, deploy 39726093357 green at about 06:00 UTC on 2026-10-22). The site's `script-src` carries no `'unsafe-inline'`.
+**Prod runs deployment prod-11af06b** (PR #528, deploy 39755050805 green on 2026-10-22). The site's `script-src` carries no `'unsafe-inline'`.
 **ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-20 10:46 UTC; the pointer last written 18:47 UTC on 2026-10-21). Its self-destruct fires every four hours from creation and skips while the set is last-known-good inside the 12 h window from the pointer's last write, so it goes at the 10:46 UTC firing on 2026-10-22 unless a branch deploy renews it first.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -38,13 +38,13 @@ step.
 
 ## In flight
 
-- [ ] **UX2. Show each label beside its value in definition lists.** The page stylesheet `web/public/submit.css` has no `dl`, `dt` or `dd` rule, so every label sits on its own line above its value. Seen on the Review step of `web/public/companies-house/changeRegisteredOffice.html` (`#reviewAddress`, line 123, and `#currentAddressList`, line 67, both filled by `renderAddressList` in `changeRegisteredOffice.page.js` line 44; operator screenshot, 2026-10-21). The same markup is in `companies-house/companySearch.html` (`#companyProfile`), `hmrc/itsa/selfEmploymentPeriod.html`, `hmrc/itsa/ukPropertyPeriod.html`, `hmrc/itsa/taxLiabilityAdjustments.html`, `rates.html` and `mcp.html`. Fix: one two-column `dl` rule in `submit.css` (label column, value column, one row per pair; one column below the phone breakpoint), checked on each page above. A browser test in `web/browser-tests/` asserts that a `dt` and its `dd` share a row on the office Review step. Then re-record `change-registered-office` and replace c47MLAUU0g4 through `.claude/skills/video-publish/SKILL.md`; other videos that show a changed page are re-recorded in the same pass. The CSS and the browser test are on main (PR #524) and prod runs them. The re-record is uploaded unlisted as https://youtu.be/sN_FhTnAqF4 (capture run 39701275565 on ci; `publish.json` on main, PR #527 6ebe181ef). Remaining: the operator watches it; then `npm run video:publish -- --public`, `npm run video:walkthrough -- --id change-registered-office`, the operator deletes c47MLAUU0g4 in YouTube Studio, and `AWS_PROFILE=diya-submit-prod npm run video:embed-check` after the deploy. **Source**: operator, 2026-10-21. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
 ## Machine-only
 
 ## Machine-ask
 
 ## Human-driven
+
+- [ ] **UX2. Delete the superseded registered-office video c47MLAUU0g4.** Its replacement https://youtu.be/sN_FhTnAqF4 is public and embedded (PR #528); `npm run video:embed-check` on prod lists 39 of 39 embedded and one problem: public channel video c47MLAUU0g4 is embedded on no page. The operator deletes it in YouTube Studio (https://studio.youtube.com, Content, the video's menu, Delete forever); then `AWS_PROFILE=diya-submit-prod npm run video:embed-check` reports no problem. **Source**: operator, 2026-10-21. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **B34. Companies House: the reply on the XML team's thread, carrying the live-clearance asks (PLAN_COMPANIES_HOUSE B34.6c, PLAN_COMPANIES_HOUSE_APPROVAL O34c and CS-A4).** The replacement test presenter is proven: every statement case settles on its first poll (harness run 38029097822 and three earlier green runs on 2026-10-10, every case pinned in `scripts/fixtures/companies-house-test-service-cases.json`), and the accounts submission 00002Y answers PENDING on every poll (279 polls to 06:25 UTC on 2026-10-11, run 38030268952; 276 polls again to POLL_TIMEOUT on 2026-10-20, run 39345324672), which the fixture pins. The operator sends `../private.diyaccounting.co.uk/companies-house/correspondence/DRAFT_EMAIL_XMLGW_REPLACEMENT_PRESENTER_REPLY.md` on the thread with the pack `../private.diyaccounting.co.uk/companies-house/xmlgw-evidence/SOFTWARE_AUTHORISATION_PACK_2026-10-10.md` attached: the success report, the two observations (accounts stay PENDING on the test service; the wrong-authentication-code case was accepted), and the asks: clear the credit-account presenter for live accounts filing with its live package reference (O34c), and the live package reference for the confirmation statement and the PSC verification statement (CS-A4). After the answer: the live values on GitHub's `prod` environment (O34c), then B34c. **Source**: `PLAN_COMPANIES_HOUSE.md` B34.6c; `PLAN_COMPANIES_HOUSE_APPROVAL.md` O34c, CS-A4. **Owner**: Operator. **Model**: none. **Size**: 0 files. Unblocks O34c, CS-A4, B34c, CS-11b, CS-P1.
 
