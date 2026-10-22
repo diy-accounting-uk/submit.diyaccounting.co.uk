@@ -35,22 +35,86 @@ async function getBigQueryClient(projectId) {
   return cachedClient;
 }
 
-function dailyTableSuffixes(lookbackDays) {
+// The GA4 property's reporting time zone (infra/google/ga4/analytics.toml, key time_zone).
+// The daily export tables events_YYYYMMDD are days in this zone, not UTC days.
+const propertyTimeZone = "Europe/London";
+const dayMs = 24 * 60 * 60 * 1000;
+export const dailyExportLagMs = 27 * 60 * 60 * 1000;
+
+const propertyDateFormat = new Intl.DateTimeFormat("en-GB", {
+  timeZone: propertyTimeZone,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23",
+});
+
+function propertyWallClock(ms) {
+  const parts = Object.fromEntries(propertyDateFormat.formatToParts(new Date(ms)).map((part) => [part.type, part.value]));
+  return {
+    year: Number(parts.year),
+    month: Number(parts.month),
+    day: Number(parts.day),
+    wallAsUtcMs: Date.UTC(
+      Number(parts.year),
+      Number(parts.month) - 1,
+      Number(parts.day),
+      Number(parts.hour),
+      Number(parts.minute),
+      Number(parts.second),
+    ),
+  };
+}
+
+/**
+ * The UTC instant of midnight at the start of the property-time-zone calendar day year-month-day
+ * (month 1-12). Out-of-range days roll over, so day 0 is the last day of the previous month.
+ *
+ * @param {number} year
+ * @param {number} month
+ * @param {number} day
+ * @returns {number}
+ */
+export function propertyMidnightMs(year, month, day) {
+  const wallAsUtcMs = Date.UTC(year, month - 1, day);
+  const firstGuessMs = wallAsUtcMs - (propertyWallClock(wallAsUtcMs).wallAsUtcMs - wallAsUtcMs);
+  return wallAsUtcMs - (propertyWallClock(firstGuessMs).wallAsUtcMs - firstGuessMs);
+}
+
+/**
+ * The UTC instant at which the property-time-zone day containing `ms` began.
+ *
+ * @param {number} ms
+ * @returns {number}
+ */
+export function propertyDayStartMs(ms) {
+  const { year, month, day } = propertyWallClock(ms);
+  return propertyMidnightMs(year, month, day);
+}
+
+/**
+ * The daily table suffixes (YYYYMMDD, property-time-zone days) for today and the previous
+ * `lookbackDays` days.
+ *
+ * @param {number} lookbackDays
+ * @param {number} [nowMs]
+ * @returns {string[]}
+ */
+export function dailyTableSuffixes(lookbackDays, nowMs = Date.now()) {
+  const { year, month, day } = propertyWallClock(nowMs);
   const suffixes = [];
-  const now = new Date();
   for (let daysAgo = 0; daysAgo <= lookbackDays; daysAgo++) {
-    const day = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysAgo));
-    suffixes.push(day.toISOString().slice(0, 10).replace(/-/g, ""));
+    suffixes.push(new Date(Date.UTC(year, month - 1, day - daysAgo)).toISOString().slice(0, 10).replace(/-/g, ""));
   }
   return suffixes;
 }
 
-const dayMs = 24 * 60 * 60 * 1000;
-export const dailyExportLagMs = 27 * 60 * 60 * 1000;
-
 /**
  * The creation-time window a transaction must fall in for its purchase event to be readable in
- * the daily tables: created on a UTC day whose daily table has had `dailyExportLagMs` since the
+ * the daily tables: created on a property-time-zone day whose daily table has had `dailyExportLagMs` since the
  * day closed (so the table has landed), and on or after the first day of the `lookbackDays`
  * tables the query reads, and after the first whole day the export covers.
  *
@@ -59,9 +123,9 @@ export const dailyExportLagMs = 27 * 60 * 60 * 1000;
  */
 export function exportedTransactionWindow({ nowMs, lookbackDays, exportFirstWholeDayStartMs }) {
   if (exportFirstWholeDayStartMs === null) return null;
-  const todayStartMs = Math.floor(nowMs / dayMs) * dayMs;
-  const createdBeforeMs = Math.floor((nowMs - dailyExportLagMs) / dayMs) * dayMs;
-  const createdAfterMs = Math.max(todayStartMs - lookbackDays * dayMs, exportFirstWholeDayStartMs);
+  const today = propertyWallClock(nowMs);
+  const createdBeforeMs = propertyDayStartMs(nowMs - dailyExportLagMs);
+  const createdAfterMs = Math.max(propertyMidnightMs(today.year, today.month, today.day - lookbackDays), exportFirstWholeDayStartMs);
   return createdAfterMs < createdBeforeMs ? { createdAfterMs, createdBeforeMs } : null;
 }
 
@@ -110,7 +174,7 @@ export async function findPastStripeSubscription({ createdAfterMs, createdBefore
 }
 
 /**
- * The start (UTC midnight, in ms) of the first whole day the GA4 export dataset covers: the day
+ * The start (property-time-zone midnight, in ms) of the first whole day the GA4 export dataset covers: the day
  * after its oldest daily table, since the export can begin part way through that day. Null when
  * the dataset holds no daily table. A purchase fired earlier may never have been exported.
  *
@@ -123,8 +187,8 @@ export async function exportFirstWholeDayStartMs({ projectId, datasetId }) {
   const days = tables
     .map((table) => /^events_(\d{4})(\d{2})(\d{2})$/.exec(table.id))
     .filter(Boolean)
-    .map(([, year, month, day]) => Date.UTC(Number(year), Number(month) - 1, Number(day)));
-  return days.length > 0 ? Math.min(...days) + 24 * 60 * 60 * 1000 : null;
+    .map(([, year, month, day]) => propertyMidnightMs(Number(year), Number(month), Number(day) + 1));
+  return days.length > 0 ? Math.min(...days) : null;
 }
 
 /**
