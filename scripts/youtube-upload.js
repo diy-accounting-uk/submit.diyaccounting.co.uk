@@ -55,7 +55,7 @@ import fs from "fs";
 import path from "path";
 import http from "node:http";
 import net from "node:net";
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import { fileURLToPath } from "url";
 import TOML from "@iarna/toml";
 import { OAuth2Client } from "google-auth-library";
@@ -138,8 +138,11 @@ export function loadPublishList(filePath = PUBLISH_LIST_PATH) {
   return parsed;
 }
 
+// Written through Prettier so the file matches the formatting gate in CI; JSON.stringify alone
+// expands every short array onto its own lines.
 export function savePublishList(list, filePath = PUBLISH_LIST_PATH) {
   fs.writeFileSync(filePath, JSON.stringify(list, null, 2) + "\n");
+  execFileSync("npx", ["prettier", "--write", filePath], { stdio: "ignore" });
 }
 
 export function selectPendingUploads(list) {
