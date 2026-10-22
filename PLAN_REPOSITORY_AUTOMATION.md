@@ -578,6 +578,8 @@ Proves: the rule holds under a real batch, and the operator stops merging by han
 
 ### Phase 3. Ops that close their own loop
 
+Status: on main (cc7735eba, 6ddd26955: `app/data/alarm-remedies.json`, the remedy step in `alarm-triage.yml`, `alarm-remedy-close.yml`, `scripts/remedy-budget-remaining.mjs`, `scripts/close-alarm-issue-when-ok.mjs`, `scripts/verify-draft-pr-scope.mjs`). Open: the `run-nightly.yml` replay in the horizon below.
+
 - The remedy list, one row per alarm family, written twice in the same shape:
   `app/data/alarm-remedies.json` for the workflow and the table below for the reader. The key is
   what `alarmFamilyKey` in `app/lib/alarmName.js` returns, so every deployment of prod shares a
@@ -711,6 +713,8 @@ Proves: an alarm can close without the operator when the remedy is on the list. 
 share of the closed alarm issues that close themselves against the 43% this table would have taken.
 
 ### Phase 4. Support
+
+Status: the inbound triage is on main (`support-triage.yml`, 254f7da71). Open, and blocked on ORA4 on `NEXT.md`: the customer lookup from the alarm issue, and the reply drafts into Gmail.
 
 - Inbound triage and labelling on `issues: [opened]`, beside alarm-triage.
 - The customer-lookup skill fires from the alarm issue rather than from a person asking.
