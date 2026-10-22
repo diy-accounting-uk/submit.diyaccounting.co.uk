@@ -46,7 +46,8 @@ class OpenApiGeneratorTest {
         OpenApiGenerator.main(new String[] {"https://submit.diyaccounting.co.uk/", "1.0.0", outputDir.toString()});
         String html = Files.readString(outputDir.resolve("index.html"));
 
-        Matcher scriptTag = Pattern.compile("<script\\b([^>]*)>", Pattern.CASE_INSENSITIVE).matcher(html);
+        Matcher scriptTag =
+                Pattern.compile("<script\\b([^>]*)>", Pattern.CASE_INSENSITIVE).matcher(html);
         while (scriptTag.find()) {
             assertTrue(scriptTag.group(1).contains("src="), "inline script tag: " + scriptTag.group());
         }
