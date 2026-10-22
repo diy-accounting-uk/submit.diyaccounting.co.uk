@@ -458,7 +458,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       : null;
     if (!priorSubscription) {
       console.log(
-        "No prior ci subscription of this user pool created on a UTC day whose daily export has landed and that the query window covers — skipping the BigQuery assertion",
+        "No prior ci subscription of this user pool created on a London day whose daily export has landed and that the query window covers — skipping the BigQuery assertion",
       );
       return;
     }
