@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-7cf71b6** (PR #529, deploy 39808661362 attempt 2 green on 2026-10-22). The site's `script-src` carries no `'unsafe-inline'`.
-**ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-20 10:46 UTC; the pointer last written 18:47 UTC on 2026-10-21). Its self-destruct fires every four hours from creation and skips while the set is last-known-good inside the 12 h window from the pointer's last write, so it goes at the 10:46 UTC firing on 2026-10-22 unless a branch deploy renews it first.
+**ci**: `ci-set1` is last-known-good (12 stacks, created 2026-10-20 10:46 UTC; the pointer last written 15:09 UTC on 2026-10-22). Its self-destruct fires every four hours from creation and skips while the set is last-known-good inside the 12 h window from the pointer's last write, so it goes at the 06:46 UTC firing on 2026-10-23 unless a branch deploy renews it first.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
