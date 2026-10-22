@@ -77,7 +77,7 @@ class SubmitApplicationCdkResourceTest {
         Template authStackTemplate = Template.fromStack(submitApplication.authStack);
         authStackTemplate.resourceCountIs("AWS::Lambda::Function", 2);
         assertGroupedStackHealthAlarm(
-                authStackTemplate, List.of("cognito-token-post", "custom-authorizer"), 0, routedPrefixes);
+                authStackTemplate, List.of("cognito-token-post", "custom-authorizer"), List.of(), routedPrefixes);
 
         infof("Created stack:", submitApplication.hmrcStack.getStackName());
         Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
@@ -111,7 +111,29 @@ class SubmitApplicationCdkResourceTest {
                         "hmrc-vat-penalties-get",
                         "hmrc-vat-return-get",
                         "hmrc-vat-return-post"),
-                22,
+                outsideCallerQueueChecks(
+                        "hmrc-itsa-bsas-se-adjust-post",
+                        "hmrc-itsa-bsas-se-get",
+                        "hmrc-itsa-bsas-trigger-post",
+                        "hmrc-itsa-business-details-get",
+                        "hmrc-itsa-calculation-get",
+                        "hmrc-itsa-calculation-trigger-post",
+                        "hmrc-itsa-crystallisation-get",
+                        "hmrc-itsa-final-declaration-post",
+                        "hmrc-itsa-obligations-get",
+                        "hmrc-itsa-se-annual-get",
+                        "hmrc-itsa-se-annual-put",
+                        "hmrc-itsa-se-period-get",
+                        "hmrc-itsa-se-period-post",
+                        "hmrc-itsa-se-period-put",
+                        "hmrc-itsa-se-periods-get",
+                        "hmrc-itsa-status-get",
+                        "hmrc-vat-liabilities-get",
+                        "hmrc-vat-obligation-get",
+                        "hmrc-vat-payments-get",
+                        "hmrc-vat-penalties-get",
+                        "hmrc-vat-return-get",
+                        "hmrc-vat-return-post"),
                 routedPrefixes);
 
         infof("Created stack:", submitApplication.hmrcItsaStack.getStackName());
@@ -136,7 +158,24 @@ class SubmitApplicationCdkResourceTest {
                         "hmrc-itsa-uk-property-period-post",
                         "hmrc-itsa-uk-property-period-put",
                         "hmrc-itsa-uk-property-periods-get"),
-                18,
+                joined(
+                        outsideCallerQueueChecks(
+                                "hmrc-itsa-bsas-uk-property-adjust-post",
+                                "hmrc-itsa-bsas-uk-property-get",
+                                "hmrc-itsa-losses-and-claims-delete",
+                                "hmrc-itsa-losses-and-claims-get",
+                                "hmrc-itsa-losses-and-claims-put",
+                                "hmrc-itsa-tax-liability-adjust-delete",
+                                "hmrc-itsa-tax-liability-adjust-get",
+                                "hmrc-itsa-tax-liability-adjust-put",
+                                "hmrc-itsa-uk-property-annual-get",
+                                "hmrc-itsa-uk-property-annual-put",
+                                "hmrc-itsa-uk-property-period-get",
+                                "hmrc-itsa-uk-property-period-post",
+                                "hmrc-itsa-uk-property-period-put",
+                                "hmrc-itsa-uk-property-periods-get"),
+                        // the four assist functions share one grouped pair
+                        List.of("hmrc-itsa-dlq-not-empty", "hmrc-itsa-queue-message-age")),
                 routedPrefixes);
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
@@ -169,7 +208,7 @@ class SubmitApplicationCdkResourceTest {
                         "hmrc-ct-return-get",
                         "hmrc-ct-return-post",
                         "hmrc-ct-return-preview-post"),
-                0,
+                List.of(),
                 routedPrefixes);
 
         // Every route that can carry a clientId resolves it via enforceBundles -> getClient(),
@@ -213,7 +252,7 @@ class SubmitApplicationCdkResourceTest {
                         "practice-client-authorisation-invite-delete",
                         "practice-client-authorisation-invite-post",
                         "session"),
-                2,
+                List.of("account-dlq-not-empty", "account-queue-message-age"),
                 routedPrefixes);
 
         // Regression guard: bundleGet performs lazy token refresh via dynamodb:UpdateItem on the
@@ -274,13 +313,13 @@ class SubmitApplicationCdkResourceTest {
                         "billing-checkout-session-get",
                         "billing-portal-get",
                         "billing-recover-post"),
-                0,
+                List.of(),
                 routedPrefixes);
 
         assertGroupedStackHealthAlarm(
                 Template.fromStack(submitApplication.diyaGlStack),
                 List.of("diya-gl", "practice-client-book-move-post"),
-                0,
+                List.of(),
                 routedPrefixes);
 
         // One invocation-errors alarm covers the whole deployment set and is routed directly.
@@ -463,7 +502,7 @@ class SubmitApplicationCdkResourceTest {
         Template edgeStackTemplate = Template.fromStack(submitApplication.edgeStack);
         edgeStackTemplate.resourceCountIs("AWS::CloudFront::Distribution", 1);
         // The WAF scan-detect Lambda is this stack's only Lambda construct.
-        assertGroupedStackHealthAlarm(edgeStackTemplate, List.of("waf-scan-detect"), 0, routedPrefixes);
+        assertGroupedStackHealthAlarm(edgeStackTemplate, List.of("waf-scan-detect"), List.of(), routedPrefixes);
 
         // Access logs reach the analytics lake only through the v2 Parquet delivery below; the
         // distribution itself must carry no classic standard-logging configuration.
@@ -583,7 +622,8 @@ class SubmitApplicationCdkResourceTest {
             // Only the self-destruct function: its log group belongs to the environment stack.
             Template selfDestructStackTemplate = Template.fromStack(submitApplication.selfDestructStack);
             selfDestructStackTemplate.resourceCountIs("AWS::Lambda::Function", 1);
-            assertGroupedStackHealthAlarm(selfDestructStackTemplate, List.of("self-destruct"), 0, routedPrefixes);
+            assertGroupedStackHealthAlarm(
+                    selfDestructStackTemplate, List.of("self-destruct"), List.of(), routedPrefixes);
         }
 
         // Every Lambda function in every app stack must route its logs to an explicit, retained log
@@ -1088,24 +1128,41 @@ class SubmitApplicationCdkResourceTest {
     /**
      * Asserts a deployment-set stack's grouped health-alarm shape: its {@code check-} alarms are
      * exactly one {@code -log-errors} alarm per name in {@code expectedLogErrorsNames} (after the
-     * {@code tt-witheight-app-} prefix) plus the DLQ and message-age checks of each async pair;
+     * {@code tt-witheight-app-} prefix) plus the queue checks: a DLQ and a message-age alarm for each async function that
+     * calls an external API, and grouped DLQ and message-age alarms for the others;
      * every function's log group feeds the deployment's shared invocation-errors metric; and the
      * composite covers every check.
      */
+    /** The DLQ and message-age checks of async functions that keep a pair of their own. */
+    static List<String> outsideCallerQueueChecks(String... functionNames) {
+        var checks = new ArrayList<String>();
+        for (String functionName : functionNames) {
+            checks.add(functionName + "-dlq-not-empty");
+            checks.add(functionName + "-queue-message-age");
+        }
+        return checks;
+    }
+
+    private static List<String> joined(List<String> first, List<String> second) {
+        var all = new ArrayList<>(first);
+        all.addAll(second);
+        return all;
+    }
+
     @SuppressWarnings("unchecked")
     static void assertGroupedStackHealthAlarm(
             Template template,
             List<String> expectedLogErrorsNames,
-            int expectedAsyncPairs,
+            List<String> expectedQueueChecks,
             List<String> routedPrefixes) {
         var logErrorsNames = new ArrayList<String>();
-        int queueChecks = 0;
+        var queueChecks = new ArrayList<String>();
         for (Map<String, Object> alarm :
                 template.findResources("AWS::CloudWatch::Alarm").values()) {
             String name = String.valueOf(((Map<String, Object>) alarm.get("Properties")).get("AlarmName"));
             if (!name.startsWith(Lambda.CHECK_ALARM_NAME_PREFIX)) continue;
             if (name.endsWith("-not-empty") || name.endsWith("-message-age")) {
-                queueChecks++;
+                queueChecks.add(name.substring((Lambda.CHECK_ALARM_NAME_PREFIX + "tt-witheight-app-").length()));
                 continue;
             }
             org.junit.jupiter.api.Assertions.assertTrue(
@@ -1118,7 +1175,11 @@ class SubmitApplicationCdkResourceTest {
         var expected = new ArrayList<>(expectedLogErrorsNames);
         java.util.Collections.sort(expected);
         assertEquals(expected, logErrorsNames);
-        assertEquals(2 * expectedAsyncPairs, queueChecks, "DLQ and message-age checks per async pair");
+        java.util.Collections.sort(queueChecks);
+        var expectedQueue = new ArrayList<>(expectedQueueChecks);
+        java.util.Collections.sort(expectedQueue);
+        assertEquals(
+                expectedQueue, queueChecks, "Queue checks: a pair per outside caller, grouped alarms for the rest");
 
         var logErrorsLogGroups = new java.util.HashSet<String>();
         var invocationErrorsLogGroups = new java.util.HashSet<String>();
@@ -1142,7 +1203,7 @@ class SubmitApplicationCdkResourceTest {
                 invocationErrorsLogGroups,
                 "Every function log group with a log-errors filter also feeds the shared invocation-errors metric");
 
-        assertStackHealthAlarm(template, null, expectedAsyncPairs, routedPrefixes);
+        assertStackHealthAlarm(template, null, 0, routedPrefixes);
     }
 
     /**

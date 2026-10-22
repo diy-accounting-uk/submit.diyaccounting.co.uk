@@ -316,7 +316,9 @@ public class Lambda {
      *   <li>error-like log lines: one alarm per REST resource ({@code /api/v1/<resource>}) for the
      *       functions under it, and one alarm of its own for every function that calls an external
      *       API ({@link AbstractLambdaProps#callsExternalApi()}) or serves no REST resource;
-     *   <li>queue checks: the DLQ and message-age alarms of every async pair.
+     *   <li>queue checks: the DLQ and message-age alarms of every async pair that calls an external
+     *       API; the other pairs share one DLQ alarm and one message-age alarm per group of up to
+     *       10.
      * </ul>
      *
      * <p>A shared alarm is named after the longest name prefix its functions have in common, so
@@ -368,8 +370,15 @@ public class Lambda {
                     "Detected >= 1 error-like log line in the last 5 minutes in one of the functions "
                             + String.join(", ", memberNames)));
         }
+        var groupedAsync = new ArrayList<AsyncApiLambda>();
         for (Lambda function : functions) {
             checks.addAll(function.addQueueChecks());
+            if (function instanceof AsyncApiLambda async && !async.props.callsExternalApi()) {
+                groupedAsync.add(async);
+            }
+        }
+        if (!groupedAsync.isEmpty()) {
+            checks.addAll(AsyncApiLambda.groupedQueueChecks(scope, resourceNamePrefix, stackShortName, groupedAsync));
         }
         return Optional.of(compositeHealthAlarm(scope, resourceNamePrefix, stackShortName, checks));
     }
