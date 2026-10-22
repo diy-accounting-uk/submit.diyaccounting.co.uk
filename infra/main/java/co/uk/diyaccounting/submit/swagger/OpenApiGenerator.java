@@ -547,7 +547,7 @@ public class OpenApiGenerator {
     }
 
     /**
-     * Generates the Swagger UI HTML file
+     * Generates the Swagger UI HTML file. The page logic lives in index.page.js because the site CSP has no inline script.
      */
     private static void generateSwaggerUiHtml(Path outputPath) throws IOException {
         String swaggerUiHtml =
@@ -577,46 +577,7 @@ public class OpenApiGenerator {
     <div id="swagger-ui"></div>
     <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js"></script>
     <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js"></script>
-    <script>
-        window.onload = function() {
-            // Determine if we're logged in by checking for Cognito session
-            const isLoggedIn = document.cookie.includes('AWSELBAuthSessionCookie') ||
-                              document.cookie.includes('cognito') ||
-                              localStorage.getItem('cognitoToken');
-
-            const ui = SwaggerUIBundle({
-                url: './openapi.json',
-                dom_id: '#swagger-ui',
-                deepLinking: true,
-                presets: [
-                    SwaggerUIBundle.presets.apis,
-                    SwaggerUIStandalonePreset
-                ],
-                plugins: [
-                    SwaggerUIBundle.plugins.DownloadUrl
-                ],
-                layout: "StandaloneLayout",
-                requestInterceptor: function(request) {
-                    // If logged in via the website, include cookies for same-origin requests
-                    if (isLoggedIn && request.url.startsWith(window.location.origin)) {
-                        request.credentials = 'include';
-                    }
-                    return request;
-                },
-                onComplete: function() {
-                    if (isLoggedIn) {
-                        // Show a notice that the user is authenticated
-                        const authNotice = document.createElement('div');
-                        authNotice.style.cssText = 'background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 10px; margin: 10px; border-radius: 4px;';
-                        authNotice.innerHTML = '✓ You appear to be logged in. API calls will use your existing session.';
-                        document.querySelector('.swagger-ui').prepend(authNotice);
-                    }
-                }
-            });
-
-            window.ui = ui;
-        };
-    </script>
+    <script src="index.page.js"></script>
 </body>
 </html>
         """;

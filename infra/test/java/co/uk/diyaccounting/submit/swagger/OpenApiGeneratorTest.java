@@ -6,11 +6,15 @@
 package co.uk.diyaccounting.submit.swagger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -35,5 +39,17 @@ class OpenApiGeneratorTest {
         assertEquals(
                 "https://submit.diyaccounting.co.uk/terms.html",
                 info.path("termsOfService").asText());
+    }
+
+    @Test
+    void generatedDocsPageHasNoInlineScriptAndLoadsThePageScript(@TempDir Path outputDir) throws IOException {
+        OpenApiGenerator.main(new String[] {"https://submit.diyaccounting.co.uk/", "1.0.0", outputDir.toString()});
+        String html = Files.readString(outputDir.resolve("index.html"));
+
+        Matcher scriptTag = Pattern.compile("<script\\b([^>]*)>", Pattern.CASE_INSENSITIVE).matcher(html);
+        while (scriptTag.find()) {
+            assertTrue(scriptTag.group(1).contains("src="), "inline script tag: " + scriptTag.group());
+        }
+        assertTrue(html.contains("<script src=\"index.page.js\"></script>"));
     }
 }
