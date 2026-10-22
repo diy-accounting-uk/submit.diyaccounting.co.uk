@@ -7,12 +7,18 @@ package co.uk.diyaccounting.submit.constructs;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.IAlarm;
+import software.amazon.awscdk.services.cloudwatch.IMetric;
+import software.amazon.awscdk.services.cloudwatch.MathExpression;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
@@ -138,10 +144,79 @@ public class AsyncApiLambda extends ApiLambda {
         this.healthChecks.addAll(List.of(dlqNotEmptyAlarm, workerErrorsAlarm, queueMessageAgeAlarm));
     }
 
-    /** The worker logs to the ingest function's log group, so its errors need no check of their own here. */
+    /**
+     * The worker logs to the ingest function's log group, so its errors need no check of their own
+     * here. Only a function that calls an outside service keeps queue checks of its own; the
+     * others are covered by {@link #groupedQueueChecks}.
+     */
     @Override
     protected List<IAlarm> addQueueChecks() {
+        if (!this.asyncProps.callsExternalApi()) {
+            return List.of();
+        }
         return List.of(dlqNotEmptyAlarm(), queueMessageAgeAlarm());
+    }
+
+    /** CloudWatch reads at most this many metrics in one metric-math alarm. */
+    static final int QUEUE_GROUP_MAX_METRICS = 10;
+
+    /**
+     * Queue checks for async functions that share an alarm: per group of up to
+     * {@value #QUEUE_GROUP_MAX_METRICS} functions in name order, one alarm on the sum of the
+     * DLQs' visible messages and one on the maximum age of the work queues' oldest message.
+     * A stack with a single group names its alarms {@code check-<prefix>-<stack>-dlq-not-empty}
+     * and {@code check-<prefix>-<stack>-queue-message-age}; with several the names carry
+     * {@code -group<n>} after the stack name.
+     */
+    static List<IAlarm> groupedQueueChecks(
+            Construct scope, String resourceNamePrefix, String stackShortName, List<AsyncApiLambda> members) {
+        var sorted = new ArrayList<>(members);
+        sorted.sort(Comparator.comparing(member -> member.asyncProps.ingestFunctionName()));
+        var alarms = new ArrayList<IAlarm>();
+        int groupCount = (sorted.size() + QUEUE_GROUP_MAX_METRICS - 1) / QUEUE_GROUP_MAX_METRICS;
+        for (int group = 0; group < groupCount; group++) {
+            var groupMembers = sorted.subList(
+                    group * QUEUE_GROUP_MAX_METRICS, Math.min(sorted.size(), (group + 1) * QUEUE_GROUP_MAX_METRICS));
+            String groupLabel = groupCount == 1 ? "" : "-group" + (group + 1);
+            String namePrefix = CHECK_ALARM_NAME_PREFIX + resourceNamePrefix + "-" + stackShortName + groupLabel;
+            String idSuffix = "-" + stackShortName + groupLabel;
+            var dlqMetrics = new HashMap<String, IMetric>();
+            var ageMetrics = new HashMap<String, IMetric>();
+            var functionNames = new ArrayList<String>();
+            for (int i = 0; i < groupMembers.size(); i++) {
+                dlqMetrics.put("d" + i, groupMembers.get(i).dlq.metricApproximateNumberOfMessagesVisible());
+                ageMetrics.put("a" + i, groupMembers.get(i).queue.metricApproximateAgeOfOldestMessage());
+                functionNames.add(groupMembers.get(i).asyncProps.ingestFunctionName());
+            }
+            alarms.add(Alarm.Builder.create(scope, "QueueDlqAlarm" + idSuffix)
+                    .alarmName(namePrefix + "-dlq-not-empty")
+                    .metric(queueMath("SUM(METRICS())", dlqMetrics))
+                    .threshold(1)
+                    .evaluationPeriods(1)
+                    .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                    .treatMissingData(TreatMissingData.NOT_BREACHING)
+                    .alarmDescription("SQS DLQs for " + String.join(", ", functionNames) + " have items")
+                    .build());
+            alarms.add(Alarm.Builder.create(scope, "QueueMessageAgeAlarm" + idSuffix)
+                    .alarmName(namePrefix + "-queue-message-age")
+                    .metric(queueMath("MAX(METRICS())", ageMetrics))
+                    .threshold(Duration.minutes(30).toSeconds())
+                    .evaluationPeriods(1)
+                    .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                    .treatMissingData(TreatMissingData.NOT_BREACHING)
+                    .alarmDescription("SQS message age >= 30 minutes in a queue of " + String.join(", ", functionNames)
+                            + " (worker stalled)")
+                    .build());
+        }
+        return alarms;
+    }
+
+    private static MathExpression queueMath(String expression, Map<String, IMetric> metrics) {
+        return MathExpression.Builder.create()
+                .expression(expression)
+                .usingMetrics(metrics)
+                .period(Duration.minutes(5))
+                .build();
     }
 
     private Alarm dlqNotEmptyAlarm() {

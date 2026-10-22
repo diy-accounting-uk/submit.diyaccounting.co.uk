@@ -44,6 +44,12 @@ describe("alarmFamilyKey", () => {
   });
 });
 
+describe("alarmFamilyKey on grouped queue checks", () => {
+  test("drops the slug from a stack's grouped message-age check name", () => {
+    expect(alarmFamilyKey("prod-11af06b-app-account-queue-message-age")).toBe("prod-app-account-queue-message-age");
+  });
+});
+
 describe("alarmDeploymentSlug", () => {
   test("extracts the slug from a deployment-scoped composite alarm", () => {
     expect(alarmDeploymentSlug("prod-a0f41c7-app-hmrc-stack-health")).toBe("a0f41c7");
@@ -51,6 +57,11 @@ describe("alarmDeploymentSlug", () => {
 
   test("strips the check- prefix from a composite's child alarm", () => {
     expect(alarmDeploymentSlug("check-ci-claudeboa-app-hmrc-vat-return-post-errors")).toBe("claudeboa");
+  });
+
+  test("extracts the slug from a grouped queue check", () => {
+    expect(alarmDeploymentSlug("check-prod-11af06b-app-hmrc-itsa-group2-dlq-not-empty")).toBe("11af06b");
+    expect(alarmDeploymentSlug("check-prod-11af06b-app-account-queue-message-age")).toBe("11af06b");
   });
 
   test("returns null for an environment-scoped alarm with no slug", () => {
