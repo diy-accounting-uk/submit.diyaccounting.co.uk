@@ -5,7 +5,7 @@
 
 HMRC Assist returns up to five feedback messages on a draft return before it is filed. It is live for Income Tax (the Self Assessment Assist (MTD) API, sandbox and production) and arrives for VAT in April 2027 (the VAT Assist (MTD) API, listed on the Developer Hub without documentation on 2026-10-03, early adopters in production from January 2027). This plan takes HMRC Assist over from `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ENGAGEMENT.md` item 24 and designs the integration from what HMRC has published: the Income Tax API's specification, the VAT service guide's rules, the June 2026 slides and the three emails.
 
-Status: HA1, HA2, HA3, HA3a and HA6's privacy notice are on main (PR #469); HA5 and HA6's receipts page are on main (PR #471, prod-ff255de). HA7 is public (https://youtu.be/ZXOS6TskYfk, recorded on the simulator lane, 2026-10-19). HA4's sandbox run passed on 2026-10-20 (report 9274246c-9670-4a41-b686-76df1088eb53) and the early adopter email went the same day. Open: HA8.
+Status: HA1, HA2, HA3, HA3a and HA6's privacy notice are on main (PR #469); HA5 and HA6's receipts page are on main (PR #471, prod-ff255de). HA7 is public (https://youtu.be/ZXOS6TskYfk, recorded on the simulator lane, 2026-10-19). HA4's sandbox run passed on 2026-10-20 (report 9274246c-9670-4a41-b686-76df1088eb53) and the early adopter email went the same day. Open: HA8a, HA8b.
 
 ## Operator assertions (verbatim)
 
@@ -103,9 +103,10 @@ The server already has everything the request needs: the bearer token from the H
 | HA5 | The behaviour suite `hmrcAssistBehaviour` on the simulator lane: VAT messages shown in order and acknowledged, then the return submitted and both receipts present; the 204 path; the unavailable path with the submit still allowed; a fulfilled period with no control; the Income Tax path; added to the CI test matrix | `behaviour-tests/hmrcAssist.behaviour.test.js`, `behaviour-tests/steps/behaviour-hmrc-assist-steps.js`, `package.json`, `.github/workflows/test.yml` | ~4 | Sonnet | HA3, HA4 |
 | HA6 | The privacy notice and the receipts page: the pre-submission draft sent on the customer's action, what comes back, where it is kept; the receipts page lists the report under its return | `web/public/privacy.html`, `web/public/hmrc/receipt/receipts.html` | ~2 | Haiku | HA2 for the receipts page; the privacy text now |
 | HA7 (done) | The video scene: the VAT return checked with HMRC Assist on the simulator, added to `videos/` and `web/public/videos/publish.json` through `site-video-capture` and `video-publish` | `videos/vat-hmrc-assist.json`, `web/public/videos/publish.json` | ~2 | Sonnet | HA5 |
-| HA8 | The real VAT contract: when HMRC publishes the VAT Assist (MTD) specification and the sandbox lists it, subscribe the Developer Hub application, rewrite `hmrcAssistApi.js`'s VAT half and its tests and the simulator's VAT routes to the published paths, bodies and scenarios, run HA5 against the sandbox, and record the run for the early adopter proof | `app/lib/hmrcAssistApi.js`, its test, `routes/vat-assist.js`, `scenarios/assist.js` | ~4 | Sonnet | HMRC publishing the API; O24's reply |
+| HA8a | The real VAT contract, built: rewrite `hmrcAssistApi.js`'s VAT half and its tests and the simulator's VAT routes to the published `mtd-transaction-risking` 1.0 paths, bodies and scenarios (HMRC's email of 2026-10-21 links the documentation) | `app/lib/hmrcAssistApi.js`, its test, `routes/vat-assist.js`, `scenarios/assist.js` | ~4 | Sonnet | none |
+| HA8b | The sandbox proof: subscribe the Developer Hub sandbox application, run HA5 against the sandbox, and record the run for the early adopter proof; `prod` on `vat-assist-check` waits for HMRC's production access (early adopters from January 2027) | the run record | ~1 | Sonnet | HA8a; the operator's reply with the sandbox application name and ID (OHA8); HMRC granting access |
 
-Order: HA1, HA2 and HA6's privacy text in the first wave (HA1 and HA2 share the simulator contract, so one agent runs HA1 then HA2); HA3 and HA4 next, one agent, VAT then Income Tax; HA5, then HA7. HA8 waits on HMRC.
+Order: HA1, HA2 and HA6's privacy text in the first wave (HA1 and HA2 share the simulator contract, so one agent runs HA1 then HA2); HA3 and HA4 next, one agent, VAT then Income Tax; HA5, then HA7. HA8a runs now; HA8b waits on OHA8 and HMRC's access grant.
 
 ### Dependency graph
 
@@ -115,7 +116,7 @@ HA1 ──► HA2 ──► HA3 ──► HA3a ──► HA4 ──► HA5 ─�
                                   └──► HA4's sandbox run ──► O24 (the email)
          │               
          └──► HA6 (receipts page; the privacy text is independent)
-O24 reply ──► HMRC publishes the VAT Assist (MTD) API ──► HA8
+HA8a ──► HA8b ◄── OHA8 (sandbox application name and ID to HMRC) ◄── HMRC's access grant
 ```
 
 ## The reply to HMRC
