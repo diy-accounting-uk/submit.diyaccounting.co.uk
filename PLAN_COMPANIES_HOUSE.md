@@ -180,7 +180,7 @@ prompt for each director-PSC.
 February 2026, debited from the credit account behind the presenter — nothing in the envelope
 carries payment; `PaymentPeriodsRequest` says whether this submission is due. Submit recovers its
 own charge from the customer by Stripe Checkout before submitting, at (Companies House fee +
-Stripe fee) × 1.2: £61.35 for the £50 fee. The operator's own filings skip the Stripe charge
+Stripe fee) × 1.2, a 20% charge on top and not VAT (DIY Accounting Limited is not VAT registered): £61.35 for the £50 fee. The operator's own filings skip the Stripe charge
 (the fee waiver for listed company numbers, CS-11a); CS-11b takes the £61.35 customer price to prod. A customer filing
 under their own presenter (CS-P1) pays Companies House's £50 fee directly and Submit charges
 nothing.
