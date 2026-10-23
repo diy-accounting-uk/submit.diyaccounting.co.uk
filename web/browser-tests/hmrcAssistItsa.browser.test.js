@@ -168,7 +168,13 @@ test.describe("HMRC Assist check on the Income Tax calculation", () => {
     await scrollToLastMessage(page);
 
     await expect.poll(() => acknowledgeRequests.length).toBe(1);
-    expect(acknowledgeRequests[0]).toEqual({ nino: NINO, reportId: "report-1", correlationId: "correlation-1", receiptId: "receipt-1" });
+    expect(acknowledgeRequests[0]).toEqual({
+      nino: NINO,
+      reportId: "report-1",
+      correlationId: "correlation-1",
+      receiptId: "receipt-1",
+      presentedDateTime: expect.any(String),
+    });
     await expect
       .poll(() => page.evaluate(() => window.hmrcAssistMessages.unacknowledgedFor("itsa", "f2fb30e5-4ab6-4a29-b3c1-c7efc90fc66a")))
       .toBe(false);

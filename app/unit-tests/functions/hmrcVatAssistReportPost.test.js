@@ -92,34 +92,37 @@ const CORRELATION_ID = "c".repeat(64);
 const HMRC_REPORT = {
   reportId: REPORT_ID,
   correlationId: CORRELATION_ID,
-  messages: [
+  englishFeedback: [
     {
+      itemNumber: "1",
       title: "First",
       body: "Body one",
       action: "Action one",
       links: [{ title: "Link one", url: "https://www.gov.uk/one" }],
-      path: "/path/one",
+      path: "vatDueSales",
     },
     {
+      itemNumber: "2",
       title: "Second",
       body: "Body two",
       action: "Action two",
       links: [{ title: "Link two", url: "https://www.gov.uk/two" }],
-      path: "/path/two",
+      path: "totalValuePurchasesExVAT",
     },
+  ],
+  welshFeedback: [
+    { itemNumber: "1", title: "Cyntaf", body: "Corff un", action: "Gweithred un", links: [], path: "vatDueSales" },
+    { itemNumber: "2", title: "Ail", body: "Corff dau", action: "Gweithred dau", links: [], path: "totalValuePurchasesExVAT" },
   ],
 };
 
-let mockFetch;
+const HMRC_NO_FEEDBACK = {
+  reportId: REPORT_ID,
+  englishFeedback: [{ itemNumber: "0", title: "HMRC Assist has not returned any messages.", body: "Not a complete check." }],
+  welshFeedback: [{ itemNumber: "0", title: "Nid yw HMRC Assist wedi dychwelyd unrhyw negeseuon.", body: "Nid yw hwn yn wiriad cyflawn." }],
+};
 
-function mockHmrcNoContent() {
-  mockFetch.mockResolvedValueOnce({
-    ok: true,
-    status: 204,
-    json: () => Promise.reject(new Error("no body")),
-    text: () => Promise.resolve(""),
-  });
-}
+let mockFetch;
 
 function hmrcCalls() {
   return mockFetch.mock.calls.filter((call) => String(call[0]).startsWith(process.env.HMRC_BASE_URI));
@@ -210,7 +213,7 @@ describe("hmrcVatAssistReportPost ingestHandler", () => {
   });
 
   test("the contract names the scopes the sign-in must grant", () => {
-    expect(vatAssist.scopes).toEqual(["read:vat", "write:vat"]);
+    expect(vatAssist.scopes).toEqual(["write:vat"]);
   });
 
   test("returns the normalised report and stores a receipt of kind vat-assist-report", async () => {
@@ -231,15 +234,17 @@ describe("hmrcVatAssistReportPost ingestHandler", () => {
     expect(receipt.kind).toBe("vat-assist-report");
     expect(receipt.reportId).toBe(REPORT_ID);
     expect(receipt.correlationId).toBe(CORRELATION_ID);
-    expect(receipt.messages).toEqual(HMRC_REPORT.messages);
+    expect(receipt.messages).toEqual(vatAssist.normaliseReport(HMRC_REPORT).messages);
+    expect(receipt.welshMessages.map((message) => message.title)).toEqual(["Cyntaf", "Ail"]);
+    expect(body.messages.map((message) => message.path)).toEqual(["vatDueSales", "totalValuePurchasesExVAT"]);
     expect(receipt.requestedAt).toBeTruthy();
     expect(receipt.figures).toEqual(FIGURES);
     expect(receipt.periodKey).toBe(PERIOD_KEY);
     expect(receipt.vrn).toBe(VRN);
   });
 
-  test("passes HMRC's 204 through as 204 and stores no receipt", async () => {
-    mockHmrcNoContent();
+  test("answers 204 and stores no receipt when HMRC returns the no-feedback message", async () => {
+    mockHmrcSuccess(mockFetch, HMRC_NO_FEEDBACK);
     const response = await ingestHandler(buildEvent());
 
     expect(response.statusCode).toBe(204);
@@ -247,9 +252,9 @@ describe("hmrcVatAssistReportPost ingestHandler", () => {
   });
 
   test.each([
-    [400, "INVALID_REQUEST"],
-    [403, "CLIENT_OR_AGENT_NOT_AUTHORISED"],
-    [404, "MATCHING_RESOURCE_NOT_FOUND"],
+    [400, "PERIOD_KEY_INVALID"],
+    [403, "RULE_INSOLVENT_TRADER"],
+    [404, "VRN_NOT_FOUND"],
   ])("maps an HMRC %i (%s) to the same status", async (status, code) => {
     mockHmrcError(mockFetch, status, { code, message: "HMRC says no" });
     const response = await ingestHandler(buildEvent());

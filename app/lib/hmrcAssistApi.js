@@ -4,9 +4,8 @@
 // app/lib/hmrcAssistApi.js
 //
 // The one place that knows the HMRC Assist wire contracts. The Income Tax half follows the
-// published Self Assessment Assist (MTD) 1.0 specification. The VAT paths and body are the
-// assumed contract until HMRC publishes the VAT Assist (MTD) API: this file is the one place
-// to change when it does.
+// published Self Assessment Assist (MTD) 1.0 specification. The VAT half follows the published
+// VAT Assist (MTD) 1.0 specification (mtd-transaction-risking).
 
 const ACCEPT_HEADER = "application/vnd.hmrc.1.0+json";
 
@@ -22,35 +21,50 @@ const VAT_BOX_FIELDS = [
   "totalAcquisitionsExVAT",
 ];
 
-/**
- * Reduce an HMRC Assist report to the shape the rest of the system uses. Message text, links,
- * paths and order pass through unchanged.
- * @param {Object} json - The HMRC report body
- * @returns {{reportId: string, correlationId: string, messages: Array<{title: string, body: string, action?: string, links: Array<{title: string, url: string}>, path: string}>}}
- */
-function normaliseReport(json) {
-  const messages = (json?.messages || []).map((message) => ({
+function normaliseMessages(list) {
+  return (list || []).map((message) => ({
     title: message.title,
     body: message.body,
     action: message.action,
     links: (message.links || []).map((link) => ({ title: link.title, url: link.url })),
     path: message.path,
   }));
-  return { reportId: json?.reportId, correlationId: json?.correlationId, messages };
+}
+
+/**
+ * Reduce an Income Tax HMRC Assist report to the shape the rest of the system uses. Message
+ * text, links, paths and order pass through unchanged.
+ * @param {Object} json - The HMRC report body
+ * @returns {{reportId: string, correlationId: string, messages: Array<{title: string, body: string, action?: string, links: Array<{title: string, url: string}>, path: string}>}}
+ */
+function normaliseReport(json) {
+  return { reportId: json?.reportId, correlationId: json?.correlationId, messages: normaliseMessages(json?.messages) };
+}
+
+/**
+ * Reduce a VAT Assist feedback response to the same shape: the English feedback, unchanged and
+ * in order.
+ * @param {Object} json - The HMRC feedback body
+ */
+function normaliseVatReport(json) {
+  return { reportId: json?.reportId, correlationId: json?.correlationId, messages: normaliseMessages(json?.englishFeedback) };
 }
 
 export const vatAssist = {
   acceptHeader: ACCEPT_HEADER,
-  scopes: ["read:vat", "write:vat"],
-  reportUrl: (base, { vrn }) => `${base}/organisations/vat/${vrn}/assist/reports`,
-  acknowledgeUrl: (base, { vrn, reportId, correlationId }) =>
-    `${base}/organisations/vat/${vrn}/assist/reports/acknowledge/${reportId}/${correlationId}`,
+  scopes: ["write:vat"],
+  reportUrl: (base, { vrn }) => `${base}/organisations/vat-assist/feedback/${vrn}`,
+  acknowledgeUrl: (base, { vrn, reportId, correlationId, presentedDateTime }) =>
+    `${base}/organisations/vat-assist/acknowledge/${vrn}/${reportId}/${correlationId}?presentedDateTime=${encodeURIComponent(presentedDateTime)}`,
   reportBody: ({ periodKey }, figures) => {
     const body = { periodKey };
     for (const field of VAT_BOX_FIELDS) body[field] = figures[field];
     return body;
   },
-  normaliseReport,
+  normaliseReport: normaliseVatReport,
+  normaliseWelshMessages: (json) => normaliseMessages(json?.welshFeedback),
+  // The "no feedback" answer is one message numbered 0, without a correlation id; it needs no acknowledgement.
+  isNoFeedback: (json) => (json?.englishFeedback || []).every((item) => Number(item.itemNumber) === 0),
 };
 
 export const itsaAssist = {

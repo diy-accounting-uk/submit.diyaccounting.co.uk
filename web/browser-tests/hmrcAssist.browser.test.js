@@ -8,7 +8,7 @@ import { test, expect } from "@playwright/test";
 import { spawn } from "node:child_process";
 import path from "node:path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { vatDefaultMessages } from "@app/http-simulator/scenarios/assist.js";
+import { vatMultipleMessages } from "@app/http-simulator/scenarios/assist.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -111,7 +111,7 @@ async function openForm(page, { obligations = [obligation("O")], report, acknowl
             reportId: `report-${reportRequests.length}`,
             correlationId: `correlation-${reportRequests.length}`,
             receiptId: `receipt-${reportRequests.length}`,
-            messages: vatDefaultMessages(request.vrn),
+            messages: vatMultipleMessages(request.vrn),
             vrn: request.vrn,
             periodKey: request.periodKey,
           },
@@ -165,7 +165,7 @@ test.describe("HMRC Assist check on the VAT return", () => {
     await expect(control).toBeEnabled();
     await control.click();
 
-    const expected = vatDefaultMessages(VRN);
+    const expected = vatMultipleMessages(VRN);
     await expect(page.locator("#hmrcAssistFeedback h3")).toHaveText("HMRC feedback");
     const items = page.locator("#hmrcAssistMessages > li");
     await expect(items).toHaveCount(expected.length);
@@ -182,9 +182,8 @@ test.describe("HMRC Assist check on the VAT return", () => {
       }
     }
 
-    await expect(page.locator("#vatReclaimedCurrPeriod")).toHaveClass(/hmrc-assist-highlight/);
     await expect(page.locator("#vatDueSales")).toHaveClass(/hmrc-assist-highlight/);
-    await expect(page.locator("#totalValueSalesExVAT")).toHaveClass(/hmrc-assist-highlight/);
+    await expect(page.locator("#totalValuePurchasesExVAT")).toHaveClass(/hmrc-assist-highlight/);
     await expect(page.locator("#vatDueAcquisitions")).not.toHaveClass(/hmrc-assist-highlight/);
     await expect(page.locator("#submitBtn")).toBeEnabled();
   });
@@ -207,10 +206,11 @@ test.describe("HMRC Assist check on the VAT return", () => {
   });
 
   test("acknowledges the report once, with the receipt id, after the messages are displayed", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 150 });
     const { acknowledgeRequests } = await openForm(page);
     await fillBoxes(page);
     await page.locator("#hmrcAssistCheckBtn").click();
-    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(3);
+    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(2);
     await expect(page.locator("#hmrcAssistFeedback")).toBeVisible();
     expect(acknowledgeRequests).toHaveLength(0);
     await scrollToLastMessage(page);
@@ -223,6 +223,7 @@ test.describe("HMRC Assist check on the VAT return", () => {
       reportId: "report-1",
       correlationId: "correlation-1",
       receiptId: "receipt-1",
+      presentedDateTime: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/),
     });
   });
 
@@ -232,7 +233,7 @@ test.describe("HMRC Assist check on the VAT return", () => {
     });
     await fillBoxes(page);
     await page.locator("#hmrcAssistCheckBtn").click();
-    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(3);
+    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(2);
     await expect(page.locator("#submitBtn")).toBeEnabled();
     await scrollToLastMessage(page);
 
@@ -251,7 +252,7 @@ test.describe("HMRC Assist check on the VAT return", () => {
         await gate;
         return {
           status: 200,
-          body: { reportId: "r", correlationId: "c", receiptId: "x", messages: vatDefaultMessages(request.vrn), vrn: request.vrn },
+          body: { reportId: "r", correlationId: "c", receiptId: "x", messages: vatMultipleMessages(request.vrn), vrn: request.vrn },
         };
       },
     });
@@ -263,7 +264,7 @@ test.describe("HMRC Assist check on the VAT return", () => {
     await expect(page.locator("#submitBtn")).toBeDisabled();
 
     release();
-    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(3);
+    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(2);
     await expect(page.locator("#submitBtn")).toBeEnabled();
   });
 
@@ -301,7 +302,7 @@ test.describe("HMRC Assist check on the VAT return", () => {
     const { acknowledgeRequests } = await openForm(page);
     await fillBoxes(page);
     await page.locator("#hmrcAssistCheckBtn").click();
-    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(3);
+    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(2);
     await expect(page.locator("#hmrcAssistCheckBtn")).toBeDisabled();
     await scrollToLastMessage(page);
     await expect.poll(() => acknowledgeRequests.length).toBe(1);
@@ -313,7 +314,7 @@ test.describe("HMRC Assist check on the VAT return", () => {
     await expect(page.locator("#hmrcAssistCheckBtn")).toBeEnabled();
 
     await page.locator("#hmrcAssistCheckBtn").click();
-    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(3);
+    await expect(page.locator("#hmrcAssistMessages > li")).toHaveCount(2);
     await scrollToLastMessage(page);
     await expect.poll(() => acknowledgeRequests.length).toBe(2);
     expect(acknowledgeRequests.map((request) => request.receiptId)).toEqual(["receipt-1", "receipt-2"]);

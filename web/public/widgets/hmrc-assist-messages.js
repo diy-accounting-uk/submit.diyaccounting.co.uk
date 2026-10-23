@@ -72,8 +72,9 @@
   }
 
   function fragmentOf(path) {
-    const index = typeof path === "string" ? path.indexOf("#") : -1;
-    return index === -1 ? "" : path.slice(index + 1);
+    if (typeof path !== "string") return "";
+    const index = path.indexOf("#");
+    return index === -1 ? path : path.slice(index + 1);
   }
 
   function isWebUrl(url) {
@@ -224,12 +225,13 @@
       }
     }
 
-    async function acknowledge(report, draft, attempt = 0) {
+    async function acknowledge(report, draft, presentedDateTime, attempt = 0) {
       const body = {
         ...draft.acknowledgeIdentity,
         reportId: report.reportId,
         correlationId: report.correlationId,
         receiptId: report.receiptId,
+        presentedDateTime,
       };
       let retry = true;
       try {
@@ -244,7 +246,7 @@
       }
       if (!retry) return;
       const delay = Math.min(ackRetryBaseMs * 2 ** attempt, MAX_ACK_RETRY_DELAY_MS);
-      setTimeout(() => acknowledge(report, draft, attempt + 1), delay);
+      setTimeout(() => acknowledge(report, draft, presentedDateTime, attempt + 1), delay);
     }
 
     function showReport(report, draft) {
@@ -263,10 +265,11 @@
       feedback.appendChild(list);
       feedback.hidden = false;
 
+      const presentedDateTime = new Date().toISOString();
       highlightFields(messages);
       markUnacknowledged(kind, draft.key, report.reportId);
 
-      observer = onceInView(items[items.length - 1], () => acknowledge(report, draft));
+      observer = onceInView(items[items.length - 1], () => acknowledge(report, draft, presentedDateTime));
     }
 
     async function check() {
