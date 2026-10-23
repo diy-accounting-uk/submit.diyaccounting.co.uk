@@ -578,7 +578,7 @@ Proves: the rule holds under a real batch, and the operator stops merging by han
 
 ### Phase 3. Ops that close their own loop
 
-Status: on main (cc7735eba, 6ddd26955: `app/data/alarm-remedies.json`, the remedy step in `alarm-triage.yml`, `alarm-remedy-close.yml`, `scripts/remedy-budget-remaining.mjs`, `scripts/close-alarm-issue-when-ok.mjs`, `scripts/verify-draft-pr-scope.mjs`). Open: the `run-nightly.yml` replay in the horizon below.
+Status: on main (cc7735eba, 6ddd26955: `app/data/alarm-remedies.json`, the remedy step in `alarm-triage.yml`, `alarm-remedy-close.yml`, `scripts/remedy-budget-remaining.mjs`, `scripts/close-alarm-issue-when-ok.mjs`, `scripts/verify-draft-pr-scope.mjs`). Open: the `run-nightly.yml` replay in the horizon below, boarded as RA3 on `NEXT.md`.
 
 - The remedy list, one row per alarm family, written twice in the same shape:
   `app/data/alarm-remedies.json` for the workflow and the table below for the reader. The key is
