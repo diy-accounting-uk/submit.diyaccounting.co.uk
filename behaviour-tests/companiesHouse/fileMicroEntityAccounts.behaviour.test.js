@@ -274,8 +274,11 @@ test("Click through: file small company accounts in full with comparatives and s
   await previewAccounts(page, screenshotPath);
   await verifyPreviewContains(
     page,
-    ["core:TurnoverRevenue", "Profit and loss account", "Directors' report", 'contextRef="y2024"'],
-    ["section 444(5A)"],
+    {
+      source: ["core:TurnoverRevenue", 'contextRef="y2024"'],
+      notInSource: ["section 444(5A)"],
+      rendered: ["Profit and loss account", "Directors' report", "Balance sheet", "Notes to the financial statements"],
+    },
     screenshotPath,
   );
   await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
@@ -296,8 +299,12 @@ test("Click through: file filleted small company accounts and see the filing acc
   await previewAccounts(page, screenshotPath);
   await verifyPreviewContains(
     page,
-    ["section 444(5A)", "core:NetAssetsLiabilities"],
-    ["core:TurnoverRevenue", "Directors' report"],
+    {
+      source: ["core:NetAssetsLiabilities"],
+      notInSource: ["core:TurnoverRevenue"],
+      rendered: ["section 444(5A)", "Balance sheet"],
+      notRendered: ["Directors' report", "Turnover"],
+    },
     screenshotPath,
   );
   await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);

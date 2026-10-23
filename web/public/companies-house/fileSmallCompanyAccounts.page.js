@@ -252,6 +252,7 @@ async function handleAccountsFormSubmit(event) {
   try {
     const preview = await window.previewMicroEntityAccounts(buildAccountsPayload());
     document.getElementById("previewIxbrl").textContent = preview.ixbrl;
+    document.getElementById("previewRendered").srcdoc = preview.ixbrl;
     showView("previewView");
   } catch (error) {
     console.error("Failed to render the accounts preview:", error);

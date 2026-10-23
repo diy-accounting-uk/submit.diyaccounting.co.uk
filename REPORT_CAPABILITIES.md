@@ -114,6 +114,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Test, validation and provisioning](#test-validation-and-provisioning-ch)
     - [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies: use when a test needs a real-shaped Companies House test company without a live entity.
     - [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts: use when the FRS 102/105 taxonomy fixture needs refreshing, or a generated iXBRL document needs checking against Companies House's validator.
+    - [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it: use when an accounts or CT computations iXBRL builder changes, or a document must be checked before it is filed.
     - [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack: use when adding, renaming or rewiring a Companies House Lambda function or its API Gateway route.
 - **[Billing and entitlements](#billing-and-entitlements-bill)**
   - [Bundle grants and entitlements](#bundle-grants-and-entitlements-bill)
@@ -458,7 +459,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally: use when a batch branch is about to take its first push, or a local pass has gone red in CI.
     - [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions: use when the operator asks which donors use submit, whether donors file, or for the donor-to-usage cross reference.
     - [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them: use when a major change to anything a person sees has passed its tests, a guide or site screenshot set was refreshed, or the operator asks for a visual, look or screenshot review.
-    - [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page: use when a design pass or visual review needs every page at phone and desktop width, light and dark, with its console errors.
+    - [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page: use when a design pass or visual review needs every page under web/public at phone and desktop width, light and dark, with the console errors each page logs.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -1282,7 +1283,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-preview-micro-entity-accounts-before-filing) Preview micro-entity accounts before filing · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House
 - [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC
 - [Filing infrastructure](#filing-infrastructure-ch): [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions · [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout · [CH-11](#ch-11-parse-xml-safely) Parse XML safely
-- [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
+- [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:area CH -->
 
 ### OAuth and identity (CH)
@@ -1452,6 +1453,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group test-validation-and-provisioning-ch -->
 - [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies
 - [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts
+- [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it
 - [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:group test-validation-and-provisioning-ch -->
 
@@ -1474,6 +1476,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/generate-frc-taxonomy-concepts.js, scripts/validate-accounts-ixbrl.js
 - **Keywords:** frc taxonomy, frs 102, frs 105, ixbrl, concepts fixture, xbrl validator, companies house, taxonomy schema
 - **Related:** CH-08, CH-07
+
+#### CH-16 Check an accounts iXBRL document as a reader sees it
+
+- **Use when:** an accounts or CT computations iXBRL builder changes, or a document must be checked before it is filed.
+- **Does:** ixbrlStructureProblems lists the structural problems in an iXBRL document without a taxonomy. It checks that the document is well-formed and the ix:header is hidden with one schemaRef. It checks that every context and unit reference resolves and every context is used. It checks the ixt2 transforms, duplicate facts, and the absence of scripts, links and images. The browser test opens each accounts case and the computations as XHTML. It asserts that no header text is visible, the balance sheet reads in order and nothing follows the last note. It saves each render under target/accounts-documents/.
+- **Run:** `npx vitest run app/unit-tests/lib/ixbrlStructure.test.js`; `npx playwright test --project=browser-tests web/browser-tests/accountsDocumentRendering.browser.test.js`
+- **Entry:** `app/lib/ixbrlStructure.js:ixbrlStructureProblems`; `app/test-helpers/accountsDocumentCases.js:accountsDocumentCases`
+- **Files:** app/lib/ixbrlStructure.js, app/test-helpers/accountsDocumentCases.js, app/unit-tests/lib/ixbrlStructure.test.js, web/browser-tests/accountsDocumentRendering.browser.test.js
+- **Keywords:** ixbrl, inline xbrl, accounts document, rendering, screenshot, header hidden, context, unit, transform, xhtml, validation
+- **Related:** CH-07, CH-08, CH-13, CH-15
 
 #### CH-14 Provision the Companies House CDK stack
 
@@ -5733,6 +5745,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - account separation: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
 - account stack: [BILL-36](#bill-36-cdk-account-stack)
 - accounting year-end: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
+- accounts document: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - accounts filing: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - accounts staging: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
 - acm: [OPS-37](#ops-37-check-https-certificate-expiry)
@@ -6164,6 +6177,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - console errors: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - console links: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation), [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
 - consume token: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
+- context: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - continuous backups: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - contrast: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - conversion actions: [DATA-33](#data-33-read-the-google-ads-account-inventory)
@@ -6672,6 +6686,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - head request: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - header check: [DEV-20](#dev-20-check-spdx-licence-headers)
 - header footer diagram: [SITE-12](#site-12-map-the-site-structure)
+- header hidden: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - header injection: [DEV-20](#dev-20-check-spdx-licence-headers)
 - header nav footer: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - header validation: [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
@@ -6770,6 +6785,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - infrastructure: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
 - init fill submit verify: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
 - init workflow: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
+- inline xbrl: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - installation token: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
 - intelligent tiering: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - intent to crystallise: [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations)
@@ -6805,7 +6821,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - itsa sandbox: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - itsa sandbox spike: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - itsa status: [HMRC-11](#hmrc-11-retrieve-itsa-status)
-- ixbrl: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
+- ixbrl: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - java cdk: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks)
 - job minutes: [DEV-37](#dev-37-write-the-session-report)
 - join button: [SITE-03](#site-03-capture-feedback-interest)
@@ -7348,6 +7364,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - remedy row: [OPS-21](#ops-21-auto-close-resolved-alarm-issues), [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope)
 - remove bundle: [BILL-03](#bill-03-delete-a-bundle)
 - removeline: [SS-04](#ss-04-apply-book-edits-and-derivations)
+- rendering: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - rental income: [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates)
 - rental property: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
 - replay nightly: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
@@ -7470,6 +7487,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - schema change: [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - schema tables: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - screen reader: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
+- screenshot: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - screenshot review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - screenshots: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video), [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
@@ -7754,6 +7772,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - transaction_status: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
 - transactionid: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - transcript: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
+- transform: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - trend: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - trend deep link: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - triage: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
@@ -7779,6 +7798,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - unattended agent workflow: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - unattended loop: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
 - undo stack: [SS-04](#ss-04-apply-book-edits-and-derivations)
+- unit: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - unit tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
 - unlimited sentinel: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - unlisted: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
@@ -7809,7 +7829,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - v2 schema: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
 - validate workflows: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - validatelines: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
-- validation: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
+- validation: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
 - validity: [BILL-08](#bill-08-check-a-passs-validity)
 - vat account: [HMRC-05](#hmrc-05-retrieve-vat-payments), [HMRC-06](#hmrc-06-retrieve-vat-penalties)
 - vat box config: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
@@ -7921,6 +7941,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - x-ray console: [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
 - x-request-id: [SITE-17](#site-17-trace-and-secure-client-requests)
 - xbrl validator: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
+- xhtml: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - xls roundtrip: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - xlsx: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
 - xlsx export: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)

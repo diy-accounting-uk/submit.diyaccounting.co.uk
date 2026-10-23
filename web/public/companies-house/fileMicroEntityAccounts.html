@@ -408,7 +408,13 @@
       <div id="previewView" class="results-container" style="display: none">
         <h2>Preview</h2>
         <p>These are the accounts as they will be filed. Nothing has been submitted to Companies House yet.</p>
-        <iframe id="previewRendered" class="accounts-preview-frame" title="Accounts preview" sandbox=""></iframe>
+        <iframe
+          id="previewRendered"
+          class="accounts-preview-frame"
+          title="The accounts as they will be filed"
+          sandbox=""
+          style="width: 100%; height: 80vh; border: 1px solid #b1b4b6; background: #fff"
+        ></iframe>
         <pre id="previewIxbrl" class="ixbrl-preview developer-only-section"></pre>
         <div class="form-group">
           <label for="companyAuthCode">Company authentication code</label>
