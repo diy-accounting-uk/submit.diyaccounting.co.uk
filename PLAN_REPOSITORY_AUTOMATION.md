@@ -713,10 +713,10 @@ share of the closed alarm issues that close themselves against the 43% this tabl
 
 ### Phase 4. Support
 
-Status: the inbound triage is on main (`support-triage.yml`, 254f7da71). Decided 2026-10-23: the customer lookup writes a file per alarm to the private repository and pings the operator on Telegram with no personal data (`NEXT.md` RA4); reply drafts go into the support@ mailbox as unsent Gmail drafts under a credential limited to that mailbox and to drafts (`NEXT.md` RA5).
+Status: the inbound triage is on main (`support-triage.yml`, 254f7da71). The `customer-lookup` job in `alarm-triage.yml` runs `scripts/alarm-customer-lookup.mjs` for `prod-env-hmrc-submission-failure` and `prod-env-itsa-submission-failure` issues, commits `support/alarms/<issue>-<alarm>.md` to the private repository with the `PRIVATE_REPO_DEPLOY_KEY` deploy key, and pings the ops Telegram chat with no personal data. Open: create the deploy key and the `prod` secret; the support-mail check in the file stays a pointer until the mailbox is reachable from the job; reply drafts go into the support@ mailbox as unsent Gmail drafts under a credential limited to that mailbox and to drafts (`NEXT.md` RA5).
 
 - Inbound triage and labelling on `issues: [opened]`, beside alarm-triage.
-- The customer-lookup skill fires from the alarm issue rather than from a person asking.
+- The customer lookup fires from the alarm issue rather than from a person asking, and writes to the private repository only.
 - Reply drafting into Gmail, which `../private.diyaccounting.co.uk/strategy/STRATEGY.md` W4 already names.
 - Replies stay drafts until the acceptance rate is measured. Then one class of reply, a settled
   answer matched to a published article, sends on its own.

@@ -28,14 +28,14 @@ datapoint minute as the start and look at the following 30 minutes.
 ## 2. Activity events: who, what, and the request ids
 
 The activity bus lands in the analytics lake as Parquet, queryable with Athena (workgroup
-`prod-env-analytics`, database `prod_env_analytics`, table `activity_events`; partitions
-`year`, `month`, `day` are integers; `event_ts` is a timestamp):
+`prod-env-analytics`, database `prod_env_analytics`, view `activity_events_all`; the partition `dt`
+is a date; `event_ts` is a timestamp):
 
 ```
 SELECT CAST(event_ts AS varchar) AS event_ts, event, actor, flow, outcome, failure,
        hashed_sub, bundle_id, hmrc_status, request_id, summary
-FROM prod_env_analytics.activity_events
-WHERE year=2026 AND month=9 AND day=3
+FROM prod_env_analytics.activity_events_all
+WHERE dt = DATE '2026-09-03'
   AND event_ts BETWEEN TIMESTAMP '2026-09-03 21:15:00' AND TIMESTAMP '2026-09-03 21:55:00'
 ORDER BY event_ts
 ```

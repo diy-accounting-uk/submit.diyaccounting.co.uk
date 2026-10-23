@@ -682,3 +682,138 @@ jobs:
           bucket: '${{ env.ENV_NAME }}-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
           key: ${{ steps.agent-run-row.outputs.key }}
           row: ${{ steps.agent-run-row.outputs.row }}
+
+  # Looks up the customer behind a failed submission and writes the result to a file in the
+  # private repository, then pings the operator on Telegram with the alarm name, the issue link
+  # and the file's path. The file holds personal data, so it never goes to the issue, the run log
+  # or the run summary. The job never fails the triage: continue-on-error is set, and the triage
+  # job above does not depend on it. The lookup reads customer data, which the read-only alarm
+  # triage role denies, so this job chains into the deployment role instead.
+  customer-lookup:
+    needs: triage
+    if: >-
+      needs.triage.outputs.proceed == 'true' &&
+      (needs.triage.outputs.alarm-name == 'prod-env-hmrc-submission-failure' ||
+      needs.triage.outputs.alarm-name == 'prod-env-itsa-submission-failure')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    continue-on-error: true
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      ALARM_NAME: ${{ needs.triage.outputs.alarm-name }}
+      ALARM_REGION: ${{ needs.triage.outputs.region }}
+      ALARM_WINDOW: ${{ needs.triage.outputs.window }}
+      ALARM_TIMESTAMP: ${{ needs.triage.outputs.timestamp }}
+      ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
+      ISSUE_URL: ${{ github.server_url }}/${{ github.repository }}/issues/${{ inputs.issue-number || github.event.issue.number }}
+      PRIVATE_REPO: diy-accounting-uk/private.diyaccounting.co.uk
+    steps:
+      - name: Stop when the private repository deploy key is not set
+        id: key
+        env:
+          PRIVATE_REPO_DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
+        run: |
+          if [ -z "${PRIVATE_REPO_DEPLOY_KEY}" ]; then
+            echo "PRIVATE_REPO_DEPLOY_KEY is not set on the prod environment, so the customer lookup waits" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "configured=false" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" | tee -a "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: steps.key.outputs.configured == 'true'
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node
+        if: steps.key.outputs.configured == 'true'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Configure AWS role via GitHub OIDC
+        if: steps.key.outputs.configured == 'true'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: steps.key.outputs.configured == 'true'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Install dependencies
+        if: steps.key.outputs.configured == 'true'
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+
+      - name: Verify the alarm actually fired
+        if: steps.key.outputs.configured == 'true'
+        run: |
+          node scripts/verify-alarm-origin.mjs \
+            --alarm-name "$ALARM_NAME" --window "$ALARM_WINDOW" --region "${ALARM_REGION:-eu-west-2}"
+
+      - name: Look up the customer into a file
+        if: steps.key.outputs.configured == 'true'
+        run: |
+          set -euo pipefail
+          node scripts/alarm-customer-lookup.mjs \
+            --alarm-name "$ALARM_NAME" --timestamp "$ALARM_TIMESTAMP" \
+            --issue-number "$ISSUE_NUMBER" --issue-url "$ISSUE_URL" \
+            --region "${ALARM_REGION:-eu-west-2}" --out "$RUNNER_TEMP/alarm-lookup.md"
+
+      - name: Commit the file to the private repository
+        if: steps.key.outputs.configured == 'true'
+        id: private-commit
+        env:
+          PRIVATE_REPO_DEPLOY_KEY: ${{ secrets.PRIVATE_REPO_DEPLOY_KEY }}
+        run: |
+          set -euo pipefail
+          KEY_FILE="$RUNNER_TEMP/private-repo-deploy-key"
+          umask 077
+          printf '%s\n' "$PRIVATE_REPO_DEPLOY_KEY" > "$KEY_FILE"
+          export GIT_SSH_COMMAND="ssh -i $KEY_FILE -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+          git clone --depth 1 "git@github.com:${PRIVATE_REPO}.git" "$RUNNER_TEMP/private"
+          FILE_PATH="support/alarms/${ISSUE_NUMBER}-${ALARM_NAME}.md"
+          mkdir -p "$RUNNER_TEMP/private/support/alarms"
+          cp "$RUNNER_TEMP/alarm-lookup.md" "$RUNNER_TEMP/private/${FILE_PATH}"
+          cd "$RUNNER_TEMP/private"
+          git config user.name "submit-alarm-lookup"
+          git config user.email "submit-alarm-lookup@users.noreply.github.com"
+          git add "$FILE_PATH"
+          git commit -m "Alarm lookup for #${ISSUE_NUMBER}: ${ALARM_NAME}"
+          for ATTEMPT in 1 2 3; do
+            if git push origin HEAD:main; then break; fi
+            if [ "$ATTEMPT" = 3 ]; then exit 1; fi
+            git pull --rebase origin main
+          done
+          rm -f "$KEY_FILE"
+          echo "file-path=${FILE_PATH}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Tell the operator on Telegram
+        if: steps.private-commit.outcome == 'success'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          FILE_PATH: ${{ steps.private-commit.outputs.file-path }}
+        run: |
+          set -euo pipefail
+          CHAT_ID=$(sed -n 's/^TELEGRAM_OPS_CHAT_ID=\([-0-9]*\).*/\1/p' .env.prod | head -1)
+          TEXT=$(printf '%s: customer lookup written to %s in %s\n%s' "$ALARM_NAME" "$FILE_PATH" "$PRIVATE_REPO" "$ISSUE_URL")
+          curl --silent --show-error --fail --max-time 15 \
+            --data-urlencode "chat_id=${CHAT_ID}" \
+            --data-urlencode "text=${TEXT}" \
+            "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" > /dev/null
