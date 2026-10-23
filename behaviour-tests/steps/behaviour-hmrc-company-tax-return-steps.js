@@ -45,7 +45,7 @@ export async function previewCompanyTaxReturn(page, screenshotPath = defaultScre
     await expect(page.locator("#previewView")).toBeVisible({ timeout: 30000 });
     await expect(page.locator("#ct600Table tbody tr").first()).toBeVisible();
     await expect(page.locator("#computationsTable tbody tr").first()).toBeVisible();
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-preview.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-preview.png`, readerView: true });
   });
 }
 

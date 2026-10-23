@@ -758,7 +758,131 @@ export const loggedSelectOption = async (page, selectorOrLocator, valueOrOptions
  */
 export async function takeScreenshot(page, options) {
   await page.waitForLoadState("load");
-  return page.screenshot(options);
+  const { readerView, ...screenshotOptions } = options || {};
+  if (readerView) {
+    await assertReaderView(page, readerView === true ? {} : readerView);
+  }
+  return page.screenshot(screenshotOptions);
+}
+
+/**
+ * The defects a person sees on the rendered page, found from computed style, bounding boxes and
+ * the text of visible nodes. Returns one { rule, detail } per defect; an empty list is a clean page.
+ *
+ * @param {import("@playwright/test").Page} page
+ * @param {Object} [options]
+ * @param {string[]} [options.ignoreSelectors] - Elements (and their subtrees) the rules skip
+ * @returns {Promise<Array<{rule: string, detail: string}>>}
+ */
+export async function findReaderViewDefects(page, options = {}) {
+  const ignoreSelectors = options.ignoreSelectors || [];
+  return page.evaluate((ignored) => {
+    const defects = [];
+    const describe = (el) => {
+      const id = el.id ? `#${el.id}` : "";
+      const cls = typeof el.className === "string" && el.className.trim() ? `.${el.className.trim().split(/\s+/).join(".")}` : "";
+      return `${el.tagName.toLowerCase()}${id}${cls}`;
+    };
+    const isIgnored = (el) => ignored.some((selector) => el.closest(selector));
+    const isVisible = (el) => {
+      for (let node = el; node && node.nodeType === 1; node = node.parentElement) {
+        const style = getComputedStyle(node);
+        if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse") return false;
+        if (Number(style.opacity) === 0) return false;
+      }
+      const rect = el.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0;
+    };
+    const skippedTags = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "TEXTAREA", "INPUT", "SELECT", "OPTION", "TEMPLATE"]);
+    const snippet = (text, index) =>
+      text
+        .slice(Math.max(0, index - 10), index + 50)
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const textRules = [
+      { rule: "markup-as-text", pattern: /<\?xml|xmlns[:=]|\bix:[a-z]+|<html|<\/?[a-z][a-z0-9-]*[\s>]/i },
+      { rule: "json-as-text", pattern: /\{\s*"[^"]+"\s*:/ },
+      { rule: "stack-trace-as-text", pattern: /^\s+at \S+ \(|^\s+at \S+:\d+:\d+/m },
+      { rule: "placeholder-value-as-text", pattern: /\b(undefined|null|NaN)\b|\[object Object\]/ },
+    ];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+      const parent = node.parentElement;
+      const text = node.nodeValue;
+      if (!parent || !text.trim() || skippedTags.has(parent.tagName) || isIgnored(parent) || !isVisible(parent)) continue;
+      for (const { rule, pattern } of textRules) {
+        const match = pattern.exec(text);
+        if (match) defects.push({ rule, detail: `${describe(parent)} shows "${snippet(text, match.index)}"` });
+      }
+    }
+
+    if (!document.body.classList.contains("developer-mode")) {
+      for (const el of document.querySelectorAll(".developer-only-section, .developer-field")) {
+        if (!isIgnored(el) && isVisible(el))
+          defects.push({ rule: "developer-content-visible", detail: `${describe(el)} is visible with developer mode off` });
+      }
+    }
+
+    const root = document.documentElement;
+    if (root.scrollWidth > root.clientWidth + 1) {
+      defects.push({ rule: "horizontal-overflow", detail: `page scrollWidth ${root.scrollWidth} exceeds clientWidth ${root.clientWidth}` });
+    }
+    for (const el of document.body.querySelectorAll("*")) {
+      const parent = el.parentElement;
+      if (!parent || parent === document.body || skippedTags.has(el.tagName) || isIgnored(el) || !isVisible(el)) continue;
+      const style = getComputedStyle(el);
+      if (style.position === "fixed" || style.position === "absolute") continue;
+      const parentStyle = getComputedStyle(parent);
+      if (parentStyle.display === "contents" || parentStyle.overflowX !== "visible") continue;
+      const rect = el.getBoundingClientRect();
+      const parentRect = parent.getBoundingClientRect();
+      if (rect.right > parentRect.right + 1 || rect.left < parentRect.left - 1) {
+        defects.push({
+          rule: "element-wider-than-container",
+          detail: `${describe(el)} spans ${Math.round(rect.left)}-${Math.round(rect.right)}, ${describe(parent)} spans ${Math.round(parentRect.left)}-${Math.round(parentRect.right)}`,
+        });
+      }
+    }
+
+    const textInputTypes = new Set(["text", "email", "number", "password", "search", "tel", "url", "date"]);
+    const groups = new Map();
+    for (const input of document.querySelectorAll("input, select, textarea")) {
+      const type = input.tagName === "INPUT" ? (input.getAttribute("type") || "text").toLowerCase() : input.tagName.toLowerCase();
+      if (input.tagName === "INPUT" && !textInputTypes.has(type)) continue;
+      if (isIgnored(input) || !isVisible(input)) continue;
+      const group = input.closest("form") || document.body;
+      if (!groups.has(group)) groups.set(group, []);
+      groups.get(group).push(input);
+    }
+    for (const inputs of groups.values()) {
+      if (inputs.length < 3) continue;
+      const widths = inputs.map((input) => input.offsetWidth).sort((a, b) => a - b);
+      const median = widths[Math.floor(widths.length / 2)];
+      for (const input of inputs) {
+        if (input.offsetWidth < median / 2) {
+          defects.push({
+            rule: "unstyled-control",
+            detail: `${describe(input)} is ${input.offsetWidth}px wide, the median control is ${median}px`,
+          });
+        }
+      }
+    }
+    return defects;
+  }, ignoreSelectors);
+}
+
+/**
+ * Fails the step when the visible page shows what a reader would not accept: markup, JSON or a
+ * stack trace as text; undefined, null, NaN or [object Object]; developer content with developer
+ * mode off; horizontal overflow; or a form control far narrower than its siblings.
+ */
+export async function assertReaderView(page, options = {}) {
+  const defects = await findReaderViewDefects(page, options);
+  if (defects.length > 0) {
+    const lines = defects.slice(0, 20).map((defect) => `  [${defect.rule}] ${defect.detail}`);
+    throw new Error(`The page shows ${defects.length} defect(s) a reader would see at ${page.url()}:\n${lines.join("\n")}`);
+  }
 }
 
 // Generate timestamp for file naming
