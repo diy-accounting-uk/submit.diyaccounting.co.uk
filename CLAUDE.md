@@ -142,6 +142,8 @@ not when the tests pass:
 
 A copy change or a small fix inside one component needs step 1 only.
 
+A change that alters what a business can file, or through which channel, or whether a feature is production, sandbox or preview, also updates the availability table and the dates on `web/public/mtd-calendar.html` in the same change, as part of the bug fix, feature or release.
+
 ## A direct question gets its answer as the whole reply
 
 When the operator asks a question, answer it in a reply that ends the turn, with every link and
