@@ -714,7 +714,7 @@ share of the closed alarm issues that close themselves against the 43% this tabl
 
 ### Phase 4. Support
 
-Status: the inbound triage is on main (`support-triage.yml`, 254f7da71). Open, and blocked on ORA4 on `NEXT.md`: the customer lookup from the alarm issue, and the reply drafts into Gmail.
+Status: the inbound triage is on main (`support-triage.yml`, 254f7da71). Decided 2026-10-23: the customer lookup writes a file per alarm to the private repository and pings the operator on Telegram with no personal data (`NEXT.md` RA4); reply drafts go into the support@ mailbox as unsent Gmail drafts under a credential limited to that mailbox and to drafts (`NEXT.md` RA5).
 
 - Inbound triage and labelling on `issues: [opened]`, beside alarm-triage.
 - The customer-lookup skill fires from the alarm issue rather than from a person asking.
