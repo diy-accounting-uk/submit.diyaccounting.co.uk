@@ -172,7 +172,7 @@ describe("services/microEntityAccountsIxbrl", () => {
           (el) => el.getAttribute("name") === qualifiedName,
         );
         const element = contextRefSuffix ? elements.find((el) => el.getAttribute("contextRef").endsWith(contextRefSuffix)) : elements[0];
-        return Number(element.textContent);
+        return Number(element.textContent.replaceAll(",", ""));
       }
 
       expect(valueFor("netCurrentAssetsLiabilities")).toBe(2000);
@@ -211,6 +211,49 @@ describe("services/microEntityAccountsIxbrl", () => {
       );
       expect(profitAndLossFact.getAttribute("sign")).toBe("-");
       expect(profitAndLossFact.textContent).toBe("500");
+    });
+  });
+
+  describe("buildMicroEntityAccounts layout", () => {
+    const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
+    const document = parseXmlDocument(xhtml);
+
+    test("the ix:header sits inside a div hidden with display:none", () => {
+      const header = document.getElementsByTagName("ix:header")[0];
+      expect(header.parentNode.localName).toBe("div");
+      expect(header.parentNode.getAttribute("style")).toBe("display:none");
+    });
+
+    test("every figure on the balance sheet sits in a labelled table row with both years", () => {
+      const rows = Array.from(document.getElementsByTagName("tr")).map((row) =>
+        Array.from(row.getElementsByTagName("td")).map((cell) => cell.textContent.trim()),
+      );
+      expect(rows).toContainEqual(["Fixed assets", "10,000", "8,000"]);
+      expect(rows).toContainEqual(["Creditors: amounts falling due within one year", "(3,000)", "(2,500)"]);
+      expect(rows).toContainEqual(["Net assets", "10,000", "8,000"]);
+      expect(rows).toContainEqual(["Shareholders' funds", "10,000", "8,000"]);
+      const headings = Array.from(document.getElementsByTagName("th")).map((cell) => cell.textContent);
+      expect(headings).toEqual(expect.arrayContaining(["2026", "2025", "£"]));
+    });
+
+    test("no fact sits outside a table, a paragraph or the hidden header", () => {
+      for (const fact of [...document.getElementsByTagName("ix:nonFraction"), ...document.getElementsByTagName("ix:nonNumeric")]) {
+        expect(["td", "p", "ix:hidden"], fact.getAttribute("name")).toContain(
+          fact.parentNode.localName === "hidden" ? "ix:hidden" : fact.parentNode.localName,
+        );
+      }
+    });
+
+    test("carries no script, link, image or external stylesheet", () => {
+      for (const tag of ["script", "a", "img", "link", "iframe", "object"]) {
+        expect(document.getElementsByTagName(tag), tag).toHaveLength(0);
+      }
+      expect(xhtml).toContain('<style type="text/css">');
+    });
+
+    test("writes dates as printed accounts do and tags them with the English date transform", () => {
+      expect(xhtml).toMatch(/name="bus:BalanceSheetDate" contextRef="e2026" format="ixt2:datedaymonthyearen">30 June 2026</);
+      expect(xhtml).toContain("for the year ended 30 June 2026");
     });
   });
 
@@ -259,7 +302,7 @@ describe("services/microEntityAccountsIxbrl", () => {
         dimension: "bus:EntityShareClassesDimension",
         member: "bus:OrdinaryShareClass1",
       });
-      expect(dormantXhtml).toContain("200 ordinary shares of £0.5 each");
+      expect(dormantXhtml).toMatch(/>200<\/ix:nonFraction> ordinary shares of £<ix:nonFraction[^>]*>0.5<\/ix:nonFraction> each/);
     });
 
     test("every concept it uses is in the FRS 102 taxonomy", () => {
@@ -310,7 +353,7 @@ describe("services/microEntityAccountsIxbrl", () => {
 
   describe("formatMonetary", () => {
     test("rounds to whole pounds", () => {
-      expect(formatMonetary(1234.6)).toBe("1235");
+      expect(formatMonetary(1234.6)).toBe("1,235");
     });
 
     test("returns the magnitude for a negative value", () => {

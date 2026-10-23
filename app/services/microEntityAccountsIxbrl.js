@@ -12,14 +12,22 @@ import {
   CONCEPTS,
   DIMENSIONS,
   MEMBERS,
+  NUMBER_FORMAT,
   qname,
   buildContexts,
   formatMonetary,
+  periodEndedPhrase,
   renderStatement,
   renderFixedFact,
+  renderDateFact,
   dimensionMemberXml,
   buildDimensionedContext,
-  assembleBalanceSheetFacts,
+  balanceSheetFacts,
+  balanceSheetRows,
+  statementTable,
+  pageHeading,
+  coverPage,
+  approvalHtml,
   renderAccountsDocument,
 } from "./accountsIxbrlCommon.js";
 
@@ -98,34 +106,13 @@ export function sharesIssuedFor(calledUpShareCapital, nominalValue) {
 export function buildMicroEntityAccounts(input) {
   const { xml: contextsXml, refs, entityIdentifierXml, periodXml } = buildContexts(input);
   const additionalContexts = [];
+  const hiddenFacts = [];
 
-  const facts = [];
-
-  facts.push(
-    `<ix:nonNumeric name="${qname(CONCEPTS.companiesHouseRegisteredNumber)}" contextRef="${refs.current}">${escapeXmlText(input.companyNumber)}</ix:nonNumeric>`,
-  );
-  facts.push(
-    `<ix:nonNumeric name="${qname(CONCEPTS.entityCurrentLegalOrRegisteredName)}" contextRef="${refs.current}">${escapeXmlText(input.companyName)}</ix:nonNumeric>`,
-  );
-  facts.push(
-    `<ix:nonNumeric name="${qname(CONCEPTS.balanceSheetDate)}" contextRef="${refs.currentInstant}">${input.periodEnd}</ix:nonNumeric>`,
-  );
-  // Companies House's validator requires this fact in the same current-period context as the
-  // balance sheet date, not a bespoke one keyed to the approval date's own value.
-  facts.push(
-    `<ix:nonNumeric name="${qname(CONCEPTS.dateAuthorisationFinancialStatementsForIssue)}" contextRef="${refs.currentInstant}">${input.dateOfApproval}</ix:nonNumeric>`,
-  );
   // DirectorSigningFinancialStatements is a fixed (zero-length) fact: it marks that a director
-  // signed. The director's own name is plain prose next to it, not part of the tagged data.
-  facts.push(renderFixedFact("directorSigningFinancialStatements", refs.current));
-  facts.push(
+  // signed. The director's own name is the prose of the approval line.
+  hiddenFacts.push(renderFixedFact("directorSigningFinancialStatements", refs.current));
+  hiddenFacts.push(
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">${input.dormant ? "true" : "false"}</ix:nonNumeric>`,
-  );
-  facts.push(
-    `<ix:nonNumeric name="${qname(CONCEPTS.startDateForPeriodCoveredByReport)}" contextRef="${refs.periodStartInstant}">${input.periodStart}</ix:nonNumeric>`,
-  );
-  facts.push(
-    `<ix:nonNumeric name="${qname(CONCEPTS.endDateForPeriodCoveredByReport)}" contextRef="${refs.currentInstant}">${input.periodEnd}</ix:nonNumeric>`,
   );
   if (input.dormant) {
     const tradingStatusContextId = buildDimensionedContext({
@@ -135,50 +122,30 @@ export function buildMicroEntityAccounts(input) {
       dimensionXml: dimensionMemberXml(DIMENSIONS.entityTradingStatus, MEMBERS[input.dormantTradingStatus]),
       id: `${refs.current}-trading-status`,
     });
-    facts.push(renderFixedFact("entityTradingStatus", tradingStatusContextId));
+    hiddenFacts.push(renderFixedFact("entityTradingStatus", tradingStatusContextId));
   } else {
     // EntityTradingStatus is reported at its default member (trading) with no dimension: a
     // dimension at its default value must not be reported.
-    facts.push(renderFixedFact("entityTradingStatus", refs.current));
+    hiddenFacts.push(renderFixedFact("entityTradingStatus", refs.current));
   }
 
-  const accountsStatusContextId = buildDimensionedContext({
-    additionalContexts,
-    entityIdentifierXml,
-    periodXml: periodXml[refs.current],
-    dimensionXml: dimensionMemberXml(DIMENSIONS.accountsStatus, MEMBERS.auditExemptNoAccountantsReport),
-    id: `${refs.current}-accounts-status`,
-  });
-  facts.push(renderFixedFact("accountsStatusAuditedOrUnaudited", accountsStatusContextId));
-
-  const accountsTypeContextId = buildDimensionedContext({
-    additionalContexts,
-    entityIdentifierXml,
-    periodXml: periodXml[refs.current],
-    dimensionXml: dimensionMemberXml(DIMENSIONS.accountsType, MEMBERS.fullAccounts),
-    id: `${refs.current}-accounts-type`,
-  });
-  facts.push(renderFixedFact("accountsType", accountsTypeContextId));
-
-  const accountingStandardsContextId = buildDimensionedContext({
-    additionalContexts,
-    entityIdentifierXml,
-    periodXml: periodXml[refs.current],
-    dimensionXml: dimensionMemberXml(DIMENSIONS.accountingStandards, MEMBERS.microEntities),
-    id: `${refs.current}-accounting-standards`,
-  });
-  facts.push(renderFixedFact("accountingStandardsApplied", accountingStandardsContextId));
-
-  for (const statementKey of input.dormant ? DORMANT_STATEMENT_KEYS : STATEMENT_KEYS) {
-    facts.push(renderStatement(statementKey, refs.current));
+  for (const [conceptKey, dimension, member, id] of [
+    ["accountsStatusAuditedOrUnaudited", DIMENSIONS.accountsStatus, MEMBERS.auditExemptNoAccountantsReport, "accounts-status"],
+    ["accountsType", DIMENSIONS.accountsType, MEMBERS.fullAccounts, "accounts-type"],
+    ["accountingStandardsApplied", DIMENSIONS.accountingStandards, MEMBERS.microEntities, "accounting-standards"],
+  ]) {
+    const contextRef = buildDimensionedContext({
+      additionalContexts,
+      entityIdentifierXml,
+      periodXml: periodXml[refs.current],
+      dimensionXml: dimensionMemberXml(dimension, member),
+      id: `${refs.current}-${id}`,
+    });
+    hiddenFacts.push(renderFixedFact(conceptKey, contextRef));
   }
 
-  facts.push(
-    `<ix:nonFraction name="${qname(CONCEPTS.averageNumberEmployeesDuringPeriod)}" contextRef="${refs.current}" unitRef="pure" decimals="0">${formatMonetary(input.averageNumberOfEmployees)}</ix:nonFraction>`,
-  );
-
-  facts.push(
-    assembleBalanceSheetFacts({
+  const years = [
+    balanceSheetFacts({
       contextRef: refs.currentInstant,
       entityIdentifierXml,
       periodXml: periodXml[refs.currentInstant],
@@ -186,11 +153,11 @@ export function buildMicroEntityAccounts(input) {
       unitRef: "GBP",
       figures: input.balanceSheet.current,
     }),
-  );
-
+  ];
+  const columns = [input.periodEnd.slice(0, 4)];
   if (input.balanceSheet.prior) {
-    facts.push(
-      assembleBalanceSheetFacts({
+    years.push(
+      balanceSheetFacts({
         contextRef: refs.priorInstant,
         entityIdentifierXml,
         periodXml: periodXml[refs.priorInstant],
@@ -199,9 +166,21 @@ export function buildMicroEntityAccounts(input) {
         figures: input.balanceSheet.prior,
       }),
     );
+    columns.push(refs.priorInstant.slice(1));
   }
 
-  let shareNoteHtml = "";
+  const notes = [
+    {
+      title: "Accounting policies",
+      html: `<p>These financial statements have been prepared in accordance with FRS 105 The Financial Reporting Standard applicable to the Micro-entities Regime.</p>`,
+    },
+    {
+      title: "Employees",
+      html: `<p>The average number of employees during the ${periodEndedPhrase(input.periodStart, input.periodEnd).split(" ")[0]} was <ix:nonFraction name="${qname(CONCEPTS.averageNumberEmployeesDuringPeriod)}" contextRef="${refs.current}" unitRef="pure" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(input.averageNumberOfEmployees)}</ix:nonFraction>.</p>`,
+    },
+  ];
+
+  let shareCapitalNote;
   if (input.dormant) {
     const sharesIssued = sharesIssuedFor(input.balanceSheet.current.calledUpShareCapital, input.nominalValue);
     const shareClassDimensionXml = dimensionMemberXml(DIMENSIONS.entityShareClasses, MEMBERS[input.shareClass]);
@@ -221,20 +200,46 @@ export function buildMicroEntityAccounts(input) {
       dimensionXml: shareClassDimensionXml,
       id: `${refs.current}-share-class`,
     });
-    facts.push(
-      `<ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0">${sharesIssued}</ix:nonFraction>`,
-      `<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction>`,
-    );
-    shareNoteHtml = `<p>Share capital: ${sharesIssued} ${SHARE_CLASS_LABEL[input.shareClass]} shares of £${input.nominalValue} each, allotted and fully paid</p>\n`;
+    notes.push({
+      title: "Called up share capital",
+      html: `<p>Allotted, called up and fully paid: <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} shares of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction> each.</p>`,
+    });
+    shareCapitalNote = notes.length;
   }
 
-  const bodyHtml = `<h1>${escapeXmlText(input.companyName)}</h1>
-<p>Company number ${escapeXmlText(input.companyNumber)}</p>
-<p>Annual accounts for the period from ${input.periodStart} to ${input.periodEnd}</p>
-<p>Approved on behalf of the board on ${input.dateOfApproval} by ${escapeXmlText(input.directorName)}</p>
-${shareNoteHtml}${facts.join("\n")}`;
+  const heading = (title, subtitleHtml) =>
+    pageHeading({ companyName: input.companyName, companyNumber: input.companyNumber, title, subtitleHtml });
+  const statementKeys = input.dormant ? DORMANT_STATEMENT_KEYS : STATEMENT_KEYS;
 
-  return renderAccountsDocument({ companyName: input.companyName, contextsXml: `${contextsXml}${additionalContexts.join("")}`, bodyHtml });
+  const bodyHtml = `${coverPage({
+    refs,
+    companyName: input.companyName,
+    companyNumber: input.companyNumber,
+    title: input.dormant ? "Unaudited dormant micro-entity accounts" : "Unaudited micro-entity accounts",
+    periodStart: input.periodStart,
+    periodEnd: input.periodEnd,
+  })}
+<div class="page">
+${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${statementTable({
+    columns,
+    notes: Boolean(shareCapitalNote),
+    rows: balanceSheetRows({ years, notes: { calledUpShareCapital: shareCapitalNote } }),
+  })}
+${statementKeys.map((key) => `<p>${renderStatement(key, refs.current)}</p>`).join("\n")}
+${approvalHtml({ refs, dateOfApproval: input.dateOfApproval, directorName: input.directorName })}
+</div>
+<div class="page">
+${heading("Notes to the financial statements", `for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}`)}${notes
+    .map((note, index) => `<h3>${index + 1}. ${escapeXmlText(note.title)}</h3>\n${note.html}`)
+    .join("\n")}
+</div>`;
+
+  return renderAccountsDocument({
+    title: `${input.companyName} - Accounts`,
+    contextsXml: `${contextsXml}${additionalContexts.join("")}`,
+    hiddenFactsXml: hiddenFacts.join("\n"),
+    bodyHtml,
+  });
 }
 
 export { MANDATORY_CONCEPT_KEYS, STATEMENT_KEYS, DORMANT_STATEMENT_KEYS };

@@ -102,16 +102,20 @@ const BOX_GUIDE_ANCHORS = {
   985: "declaration",
 };
 
-const COMPUTATION_LINE_MEANINGS = {
-  profitLossPerAccounts: "Profit or loss per the accounts",
-  nonTradingLoanRelationshipCredits: "Non-trading loan relationship credits",
-  depreciation: "Depreciation",
-  amortisation: "Amortisation",
-  entertaining: "Entertaining",
-  adjustedProfitBeforeCapitalAllowances: "Adjusted profit before capital allowances",
-  totalCapitalAllowances: "Total capital allowances",
-  adjustedProfit: "Adjusted profit",
-};
+const MONEY_BOXES = new Set([145, 155, 315, 440]);
+
+// Each computation line in the order HMRC's computation prints it: a deduction shows in
+// brackets, a subtotal has a rule above it and the total a double rule below it.
+const COMPUTATION_LINES = [
+  { field: "profitLossPerAccounts", meaning: "Profit or loss per the accounts" },
+  { field: "nonTradingLoanRelationshipCredits", meaning: "Less: non-trading loan relationship credits", deduction: true },
+  { field: "depreciation", meaning: "Add: depreciation" },
+  { field: "amortisation", meaning: "Add: amortisation" },
+  { field: "entertaining", meaning: "Add: entertaining" },
+  { field: "adjustedProfitBeforeCapitalAllowances", meaning: "Adjusted profit before capital allowances", style: "subtotal" },
+  { field: "totalCapitalAllowances", meaning: "Less: total capital allowances", deduction: true },
+  { field: "adjustedProfit", meaning: "Adjusted profit", style: "total" },
+];
 
 const COMPUTATIONS_GUIDE_ANCHOR = "and-90-accounts-and-computations";
 
@@ -294,16 +298,45 @@ function tableRow(...cells) {
   return row;
 }
 
+// An amount as printed accounts show it: thousands separators, pence only when there are any,
+// and brackets around a deduction or a negative amount (but not both).
+function formatPounds(value, deduction = false) {
+  const amount = Number(value);
+  const digits = Number.isInteger(amount) ? 0 : 2;
+  const text = Math.abs(amount).toLocaleString("en-GB", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  return amount !== 0 && deduction !== amount < 0 ? `(${text})` : text;
+}
+
+function amountCell(row, text, style) {
+  const cell = row.lastElementChild;
+  cell.textContent = text;
+  cell.style.textAlign = "right";
+  cell.style.whiteSpace = "nowrap";
+  if (style === "subtotal" || style === "total") cell.style.borderTop = "1px solid currentColor";
+  if (style === "total") {
+    cell.style.borderBottom = "3px double currentColor";
+    cell.style.fontWeight = "bold";
+  }
+  return row;
+}
+
 function renderReview(preview, request) {
   const boxRows = Object.keys(preview.boxes)
     .map(Number)
     .sort((a, b) => a - b)
-    .map((box) => tableRow(box, guideLink(BOX_MEANINGS[box], BOX_GUIDE_ANCHORS[box]), preview.boxes[box]));
+    .map((box) => {
+      const row = tableRow(box, guideLink(BOX_MEANINGS[box], BOX_GUIDE_ANCHORS[box]), preview.boxes[box]);
+      return MONEY_BOXES.has(box) ? amountCell(row, formatPounds(preview.boxes[box])) : row;
+    });
   element("ct600Table")
     .querySelector("tbody")
     .replaceChildren(...boxRows);
-  const lineRows = Object.entries(COMPUTATION_LINE_MEANINGS).map(([field, meaning]) =>
-    tableRow(guideLink(meaning, COMPUTATIONS_GUIDE_ANCHOR), request.computationLines[field]),
+  const lineRows = COMPUTATION_LINES.map(({ field, meaning, deduction, style }) =>
+    amountCell(
+      tableRow(guideLink(meaning, COMPUTATIONS_GUIDE_ANCHOR), ""),
+      formatPounds(request.computationLines[field], deduction),
+      style,
+    ),
   );
   element("computationsTable")
     .querySelector("tbody")
