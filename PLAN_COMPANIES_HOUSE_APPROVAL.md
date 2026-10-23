@@ -29,7 +29,7 @@ section is their board.
 
 ### Human-driven
 
-- [ ] **O34g. HMRC Corporation Tax test-service credentials.** Register with HMRC's Software Developers Support Team for the Corporation Tax online test services, then set the test-service (ETS) sender id, password and the 4-digit vendor id as secrets on GitHub's `ci` environment, named as `PLAN_COMPANIES_HOUSE.md`'s design section lists them. Unblocks B34g2 (B34g1 proves against the credential-free payload validator first). **Source**: `PLAN_COMPANIES_HOUSE.md` design. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+- [ ] **O34g. HMRC Corporation Tax test-service credentials.** The registration email went to SDST on 2026-10-23 at 22:07 (`../private.diyaccounting.co.uk/hmrc/ct/EMAIL_SDST_CT600_REGISTRATION.md`); when SDST answers, set the test-service (ETS) sender id, password and the 4-digit vendor id as secrets on GitHub's `ci` environment, named as `PLAN_COMPANIES_HOUSE.md`'s design section lists them. Unblocks B34g2 (B34g1 proves against the credential-free payload validator first). **Source**: `PLAN_COMPANIES_HOUSE.md` design. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 ### Blocked
 
