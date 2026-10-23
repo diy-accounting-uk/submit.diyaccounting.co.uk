@@ -8,18 +8,98 @@
 const FILED_ACCOUNTS_STORAGE_KEY = "filedSmallCompanyAccounts";
 const MAX_POLLS = 60;
 
+const COMPANY_TAX_RETURN_GUIDE_URL = "https://www.gov.uk/guidance/the-company-tax-return-guide";
+
+// HMRC's own box names from the CT600 (2026) Version 3 form and the Company Tax Return guide.
 const BOX_MEANINGS = {
   1: "Company name",
   2: "Company registration number",
-  3: "Unique Taxpayer Reference",
-  30: "Start of the accounting period",
-  35: "End of the accounting period",
-  145: "Turnover",
+  3: "Tax reference (Unique Taxpayer Reference)",
+  4: "Type of company",
+  30: "Start of the period covered by the return",
+  35: "End of the period covered by the return",
+  145: "Total turnover from trade",
   155: "Trading profits",
+  160: "Trading losses brought forward set against trading profits",
+  165: "Net trading profits",
+  170: "Bank, building society or other interest, and profits from non-trading loan relationships",
+  235: "Profits before other deductions and reliefs",
+  300: "Profits before qualifying donations and group relief",
   315: "Profits chargeable to Corporation Tax",
-  440: "Corporation Tax",
-  975: "Name of the person signing",
-  985: "Status of the person signing",
+  326: "Number of associated companies in this period",
+  327: "Number of associated companies in the first financial year",
+  328: "Number of associated companies in the second financial year",
+  329: "Small profit rate or marginal relief entitlement",
+  330: "Financial year of the first tax rate",
+  335: "Amount of profit chargeable at the first rate",
+  340: "First rate of tax",
+  345: "Tax at the first rate",
+  380: "Financial year of the second tax rate",
+  385: "Amount of profit chargeable at the second rate",
+  390: "Second rate of tax",
+  395: "Tax at the second rate",
+  430: "Corporation Tax",
+  435: "Marginal relief",
+  440: "Corporation Tax chargeable",
+  475: "Net Corporation Tax liability",
+  510: "Tax chargeable",
+  515: "Income Tax deducted from gross income included in profits",
+  525: "Self-assessment of tax payable before restitution tax and coronavirus support scheme overpayments",
+  528: "Self-assessment of tax payable",
+  595: "Tax already paid (and not already repaid)",
+  600: "Tax outstanding",
+  620: "Franked investment income or exempt ABGH distributions",
+  690: "Annual investment allowance",
+  705: "Machinery and plant, main pool: allowances",
+  710: "Machinery and plant, main pool: balancing charges",
+  975: "Name of the person signing the declaration",
+  985: "Status of the person signing the declaration",
+};
+
+// The anchor of each box's section in the Company Tax Return guide.
+const BOX_GUIDE_ANCHORS = {
+  1: "company-name",
+  2: "company-registration-number",
+  3: "tax-reference",
+  4: "type-of-company",
+  30: "and-35-period-of-the-return",
+  35: "and-35-period-of-the-return",
+  145: "turnover",
+  155: "trading-profits",
+  160: "trading-losses-brought-forward-set-against-trading-profits",
+  165: "net-trading-profits",
+  170: "and-172-bank-building-society-or-other-interest-and-profits-from-non-trading-loan-relationships",
+  235: "profits-before-other-deductions-and-reliefs-1",
+  300: "profits-before-qualifying-donations-and-group-relief",
+  315: "profits-chargeable-to-corporation-tax",
+  326: "number-of-associated-companies-in-this-period",
+  327: "and-328-number-of-associated-companies-in-the-first-and-second-financial-years",
+  328: "and-328-number-of-associated-companies-in-the-first-and-second-financial-years",
+  329: "small-profit-rate-or-marginal-relief-entitlement",
+  330: "boxes-330-to-425",
+  335: "boxes-330-to-425",
+  340: "boxes-330-to-425",
+  345: "boxes-330-to-425",
+  380: "boxes-330-to-425",
+  385: "boxes-330-to-425",
+  390: "boxes-330-to-425",
+  395: "boxes-330-to-425",
+  430: "corporation-tax",
+  435: "marginal-relief",
+  440: "corporation-tax-chargeable",
+  475: "net-corporation-tax-liability",
+  510: "tax-chargeable",
+  515: "income-tax-deducted-from-gross-income-included-in-profits",
+  525: "self-assessment-of-tax-payable-before-restitution-tax-and-coronavirus-support-scheme-overpayments",
+  528: "self-assessment-of-tax-payable",
+  595: "tax-already-paid-and-not-already-repaid",
+  600: "tax-outstanding",
+  620: "franked-investment-income-or-exempt-abgh-distributions",
+  690: "annual-investment-allowance",
+  705: "and-710-machinery-and-plant--main-pool",
+  710: "and-710-machinery-and-plant--main-pool",
+  975: "declaration",
+  985: "declaration",
 };
 
 const COMPUTATION_LINE_MEANINGS = {
@@ -32,6 +112,8 @@ const COMPUTATION_LINE_MEANINGS = {
   totalCapitalAllowances: "Total capital allowances",
   adjustedProfit: "Adjusted profit",
 };
+
+const COMPUTATIONS_GUIDE_ANCHOR = "and-90-accounts-and-computations";
 
 let company = null;
 let previewRequest = null;
@@ -189,11 +271,24 @@ function formProblem() {
   return null;
 }
 
+function guideLink(text, anchor) {
+  const link = document.createElement("a");
+  link.href = `${COMPANY_TAX_RETURN_GUIDE_URL}#${anchor}`;
+  link.target = "_blank";
+  link.rel = "noopener";
+  link.textContent = text;
+  return link;
+}
+
 function tableRow(...cells) {
   const row = document.createElement("tr");
   for (const cell of cells) {
     const td = document.createElement("td");
-    td.textContent = String(cell);
+    if (cell instanceof Node) {
+      td.append(cell);
+    } else {
+      td.textContent = String(cell);
+    }
     row.append(td);
   }
   return row;
@@ -203,11 +298,13 @@ function renderReview(preview, request) {
   const boxRows = Object.keys(preview.boxes)
     .map(Number)
     .sort((a, b) => a - b)
-    .map((box) => tableRow(box, BOX_MEANINGS[box] ?? "", preview.boxes[box]));
+    .map((box) => tableRow(box, guideLink(BOX_MEANINGS[box], BOX_GUIDE_ANCHORS[box]), preview.boxes[box]));
   element("ct600Table")
     .querySelector("tbody")
     .replaceChildren(...boxRows);
-  const lineRows = Object.entries(COMPUTATION_LINE_MEANINGS).map(([field, meaning]) => tableRow(meaning, request.computationLines[field]));
+  const lineRows = Object.entries(COMPUTATION_LINE_MEANINGS).map(([field, meaning]) =>
+    tableRow(guideLink(meaning, COMPUTATIONS_GUIDE_ANCHOR), request.computationLines[field]),
+  );
   element("computationsTable")
     .querySelector("tbody")
     .replaceChildren(...lineRows);
