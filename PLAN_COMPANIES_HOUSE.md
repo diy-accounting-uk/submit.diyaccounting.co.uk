@@ -84,6 +84,11 @@ flowchart LR
     CT3b --> CT3c
     CT3c --> CT4
     CT3a --> CT3d
+    CT3c --> DF2a
+    B34c --> DF2a
+    B34g2b --> DF2a
+    DF2a --> DF2b
+    DF2a --> DF2c
 ```
 
 The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarded in `PLAN_COMPANIES_HOUSE_APPROVAL.md`; the graph keeps them so the chain reads whole.
@@ -104,6 +109,9 @@ The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarde
 - CT3c: blocked by CT3b
 - CT3d: blocked by CT3a and open question 14
 - CT4: blocked by CT3c (the videos, on `NEXT.md`)
+- DF2a: blocked by CT3c, B34c and B34g2b (the DF1 design below)
+- DF2b: blocked by DF2a
+- DF2c: blocked by DF2a
 
 ## Operator dates
 
@@ -736,6 +744,116 @@ regression proof.
 | Attach the accounts filed at Companies House as they are | Companies House may hold micro or filleted accounts with no P&L, and what we file is always our own document |
 | Keep the JSON paste beside the card | the card reads every kind the paste read, and more |
 
+### Design: the accounts and the Company Tax Return filed together (DF1)
+
+The design DF2a, DF2b and DF2c build to. Today the two are separate journeys: after Companies House
+accepts the accounts, `fileSmallCompanyAccounts.page.js` writes `filedSmallCompanyAccounts` to
+sessionStorage, and `fileCompanyTaxReturn.page.js` (line 8) offers those accounts on a second
+company lookup and a second review.
+
+**The service this replaces.** HMRC's free joint service closed: "The 'File your accounts and
+Company Tax Return' online service closed on 31 March 2026." and "From 1 April 2026 you should use
+commercial software to file annual accounts and Company Tax Returns with HMRC." (GOV.UK, "Filing
+company accounts and tax returns if you previously used the HMRC online service",
+https://www.gov.uk/guidance/closure-of-the-service-to-file-your-company-accounts-and-tax-return,
+published 6 March 2025, last updated 1 April 2026, retrieved 2026-10-23.) Companies House accounts
+filing stays separate: software, its web service, or paper, until April 2028, when it becomes
+software only (GOV.UK news, "Companies House update to accounts filing from April 2028",
+https://www.gov.uk/government/news/companies-house-update-to-accounts-filing-from-april-2028,
+published and retrieved 2026-10-23).
+
+**One journey.** The CT600 page (`fileCompanyTaxReturn.html`) becomes the joint page. Its first
+form question after the company lookup is "Where are you sending these accounts?":
+
+| Answer | Sends |
+|---|---|
+| To HMRC with the Company Tax Return | the CT600 alone (CT2's journey) |
+| To Companies House and to HMRC with the Company Tax Return | both, in the order below |
+
+Filing the accounts at Companies House alone stays on `fileSmallCompanyAccounts.html`. Then the
+journey is CT2's: one company lookup, one entry form (typed or filled from the card), one
+check-your-answers review. The joint answer adds these to the form and the review:
+
+| Added | Where | Notes |
+|---|---|---|
+| The copy for Companies House: full or filleted | the accounts section | open question 3; HMRC always gets the full accounts |
+| What Companies House receives | the review | a summary row of the copy, and, when filleted, the parts left out (P&L, directors' report) |
+| The company authentication code | the send step, beside the Government Gateway user ID and password | typed, sent once with the Companies House call, never stored |
+
+Both documents come from the same figures in `state.figures`: `buildAccountsIxbrl` builds the
+Companies House copy (`filleted` as chosen) and the full copy for HMRC. So one balance sheet
+serves both, and the accounts the CT600 carries are the accounts on the register.
+
+**The order of the sends.** Companies House first, then HMRC.
+
+1. The page posts the accounts to `companiesHouseAccountsPost.js` and polls
+   `companiesHouseAccountsGet.js` as `fileSmallCompanyAccounts.page.js` does.
+2. On `ACCEPT`, the page posts the CT600 to `hmrcCtReturnPost.js` with the full accounts and
+   polls `hmrcCtReturnGet.js`.
+3. When Companies House is still `PENDING` or `PARKED` after the page's poll window, the page says
+   so and offers two buttons: "Send the Company Tax Return now" and "Wait for Companies House".
+   The figures stay in sessionStorage (`state.figures`; no codes, no password), so a reload of the
+   page resumes at the send step. The Government Gateway password is typed again for a later send.
+
+Companies House goes first because its rejections come from the accounts document and from the
+authentication code, and a fix there can change figures the CT600 carries. A CT600 sent after the
+accounts are accepted carries accounts that match the register.
+
+**When one is accepted and the other rejected.**
+
+| Companies House | HMRC | What the page does |
+|---|---|---|
+| gateway error (`GovTalkErrors`) | not sent | nothing is filed; the page shows the error in plain words (`companies-house-error-messages.js`); the customer fixes and sends again |
+| `REJECT` | not sent | shows the reject codes; Change links lead to the fields; the customer fixes and resends to Companies House; HMRC follows on `ACCEPT` |
+| `ACCEPT` | `REJECT` | the accepted filing is kept; the accounts section is locked and reads "Filed at Companies House on <date>, submission <number>"; the customer changes only the tax answers (computation, allowances, income and reliefs, payments, UTR, declarant) and resends the CT600 alone |
+| `ACCEPT` | `REJECT` naming the attached accounts | the fix needs amended accounts at Companies House first; DF2c |
+| `PENDING`, CT600 sent early | `ACCEPT` | the CT600 is kept; if Companies House then rejects and the fix changes the figures, the CT600 needs an amended return (`ReturnType="amended"`); DF2c |
+| `ACCEPT` | `ACCEPT` | both receipts show as one filing |
+
+**One record with two receipts.** The page makes a `jointFilingId` (a UUID) when the customer
+opens the review. Both posts carry it. `putAsyncRequest` stores it with each submission, and
+`companiesHouseAccountsGet.js` and `hmrcCtReturnGet.js` write it into each receipt. The receipts
+page (AX5, in HS1's house style) shows the two receipts under one entry: the Companies House
+submission number and status, and HMRC's IRmark. Each receipt stays a full receipt of its own, so
+a half-finished pair still shows the filing that was accepted.
+
+**The charge.** One token per filing sent, two for the pair (operator, 2026-10-10). Each send goes
+through its own Lambda and its own activity's metering. `bundleManagement.js` path matching decides
+which activity a call from the joint page charges (open question 1). DF2a answers that first and
+pins it with a unit test.
+
+**Open question 3, the Companies House copy.** The operator's to decide. The alternatives:
+
+| Option | For | Against |
+|---|---|---|
+| A. Full by default, filleted offered | one document to both bodies; the review shows one set of accounts; nothing hidden from the register by accident | the P&L becomes public unless the customer chooses to fillet |
+| B. Filleted by default, full offered | keeps the P&L and directors' report off the public register, which small companies often want | the review shows two different documents; a customer who wants full accounts must choose them |
+| C. Full only | the simplest build | takes away a choice the law gives (section 444) and Companies House keeps after April 2028 (the GOV.UK news above) |
+| D. Filleted only | the most private | takes away full accounts; an option the builder already supports goes unused |
+
+Recommendation: A. The customer files one set of accounts and sees one document; filleting is
+one choice in the accounts section, and its review row says what Companies House publishes.
+
+**The build.** The rows wait on both filings being live (B34c, B34g2b) and on CT2's review (CT3c).
+
+| Row | Files | Tests | Proof |
+|---|---|---|---|
+| DF2a the joint journey | `fileCompanyTaxReturn.html`, `fileCompanyTaxReturn.page.js`, `app/functions/companies-house/companiesHouseAccountsPost.js` and `companiesHouseAccountsGet.js` (`jointFilingId`), `app/functions/hmrc/hmrcCtReturnPost.js` and `hmrcCtReturnGet.js` (`jointFilingId`), `web/public/submit.catalogue.toml` if open question 1 needs it, `behaviour-tests/companyTaxReturn.behaviour.test.js` (~8) | the order of the sends; each row of the accepted-and-rejected table on the simulator (its Gov-Test-Scenario headers); the accounts lock after `ACCEPT`; both receipts carry the same `jointFilingId`; the metering charges two tokens for the pair | the `simulator - companyTaxReturnBehaviour` job with a joint case; the `visual-review` skill on its screenshots; the availability table on `mtd-calendar.html` gains the joint filing |
+| DF2b the live proof | the catalogue (`prod` on the activity), `REPORT_CAPABILITIES.md` (~2) | — | one joint filing for DIY Accounting Limited on prod, both accepted, both receipts under one entry |
+| DF2c amended filings | revised accounts at Companies House (the accounts TIS supports revised accounts from the 2021 taxonomy) and an amended CT600 (`ReturnType="amended"`), each from the locked state (~6) | each amended path on the simulator | one amended CT600 through TPVS |
+
+**Rejected options.**
+
+| Option | Why not |
+|---|---|
+| Keep the two journeys and the sessionStorage hand-off | two lookups and two reviews; the operator asked for one journey |
+| A third page for the joint filing | a third copy of the accounts form; the CT600 page already holds the full accounts form after CT2 |
+| HMRC first, then Companies House | a Companies House fix can change the figures, which then needs an amended CT600 |
+| Both sends at once | the same risk as HMRC first, and two sets of errors on one screen |
+| Send the CT600 only on a Companies House `ACCEPT`, with no early option | Companies House can stay `PENDING` for hours; the customer may need the CT600 in before its deadline |
+| Undo the accepted filing when the other is rejected | neither body withdraws an accepted filing; the accepted one stays and only the other is corrected |
+| Store the Government Gateway password or the authentication code for a later send | this plan's rule: codes are typed, sent once and never stored |
+
 ## Tasks
 
 The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
@@ -753,6 +871,9 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 | CT3b | The typed entry form, the field table with CT1's labels, the live checks, the card's `ct600` kind (the CT2 design) | ~7 | Sonnet | CT3a, CT1 | Blocked |
 | CT3c | The check-your-answers review with Change links, history, and the typed and book behaviour cases (the CT2 design) | ~5 | Sonnet | CT3b | Blocked |
 | CT3d | A micro-entity's FRS 105 accounts with a P&L as the CT600 attachment (the CT2 design, open question 14) | ~5 | Sonnet | CT3a | Blocked |
+| DF2a | The joint journey on the CT600 page: the send-to question, Companies House then HMRC, the lock after `ACCEPT`, `jointFilingId` on both receipts (the DF1 design) | ~8 | Sonnet | CT3c, B34c, B34g2b | Blocked |
+| DF2b | One live joint filing for DIY Accounting Limited; `prod` on the activity (the DF1 design) | ~2 | Sonnet | DF2a | Blocked |
+| DF2c | Amended accounts at Companies House and an amended CT600 from the locked state (the DF1 design) | ~6 | Sonnet | DF2a | Blocked |
 
 
 ## Task detail
