@@ -82,6 +82,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/compact-ready/SKILL.md` — before a compaction: land or commit every agent's and worktree's work, write `NEXT.md` and chat decisions to files, keep monitors, then say yes / yes after / not yet and list what the summary must keep; invoke as `/compact-ready`
 - `.claude/skills/company-book/SKILL.md` — build, verify and hand over DIY Accounting Limited's own diya-gl book from its bank, Stripe, PayPal and supplier sources, and tell Cowork how to read it with the spreadsheets MCP; invoke as `/company-book`
 - `.claude/skills/donor-usage/SKILL.md` — match Stripe and PayPal donors to prod submit accounts and their submissions, into a private file at the workspace root; invoke as `/donor-usage`
+- `.claude/skills/visual-review/SKILL.md` — judge screenshots as a reader sees them (realistic data, not a bug, clean edges, space used, readable, current, safe) after a major visual change, then refresh and review the guide and site screenshots and the videos; the look pass in the visual definition of done
 
 ## Permission Handling
 
@@ -122,6 +123,24 @@ no longer needed (its content is proven on the batch or on `main`), print the re
 command for the operator, in a fenced block with the `!` prefix, at the moment it stops being
 needed, and again in every `/board` render's Part 5 until it is gone. Nothing waits on the removal:
 a stale worktree or branch left on disk blocks no merge, no dispatch and no push.
+
+## Definition of done for anything a person sees
+
+A change to anything a person sees (a page, `web/public/submit.css` or a shared widget, a rendered
+document such as a filed iXBRL or a receipt, the guide, a video) is done when all of these hold,
+not when the tests pass:
+
+1. The tests pass, including a check of what the reader sees, not only what the DOM holds.
+2. After a major visual change (a new page, journey or rendered document; a layout change; a
+   change to the shared stylesheet, a shared widget or the submission-record house style), the
+   `visual-review` skill judges the passing run's screenshots as an LLM reviewer.
+3. The guide screenshots (`npm run video:walkthrough`) and the site screenshots are taken again;
+   for a major change, the videos that show it are recorded again.
+4. The `visual-review` skill judges the new screenshots, and the `ui-ux-pro-max` skill reviews the
+   guide's screenshots for the journeys the change reaches.
+5. Every fail is fixed in the change, or is a `NEXT.md` row with its screenshots.
+
+A copy change or a small fix inside one component needs step 1 only.
 
 ## A direct question gets its answer as the whole reply
 

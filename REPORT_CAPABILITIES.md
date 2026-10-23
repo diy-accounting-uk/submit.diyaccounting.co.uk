@@ -455,6 +455,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any: use when a task would add a script, workflow, Lambda, check, sync, report, alarm, page or skill
     - [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally: use when a batch branch is about to take its first push, or a local pass has gone red in CI.
     - [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions: use when the operator asks which donors use submit, whether donors file, or for the donor-to-usage cross reference.
+    - [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them: use when a major change to anything a person sees has passed its tests, a guide or site screenshot set was refreshed, or the operator asks for a visual, look or screenshot review.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -4464,7 +4465,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -4781,6 +4782,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any
 - [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally
 - [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions
+- [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -4969,6 +4971,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `.claude/skills/donor-usage/SKILL.md`
 - **Files:** .claude/skills/donor-usage/SKILL.md, app/services/subHasher.js, scripts/finance/stripe-stage.js, scripts/finance/paypal-stage.js
 - **Keywords:** donor, donation, donors who submit, cross reference, Stripe donor, PayPal donor, usage by donor
+
+#### DEV-46 Judge screenshots as a reader sees them
+
+- **Use when:** a major change to anything a person sees has passed its tests, a guide or site screenshot set was refreshed, or the operator asks for a visual, look or screenshot review.
+- **Does:** visual-review reads each screenshot with the Read tool and scores it pass or fail on ten criteria (realistic data, not a bug, clean edges, space used, readable, current, nothing in the way, safe, alt text, consistent). It refreshes the guide and site screenshots and the videos after a major change, runs ui-ux-pro-max over the guide, fixes the fails the change caused and raises NEXT.md rows for bugs with their screenshots.
+- **Run:** `/visual-review`
+- **Entry:** `.claude/skills/visual-review/SKILL.md`
+- **Files:** .claude/skills/visual-review/SKILL.md
+- **Keywords:** visual review, screenshot review, look pass, llm as judge, definition of done, realistic data, clipping, guide screenshots, ux review
+- **Related:** DEV-19, OPS-139
 
 
 ## Spreadsheets and diya-gl (SS)
@@ -6027,6 +6039,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - client secret: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token)
 - client_authorisation_status: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - client_credentials: [DEV-03](#dev-03-simulate-hmrc-oauth)
+- clipping: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - cloud book: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - cloud sign-in: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - cloud sign-in event: [SS-33](#ss-33-send-diya-gl-ga4-events)
@@ -6226,6 +6239,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - deep clean: [DEV-22](#dev-22-clean-and-update-local-build-state)
 - deep link: [OPS-80](#ops-80-build-aws-console-deep-links-for-operators), [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - deep links: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
+- definition of done: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - delegated relationship: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client)
 - delete book: [BILL-18](#bill-18-delete-a-diya-gl-book)
 - delete bundle: [BILL-03](#bill-03-delete-a-bundle)
@@ -6604,6 +6618,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - guardduty: [OPS-75](#ops-75-run-nightly-security-lake-analysis), [OPS-117](#ops-117-provision-the-observability-stack)
 - guardrail: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - guest role: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
+- guide screenshots: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - gyb mail mirror: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - haiku: [OPS-18](#ops-18-run-alarm-and-support-triage)
 - halt triage: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
@@ -6818,6 +6833,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - list_vat_obligations: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - listlapsedbundleowners: [BILL-21](#bill-21-sweep-lapsed-diya-gl-books)
 - live mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
+- llm as judge: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - llm judge: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - llm voice tells: [DEV-38](#dev-38-write-plain-human-prose)
 - llm-voice: [SS-57](#ss-57-write-plain-human-prose)
@@ -6843,6 +6859,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - login to submission funnel: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - logout: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - logout beacon: [SITE-04](#site-04-track-visits-via-session-beacon)
+- look pass: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - lookup resources: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention)
 - loopback: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
 - loss carry forward: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
@@ -7235,6 +7252,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - read-workbook: [SS-05](#ss-05-run-the-diya-gl-cli)
 - read:self-assessment: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - readme: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
+- realistic data: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - recalc: [SS-05](#ss-05-run-the-diya-gl-cli)
 - recalculate mode: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - receipt: [HMRC-01](#hmrc-01-submit-a-vat-return)
@@ -7403,6 +7421,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - schema tables: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - screen reader: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
+- screenshot review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - screenshots: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video), [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - sdst: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - se-derivations: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
@@ -7731,6 +7750,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - utm_campaign: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - utm_source: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - utr: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
+- ux review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - v2 schema: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
 - validate workflows: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - validatelines: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
@@ -7785,6 +7805,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - visitor kind: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - visitor_kind property: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
 - visitors by kind: [DATA-27](#data-27-sql-views-activity-and-traffic)
+- visual review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - vitest config: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - volatile cells: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
 - vrn: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
