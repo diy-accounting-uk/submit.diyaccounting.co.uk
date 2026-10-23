@@ -483,6 +483,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           APP_TOKEN: ${{ steps.app-token.outputs.token }}
           DRAFT_PR_URL: ${{ steps.draft-pr.outputs.url }}
+          ALARM_TIMESTAMP: ${{ needs.triage.outputs.timestamp }}
         run: |
           set -euo pipefail
           gh label create "remedy:dispatch" --color 0e8a16 --description "Triage dispatched this family's own remedy workflow" --repo "${{ github.repository }}" 2>/dev/null || true
@@ -525,6 +526,10 @@ jobs:
               INPUT_ARGS=()
               for KEY in $(jq -r '.inputs // {} | keys[]' <<<"$REMEDY_ROW"); do
                 VALUE=$(jq -r --arg k "$KEY" '.inputs[$k]' <<<"$REMEDY_ROW")
+                # A row value of {alarm-date-minus-1} is the UTC day before the alarm fired.
+                if [ "$VALUE" = "{alarm-date-minus-1}" ]; then
+                  VALUE=$(date -u -d "${ALARM_TIMESTAMP} - 1 day" +%F)
+                fi
                 INPUT_ARGS+=(-f "${KEY}=${VALUE}")
               done
               GH_TOKEN="$APP_TOKEN" gh workflow run "$ROW_WORKFLOW" --repo "${{ github.repository }}" "${INPUT_ARGS[@]}"

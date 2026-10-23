@@ -578,7 +578,7 @@ Proves: the rule holds under a real batch, and the operator stops merging by han
 
 ### Phase 3. Ops that close their own loop
 
-Status: on main (cc7735eba, 6ddd26955: `app/data/alarm-remedies.json`, the remedy step in `alarm-triage.yml`, `alarm-remedy-close.yml`, `scripts/remedy-budget-remaining.mjs`, `scripts/close-alarm-issue-when-ok.mjs`, `scripts/verify-draft-pr-scope.mjs`). Open: the `run-nightly.yml` replay in the horizon below, boarded as RA3 on `NEXT.md`.
+Status: on main (cc7735eba, 6ddd26955: `app/data/alarm-remedies.json`, the remedy step in `alarm-triage.yml`, `alarm-remedy-close.yml`, `scripts/remedy-budget-remaining.mjs`, `scripts/close-alarm-issue-when-ok.mjs`, `scripts/verify-draft-pr-scope.mjs`). `run-nightly.yml` replays one night by dispatch; the `analytics-nightly-missed` row uses it. Open: the `*-errors` and `scan-detect-404-missed` rows in the horizon below.
 
 - The remedy list, one row per alarm family, written twice in the same shape:
   `app/data/alarm-remedies.json` for the workflow and the table below for the reader. The key is
@@ -604,11 +604,10 @@ Status: on main (cc7735eba, 6ddd26955: `app/data/alarm-remedies.json`, the remed
   the history. ci alarms reach Telegram only, since the issue Lambda is a target only in prod, so
   the ci rows exist for the closed issues and take no new ones. `check-*` child alarms sit outside
   the alarm-state-change rule and raise no issue, so they have no rows.
-- Horizon: the nightly `*-errors`, `analytics-nightly-missed` and `scan-detect-404-missed`
-  families lose a night's data on every failure. The replay the stacks design is one state
-  machine execution with an explicit date. A `run-nightly.yml` taking `environment-name` and
-  `date` would turn those rows' missing night into a dispatch; until it exists the `draft-pr`
-  rows fix the code and the `missed` rows wait for a person.
+- Horizon: the nightly `*-errors` and `scan-detect-404-missed` families lose a night's data on
+  every failure. `run-nightly.yml` takes `environment-name` and `date` and runs the analytics
+  state machine once; the `*-errors` rows stay `draft-pr` until a replay follows the fix, and the
+  `scan-detect-404-missed` row waits for a replay workflow of its own.
 - `alarm-triage.yml`'s run budget generalises to every agent path.
 
 Score, over the 86 closed alarm issues: 37 (43%) would have closed themselves under this table,
@@ -674,7 +673,7 @@ although a board PR that only cites the issue counts the same way, so the 37 is 
 | `ci-env-salt-secret-unexpected-read` | none |  | 0 | Security signal; ci alarms raise no issue now (the issue Lambda is a prod target), so only the historical issues carry it. |
 | `prod-env-activity-events-data-quality-rules-failed` | none |  | 0 | A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause. |
 | `prod-env-alarm-state-changes-data-quality-rules-failed` | none |  | 0 | A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause. |
-| `prod-env-analytics-nightly-missed` | none |  | 0 | The nightly did not start; the scheduler needs a person until a replay workflow exists. |
+| `prod-env-analytics-nightly-missed` | dispatch | `run-nightly.yml` `-f environment-name=prod` `-f date=<the UTC day before the alarm fired>` | 1 | The nightly did not start; one execution with the missed night's date replays it, and the alarm returns to OK when that run succeeds. |
 | `prod-env-billing-webhook-stack-health` | none |  | 0 | The Stripe webhook is a money path; a person reviews every change to it. |
 | `prod-env-bundle-cap-reached` | none |  | 0 | A cap is a business limit; raising it is the operator's decision. |
 | `prod-env-cis-aws-config-changes` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |

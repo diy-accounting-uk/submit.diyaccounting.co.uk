@@ -370,9 +370,14 @@
   },
   {
     "family": "prod-env-analytics-nightly-missed",
-    "remedy": "none",
-    "budgetPerDay": 0,
-    "why": "The nightly did not start; the scheduler needs a person until a replay workflow exists."
+    "remedy": "dispatch",
+    "workflow": "run-nightly.yml",
+    "inputs": {
+      "environment-name": "prod",
+      "date": "{alarm-date-minus-1}"
+    },
+    "budgetPerDay": 1,
+    "why": "The nightly did not start; one execution with the missed night's date replays it, and the alarm returns to OK when that run succeeds."
   },
   {
     "family": "prod-env-billing-webhook-stack-health",
