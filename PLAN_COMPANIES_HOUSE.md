@@ -82,7 +82,7 @@ flowchart LR
 
 The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarded in `PLAN_COMPANIES_HOUSE_APPROVAL.md`; the graph keeps them so the chain reads whole.
 
-- B34.6c: the send (NEXT.md B34); the harness is green under the replacement presenter and every case is pinned
+- B34.6c: sent 2026-10-23 on the 000004 thread (NEXT.md B34 waits on the answer); the harness is green under the replacement presenter and every case is pinned
 - O34c: ready; it is the ask in B34's email
 - B34c: blocked by O34c
 - CS-A4: in flight; the pack rides on B34's email
