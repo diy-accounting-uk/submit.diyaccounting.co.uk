@@ -76,7 +76,7 @@
             <label>VAT period</label>
             <div id="obligationChoiceGroup" hidden>
               <p id="obligationChoice-hint" class="hint">Choose a period HMRC is expecting a return for</p>
-              <select id="obligationChoice" aria-describedby="obligationChoice-hint"></select>
+              <select id="obligationChoice" style="width: 100%" aria-describedby="obligationChoice-hint"></select>
             </div>
             <p id="obligationStatus" class="hint" role="status"></p>
             <button type="button" id="connectHmrcBtn" class="secondary-button" style="display: none">
@@ -85,11 +85,11 @@
             <div id="periodDates">
               <p id="periodDates-hint" class="hint">Enter the start and end dates of your VAT period</p>
               <div class="period-date-inputs" style="display: flex; gap: 1em; flex-wrap: wrap">
-                <div>
+                <div style="flex: 1 1 12em">
                   <label for="periodStart">Period start</label>
                   <input type="date" id="periodStart" name="periodStart" required aria-describedby="periodDates-hint" />
                 </div>
-                <div>
+                <div style="flex: 1 1 12em">
                   <label for="periodEnd">Period end</label>
                   <input type="date" id="periodEnd" name="periodEnd" required aria-describedby="periodDates-hint" />
                 </div>
@@ -312,7 +312,7 @@
             </div>
             <label for="testScenario">Test scenario (Developer/Synthetic only)</label>
             <p id="testScenario-hint" class="hint">Test different HMRC sandbox error scenarios</p>
-            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+            <select id="testScenario" style="width: 100%" name="testScenario" aria-describedby="testScenario-hint">
               <option value="">Default</option>
               <!-- Values aligned with reference/hmrc-mtd-vat-api-1.0.yaml (POST /organisations/vat/{vrn}/returns) -->
               <option value="INVALID_VRN">Invalid VAT registration number</option>

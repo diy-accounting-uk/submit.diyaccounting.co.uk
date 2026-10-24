@@ -375,9 +375,10 @@ export async function submitVat(
       }
       throw new Error(message);
     }
-    const message = `Failed to submit VAT. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to submit VAT. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to submit VAT (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -424,9 +425,10 @@ export async function getBusinessDetails(
       }
       throw new Error(message);
     }
-    const message = `Failed to retrieve business details. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to retrieve business details. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to retrieve business details (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -480,9 +482,10 @@ export async function getObligations(
       }
       throw new Error(message);
     }
-    const message = `Failed to retrieve obligations. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to retrieve obligations. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to retrieve obligations (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -540,9 +543,10 @@ export async function postSelfEmploymentPeriod(
       }
       throw new Error(message);
     }
-    const message = `Failed to file the quarterly update. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to file the quarterly update. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to file the quarterly update (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -591,9 +595,10 @@ export async function getSelfEmploymentAnnual(
       }
       throw new Error(message);
     }
-    const message = `Failed to retrieve the annual submission. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to retrieve the annual submission. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to retrieve the annual submission (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -646,9 +651,10 @@ export async function putSelfEmploymentAnnual(
       }
       throw new Error(message);
     }
-    const message = `Failed to save the annual submission. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to save the annual submission. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to save the annual submission (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -700,9 +706,10 @@ export async function triggerBsas(
       }
       throw new Error(message);
     }
-    const message = `Failed to trigger the year-end summary. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to trigger the year-end summary. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to trigger the year-end summary (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -809,9 +816,10 @@ export async function adjustBsasSelfEmployment(
       }
       throw new Error(message);
     }
-    const message = `Failed to submit the year-end adjustment. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to submit the year-end adjustment. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to submit the year-end adjustment (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -860,9 +868,10 @@ export async function getUkPropertyAnnual(
       }
       throw new Error(message);
     }
-    const message = `Failed to retrieve the annual submission. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to retrieve the annual submission. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to retrieve the annual submission (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -914,9 +923,10 @@ export async function putUkPropertyAnnual(
       }
       throw new Error(message);
     }
-    const message = `Failed to save the annual submission. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to save the annual submission. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to save the annual submission (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -1022,9 +1032,10 @@ export async function adjustBsasUkProperty(
       }
       throw new Error(message);
     }
-    const message = `Failed to submit the year-end adjustment. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to submit the year-end adjustment. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to submit the year-end adjustment (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -1083,9 +1094,10 @@ export async function triggerCalculation(
       }
       throw new Error(message);
     }
-    const message = `Failed to trigger the tax calculation. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to trigger the tax calculation. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to trigger the tax calculation (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -1134,9 +1146,10 @@ export async function getCalculation(
       }
       throw new Error(message);
     }
-    const message = `Failed to retrieve the tax calculation. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to retrieve the tax calculation. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to retrieve the tax calculation (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -1199,9 +1212,10 @@ export async function postFinalDeclaration(
       error.tokensRemaining = responseJson.tokensRemaining;
       throw error;
     }
-    const message = `Failed to submit the final declaration. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to submit the final declaration. Remote call failed: POST ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to submit the final declaration (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -1250,9 +1264,10 @@ export async function getLossesAndClaims(
       }
       throw new Error(message);
     }
-    const message = `Failed to retrieve losses and claims. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to retrieve losses and claims. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to retrieve losses and claims (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -1306,9 +1321,10 @@ export async function putLossesAndClaims(
       }
       throw new Error(message);
     }
-    const message = `Failed to save losses and claims. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to save losses and claims. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to save losses and claims (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -1355,9 +1371,10 @@ export async function getTaxLiabilityAdjustments(
       }
       throw new Error(message);
     }
-    const message = `Failed to retrieve tax liability adjustments. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to retrieve tax liability adjustments. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to retrieve tax liability adjustments (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -1408,9 +1425,10 @@ export async function putTaxLiabilityAdjustments(
       }
       throw new Error(message);
     }
-    const message = `Failed to save tax liability adjustments. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
-    console.error(message);
-    throw new Error(message);
+    console.error(
+      `Failed to save tax liability adjustments. Remote call failed: PUT ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw new Error(`Failed to save tax liability adjustments (HTTP ${response.status}).${failureReason(responseJson)}`);
   }
   return responseJson;
 }
@@ -1441,4 +1459,9 @@ if (typeof window !== "undefined") {
   window.putLossesAndClaims = putLossesAndClaims;
   window.getTaxLiabilityAdjustments = getTaxLiabilityAdjustments;
   window.putTaxLiabilityAdjustments = putTaxLiabilityAdjustments;
+}
+
+function failureReason(responseJson) {
+  const reason = responseJson?.userMessage || responseJson?.message || responseJson?.error;
+  return typeof reason === "string" && reason.trim() ? ` ${reason.trim()}` : "";
 }

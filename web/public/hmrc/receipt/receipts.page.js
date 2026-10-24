@@ -226,6 +226,8 @@ function displayAssistMessages(container, messages, acknowledgedAt) {
   container.appendChild(section);
 }
 
+const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/;
+
 function displayReceiptTable(data, name) {
   const receiptDisplay = document.getElementById("receiptDisplay");
   const receiptContent = document.getElementById("receiptContent");
@@ -244,7 +246,9 @@ function displayReceiptTable(data, name) {
   const dataRows = receiptRows(dataToDisplay).map((entry) => {
     const isAmount = typeof entry.value === "number" && Number.isFinite(entry.value);
     const box = vatBoxes[entry.field];
-    const row = { ...entry, kind: isAmount ? "money" : "text" };
+    const isTimestamp = typeof entry.value === "string" && ISO_TIMESTAMP.test(entry.value);
+    const value = isTimestamp ? new Date(entry.value).toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short" }) : entry.value;
+    const row = { ...entry, value, kind: isAmount ? "money" : "text" };
     return box ? { ...row, label: box.label, definition: box.definition, source: box.source } : row;
   });
   const rows = [{ field: "receiptName", label: "Receipt name", value: name, kind: "text" }, ...dataRows];

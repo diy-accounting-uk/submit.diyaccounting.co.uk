@@ -213,7 +213,7 @@ export async function fillInVat(
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-selected-scenario.png` });
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-options-shown.png` });
     }
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-submission.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-submission.png`, readerView: true });
 
     // Period dates are now set via date inputs, periodKey is resolved server-side
     // No need for synthetic-specific dropdown manipulation
@@ -371,7 +371,7 @@ export async function fillInVat9Box(
       }
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-9box-scenario.png` });
     }
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-9box-complete.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-9box-complete.png`, readerView: true });
 
     // Period dates are now set via date inputs, periodKey is resolved server-side
 
@@ -412,7 +412,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
       // genuine stall into a fast, attributable failure instead of quietly spending the
       // whole test timeout on it.
       await expect(statusContainer).toContainText(/failed|error/i, { timeout: 90_000 });
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png`, readerView: true });
       await expect(page.locator("#receiptDisplay")).toBeHidden();
     });
   } else {
@@ -500,9 +500,9 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
           timeout: 1_000_000,
           screenshotPath,
         });
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-receipt.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-receipt.png`, readerView: true });
         await page.waitForTimeout(500);
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-complete-vat-receipt.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-complete-vat-receipt.png`, readerView: true });
         // Scroll, capture a pagedown
         await page.keyboard.press("PageDown");
         await page.waitForTimeout(200);
@@ -523,7 +523,7 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
       // genuine stall into a fast, attributable failure instead of quietly spending the
       // whole test timeout on it.
       await expect(statusContainer).toContainText(/failed|error/i, { timeout: 90_000 });
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png`, readerView: true });
       await expect(page.locator("#receiptDisplay")).toBeHidden();
     });
   } else {
@@ -535,7 +535,7 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
       // Check for the success message
       const successHeader = receiptDisplay.locator("h3");
       await expect(successHeader).toContainText("VAT return submitted successfully");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-verify-vat-submitted.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-verify-vat-submitted.png`, readerView: true });
 
       // Verify receipt details are populated with correct HMRC formats
       // formBundleNumber: exactly 12 digits per HMRC API spec pattern ^[0-9]{12}$
@@ -576,7 +576,7 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
 
       // Verify the form is hidden after successful submission
       await expect(page.locator("#vatForm")).toBeHidden();
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-verify-vat.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-verify-vat.png`, readerView: true });
 
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
@@ -772,7 +772,7 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
       timeout: 450_000,
       screenshotPath,
     });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations-results.png`, readerView: true });
     const resultsContainer = page.locator("#obligationsResults");
     await expect(resultsContainer).toBeVisible();
 
@@ -1011,12 +1011,12 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
     }
 
     console.log("VAT obligations retrieval completed successfully");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-obligations-success.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-obligations-success.png`, readerView: true });
 
     // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
     await page.waitForTimeout(200);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-obligations-results-pagedown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-obligations-results-pagedown.png`, readerView: true });
   });
 }
 
@@ -1187,7 +1187,7 @@ export async function verifyVatLiabilitiesResults(page, liabilitiesQuery, screen
       timeout: 450_000,
       screenshotPath,
     });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-liabilities-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-liabilities-results.png`, readerView: true });
     const resultsContainer = page.locator("#liabilitiesResults");
     await expect(resultsContainer).toBeVisible();
 
@@ -1215,7 +1215,7 @@ export async function verifyVatLiabilitiesResults(page, liabilitiesQuery, screen
     }
 
     console.log("VAT liabilities retrieval completed successfully");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-liabilities-success.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-liabilities-success.png`, readerView: true });
 
     // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
@@ -1391,7 +1391,7 @@ export async function verifyVatPaymentsResults(page, paymentsQuery, screenshotPa
       timeout: 450_000,
       screenshotPath,
     });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-payments-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-payments-results.png`, readerView: true });
     const resultsContainer = page.locator("#paymentsResults");
     await expect(resultsContainer).toBeVisible();
 
@@ -1419,7 +1419,7 @@ export async function verifyVatPaymentsResults(page, paymentsQuery, screenshotPa
     }
 
     console.log("VAT payments retrieval completed successfully");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-payments-success.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-payments-success.png`, readerView: true });
 
     // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
@@ -1574,7 +1574,7 @@ export async function verifyVatPenaltiesResults(page, penaltiesQuery, screenshot
       timeout: 450_000,
       screenshotPath,
     });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-penalties-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-penalties-results.png`, readerView: true });
     const resultsContainer = page.locator("#penaltiesResults");
     await expect(resultsContainer).toBeVisible();
 
@@ -1594,7 +1594,7 @@ export async function verifyVatPenaltiesResults(page, penaltiesQuery, screenshot
     }
 
     console.log("VAT penalties retrieval completed successfully");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-penalties-success.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-penalties-success.png`, readerView: true });
 
     // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
@@ -1737,7 +1737,7 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-results-waiting.png` });
       await page.waitForLoadState("networkidle");
       await page.waitForTimeout(500);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-results-error.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-results-error.png`, readerView: true });
       const statusContainer = page.locator("#statusMessagesContainer");
       let statusText;
       for (let attempt = 1; attempt <= 3; attempt++) {
@@ -1788,7 +1788,7 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
         }
         throw error;
       }
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-view-vat-return-results.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-view-vat-return-results.png`, readerView: true });
       const resultsContainer = page.locator("#returnResults");
       await expect(resultsContainer).toBeVisible();
 
@@ -1831,7 +1831,7 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-view-vat-return-results.png` });
       await page.keyboard.press("PageDown");
       await page.waitForTimeout(200);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-view-vat-return-results.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-view-vat-return-results.png`, readerView: true });
 
       console.log("View VAT return completed successfully with validated fields");
     });
