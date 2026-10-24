@@ -12,17 +12,9 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { escapeXmlText } from "../lib/xmlDom.js";
-import {
-  DATE_FORMAT,
-  DOCUMENT_STYLE,
-  IXT2_NAMESPACE,
-  NUMBER_FORMAT,
-  displayDate,
-  figure,
-  formatMonetary,
-  periodEndedPhrase,
-  statementTable,
-} from "./accountsIxbrlCommon.js";
+import { DATE_FORMAT, IXT2_NAMESPACE, NUMBER_FORMAT, displayDate, formatMonetary, periodEndedPhrase } from "./accountsIxbrlCommon.js";
+import { recordFigure, recordHeading, recordTable } from "../lib/submissionRecord.js";
+import { RECORD_STYLE } from "../lib/submissionRecordStyle.js";
 
 // eslint-disable-next-line sonarjs/no-clear-text-protocols -- the entry point HMRC accepts is this http URI, resolved from the taxonomy package
 export const CT_COMP_ENTRY_POINT = "http://www.hmrc.gov.uk/schemas/ct/comp/2025-01-01/ct-comp-2025.xsd";
@@ -106,7 +98,7 @@ function monetaryFact(concept, contextRef, value) {
 }
 
 function monetaryCell(concept, contextRef, value, options) {
-  return figure(monetaryFact(concept, contextRef, value), value, options);
+  return recordFigure(monetaryFact(concept, contextRef, value), value, options);
 }
 
 function textFact(concept, contextRef, text) {
@@ -161,7 +153,7 @@ export function buildCtComputations({ companyName, companyNumber, utr, periodSta
     label: line.label,
     cells: [monetaryCell(line.concept, "tradePeriod", lines[line.key], { deduction: line.effect < 0 })],
   }));
-  const computationTable = statementTable({
+  const computationTable = recordTable({
     columns: [periodEnd.slice(0, 4)],
     rows: [
       {
@@ -189,12 +181,15 @@ export function buildCtComputations({ companyName, companyNumber, utr, periodSta
   });
 
   const bodyHtml = `<div class="page">
-<p class="company">${textFact("CompanyName", "companyInstant", companyName)}</p>
-<p class="registration">Registered number: ${escapeXmlText(companyNumber)}</p>
-<p class="registration">Unique Taxpayer Reference: ${textFact("TaxReference", "companyInstant", utr)}</p>
-<h2>Corporation Tax computation</h2>
-<p class="subtitle">for the ${escapeXmlText(periodEndedPhrase(periodStart, periodEnd))}</p>
-<p>Return period: ${dateFact("StartOfPeriodCoveredByReturn", "companyInstant", periodStart)} to ${dateFact("EndOfPeriodCoveredByReturn", "companyInstant", periodEnd)}</p>
+${recordHeading({
+  nameHtml: textFact("CompanyName", "companyInstant", companyName),
+  referenceHtml: [
+    `Registered number: ${escapeXmlText(companyNumber)}`,
+    `Unique Taxpayer Reference: ${textFact("TaxReference", "companyInstant", utr)}`,
+  ],
+  title: "Corporation Tax computation",
+  subtitleHtml: `for the ${escapeXmlText(periodEndedPhrase(periodStart, periodEnd))}`,
+})}<p>Return period: ${dateFact("StartOfPeriodCoveredByReturn", "companyInstant", periodStart)} to ${dateFact("EndOfPeriodCoveredByReturn", "companyInstant", periodEnd)}</p>
 <p>Period of account: ${dateFact("PeriodOfAccountStartDate", "companyInstant", periodStart)} to ${dateFact("PeriodOfAccountEndDate", "companyInstant", periodEnd)}</p>
 <h3>Trading profits: ${escapeXmlText(tradeName)}</h3>
 ${computationTable}
@@ -204,7 +199,7 @@ ${computationTable}
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL" xmlns:ixt2="${IXT2_NAMESPACE}" xmlns:xbrli="http://www.xbrl.org/2003/instance" xmlns:xbrldi="http://xbrl.org/2006/xbrldi" xmlns:link="http://www.xbrl.org/2003/linkbase" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:iso4217="http://www.xbrl.org/2003/iso4217" xmlns:ct-comp="${CT_COMP_NAMESPACE}">
 <head>
 <title>${escapeXmlText(companyName)} - Computation</title>
-<style type="text/css">${DOCUMENT_STYLE}</style>
+<style type="text/css">${RECORD_STYLE}</style>
 </head>
 <body>
 <div style="display:none">

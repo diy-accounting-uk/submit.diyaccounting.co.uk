@@ -11,6 +11,8 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { escapeXmlText } from "../lib/xmlDom.js";
+import { recordFigure, recordHeading } from "../lib/submissionRecord.js";
+import { RECORD_STYLE } from "../lib/submissionRecordStyle.js";
 
 export const FRS_102_ENTRY_POINT = "https://xbrl.frc.org.uk/FRS-102/2026-01-01/FRS-102-2026-01-01.xsd";
 
@@ -349,60 +351,6 @@ export function buildDimensionedContext({ additionalContexts, entityIdentifierXm
 }
 
 /**
- * A figure as printed in a statement column: a tagged fact with its value, shown in brackets when
- * it is a deduction from the lines above it or a negative amount (but not both).
- * @param {string} factXml - the ix:nonFraction element
- * @param {number} value
- * @param {{deduction?: boolean}} [options]
- * @returns {{xml: string, bracketed: boolean}}
- */
-export function figure(factXml, value, { deduction = false } = {}) {
-  const bracketed = value !== 0 && deduction !== value < 0;
-  return { xml: bracketed ? `(${factXml})` : factXml, bracketed };
-}
-
-/**
- * One statement laid out as printed accounts: a label column, an optional note column and one
- * right-aligned figure column per heading, with a pound sign under each heading.
- *
- * Each row is {label, note?, cells?, style?, indent?}: cells holds one figure() result (or null
- * for a blank cell) per column; style is "heading" (a label with no figures), "subtotal" (a rule
- * above the figures) or "total" (a rule above and a double rule below).
- *
- * @param {object} table
- * @param {string[]} table.columns - the heading of each figure column, e.g. ["2025", "2024"]
- * @param {boolean} [table.notes] - whether the table carries a note column
- * @param {object[]} table.rows
- * @returns {string}
- */
-export function statementTable({ columns, notes = false, rows }) {
-  const noteHeading = notes ? '<th class="note">Note</th>' : "";
-  const headings = columns.map((heading) => `<th class="figure">${escapeXmlText(heading)}</th>`).join("");
-  const pounds = columns.map(() => '<th class="figure">£</th>').join("");
-  const body = rows
-    .map((row) => {
-      const rowClass = row.style ? ` class="${row.style}"` : "";
-      const labelClass = row.indent ? ' class="label indent"' : ' class="label"';
-      const noteText = row.note ? escapeXmlText(String(row.note)) : "";
-      const noteCell = notes ? `<td class="note">${noteText}</td>` : "";
-      const cells = (row.cells ?? columns.map(() => null))
-        .map((cell) => {
-          if (!cell) return '<td class="figure"></td>';
-          return `<td class="figure${cell.bracketed ? "" : " positive"}">${cell.xml}</td>`;
-        })
-        .join("");
-      return `<tr${rowClass}><td${labelClass}>${escapeXmlText(row.label)}</td>${noteCell}${cells}</tr>`;
-    })
-    .join("\n");
-  return `<table class="statement">
-<thead><tr><th class="label"></th>${noteHeading}${headings}</tr><tr><th class="label"></th>${notes ? '<th class="note"></th>' : ""}${pounds}</tr></thead>
-<tbody>
-${body}
-</tbody>
-</table>`;
-}
-
-/**
  * The heading every page of the accounts carries: the company name and registered number, then
  * the page's title and the line under it.
  * @param {object} heading
@@ -413,11 +361,12 @@ ${body}
  * @returns {string}
  */
 export function pageHeading({ companyName, companyNumber, title, subtitleHtml }) {
-  return `<p class="company">${escapeXmlText(companyName)}</p>
-<p class="registration">Registered number: ${escapeXmlText(companyNumber)}</p>
-<h2>${escapeXmlText(title)}</h2>
-<p class="subtitle">${subtitleHtml}</p>
-`;
+  return recordHeading({
+    nameHtml: escapeXmlText(companyName),
+    referenceHtml: [`Registered number: ${escapeXmlText(companyNumber)}`],
+    title,
+    subtitleHtml,
+  });
 }
 
 /**
@@ -515,10 +464,10 @@ export function balanceSheetFacts({ contextRef, entityIdentifierXml, periodXml, 
  * @param {object[]} [rowsInput.currentAssetLines] - {label, cells} rows shown under "Current assets"
  * @param {object[]} [rowsInput.creditorLines] - {label, cells} rows shown under the creditors heading
  * @param {object} [rowsInput.notes] - note numbers keyed by line (fixedAssets, calledUpShareCapital)
- * @returns {object[]} statementTable rows
+ * @returns {object[]} recordTable rows
  */
 export function balanceSheetRows({ years, currentAssetLines, creditorLines, notes = {} }) {
-  const cells = (line, options) => years.map((year) => figure(year[line].xml, year[line].value, options));
+  const cells = (line, options) => years.map((year) => recordFigure(year[line].xml, year[line].value, options));
   const values = (line) => years.map((year) => year[line].value);
   const rows = [{ label: "Fixed assets", note: notes.fixedAssets, cells: cells("fixedAssets") }];
   if (currentAssetLines) {
@@ -552,37 +501,6 @@ export function balanceSheetRows({ years, currentAssetLines, creditorLines, note
   return rows;
 }
 
-// The house style of every accounts and computations document: the layout of printed accounts,
-// held in the document itself because a filed iXBRL document can reference no stylesheet.
-export const DOCUMENT_STYLE = `
-body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #000; background: #fff; margin: 0; }
-.page { max-width: 180mm; margin: 0 auto; padding: 12mm 10mm; page-break-after: always; }
-.page:last-child { page-break-after: auto; }
-.cover { text-align: center; padding-top: 40mm; }
-.cover-name { font-size: 16pt; font-weight: bold; margin-bottom: 18mm; }
-.cover-title { font-size: 13pt; font-weight: bold; margin-top: 14mm; }
-.cover-line { margin: 2mm 0; }
-.company { text-align: center; font-size: 13pt; font-weight: bold; margin: 0; }
-.registration { text-align: center; margin: 1mm 0 4mm 0; }
-h2 { text-align: center; font-size: 12pt; margin: 2mm 0; }
-h3 { font-size: 11pt; margin: 6mm 0 2mm 0; }
-.subtitle { text-align: center; margin: 0 0 6mm 0; }
-table.statement { width: 100%; border-collapse: collapse; margin: 4mm 0; }
-table.statement th, table.statement td { padding: 1mm 2mm; vertical-align: bottom; }
-table.statement th.label, table.statement td.label { text-align: left; }
-table.statement td.indent { padding-left: 8mm; }
-table.statement th.note, table.statement td.note { width: 10mm; text-align: center; }
-table.statement th.figure { text-align: right; width: 24mm; font-weight: bold; }
-table.statement td.figure { text-align: right; width: 24mm; white-space: nowrap; }
-table.statement td.positive { padding-right: 3.2mm; }
-table.statement tr.heading td { font-weight: bold; padding-top: 3mm; }
-table.statement tr.subtotal td.figure { border-top: 1px solid #000; }
-table.statement tr.total td { font-weight: bold; }
-table.statement tr.total td.figure { border-top: 1px solid #000; border-bottom: 3px double #000; }
-.approval { margin-top: 6mm; }
-.signature { margin-top: 8mm; }
-`;
-
 /**
  * Wrap rendered contexts, hidden facts and the visible pages in the iXBRL document shell. The
  * ix:header sits inside a hidden div, so a browser shows the pages and nothing of the header.
@@ -603,7 +521,7 @@ export function renderAccountsDocument({ title, contextsXml, hiddenFactsXml, bod
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
 <title>${escapeXmlText(title)}</title>
-<style type="text/css">${DOCUMENT_STYLE}</style>
+<style type="text/css">${RECORD_STYLE}</style>
 </head>
 <body>
 <div style="display:none">

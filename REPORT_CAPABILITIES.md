@@ -43,6 +43,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests: use when a fetch needs a W3C traceparent and request id stamped on it, or a random value for OAuth state.
     - [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle: use when a new utils, services or widgets module needs wiring into the site's single entry point.
     - [SITE-19](#site-19-generate-qr-codes) Generate QR codes: use when a page must render a scannable QR code, such as a pass-generation page.
+    - [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style: use when a page or a builder shows or files a VAT return, an Income Tax update or declaration, a confirmation statement, accounts or a CT600 computation, or a page shows a customer's copy of one.
   - [Business documentation](#business-documentation-site)
     - [SITE-20](#site-20-document-business-governance-and-positioning) Document business governance and positioning: use when a question needs the licensing terms, trademark rules, product strategy or marketing rules.
     - [SITE-21](#site-21-log-growth-experiments) Log growth experiments: use when a growth experiment needs recording so the operator dashboard can annotate its metrics.
@@ -535,7 +536,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
 - [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts
-- [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes
+- [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
 - [Business documentation](#business-documentation-site): [SITE-20](#site-20-document-business-governance-and-positioning) Document business governance and positioning · [SITE-21](#site-21-log-growth-experiments) Log growth experiments
 <!-- /generated:area SITE -->
 
@@ -712,6 +713,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests
 - [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle
 - [SITE-19](#site-19-generate-qr-codes) Generate QR codes
+- [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
 <!-- /generated:group frontend-infrastructure-site -->
 
 #### SITE-13 Warm backend routes via prefetch scripts
@@ -782,6 +784,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `web/public/lib/qrcode.min.js`
 - **Files:** web/public/lib/qrcode.min.js
 - **Keywords:** qr code, node-qrcode, vendored library, pass generation, scannable code
+
+#### SITE-23 Render a submission record in the house style
+
+- **Use when:** a page or a builder shows or files a VAT return, an Income Tax update or declaration, a confirmation statement, accounts or a CT600 computation, or a page shows a customer's copy of one.
+- **Does:** submission-record.css holds the house style in two layers: the record and the customer copy around it. submissionRecord.js renders the record headings, statement tables and figures, and customerCopyHtml frames a record with the brand, the submission number, status and date, explanations and links. The generator writes the record layer inline for the iXBRL builders and copies the helper for the browser. A unit test fails when either copy is not current.
+- **Run:** `npm run generate:submission-record`; `node scripts/generate-submission-record.mjs --check`; `npx vitest run app/unit-tests/lib/submissionRecord.test.js`
+- **Entry:** `app/lib/submissionRecord.js:customerCopyHtml`; `app/lib/submissionRecord.js:recordTable`; `scripts/generate-submission-record.mjs:generatedFiles`
+- **Files:** web/public/submission-record.css, app/lib/submissionRecord.js, app/lib/submissionRecordStyle.js, web/public/lib/submission-record.js, scripts/generate-submission-record.mjs, app/unit-tests/lib/submissionRecord.test.js
+- **Keywords:** house style, submission record, customer copy, receipt, ixbrl style, inline css, statement table, brackets, double rule
+- **Related:** CH-16
 
 ### Business documentation (SITE)
 
@@ -5953,6 +5965,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - bootstrap account: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
 - box 3: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - box 5: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
+- brackets: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - branch audit: [DEV-27](#dev-27-render-the-open-work-board), [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - branch hash: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - branch protection: [OPS-60](#ops-60-guide-github-repository-configuration)
@@ -6257,6 +6270,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - custom amount: [SS-22](#ss-22-take-stripe-and-paypal-donations)
 - custom error page: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
+- customer copy: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - customer id hashing: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - customer lookup: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - customer portal: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal)
@@ -6404,6 +6418,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dora runs daily: [DATA-31](#data-31-sql-views-dora-and-operations)
 - dora-row action: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - dora_runs: [DATA-11](#data-11-run-glue-data-quality-checks)
+- double rule: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - download page: [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - downloads by product: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - dr drill: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
@@ -6740,6 +6755,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hosted mcp: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - hosted ui: [SITE-01](#site-01-sign-customers-in-via-cognito), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - hourly: [BILL-05](#bill-05-reconcile-bundle-capacity-counters)
+- house style: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - http client: [CH-10](#ch-10-fetch-http-with-a-timeout)
 - http response helper: [SITE-07](#site-07-format-http-responses-and-errors)
 - http simulator: [DEV-01](#dev-01-run-the-http-simulator-server)
@@ -6785,6 +6801,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - infrastructure: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
 - init fill submit verify: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
 - init workflow: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
+- inline css: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - inline xbrl: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - installation token: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
 - intelligent tiering: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
@@ -6822,6 +6839,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - itsa sandbox spike: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - itsa status: [HMRC-11](#hmrc-11-retrieve-itsa-status)
 - ixbrl: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
+- ixbrl style: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - java cdk: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks)
 - job minutes: [DEV-37](#dev-37-write-the-session-report)
 - join button: [SITE-03](#site-03-capture-feedback-interest)
@@ -7319,7 +7337,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - realistic data: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - recalc: [SS-05](#ss-05-run-the-diya-gl-cli)
 - recalculate mode: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
-- receipt: [HMRC-01](#hmrc-01-submit-a-vat-return)
+- receipt: [SITE-23](#site-23-render-a-submission-record-in-the-house-style), [HMRC-01](#hmrc-01-submit-a-vat-return)
 - receipts: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - receipts page: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
 - recently-updated: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
@@ -7613,6 +7631,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - start execution: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - state machine execution: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - statement: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
+- statement table: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - static analysis: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
 - static pages: [SITE-10](#site-10-serve-general-site-pages)
 - status clear: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return)
@@ -7654,6 +7673,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - subhasher: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - subject id salt: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - submission failure: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
+- submission record: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - submissions daily: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - submit vat: [HMRC-01](#hmrc-01-submit-a-vat-return)
 - submit.bundle.js: [BILL-43](#bill-43-build-the-frontend-test-bundle)
