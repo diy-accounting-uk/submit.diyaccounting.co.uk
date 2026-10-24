@@ -270,7 +270,9 @@ public class McpStack extends Stack {
         mcpSessionsTable.grantReadWriteData(this.mcpCodesEntryLambda);
         this.oauthBlobKeySecret.grantRead(this.mcpCodesEntryLambda);
         SubHashSaltHelper.grantSaltAccess(this.mcpCodesEntryLambda, region, account, props.envName());
-        infof("Created MCP codes entry Lambda %s", this.mcpCodesEntryLambda.getNode().getId());
+        infof(
+                "Created MCP codes entry Lambda %s",
+                this.mcpCodesEntryLambda.getNode().getId());
 
         Lambda.appStackHealthAlarm(
                 this,

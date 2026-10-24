@@ -46,8 +46,7 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 function pageUrl(entryId) {
-  const base = process.env.DIY_SUBMIT_BASE_URL.replace(/\/+$/, "");
-  return `${base}${CODES_PAGE_PATH}?entry=${entryId}`;
+  return new URL(`${CODES_PAGE_PATH}?entry=${entryId}`, process.env.DIY_SUBMIT_BASE_URL).toString();
 }
 
 function directorsFromBody(kind, directors, errorMessages) {
