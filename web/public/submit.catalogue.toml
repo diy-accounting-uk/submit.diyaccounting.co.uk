@@ -274,7 +274,7 @@ hmrcScopesRequired = ["write:vat", "read:vat"]
 # display: never - it is a control on the submit-vat page, not a home page entry
 [[activities]]
 id = "vat-assist-check"
-name = "HMRC Assist check (VAT)"
+name = "HMRC Assist check (VAT, preview)"
 display = "never"
 bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
@@ -343,7 +343,7 @@ hmrcScopesRequired = ["read:vat"]
 
 [[activities]]
 id = "self-employed"
-name = "Self Assessment (HMRC)"
+name = "Self Assessment (HMRC, sandbox)"
 display = "always-with-upsell"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
@@ -366,7 +366,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 # display: never - reached from the self-employed dashboard, not its own home page entry
 [[activities]]
 id = "self-employed-read"
-name = "Self Assessment reads (HMRC)"
+name = "Self Assessment reads (HMRC, sandbox)"
 display = "never"
 bundles = ["resident", "resident-pro"]
 tokenCost = 0
@@ -379,7 +379,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 # needs write:self-assessment, and files nothing, so it costs nothing.
 [[activities]]
 id = "self-employed-calculation"
-name = "Self Assessment tax calculation (HMRC)"
+name = "Self Assessment tax calculation (HMRC, sandbox)"
 display = "never"
 bundles = ["resident", "resident-pro"]
 tokenCost = 0
@@ -394,7 +394,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 # claims, and tax liability adjustments all submit to HMRC.
 [[activities]]
 id = "self-employed-year-end"
-name = "Self Assessment year-end submissions (HMRC)"
+name = "Self Assessment year-end submissions (HMRC, sandbox)"
 display = "never"
 # display: never - reached from the self-employed dashboard, not its own home page entry
 bundles = ["resident", "resident-pro"]
@@ -414,7 +414,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 # charge against.
 [[activities]]
 id = "self-employed-year-end-delete"
-name = "Self Assessment year-end deletions (HMRC)"
+name = "Self Assessment year-end deletions (HMRC, sandbox)"
 display = "never"
 bundles = ["resident", "resident-pro"]
 tokenCost = 0
@@ -453,7 +453,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 
 [[activities]]
 id = "file-micro-entity-accounts"
-name = "File Micro-entity Accounts (Companies House)"
+name = "File Micro-entity Accounts (Companies House, sandbox)"
 display = "on-entitlement"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
@@ -463,7 +463,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "file-small-company-accounts"
-name = "File Small Company Accounts (Companies House)"
+name = "File Small Company Accounts (Companies House, sandbox)"
 display = "on-entitlement"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
@@ -473,7 +473,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "file-company-tax-return"
-name = "File Company Tax Return (HMRC)"
+name = "File Company Tax Return (HMRC, preview)"
 display = "on-entitlement"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
@@ -483,7 +483,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "file-confirmation-statement"
-name = "File Confirmation Statement (Companies House)"
+name = "File Confirmation Statement (Companies House, sandbox)"
 display = "on-entitlement"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
@@ -507,7 +507,7 @@ default = true
 
 [[activities]]
 id = "file-psc-verification-statement"
-name = "File PSC Verification Statement (Companies House)"
+name = "File PSC Verification Statement (Companies House, sandbox)"
 display = "on-entitlement"
 bundles = ["resident", "resident-pro"]
 metered = false

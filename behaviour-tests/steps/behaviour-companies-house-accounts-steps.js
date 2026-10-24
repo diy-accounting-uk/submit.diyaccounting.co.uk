@@ -12,7 +12,7 @@ import { loggedClick, loggedFill, timestamp, takeScreenshot } from "../helpers/b
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-companies-house-accounts-steps";
 
 export async function goToFileMicroEntityAccounts(page, screenshotPath = defaultScreenshotPath) {
-  const activityButtonText = "File Micro-entity Accounts (Companies House)";
+  const activityButtonText = "File Micro-entity Accounts (Companies House, sandbox)";
   await test.step(`The user navigates to ${activityButtonText} and sees the company lookup form`, async () => {
     await page.waitForTimeout(500);
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting File Micro-entity Accounts", {
@@ -121,7 +121,7 @@ export async function verifyFilingRejected(page, expectedRejectCode, screenshotP
 }
 
 export async function goToFileSmallCompanyAccounts(page, screenshotPath = defaultScreenshotPath) {
-  const activityButtonText = "File Small Company Accounts (Companies House)";
+  const activityButtonText = "File Small Company Accounts (Companies House, sandbox)";
   await test.step(`The user navigates to ${activityButtonText} and sees the company lookup form`, async () => {
     await page.waitForTimeout(500);
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting File Small Company Accounts", {

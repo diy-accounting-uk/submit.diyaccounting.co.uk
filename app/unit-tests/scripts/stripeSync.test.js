@@ -56,7 +56,7 @@ describe("buildStripeProductsFromCatalog", () => {
 
     expect(confirmationStatementPrices).toHaveLength(1);
     expect(confirmationStatementPrices[0]).toMatchObject({
-      name: "File Confirmation Statement (Companies House)",
+      name: "File Confirmation Statement (Companies House, sandbox)",
       priceAmount: 6135,
       currency: "gbp",
       interval: "submission",

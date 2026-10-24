@@ -220,9 +220,9 @@ export async function getVatReceipt(session, params = {}) {
 const ACCOUNTS_STATEMENT_FIELDS = ["section477Exemption", "membersNotRequiredAudit", "directorsResponsibilities", "microEntityProvisions"];
 
 /**
- * The body both companies-house/accounts routes take, common to the preview and the submit
+ * The body both companies-house/accounts routes take, common to the render and the submit
  * calls; the submit call adds companyAuthCode on top. Only the submit route resolves companyNumber
- * from a practice client's row (companiesHouseAccountsPost.js); the preview route never reads
+ * from a practice client's row (companiesHouseAccountsPost.js); the render route never reads
  * clientId at all, so allowClientId stays false there and companyNumber stays required.
  */
 function accountsFilingBody(toolName, params, { allowClientId = false } = {}) {
@@ -257,52 +257,52 @@ function accountsFilingBody(toolName, params, { allowClientId = false } = {}) {
 }
 
 /**
- * preview_micro_entity_accounts: the rendered iXBRL for confirmed figures, without reaching the
- * Companies House XML Gateway. The preview route never resolves a company from a practice
+ * render_micro_entity_accounts_sandbox: the rendered iXBRL for confirmed figures, without reaching the
+ * Companies House XML Gateway. The render route never resolves a company from a practice
  * client's row, so this tool takes companyNumber only, not clientId.
  * @param {Object} session
  * @param {{companyNumber: string, companyName: string, periodStart: string, periodEnd: string,
  *   balanceSheet: {currentYear: Object, priorYear: Object}, averageEmployees: number,
  *   director: {name: string, dateApproved: string}, statementsAccepted: Object}} params
  */
-export async function previewMicroEntityAccounts(session, params = {}) {
-  const body = accountsFilingBody("preview_micro_entity_accounts", params);
+export async function renderMicroEntityAccounts(session, params = {}) {
+  const body = accountsFilingBody("render_micro_entity_accounts_sandbox", params);
   return callSubmitApi(session, "/api/v1/companies-house/accounts/preview", { method: "POST", body });
 }
 
 /**
- * submit_micro_entity_accounts: files confirmed figures with the company authentication code
+ * submit_micro_entity_accounts_sandbox: files confirmed figures with the company authentication code
  * (6 to 8 characters — Companies House's own format, checked by the route, not by this tool), for
  * companyNumber or, when clientId is given instead, for that practice client's own company number
  * (companiesHouseAccountsPost.js resolves it from the client row; a client that is not this
  * practice's own, or not yet authorised for Companies House filing, answers 403). Returns
- * {submissionNumber, gatewayTimestamp, pollInterval}; poll_accounts_submission takes the
+ * {submissionNumber, gatewayTimestamp, pollInterval}; poll_accounts_submission_sandbox takes the
  * submissionNumber to reach the filing's outcome. This route answers synchronously (200/201),
  * unlike list_vat_obligations and submit_vat_return.
  * @param {Object} session
- * @param {Object} params - as previewMicroEntityAccounts, but companyNumber is optional when
+ * @param {Object} params - as renderMicroEntityAccounts, but companyNumber is optional when
  *   clientId is given, plus companyAuthCode
  */
 export async function submitMicroEntityAccounts(session, params = {}) {
-  const companyAuthCode = requireField("submit_micro_entity_accounts", params, "companyAuthCode");
-  const body = accountsFilingBody("submit_micro_entity_accounts", params, { allowClientId: true });
+  const companyAuthCode = requireField("submit_micro_entity_accounts_sandbox", params, "companyAuthCode");
+  const body = accountsFilingBody("submit_micro_entity_accounts_sandbox", params, { allowClientId: true });
   return callSubmitApi(session, "/api/v1/companies-house/accounts", { method: "POST", body: { ...body, companyAuthCode } });
 }
 
 /**
- * poll_accounts_submission: the filing's outcome — {submissionNumber, statusCode, companyNumber,
+ * poll_accounts_submission_sandbox: the filing's outcome — {submissionNumber, statusCode, companyNumber,
  * rejections}, where statusCode is "PENDING" while Companies House has not answered yet, "ACCEPT"
  * once filed (with a receiptId added), or "REJECT" with rejections carrying the reasons.
  * @param {Object} session
  * @param {{submissionNumber: string}} params
  */
 export async function pollAccountsSubmission(session, params = {}) {
-  const submissionNumber = requireField("poll_accounts_submission", params, "submissionNumber");
+  const submissionNumber = requireField("poll_accounts_submission_sandbox", params, "submissionNumber");
   return callSubmitApi(session, `/api/v1/companies-house/accounts/${encodeURIComponent(submissionNumber)}`);
 }
 
 /**
- * get_confirmation_statement_data: the register data a confirmation statement form is built
+ * get_confirmation_statement_data_sandbox: the register data a confirmation statement form is built
  * from — MadeUpDate, NextDueDate, SIC codes, RegisteredEmailAddress, officers, PSCs,
  * StatementOfCapital, Shareholdings, TradingOnMarket, DTR5Applies, the PSC exemption flags, and
  * paymentPeriods/paymentPeriodPaid — over the deployed API. Confirmation statement routes never
@@ -312,9 +312,9 @@ export async function pollAccountsSubmission(session, params = {}) {
  * @param {{companyNumber: string, companyAuthCode: string, madeUpDate: string, companyType?: string}} params
  */
 export async function getConfirmationStatementData(session, params = {}) {
-  const companyNumber = requireField("get_confirmation_statement_data", params, "companyNumber");
-  const companyAuthCode = requireField("get_confirmation_statement_data", params, "companyAuthCode");
-  const madeUpDate = requireField("get_confirmation_statement_data", params, "madeUpDate");
+  const companyNumber = requireField("get_confirmation_statement_data_sandbox", params, "companyNumber");
+  const companyAuthCode = requireField("get_confirmation_statement_data_sandbox", params, "companyAuthCode");
+  const madeUpDate = requireField("get_confirmation_statement_data_sandbox", params, "madeUpDate");
   const { companyType } = params;
 
   return callSubmitApi(session, `/api/v1/companies-house/company/${encodeURIComponent(companyNumber)}/filing-data`, {
@@ -324,7 +324,7 @@ export async function getConfirmationStatementData(session, params = {}) {
 }
 
 /**
- * The body both companies-house/confirmation-statement routes take, common to the preview and the
+ * The body both companies-house/confirmation-statement routes take, common to the render and the
  * submit calls; the submit call adds companyAuthCode on top. Confirmation statement routes never
  * resolve a company from a practice client's row, unlike the accounts routes, so companyNumber is
  * always required.
@@ -361,7 +361,7 @@ function confirmationStatementFilingBody(toolName, params) {
 }
 
 /**
- * preview_confirmation_statement: the rendered ConfirmationAndVerificationStatement body for
+ * render_confirmation_statement_sandbox: the rendered ConfirmationAndVerificationStatement body for
  * confirmed answers, without reaching the Companies House XML Gateway. Every director's personal
  * code is masked in the rendered body before it leaves the route.
  * @param {Object} session
@@ -370,29 +370,29 @@ function confirmationStatementFilingBody(toolName, params) {
  *   registeredEmailAddress?: string, lawfulPurposeStatementAccepted: true, stateConfirmationAccepted: true,
  *   directors: {forename: string, surname: string, dob: string, personalCode: string}[]}} params
  */
-export async function previewConfirmationStatement(session, params = {}) {
-  const body = confirmationStatementFilingBody("preview_confirmation_statement", params);
+export async function renderConfirmationStatement(session, params = {}) {
+  const body = confirmationStatementFilingBody("render_confirmation_statement_sandbox", params);
   return callSubmitApi(session, "/api/v1/companies-house/confirmation-statement/preview", { method: "POST", body });
 }
 
 /**
- * submit_confirmation_statement: files confirmed answers with the company authentication code
+ * submit_confirmation_statement_sandbox: files confirmed answers with the company authentication code
  * (6 to 8 characters — Companies House's own format, checked by the route, not by this tool) and
  * every director's personal code (11 characters each, carried on the directors array). Returns
- * {submissionNumber, gatewayTimestamp, pollInterval}; poll_confirmation_statement takes the
+ * {submissionNumber, gatewayTimestamp, pollInterval}; poll_confirmation_statement_sandbox takes the
  * submissionNumber to reach the filing's outcome. This route answers synchronously (200/201),
  * unlike list_vat_obligations and submit_vat_return.
  * @param {Object} session
- * @param {Object} params - as previewConfirmationStatement, plus companyAuthCode
+ * @param {Object} params - as renderConfirmationStatement, plus companyAuthCode
  */
 export async function submitConfirmationStatement(session, params = {}) {
-  const companyAuthCode = requireField("submit_confirmation_statement", params, "companyAuthCode");
-  const body = confirmationStatementFilingBody("submit_confirmation_statement", params);
+  const companyAuthCode = requireField("submit_confirmation_statement_sandbox", params, "companyAuthCode");
+  const body = confirmationStatementFilingBody("submit_confirmation_statement_sandbox", params);
   return callSubmitApi(session, "/api/v1/companies-house/confirmation-statement", { method: "POST", body: { ...body, companyAuthCode } });
 }
 
 /**
- * poll_confirmation_statement: the filing's outcome — {submissionNumber, statusCode,
+ * poll_confirmation_statement_sandbox: the filing's outcome — {submissionNumber, statusCode,
  * companyNumber, rejections}, where statusCode is "PENDING" while Companies House has not
  * answered yet, "ACCEPT" once filed (with a receiptId added), or "REJECT" with rejections
  * carrying the reasons.
@@ -400,6 +400,6 @@ export async function submitConfirmationStatement(session, params = {}) {
  * @param {{submissionNumber: string}} params
  */
 export async function pollConfirmationStatement(session, params = {}) {
-  const submissionNumber = requireField("poll_confirmation_statement", params, "submissionNumber");
+  const submissionNumber = requireField("poll_confirmation_statement_sandbox", params, "submissionNumber");
   return callSubmitApi(session, `/api/v1/companies-house/confirmation-statement/${encodeURIComponent(submissionNumber)}`);
 }

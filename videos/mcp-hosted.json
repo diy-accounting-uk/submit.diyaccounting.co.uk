@@ -117,7 +117,7 @@
           "action": "point",
           "target": {
             "role": "button",
-            "name": "submit_micro_entity_accounts"
+            "name": "submit_micro_entity_accounts_sandbox"
           },
           "caption": "Each tool is listed by name, ready for a chat app to use.",
           "headline": "The tool list",

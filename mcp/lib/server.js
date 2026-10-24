@@ -25,11 +25,11 @@ import {
   listVatObligations,
   submitVatReturn,
   getVatReceipt,
-  previewMicroEntityAccounts,
+  renderMicroEntityAccounts,
   submitMicroEntityAccounts,
   pollAccountsSubmission,
   getConfirmationStatementData,
-  previewConfirmationStatement,
+  renderConfirmationStatement,
   submitConfirmationStatement,
   pollConfirmationStatement,
 } from "./submit-tools.js";
@@ -319,15 +319,15 @@ export const TOOLS = {
     },
     handler: getVatReceipt,
   },
-  preview_micro_entity_accounts: {
+  render_micro_entity_accounts_sandbox: {
     description:
       "The rendered FRS 105 micro-entity iXBRL for confirmed figures (derive_micro_entity_accounts' answer), over the " +
       "deployed API. Never reaches the Companies House XML Gateway. The route never resolves a company from a " +
       "practice client's row, so this tool takes companyNumber only, not clientId.",
     inputSchema: accountsFilingInputSchema,
-    handler: previewMicroEntityAccounts,
+    handler: renderMicroEntityAccounts,
   },
-  submit_micro_entity_accounts: {
+  submit_micro_entity_accounts_sandbox: {
     description:
       "Files confirmed micro-entity accounts through the Companies House XML Gateway, over the deployed API, for " +
       "companyNumber or, when clientId is given instead, for that practice client's own company number; returns the " +
@@ -340,14 +340,14 @@ export const TOOLS = {
     },
     handler: submitMicroEntityAccounts,
   },
-  poll_accounts_submission: {
+  poll_accounts_submission_sandbox: {
     description: "Accepted, rejected with reasons, or pending, for a submitted micro-entity accounts filing, over the deployed API.",
     inputSchema: {
       submissionNumber: z.string().describe("The 6-character submission number"),
     },
     handler: pollAccountsSubmission,
   },
-  get_confirmation_statement_data: {
+  get_confirmation_statement_data_sandbox: {
     description:
       "The register data a confirmation statement form is built from -- MadeUpDate, NextDueDate, SIC codes, " +
       "RegisteredEmailAddress, officers, PSCs, StatementOfCapital, Shareholdings, TradingOnMarket, DTR5Applies, the PSC " +
@@ -361,15 +361,15 @@ export const TOOLS = {
     },
     handler: getConfirmationStatementData,
   },
-  preview_confirmation_statement: {
+  render_confirmation_statement_sandbox: {
     description:
       "The rendered ConfirmationAndVerificationStatement body for confirmed answers, over the deployed API. Never " +
       "reaches the Companies House XML Gateway; every director's personal code is masked in the rendered body before " +
       "it leaves the route.",
     inputSchema: confirmationStatementFilingInputSchema,
-    handler: previewConfirmationStatement,
+    handler: renderConfirmationStatement,
   },
-  submit_confirmation_statement: {
+  submit_confirmation_statement_sandbox: {
     description:
       "Files a confirmed confirmation statement through the Companies House XML Gateway, over the deployed API; " +
       "returns the submission number. Takes the company authentication code and every director's personal code on " +
@@ -380,7 +380,7 @@ export const TOOLS = {
     },
     handler: submitConfirmationStatement,
   },
-  poll_confirmation_statement: {
+  poll_confirmation_statement_sandbox: {
     description: "Accepted, rejected with reasons, or pending, for a submitted confirmation statement filing, over the deployed API.",
     inputSchema: {
       submissionNumber: z.string().describe("The 6-character submission number"),
@@ -452,7 +452,7 @@ export const TOOLS = {
       "Runs one client-scoped tool once per client in the practice's own list (list_clients), passing each client's " +
       "clientId in turn. Returns one row per client -- {clientId, displayName, ok, result or error} -- plus a summary " +
       "count; one client's failure never stops the rest. tool is one of list_vat_obligations, submit_vat_return, " +
-      "get_vat_receipt, submit_micro_entity_accounts, open_book, save_book.",
+      "get_vat_receipt, submit_micro_entity_accounts_sandbox, open_book, save_book.",
     inputSchema: {
       tool: z.enum(RUN_FOR_CLIENTS_TOOLS).describe("The client-scoped tool to run for every client"),
       args: z

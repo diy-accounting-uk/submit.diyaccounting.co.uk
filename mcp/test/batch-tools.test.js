@@ -109,7 +109,14 @@ describe("run_for_clients", () => {
 
   it("lists exactly the client-scoped tools", () => {
     expect(RUN_FOR_CLIENTS_TOOLS.sort()).toEqual(
-      ["list_vat_obligations", "submit_vat_return", "get_vat_receipt", "submit_micro_entity_accounts", "open_book", "save_book"].sort(),
+      [
+        "list_vat_obligations",
+        "submit_vat_return",
+        "get_vat_receipt",
+        "submit_micro_entity_accounts_sandbox",
+        "open_book",
+        "save_book",
+      ].sort(),
     );
   });
 

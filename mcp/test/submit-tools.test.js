@@ -15,11 +15,11 @@ import {
   listVatObligations,
   submitVatReturn,
   getVatReceipt,
-  previewMicroEntityAccounts,
+  renderMicroEntityAccounts,
   submitMicroEntityAccounts,
   pollAccountsSubmission,
   getConfirmationStatementData,
-  previewConfirmationStatement,
+  renderConfirmationStatement,
   submitConfirmationStatement,
   pollConfirmationStatement,
 } from "../lib/submit-tools.js";
@@ -41,12 +41,12 @@ function fixture(name) {
 const LIST_VAT_OBLIGATIONS_RESPONSE = fixture("list-vat-obligations.response.json");
 const SUBMIT_VAT_RETURN_RESPONSE = fixture("submit-vat-return.response.json");
 const GET_VAT_RECEIPT_RESPONSE = fixture("get-vat-receipt.response.json");
-const PREVIEW_MICRO_ENTITY_ACCOUNTS_RESPONSE = fixture("preview-micro-entity-accounts.response.json");
+const RENDER_MICRO_ENTITY_ACCOUNTS_RESPONSE = fixture("render-micro-entity-accounts.response.json");
 const SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE = fixture("submit-micro-entity-accounts.response.json");
 const POLL_ACCOUNTS_SUBMISSION_PENDING_RESPONSE = fixture("poll-accounts-submission.pending.response.json");
 const POLL_ACCOUNTS_SUBMISSION_ACCEPTED_RESPONSE = fixture("poll-accounts-submission.accepted.response.json");
 const CONFIRMATION_STATEMENT_DATA_RESPONSE = fixture("confirmation-statement-data.response.json");
-const PREVIEW_CONFIRMATION_STATEMENT_RESPONSE = fixture("preview-confirmation-statement.response.json");
+const RENDER_CONFIRMATION_STATEMENT_RESPONSE = fixture("render-confirmation-statement.response.json");
 const SUBMIT_CONFIRMATION_STATEMENT_RESPONSE = fixture("submit-confirmation-statement.response.json");
 const POLL_CONFIRMATION_STATEMENT_PENDING_RESPONSE = fixture("poll-confirmation-statement.pending.response.json");
 const POLL_CONFIRMATION_STATEMENT_ACCEPTED_RESPONSE = fixture("poll-confirmation-statement.accepted.response.json");
@@ -401,14 +401,14 @@ describe("submit-tools", () => {
     });
   });
 
-  describe("preview_micro_entity_accounts", () => {
+  describe("render_micro_entity_accounts_sandbox", () => {
     it("posts the balance sheet and returns the rendered iXBRL", async () => {
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, PREVIEW_MICRO_ENTITY_ACCOUNTS_RESPONSE));
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, RENDER_MICRO_ENTITY_ACCOUNTS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await previewMicroEntityAccounts(session, ACCOUNTS_PARAMS);
+      const result = await renderMicroEntityAccounts(session, ACCOUNTS_PARAMS);
 
-      expect(result).toEqual(PREVIEW_MICRO_ENTITY_ACCOUNTS_RESPONSE);
+      expect(result).toEqual(RENDER_MICRO_ENTITY_ACCOUNTS_RESPONSE);
       expect(result.ixbrl).toContain("<?xml");
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/accounts/preview");
@@ -420,19 +420,19 @@ describe("submit-tools", () => {
 
     it("refuses when a statement is not accepted", async () => {
       const params = { ...ACCOUNTS_PARAMS, statementsAccepted: { ...ACCOUNTS_PARAMS.statementsAccepted, microEntityProvisions: false } };
-      await expect(previewMicroEntityAccounts(session, params)).rejects.toThrow("microEntityProvisions");
+      await expect(renderMicroEntityAccounts(session, params)).rejects.toThrow("microEntityProvisions");
     });
 
     it("still requires companyNumber when clientId is given, since the preview route never reads it", async () => {
       const withoutCompanyNumber = { ...ACCOUNTS_PARAMS };
       delete withoutCompanyNumber.companyNumber;
-      await expect(
-        previewMicroEntityAccounts(session, { ...withoutCompanyNumber, clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" }),
-      ).rejects.toThrow("companyNumber");
+      await expect(renderMicroEntityAccounts(session, { ...withoutCompanyNumber, clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" })).rejects.toThrow(
+        "companyNumber",
+      );
     });
   });
 
-  describe("submit_micro_entity_accounts", () => {
+  describe("submit_micro_entity_accounts_sandbox", () => {
     it("posts the balance sheet with the company authentication code and returns the submission number", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
@@ -475,7 +475,7 @@ describe("submit-tools", () => {
     });
   });
 
-  describe("poll_accounts_submission", () => {
+  describe("poll_accounts_submission_sandbox", () => {
     it("gets the filing outcome by submission number, pending before Companies House answers", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_ACCOUNTS_SUBMISSION_PENDING_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
@@ -502,7 +502,7 @@ describe("submit-tools", () => {
     });
   });
 
-  describe("get_confirmation_statement_data", () => {
+  describe("get_confirmation_statement_data_sandbox", () => {
     it("posts the authentication code and made-up date and returns the register data", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, CONFIRMATION_STATEMENT_DATA_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
@@ -558,14 +558,14 @@ describe("submit-tools", () => {
     });
   });
 
-  describe("preview_confirmation_statement", () => {
+  describe("render_confirmation_statement_sandbox", () => {
     it("posts the form body and returns the rendered statement", async () => {
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, PREVIEW_CONFIRMATION_STATEMENT_RESPONSE));
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, RENDER_CONFIRMATION_STATEMENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await previewConfirmationStatement(session, CONFIRMATION_STATEMENT_PARAMS);
+      const result = await renderConfirmationStatement(session, CONFIRMATION_STATEMENT_PARAMS);
 
-      expect(result).toEqual(PREVIEW_CONFIRMATION_STATEMENT_RESPONSE);
+      expect(result).toEqual(RENDER_CONFIRMATION_STATEMENT_RESPONSE);
       expect(result.confirmationStatementXml).toContain("ConfirmationAndVerificationStatement");
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/confirmation-statement/preview");
@@ -576,32 +576,32 @@ describe("submit-tools", () => {
     });
 
     it("requires at least one director", async () => {
-      await expect(previewConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, directors: [] })).rejects.toThrow("director");
+      await expect(renderConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, directors: [] })).rejects.toThrow("director");
     });
 
     it("requires lawfulPurposeStatementAccepted to be accepted", async () => {
       await expect(
-        previewConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, lawfulPurposeStatementAccepted: false }),
+        renderConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, lawfulPurposeStatementAccepted: false }),
       ).rejects.toThrow("lawfulPurposeStatementAccepted");
     });
 
     it("requires stateConfirmationAccepted to be accepted", async () => {
       await expect(
-        previewConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, stateConfirmationAccepted: false }),
+        renderConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, stateConfirmationAccepted: false }),
       ).rejects.toThrow("stateConfirmationAccepted");
     });
 
     it("requires companyNumber", async () => {
       const withoutCompanyNumber = { ...CONFIRMATION_STATEMENT_PARAMS };
       delete withoutCompanyNumber.companyNumber;
-      await expect(previewConfirmationStatement(session, withoutCompanyNumber)).rejects.toThrow("companyNumber");
+      await expect(renderConfirmationStatement(session, withoutCompanyNumber)).rejects.toThrow("companyNumber");
     });
 
     it("carries sicCodes, statementOfCapital, shareholdings and registeredEmailAddress through when given", async () => {
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, PREVIEW_CONFIRMATION_STATEMENT_RESPONSE));
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, RENDER_CONFIRMATION_STATEMENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      await previewConfirmationStatement(session, {
+      await renderConfirmationStatement(session, {
         ...CONFIRMATION_STATEMENT_PARAMS,
         sicCodes: ["43390"],
         statementOfCapital: {
@@ -623,7 +623,7 @@ describe("submit-tools", () => {
     });
   });
 
-  describe("submit_confirmation_statement", () => {
+  describe("submit_confirmation_statement_sandbox", () => {
     it("posts the form body with the company authentication code and returns the submission number", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_CONFIRMATION_STATEMENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
@@ -665,7 +665,7 @@ describe("submit-tools", () => {
     });
   });
 
-  describe("poll_confirmation_statement", () => {
+  describe("poll_confirmation_statement_sandbox", () => {
     it("gets the filing outcome by submission number, pending before Companies House answers", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_CONFIRMATION_STATEMENT_PENDING_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
@@ -697,13 +697,13 @@ describe("submit-tools", () => {
       expect(TOOLS.list_vat_obligations.handler).toBe(listVatObligations);
       expect(TOOLS.submit_vat_return.handler).toBe(submitVatReturn);
       expect(TOOLS.get_vat_receipt.handler).toBe(getVatReceipt);
-      expect(TOOLS.preview_micro_entity_accounts.handler).toBe(previewMicroEntityAccounts);
-      expect(TOOLS.submit_micro_entity_accounts.handler).toBe(submitMicroEntityAccounts);
-      expect(TOOLS.poll_accounts_submission.handler).toBe(pollAccountsSubmission);
-      expect(TOOLS.get_confirmation_statement_data.handler).toBe(getConfirmationStatementData);
-      expect(TOOLS.preview_confirmation_statement.handler).toBe(previewConfirmationStatement);
-      expect(TOOLS.submit_confirmation_statement.handler).toBe(submitConfirmationStatement);
-      expect(TOOLS.poll_confirmation_statement.handler).toBe(pollConfirmationStatement);
+      expect(TOOLS.render_micro_entity_accounts_sandbox.handler).toBe(renderMicroEntityAccounts);
+      expect(TOOLS.submit_micro_entity_accounts_sandbox.handler).toBe(submitMicroEntityAccounts);
+      expect(TOOLS.poll_accounts_submission_sandbox.handler).toBe(pollAccountsSubmission);
+      expect(TOOLS.get_confirmation_statement_data_sandbox.handler).toBe(getConfirmationStatementData);
+      expect(TOOLS.render_confirmation_statement_sandbox.handler).toBe(renderConfirmationStatement);
+      expect(TOOLS.submit_confirmation_statement_sandbox.handler).toBe(submitConfirmationStatement);
+      expect(TOOLS.poll_confirmation_statement_sandbox.handler).toBe(pollConfirmationStatement);
     });
   });
 });

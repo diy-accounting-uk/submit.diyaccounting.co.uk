@@ -16,7 +16,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 const CATALOGUE_TOML = `
 [[activities]]
 id = "self-employed"
-name = "Self Assessment (HMRC)"
+name = "Self Assessment (HMRC, sandbox)"
 bundles = ["resident"]
 tokenCost = 1
 metered = true
@@ -24,7 +24,7 @@ paths = ["activity.html"]
 
 [[activities]]
 id = "self-employed-year-end"
-name = "Self Assessment year-end submissions (HMRC)"
+name = "Self Assessment year-end submissions (HMRC, sandbox)"
 bundles = ["resident"]
 tokenCost = 0
 metered = true

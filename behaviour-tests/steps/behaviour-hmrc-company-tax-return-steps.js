@@ -11,7 +11,7 @@ import { loggedClick, loggedFill, timestamp, takeScreenshot } from "../helpers/b
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-company-tax-return-steps";
 
 export async function goToFileCompanyTaxReturn(page, screenshotPath = defaultScreenshotPath) {
-  const activityButtonText = "File Company Tax Return (HMRC)";
+  const activityButtonText = "File Company Tax Return (HMRC, preview)";
   await test.step(`The user navigates to ${activityButtonText} and sees the company lookup form`, async () => {
     await page.waitForTimeout(500);
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting File Company Tax Return", {

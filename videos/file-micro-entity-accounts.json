@@ -121,7 +121,7 @@
         },
         {
           "action": "await",
-          "until": "button:has-text('File Micro-entity Accounts (Companies House)')",
+          "until": "button:has-text('File Micro-entity Accounts (Companies House, sandbox)')",
           "label": "Waiting for the subscription to unlock the activity"
         },
         { "action": "hold", "ms": 500 }
@@ -134,7 +134,7 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "button", "name": "File Micro-entity Accounts (Companies House)" },
+          "target": { "role": "button", "name": "File Micro-entity Accounts (Companies House, sandbox)" },
           "expectsNavigation": true,
           "caption": "Open File Micro-entity Accounts to find the company.",
           "headline": "Find the company",
