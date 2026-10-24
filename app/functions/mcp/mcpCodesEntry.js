@@ -24,7 +24,7 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { isValidCompanyNumber, isValidCompaniesHousePersonalCode } from "../../services/companiesHouseApi.js";
-import { createCodesEntry, getCodesEntry, fillCodesEntry } from "../../data/dynamoDbCodesEntryRepository.js";
+import { createCodesEntry, getCodesEntry, fillCodesEntry, fillCodesEntryForClients } from "../../data/dynamoDbCodesEntryRepository.js";
 import { sealCodes } from "../../lib/codesSeal.js";
 
 const logger = createLogger({ source: "app/functions/mcp/mcpCodesEntry.js" });
@@ -33,6 +33,7 @@ const KINDS = ["accounts", "confirmation-statement", "confirmation-statement-dat
 const MIN_COMPANY_AUTH_CODE_LENGTH = 6;
 const MAX_COMPANY_AUTH_CODE_LENGTH = 8;
 const MAX_DIRECTORS = 20;
+const MAX_CLIENTS = 100;
 const ENTRY_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const CODES_PATH = "/api/v1/mcp/codes-entries";
 const CODES_PAGE_PATH = "/companies-house/mcpCodes.html";
@@ -63,6 +64,29 @@ function directorsFromBody(kind, directors, errorMessages) {
   });
 }
 
+function clientsFromBody(kind, clients, errorMessages) {
+  if (clients === undefined) return undefined;
+  if (kind === "confirmation-statement") {
+    errorMessages.push(
+      "clients is for accounts and confirmation-statement-data; a confirmation statement is requested one company at a time",
+    );
+    return undefined;
+  }
+  if (!Array.isArray(clients) || clients.length === 0 || clients.length > MAX_CLIENTS) {
+    errorMessages.push(`clients must list 1 to ${MAX_CLIENTS} practice clients`);
+    return undefined;
+  }
+  const seen = new Set();
+  return clients.map((client, index) => {
+    const clientId = typeof client?.clientId === "string" ? client.clientId.trim() : "";
+    const displayName = typeof client?.displayName === "string" ? client.displayName.trim() : "";
+    if (!clientId || !displayName) errorMessages.push(`clients[${index}] needs a clientId and a displayName`);
+    if (seen.has(clientId)) errorMessages.push(`clients[${index}] repeats clientId ${clientId}`);
+    seen.add(clientId);
+    return { clientId, displayName };
+  });
+}
+
 async function mint(event, request, responseHeaders) {
   const user = extractUserFromAuthorizerContext(event);
   if (!user) return http401UnauthorizedResponse({ request, headers: responseHeaders, message: "Authentication required" });
@@ -70,8 +94,9 @@ async function mint(event, request, responseHeaders) {
   const body = parseRequestBody(event) || {};
   const errorMessages = [];
   if (!KINDS.includes(body.kind)) errorMessages.push(`kind must be one of ${KINDS.join(", ")}`);
+  const clients = clientsFromBody(body.kind, body.clients, errorMessages);
   const { valid, normalised } = isValidCompanyNumber(body.companyNumber);
-  if (!valid) errorMessages.push("Invalid company number - must be 8 characters");
+  if (!clients && !valid) errorMessages.push("Invalid company number - must be 8 characters");
   const directors = directorsFromBody(body.kind, body.directors, errorMessages);
   if (errorMessages.length > 0) {
     return http400BadRequestResponse({
@@ -83,7 +108,13 @@ async function mint(event, request, responseHeaders) {
   }
 
   await initializeSalt();
-  const entry = await createCodesEntry({ hashedSub: hashSub(user.sub), kind: body.kind, companyNumber: normalised, directors });
+  const entry = await createCodesEntry({
+    hashedSub: hashSub(user.sub),
+    kind: body.kind,
+    companyNumber: clients ? undefined : normalised,
+    directors,
+    clients,
+  });
   return http201CreatedResponse({
     request,
     headers: responseHeaders,
@@ -108,9 +139,54 @@ async function read(entryId, request, responseHeaders) {
       kind: entry.kind,
       companyNumber: entry.companyNumber,
       directors: entry.directors,
+      clients: entry.clients ?? [],
       expiresAt: new Date(entry.ttl * 1000).toISOString(),
     },
   });
+}
+
+function isValidCompanyAuthCode(code) {
+  return code.length >= MIN_COMPANY_AUTH_CODE_LENGTH && code.length <= MAX_COMPANY_AUTH_CODE_LENGTH;
+}
+
+const INVALID_COMPANY_AUTH_CODE = `Invalid companyAuthCode - must be ${MIN_COMPANY_AUTH_CODE_LENGTH} to ${MAX_COMPANY_AUTH_CODE_LENGTH} characters`;
+
+async function fillForClients(entry, entryId, body, request, responseHeaders) {
+  const given = new Map();
+  for (const item of Array.isArray(body.clients) ? body.clients : []) {
+    if (typeof item?.clientId === "string")
+      given.set(item.clientId, typeof item.companyAuthCode === "string" ? item.companyAuthCode.trim() : "");
+  }
+  const errorMessages = [];
+  for (const client of entry.clients) {
+    if (!given.has(client.clientId)) errorMessages.push(`clients must hold a code for ${client.displayName}`);
+    else if (!isValidCompanyAuthCode(given.get(client.clientId)))
+      errorMessages.push(`${INVALID_COMPANY_AUTH_CODE} (${client.displayName})`);
+  }
+  if (errorMessages.length > 0) {
+    return http400BadRequestResponse({
+      request,
+      headers: responseHeaders,
+      message: errorMessages.join("; "),
+      error: { errors: errorMessages },
+    });
+  }
+  const sealedByClient = {};
+  for (const client of entry.clients) {
+    sealedByClient[client.clientId] = await sealCodes(
+      { companyAuthCode: given.get(client.clientId), personalCodes: [] },
+      `${entryId}/${client.clientId}`,
+    );
+  }
+  if (!(await fillCodesEntryForClients(entryId, sealedByClient))) {
+    return http409ConflictResponse({
+      request,
+      headers: responseHeaders,
+      message: "These codes were already entered for this link",
+      error: {},
+    });
+  }
+  return http200OkResponse({ request, headers: responseHeaders, data: { state: "filled" } });
 }
 
 async function fill(event, entryId, request, responseHeaders) {
@@ -124,11 +200,10 @@ async function fill(event, entryId, request, responseHeaders) {
     });
 
   const body = parseRequestBody(event) || {};
+  if (entry.clients?.length) return await fillForClients(entry, entryId, body, request, responseHeaders);
   const errorMessages = [];
   const companyAuthCode = typeof body.companyAuthCode === "string" ? body.companyAuthCode.trim() : "";
-  if (companyAuthCode.length < MIN_COMPANY_AUTH_CODE_LENGTH || companyAuthCode.length > MAX_COMPANY_AUTH_CODE_LENGTH) {
-    errorMessages.push(`Invalid companyAuthCode - must be ${MIN_COMPANY_AUTH_CODE_LENGTH} to ${MAX_COMPANY_AUTH_CODE_LENGTH} characters`);
-  }
+  if (!isValidCompanyAuthCode(companyAuthCode)) errorMessages.push(INVALID_COMPANY_AUTH_CODE);
   const personalCodes = [];
   if (entry.kind === "confirmation-statement") {
     const given = Array.isArray(body.personalCodes) ? body.personalCodes : [];

@@ -7,6 +7,11 @@
 // "codes:<entryId>". An entry is minted by a tool call (pending), filled once by the user on the
 // codes page (filled, the codes sealed) and deleted when a filing route takes it. It expires
 // ten minutes after it is minted, whatever state it is in.
+//
+// A batch entry names several practice clients (clients). When the user fills it, each client's
+// sealed value is stored as an item of its own under "codes:<entryId>/<clientId>", so a filing
+// route needs only DeleteItem to take one client's value, the same as for a single entry. The
+// batch entry itself holds no codes and expires with its ten minutes.
 
 import { randomUUID } from "node:crypto";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
@@ -27,13 +32,23 @@ function isConditionFailure(error) {
 }
 
 /**
- * @param {{hashedSub: string, kind: "accounts"|"confirmation-statement"|"confirmation-statement-data", companyNumber: string, directors?: {forename: string, surname: string}[]}} entry
+ * @param {{hashedSub: string, kind: "accounts"|"confirmation-statement"|"confirmation-statement-data", companyNumber?: string, directors?: {forename: string, surname: string}[], clients?: {clientId: string, displayName: string}[]}} entry
+ * companyNumber is given for a single entry and left out for a batch entry, whose clients carry their own companies.
  * @returns {Promise<{entryId: string, state: "pending", ttl: number}>}
  */
-export async function createCodesEntry({ hashedSub, kind, companyNumber, directors = [] }) {
+export async function createCodesEntry({ hashedSub, kind, companyNumber, directors = [], clients }) {
   const entryId = randomUUID();
   const ttl = calculateTtl(new Date(), ENTRY_LIFETIME).ttl;
-  const item = { ...keyFor(entryId), hashedSub, kind, companyNumber, directors, state: "pending", ttl };
+  const item = {
+    ...keyFor(entryId),
+    hashedSub,
+    kind,
+    ...(companyNumber ? { companyNumber } : {}),
+    directors,
+    ...(clients ? { clients } : {}),
+    state: "pending",
+    ttl,
+  };
   await executeDynamoDbCommand((module) => new module.PutCommand({ TableName: tableName(), Item: item }));
   return { entryId, state: "pending", ttl };
 }
@@ -41,7 +56,7 @@ export async function createCodesEntry({ hashedSub, kind, companyNumber, directo
 /**
  * Reads an entry without its sealed codes. An expired entry answers null.
  * @param {string} entryId
- * @returns {Promise<{entryId: string, hashedSub: string, kind: string, companyNumber: string, directors: object[], state: string, ttl: number}|null>}
+ * @returns {Promise<{entryId: string, hashedSub: string, kind: string, companyNumber?: string, directors: object[], clients?: object[], state: string, ttl: number}|null>}
  */
 export async function getCodesEntry(entryId) {
   const result = await executeDynamoDbCommand(
@@ -63,17 +78,50 @@ export async function getCodesEntry(entryId) {
  * @returns {Promise<boolean>}
  */
 export async function fillCodesEntry(entryId, sealed) {
+  return markFilled(entryId, "sealed = :sealed, ", { ":sealed": sealed });
+}
+
+/**
+ * Fills a pending batch entry: stores one sealed value for each client, each as an item of its
+ * own. A second fill, an expired entry or an unknown id answers false and changes nothing.
+ * @param {string} entryId
+ * @param {Record<string, string>} sealedByClient - sealed value by clientId
+ * @returns {Promise<boolean>}
+ */
+export async function fillCodesEntryForClients(entryId, sealedByClient) {
+  const entry = await getCodesEntry(entryId);
+  if (!entry || !(await markFilled(entryId, "", {}))) return false;
+  for (const [clientId, sealed] of Object.entries(sealedByClient)) {
+    const item = {
+      sessionId: clientKey(entryId, clientId),
+      hashedSub: entry.hashedSub,
+      kind: entry.kind,
+      directors: [],
+      sealed,
+      state: "filled",
+      ttl: entry.ttl,
+    };
+    await executeDynamoDbCommand((module) => new module.PutCommand({ TableName: tableName(), Item: item }));
+  }
+  return true;
+}
+
+function clientKey(entryId, clientId) {
+  return `codes:${entryId}/${clientId}`;
+}
+
+async function markFilled(entryId, setSealed, sealedValues) {
   try {
     await executeDynamoDbCommand(
       (module) =>
         new module.UpdateCommand({
           TableName: tableName(),
           Key: keyFor(entryId),
-          UpdateExpression: "SET sealed = :sealed, #state = :filled",
+          UpdateExpression: `SET ${setSealed}#state = :filled`,
           ConditionExpression: "attribute_exists(sessionId) AND #state = :pending AND #ttl > :now",
           ExpressionAttributeNames: { "#state": "state", "#ttl": "ttl" },
           ExpressionAttributeValues: {
-            ":sealed": sealed,
+            ...sealedValues,
             ":filled": "filled",
             ":pending": "pending",
             ":now": Math.floor(Date.now() / 1000),
@@ -88,20 +136,37 @@ export async function fillCodesEntry(entryId, sealed) {
 }
 
 /**
- * Deletes a filled entry and returns what it held. An entry that is pending, expired, unknown or
- * owned by another user answers null and stays as it was.
+ * Deletes a filled entry and returns what it held. An entry that is pending, expired, unknown,
+ * owned by another user or a batch entry answers null and stays as it was.
  * @param {string} entryId
  * @param {string} hashedSub - the caller's hashed sub
  * @returns {Promise<{kind: string, companyNumber: string, directors: object[], sealed: string}|null>}
  */
 export async function takeCodesEntry(entryId, hashedSub) {
+  return deleteSealed(keyFor(entryId), hashedSub);
+}
+
+/**
+ * Deletes one client's sealed value from a filled batch entry and returns it. A client the entry
+ * was not filled for, an entry that is pending, expired, unknown or owned by another user, and a
+ * value already taken all answer null.
+ * @param {string} entryId
+ * @param {string} hashedSub - the caller's hashed sub
+ * @param {string} clientId
+ * @returns {Promise<{kind: string, companyNumber: undefined, directors: object[], sealed: string}|null>}
+ */
+export async function takeCodesEntryForClient(entryId, hashedSub, clientId) {
+  return deleteSealed({ sessionId: clientKey(entryId, clientId) }, hashedSub);
+}
+
+async function deleteSealed(key, hashedSub) {
   try {
     const result = await executeDynamoDbCommand(
       (module) =>
         new module.DeleteCommand({
           TableName: tableName(),
-          Key: keyFor(entryId),
-          ConditionExpression: "hashedSub = :hashedSub AND #state = :filled AND #ttl > :now",
+          Key: key,
+          ConditionExpression: "hashedSub = :hashedSub AND #state = :filled AND #ttl > :now AND attribute_exists(sealed)",
           ExpressionAttributeNames: { "#state": "state", "#ttl": "ttl" },
           ExpressionAttributeValues: { ":hashedSub": hashedSub, ":filled": "filled", ":now": Math.floor(Date.now() / 1000) },
           ReturnValues: "ALL_OLD",

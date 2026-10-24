@@ -77,6 +77,43 @@ test.describe("Companies House codes page", () => {
     expect(puts).toEqual([{ companyAuthCode: "Sim0123", personalCodes: ["ABCDE123456", "FGHIJK67890"] }]);
   });
 
+  test("asks for one company code for each client of a batch, by name", async ({ page }) => {
+    const puts = await setupRoutes(page, {
+      entry: {
+        state: "pending",
+        kind: "accounts",
+        directors: [],
+        clients: [
+          { clientId: "client-a", displayName: "Alpha Ltd" },
+          { clientId: "client-b", displayName: "Beta Ltd" },
+        ],
+      },
+    });
+    await page.goto(PAGE, { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("#codesIntro")).toContainText("2 clients");
+    await expect(page.locator("#companyAuthCodeGroup")).toBeHidden();
+    await expect(page.locator("#clientCodeFields label")).toHaveText([
+      "Company authentication code for Alpha Ltd",
+      "Company authentication code for Beta Ltd",
+    ]);
+    await page.screenshot({ path: "target/mcp-codes-screenshots/mcp-codes-batch.png" });
+
+    await page.locator("#clientCode0").fill("AlphaC1");
+    await page.locator("#clientCode1").fill("BetaC22");
+    await page.locator("#saveCodesBtn").click();
+
+    await expect(page.locator("#codesDoneView")).toBeVisible();
+    expect(puts).toEqual([
+      {
+        clients: [
+          { clientId: "client-a", companyAuthCode: "AlphaC1" },
+          { clientId: "client-b", companyAuthCode: "BetaC22" },
+        ],
+      },
+    ]);
+  });
+
   test("shows the reason and lets the user try again when the codes are refused", async ({ page }) => {
     await setupRoutes(page, {
       entry: { state: "pending", kind: "accounts", companyNumber: "12345678", directors: [] },

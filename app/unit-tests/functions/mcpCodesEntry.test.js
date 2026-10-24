@@ -243,4 +243,87 @@ describe("mcpCodesEntry", () => {
       expect((await applyCodesEntry(event, { userSub: "user-sub-1", kind: "accounts" })).event).toBe(event);
     });
   });
+
+  describe("one entry for a batch of clients", () => {
+    const CLIENTS = [
+      { clientId: "client-a", displayName: "Alpha Ltd" },
+      { clientId: "client-b", displayName: "Beta Ltd" },
+    ];
+    const FILL = {
+      clients: [
+        { clientId: "client-a", companyAuthCode: "AlphaC1" },
+        { clientId: "client-b", companyAuthCode: "BetaC22" },
+      ],
+    };
+
+    function filingEvent(body) {
+      return buildLambdaEvent({ method: "POST", path: "/api/v1/companies-house/accounts", body });
+    }
+
+    async function filledBatch() {
+      const { body: minted } = await mint({ kind: "accounts", clients: CLIENTS });
+      await ingestHandler(itemEvent("PUT", minted.entryId, FILL));
+      return minted.entryId;
+    }
+
+    test("mints without a company number and tells the page which clients to ask for", async () => {
+      const { response, body } = await mint({ kind: "accounts", clients: CLIENTS });
+      expect(response.statusCode).toBe(201);
+      const read = parseResponseBody(await ingestHandler(itemEvent("GET", body.entryId)));
+      expect(read).toMatchObject({ state: "pending", kind: "accounts", clients: CLIENTS });
+    });
+
+    test("refuses a client list that is empty, repeats a client, or is for a confirmation statement", async () => {
+      expect((await mint({ kind: "accounts", clients: [] })).response.statusCode).toBe(400);
+      expect((await mint({ kind: "accounts", clients: [CLIENTS[0], CLIENTS[0]] })).response.statusCode).toBe(400);
+      expect((await mint({ kind: "accounts", clients: [{ clientId: "client-a" }] })).response.statusCode).toBe(400);
+      expect((await mint({ kind: "confirmation-statement", clients: CLIENTS, directors: DIRECTORS })).response.statusCode).toBe(400);
+    });
+
+    test("needs a valid code for every client", async () => {
+      const { body: minted } = await mint({ kind: "accounts", clients: CLIENTS });
+      const missing = await ingestHandler(itemEvent("PUT", minted.entryId, { clients: [FILL.clients[0]] }));
+      expect(missing.statusCode).toBe(400);
+      expect(parseResponseBody(missing).message).toContain("Beta Ltd");
+      const short = await ingestHandler(
+        itemEvent("PUT", minted.entryId, { clients: [FILL.clients[0], { clientId: "client-b", companyAuthCode: "x" }] }),
+      );
+      expect(short.statusCode).toBe(400);
+    });
+
+    test("stores every code sealed and takes it only once", async () => {
+      const { body: minted } = await mint({ kind: "accounts", clients: CLIENTS });
+      expect((await ingestHandler(itemEvent("PUT", minted.entryId, FILL))).statusCode).toBe(200);
+      expect((await ingestHandler(itemEvent("PUT", minted.entryId, FILL))).statusCode).toBe(409);
+      const stored = JSON.stringify([...table.items.values()]);
+      expect(stored).toContain("v1.");
+      expect(stored).not.toContain("AlphaC1");
+      expect(stored).not.toContain("BetaC22");
+    });
+
+    test("gives each client's filing its own code and is spent after the last", async () => {
+      const codesEntryId = await filledBatch();
+      const options = { userSub: "user-sub-1", kind: "accounts" };
+      const second = await applyCodesEntry(filingEvent({ clientId: "client-b", codesEntryId }), options);
+      expect(JSON.parse(second.event.body)).toEqual({ clientId: "client-b", companyAuthCode: "BetaC22" });
+      const first = await applyCodesEntry(filingEvent({ clientId: "client-a", codesEntryId }), options);
+      expect(JSON.parse(first.event.body).companyAuthCode).toBe("AlphaC1");
+      const again = await applyCodesEntry(filingEvent({ clientId: "client-a", codesEntryId }), options);
+      expect(again.failure).toContain("ask for a new codes link");
+      expect([...table.items.values()].some((item) => item.sealed !== undefined)).toBe(false);
+    });
+
+    test("refuses a filing with no client, a client it was not minted for, or another user", async () => {
+      const codesEntryId = await filledBatch();
+      const options = { userSub: "user-sub-1", kind: "accounts" };
+      expect((await applyCodesEntry(filingEvent({ codesEntryId }), options)).failure).toContain("ask for a new codes link");
+      expect((await applyCodesEntry(filingEvent({ clientId: "client-z", codesEntryId }), options)).failure).toContain(
+        "ask for a new codes link",
+      );
+      expect(
+        (await applyCodesEntry(filingEvent({ clientId: "client-a", codesEntryId }), { userSub: "user-sub-2", kind: "accounts" })).failure,
+      ).toContain("ask for a new codes link");
+      expect((await applyCodesEntry(filingEvent({ clientId: "client-a", codesEntryId }), options)).failure).toBeUndefined();
+    });
+  });
 });

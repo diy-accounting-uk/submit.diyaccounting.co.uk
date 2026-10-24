@@ -12,6 +12,7 @@
   const doneView = document.getElementById("codesDoneView");
   const form = document.getElementById("codesForm");
   const personalCodeFields = document.getElementById("personalCodeFields");
+  const clientCodeFields = document.getElementById("clientCodeFields");
   let entry = null;
 
   function say(text, isError) {
@@ -23,7 +24,34 @@
     return `${director.forename} ${director.surname}`;
   }
 
+  function showClientRows() {
+    document.getElementById("codesIntro").textContent =
+      `Companies House filings for ${entry.clients.length} clients. Type each client's company authentication code below to let DIY Accounting Submit make the filings.`;
+    const companyGroup = document.getElementById("companyAuthCodeGroup");
+    companyGroup.style.display = "none";
+    document.getElementById("companyAuthCode").required = false;
+    entry.clients.forEach((client, index) => {
+      const group = document.createElement("div");
+      group.className = "form-group";
+      const label = document.createElement("label");
+      label.htmlFor = `clientCode${index}`;
+      label.textContent = `Company authentication code for ${client.displayName}`;
+      const input = document.createElement("input");
+      input.type = "password";
+      input.id = `clientCode${index}`;
+      input.name = `clientCode${index}`;
+      input.required = true;
+      input.minLength = 6;
+      input.maxLength = 8;
+      input.autocomplete = "off";
+      group.append(label, input);
+      clientCodeFields.append(group);
+    });
+    formView.style.display = "";
+  }
+
   function showForm() {
+    if (entry.clients && entry.clients.length > 0) return showClientRows();
     document.getElementById("codesIntro").textContent =
       `Companies House company ${entry.companyNumber}. Type the codes below to let DIY Accounting Submit make the filing.`;
     entry.directors.forEach((director, index) => {
@@ -63,11 +91,22 @@
     event.preventDefault();
     const button = document.getElementById("saveCodesBtn");
     button.disabled = true;
-    const personalCodes = entry.directors.map((_, index) => document.getElementById(`personalCode${index}`).value);
+    const payload =
+      entry.clients && entry.clients.length > 0
+        ? {
+            clients: entry.clients.map((client, index) => ({
+              clientId: client.clientId,
+              companyAuthCode: document.getElementById(`clientCode${index}`).value,
+            })),
+          }
+        : {
+            companyAuthCode: document.getElementById("companyAuthCode").value,
+            personalCodes: entry.directors.map((_, index) => document.getElementById(`personalCode${index}`).value),
+          };
     const response = await fetch(entryUrl, {
       method: "PUT",
       headers: { "Content-Type": "application/json", "Accept": "application/json" },
-      body: JSON.stringify({ companyAuthCode: document.getElementById("companyAuthCode").value, personalCodes }),
+      body: JSON.stringify(payload),
     });
     if (response.ok) {
       form.reset();

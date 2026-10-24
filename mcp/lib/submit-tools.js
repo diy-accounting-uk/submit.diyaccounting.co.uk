@@ -415,16 +415,32 @@ const CODES_KINDS = ["accounts", "confirmation-statement", "confirmation-stateme
 
 /**
  * request_companies_house_codes: mints a codes entry and answers the link where the user types the
- * Companies House codes. The entry expires in ten minutes and the first filing call that names it
- * uses it up. Answers {entryId, url, expiresAt}; the filing tool takes entryId as codesEntryId.
+ * Companies House codes. The entry expires in ten minutes. A single entry is used up by the first
+ * filing call that names it. With clientIds the entry is a batch entry: the page asks for one
+ * company authentication code per practice client, and each filing call takes its own client's
+ * codes, so run_for_clients can pass the one entryId. Answers {entryId, url, expiresAt}; the
+ * filing tool takes entryId as codesEntryId.
  * @param {Object} session
- * @param {{kind: "accounts"|"confirmation-statement"|"confirmation-statement-data", companyNumber: string,
- *   directors?: {forename: string, surname: string}[]}} params - directors are the confirmation
- *   statement's directors, in the order the filing lists them
+ * @param {{kind: "accounts"|"confirmation-statement"|"confirmation-statement-data", companyNumber?: string,
+ *   directors?: {forename: string, surname: string}[], clientIds?: string[]}} params - directors are the
+ *   confirmation statement's directors, in the order the filing lists them; companyNumber is required
+ *   unless clientIds is given
  */
 export async function requestCompaniesHouseCodes(session, params = {}) {
   const kind = requireField("request_companies_house_codes", params, "kind");
   if (!CODES_KINDS.includes(kind)) throw new Error(`request_companies_house_codes kind must be one of ${CODES_KINDS.join(", ")}`);
+  if (params.clientIds !== undefined) {
+    if (!Array.isArray(params.clientIds) || params.clientIds.length === 0) {
+      throw new Error("request_companies_house_codes clientIds must list at least one client id");
+    }
+    const { clients: practiceClients } = await callSubmitApi(session, "/api/v1/practice/clients");
+    const clients = params.clientIds.map((clientId) => {
+      const found = practiceClients.find((client) => client.clientId === clientId);
+      if (!found) throw new Error(`request_companies_house_codes clientIds names ${clientId}, which is not in the practice's client list`);
+      return { clientId, displayName: found.displayName };
+    });
+    return callSubmitApi(session, "/api/v1/mcp/codes-entries", { method: "POST", body: { kind, clients } });
+  }
   const companyNumber = requireField("request_companies_house_codes", params, "companyNumber");
   const directors = kind === "confirmation-statement" ? requireField("request_companies_house_codes", params, "directors") : undefined;
   return callSubmitApi(session, "/api/v1/mcp/codes-entries", {

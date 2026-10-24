@@ -332,7 +332,8 @@ export const TOOLS = {
       "Files confirmed micro-entity accounts through the Companies House XML Gateway, over the deployed API, for " +
       "companyNumber or, when clientId is given instead, for that practice client's own company number; returns the " +
       "submission number. The company authentication code is not an argument: the user types it on the link " +
-      "request_companies_house_codes answers, and this call names that entry by codesEntryId. The entry is used up by this call.",
+      "request_companies_house_codes answers, and this call names that entry by codesEntryId. A single entry is used up by this " +
+      "call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass one codesEntryId for every client.",
     inputSchema: {
       ...accountsFilingInputSchema,
       companyNumber: accountsFilingInputSchema.companyNumber.optional().describe("Required unless clientId is given"),
@@ -347,13 +348,20 @@ export const TOOLS = {
     description:
       "Answers a link where the user types the Companies House codes a filing needs, so the codes never appear in " +
       "the chat. Answers {entryId, url, expiresAt}: show the user the url, wait for them to say they have saved the " +
-      "codes, then pass entryId as codesEntryId to the filing tool. The link works for ten minutes and its entry is " +
-      "used up by one filing call; ask again for a second filing. kind accounts is for submit_micro_entity_accounts_sandbox, " +
+      "codes, then pass entryId as codesEntryId to the filing tool. The link works for ten minutes. A single entry is " +
+      "used up by one filing call; ask again for a second filing. To file for several practice clients through " +
+      "run_for_clients, give clientIds (kind accounts or confirmation-statement-data, no companyNumber): the page then asks " +
+      "for one company authentication code per client by name, and each client's filing call takes only its own client's codes, so " +
+      "the one entryId serves the whole batch. kind accounts is for submit_micro_entity_accounts_sandbox, " +
       "confirmation-statement-data for get_confirmation_statement_data_sandbox, and confirmation-statement (with " +
       "directors, in the order the filing lists them) for submit_confirmation_statement_sandbox. Over the deployed API.",
     inputSchema: {
       kind: z.enum(["accounts", "confirmation-statement", "confirmation-statement-data"]).describe("Which filing the codes are for"),
-      companyNumber: z.string().describe("The 8-character Companies House company number"),
+      companyNumber: z.string().optional().describe("The 8-character Companies House company number; required unless clientIds is given"),
+      clientIds: z
+        .array(z.string())
+        .optional()
+        .describe("Practice client ids for a batch filing through run_for_clients: the page asks for one code per client"),
       directors: z
         .array(z.object({ forename: z.string(), surname: z.string() }))
         .optional()
@@ -479,7 +487,9 @@ export const TOOLS = {
       "Runs one client-scoped tool once per client in the practice's own list (list_clients), passing each client's " +
       "clientId in turn. Returns one row per client -- {clientId, displayName, ok, result or error} -- plus a summary " +
       "count; one client's failure never stops the rest. tool is one of list_vat_obligations, submit_vat_return, " +
-      "get_vat_receipt, submit_micro_entity_accounts_sandbox, open_book, save_book.",
+      "get_vat_receipt, submit_micro_entity_accounts_sandbox, open_book, save_book. For submit_micro_entity_accounts_sandbox, " +
+      "put in args a codesEntryId that request_companies_house_codes answered for these clients' clientIds; each client's call " +
+      "takes its own codes from it.",
     inputSchema: {
       tool: z.enum(RUN_FOR_CLIENTS_TOOLS).describe("The client-scoped tool to run for every client"),
       args: z

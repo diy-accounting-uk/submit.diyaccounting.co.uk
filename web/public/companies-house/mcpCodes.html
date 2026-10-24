@@ -25,14 +25,15 @@
       <div id="codesFormView" class="form-container" style="display: none">
         <p id="codesIntro"></p>
         <p class="hint">
-          The codes go straight to DIY Accounting Submit, are kept sealed for ten minutes and are used once, for this filing. They do not
-          appear in your chat.
+          The codes go straight to DIY Accounting Submit, are kept sealed for ten minutes and are used once, for this filing (once for each
+          client when you file for several). They do not appear in your chat.
         </p>
         <form id="codesForm" autocomplete="off">
-          <div class="form-group">
+          <div class="form-group" id="companyAuthCodeGroup">
             <label for="companyAuthCode">Company authentication code</label>
             <input type="password" id="companyAuthCode" name="companyAuthCode" minlength="6" maxlength="8" required autocomplete="off" />
           </div>
+          <div id="clientCodeFields"></div>
           <div id="personalCodeFields"></div>
           <button type="submit" id="saveCodesBtn" class="btn">Save codes</button>
         </form>
