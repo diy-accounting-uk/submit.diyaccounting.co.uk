@@ -158,7 +158,7 @@ async function continuePeriodViewRetrieval() {
       accessToken,
     );
 
-    displayPeriod(result);
+    await displayPeriod(result, pendingRequest);
     document.getElementById("periodViewResults").style.display = "block";
     hideStatus();
 
@@ -254,7 +254,7 @@ async function handleFormSubmission(event) {
         accessToken,
       );
 
-      displayPeriod(result);
+      await displayPeriod(result, { nino, businessId, taxYear, submissionId });
       document.getElementById("periodViewResults").style.display = "block";
       hideStatus();
     } catch (error) {
@@ -271,44 +271,27 @@ async function handleFormSubmission(event) {
   }
 }
 
-function displayPeriod(period) {
-  const details = document.getElementById("periodDetails");
-  const mount = (rows) => window.HmrcFieldTable.mountFieldTable(details, rows, { caption: "Period summary" });
+const JOURNEY_LINKS = [
+  { href: "ukPropertyPeriods.html", text: "See the other period summaries" },
+  { href: "dashboard.html", text: "Back to Income Tax" },
+];
 
-  // The cumulative model (2025-26 onwards) carries one flat ukProperty object - furnished
-  // holiday lettings ended 5 April 2025, so there is no FHL/non-FHL split to read there.
-  if (period?.ukProperty) {
-    const income = period.ukProperty.income || {};
-    const expenses = period.ukProperty.expenses || {};
-    mount([
-      { field: "toDate", label: "Reported to", kind: "text", value: period?.toDate },
-      { field: "periodAmount", label: "Rental income (year to date)", value: income.periodAmount },
-      { field: "otherIncome", label: "Other property income (year to date)", value: income.otherIncome },
-      { field: "repairsAndMaintenance", label: "Repairs and maintenance (year to date)", value: expenses.repairsAndMaintenance },
-      { field: "other", label: "Other property expenses (year to date)", value: expenses.other ?? expenses.consolidatedExpenses },
-    ]);
-    return;
-  }
-
-  const propertyType = period?.ukFhlProperty ? "ukFhlProperty" : "ukNonFhlProperty";
-  const property = period?.[propertyType] || {};
-  const income = property.income || {};
-  const expenses = property.expenses || {};
-
-  mount([
-    { field: "fromDate", label: "Period start date", kind: "text", value: period?.fromDate },
-    { field: "toDate", label: "Period end date", kind: "text", value: period?.toDate },
-    {
-      field: "propertyType",
-      label: "Property type",
-      kind: "text",
-      value: propertyType === "ukFhlProperty" ? "Furnished holiday letting" : "UK property",
-    },
-    { field: "periodAmount", label: "Rental income", value: income.periodAmount },
-    { field: "otherIncome", label: "Other property income", value: income.otherIncome },
-    { field: "repairsAndMaintenance", label: "Repairs and maintenance", value: expenses.repairsAndMaintenance },
-    { field: "other", label: "Other property expenses", value: expenses.other ?? expenses.consolidatedExpenses },
-  ]);
+async function displayPeriod(period, query = {}) {
+  const { periodCopyHtml, mountCopy } = await import("../../lib/itsa-submission-record.js");
+  mountCopy(
+    document.getElementById("periodDetails"),
+    periodCopyHtml({
+      kind: "uk-property",
+      period,
+      nino: query.nino,
+      businessId: query.businessId,
+      taxYear: query.taxYear,
+      periodId: query.submissionId,
+      idLabel: "Submission ID",
+      retrievedAt: new Date().toISOString(),
+      links: JOURNEY_LINKS,
+    }),
+  );
 }
 
 document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {

@@ -13,7 +13,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
-    <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
+    <link rel="stylesheet" href="../../submission-record.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -115,7 +115,6 @@
 
       <!-- Results Display -->
       <div id="periodViewResults" class="results-container" style="display: none">
-        <h3>Period summary</h3>
         <div id="periodDetails"></div>
         <div class="button-group">
           <button type="button" id="newSearchBtn" class="secondary-button">New search</button>
@@ -135,8 +134,6 @@
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/form-errors.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
-    <script src="../../lib/money-format.js"></script>
-    <script src="../../lib/hmrc-field-table.js"></script>
     <script src="../../lib/itsaSubmissionModel.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>

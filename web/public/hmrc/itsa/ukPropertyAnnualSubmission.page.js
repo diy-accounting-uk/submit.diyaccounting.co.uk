@@ -10,6 +10,29 @@ let loadedNino = "";
 let loadedBusinessId = "";
 let loadedTaxYear = "";
 
+const JOURNEY_LINKS = [
+  { href: "dashboard.html", text: "Back to Income Tax" },
+  { href: "obligations.html", text: "See your obligations" },
+];
+
+async function showSavedRecord(kind, annualDetails) {
+  const { annualCopyHtml, mountCopy } = await import("../../lib/itsa-submission-record.js");
+  mountCopy(
+    document.getElementById("annualSubmissionCopy"),
+    annualCopyHtml({
+      kind,
+      nino: annualDetails.nino,
+      businessId: annualDetails.businessId,
+      taxYear: annualDetails.taxYear,
+      savedAt: new Date().toISOString(),
+      sent: { adjustments: annualDetails.adjustments, allowances: annualDetails.allowances, nonFinancials: annualDetails.nonFinancials },
+      links: JOURNEY_LINKS,
+    }),
+  );
+  document.getElementById("annualEditForm").style.display = "none";
+  document.getElementById("annualSubmissionResults").style.display = "block";
+}
+
 function initializePage() {
   const hmrcAccount = sessionStorage.getItem("hmrcAccount");
 
@@ -162,8 +185,7 @@ async function continueAfterOAuth() {
       showLoading();
       showStatus("Saving annual submission...", "info");
       await saveAnnualSubmission(pendingSave.annualDetails, pendingSave.runFraudPreventionHeaderValidation, accessToken);
-      document.getElementById("annualEditForm").style.display = "none";
-      document.getElementById("annualSubmissionResults").style.display = "block";
+      await showSavedRecord("uk-property", pendingSave.annualDetails);
       hideStatus();
       sessionStorage.removeItem("pendingUkPropertyAnnualSaveRequest");
     } else {
@@ -269,8 +291,7 @@ async function handleSaveClick() {
         hideStatus();
         showStatus("Saving annual submission...", "info");
         await saveAnnualSubmission(annualDetails, runFraudPreventionHeaderValidation, accessToken);
-        document.getElementById("annualEditForm").style.display = "none";
-        document.getElementById("annualSubmissionResults").style.display = "block";
+        await showSavedRecord("uk-property", annualDetails);
         hideStatus();
       } catch (error) {
         showStatus(`Failed to save the annual submission: ${error.message}`, "error");

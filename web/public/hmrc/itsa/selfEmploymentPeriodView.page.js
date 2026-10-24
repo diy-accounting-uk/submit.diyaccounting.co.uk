@@ -146,7 +146,7 @@ async function continuePeriodViewRetrieval() {
       accessToken,
     );
 
-    displayPeriod(result);
+    await displayPeriod(result, pendingRequest);
     document.getElementById("periodViewResults").style.display = "block";
     hideStatus();
 
@@ -234,7 +234,7 @@ async function handleFormSubmission(event) {
 
       const result = await fetchPeriod(nino, businessId, taxYear, periodId, testScenario, runFraudPreventionHeaderValidation, accessToken);
 
-      displayPeriod(result);
+      await displayPeriod(result, { nino, businessId, taxYear, periodId });
       document.getElementById("periodViewResults").style.display = "block";
       hideStatus();
     } catch (error) {
@@ -251,20 +251,26 @@ async function handleFormSubmission(event) {
   }
 }
 
-function displayPeriod(period) {
-  const details = document.getElementById("periodDetails");
-  const dates = period?.periodDates || {};
-  const income = period?.periodIncome || {};
-  const expenses = period?.periodExpenses || {};
+const JOURNEY_LINKS = [
+  { href: "selfEmploymentPeriods.html", text: "See the other period summaries" },
+  { href: "dashboard.html", text: "Back to Income Tax" },
+];
 
-  const rows = [
-    { field: "periodStartDate", label: "Period start date", kind: "text", value: dates.periodStartDate },
-    { field: "periodEndDate", label: "Period end date", kind: "text", value: dates.periodEndDate },
-    { field: "turnover", label: "Turnover", value: income.turnover },
-    { field: "other", label: "Other income", value: income.other },
-    { field: "costOfGoods", label: "Cost of goods", value: expenses.costOfGoods },
-  ];
-  window.HmrcFieldTable.mountFieldTable(details, rows, { caption: "Period summary" });
+async function displayPeriod(period, query = {}) {
+  const { periodCopyHtml, mountCopy } = await import("../../lib/itsa-submission-record.js");
+  mountCopy(
+    document.getElementById("periodDetails"),
+    periodCopyHtml({
+      kind: "self-employment",
+      period,
+      nino: query.nino,
+      businessId: query.businessId,
+      taxYear: query.taxYear,
+      periodId: query.periodId,
+      retrievedAt: new Date().toISOString(),
+      links: JOURNEY_LINKS,
+    }),
+  );
 }
 
 document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {
