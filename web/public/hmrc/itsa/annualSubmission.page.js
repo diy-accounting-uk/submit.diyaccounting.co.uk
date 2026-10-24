@@ -15,7 +15,7 @@ const JOURNEY_LINKS = [
   { href: "obligations.html", text: "See your obligations" },
 ];
 
-async function showSavedRecord(kind, annualDetails) {
+async function showSavedRecord(kind, annualDetails, correlationId) {
   const { annualCopyHtml, mountCopy } = await import("../../lib/itsa-submission-record.js");
   mountCopy(
     document.getElementById("annualSubmissionCopy"),
@@ -25,6 +25,7 @@ async function showSavedRecord(kind, annualDetails) {
       businessId: annualDetails.businessId,
       taxYear: annualDetails.taxYear,
       savedAt: new Date().toISOString(),
+      correlationId,
       sent: { adjustments: annualDetails.adjustments, allowances: annualDetails.allowances, nonFinancials: annualDetails.nonFinancials },
       links: JOURNEY_LINKS,
     }),
@@ -192,13 +193,13 @@ async function continueAfterOAuth() {
     } else if (pendingSave) {
       showLoading();
       showStatus("Saving annual submission...", "info");
-      await saveAnnualSubmission(
+      const saved = await saveAnnualSubmission(
         pendingSave.annualDetails,
         pendingSave.testScenario,
         pendingSave.runFraudPreventionHeaderValidation,
         accessToken,
       );
-      await showSavedRecord("self-employment", pendingSave.annualDetails);
+      await showSavedRecord("self-employment", pendingSave.annualDetails, saved?.correlationId);
       hideStatus();
       sessionStorage.removeItem("pendingAnnualSaveRequest");
     } else {
@@ -305,8 +306,8 @@ async function handleSaveClick() {
         showLoading();
         hideStatus();
         showStatus("Saving annual submission...", "info");
-        await saveAnnualSubmission(annualDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
-        await showSavedRecord("self-employment", annualDetails);
+        const saved = await saveAnnualSubmission(annualDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        await showSavedRecord("self-employment", annualDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {
         showStatus(`Failed to save the annual submission: ${error.message}`, "error");

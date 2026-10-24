@@ -478,7 +478,12 @@ export async function ingestHandler(event) {
           headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
         };
 
-        const resultData = { annualSubmission, hmrcResponse: serializableHmrcResponse, hmrcResponseBody };
+        const resultData = {
+          annualSubmission,
+          hmrcResponse: serializableHmrcResponse,
+          hmrcResponseBody,
+          correlationId: serializableHmrcResponse.headers["x-correlationid"] ?? null,
+        };
 
         if (!hmrcResponse.ok) {
           return resultData;
@@ -557,7 +562,8 @@ export async function ingestHandler(event) {
     request,
     requestId,
     responseHeaders,
-    data: result ? result.annualSubmission : null,
+    // HMRC answers the save with no body, so the id the page shows rides beside whatever HMRC sent.
+    data: result?.annualSubmission ? { ...result.annualSubmission, correlationId: result.correlationId ?? null } : null,
   });
 }
 
@@ -603,7 +609,12 @@ export async function workerHandler(event) {
         headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
       };
 
-      const result = { annualSubmission, hmrcResponse: serializableHmrcResponse, hmrcResponseBody };
+      const result = {
+        annualSubmission,
+        hmrcResponse: serializableHmrcResponse,
+        hmrcResponseBody,
+        correlationId: serializableHmrcResponse.headers["x-correlationid"] ?? null,
+      };
 
       if (!hmrcResponse.ok) {
         // Distinguish retryable errors (e.g. 429, 503, 504)
