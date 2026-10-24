@@ -146,6 +146,76 @@ export const AVAILABILITY = [
   },
 ];
 
+const COMPANIES = ["owner-managed-company", "property-company", "small-company"];
+export const BUSINESS_TYPES = [
+  { id: "sole-trader", group: "Self-employed", label: "Sole trader" },
+  { id: "taxi-private-hire-driver", group: "Self-employed", label: "Taxi and private hire driver" },
+  { id: "partnership", group: "Self-employed", label: "Partnership" },
+  { id: "landlord", group: "Self-employed", label: "Landlord" },
+  { id: "sole-trader-employees", group: "Self-employed", label: "Sole trader with employees" },
+  { id: "owner-managed-company", group: "Limited company", label: "Owner-managed company with one director" },
+  { id: "property-company", group: "Limited company", label: "Property company" },
+  { id: "small-company", group: "Limited company", label: "Small company" },
+];
+
+// The business types each calendar section applies to; "all" means every type that is VAT registered.
+export const RELEVANT_FOR = {
+  "vat-mtd-all-registered-2022-04": "all",
+  "itsa-mtd-over-50k-2026-04": ["sole-trader", "taxi-private-hire-driver", "landlord", "sole-trader-employees"],
+  "itsa-mtd-over-30k-2027-04": ["sole-trader", "taxi-private-hire-driver", "landlord", "sole-trader-employees"],
+  "itsa-mtd-over-20k-2028-04": ["sole-trader", "taxi-private-hire-driver", "landlord", "sole-trader-employees"],
+  "itsa-quarterly-update-deadlines": ["sole-trader", "taxi-private-hire-driver", "landlord", "sole-trader-employees"],
+  "itsa-final-declaration-deadline": ["sole-trader", "taxi-private-hire-driver", "landlord", "sole-trader-employees"],
+  "itsa-mtd-partnerships-date-unset": ["partnership"],
+  "ch-identity-verification-2025-11": COMPANIES,
+  "ch-confirmation-statement-12-months": COMPANIES,
+  "ch-accounts-9-months": COMPANIES,
+  "ct600-12-months": COMPANIES,
+  "ct-payment-9-months-1-day": COMPANIES,
+};
+
+const LINK = (href, text) => ({ href, text });
+const NO_VAT = [LINK("#vat-mtd-all-registered-2022-04", "No VAT dates")];
+const VAT = [LINK("#vat-mtd-all-registered-2022-04", "VAT returns")];
+const ITSA_DATES = [
+  LINK("#itsa-mtd-over-50k-2026-04", "Dates by income"),
+  LINK("#itsa-quarterly-update-deadlines", "Quarterly updates"),
+  LINK("#itsa-final-declaration-deadline", "Final declaration"),
+];
+const NONE = [{ text: "Not applicable" }];
+const SELF_EMPLOYED_ROW = [NO_VAT, VAT, ITSA_DATES, NONE, NONE];
+const COMPANY_ROW = [
+  NO_VAT,
+  VAT,
+  [{ text: "Not in this rule" }],
+  [
+    LINK("#ch-confirmation-statement-12-months", "Confirmation statement"),
+    LINK("#ch-identity-verification-2025-11", "Identity verification"),
+  ],
+  [
+    LINK("#ch-accounts-9-months", "Annual accounts"),
+    LINK("#ct600-12-months", "Company Tax Return"),
+    LINK("#ct-payment-9-months-1-day", "Corporation Tax payment"),
+  ],
+];
+export const BUSINESS_COLUMNS = [
+  "Not VAT registered",
+  "VAT registered",
+  "Income Tax (MTD)",
+  "Companies House filings",
+  "Companies House accounts",
+];
+export const BUSINESS_CELLS = {
+  "sole-trader": SELF_EMPLOYED_ROW,
+  "taxi-private-hire-driver": SELF_EMPLOYED_ROW,
+  "partnership": [NO_VAT, VAT, [LINK("#itsa-mtd-partnerships-date-unset", "No date yet")], NONE, NONE],
+  "landlord": SELF_EMPLOYED_ROW,
+  "sole-trader-employees": SELF_EMPLOYED_ROW,
+  "owner-managed-company": COMPANY_ROW,
+  "property-company": COMPANY_ROW,
+  "small-company": COMPANY_ROW,
+};
+
 export const UNDATED_FACTS = [
   {
     id: "itsa-mtd-partnerships-date-unset",
@@ -156,6 +226,41 @@ export const UNDATED_FACTS = [
 
 export function allFactIds() {
   return [...DATED_FACTS, QUARTERLY_FACT, FINAL_DECLARATION_FACT, ...COMPANY_YEARLY_FACTS, ...UNDATED_FACTS].map((f) => f.id);
+}
+
+function relevantHtml(factId) {
+  const rule = RELEVANT_FOR[factId];
+  if (!rule) return "";
+  const names =
+    rule === "all"
+      ? "every business type in the table, once it is VAT registered"
+      : BUSINESS_TYPES.filter((t) => rule.includes(t.id))
+          .map((t) => t.label)
+          .join(", ");
+  return `<p class="relevant-for"><strong>Relevant for:</strong> ${escapeHtml(names)}.</p>`;
+}
+
+function businessTypesHtml() {
+  const cell = (items) => items.map((i) => (i.href ? `<a href="${i.href}">${escapeHtml(i.text)}</a>` : escapeHtml(i.text))).join("<br />");
+  const groups = [...new Set(BUSINESS_TYPES.map((t) => t.group))];
+  const body = groups
+    .map(
+      (g) =>
+        `<tbody><tr><th scope="rowgroup" colspan="${BUSINESS_COLUMNS.length + 1}">${g}</th></tr>` +
+        BUSINESS_TYPES.filter((t) => t.group === g)
+          .map(
+            (t) => `<tr><th scope="row">${escapeHtml(t.label)}</th>${BUSINESS_CELLS[t.id].map((c) => `<td>${cell(c)}</td>`).join("")}</tr>`,
+          )
+          .join("") +
+        `</tbody>`,
+    )
+    .join("");
+  return (
+    `<div class="form-container" id="business-types"><h2>Which dates apply to your business</h2>` +
+    `<p>Find your business type, then follow the link in each column to its dates. Making Tax Digital for Income Tax covers sole traders and landlords registered for Self Assessment, so a limited company is outside it. Partnerships have no date yet. A taxi or private hire driver, and a sole trader with employees, follow the sole trader rules.</p>` +
+    `<div class="table-scroll"><table class="deadline-table"><caption class="calendar-date">Business type against what applies</caption>` +
+    `<thead><tr><th scope="col">Business type</th>${BUSINESS_COLUMNS.map((c) => `<th scope="col">${c}</th>`).join("")}</tr></thead>${body}</table></div></div>`
+  );
 }
 
 function cellHtml([status, note]) {
@@ -199,6 +304,7 @@ function entryHtml(fact, sources, heading, extraHtml = "") {
     `<li class="calendar-entry" id="${fact.id}">` +
     `<h3>${heading}</h3>` +
     `<p>${escapeHtml(fact.text)}</p>` +
+    relevantHtml(fact.id) +
     (fact.optional ? `<p><strong>Optional:</strong> ${escapeHtml(fact.optional)}</p>` : "") +
     extraHtml +
     sourcesHtml(fact.id, sources) +
@@ -316,6 +422,8 @@ export function renderCalendarHtml(sources) {
 
     <main id="mainContent">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      ${businessTypesHtml()}
 
       ${availabilityHtml()}
 
