@@ -4,7 +4,7 @@
 // app/services/diyaGlEntitlement.js
 //
 // Decides a DIYA-GL book's retention tier: "resident" for an active subscriber to the resident
-// bundle, "sandbox" for everyone else.
+// bundle or to resident-pro, "sandbox" for everyone else.
 // DIYA_GL_RESIDENT_TIER gates whether the resident tier is offered at all on this environment;
 // off, every caller gets the sandbox tier without a bundle read.
 //
@@ -51,6 +51,9 @@ export function hasActiveResidentProBundle(bundles) {
 
 /**
  * @param {string} sub - the raw Cognito sub
+ * Own books (no clientId): resident when the named bundle is active, or else when the caller
+ * holds an active resident-pro subscription; sandbox otherwise.
+ *
  * @param {string} [clientId] - when given, decides the tier for that client's book set: the
  *   caller's own resident-pro subscription and the client row belonging to the caller, rather
  *   than any bundle held against the client
@@ -76,7 +79,22 @@ export async function entitlementFor(sub, clientId) {
   const diyaGlBundleIds = process.env.DIYA_GL_BUNDLE_ID ? [process.env.DIYA_GL_BUNDLE_ID] : DEFAULT_DIYA_GL_BUNDLE_IDS;
   const matchingBundle = diyaGlBundleIds.map((id) => bundles.find((bundle) => bundle.bundleId === id)).find(Boolean);
 
+  // A practice keeps its own books on the resident tier too, whether or not it also holds the
+  // resident bundle.
+  const practiceOwnBooks = () => {
+    const practiceBundle = bundles.find((bundle) => bundle.bundleId === PRACTICE_BUNDLE_ID);
+    return {
+      retention: "resident",
+      reason: "active-subscription",
+      residentTier: true,
+      bundleId: PRACTICE_BUNDLE_ID,
+      expiry: practiceBundle.expiry || null,
+      checkedAt,
+    };
+  };
+
   if (!matchingBundle) {
+    if (hasActiveResidentProBundle(bundles)) return practiceOwnBooks();
     logger.info({ message: "No matching DIYA-GL bundle", bundleIds: diyaGlBundleIds });
     return { retention: "sandbox", reason: "no-subscription", residentTier: true, bundleId: null, expiry: null, checkedAt };
   }
@@ -94,6 +112,8 @@ export async function entitlementFor(sub, clientId) {
       checkedAt,
     };
   }
+
+  if (hasActiveResidentProBundle(bundles)) return practiceOwnBooks();
 
   logger.info({
     message: "DIYA-GL bundle found but not active",

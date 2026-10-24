@@ -206,7 +206,7 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-pro"
 name = "Resident Pro"
-description = "Manage a practice's clients and file VAT, Income Tax Self Assessment and micro-entity accounts to HMRC and Companies House on their behalf. £199/year, or £19.99/month, cancel anytime."
+description = "Manage a practice's clients and file VAT, Income Tax Self Assessment and micro-entity accounts to HMRC and Companies House on their behalf, and save and load your own DIYA-GL books. £199/year, or £19.99/month, cancel anytime."
 levelName = "Pro"
 enable = "always"
 hidden = false

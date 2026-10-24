@@ -115,6 +115,52 @@ describe("diyaGlEntitlement", () => {
     expect(result.bundleId).toBe("custom-books-bundle");
   });
 
+  test("keeps a resident-pro holder's own books resident when no resident bundle is held", async () => {
+    process.env.DIYA_GL_RESIDENT_TIER = "true";
+    process.env.DIYA_GL_BUNDLE_ID = "resident";
+    const future = new Date(Date.now() + 60_000).toISOString();
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active", expiry: future }]);
+
+    const result = await entitlementFor("practice-sub");
+
+    expect(result.retention).toBe("resident");
+    expect(result.reason).toBe("active-subscription");
+    expect(result.bundleId).toBe("resident-pro");
+    expect(result.expiry).toBe(future);
+    expect(getClient).not.toHaveBeenCalled();
+  });
+
+  test("gives a resident-pro holder with a lapsed resident bundle resident own books", async () => {
+    process.env.DIYA_GL_RESIDENT_TIER = "true";
+    process.env.DIYA_GL_BUNDLE_ID = "resident";
+    getUserBundles.mockResolvedValue([
+      { bundleId: "resident", subscriptionStatus: "expired", expiry: null },
+      { bundleId: "resident-pro", subscriptionStatus: "active", expiry: null },
+    ]);
+
+    const result = await entitlementFor("practice-sub");
+
+    expect(result.retention).toBe("resident");
+    expect(result.bundleId).toBe("resident-pro");
+    expect(result.expiry).toBeNull();
+  });
+
+  test("gives sandbox own books to an expired or inactive resident-pro holder with no resident bundle", async () => {
+    process.env.DIYA_GL_RESIDENT_TIER = "true";
+    process.env.DIYA_GL_BUNDLE_ID = "resident";
+    const past = new Date(Date.now() - 60_000).toISOString();
+
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active", expiry: past }]);
+    const expired = await entitlementFor("practice-sub");
+    expect(expired.retention).toBe("sandbox");
+    expect(expired.reason).toBe("no-subscription");
+
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "cancelled", expiry: null }]);
+    const inactive = await entitlementFor("practice-sub");
+    expect(inactive.retention).toBe("sandbox");
+    expect(inactive.reason).toBe("no-subscription");
+  });
+
   test("gives resident retention for a client's books when the practice holds an active resident-pro subscription and the client belongs to it", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     const future = new Date(Date.now() + 60_000).toISOString();
