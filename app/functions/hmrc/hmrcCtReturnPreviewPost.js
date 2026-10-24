@@ -71,6 +71,8 @@ export async function ingestHandler(event) {
       computationsIxbrl: documents.computationsIxbrl,
       accountsIxbrl: documents.accountsIxbrl,
       boxes: documents.boxes,
+      computationLines: documents.computationLines,
+      worked: documents.worked,
     },
   });
 }

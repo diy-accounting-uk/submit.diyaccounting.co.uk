@@ -131,8 +131,7 @@ describe("hmrcCtReturnPreviewPost ingestHandler", () => {
     ["a UTR that is not 10 digits", { utr: "123" }, /utr/],
     ["a missing trade name", { tradeName: "" }, /tradeName/],
     ["a missing declarant", { declarant: { name: "", status: "" } }, /declarant/],
-    ["no boxes", { boxes: undefined }, /Missing boxes/],
-    ["no computation lines", { computationLines: undefined }, /Missing computationLines/],
+    ["no figures", { figures: undefined }, /Missing figures/],
     ["a filleted accounts copy", { smallCompany: undefined }, /smallCompany is required/],
   ])("answers 400 for %s", async (_label, overrides, message) => {
     const response = await hmrcCtReturnPreviewPostHandler(buildEvent({ body: { ...baseBody, ...overrides } }));
@@ -140,30 +139,26 @@ describe("hmrcCtReturnPreviewPost ingestHandler", () => {
     expect(JSON.stringify(parseResponseBody(response))).toMatch(message);
   });
 
-  test("answers 400 when box 155 disagrees with the computation's adjusted profit", async () => {
-    const response = await hmrcCtReturnPreviewPostHandler(
-      buildEvent({ body: { ...baseBody, boxes: { ...baseBody.boxes, 155: baseBody.boxes[155] + 1 } } }),
-    );
-    expect(response.statusCode).toBe(400);
-    expect(JSON.stringify(parseResponseBody(response))).toMatch(/Box 155/);
-  });
-
   test("answers 400 when the accounts period does not overlap the return period", async () => {
     const response = await hmrcCtReturnPreviewPostHandler(
-      buildEvent({ body: { ...baseBody, boxes: { ...baseBody.boxes, 30: "2001-01-01", 35: "2001-12-31" } } }),
+      buildEvent({ body: { ...baseBody, figures: { ...baseBody.figures, periodStart: "2001-01-01", periodEnd: "2001-12-31" } } }),
     );
     expect(response.statusCode).toBe(400);
     expect(JSON.stringify(parseResponseBody(response))).toMatch(/does not overlap/);
   });
 
-  test("answers 400 when the computation lines do not add up", async () => {
+  test("answers 400 when Income Tax deducted exceeds the Corporation Tax charged", async () => {
     const response = await hmrcCtReturnPreviewPostHandler(
-      buildEvent({
-        body: { ...baseBody, computationLines: { ...baseBody.computationLines, depreciation: baseBody.computationLines.depreciation + 5 } },
-      }),
+      buildEvent({ body: { ...baseBody, figures: { ...baseBody.figures, incomeTaxDeducted: 40000 } } }),
     );
     expect(response.statusCode).toBe(400);
-    expect(JSON.stringify(parseResponseBody(response))).toMatch(/does not add up/);
+    expect(JSON.stringify(parseResponseBody(response))).toMatch(/Income Tax deducted/);
+  });
+
+  test("returns the computation lines and the worked boxes with the boxes", async () => {
+    const body = parseResponseBody(await hmrcCtReturnPreviewPostHandler(buildEvent()));
+    expect(body.computationLines.adjustedProfit).toBe(body.boxes["155"]);
+    expect(body.worked["705"].sources).toContain("annualInvestmentAllowance");
   });
 
   test("returns 401 when the Cognito bearer token is missing", async () => {

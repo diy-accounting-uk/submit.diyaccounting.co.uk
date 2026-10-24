@@ -4,24 +4,24 @@
 // app/services/ct600Xml.js
 // The CT600 (2026) Version 3 return as HMRC's IRenvelope XML (RIM artefacts V1.994, namespace
 // http://www.govtalk.gov.uk/taxation/CT/5), with the accounts and computations iXBRL attached,
-// for a small trading company filed from a diya-gl Company book. deriveCt600Boxes works the boxes
-// from the book's calculated results and refuses a book that needs a box diya-gl has no cell for;
-// buildCt600IrEnvelope writes them in the schema's element order.
+// for a small trading company. ct600Figures.js works the boxes from the figures; deriveCompanyTaxReturn
+// gives it a diya-gl Company book's figures; buildCt600IrEnvelope writes the boxes in the schema's
+// element order.
 
+import { existsSync, readFileSync } from "node:fs";
+import { createRequire } from "node:module";
+import { dirname, join } from "node:path";
+import { parse as parseToml } from "@iarna/toml";
 import { calculatedResultsFor } from "@diy-accounting-uk/diya-gl/dist/app/bin/export.js";
 import { loadTaxDataForBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
-import { apportionCorporationTax, financialYearsInPeriod } from "@diy-accounting-uk/diya-gl/dist/app/lib/tax/corporation-tax.js";
+import { financialYearNumber } from "@diy-accounting-uk/diya-gl/dist/app/lib/tax/corporation-tax.js";
 import { escapeXmlText } from "../lib/xmlDom.js";
-import { computationLinesFromResults } from "./ctComputationsIxbrl.js";
+import { deriveSmallCompanyAccounts } from "./smallCompanyAccounts.js";
+import { ct600FiguresFromResults, deriveCt600FromFigures } from "./ct600Figures.js";
 
 // eslint-disable-next-line sonarjs/no-clear-text-protocols -- XML namespace, compared byte for byte, not fetched
 export const CT600_NAMESPACE = "http://www.govtalk.gov.uk/taxation/CT/5";
 export const CT600_RIM_ARTEFACT_VERSION = "V1.994";
-
-const EARLIEST_PERIOD_START = "2015-04-01";
-const EXCEL_EPOCH_MS = Date.UTC(1899, 11, 30);
-const DAY_MS = 86_400_000;
-const WORKING_SHEET_TOLERANCE_POUNDS = 5;
 
 // Where each box the builder fills sits in the return, as HMRC's CT-specDoc names it. The unit
 // tests read every box back from the built XML by these paths and check them against diya-gl's
@@ -71,216 +71,18 @@ export const CT600_BOX_PATHS = {
   985: "/IRenvelope/CompanyTaxReturn/Declaration/Status",
 };
 
-export class Ct600RefusedError extends Error {
-  constructor(message) {
-    super(message);
-    this.name = "Ct600RefusedError";
-  }
-}
-
-function isoFromSerial(serial) {
-  return new Date(EXCEL_EPOCH_MS + serial * DAY_MS).toISOString().slice(0, 10);
-}
-
-function utcDate(isoDate) {
-  return new Date(`${isoDate}T00:00:00Z`);
-}
-
-function lastDayOfTwelveMonths(isoStart) {
-  const date = utcDate(isoStart);
-  date.setUTCFullYear(date.getUTCFullYear() + 1);
-  date.setUTCDate(date.getUTCDate() - 1);
-  return date.toISOString().slice(0, 10);
-}
-
-function toPence(pounds) {
-  return Math.round(pounds * 100);
-}
-
-function fromPence(pence) {
-  return pence / 100;
-}
-
-function requireText(value, label) {
-  if (typeof value !== "string" || value.trim().length < 2) throw new Error(`${label} is required (at least 2 characters)`);
-  return value.trim();
-}
-
 /**
- * Work the CT600 boxes for a small trading company from a Company book's calculated results and
- * the facts typed on the page. The tax rows follow HMRC's rules from box 315: 9198 splits the
- * profit between financial years by days, 9204 and 9213 charge each share at its rate to the
- * penny, and the marginal relief is diya-gl's own calculation on the boxed profit. The working
- * sheet's own trading profit and tax must agree with the result to within a few pounds.
- *
- * @param {object} input
- * @param {object} input.results - diya-gl calculatedResultsFor output for a Company book
- * @param {object} input.company
- * @param {string} input.company.companyName - box 1
- * @param {string} input.company.companyNumber - box 2
- * @param {string} input.company.utr - box 3
- * @param {number} input.company.companyType - box 4; 0, none of the listed types, is the only one this builder files
- * @param {string} input.company.declarantName - box 975
- * @param {string} input.company.declarantStatus - box 985, e.g. "Director"
- * @param {number} [input.company.taxAlreadyPaid] - box 595, pounds and pence paid before filing
- * @returns {{boxes: Record<number, string|number>, computationLines: object, periodStart: string, periodEnd: string}}
+ * The parsed ltd-<FY>.toml files a return's period needs, keyed by financial year: the one named
+ * for the financial year the period ends in, which also states the year before.
+ * @param {string} periodEnd - ISO date
+ * @returns {Record<number, object>}
  */
-export function deriveCt600Boxes({ results, company }) {
-  const ct600 = results.CT600;
-  const workingSheet = results.CorporationTax;
-  const admin = results.Admin;
-  if (!ct600 || !workingSheet || !admin) {
-    throw new Ct600RefusedError("The book carries no CT600 sheet; only a Company (ltd) book files a Company Tax Return");
-  }
-  if (company.companyType !== 0) {
-    throw new Ct600RefusedError(`Company type ${company.companyType} is not filed here; only type 0 (none of the listed types) is`);
-  }
-  if (!/^\d{10}$/.test(company.utr || "")) throw new Error("The UTR must be 10 digits");
-  if (!/^[A-Z0-9]{2,8}$/.test(company.companyNumber || ""))
-    throw new Error("The company registration number must be 2 to 8 capital letters or digits");
-
-  const periodStart = isoFromSerial(ct600.B33);
-  const periodEnd = isoFromSerial(ct600.M33);
-  if (periodStart < EARLIEST_PERIOD_START) {
-    throw new Ct600RefusedError(
-      `The return period starts ${periodStart}; CT600 Version 3 covers periods starting on or after ${EARLIEST_PERIOD_START}`,
-    );
-  }
-  if (periodEnd > lastDayOfTwelveMonths(periodStart)) {
-    throw new Ct600RefusedError(
-      `The return period ${periodStart} to ${periodEnd} is longer than 12 months; a long period of account files two returns`,
-    );
-  }
-  if (workingSheet.K22 < 0) {
-    throw new Ct600RefusedError("The book makes a trading loss; the loss boxes (780 onward) have no diya-gl cell yet");
-  }
-  if (workingSheet.K24 < 0) {
-    throw new Ct600RefusedError("The book has net non-trading loan relationship debits; those boxes have no diya-gl cell yet");
-  }
-  if ((ct600.AK66 ?? 0) < 0) throw new Ct600RefusedError("The book's turnover is negative");
-
-  const computationLines = computationLinesFromResults(results);
-  const boxes = {
-    1: requireText(company.companyName, "The company name"),
-    2: company.companyNumber,
-    3: company.utr,
-    4: 0,
-    30: periodStart,
-    35: periodEnd,
-    145: Math.round(ct600.AK66 ?? 0),
-    975: requireText(company.declarantName, "The declarant's name"),
-    985: requireText(company.declarantStatus, "The declarant's status"),
-  };
-
-  const tradingProfit = Math.max(computationLines.adjustedProfit, 0);
-  if (Math.abs(tradingProfit - workingSheet.K22) > WORKING_SHEET_TOLERANCE_POUNDS) {
-    throw new Ct600RefusedError(
-      `The computation's adjusted trading profit ${tradingProfit} disagrees with the working sheet's ${Math.round(workingSheet.K22)}`,
-    );
-  }
-  const lossesBroughtForward = Math.round(ct600.Z72 ?? 0);
-  if (tradingProfit > 0) {
-    boxes[155] = tradingProfit;
-    if (lossesBroughtForward > 0) boxes[160] = Math.min(lossesBroughtForward, tradingProfit);
-    boxes[165] = tradingProfit - (boxes[160] ?? 0);
-  }
-  const bankInterest = computationLines.nonTradingLoanRelationshipCredits;
-  if (bankInterest > 0) boxes[170] = bankInterest;
-  const profitsBeforeOtherDeductions = (boxes[165] ?? 0) + (boxes[170] ?? 0);
-  if (profitsBeforeOtherDeductions > 0) {
-    boxes[235] = profitsBeforeOtherDeductions;
-    boxes[300] = profitsBeforeOtherDeductions;
-  }
-  const chargeableProfits = profitsBeforeOtherDeductions;
-  boxes[315] = chargeableProfits;
-
-  const { years, totalDays } = financialYearsInPeriod(utcDate(periodStart), utcDate(periodEnd));
-  const straddles = years[1].days > 0;
-  const associatedCompanies = admin.P14 ?? 0;
-  const frankedInvestmentIncome = Math.round(workingSheet.K29 ?? 0);
-  if (frankedInvestmentIncome > 0) boxes[620] = frankedInvestmentIncome;
-
-  let corporationTaxPence = 0;
-  let marginalReliefPence = 0;
-  if (chargeableProfits > 0) {
-    const perYear = [6, 7].map((row) => ({
-      smallProfitsRatePercent: admin[`P${row}`],
-      mainRatePercent: admin[`R${row}`],
-      marginalReliefFraction: admin[`S${row}`],
-      lowerLimit: admin[`T${row}`],
-      upperLimit: admin[`U${row}`],
-    }));
-    const charge = apportionCorporationTax(chargeableProfits, years, totalDays, { perYear, associatedCompanies, frankedInvestmentIncome });
-    const firstShare = straddles ? Math.round((chargeableProfits * years[0].days) / totalDays) : chargeableProfits;
-    const shares = [firstShare, chargeableProfits - firstShare];
-    const yearBoxes = [
-      [330, 335, 340, 345],
-      [380, 385, 390, 395],
-    ];
-    years.forEach((year, index) => {
-      if (index === 1 && !straddles) return;
-      const [yearBox, profitBox, rateBox, taxBox] = yearBoxes[index];
-      const ratePercent = charge.rows[index].ratePercent;
-      boxes[yearBox] = year.year;
-      boxes[profitBox] = shares[index];
-      boxes[rateBox] = ratePercent;
-      const taxPence = shares[index] * ratePercent;
-      boxes[taxBox] = fromPence(taxPence);
-      corporationTaxPence += taxPence;
-    });
-    marginalReliefPence = toPence(charge.marginalRelief);
-    const claimsSmallProfitsRateOrRelief =
-      marginalReliefPence > 0 ||
-      charge.rows.some(
-        (row, index) =>
-          row.days > 0 &&
-          perYear[index].smallProfitsRatePercent < perYear[index].mainRatePercent &&
-          row.ratePercent === perYear[index].smallProfitsRatePercent,
-      );
-    if (straddles) {
-      boxes[327] = associatedCompanies;
-      boxes[328] = associatedCompanies;
-    } else {
-      boxes[326] = associatedCompanies;
-    }
-    if (claimsSmallProfitsRateOrRelief) boxes[329] = "yes";
-    boxes[430] = fromPence(corporationTaxPence);
-    if (marginalReliefPence > 0) boxes[435] = fromPence(marginalReliefPence);
-  }
-  const netCorporationTaxPence = corporationTaxPence - marginalReliefPence;
-  if (Math.abs(fromPence(netCorporationTaxPence) - (workingSheet.K35 ?? 0)) > WORKING_SHEET_TOLERANCE_POUNDS) {
-    throw new Ct600RefusedError(
-      `The return's Corporation Tax ${fromPence(netCorporationTaxPence).toFixed(2)} disagrees with the working sheet's ${(workingSheet.K35 ?? 0).toFixed(2)}`,
-    );
-  }
-  boxes[440] = fromPence(netCorporationTaxPence);
-  boxes[475] = boxes[440];
-  boxes[510] = boxes[440];
-  const incomeTaxDeductedPence = workingSheet.K37 > 0 ? toPence(workingSheet.K37) : 0;
-  if (incomeTaxDeductedPence > 0) boxes[515] = fromPence(incomeTaxDeductedPence);
-  const taxPayablePence = Math.max(netCorporationTaxPence - incomeTaxDeductedPence, 0);
-  boxes[525] = fromPence(taxPayablePence);
-  boxes[528] = boxes[525];
-
-  const alreadyPaidPence = company.taxAlreadyPaid ? toPence(company.taxAlreadyPaid) : 0;
-  if (alreadyPaidPence < 0) throw new Error("The tax already paid cannot be negative");
-  if (alreadyPaidPence > taxPayablePence) {
-    throw new Ct600RefusedError(
-      "More tax was paid than the return charges; the repayment boxes (bank details, 920 onward) are not filed here",
-    );
-  }
-  if (alreadyPaidPence > 0) boxes[595] = fromPence(alreadyPaidPence);
-  boxes[600] = fromPence(taxPayablePence - alreadyPaidPence);
-
-  const allowances = workingSheet;
-  const annualInvestmentAllowance = Math.round(allowances.I15 ?? 0);
-  const mainPoolAllowances = Math.round((allowances.I16 ?? 0) + (allowances.I17 ?? 0) + Math.max(allowances.I18 ?? 0, 0));
-  const balancingCharges = Math.round(Math.max(-(allowances.I18 ?? 0), 0));
-  if (annualInvestmentAllowance > 0) boxes[690] = annualInvestmentAllowance;
-  if (mainPoolAllowances > 0) boxes[705] = mainPoolAllowances;
-  if (balancingCharges > 0) boxes[710] = balancingCharges;
-
-  return { boxes, computationLines, periodStart, periodEnd };
+export function ltdTaxDataForPeriodEnd(periodEnd) {
+  const financialYear = financialYearNumber(new Date(`${periodEnd}T00:00:00Z`));
+  const packageFile = createRequire(import.meta.url).resolve("@diy-accounting-uk/diya-gl/package.json");
+  const dataFile = join(dirname(packageFile), "dist", "app", "data", `ltd-${financialYear}.toml`);
+  if (!existsSync(dataFile)) return {};
+  return { [financialYear]: parseToml(readFileSync(dataFile, "utf8")) };
 }
 
 function money(value) {
@@ -309,7 +111,7 @@ function financialYearXml(name, year, profit, rate, tax) {
  * iXBRL and an empty IRmark for hmrcTransactionEngine.js to fill.
  *
  * @param {object} input
- * @param {Record<number, string|number>} input.boxes - deriveCt600Boxes output
+ * @param {Record<number, string|number>} input.boxes - deriveCt600FromFigures output
  * @param {string} input.accountsIxbrl - the full FRS 102 accounts document
  * @param {string} input.computationsIxbrl - from ctComputationsIxbrl.js
  * @returns {string}
@@ -353,14 +155,34 @@ export function buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl }
 }
 
 /**
- * derive_company_tax_return: the CT600 boxes and computation lines for the session's loaded
- * Company book.
+ * derive_company_tax_return: the figures, the CT600 boxes and the computation lines for the
+ * session's loaded Company book.
  * @param {object} session - carries book and lines
- * @param {object} company - the typed facts deriveCt600Boxes takes
+ * @param {object} company - the typed facts a book does not hold
+ * @param {string} company.companyName - box 1
+ * @param {string} company.companyNumber - box 2
+ * @param {string} company.utr - box 3
+ * @param {number} company.companyType - box 4
+ * @param {string} company.declarantName - box 975
+ * @param {string} company.declarantStatus - box 985
+ * @param {number} [company.taxAlreadyPaid] - box 595, pounds and pence paid before filing
+ * @param {object} [options]
+ * @param {object} [options.priorYearProfitAndLoss] - the prior year's profit and loss lines, when the company has them
  */
-export async function deriveCompanyTaxReturn(session, company) {
+export async function deriveCompanyTaxReturn(session, company, options) {
   if (!session.book || !session.lines) throw new Error("No book is loaded. Call open_book first.");
+  const accounts = await deriveSmallCompanyAccounts(session, options);
   const taxData = await loadTaxDataForBook(session.book);
   const results = calculatedResultsFor(session.book, session.lines, taxData);
-  return deriveCt600Boxes({ results, company });
+  const figures = {
+    ...ct600FiguresFromResults(results, accounts),
+    companyName: company.companyName,
+    companyNumber: company.companyNumber,
+    utr: company.utr,
+    companyType: company.companyType,
+    declarantName: company.declarantName,
+    declarantStatus: company.declarantStatus,
+    taxAlreadyPaid: company.taxAlreadyPaid ?? 0,
+  };
+  return { ...deriveCt600FromFigures(figures, ltdTaxDataForPeriodEnd(figures.periodEnd)), figures };
 }

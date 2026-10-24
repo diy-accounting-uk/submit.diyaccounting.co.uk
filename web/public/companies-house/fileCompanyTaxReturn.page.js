@@ -210,8 +210,8 @@ function parseBookExport() {
   } catch {
     return { problem: "The book export is not valid JSON." };
   }
-  if (!parsed?.boxes || !parsed?.computationLines || !parsed?.tradeName) {
-    return { problem: "The book export needs boxes, computationLines and tradeName." };
+  if (!parsed?.figures || !parsed?.tradeName) {
+    return { problem: "The book export needs figures and tradeName." };
   }
   if (!filedAccountsSelected() && !parsed.smallCompany) {
     return { problem: "The book export has no accounts. Choose the accounts from the Companies House filing, or use a fuller export." };
@@ -251,8 +251,7 @@ function buildReturnRequest(exported) {
       smallCompaniesRegime: element("statementSmallCompaniesRegime").checked,
     },
     tradeName: exported.tradeName,
-    boxes: exported.boxes,
-    computationLines: exported.computationLines,
+    figures: exported.figures,
     utr: element("utr").value.trim(),
     declarant: { name: element("declarantName").value.trim(), status: element("declarantStatus").value.trim() },
     directorsLoanOverdrawn: false,
@@ -320,7 +319,7 @@ function amountCell(row, text, style) {
   return row;
 }
 
-function renderReview(preview, request) {
+function renderReview(preview) {
   const boxRows = Object.keys(preview.boxes)
     .map(Number)
     .sort((a, b) => a - b)
@@ -334,7 +333,7 @@ function renderReview(preview, request) {
   const lineRows = COMPUTATION_LINES.map(({ field, meaning, deduction, style }) =>
     amountCell(
       tableRow(guideLink(meaning, COMPUTATIONS_GUIDE_ANCHOR), ""),
-      formatPounds(request.computationLines[field], deduction),
+      formatPounds(preview.computationLines[field], deduction),
       style,
     ),
   );
@@ -362,7 +361,7 @@ async function handleReturnFormSubmit(event) {
   try {
     previewRequest = buildReturnRequest(parsed);
     const preview = await window.previewCtReturn(previewRequest);
-    renderReview(preview, previewRequest);
+    renderReview(preview);
     showView("previewView");
   } catch (error) {
     console.error("Failed to preview the Company Tax Return:", error);
