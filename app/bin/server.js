@@ -15,6 +15,7 @@ import { apiEndpoint as mockTokenPostApiEndpoint } from "../functions/non-lambda
 import { apiEndpoint as mockBillingApiEndpoint } from "../functions/non-lambda-mocks/mockBilling.js";
 import { apiEndpoint as mcpHttpApiEndpoint } from "../functions/mcp/mcpHttp.js";
 import { apiEndpoint as mcpOauthApiEndpoint } from "../functions/mcp/mcpOauth.js";
+import { apiEndpoint as mcpHarnessApiEndpoint } from "../functions/mcp/mcpHarness.js";
 import { apiEndpoint as bundleGetApiEndpoint } from "../functions/account/bundleGet.js";
 import { apiEndpoint as bundlePostApiEndpoint } from "../functions/account/bundlePost.js";
 import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bundleDelete.js";
@@ -78,7 +79,7 @@ import { apiEndpoint as companiesHouseRegisteredOfficeAddressGetApiEndpoint } fr
 import { apiEndpoint as companiesHouseRegisteredOfficeAddressPostApiEndpoint } from "../functions/companies-house/companiesHouseRegisteredOfficeAddressPost.js";
 import { apiEndpoint as companiesHouseRegisteredEmailEligibilityGetApiEndpoint } from "../functions/companies-house/companiesHouseRegisteredEmailEligibilityGet.js";
 import { apiEndpoint as companiesHouseRegisteredEmailAddressPostApiEndpoint } from "../functions/companies-house/companiesHouseRegisteredEmailAddressPost.js";
-import { apiEndpoint as companiesHouseAccountsPreviewPostApiEndpoint } from "../functions/companies-house/companiesHouseAccountsPreviewPost.js";
+import { apiEndpoint as companiesHouseAccountsRenderPostApiEndpoint } from "../functions/companies-house/companiesHouseAccountsRenderPost.js";
 import { apiEndpoint as companiesHouseAccountsPostApiEndpoint } from "../functions/companies-house/companiesHouseAccountsPost.js";
 import { apiEndpoint as companiesHouseAccountsGetApiEndpoint } from "../functions/companies-house/companiesHouseAccountsGet.js";
 import { apiEndpoint as hmrcCtReturnPreviewPostApiEndpoint } from "../functions/hmrc/hmrcCtReturnPreviewPost.js";
@@ -87,7 +88,7 @@ import { apiEndpoint as hmrcCtReturnGetApiEndpoint } from "../functions/hmrc/hmr
 import { apiEndpoint as companiesHouseOfficersGetApiEndpoint } from "../functions/companies-house/companiesHouseOfficersGet.js";
 import { apiEndpoint as companiesHousePscGetApiEndpoint } from "../functions/companies-house/companiesHousePscGet.js";
 import { apiEndpoint as companiesHouseFilingDataPostApiEndpoint } from "../functions/companies-house/companiesHouseFilingDataPost.js";
-import { apiEndpoint as companiesHouseConfirmationStatementPreviewPostApiEndpoint } from "../functions/companies-house/companiesHouseConfirmationStatementPreviewPost.js";
+import { apiEndpoint as companiesHouseConfirmationStatementRenderPostApiEndpoint } from "../functions/companies-house/companiesHouseConfirmationStatementRenderPost.js";
 import { apiEndpoint as companiesHouseConfirmationStatementPostApiEndpoint } from "../functions/companies-house/companiesHouseConfirmationStatementPost.js";
 import { apiEndpoint as companiesHouseConfirmationStatementGetApiEndpoint } from "../functions/companies-house/companiesHouseConfirmationStatementGet.js";
 import { apiEndpoint as companiesHousePscVerificationStatementPostApiEndpoint } from "../functions/companies-house/companiesHousePscVerificationStatementPost.js";
@@ -268,6 +269,7 @@ app.get("/auth/login-mock-addon.js", (req, res) => {
 
 mcpHttpApiEndpoint(app);
 mcpOauthApiEndpoint(app);
+mcpHarnessApiEndpoint(app);
 
 app.use(express.static(path.join(__dirname, "../../web/public"), { dotfiles: "allow" }));
 
@@ -345,7 +347,7 @@ companiesHouseRegisteredOfficeAddressGetApiEndpoint(app);
 companiesHouseRegisteredOfficeAddressPostApiEndpoint(app);
 companiesHouseRegisteredEmailEligibilityGetApiEndpoint(app);
 companiesHouseRegisteredEmailAddressPostApiEndpoint(app);
-companiesHouseAccountsPreviewPostApiEndpoint(app);
+companiesHouseAccountsRenderPostApiEndpoint(app);
 companiesHouseAccountsPostApiEndpoint(app);
 companiesHouseAccountsGetApiEndpoint(app);
 hmrcCtReturnPreviewPostApiEndpoint(app);
@@ -354,7 +356,7 @@ hmrcCtReturnGetApiEndpoint(app);
 companiesHouseOfficersGetApiEndpoint(app);
 companiesHousePscGetApiEndpoint(app);
 companiesHouseFilingDataPostApiEndpoint(app);
-companiesHouseConfirmationStatementPreviewPostApiEndpoint(app);
+companiesHouseConfirmationStatementRenderPostApiEndpoint(app);
 companiesHouseConfirmationStatementPostApiEndpoint(app);
 companiesHouseConfirmationStatementGetApiEndpoint(app);
 companiesHousePscVerificationStatementPostApiEndpoint(app);

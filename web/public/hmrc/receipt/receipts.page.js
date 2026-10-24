@@ -48,16 +48,15 @@ async function fetchReceipts() {
       const tr = document.createElement("tr");
 
       // Date cell
-      const date = new Date(it.timestamp);
       const dateCell = document.createElement("td");
-      dateCell.textContent = isNaN(date.getTime()) ? it.timestamp : date.toLocaleString("en-GB");
+      dateCell.textContent = HmrcDisplayFormat.formatDateTime(it.timestamp);
 
       // Receipt cell with clickable label and download icon
       const receiptCell = document.createElement("td");
       const receiptLabel = document.createElement("a");
       receiptLabel.className = "receipt-label";
       receiptLabel.href = "#";
-      receiptLabel.textContent = it.formBundleNumber || it.name || "Unknown";
+      receiptLabel.textContent = it.formBundleNumber || it.name || "Unnamed receipt";
       receiptLabel.onclick = (e) => {
         e.preventDefault();
         viewReceipt(it.name);
@@ -78,7 +77,7 @@ async function fetchReceipts() {
 
       // Size cell
       const sizeCell = document.createElement("td");
-      sizeCell.textContent = typeof it.size === "number" ? `${it.size} bytes` : "";
+      sizeCell.textContent = typeof it.size === "number" && Number.isFinite(it.size) ? `${it.size.toLocaleString("en-GB")} bytes` : "—";
 
       tr.appendChild(dateCell);
       tr.appendChild(receiptCell);
@@ -93,13 +92,15 @@ async function viewReceipt(name) {
   if (!res.ok) return alert("Failed to fetch receipt");
   const text = await res.text();
 
+  let receiptData;
   try {
-    const receiptData = JSON.parse(text);
-    displayReceiptTable(receiptData, name);
+    receiptData = JSON.parse(text);
   } catch (e) {
     // If not JSON, display as text
-    displayReceiptTable({ content: text }, name);
+    receiptData = { content: text };
   }
+  if (receiptData === null || typeof receiptData !== "object") receiptData = { content: receiptData };
+  await displayReceiptTable(receiptData, name);
 }
 
 const RECEIPT_FIELD_NAMES = {
@@ -175,7 +176,7 @@ function displayAssistMessages(container, messages, acknowledgedAt) {
   const status = document.createElement("p");
   status.className = "assist-acknowledgement";
   status.textContent = acknowledgedAt
-    ? `Acknowledged to HMRC on ${new Date(acknowledgedAt).toLocaleString("en-GB")}`
+    ? `Acknowledged to HMRC on ${HmrcDisplayFormat.formatDateTime(acknowledgedAt)}`
     : "Not acknowledged to HMRC";
   section.appendChild(status);
 
@@ -187,12 +188,12 @@ function displayAssistMessages(container, messages, acknowledgedAt) {
     li.className = "assist-message";
 
     const title = document.createElement("strong");
-    title.textContent = message.title;
+    title.textContent = HmrcDisplayFormat.formatText(message.title);
     li.appendChild(title);
 
     const body = document.createElement("p");
     body.className = "assist-message-body";
-    body.textContent = message.body;
+    body.textContent = HmrcDisplayFormat.formatText(message.body);
     li.appendChild(body);
 
     if (message.links && Array.isArray(message.links) && message.links.length > 0) {
@@ -204,7 +205,7 @@ function displayAssistMessages(container, messages, acknowledgedAt) {
         a.target = "_blank";
         a.rel = "noopener noreferrer";
         a.className = "assist-message-link";
-        a.textContent = link.title;
+        a.textContent = link.title || link.url;
         linksSection.appendChild(a);
       }
       li.appendChild(linksSection);
@@ -228,7 +229,55 @@ function displayAssistMessages(container, messages, acknowledgedAt) {
 
 const ISO_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T[\d:.]+Z$/;
 
-function displayReceiptTable(data, name) {
+const VAT_RECEIPT_EXPLANATION =
+  "HMRC gives this receipt when it accepts a VAT return. The form bundle number is HMRC's reference for your return. Keep it: HMRC asks for it if you ask about the return.";
+
+const PAYMENT_INDICATORS = {
+  DD: "DD means Direct Debit.",
+  BANK: "BANK means a payment through your bank.",
+};
+
+// A VAT return's receipt carries HMRC's processing date and form bundle number and no report kind.
+function isVatReceipt(data) {
+  return !data.kind && Boolean(data.formBundleNumber) && Boolean(data.processingDate);
+}
+
+function receiptCopyExplanation(data) {
+  const indicator = Object.hasOwn(PAYMENT_INDICATORS, data.paymentIndicator) ? PAYMENT_INDICATORS[data.paymentIndicator] : "";
+  const charge = data.chargeRefNumber ? `Quote charge reference ${data.chargeRefNumber} when you pay.` : "";
+  return [VAT_RECEIPT_EXPLANATION, indicator, charge].filter(Boolean).join(" ");
+}
+
+// The customer copy of a VAT receipt: HMRC's receipt as the record, DIY Accounting's frame around it.
+async function mountVatReceiptCopy(container, data) {
+  const [{ customerCopyHtml }, { vatReceiptRecordHtml }] = await Promise.all([
+    import("../../lib/submission-record.js"),
+    import("../../lib/vat-return-record.js"),
+  ]);
+  const processingDateText = HmrcDisplayFormat.formatDateTime(data.processingDate);
+  const html = customerCopyHtml({
+    title: "Your copy of the receipt for a VAT return",
+    reference: { label: "Form bundle number", value: String(data.formBundleNumber) },
+    status: { kind: "accepted", text: "Accepted by HMRC" },
+    date: processingDateText,
+    sections: [
+      {
+        heading: "Receipt from HMRC",
+        explanation: receiptCopyExplanation(data),
+        recordHtml: vatReceiptRecordHtml({ ...data, processingDateText }),
+      },
+    ],
+    links: [
+      { href: "receipts.html", text: "Back to your receipts" },
+      { href: "../vat/vatObligations.html", text: "See your VAT obligations" },
+      { href: "../vat/vatPayments.html", text: "See your VAT payments" },
+    ],
+  });
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  container.replaceChildren(...parsed.body.childNodes);
+}
+
+async function displayReceiptTable(data, name) {
   const receiptDisplay = document.getElementById("receiptDisplay");
   const receiptContent = document.getElementById("receiptContent");
 
@@ -247,13 +296,19 @@ function displayReceiptTable(data, name) {
     const isAmount = typeof entry.value === "number" && Number.isFinite(entry.value);
     const box = vatBoxes[entry.field];
     const isTimestamp = typeof entry.value === "string" && ISO_TIMESTAMP.test(entry.value);
-    const value = isTimestamp ? new Date(entry.value).toLocaleString("en-GB", { dateStyle: "long", timeStyle: "short" }) : entry.value;
+    const value = isTimestamp ? HmrcDisplayFormat.formatDateTime(entry.value) : entry.value;
     const row = { ...entry, value, kind: isAmount ? "money" : "text" };
     return box ? { ...row, label: box.label, definition: box.definition, source: box.source } : row;
   });
   const rows = [{ field: "receiptName", label: "Receipt name", value: name, kind: "text" }, ...dataRows];
 
-  HmrcFieldTable.mountFieldTable(receiptContent, rows, { caption: "Receipt details" });
+  const showCopy = isVatReceipt(data);
+  document.getElementById("receiptHeading").hidden = showCopy;
+  if (showCopy) {
+    await mountVatReceiptCopy(receiptContent, data);
+  } else {
+    HmrcFieldTable.mountFieldTable(receiptContent, rows, { caption: "Receipt details" });
+  }
 
   receiptDisplay.style.display = "block";
   receiptDisplay.scrollIntoView({ behavior: "smooth" });

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// app/unit-tests/functions/companiesHouseAccountsPreviewPost.test.js
+// app/unit-tests/functions/companiesHouseAccountsRenderPost.test.js
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
@@ -67,7 +67,7 @@ vi.mock("@app/services/microEntityAccountsIxbrl.js", async (importOriginal) => (
   buildMicroEntityAccounts: (...args) => mockBuildMicroEntityAccounts(...args),
 }));
 
-import { ingestHandler as companiesHouseAccountsPreviewPostHandler } from "@app/functions/companies-house/companiesHouseAccountsPreviewPost.js";
+import { ingestHandler as companiesHouseAccountsRenderPostHandler } from "@app/functions/companies-house/companiesHouseAccountsRenderPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -175,7 +175,7 @@ function buildSmallCompanyBody(overrides = {}, smallOverrides = {}) {
 function buildEvent({ body = buildAccountsBody(), headers = {}, authorizer, method = "POST" } = {}) {
   const options = {
     method,
-    path: "/api/v1/companies-house/accounts/preview",
+    path: "/api/v1/companies-house/accounts/render",
     body,
     headers: { Authorization: "Bearer test-cognito-token", ...headers },
   };
@@ -183,7 +183,7 @@ function buildEvent({ body = buildAccountsBody(), headers = {}, authorizer, meth
   return buildLambdaEvent(options);
 }
 
-describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
+describe("companiesHouseAccountsRenderPost ingestHandler", () => {
   beforeEach(() => {
     Object.assign(
       process.env,
@@ -204,7 +204,7 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
   });
 
   test("returns the generated iXBRL and never touches the gateway", async () => {
-    const response = await companiesHouseAccountsPreviewPostHandler(buildEvent());
+    const response = await companiesHouseAccountsRenderPostHandler(buildEvent());
     expect(response.statusCode).toBe(200);
     const body = parseResponseBody(response);
     expect(body.ixbrl).toContain("fake ixbrl");
@@ -212,7 +212,7 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
   });
 
   test("passes the balance sheet through to the generator without a company authentication code", async () => {
-    await companiesHouseAccountsPreviewPostHandler(buildEvent());
+    await companiesHouseAccountsRenderPostHandler(buildEvent());
     const [input] = mockBuildMicroEntityAccounts.mock.calls[0];
     expect(input.companyNumber).toBe("00000001");
     expect(input.balanceSheet.current.fixedAssets).toBe(1000);
@@ -220,7 +220,7 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
   });
 
   test("rejects an invalid company number with 400", async () => {
-    const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body: buildAccountsBody({ companyNumber: "bad" }) }));
+    const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body: buildAccountsBody({ companyNumber: "bad" }) }));
     expect(response.statusCode).toBe(400);
     expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
   });
@@ -228,7 +228,7 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
   test("rejects a balance sheet where capital and reserves does not equal net assets", async () => {
     const body = buildAccountsBody();
     body.balanceSheet.currentYear.capitalAndReserves = 9999;
-    const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body }));
+    const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body }));
     expect(response.statusCode).toBe(400);
     const responseBody = parseResponseBody(response);
     expect(responseBody.message).toContain("net assets");
@@ -237,7 +237,7 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
   test("rejects when a required statement is not accepted", async () => {
     const body = buildAccountsBody();
     body.statementsAccepted.microEntityProvisions = false;
-    const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body }));
+    const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body }));
     expect(response.statusCode).toBe(400);
     const responseBody = parseResponseBody(response);
     expect(responseBody.message).toContain("microEntityProvisions");
@@ -245,7 +245,7 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
 
   describe("dormant filings", () => {
     test("passes the dormant flag, trading status, share class and nominal value to the generator", async () => {
-      const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body: buildDormantBody() }));
+      const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body: buildDormantBody() }));
       expect(response.statusCode).toBe(200);
       const [input] = mockBuildMicroEntityAccounts.mock.calls[0];
       expect(input).toMatchObject({
@@ -257,7 +257,7 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
     });
 
     test("leaves the dormant fields off a filing that does not tick dormant", async () => {
-      await companiesHouseAccountsPreviewPostHandler(buildEvent());
+      await companiesHouseAccountsRenderPostHandler(buildEvent());
       const [input] = mockBuildMicroEntityAccounts.mock.calls[0];
       expect(input.dormant).toBeUndefined();
       expect(input.shareClass).toBeUndefined();
@@ -268,14 +268,14 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
       body.balanceSheet.currentYear.profitAndLossAccount += 50;
       body.balanceSheet.currentYear.capitalAndReserves += 50;
       body.balanceSheet.currentYear.currentAssets += 50;
-      const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body }));
+      const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body }));
       expect(response.statusCode).toBe(400);
       expect(parseResponseBody(response).message).toContain("dormant company cannot report a profit or loss");
       expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
     });
 
     test("rejects a dormant filing with no share class, trading status or nominal value", async () => {
-      const response = await companiesHouseAccountsPreviewPostHandler(
+      const response = await companiesHouseAccountsRenderPostHandler(
         buildEvent({ body: buildDormantBody({ shareClass: undefined, dormantTradingStatus: undefined, nominalValue: undefined }) }),
       );
       expect(response.statusCode).toBe(400);
@@ -286,7 +286,7 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
     });
 
     test("rejects a nominal value that does not divide the called up share capital into whole shares", async () => {
-      const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body: buildDormantBody({ nominalValue: 30 }) }));
+      const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body: buildDormantBody({ nominalValue: 30 }) }));
       expect(response.statusCode).toBe(400);
       expect(parseResponseBody(response).message).toContain("whole number of shares");
     });
@@ -296,7 +296,7 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
     test("returns the small company iXBRL without the micro-entity builder or a company authentication code", async () => {
       const body = buildSmallCompanyBody();
       delete body.companyAuthCode;
-      const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body }));
+      const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body }));
       expect(response.statusCode).toBe(200);
       const ixbrl = parseResponseBody(response).ixbrl;
       expect(ixbrl).toContain('name="core:ProfitLoss"');
@@ -305,7 +305,7 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
     });
 
     test("filleted previews carry the section 444(5A) statement and no profit and loss account", async () => {
-      const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body: buildSmallCompanyBody({}, { filleted: true }) }));
+      const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body: buildSmallCompanyBody({}, { filleted: true }) }));
       const ixbrl = parseResponseBody(response).ixbrl;
       expect(ixbrl).toContain("section 444(5A)");
       expect(ixbrl).not.toContain('name="core:ProfitLoss"');
@@ -314,27 +314,27 @@ describe("companiesHouseAccountsPreviewPost ingestHandler", () => {
     test("rejects figures that do not hold together", async () => {
       const body = buildSmallCompanyBody();
       body.smallCompany.profitAndLoss.currentYear.grossProfit = 1;
-      const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ body }));
+      const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ body }));
       expect(response.statusCode).toBe(400);
       expect(parseResponseBody(response).message).toContain("grossProfit must equal turnover less costOfSales");
     });
   });
 
   test("returns 401 when the Cognito bearer token is missing", async () => {
-    const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ authorizer: {} }));
+    const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ authorizer: {} }));
     expect(response.statusCode).toBe(401);
     expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
   });
 
   test("returns 403 when the environment does not list the matched activity", async () => {
     process.env.ENVIRONMENT_NAME = "not-a-listed-environment";
-    const response = await companiesHouseAccountsPreviewPostHandler(buildEvent());
+    const response = await companiesHouseAccountsRenderPostHandler(buildEvent());
     expect(response.statusCode).toBe(403);
     expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
   });
 
   test("returns 200 with an empty object for a HEAD request", async () => {
-    const response = await companiesHouseAccountsPreviewPostHandler(buildEvent({ method: "HEAD" }));
+    const response = await companiesHouseAccountsRenderPostHandler(buildEvent({ method: "HEAD" }));
     expect(response.statusCode).toBe(200);
     expect(parseResponseBody(response)).toEqual({});
   });

@@ -113,7 +113,7 @@ test.describe("File Confirmation Statement page", () => {
           window.__filingDataCalls.push({ companyNumber, ...input });
           return Promise.resolve(filingDataArg);
         };
-        window.previewConfirmationStatement = (statement) => {
+        window.renderConfirmationStatement = (statement) => {
           window.__previewCalls.push(statement);
           return Promise.resolve({
             confirmationStatementXml: "<ConfirmationAndVerificationStatement>preview</ConfirmationAndVerificationStatement>",

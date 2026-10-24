@@ -56,13 +56,13 @@ import {
   putRegisteredEmailAddress,
   closeTransaction,
   getTransaction,
-  previewMicroEntityAccounts,
+  renderMicroEntityAccounts,
   submitMicroEntityAccounts,
   pollMicroEntityAccounts,
 } from "./lib/services/companies-house-filing-service.js";
 import {
   getConfirmationStatementFilingData,
-  previewConfirmationStatement,
+  renderConfirmationStatement,
   submitConfirmationStatement,
   pollConfirmationStatement,
 } from "./lib/services/companies-house-confirmation-service.js";
@@ -493,7 +493,7 @@ if (typeof window !== "undefined") {
   window.putRegisteredEmailAddress = putRegisteredEmailAddress;
   window.closeCompaniesHouseTransaction = closeTransaction;
   window.getCompaniesHouseTransaction = getTransaction;
-  window.previewMicroEntityAccounts = previewMicroEntityAccounts;
+  window.renderMicroEntityAccounts = renderMicroEntityAccounts;
   window.submitMicroEntityAccounts = submitMicroEntityAccounts;
   window.pollMicroEntityAccounts = pollMicroEntityAccounts;
 
@@ -504,7 +504,7 @@ if (typeof window !== "undefined") {
 
   // Companies House confirmation statement service
   window.getConfirmationStatementFilingData = getConfirmationStatementFilingData;
-  window.previewConfirmationStatement = previewConfirmationStatement;
+  window.renderConfirmationStatement = renderConfirmationStatement;
   window.submitConfirmationStatement = submitConfirmationStatement;
   window.pollConfirmationStatement = pollConfirmationStatement;
 

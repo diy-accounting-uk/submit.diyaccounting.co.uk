@@ -92,3 +92,7 @@ eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9
 
 # The UTR HMRC's own CT600 samples use, the default in scripts/hmrc-tpvs-ct600.js.
 8596148860
+
+# The simulator lane's VAT registration number in the MCP harness's scripted conversation
+# (web/public/mcp-harness/*.json); the simulator answers it with fixture obligations.
+111222333

@@ -14,6 +14,7 @@
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
     <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
+    <link rel="stylesheet" href="../../submission-record.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -115,7 +116,6 @@
 
       <!-- Results Display -->
       <div id="returnResults" class="results-container" style="display: none">
-        <h3>VAT return details</h3>
         <div id="returnDetails"></div>
         <div class="button-group">
           <button type="button" id="newSearchBtn" class="secondary-button">View another return</button>
@@ -135,6 +135,7 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/carried-identifiers.js"></script>
     <script src="../../lib/money-format.js"></script>
+    <script src="../../lib/hmrc-display-format.js"></script>
     <script src="../../lib/hmrc-field-table.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
@@ -145,81 +146,31 @@
     <script src="viewVatReturn.page.js"></script>
 
     <style>
-      .return-details {
-        background: white;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        padding: 20px;
-        margin: 20px 0;
+      .box-definitions {
+        margin: 1.5em 0 1em;
       }
-
-      .detail-section {
-        margin-bottom: 30px;
-      }
-
-      .detail-section h4 {
-        color: #333;
-        border-bottom: 2px solid #007acc;
-        padding-bottom: 8px;
-        margin-bottom: 15px;
-      }
-
-      .detail-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 15px;
-      }
-
-      .detail-item {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: space-between;
-        align-items: baseline;
-        align-content: flex-start;
-        gap: 0 1em;
-        padding: 8px 0;
-        border-bottom: 1px solid #f0f0f0;
-      }
-
-      .detail-item dt {
-        flex: 1 1 0;
-        margin: 0;
-        font-weight: 500;
-        color: #555;
-      }
-
-      .detail-item dd {
-        margin: 0;
+      .box-definitions summary {
+        min-height: 44px;
+        cursor: pointer;
         font-weight: 600;
-        color: #333;
-        font-variant-numeric: tabular-nums;
-        text-align: right;
-        white-space: nowrap;
       }
-
-      .net-amount {
-        font-size: 1.1em;
-        color: #007acc;
+      .box-definitions dl {
+        margin: 0.5em 0 0;
       }
-
-      .status-fulfilled {
-        color: #28a745;
+      .box-definition-item {
+        padding: 0.5em 0;
+        border-bottom: 1px solid #ddd;
       }
-
-      .status-open {
-        color: #dc3545;
+      .box-definition-item dt {
+        font-weight: 600;
       }
-
-      @media (max-width: 768px) {
-        .detail-grid {
-          grid-template-columns: 1fr;
-        }
-
-        .detail-item {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 5px;
-        }
+      .box-definition-item dd {
+        margin: 0.25em 0 0;
+      }
+      .box-definition {
+        margin: 0;
+        max-width: 65ch;
+        line-height: 1.5;
       }
     </style>
   </body>

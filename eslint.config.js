@@ -114,6 +114,7 @@ export default [
         getGovClientHeaders: "readonly",
         generateRandomState: "readonly",
         HmrcFieldTable: "readonly",
+        HmrcDisplayFormat: "readonly",
         hmrcErrorMessage: "readonly",
         getObligations: "readonly",
         triggerBsas: "readonly",
@@ -160,7 +161,12 @@ export default [
   },
   // Page scripts that import widgets load as modules
   {
-    files: ["web/public/videos*.page.js"],
+    files: [
+      "web/public/videos*.page.js",
+      "web/public/companies-house/fileCompanyTaxReturn.page.js",
+      "web/public/hmrc/itsa/taxCalculation.page.js",
+      "web/public/hmrc/itsa/finalDeclaration.page.js",
+    ],
     languageOptions: { sourceType: "module" },
   },
   // Browser environment for gateway site

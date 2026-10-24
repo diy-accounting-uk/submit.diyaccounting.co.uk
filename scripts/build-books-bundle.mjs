@@ -217,6 +217,7 @@ import { diyaGlToScenario } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-g
 import { calculateFromDiyaGl } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-calculator.js";
 import { loadTaxDataForBook, productOf } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import { ct600FiguresFromResults, smallCompanyProfitAndLossFromPublishedAccount } from "./app/services/ct600Figures.js";
+import { smallCompanyAccountsFromResults } from "./app/services/smallCompanyAccountsFromResults.js";
 export { deriveCt600FromFigures, validateCt600Figures } from "./app/services/ct600Figures.js";
 export async function ltdTaxData(financialYear) {
   return parseToml(readFileSync("data/ltd-" + financialYear + ".toml", "utf8"));
@@ -229,6 +230,12 @@ export async function ct600FiguresFromBook(book, lines) {
   const results = calculatedResultsFor(book, lines, await loadTaxDataForBook(book));
   const profitAndLoss = { currentYear: smallCompanyProfitAndLossFromPublishedAccount(results["PubP&L"]) };
   return ct600FiguresFromResults(results, { profitAndLoss });
+}
+export async function smallCompanyAccountsFromBook(book, lines) {
+  const results = calculatedResultsFor(book, lines, await loadTaxDataForBook(book));
+  const scenario = diyaGlToScenario(book, lines, productOf(book));
+  const accounts = smallCompanyAccountsFromResults(book, results, scenario);
+  return { ...accounts, tradeName: book.entityInformation?.organizationDescription || accounts.companyName };
 }
 `;
 

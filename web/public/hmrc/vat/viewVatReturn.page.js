@@ -1,16 +1,6 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// Date formatting utilities (inline version for non-module context)
-const DateUtils = {
-  formatDateRange(start, end) {
-    const startDate = new Date(start);
-    const endDate = new Date(end);
-    const dateOptions = { day: "numeric", month: "short", year: "numeric" };
-    return `${startDate.toLocaleDateString("en-GB", dateOptions)} to ${endDate.toLocaleDateString("en-GB", dateOptions)}`;
-  },
-};
-
 // Check if we're in synthetic/test mode to show developer options
 async function initializePage() {
   const urlParams = new URLSearchParams(window.location.search);
@@ -205,7 +195,7 @@ async function continueReturnRetrieval() {
     // Display results - add period dates for display
     result.periodStart = pendingRequest.periodStart;
     result.periodEnd = pendingRequest.periodEnd;
-    displayReturn(result);
+    await displayReturn(result);
     document.getElementById("returnResults").style.display = "block";
     hideRequestControls();
     document.getElementById("searchForm").style.display = "none";
@@ -366,7 +356,7 @@ async function handleFormSubmission(event) {
       // Display results - add period dates for display
       result.periodStart = periodStart;
       result.periodEnd = periodEnd;
-      displayReturn(result);
+      await displayReturn(result);
       document.getElementById("returnResults").style.display = "block";
       hideRequestControls();
       document.getElementById("searchForm").style.display = "none";
@@ -393,86 +383,92 @@ function sourceAnchor(sourceKey, { anchor, text } = {}) {
   return element("a", { href, rel: "noopener", target: "_blank" }, text || source.title);
 }
 
-function displayReturn(returnData) {
-  const detailsContainer = document.getElementById("returnDetails");
+const RETURN_EXPLANATIONS = {
+  amounts:
+    "Boxes 1 to 5 show the VAT due on your sales, the VAT you can reclaim on purchases, and the net amount. Box 5 is box 3 less box 4: the VAT you pay HMRC or reclaim. Amounts are in pounds and pence.",
+  turnover:
+    "Boxes 6 to 9 show the value of your sales and purchases without VAT, in whole pounds. They are separate from the VAT in boxes 1 to 5.",
+  declaration:
+    "Finalised shows whether the return was confirmed as complete when it was sent. The declaration is the statement that the information in the return is true and complete.",
+};
 
-  const formatCurrency = (value, decimalPlaces = 2) => {
-    const num = parseFloat(value);
-    if (isNaN(num)) return decimalPlaces === 0 ? "£0" : "£0.00";
-    return decimalPlaces === 0 ? formatGbpWhole(num) : formatGbp(num);
-  };
+function periodText(returnData) {
+  const start = returnData.periodStart ?? returnData.start;
+  const end = returnData.periodEnd ?? returnData.end;
+  return HmrcDisplayFormat.formatDateRange(start, end);
+}
 
-  const formatWholePounds = (value) => formatCurrency(value, 0);
+function copyStatus(finalised) {
+  if (finalised === true) return { kind: "accepted", text: "Accepted by HMRC" };
+  if (finalised === false) return { kind: "pending", text: "Held by HMRC, not yet final" };
+  return { kind: "sent", text: "Retrieved from HMRC" };
+}
 
-  const formatBoolean = (value) => {
-    return value === true ? "Yes" : value === false ? "No" : "—";
-  };
-
-  // Boxes 3 and 5 are the totals, so their figures are bold; boxes 6 to 9 are whole pounds.
-  const buildBox = (box) => {
-    const whole = box.box >= 6;
-    const amount = whole ? formatWholePounds(returnData[box.field]) : formatCurrency(returnData[box.field]);
-    const amountElement = element("dd", box.box === 5 ? { class: "net-amount" } : {});
-    if (box.box === 3 || box.box === 5) {
-      amountElement.append(element("strong", {}, amount));
-    } else {
-      amountElement.append(amount);
-    }
-    return element(
-      "div",
-      { "class": "detail-item", "id": `vatReturnBox${box.box}`, "data-hmrc-field": box.field },
-      element("dt", {}, `Box ${box.box}: ${box.label || ""}`),
-      amountElement,
-      element(
-        "p",
-        { class: "box-definition", id: `vatReturnBox${box.box}Definition` },
-        `“${box.definition || ""}”`,
-        " ",
-        sourceAnchor(box.source, { anchor: box.anchor, text: `VAT Notice 700/12, box ${box.box}` }),
-      ),
-    );
-  };
-  const buildBoxes = (first, last) => HmrcFieldTable.VAT_RETURN_BOXES.filter((box) => box.box >= first && box.box <= last).map(buildBox);
-
-  // Get period display from the dates (periodStart/periodEnd are set on returnData before calling displayReturn)
-  const periodDisplay =
-    returnData.periodStart && returnData.periodEnd
-      ? DateUtils.formatDateRange(returnData.periodStart, returnData.periodEnd)
-      : returnData.start && returnData.end
-        ? DateUtils.formatDateRange(returnData.start, returnData.end)
-        : "—";
-
-  const section = (heading, ...gridChildren) =>
-    element("div", { class: "detail-section" }, element("h4", {}, heading), element("dl", { class: "detail-grid" }, ...gridChildren));
-
-  detailsContainer.replaceChildren(
+// What each box means: HMRC's guidance for the box, with a link to it. Outside the record.
+function boxDefinitions() {
+  const items = HmrcFieldTable.VAT_RETURN_BOXES.map((box) =>
     element(
       "div",
-      { class: "return-details" },
-      section(
-        "Period information",
-        element(
-          "div",
-          { class: "detail-item" },
-          element("dt", {}, "Period:"),
-          element("dd", {}, element("strong", {}, periodDisplay || "")),
-        ),
-        element(
-          "div",
-          { class: "detail-item" },
-          element("dt", {}, "Finalised:"),
-          element("dd", { class: returnData.finalised ? "status-fulfilled" : "status-open" }, formatBoolean(returnData.finalised)),
-        ),
-      ),
-      section("VAT amounts", ...buildBoxes(1, 5)),
-      section("Turnover (whole pounds)", ...buildBoxes(6, 9)),
+      { class: "box-definition-item" },
+      element("dt", {}, `Box ${box.box}: ${box.label}`),
       element(
-        "p",
-        { class: "field-table-source" },
-        "Box definitions quoted from ",
-        sourceAnchor("vatNotice70012"),
-        `, retrieved ${HmrcFieldTable.formatIsoDate(HmrcFieldTable.SOURCES.vatNotice70012.retrieved)}.`,
+        "dd",
+        {},
+        element(
+          "p",
+          { class: "box-definition", id: `vatReturnBox${box.box}Definition` },
+          `“${box.definition}”`,
+          " ",
+          sourceAnchor(box.source, { anchor: box.anchor, text: `VAT Notice 700/12, box ${box.box}` }),
+        ),
       ),
+    ),
+  );
+  return element("details", { class: "box-definitions" }, element("summary", {}, "What each box means"), element("dl", {}, ...items));
+}
+
+async function displayReturn(returnData) {
+  const detailsContainer = document.getElementById("returnDetails");
+  const [{ customerCopyHtml }, { vatReturnRecordSections }] = await Promise.all([
+    import("../../lib/submission-record.js"),
+    import("../../lib/vat-return-record.js"),
+  ]);
+
+  const period = periodText(returnData);
+  const finalisedText = returnData.finalised === true ? "Yes" : returnData.finalised === false ? "No" : "—";
+  const sections = vatReturnRecordSections({
+    data: returnData,
+    boxes: HmrcFieldTable.VAT_RETURN_BOXES,
+    vatNumber: document.getElementById("vrn").value,
+    periodHtml: `<strong>${HmrcFieldTable.escapeHtml(period)}</strong>`,
+    declarationHtml: `Finalised: <strong>${finalisedText}</strong>. The information in this return was declared true and complete when it was sent to HMRC.`,
+  });
+  const html = customerCopyHtml({
+    title: period === "—" ? "Your copy of a VAT return" : `Your copy of the VAT return for ${period}`,
+    reference: { label: "VAT registration number", value: document.getElementById("vrn").value || "—" },
+    status: copyStatus(returnData.finalised),
+    date: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }),
+    sections: [
+      { heading: "VAT due", explanation: RETURN_EXPLANATIONS.amounts, recordHtml: sections.moneyHtml },
+      { heading: "Turnover", explanation: RETURN_EXPLANATIONS.turnover, recordHtml: sections.turnoverHtml },
+      { heading: "Declaration", explanation: RETURN_EXPLANATIONS.declaration, recordHtml: sections.declarationHtml },
+    ],
+    links: [
+      { href: "../receipt/receipts.html", text: "See your receipts" },
+      { href: "vatLiabilities.html", text: "See what you owe HMRC" },
+      { href: "vatPayments.html", text: "See your payments" },
+    ],
+  });
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  detailsContainer.replaceChildren(
+    ...parsed.body.childNodes,
+    boxDefinitions(),
+    element(
+      "p",
+      { class: "field-table-source" },
+      "Box definitions quoted from ",
+      sourceAnchor("vatNotice70012"),
+      `, retrieved ${HmrcFieldTable.formatIsoDate(HmrcFieldTable.SOURCES.vatNotice70012.retrieved)}.`,
     ),
   );
 }

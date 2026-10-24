@@ -150,6 +150,10 @@
 .submission-record th {
   font-weight: bold;
 }
+.submission-record .subtitle {
+  color: inherit;
+  font-size: inherit;
+}
 
 /* The customer copy. */
 .customer-copy {
@@ -176,6 +180,9 @@
   flex-wrap: wrap;
   gap: 0.5em 2.5em;
   margin: 0;
+}
+.customer-copy-submission > div {
+  text-align: left;
 }
 .customer-copy-submission dt {
   color: var(--color-text-hint, #505a5f);

@@ -1809,12 +1809,13 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
         console.log(`Period validated: ${periodDisplay}`);
       }
 
-      // Validate monetary values are properly formatted (£X.XX format)
+      // Validate monetary values are properly formatted: the record prints the pound sign once,
+      // under the column heading, and each figure with thousands separators (X,XXX.XX)
       for (let box = 1; box <= 9; box += 1) {
         const field = `Box ${box}`;
-        const amountText = await page.locator(`#vatReturnBox${box} dd`).first().innerText();
-        const match = amountText.match(/£([0-9,]+(?:\.[0-9]{2})?)/);
-        expect(match, `${field} should show a £ amount`).not.toBeNull();
+        const amountText = (await page.locator(`#vatReturnBox${box} td.figure`).first().innerText()).trim();
+        const match = amountText.match(/^([0-9,]+(?:\.[0-9]{2})?)$/);
+        expect(match, `${field} should show a figure, not a bracket or a dash: ${amountText}`).not.toBeNull();
         const numValue = parseFloat(match[1].replace(/,/g, ""));
         expect(numValue, `${field} should be a valid number`).not.toBeNaN();
         expect(numValue, `${field} should not be negative`).toBeGreaterThanOrEqual(0);

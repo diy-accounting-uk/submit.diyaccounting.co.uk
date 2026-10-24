@@ -34,7 +34,8 @@ export function serveMoneyInput(page) {
 }
 
 // The site stylesheet, for a screenshot that looks like the deployed page.
-export function serveSiteStyles(page) {
+export async function serveSiteStyles(page) {
+  await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
   return serveFile(page, "**/submit.css", "submit.css", "text/css");
 }
 
@@ -64,7 +65,8 @@ export function serveCarriedIdentifiers(page) {
 }
 
 // The real page script of any page under web/public, for a test that serves the page HTML from disk.
-export function servePageScripts(page) {
+export async function servePageScripts(page) {
+  await serveFile(page, "**/lib/hmrc-display-format.js", "lib/hmrc-display-format.js", "application/javascript");
   return page.route("**/*.page.js", async (route) => {
     const pathname = decodeURIComponent(new URL(route.request().url()).pathname);
     const exactPath = path.join(PUBLIC_DIR, pathname);
@@ -74,7 +76,10 @@ export function servePageScripts(page) {
 }
 
 // The real page script of an ITSA page whose other scripts are stubbed out.
-export function serveItsaPageScripts(page) {
+export async function serveItsaPageScripts(page) {
+  await serveFile(page, "**/lib/submission-record.js", "lib/submission-record.js", "application/javascript");
+  await serveFile(page, "**/lib/itsa-calculation-record.js", "lib/itsa-calculation-record.js", "application/javascript");
+  await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
   return page.route("**/hmrc/itsa/*.page.js", async (route) => {
     const fileName = path.basename(new URL(route.request().url()).pathname);
     await route.fulfill({

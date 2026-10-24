@@ -75,10 +75,14 @@ describe("the staged package", () => {
 
   test("vendors the modules a vendored module imports relatively, keeping the layout", () => {
     expect(vendored).toEqual(
-      expect.arrayContaining(["services/smallCompanyAccounts.js", "services/smallCompanyAccountsIxbrl.js", "lib/xmlDom.js"]),
+      expect.arrayContaining([
+        "services/smallCompanyAccounts.js",
+        "services/smallCompanyAccountsFromResults.js",
+        "services/ct600Figures.js",
+      ]),
     );
-    const ixbrl = readFileSync(join(staged, "lib", "vendored", "app", "services", "smallCompanyAccountsIxbrl.js"), "utf8");
-    expect(ixbrl).toContain('"../lib/xmlDom.js"');
+    const fromResults = readFileSync(join(staged, "lib", "vendored", "app", "services", "smallCompanyAccountsFromResults.js"), "utf8");
+    expect(fromResults).toContain('"./ct600Figures.js"');
   });
 
   test("leaves no import that reaches outside the package", () => {

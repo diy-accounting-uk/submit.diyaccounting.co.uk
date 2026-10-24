@@ -81,6 +81,11 @@ function readAllowances() {
 }
 
 function populateEditForm(annualSubmission) {
+  // A figure the last load filled in must not stay behind when this load has none, or the
+  // customer would save another business's figure.
+  document.querySelectorAll("#annualEditForm input:not([type=radio]):not([type=checkbox]), #annualEditForm select").forEach((field) => {
+    field.value = "";
+  });
   const ukProperty = annualSubmission?.ukProperty || {};
   const adjustments = ukProperty.adjustments || {};
   const allowances = ukProperty.allowances || {};

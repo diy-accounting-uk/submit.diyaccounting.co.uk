@@ -121,7 +121,7 @@ async function reachPreview(page, testInfo) {
   await goToFileCompanyTaxReturn(page, screenshotPath);
   await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
   await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
-  await fillInCompanyTaxReturnForm(page, { utr: FIXTURE_UTR, bookExport, declarantName: bookExport.director.name }, screenshotPath);
+  await fillInCompanyTaxReturnForm(page, { utr: FIXTURE_UTR, declarantName: bookExport.director.name }, screenshotPath);
   await previewCompanyTaxReturn(page, screenshotPath);
 }
 

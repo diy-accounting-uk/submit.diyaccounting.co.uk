@@ -384,6 +384,10 @@
         <p style="margin-top: 1em; color: #666; font-size: 0.9em">
           Your VAT return has been successfully submitted to HMRC. Please keep this receipt for your records.
         </p>
+        <nav aria-label="What to do next" style="display: flex; flex-wrap: wrap; gap: 0 2em">
+          <a href="../receipt/receipts.html" style="line-height: 44px">See your receipts</a>
+          <a href="vatObligations.html" style="line-height: 44px">See your VAT obligations</a>
+        </nav>
       </div>
     </main>
 
@@ -406,6 +410,8 @@
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/books-import.js"></script>
+    <script src="../../lib/money-format.js"></script>
+    <script src="../../lib/hmrc-display-format.js"></script>
     <script src="submitVat.page.js"></script>
   </body>
 </html>

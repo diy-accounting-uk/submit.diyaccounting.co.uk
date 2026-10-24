@@ -14,6 +14,7 @@
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
     <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
+    <link rel="stylesheet" href="../../submission-record.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -21,10 +22,21 @@
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="../../lib/analytics.js"></script>
     <style>
-      .headline-figure {
-        font-size: 2em;
-        font-weight: bold;
-        margin: 0.25em 0 0.75em 0;
+      .customer-copy-submission div,
+      .customer-copy-title,
+      .customer-copy-brand {
+        text-align: left;
+      }
+      .field-key {
+        margin: 0 0 1.5em 0;
+      }
+      .field-key dt {
+        font-weight: 600;
+        margin-top: 0.75em;
+      }
+      .field-key dd {
+        margin: 0.2em 0 0 0;
+        max-width: 65ch;
       }
     </style>
   </head>
@@ -119,15 +131,8 @@
           submit more information.
         </div>
 
-        <h3>Total Income Tax and National Insurance due</h3>
-        <p id="totalIncomeTaxAndNicsDue" class="headline-figure"></p>
-
-        <div id="taxBreakdown"></div>
-
-        <h3 id="allowancesAndDeductionsHeading">Allowances and deductions</h3>
-        <div id="allowancesAndDeductions"></div>
-
-        <p id="calculationIdDisplay" class="hint"></p>
+        <div id="calculationCopy"></div>
+        <div id="fieldKey"></div>
 
         <h3>Businesses in this return</h3>
         <p class="hint">
@@ -172,6 +177,7 @@
       <div id="finalDeclarationResults" class="results-container" style="display: none">
         <h3>Final declaration filed</h3>
         <p>HMRC has accepted the final declaration. Your Self Assessment return for the year is filed.</p>
+        <div id="declarationCopy"></div>
         <div class="button-group">
           <button type="button" id="newSearchBtn" class="secondary-button">Start again</button>
         </div>
@@ -199,6 +205,6 @@
     <script src="../../widgets/hmrc-assist-messages.js"></script>
     <script src="../../lib/money-format.js"></script>
     <script src="../../lib/hmrc-field-table.js"></script>
-    <script src="finalDeclaration.page.js"></script>
+    <script type="module" src="finalDeclaration.page.js"></script>
   </body>
 </html>

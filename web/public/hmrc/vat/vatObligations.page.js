@@ -364,7 +364,9 @@ function resultsTable(headerCells, rows) {
     {},
     ...headerCells.map(([text, className]) => element("th", className ? { class: className } : {}, text)),
   );
-  return element("table", { class: "results-table" }, element("thead", {}, headerRow), element("tbody", {}, ...rows));
+  return HmrcDisplayFormat.scrollable(
+    element("table", { class: "results-table" }, element("thead", {}, headerRow), element("tbody", {}, ...rows)),
+  );
 }
 
 function displayObligations(obligations) {
@@ -379,13 +381,14 @@ function displayObligations(obligations) {
   const vrn = document.getElementById("vrn").value;
 
   const rows = obligations.map((obligation) => {
-    const statusClass = obligation.status === "O" ? "status-open" : "status-fulfilled";
-    const statusText = obligation.status === "O" ? "Open" : "Fulfilled";
+    const statusText = obligation.status === "O" ? "Open" : obligation.status === "F" ? "Fulfilled" : "—";
+    const statusClass = obligation.status === "O" ? "status-open" : obligation.status === "F" ? "status-fulfilled" : "";
 
     // Format date range for display (HMRC requirement: don't show period key)
     const periodDisplay = formatDateRange(obligation.start, obligation.end);
     const dueDateDisplay = formatDate(obligation.due);
-    const receivedDisplay = formatDate(obligation.received);
+    // An open obligation has no received date yet.
+    const receivedDisplay = obligation.received ? formatDate(obligation.received) : obligation.status === "O" ? "Not yet received" : "—";
 
     const isFulfilled = obligation.status === "F";
     const actionButton = element("button", { class: "action-button btn" }, isFulfilled ? "View return" : "Submit return");
@@ -397,10 +400,10 @@ function displayObligations(obligations) {
     return element(
       "tr",
       {},
-      element("td", {}, element("strong", {}, periodDisplay || "")),
-      element("td", {}, dueDateDisplay || ""),
-      element("td", {}, element("span", { class: statusClass }, statusText)),
-      element("td", {}, receivedDisplay || ""),
+      element("td", {}, element("strong", {}, periodDisplay)),
+      element("td", {}, dueDateDisplay),
+      element("td", {}, element("span", statusClass ? { class: statusClass } : {}, statusText)),
+      element("td", {}, receivedDisplay),
       element("td", {}, actionButton),
     );
   });
@@ -408,22 +411,8 @@ function displayObligations(obligations) {
   tableContainer.replaceChildren(resultsTable([["VAT Period"], ["Due Date"], ["Status"], ["Received"], ["Actions"]], rows));
 }
 
-// Format a single date for display
-function formatDate(dateStr) {
-  if (!dateStr) return "—";
-  const date = new Date(dateStr);
-  const options = { day: "numeric", month: "short", year: "numeric" };
-  return date.toLocaleDateString("en-GB", options);
-}
-
-// Format date range for display (HMRC requirement: show dates instead of period key)
-function formatDateRange(startStr, endStr) {
-  if (!startStr || !endStr) return "—";
-  const startDate = new Date(startStr);
-  const endDate = new Date(endStr);
-  const options = { day: "numeric", month: "short", year: "numeric" };
-  return `${startDate.toLocaleDateString("en-GB", options)} to ${endDate.toLocaleDateString("en-GB", options)}`;
-}
+const formatDate = HmrcDisplayFormat.formatDate;
+const formatDateRange = HmrcDisplayFormat.formatDateRange;
 
 function viewReturn(vrn, periodKey, periodStart, periodEnd) {
   // Navigate to view VAT return page with period dates (hmrcAccount is in sessionStorage)

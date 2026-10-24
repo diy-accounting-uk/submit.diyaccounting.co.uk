@@ -54,8 +54,8 @@ export async function getConfirmationStatementFilingData(companyNumber, { compan
  *   registeredEmailAddress, lawfulPurposeStatementAccepted, stateConfirmationAccepted, directors (see submitConfirmationStatement)
  * @returns {Promise<{confirmationStatementXml: string}>}
  */
-export async function previewConfirmationStatement(statement) {
-  const response = await fetchWithIdToken("/api/v1/companies-house/confirmation-statement/preview", {
+export async function renderConfirmationStatement(statement) {
+  const response = await fetchWithIdToken("/api/v1/companies-house/confirmation-statement/render", {
     method: "POST",
     headers: CONFIRMATION_STATEMENT_JSON_HEADERS,
     body: JSON.stringify(statement),
@@ -70,7 +70,7 @@ export async function previewConfirmationStatement(statement) {
 /**
  * Build the ConfirmationAndVerificationStatement, wrap it in a GovTalk envelope and submit it
  * through the Companies House XML Gateway.
- * @param {object} statement - the same shape previewConfirmationStatement takes, plus
+ * @param {object} statement - the same shape renderConfirmationStatement takes, plus
  *   companyNumber, companyName, companyAuthCode and dateSigned
  * @param {object} [extraHeaders] - e.g. a developer-mode Gov-Test-Scenario override
  * @returns {Promise<{submissionNumber: string, gatewayTimestamp: string, pollInterval: number}>}
@@ -110,7 +110,7 @@ export async function pollConfirmationStatement(submissionNumber, extraHeaders =
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
   window.getConfirmationStatementFilingData = getConfirmationStatementFilingData;
-  window.previewConfirmationStatement = previewConfirmationStatement;
+  window.renderConfirmationStatement = renderConfirmationStatement;
   window.submitConfirmationStatement = submitConfirmationStatement;
   window.pollConfirmationStatement = pollConfirmationStatement;
 }

@@ -16,6 +16,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 // Read the HTML file content
 const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/hmrc/vat/submitVat.html"), "utf-8");
 const submitVatPageSource = fs.readFileSync(path.join(process.cwd(), "web/public/hmrc/vat/submitVat.page.js"), "utf-8");
+const hmrcDisplayFormatSource = fs.readFileSync(path.join(process.cwd(), "web/public/lib/hmrc-display-format.js"), "utf-8");
 const carriedIdentifiersSource = fs.readFileSync(path.join(process.cwd(), "web/public/lib/carried-identifiers.js"), "utf-8");
 
 describe("VAT Flow Frontend JavaScript", () => {
@@ -169,6 +170,9 @@ describe("VAT Flow Frontend JavaScript", () => {
     // eslint-disable-next-line no-new-func
     new Function(carriedIdentifiersSource)();
     window.CarriedIdentifiers = globalThis.CarriedIdentifiers;
+    // eslint-disable-next-line no-new-func
+    new Function(hmrcDisplayFormatSource)();
+    globalThis.HmrcDisplayFormat = window.HmrcDisplayFormat;
 
     // Execute the page script to define page-specific functions; the books import widget is not under test here
     window.booksImport = { mount() {} };

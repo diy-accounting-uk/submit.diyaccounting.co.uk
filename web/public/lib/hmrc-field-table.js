@@ -237,8 +237,12 @@
     return String(text).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
+  // A date HMRC returned as a customer reads it; anything that is not a calendar date shows as a dash.
   function formatIsoDate(iso) {
-    const [year, month, day] = iso.split("-").map(Number);
+    const match = typeof iso === "string" ? /^(\d{4})-(\d{2})-(\d{2})/.exec(iso) : null;
+    if (!match) return ABSENT;
+    const [year, month, day] = [Number(match[1]), Number(match[2]), Number(match[3])];
+    if (month < 1 || month > 12 || day < 1 || day > 31) return ABSENT;
     return `${day} ${MONTHS[month - 1]} ${year}`;
   }
 
@@ -254,7 +258,9 @@
     if (value === null || value === undefined) return ABSENT;
     if (typeof value === "boolean") return value ? "Yes" : "No";
     if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return formatIsoDate(value);
-    return String(value);
+    if (typeof value === "string") return value.trim() === "" ? ABSENT : value;
+    if (typeof value === "number") return Number.isFinite(value) ? String(value) : ABSENT;
+    return ABSENT;
   }
 
   function formatValue(value, kind) {
@@ -359,6 +365,20 @@
     return `<p class="field-table-source">Definitions quoted from ${cited}.</p>`;
   }
 
+  // The definitions behind a set of rows, quoted from the sources that publish them, as a closed
+  // key under the table that holds the figures. Rows without a definition are left out.
+  function mountFieldKey(container, rows, { summary = "What each line means" } = {}) {
+    const defined = (rows || []).filter((row) => row.definition);
+    if (defined.length === 0) {
+      container.replaceChildren();
+      return;
+    }
+    const items = defined.map((row) => `<dt>${escapeHtml(row.label)}</dt><dd>“${escapeHtml(row.definition)}”</dd>`).join("");
+    const markup = `<details class="field-key"><summary>${escapeHtml(summary)}</summary><dl>${items}</dl>${sourcesFooter(defined)}</details>`;
+    const parsed = new DOMParser().parseFromString(markup, "text/html");
+    container.replaceChildren(...parsed.body.childNodes);
+  }
+
   // rows: [{ field, label, value, kind? (money, percent or text), definition?, source?, total?, valueId? }]
   function renderFieldTable(rows, { caption, emptyText } = {}) {
     if (!rows || rows.length === 0) {
@@ -375,9 +395,11 @@
         );
       })
       .join("");
+    // "Amount" heads a column of money; a column that holds any text value is headed "Value".
+    const valueHeading = rows.every((row) => row.kind !== "text") ? "Amount" : "Value";
     const captionHtml = caption ? `<caption class="visually-hidden">${escapeHtml(caption)}</caption>` : "";
     return (
-      `<table class="field-table">${captionHtml}<thead><tr><th scope="col">Item</th><th scope="col" class="field-amount">Amount</th></tr></thead>` +
+      `<table class="field-table">${captionHtml}<thead><tr><th scope="col">Item</th><th scope="col" class="field-amount">${valueHeading}</th></tr></thead>` +
       `<tbody>${body}</tbody></table>${sourcesFooter(rows)}`
     );
   }
@@ -430,6 +452,7 @@
     sourceLink,
     renderFieldTable,
     mountFieldTable,
+    mountFieldKey,
     mountResultsTable,
   };
 })();

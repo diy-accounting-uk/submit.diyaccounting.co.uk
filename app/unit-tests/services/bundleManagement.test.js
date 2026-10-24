@@ -374,7 +374,7 @@ describe("bundleEnforcement.js", () => {
     describe("activities that share an accounts API route", () => {
       const accountsPaths = [
         "/api/v1/companies-house/accounts",
-        "/api/v1/companies-house/accounts/preview",
+        "/api/v1/companies-house/accounts/render",
         "/api/v1/companies-house/accounts/00001A",
       ];
 
@@ -432,10 +432,10 @@ describe("bundleEnforcement.js", () => {
     describe("Companies House routes for a caller holding only the automatic default bundle", () => {
       const filingRoutes = [
         "/api/v1/companies-house/accounts",
-        "/api/v1/companies-house/accounts/preview",
+        "/api/v1/companies-house/accounts/render",
         "/api/v1/companies-house/accounts/00001A",
         "/api/v1/companies-house/confirmation-statement",
-        "/api/v1/companies-house/confirmation-statement/preview",
+        "/api/v1/companies-house/confirmation-statement/render",
         "/api/v1/companies-house/confirmation-statement/00001A",
         "/api/v1/companies-house/company/00000006/officers",
         "/api/v1/companies-house/company/00000006/persons-with-significant-control",

@@ -34,6 +34,10 @@ class NightlyIngestionWorkflowTest {
     }
 
     private Template synthWorkflow(String envName) {
+        return synthWorkflow(envName, false);
+    }
+
+    private Template synthWorkflow(String envName, boolean withOptionalJobs) {
         App app = new App();
         Stack stack = new Stack(
                 app,
@@ -54,21 +58,25 @@ class NightlyIngestionWorkflowTest {
         var metricsPublishLambda = testLambda(stack, "MetricsPublishLambda", "docs-env-analytics-metrics-publish");
         var rawExportPublishLambda = testLambda(stack, "RawExportPublishLambda", "docs-env-raw-export-publish");
 
-        new NightlyIngestionWorkflow(
-                stack,
-                NightlyIngestionWorkflow.NightlyIngestionWorkflowProps.builder()
-                        .idPrefix("docs-env")
-                        .envName(envName)
-                        .stateMachineName("docs-env-analytics-nightly")
-                        .stripeReconcileLambda(stripeReconcileLambda)
-                        .ga4ReportPullLambda(ga4ReportPullLambda)
-                        .ga4EventExportPullLambda(ga4EventExportPullLambda)
-                        .ga4DailyPullLambda(ga4DailyPullLambda)
-                        .operatorEffortPullLambda(operatorEffortPullLambda)
-                        .dataQualityRunLambda(dataQualityRunLambda)
-                        .metricsPublishLambda(metricsPublishLambda)
-                        .rawExportPublishLambda(rawExportPublishLambda)
-                        .build());
+        var props = NightlyIngestionWorkflow.NightlyIngestionWorkflowProps.builder()
+                .idPrefix("docs-env")
+                .envName(envName)
+                .stateMachineName("docs-env-analytics-nightly")
+                .stripeReconcileLambda(stripeReconcileLambda)
+                .ga4ReportPullLambda(ga4ReportPullLambda)
+                .ga4EventExportPullLambda(ga4EventExportPullLambda)
+                .ga4DailyPullLambda(ga4DailyPullLambda)
+                .operatorEffortPullLambda(operatorEffortPullLambda)
+                .dataQualityRunLambda(dataQualityRunLambda)
+                .metricsPublishLambda(metricsPublishLambda)
+                .rawExportPublishLambda(rawExportPublishLambda);
+        if (withOptionalJobs) {
+            props.companyBookPullLambda(testLambda(stack, "CompanyBookPullLambda", "docs-env-company-book-pull"))
+                    .paypalDonationsPullLambda(
+                            testLambda(stack, "PaypalDonationsPullLambda", "docs-env-paypal-donations-pull"))
+                    .adsCostPullLambda(testLambda(stack, "AdsCostPullLambda", "docs-env-ads-cost-pull"));
+        }
+        new NightlyIngestionWorkflow(stack, props.build());
 
         return Template.fromStack(stack);
     }
@@ -173,6 +181,34 @@ class NightlyIngestionWorkflowTest {
     }
 
     @Test
+    void optionalJobsCatchAllErrorsAndCoreJobsDoNot() {
+        var definitionText = joinedDefinitionString(synthWorkflow("prod", true));
+
+        for (String key : List.of("company book pull", "PayPal donations pull", "Ads cost pull")) {
+            var state = stateText(definitionText, key);
+            assertTrue(
+                    state.contains("\"Catch\":[{\"ErrorEquals\":[\"States.ALL\"]"),
+                    key + " should catch States.ALL: " + state);
+            assertTrue(state.contains("\"ResultPath\":\"$.failures."), key + " should record under $.failures");
+            assertTrue(
+                    definitionText.contains("\"" + key + " failed, recorded\":{\"Type\":\"Pass\""),
+                    key + " should route to a Pass state");
+        }
+        assertEquals(3, countOccurrences(definitionText, "\"Catch\":"), "only the three optional jobs catch");
+        for (String key : List.of(
+                "Stripe reconciliation",
+                "GA4 report pull",
+                "GA4 event export pull",
+                "GA4 daily aggregate pull",
+                "operator effort pull",
+                "data quality run",
+                "metrics publish",
+                "raw export publish")) {
+            assertFalse(stateText(definitionText, key).contains("\"Catch\""), key + " should not catch");
+        }
+    }
+
+    @Test
     void scheduleTargetsTheStateMachineWithNoFlexibleTimeWindow() {
         Template template = synthWorkflow();
 
@@ -251,6 +287,37 @@ class NightlyIngestionWorkflowTest {
                         1,
                         "TreatMissingData",
                         "breaching")));
+    }
+
+    private static final List<String> STATE_NAMES = List.of(
+            "Run ingestion jobs",
+            "Stripe reconciliation",
+            "GA4 report pull",
+            "GA4 event export pull",
+            "GA4 daily aggregate pull",
+            "operator effort pull",
+            "company book pull",
+            "PayPal donations pull",
+            "Ads cost pull",
+            "company book pull failed, recorded",
+            "PayPal donations pull failed, recorded",
+            "Ads cost pull failed, recorded",
+            "data quality run",
+            "metrics publish",
+            "raw export publish");
+
+    /** The text of one state's definition, up to where the next state's definition starts. */
+    private static String stateText(String definitionText, String stateName) {
+        int start = definitionText.indexOf("\"" + stateName + "\":{");
+        assertTrue(start >= 0, "expected state " + stateName);
+        int end = definitionText.length();
+        for (String other : STATE_NAMES) {
+            int otherStart = definitionText.indexOf("\"" + other + "\":{", start + 1);
+            if (otherStart >= 0 && otherStart < end) {
+                end = otherStart;
+            }
+        }
+        return definitionText.substring(start, end);
     }
 
     private static int countOccurrences(String text, String needle) {

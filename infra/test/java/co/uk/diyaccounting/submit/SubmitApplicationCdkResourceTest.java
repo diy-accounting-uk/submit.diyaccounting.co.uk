@@ -399,7 +399,7 @@ class SubmitApplicationCdkResourceTest {
                 Map.of(
                         "RouteKey",
                         "POST /api/v1/companies-house/transaction/{transactionId}/registered-email-address"));
-        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/accounts/preview"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/accounts/render"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/accounts"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/accounts/{submissionNumber}"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/hmrc/ct/return/preview"));
@@ -414,7 +414,7 @@ class SubmitApplicationCdkResourceTest {
                         "GET /api/v1/companies-house/company/{companyNumber}/persons-with-significant-control"));
         assertApiRoute(
                 apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/company/{companyNumber}/filing-data"));
-        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement/preview"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement/render"));
         assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement"));
         assertApiRoute(
                 apiTemplates,

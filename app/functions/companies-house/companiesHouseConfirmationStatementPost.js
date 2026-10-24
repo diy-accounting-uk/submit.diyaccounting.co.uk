@@ -116,7 +116,7 @@ function validateAndNormaliseDirectors(directors, errorMessages) {
   });
 }
 
-// Extracts and validates a confirmation statement request. Shared with the preview Lambda, which
+// Extracts and validates a confirmation statement request. Shared with the render Lambda, which
 // never needs the company authentication code because it never reaches the gateway.
 export function extractAndValidateConfirmationStatementParameters(event, errorMessages, { requireCompanyAuthCode = true } = {}) {
   const parsedBody = parseRequestBody(event) || {};

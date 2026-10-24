@@ -267,7 +267,7 @@ function accountsFilingBody(toolName, params, { allowClientId = false } = {}) {
  */
 export async function renderMicroEntityAccounts(session, params = {}) {
   const body = accountsFilingBody("render_micro_entity_accounts_sandbox", params);
-  return callSubmitApi(session, "/api/v1/companies-house/accounts/preview", { method: "POST", body });
+  return callSubmitApi(session, "/api/v1/companies-house/accounts/render", { method: "POST", body });
 }
 
 /**
@@ -372,7 +372,7 @@ function confirmationStatementFilingBody(toolName, params) {
  */
 export async function renderConfirmationStatement(session, params = {}) {
   const body = confirmationStatementFilingBody("render_confirmation_statement_sandbox", params);
-  return callSubmitApi(session, "/api/v1/companies-house/confirmation-statement/preview", { method: "POST", body });
+  return callSubmitApi(session, "/api/v1/companies-house/confirmation-statement/render", { method: "POST", body });
 }
 
 /**

@@ -7,6 +7,10 @@
 
 import { expect, test } from "@playwright/test";
 import { loggedClick, loggedFill, timestamp, takeScreenshot } from "../helpers/behaviour-helpers.js";
+import fs from "node:fs";
+import path from "node:path";
+import JSZip from "jszip";
+import { FIXTURE_BOOK_DIRECTORY } from "@app/test-helpers/ctReturnFixture.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-company-tax-return-steps";
 
@@ -24,10 +28,23 @@ export async function goToFileCompanyTaxReturn(page, screenshotPath = defaultScr
   });
 }
 
-export async function fillInCompanyTaxReturnForm(page, { utr, bookExport, declarantName }, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user enters the UTR, the book export, the declarant, the statements and the declaration", async () => {
+async function zippedFixtureBook() {
+  const zip = new JSZip();
+  zip.file("book.toml", fs.readFileSync(path.join(FIXTURE_BOOK_DIRECTORY, "book.toml")));
+  zip.file("lines.jsonl", fs.readFileSync(path.join(FIXTURE_BOOK_DIRECTORY, "lines.jsonl")));
+  return zip.generateAsync({ type: "nodebuffer" });
+}
+
+export async function fillInCompanyTaxReturnForm(page, { utr, declarantName }, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user enters the UTR, drops the company's book, and enters the declarant, the statements and the declaration", async () => {
     await loggedFill(page, "#utr", utr, "UTR");
-    await loggedFill(page, "#bookExport", JSON.stringify(bookExport), "Book export");
+    await expect(page.locator("#booksImportFile")).toBeAttached();
+    await page.locator("#booksImportFile").setInputFiles({
+      name: "precision-code.diya-gl.zip",
+      mimeType: "application/zip",
+      buffer: await zippedFixtureBook(),
+    });
+    await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60000 });
     await loggedFill(page, "#declarantName", declarantName, "Declarant name");
     await page.check("#statementSection477Exemption");
     await page.check("#statementMembersNotRequiredAudit");

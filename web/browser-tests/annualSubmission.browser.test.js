@@ -102,6 +102,20 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     await expect(page.locator("#tradingIncomeAllowance")).toBeDisabled();
   });
 
+  test("clears the figures of the previous load when the next load has none", async ({ page }) => {
+    await loadPage(page);
+    await page.evaluate(() => {
+      document.getElementById("annualEditForm").style.display = "block";
+      window.populateEditForm({ adjustments: { basisAdjustment: 250.5 }, allowances: { tradingIncomeAllowance: 1000 } });
+    });
+    await expect(page.locator("#basisAdjustment")).toHaveValue("250.5");
+    await page.evaluate(() => window.populateEditForm({ adjustments: { accountingAdjustment: 7 }, nonFinancials: null }));
+    await expect(page.locator("#basisAdjustment")).toHaveValue("");
+    await expect(page.locator("#tradingIncomeAllowance")).toHaveValue("");
+    await expect(page.locator("#accountingAdjustment")).toHaveValue("7");
+    await expect(page.locator("#allowanceTypeNone")).toBeChecked();
+  });
+
   test("populates the edit form from a loaded annual submission", async ({ page }) => {
     await loadPage(page);
 

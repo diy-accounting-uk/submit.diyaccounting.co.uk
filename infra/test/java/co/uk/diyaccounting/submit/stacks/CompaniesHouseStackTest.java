@@ -210,7 +210,7 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseRegisteredOfficeAddressPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseRegisteredEmailEligibilityGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseRegisteredEmailAddressPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
                 stack.hmrcCtReturnPreviewPostLambdaProps.ingestFunctionName(),
@@ -219,7 +219,7 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseOfficersGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseConfirmationStatementPreviewPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
@@ -374,7 +374,7 @@ class CompaniesHouseStackTest {
                         "/api/v1/companies-house/transaction/{transactionId}/registered-office-address",
                         "/api/v1/companies-house/company/{companyNumber}/registered-email-address/eligibility",
                         "/api/v1/companies-house/transaction/{transactionId}/registered-email-address",
-                        "/api/v1/companies-house/accounts/preview",
+                        "/api/v1/companies-house/accounts/render",
                         "/api/v1/companies-house/accounts",
                         "/api/v1/companies-house/accounts/{submissionNumber}",
                         "/api/v1/hmrc/ct/return/preview",
@@ -383,7 +383,7 @@ class CompaniesHouseStackTest {
                         "/api/v1/companies-house/company/{companyNumber}/officers",
                         "/api/v1/companies-house/company/{companyNumber}/persons-with-significant-control",
                         "/api/v1/companies-house/company/{companyNumber}/filing-data",
-                        "/api/v1/companies-house/confirmation-statement/preview",
+                        "/api/v1/companies-house/confirmation-statement/render",
                         "/api/v1/companies-house/confirmation-statement",
                         "/api/v1/companies-house/confirmation-statement/{submissionNumber}",
                         "/api/v1/companies-house/psc-verification-statement",
@@ -651,13 +651,13 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseRegisteredOfficeAddressPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseRegisteredEmailEligibilityGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseRegisteredEmailAddressPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseOfficersGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseConfirmationStatementPreviewPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
@@ -736,10 +736,9 @@ class CompaniesHouseStackTest {
     void accountsRoutesCarryTheirDesignedPathsMethodsAndJwtOnlyAuthorizer() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
-        assertEquals(HttpMethod.POST, stack.companiesHouseAccountsPreviewPostLambdaProps.httpMethod());
+        assertEquals(HttpMethod.POST, stack.companiesHouseAccountsRenderPostLambdaProps.httpMethod());
         assertEquals(
-                "/api/v1/companies-house/accounts/preview",
-                stack.companiesHouseAccountsPreviewPostLambdaProps.urlPath());
+                "/api/v1/companies-house/accounts/render", stack.companiesHouseAccountsRenderPostLambdaProps.urlPath());
         assertEquals(HttpMethod.POST, stack.companiesHouseAccountsPostLambdaProps.httpMethod());
         assertEquals("/api/v1/companies-house/accounts", stack.companiesHouseAccountsPostLambdaProps.urlPath());
         assertEquals(HttpMethod.GET, stack.companiesHouseAccountsGetLambdaProps.httpMethod());
@@ -750,7 +749,7 @@ class CompaniesHouseStackTest {
         // None of the three carries a Companies House OAuth token, so all three sit behind the
         // JWT authorizer alone, unlike the six OAuth filing Lambdas above.
         for (var props : List.of(
-                stack.companiesHouseAccountsPreviewPostLambdaProps,
+                stack.companiesHouseAccountsRenderPostLambdaProps,
                 stack.companiesHouseAccountsPostLambdaProps,
                 stack.companiesHouseAccountsGetLambdaProps)) {
             assertEquals(
@@ -768,11 +767,11 @@ class CompaniesHouseStackTest {
         Template template = Template.fromStack(stack);
 
         for (String functionName : List.of(
-                stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseConfirmationStatementPreviewPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
@@ -792,11 +791,11 @@ class CompaniesHouseStackTest {
         Template template = Template.fromStack(stack);
 
         for (String functionName : List.of(
-                stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseAccountsRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseConfirmationStatementPreviewPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
                 stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
@@ -842,10 +841,10 @@ class CompaniesHouseStackTest {
         assertEquals(
                 "/api/v1/companies-house/company/{companyNumber}/filing-data",
                 stack.companiesHouseFilingDataPostLambdaProps.urlPath());
-        assertEquals(HttpMethod.POST, stack.companiesHouseConfirmationStatementPreviewPostLambdaProps.httpMethod());
+        assertEquals(HttpMethod.POST, stack.companiesHouseConfirmationStatementRenderPostLambdaProps.httpMethod());
         assertEquals(
-                "/api/v1/companies-house/confirmation-statement/preview",
-                stack.companiesHouseConfirmationStatementPreviewPostLambdaProps.urlPath());
+                "/api/v1/companies-house/confirmation-statement/render",
+                stack.companiesHouseConfirmationStatementRenderPostLambdaProps.urlPath());
         assertEquals(HttpMethod.POST, stack.companiesHouseConfirmationStatementPostLambdaProps.httpMethod());
         assertEquals(
                 "/api/v1/companies-house/confirmation-statement",
@@ -859,7 +858,7 @@ class CompaniesHouseStackTest {
         // authorizer alone, unlike the six OAuth filing Lambdas above.
         for (var props : List.of(
                 stack.companiesHouseFilingDataPostLambdaProps,
-                stack.companiesHouseConfirmationStatementPreviewPostLambdaProps,
+                stack.companiesHouseConfirmationStatementRenderPostLambdaProps,
                 stack.companiesHouseConfirmationStatementPostLambdaProps,
                 stack.companiesHouseConfirmationStatementGetLambdaProps)) {
             assertEquals(
@@ -945,8 +944,8 @@ class CompaniesHouseStackTest {
 
         // Neither preview reaches the gateway, so both carry neither.
         for (String functionName : List.of(
-                stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseConfirmationStatementPreviewPostLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseAccountsRenderPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             var previewEnv = environmentVariablesOf(functions);
@@ -1066,8 +1065,8 @@ class CompaniesHouseStackTest {
         }
 
         for (String functionName : List.of(
-                stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseConfirmationStatementPreviewPostLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseAccountsRenderPostLambdaProps.ingestFunctionName(),
+                stack.companiesHouseConfirmationStatementRenderPostLambdaProps.ingestFunctionName())) {
             var previewFunctions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, previewFunctions.size());

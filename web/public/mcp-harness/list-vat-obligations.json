@@ -1,0 +1,35 @@
+{
+  "title": "Ask Claude for open VAT obligations",
+  "config": {
+    "serverName": "diya-submit",
+    "hostedPath": "/mcp",
+    "stdioCommand": "node mcp/bin/diya-submit-mcp.js"
+  },
+  "turns": [
+    {
+      "id": "ask",
+      "role": "user",
+      "text": "Which VAT returns are due for 111222333?"
+    },
+    {
+      "id": "plan",
+      "role": "assistant",
+      "text": "I will ask HMRC, through the Submit server, for the open obligations."
+    },
+    {
+      "id": "obligations",
+      "role": "tool",
+      "tool": "list_vat_obligations",
+      "arguments": {
+        "vrn": "111222333",
+        "status": "O",
+        "hmrcAccessToken": "simulator-hmrc-access-token"
+      }
+    },
+    {
+      "id": "answer",
+      "role": "assistant",
+      "text": "HMRC lists the obligations above. Each open one is a return waiting to be filed."
+    }
+  ]
+}

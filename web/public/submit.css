@@ -2357,6 +2357,34 @@ input[type="radio"] {
   white-space: pre-line;
 }
 
+/* The Company Tax Return form: the worked tax is the one emphasised block */
+.worked-tax {
+  border: 2px solid var(--color-brand-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-brand-primary-light);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+.worked-tax:focus {
+  outline: 3px solid var(--color-focus);
+}
+.worked-tax__list {
+  margin: 0;
+}
+.worked-tax__row {
+  padding: var(--spacing-sm) 0;
+  border-top: 1px solid var(--color-border);
+}
+.worked-tax__row dt {
+  font-weight: var(--font-weight-bold);
+}
+.worked-tax__row dd {
+  margin: 0;
+}
+.worked-tax__row .hint {
+  margin-bottom: 0;
+}
+
 /* ============================================
    Developer-only sections and raw document previews
    ============================================ */
