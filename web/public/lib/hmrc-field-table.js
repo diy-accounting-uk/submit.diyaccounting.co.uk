@@ -395,9 +395,11 @@
         );
       })
       .join("");
+    // "Amount" heads a column of money; a column that holds any text value is headed "Value".
+    const valueHeading = rows.every((row) => row.kind !== "text") ? "Amount" : "Value";
     const captionHtml = caption ? `<caption class="visually-hidden">${escapeHtml(caption)}</caption>` : "";
     return (
-      `<table class="field-table">${captionHtml}<thead><tr><th scope="col">Item</th><th scope="col" class="field-amount">Amount</th></tr></thead>` +
+      `<table class="field-table">${captionHtml}<thead><tr><th scope="col">Item</th><th scope="col" class="field-amount">${valueHeading}</th></tr></thead>` +
       `<tbody>${body}</tbody></table>${sourcesFooter(rows)}`
     );
   }

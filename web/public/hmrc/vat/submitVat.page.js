@@ -421,7 +421,8 @@ async function continueVatSubmission() {
     // Submit VAT return with 9-box data
     const submitResponse = await submitVatWithCalculatedHeaders(submissionData.vatNumber, submissionData, accessToken);
 
-    // Display success
+    // Display success: the earlier "Submitting" and "Still processing" messages are finished, so only the outcome stays
+    hideStatus();
     showStatus("VAT return processed", "success");
     displayReceipt(submitResponse);
     // Refresh token display after consumption
@@ -475,6 +476,13 @@ async function submitVatWithCalculatedHeaders(vatNumber, vatData, accessToken) {
   return await submitVat(vatNumber, vatData, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, allowSyntheticObligations);
 }
 
+function setReceiptReference(elementId, value) {
+  const reference = document.getElementById(elementId);
+  const hasValue = value !== undefined && value !== null && String(value).trim() !== "";
+  reference.textContent = hasValue ? String(value).trim() : "";
+  reference.closest(".receipt-item").style.display = hasValue ? "" : "none";
+}
+
 function displayReceipt(response) {
   console.log("Page display transition: Displaying receipt and hiding form", response);
   // Hide the form
@@ -500,18 +508,11 @@ function displayReceipt(response) {
     });
   }
 
-  // Format and display the processing date
-  const processingDate = new Date(receipt.processingDate);
-  document.getElementById("processingDate").textContent = processingDate.toLocaleDateString("en-GB", {
-    day: "numeric",
-    month: "long",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-
-  document.getElementById("formBundleNumber").textContent = receipt.formBundleNumber;
-  document.getElementById("chargeRefNumber").textContent = receipt.chargeRefNumber ?? "";
+  // Format and display the processing date and the references HMRC returned. A reference
+  // HMRC did not return (a charge reference on a repayment) hides its row.
+  document.getElementById("processingDate").textContent = HmrcDisplayFormat.formatDateTime(receipt.processingDate);
+  setReceiptReference("formBundleNumber", receipt.formBundleNumber);
+  setReceiptReference("chargeRefNumber", receipt.chargeRefNumber);
 
   // Show the receipt
   receiptDisplay.style.display = "block";

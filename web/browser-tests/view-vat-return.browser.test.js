@@ -14,9 +14,9 @@ import {
   servePageScripts,
   serveCarriedIdentifiers,
   serveSiteStyles,
-  screenshotPath,
   expectCleanFigures,
 } from "./hmrcFieldTableAssets.js";
+import { serveSubmissionRecordAssets, recordScreenshotPath, pageScrollsSideways } from "./submissionRecordAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -224,7 +224,7 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
     expect(decimalInvalid).toBe(false);
   });
 
-  test("gives each box a stable id, its VAT Notice 700/12 definition and a link to that box's guidance", async ({ page }) => {
+  async function openReturnView(page, width) {
     await serveSiteStyles(page);
     await page.route("**/*.js", async (route) => {
       if (route.request().resourceType() === "script") {
@@ -236,7 +236,8 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
     await serveHmrcFieldTableAssets(page);
     await servePageScripts(page);
     await serveCarriedIdentifiers(page);
-    await page.setViewportSize({ width: 1280, height: 900 });
+    await serveSubmissionRecordAssets(page);
+    await page.setViewportSize({ width, height: 900 });
 
     const html = viewVatReturnHtmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/vat/">').replace(
       "<body>",
@@ -250,49 +251,98 @@ window.loadEnv = function(){ return Promise.resolve({}); };
       await route.fulfill({ status: 200, contentType: "text/html", body: html });
     });
     await page.goto("http://localhost:3000/hmrc/vat/viewVatReturn.html", { waitUntil: "domcontentloaded" });
+  }
 
-    await page.evaluate(() => {
+  async function showReturn(page, returnData) {
+    await page.evaluate(async (data) => {
+      document.getElementById("vrn").value = "123456789";
       document.getElementById("searchForm").style.display = "none";
       document.getElementById("returnResults").style.display = "block";
-      window.displayReturn({
-        finalised: true,
-        vatDueSales: 1234.56,
-        vatDueAcquisitions: 0,
-        totalVatDue: 1234.56,
-        vatReclaimedCurrPeriod: 234.5,
-        netVatDue: 1000.06,
-        totalValueSalesExVAT: 6173,
-        totalValuePurchasesExVAT: 1172,
-        totalValueGoodsSuppliedExVAT: 0,
-        totalAcquisitionsExVAT: 0,
-      });
-    });
+      await window.displayReturn(data);
+    }, returnData);
+  }
 
-    await expect(page.locator("#vatReturnBox1 dd")).toHaveText("£1,234.56");
-    await expect(page.locator("#vatReturnBox5 dd")).toHaveText("£1,000.06");
-    await expect(page.locator("#vatReturnBox6 dd")).toHaveText("£6,173");
+  const FULL_RETURN = {
+    finalised: true,
+    periodStart: "2026-07-01",
+    periodEnd: "2026-08-31",
+    vatDueSales: 1234.56,
+    vatDueAcquisitions: 0,
+    totalVatDue: 1234.56,
+    vatReclaimedCurrPeriod: 234.5,
+    netVatDue: 1000.06,
+    totalValueSalesExVAT: 6173,
+    totalValuePurchasesExVAT: 1172,
+    totalValueGoodsSuppliedExVAT: 0,
+    totalAcquisitionsExVAT: 0,
+  };
+
+  test("lays the return out as a record inside the customer copy, with each box findable by id", async ({ page }) => {
+    await openReturnView(page, 1280);
+    await showReturn(page, FULL_RETURN);
+
+    const copy = page.locator("#returnDetails .customer-copy");
+    await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the VAT return for 1 Jul 2026 to 31 Aug 2026");
+    await expect(copy.locator(".customer-copy-status")).toHaveText("Accepted by HMRC");
+    await expect(copy.locator(".customer-copy-section")).toHaveCount(3);
+    await expect(copy.locator(".submission-record").first()).toContainText("VAT registration number 123456789");
+    await expect(copy.locator(".submission-record .subtitle").first()).toContainText("Period: 1 Jul 2026 to 31 Aug 2026");
+
+    await expect(page.locator("#vatReturnBox1 td.figure")).toHaveText("1,234.56");
+    await expect(page.locator("#vatReturnBox2 td.figure")).toHaveText("0.00");
+    await expect(page.locator("#vatReturnBox5 td.figure")).toHaveText("1,000.06");
+    await expect(page.locator("#vatReturnBox6 td.figure")).toHaveText("6,173");
+    await expect(page.locator("#vatReturnBox9 td.figure")).toHaveText("0");
+    await expect(page.locator("#vatReturnBox1")).toHaveAttribute("data-hmrc-field", "vatDueSales");
+    await expect(page.locator(".customer-copy-section").nth(2)).toContainText("Finalised: Yes");
+    await expect(copy.locator(".customer-copy-links a")).toHaveCount(3);
+  });
+
+  test("gives each box its VAT Notice 700/12 definition and a link to that box's guidance", async ({ page }) => {
+    await openReturnView(page, 1280);
+    await showReturn(page, FULL_RETURN);
+
     for (let box = 1; box <= 9; box += 1) {
-      const item = page.locator(`#vatReturnBox${box}`);
-      await expect(item.locator("dt")).toContainText(`Box ${box}:`);
-      await expect(item.locator(`#vatReturnBox${box}Definition`)).toContainText("“");
-      await expect(item.locator(`#vatReturnBox${box}Definition a`)).toHaveAttribute(
+      await expect(page.locator(`#vatReturnBox${box} td.label`)).toContainText(`Box ${box}:`);
+      await expect(page.locator(`#vatReturnBox${box}Definition`)).toContainText("“");
+      await expect(page.locator(`#vatReturnBox${box}Definition a`)).toHaveAttribute(
         "href",
         `https://www.gov.uk/guidance/how-to-fill-in-and-submit-your-vat-return-vat-notice-70012#filling-in-box-${box}`,
       );
     }
-    await expect(page.locator("#vatReturnBox1")).toHaveAttribute("data-hmrc-field", "vatDueSales");
     await expect(page.locator("#returnDetails .field-table-source")).toContainText("retrieved 1 October 2026");
-
-    const detailsText = await page.locator("#returnDetails").innerText();
-    expectCleanFigures(expect, detailsText);
-
-    // The VAT behaviour step reads each box's figure as the first pound amount after its label.
-    const detailsHtml = await page.locator("#returnDetails").innerHTML();
-    const firstAmountAfter = (label) => detailsHtml.match(new RegExp(`${label}[^£]*£([0-9,]+(?:\\.[0-9]{2})?)`))?.[1];
-    expect(firstAmountAfter("VAT due in the period on sales")).toBe("1,234.56");
-    expect(firstAmountAfter("VAT reclaimed in the period on purchases")).toBe("234.50");
-    expect(firstAmountAfter("Total value of sales and all other outputs")).toBe("6,173");
-
-    await page.locator("#returnDetails").screenshot({ path: screenshotPath("viewVatReturn") });
   });
+
+  test("shows a dash for every box HMRC left out, with no undefined, NaN or nought it did not send", async ({ page }) => {
+    await openReturnView(page, 1280);
+    await showReturn(page, {});
+
+    for (let box = 1; box <= 9; box += 1) {
+      await expect(page.locator(`#vatReturnBox${box} td.figure`)).toHaveText("—");
+    }
+    await expect(page.locator("#returnDetails .customer-copy-title")).toHaveText("Your copy of a VAT return");
+    await expect(page.locator("#returnDetails .customer-copy-status")).toHaveText("Retrieved from HMRC");
+    await expect(page.locator("#returnDetails .subtitle").first()).toContainText("Period: —");
+    await expect(page.locator(".customer-copy-section").nth(2)).toContainText("Finalised: —");
+    expectCleanFigures(expect, await page.locator("#returnDetails").innerText());
+  });
+
+  test("marks a return that is not final, and prints no sideways scroll at phone width", async ({ page }) => {
+    await openReturnView(page, 390);
+    await showReturn(page, { ...FULL_RETURN, finalised: false });
+
+    await expect(page.locator("#returnDetails .customer-copy-status")).toHaveText("Held by HMRC, not yet final");
+    await expect(page.locator("#returnDetails .customer-copy-status")).toHaveAttribute("data-status", "pending");
+    expect(await pageScrollsSideways(page)).toBe(false);
+  });
+
+  for (const width of [1280, 390]) {
+    test(`screenshot of the return view at ${width} px`, async ({ page }) => {
+      await openReturnView(page, width);
+      await showReturn(page, FULL_RETURN);
+      expectCleanFigures(expect, await page.locator("#returnDetails").innerText());
+      expect(await pageScrollsSideways(page)).toBe(false);
+      await page.locator("#returnResults").screenshot({ path: recordScreenshotPath("viewVatReturn", width) });
+    });
+  }
 });

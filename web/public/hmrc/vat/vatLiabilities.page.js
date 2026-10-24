@@ -357,7 +357,9 @@ function resultsTable(headerCells, rows) {
     {},
     ...headerCells.map(([text, className]) => element("th", className ? { class: className } : {}, text)),
   );
-  return element("table", { class: "results-table" }, element("thead", {}, headerRow), element("tbody", {}, ...rows));
+  return HmrcDisplayFormat.scrollable(
+    element("table", { class: "results-table" }, element("thead", {}, headerRow), element("tbody", {}, ...rows)),
+  );
 }
 
 function displayLiabilities(liabilities) {
@@ -371,20 +373,20 @@ function displayLiabilities(liabilities) {
   const rows = liabilities.map((liability) => {
     const periodDisplay = formatDateRange(liability.taxPeriod?.from, liability.taxPeriod?.to);
     const originalAmountDisplay = formatCurrency(liability.originalAmount);
+    // HMRC leaves the outstanding amount out of a liability that is paid in full.
+    const outstanding = liability.outstandingAmount;
     const outstandingAmountDisplay =
-      liability.outstandingAmount === undefined || liability.outstandingAmount === null || liability.outstandingAmount === 0
-        ? "Paid"
-        : formatCurrency(liability.outstandingAmount);
+      outstanding === undefined || outstanding === null || Number(outstanding) === 0 ? "Paid" : formatCurrency(outstanding);
     const dueDateDisplay = formatDate(liability.due);
 
     return element(
       "tr",
       {},
-      element("td", {}, element("strong", {}, periodDisplay || "")),
-      element("td", {}, liability.type || ""),
-      element("td", { class: "money-column" }, originalAmountDisplay || ""),
-      element("td", { class: "money-column" }, outstandingAmountDisplay || ""),
-      element("td", { class: "date-column" }, dueDateDisplay || ""),
+      element("td", {}, element("strong", {}, periodDisplay)),
+      element("td", {}, HmrcDisplayFormat.formatText(liability.type)),
+      element("td", { class: "money-column" }, originalAmountDisplay),
+      element("td", { class: "money-column" }, outstandingAmountDisplay),
+      element("td", { class: "date-column" }, dueDateDisplay),
     );
   });
 
@@ -393,28 +395,9 @@ function displayLiabilities(liabilities) {
   );
 }
 
-// Format a single date for display
-function formatDate(dateStr) {
-  if (!dateStr) return "—";
-  const date = new Date(dateStr);
-  const options = { day: "numeric", month: "short", year: "numeric" };
-  return date.toLocaleDateString("en-GB", options);
-}
-
-// Format date range for display
-function formatDateRange(startStr, endStr) {
-  if (!startStr || !endStr) return "—";
-  const startDate = new Date(startStr);
-  const endDate = new Date(endStr);
-  const options = { day: "numeric", month: "short", year: "numeric" };
-  return `${startDate.toLocaleDateString("en-GB", options)} to ${endDate.toLocaleDateString("en-GB", options)}`;
-}
-
-// Format a monetary amount for display
-function formatCurrency(amount) {
-  if (amount === undefined || amount === null) return "—";
-  return formatGbp(amount);
-}
+const formatDate = HmrcDisplayFormat.formatDate;
+const formatDateRange = HmrcDisplayFormat.formatDateRange;
+const formatCurrency = HmrcDisplayFormat.formatAmount;
 
 // Toggle search criteria button handler
 document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {

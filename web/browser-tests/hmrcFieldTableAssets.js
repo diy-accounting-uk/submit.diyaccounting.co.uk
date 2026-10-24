@@ -65,7 +65,8 @@ export function serveCarriedIdentifiers(page) {
 }
 
 // The real page script of any page under web/public, for a test that serves the page HTML from disk.
-export function servePageScripts(page) {
+export async function servePageScripts(page) {
+  await serveFile(page, "**/lib/hmrc-display-format.js", "lib/hmrc-display-format.js", "application/javascript");
   return page.route("**/*.page.js", async (route) => {
     const pathname = decodeURIComponent(new URL(route.request().url()).pathname);
     const exactPath = path.join(PUBLIC_DIR, pathname);

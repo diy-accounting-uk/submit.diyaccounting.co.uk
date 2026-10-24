@@ -342,12 +342,14 @@ function noDataMessage(text) {
 }
 
 function dataRow(...cellTexts) {
-  return element("tr", {}, ...cellTexts.map((text) => element("td", {}, text || "")));
+  return element("tr", {}, ...cellTexts.map((text) => element("td", {}, HmrcDisplayFormat.formatText(text))));
 }
 
 function resultsTable(headings, rows) {
   const headerRow = element("tr", {}, ...headings.map((heading) => element("th", {}, heading)));
-  return element("table", { class: "results-table" }, element("thead", {}, headerRow), element("tbody", {}, ...rows));
+  return HmrcDisplayFormat.scrollable(
+    element("table", { class: "results-table" }, element("thead", {}, headerRow), element("tbody", {}, ...rows)),
+  );
 }
 
 function displayPenalties(penalties) {
@@ -382,13 +384,15 @@ function displayPenalties(penalties) {
     ["Late payment penalty (estimated)", formatCurrency(totalisations.latePaymentPenaltyEstimateTotal)],
   ];
   summaryContainer.replaceChildren(
-    element(
-      "table",
-      { class: "results-table" },
+    HmrcDisplayFormat.scrollable(
       element(
-        "tbody",
-        {},
-        ...summaryRows.map(([heading, value]) => element("tr", {}, element("th", {}, heading), element("td", {}, value || ""))),
+        "table",
+        { class: "results-table" },
+        element(
+          "tbody",
+          {},
+          ...summaryRows.map(([heading, value]) => element("tr", {}, element("th", {}, heading), element("td", {}, value || "—"))),
+        ),
       ),
     ),
   );
@@ -405,7 +409,7 @@ function displayPenalties(penalties) {
       const status = capitalize(detail.penaltyStatus);
       const created = formatDate(detail.penaltyCreationDate);
       const expires = formatDate(detail.penaltyExpiryDate);
-      const chargeAmount = detail.chargeAmount === undefined || detail.chargeAmount === null ? "—" : formatCurrency(detail.chargeAmount);
+      const chargeAmount = formatCurrency(detail.chargeAmount);
       return dataRow(category, status, created, expires, chargeAmount);
     });
     lateSubmissionContainer.replaceChildren(
@@ -422,8 +426,8 @@ function displayPenalties(penalties) {
     );
   } else {
     const rows = latePaymentDetails.map((detail) => {
-      const chargeReference = detail.principalChargeReference || "—";
-      const category = detail.penaltyCategory || "—";
+      const chargeReference = detail.principalChargeReference;
+      const category = detail.penaltyCategory;
       const status = capitalize(detail.penaltyStatus);
       const period = formatDateRange(detail.principalChargeBillingFrom, detail.principalChargeBillingTo);
       const amount =
@@ -438,35 +442,10 @@ function displayPenalties(penalties) {
   }
 }
 
-// Capitalize the first letter of a status/category string
-function capitalize(text) {
-  if (!text) return "—";
-  return text.charAt(0).toUpperCase() + text.slice(1);
-}
-
-// Format a single date for display
-function formatDate(dateStr) {
-  if (!dateStr) return "—";
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  const options = { day: "numeric", month: "short", year: "numeric" };
-  return date.toLocaleDateString("en-GB", options);
-}
-
-// Format date range for display
-function formatDateRange(startStr, endStr) {
-  if (!startStr || !endStr) return "—";
-  const startDate = new Date(startStr);
-  const endDate = new Date(endStr);
-  const options = { day: "numeric", month: "short", year: "numeric" };
-  return `${startDate.toLocaleDateString("en-GB", options)} to ${endDate.toLocaleDateString("en-GB", options)}`;
-}
-
-// Format a monetary amount for display
-function formatCurrency(amount) {
-  if (amount === undefined || amount === null) return "—";
-  return formatGbp(amount);
-}
+const capitalize = HmrcDisplayFormat.sentenceCase;
+const formatDate = HmrcDisplayFormat.formatDate;
+const formatDateRange = HmrcDisplayFormat.formatDateRange;
+const formatCurrency = HmrcDisplayFormat.formatAmount;
 
 // Toggle search criteria button handler
 document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {

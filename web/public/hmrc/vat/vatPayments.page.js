@@ -357,7 +357,9 @@ function resultsTable(headerCells, rows) {
     {},
     ...headerCells.map(([text, className]) => element("th", className ? { class: className } : {}, text)),
   );
-  return element("table", { class: "results-table" }, element("thead", {}, headerRow), element("tbody", {}, ...rows));
+  return HmrcDisplayFormat.scrollable(
+    element("table", { class: "results-table" }, element("thead", {}, headerRow), element("tbody", {}, ...rows)),
+  );
 }
 
 function displayPayments(payments) {
@@ -373,25 +375,14 @@ function displayPayments(payments) {
     // A payment not yet received omits "received" - show "Pending", not a bare "-",
     // since a payment that just hasn't landed yet isn't an error state.
     const receivedDisplay = payment.received ? formatDate(payment.received) : "Pending";
-    return element("tr", {}, element("td", {}, element("strong", {}, amountDisplay || "")), element("td", {}, receivedDisplay || ""));
+    return element("tr", {}, element("td", {}, element("strong", {}, amountDisplay)), element("td", {}, receivedDisplay));
   });
 
   tableContainer.replaceChildren(resultsTable([["Amount"], ["Received"]], rows));
 }
 
-// Format a single date for display
-function formatDate(dateStr) {
-  if (!dateStr) return "—";
-  const date = new Date(dateStr);
-  const options = { day: "numeric", month: "short", year: "numeric" };
-  return date.toLocaleDateString("en-GB", options);
-}
-
-// Format a monetary amount for display
-function formatCurrency(amount) {
-  if (amount === undefined || amount === null) return "—";
-  return formatGbp(amount);
-}
+const formatDate = HmrcDisplayFormat.formatDate;
+const formatCurrency = HmrcDisplayFormat.formatAmount;
 
 // Toggle search criteria button handler
 document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {

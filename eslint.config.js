@@ -114,6 +114,7 @@ export default [
         getGovClientHeaders: "readonly",
         generateRandomState: "readonly",
         HmrcFieldTable: "readonly",
+        HmrcDisplayFormat: "readonly",
         hmrcErrorMessage: "readonly",
         getObligations: "readonly",
         triggerBsas: "readonly",

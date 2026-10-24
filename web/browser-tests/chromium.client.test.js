@@ -24,6 +24,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
   let loadingSpinnerJsContent;
   let viewSourceLinkJsContent;
   let submitVatPageJsContent;
+  let hmrcDisplayFormatJsContent;
 
   test.beforeAll(async () => {
     // Read the HTML file
@@ -32,6 +33,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
     statusMessagesJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/status-messages.js"), "utf-8");
     loadingSpinnerJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/loading-spinner.js"), "utf-8");
     viewSourceLinkJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/view-source-link.js"), "utf-8");
+    hmrcDisplayFormatJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/lib/hmrc-display-format.js"), "utf-8");
     submitVatPageJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/hmrc/vat/submitVat.page.js"), "utf-8");
   });
 
@@ -90,6 +92,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
     await page.addScriptTag({ content: loadingSpinnerJsContent });
     await page.addScriptTag({ content: viewSourceLinkJsContent });
     await page.addScriptTag({ content: submitJsContent });
+    await page.addScriptTag({ content: hmrcDisplayFormatJsContent });
     await page.addScriptTag({ content: submitVatPageJsContent });
   });
 

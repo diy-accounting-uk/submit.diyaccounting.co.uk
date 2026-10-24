@@ -15,7 +15,19 @@
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
     <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
+    <link rel="stylesheet" href="../../submission-record.css" />
     <style>
+      /* The boxed footer has a left and a centre block and an empty right block; the right block takes a share so the centre is centred. */
+      body > footer .footer-right {
+        flex: 1;
+      }
+      .receipt-panel {
+        background: white;
+        padding: 1.5em;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        margin-top: 2em;
+      }
       .assist-messages-section {
         margin-bottom: 2em;
         padding: 1em;
@@ -97,8 +109,8 @@
         </div>
       </div>
 
-      <div id="receiptDisplay" class="receipt-display" style="display: none">
-        <h3>Receipt Details</h3>
+      <div id="receiptDisplay" class="receipt-panel" style="display: none">
+        <h2 id="receiptHeading">Receipt details</h2>
         <div id="assistMessages"></div>
         <div id="receiptContent"></div>
       </div>
@@ -113,6 +125,7 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/money-format.js"></script>
+    <script src="../../lib/hmrc-display-format.js"></script>
     <script src="../../lib/hmrc-field-table.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
