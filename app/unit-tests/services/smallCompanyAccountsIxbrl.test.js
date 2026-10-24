@@ -121,9 +121,9 @@ function dimensionNames(xhtml) {
 }
 
 function nonFractionValue(xhtml, name, contextRef) {
-  const pattern = new RegExp(`<ix:nonFraction name="${name}" contextRef="${contextRef}"[^>]*>([0-9]+)</ix:nonFraction>`);
+  const pattern = new RegExp(`<ix:nonFraction name="${name}" contextRef="${contextRef}"[^>]*>([0-9,]+)</ix:nonFraction>`);
   const match = pattern.exec(xhtml);
-  return match ? Number(match[1]) : undefined;
+  return match ? Number(match[1].replaceAll(",", "")) : undefined;
 }
 
 describe("services/smallCompanyAccountsIxbrl", () => {
@@ -214,10 +214,20 @@ describe("services/smallCompanyAccountsIxbrl", () => {
       expect(xhtml).toContain("entitled to the small companies regime");
     });
 
-    test("carries no section 444 statement and no prior-year facts", () => {
+    test("carries no section 444 statement and no prior-year balance sheet or profit and loss facts", () => {
       expect(factNames(xhtml)).not.toContain(`direp:${CONCEPTS.statementProfitAndLossNotDelivered.name}`);
-      expect(xhtml).not.toContain("e2025");
+      expect(nonFractionValue(xhtml, "core:NetAssetsLiabilities", "e2025")).toBeUndefined();
       expect(xhtml).not.toContain("y2025");
+    });
+
+    test("tags the fixed asset note's opening balances at the prior balance sheet date", () => {
+      expect(nonFractionValue(xhtml, "core:PropertyPlantEquipmentGrossCost", "e2025-ppe-computerEquipment")).toBe(5000);
+      expect(nonFractionValue(xhtml, "core:AccumulatedDepreciationImpairmentPropertyPlantEquipment", "e2025-ppe-computerEquipment")).toBe(
+        1500,
+      );
+      expect(nonFractionValue(xhtml, "core:PropertyPlantEquipment", "e2025")).toBe(9500);
+      expect(nonFractionValue(xhtml, "core:PropertyPlantEquipment", "e2026")).toBe(10000);
+      expect(xhtml).toContain("<xbrli:instant>2025-06-30</xbrli:instant>");
     });
   });
 
@@ -252,7 +262,39 @@ describe("services/smallCompanyAccountsIxbrl", () => {
         profitAndLoss: { current: CURRENT_PROFIT_AND_LOSS, prior: PRIOR_PROFIT_AND_LOSS },
       });
       expect(nonFractionValue(xhtml, "core:TurnoverRevenue", "y2025")).toBe(40000);
-      expect(xhtml).not.toContain("e2025");
+      expect(nonFractionValue(xhtml, "core:NetAssetsLiabilities", "e2025")).toBeUndefined();
+    });
+  });
+
+  describe("layout", () => {
+    const document = parseXmlDocument(buildSmallCompanyAccounts(WITH_COMPARATIVES));
+    const rows = Array.from(document.getElementsByTagName("tr")).map((row) =>
+      Array.from(row.getElementsByTagName("td")).map((cell) => cell.textContent.trim()),
+    );
+
+    test("the profit and loss account shows both years, deductions in brackets", () => {
+      expect(rows).toContainEqual(["Turnover", "50,000", "40,000"]);
+      expect(rows).toContainEqual(["Cost of sales", "(20,000)", "(16,000)"]);
+      expect(rows).toContainEqual(["Profit for the financial year", "4,100", "2,400"]);
+    });
+
+    test("the balance sheet shows the sub-lines under their heading and the subtotal below them", () => {
+      const labels = rows.map((row) => row[0]);
+      const stocks = labels.indexOf("Stocks");
+      expect(labels[stocks - 1]).toBe("Current assets");
+      expect(rows[stocks + 3]).toEqual(["", "", "5,000", "4,000"]);
+      expect(rows).toContainEqual(["Fixed assets", "3", "10,000", "8,000"]);
+    });
+
+    test("the fixed asset note has a column per class and a total", () => {
+      const headings = Array.from(document.getElementsByTagName("th")).map((cell) => cell.textContent);
+      expect(headings).toEqual(expect.arrayContaining(["Land and buildings", "Computer equipment", "Total"]));
+      expect(rows).toContainEqual(["At 30 June 2026", "6,000", "4,000", "10,000"]);
+    });
+
+    test("the pages run directors' report, profit and loss account, balance sheet, notes", () => {
+      const titles = Array.from(document.getElementsByTagName("h2")).map((heading) => heading.textContent);
+      expect(titles).toEqual(["Directors' report", "Profit and loss account", "Balance sheet", "Notes to the financial statements"]);
     });
   });
 
@@ -335,7 +377,10 @@ describe("services/smallCompanyAccountsIxbrl", () => {
       profit: -4900,
     };
     const xhtml = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, profitAndLoss: { current: loss } });
-    expect(xhtml).toMatch(/name="core:ProfitLoss" contextRef="y2026" unitRef="GBP" decimals="0" sign="-">4900</);
+    expect(xhtml).toMatch(
+      /name="core:ProfitLoss" contextRef="y2026" unitRef="GBP" decimals="0" format="ixt2:numdotdecimal" sign="-">4,900</,
+    );
+    expect(xhtml).toContain('(<ix:nonFraction name="core:ProfitLoss" contextRef="y2026"');
   });
 
   describe("helpers", () => {

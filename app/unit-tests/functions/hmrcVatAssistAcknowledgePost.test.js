@@ -132,12 +132,13 @@ function receiptPuts() {
 }
 
 const VRN = "123456789";
+const PRESENTED = "2026-06-09T10:30:00.123Z";
 const RECEIPT_ID = `2000-01-01T00:00:00.000Z-${REPORT_ID}`;
 const STORED_RECEIPT = { kind: "vat-assist-report", reportId: REPORT_ID, correlationId: CORRELATION_ID, messages: HMRC_REPORT.messages };
 
 function buildEvent({ body = {}, headers = {} } = {}) {
   return buildHmrcEvent({
-    body: { vrn: VRN, reportId: REPORT_ID, correlationId: CORRELATION_ID, receiptId: RECEIPT_ID, ...body },
+    body: { vrn: VRN, reportId: REPORT_ID, correlationId: CORRELATION_ID, receiptId: RECEIPT_ID, presentedDateTime: PRESENTED, ...body },
     headers: { authorization: "Bearer test-token", ...headers },
   });
 }
@@ -182,6 +183,21 @@ describe("hmrcVatAssistAcknowledgePost ingestHandler", () => {
     expect(hmrcCalls()).toHaveLength(0);
   });
 
+  test("returns 400 when presentedDateTime is missing", async () => {
+    const response = await ingestHandler(buildEvent({ body: { presentedDateTime: undefined } }));
+    expect(response.statusCode).toBe(400);
+    expect(hmrcCalls()).toHaveLength(0);
+  });
+
+  test.each(["yesterday", "2026-06-09", "2026-06-09T10:30:00+01:00", "2026-13-09T10:30:00Z"])(
+    "returns 400 when presentedDateTime is %s",
+    async (presentedDateTime) => {
+      const response = await ingestHandler(buildEvent({ body: { presentedDateTime } }));
+      expect(response.statusCode).toBe(400);
+      expect(hmrcCalls()).toHaveLength(0);
+    },
+  );
+
   test("posts to the HMRC acknowledge URL with the version 1.0 Accept header and a bearer token", async () => {
     mockHmrcNoContent();
     await ingestHandler(buildEvent());
@@ -190,14 +206,19 @@ describe("hmrcVatAssistAcknowledgePost ingestHandler", () => {
     const [calledUrl, calledInit] = hmrcCalls()[0];
     expect(calledInit.method).toBe("POST");
     expect(calledUrl).toBe(
-      vatAssist.acknowledgeUrl(process.env.HMRC_BASE_URI, { vrn: VRN, reportId: REPORT_ID, correlationId: CORRELATION_ID }),
+      vatAssist.acknowledgeUrl(process.env.HMRC_BASE_URI, {
+        vrn: VRN,
+        reportId: REPORT_ID,
+        correlationId: CORRELATION_ID,
+        presentedDateTime: PRESENTED,
+      }),
     );
     expect(calledInit.headers.Accept).toBe(vatAssist.acceptHeader);
     expect(calledInit.headers.Authorization).toBe("Bearer test-token");
   });
 
   test("the contract names the scopes the sign-in must grant", () => {
-    expect(vatAssist.scopes).toEqual(["read:vat", "write:vat"]);
+    expect(vatAssist.scopes).toEqual(["write:vat"]);
   });
 
   test("returns 204 and stamps the stored receipt with acknowledgedAt", async () => {
@@ -214,8 +235,8 @@ describe("hmrcVatAssistAcknowledgePost ingestHandler", () => {
   });
 
   test.each([
-    [400, "INVALID_REQUEST"],
-    [403, "CORRELATION_ID_NOT_AUTHORISED"],
+    [400, "FORMAT_DATETIME"],
+    [403, "CORRELATION_ID"],
     [404, "MATCHING_RESOURCE_NOT_FOUND"],
   ])("maps an HMRC %i (%s) to the same status and leaves the receipt unstamped", async (status, code) => {
     mockHmrcError(mockFetch, status, { code, message: "HMRC says no" });

@@ -74,7 +74,7 @@ The server already has everything the request needs: the bearer token from the H
 
 ## Decisions
 
-1. **Build the VAT integration now against an assumed contract, in one place.** The VAT Assist (MTD) API has no specification yet. The handlers and the simulator use the Income Tax API's shape with VAT keys, and every assumed path and body lives in one module, `app/lib/hmrcAssistApi.js`, so the real specification replaces one file. Assumed: `POST /organisations/vat/{vrn}/assist/reports` with a JSON body `{ periodKey, vatDueSales, vatDueAcquisitions, totalVatDue, vatReclaimedCurrPeriod, netVatDue, totalValueSalesExVAT, totalValuePurchasesExVAT, totalValueGoodsSuppliedExVAT, totalAcquisitionsExVAT }` (the VAT (MTD) return body without `finalised`) answering 200 `{ reportId, messages[], vrn, periodKey, correlationId }` or 204; `POST /organisations/vat/{vrn}/assist/reports/acknowledge/{reportId}/{correlationId}` answering 204; scopes `read:vat` and `write:vat` (the FAQ says the same scope as the VAT (MTD) suite). The messages' shape is the Income Tax one: `title`, `body`, `action`, `links[]`, `path`, with the slides' heading added as the first message's provenance.
+1. **The VAT integration follows the published VAT Assist (MTD) 1.0 contract (`mtd-transaction-risking`), in one module.** Every path, body and response shape lives in `app/lib/hmrcAssistApi.js`; the handlers and the simulator use it. The contract is in the table under "The contract module".
 2. **The Income Tax integration is built against the real API first.** The Self Assessment Assist (MTD) API is in the sandbox today with published scenarios, and HMRC reads sandbox logs. Building it proves the handlers, the widget, the receipt and the pause against a real HMRC service a year before the VAT one exists, and the VAT build is the same code with a different contract module. It cannot reach customers before the 2027-28 production round (`PLAN_ITSA_APPROVAL.md`), which does not matter for the proof.
 3. **Advisory, never gating.** The submit button is never disabled by HMRC Assist except during the pause between request and response. A failed or unavailable Assist call leaves the form exactly as it was, with a one-line notice. The receipt is sent automatically when the last message has been rendered, not on submit, and is retried until it answers 204; a submission that happens before the receipt is answered still goes through, with the receipt sent after. This is the service guide's rule and the slides' "presented receipt is sent back automatically once the feedback is displayed in full".
 4. **Verbatim, ordered, attributed.** Messages render exactly as received, in the order received, the first one first, at most five, each link's whole sentence as the link text, with the heading "HMRC feedback" over the list and no paraphrase anywhere. The `path` is not shown; it maps to the box it names and that box is highlighted. English is shown; the Welsh version is kept in the receipt.
@@ -89,7 +89,40 @@ The server already has everything the request needs: the bearer token from the H
 
 ## The contract module
 
-`app/lib/hmrcAssistApi.js` exports, for each of `vat` and `itsa`: the report URL builder, the acknowledge URL builder, the request body builder (VAT only), the response normaliser to one shape `{ reportId, correlationId, messages: [{ title, body, action, links, path }] }`, and the scope list. Unit tests pin the paths and the `Accept` version the way the VAT handlers' tests do. When HMRC publishes the VAT specification, HA8 changes this file and its tests, and nothing else.
+`app/lib/hmrcAssistApi.js` exports, for each of `vat` and `itsa`: the report URL builder, the acknowledge URL builder, the request body builder (VAT only), the response normaliser to one shape `{ reportId, correlationId, messages: [{ title, body, action, links, path }] }`, and the scope list. Unit tests pin the paths and the `Accept` version the way the VAT handlers' tests do.
+
+The VAT half follows the published specification (<https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/mtd-transaction-risking/1.0>; OpenAPI at `/api-documentation/docs/api/download/mtd-transaction-risking/1.0/application.yaml`):
+
+| Item | Value |
+| --- | --- |
+| Feedback request | `POST /organisations/vat-assist/feedback/{vrn}` |
+| Acknowledge | `POST /organisations/vat-assist/acknowledge/{vrn}/{reportId}/{correlationId}?presentedDateTime=<ISO 8601 UTC>` |
+| Headers | `Accept: application/vnd.hmrc.1.0+json`, `Authorization: Bearer`, fraud prevention headers, `Gov-Test-Scenario` in the sandbox |
+| Scope | `write:vat` |
+| Request body | `periodKey` and the nine boxes, all required; the acknowledge has no body |
+| 200 response | `{ reportId, correlationId?, englishFeedback[], welshFeedback[] }`; each item `{ itemNumber, title, body, action?, links[], path? }`; at most five per language |
+| No feedback | 200 with one item numbered `0`, no `correlationId`, no `path`; no acknowledge is sent |
+| `path` | the request field name the message is about, for example `vatDueSales` |
+| Acknowledge result | 204 |
+
+`presentedDateTime` is the time the messages were shown to the user. The widget records it when it renders them and sends it in the acknowledge request body.
+
+| Gov-Test-Scenario | Feedback request | Acknowledge |
+| --- | --- | --- |
+| none | one message | acknowledged |
+| `MULTIPLE_FEEDBACK` | several messages | |
+| `NO_FEEDBACK` | the item 0 message | |
+| `INVALID_VRN` | 400 `VRN_INVALID` | 400 `VRN_INVALID` |
+| `INVALID_PERIODKEY` | 400 `PERIOD_KEY_INVALID` | |
+| `INVALID_REQUEST` | 400 `INVALID_REQUEST` | |
+| `TAX_PERIOD_NOT_ENDED` | 403 `TAX_PERIOD_NOT_ENDED` | |
+| `INSOLVENT_TRADER` | 403 `RULE_INSOLVENT_TRADER` | |
+| `INVALID_REPORTID` | | 400 `FORMAT_REPORT_ID` |
+| `INVALID_DATETIME` | | 400 `FORMAT_DATETIME` |
+| `INVALID_CREDENTIALS` | | 401 `INVALID_CREDENTIALS` |
+| `NOT_AUTHORISED` | | 403 `CLIENT_OR_AGENT_NOT_AUTHORISED` |
+| `CORRELATION_ID` | | 403 `CORRELATION_ID` |
+| `NOT_FOUND` | | 404 `MATCHING_RESOURCE_NOT_FOUND` |
 
 ## Tasks
 
@@ -132,7 +165,7 @@ HA8a ──► HA8b ◄── OHA8 (sandbox application name and ID to HMRC) ◄
 
 ## Verification
 
-- A unit test per handler pins the HMRC URL it builds, the `Accept` version, the scopes and the error mapping, and the VAT contract test fails loudly when `hmrcAssistApi.js`'s VAT half is still the assumed one and a `HMRC_ASSIST_VAT_CONTRACT=published` flag is set, so HA8 cannot be forgotten.
+- A unit test per handler pins the HMRC URL it builds, the `Accept` version, the scopes and the error mapping.
 - The simulator answers every scenario in this document with HMRC's own codes and messages; the three illustrative VAT messages render verbatim, in order, with their links as whole-sentence anchors and the named box highlighted.
 - The submit button is enabled before the check, disabled only between request and response, and enabled after a 200, a 204, a 4xx and a network failure alike; a browser test asserts each.
 - The receipt is sent once per report, after the last message is in the viewport, and retried on failure; a second report after an edit gets its own receipt; both receipts and the submission receipt are in the receipts table under one user hash, and the receipts page lists them under the return.

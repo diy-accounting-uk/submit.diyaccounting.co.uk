@@ -10,19 +10,27 @@ import { createAssistHandlers, postHmrcAssist, hmrcBaseUriFor } from "../../lib/
 import { acknowledgeReceipt } from "../../lib/hmrcAssistReceipt.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 
+function isValidIsoUtcDateTime(value) {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/.test(value) && !Number.isNaN(Date.parse(value));
+}
+
 function validateBody(body, errorMessages) {
-  const { vrn, reportId, correlationId, receiptId } = body;
+  const { vrn, reportId, correlationId, receiptId, presentedDateTime } = body;
   if (!vrn) errorMessages.push("Missing vrn parameter from body");
   if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid vrn format - must be 9 digits");
   if (!reportId) errorMessages.push("Missing reportId parameter from body");
   if (!correlationId) errorMessages.push("Missing correlationId parameter from body");
   if (!receiptId) errorMessages.push("Missing receiptId parameter from body");
-  return { vrn, reportId, correlationId, receiptId };
+  if (!presentedDateTime) errorMessages.push("Missing presentedDateTime parameter from body");
+  if (presentedDateTime && !isValidIsoUtcDateTime(presentedDateTime)) {
+    errorMessages.push("Invalid presentedDateTime format - must be an ISO 8601 UTC date and time");
+  }
+  return { vrn, reportId, correlationId, receiptId, presentedDateTime };
 }
 
 async function call(params, requestContext) {
-  const { vrn, reportId, correlationId, receiptId } = params;
-  const url = vatAssist.acknowledgeUrl(hmrcBaseUriFor(requestContext.hmrcAccount), { vrn, reportId, correlationId });
+  const { vrn, reportId, correlationId, receiptId, presentedDateTime } = params;
+  const url = vatAssist.acknowledgeUrl(hmrcBaseUriFor(requestContext.hmrcAccount), { vrn, reportId, correlationId, presentedDateTime });
   const { hmrcResponse, hmrcResponseBody } = await postHmrcAssist({ url, body: undefined, acceptVersion: "1.0", context: requestContext });
 
   if (!hmrcResponse.ok) return { hmrcResponse, hmrcResponseBody, data: null };

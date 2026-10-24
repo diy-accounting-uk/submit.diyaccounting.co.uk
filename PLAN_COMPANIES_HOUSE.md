@@ -78,6 +78,23 @@ flowchart LR
     O34g --> B34g2b
     B346c --> B34f
     B346c --> B34e
+    CT2[CT2 design] --> CT3a
+    CT3a --> CT3b
+    CT1 --> CT3b
+    CT3b --> CT3c
+    CT3c --> CT4
+    CT3a --> CT3d
+    CT3c --> DF2a
+    B34c --> DF2a
+    B34g2b --> DF2a
+    DF2a --> DF2b
+    DF2a --> DF2c
+    IX1[IX1 design] --> IX2a
+    IX2a --> IX2b
+    BK1 --> IX2b
+    IX2b --> IX2c
+    CT3b --> IX2c
+    IX2a --> IX2d
 ```
 
 The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarded in `PLAN_COMPANIES_HOUSE_APPROVAL.md`; the graph keeps them so the chain reads whole.
@@ -93,6 +110,18 @@ The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarde
 - B34g1: ready (B34e's full accounts are on main); its ETS proof waits on O34g
 - B34g2a: on main (PR #511); the journey built and proven on the simulator, listed on ci and the local lanes
 - B34g2b: blocked by B34g1 and O34g; the ETS filing from the page
+- CT3a: ready (the CT2 design below)
+- CT3b: blocked by CT3a and CT1
+- CT3c: blocked by CT3b
+- CT3d: blocked by CT3a and open question 14
+- CT4: blocked by CT3c (the videos, on `NEXT.md`)
+- DF2a: blocked by CT3c, B34c and B34g2b (the DF1 design below)
+- DF2b: blocked by DF2a
+- DF2c: blocked by DF2a
+- IX2a: ready (the IX1 design below); in the spreadsheets repository
+- IX2b: blocked by IX2a's diya-gl release and BK1
+- IX2c: blocked by IX2b and CT3b
+- IX2d: blocked by IX2a
 
 ## Operator dates
 
@@ -506,6 +535,523 @@ Row 2: `ltd.js` sets the prior-year P&L cells to 0, and FRS 102 1A needs compara
 the default proposed is full accounts at Companies House, with filleting as an option. A paired
 filing charges one token per filing sent, two for the pair (operator, 2026-10-10).
 
+### Design: the CT600 without a book (CT2)
+
+The design CT3a, CT3b and CT3c build to. Today `fileCompanyTaxReturn.html` takes only a pasted
+book export (`bookExport`, `fileCompanyTaxReturn.page.js` line 116) that already holds the boxes
+and computation lines, and the server takes those boxes as sent
+(`app/services/hmrcCtReturnRequest.js`, `readBoxes`). A company with no DIY Accounting book cannot
+file. After CT3, the page has one entry form. The customer types it, or a book fills it through the
+"Fill from your books" card. Both paths go to the same check-your-answers review.
+
+**One model, two runtimes.** The figures the customer types are the input. The boxes are worked
+from them in one pure module, which runs in the browser for the live checks and on the server for
+the preview and the submit.
+
+| Part | Where | Runs in | Does |
+|---|---|---|---|
+| The figures model | `app/services/ct600Figures.js` (new, no `fs`, no `Buffer`) | Node and the books bundle | `validateCt600Figures(figures)` gives a list of `{ field, message, refusal }`; `deriveCt600FromFigures(figures, taxDataByYear)` gives `{ boxes, computationLines, worked }`, where `worked` names each worked box's sources and rule |
+| The book reader | `ct600FiguresFromResults(results, smallCompanyAccounts)` in the same module | Node and the books bundle | turns diya-gl's `calculatedResultsFor` output into the figures model, plus `workingSheet: { tradingProfit: K22, corporationTax: K35 }` for the £5 check |
+| The XML | `app/services/ct600Xml.js` | Node | `deriveCt600Boxes` becomes `ct600FiguresFromResults` then `deriveCt600FromFigures`; `buildCt600IrEnvelope` does not change |
+| The request | `app/services/hmrcCtReturnRequest.js` | Node | the body carries `figures` and the accounts; the server derives the boxes and the computation lines itself; `boxes` and `computationLines` leave the request |
+| The browser | `scripts/build-books-bundle.mjs` | build | the bundle also exports `deriveCt600FromFigures`, `validateCt600Figures`, `ct600FiguresFromBook(book, lines)` and `ltdTaxData(financialYear)` (the `ltd-<FY>.toml` files the bundle already embeds) |
+
+The rates come from diya-gl's `ltd-<FY>.toml` through `financialYearRatesFor` (the same files the
+book's Admin sheet reads), so both paths charge the same rates. `financialYearsInPeriod` and
+`apportionCorporationTax` are the functions `ct600Xml.js` imports today
+(`@diy-accounting-uk/diya-gl/dist/app/lib/tax/corporation-tax.js`); the bundle takes them from the
+same package. The simulator (`app/http-simulator/routes/hmrc-transaction-engine.js`) checks the
+envelope class and the IRmark only; rules 9198, 9204 and 9213 live in `ct600Xml.js` and move to
+`ct600Figures.js`.
+
+**What the customer types.** One period serves the accounts, the return and the computations. The
+accounts section is the `fileSmallCompanyAccounts.html` form, reused (its P&L, balance sheet,
+fixed asset note, directors, principal activity, policies, employees, signer and the four
+statements), because HMRC takes the full accounts and they carry the profit the computation starts
+from.
+
+| Section | Field | Feeds | Default | Live check beside the field |
+|---|---|---|---|---|
+| Company | Unique Taxpayer Reference | box 3 | — | 10 digits |
+| Company | Is the company one of the types listed for box 4? | box 4 | No | Yes is a refusal (below) |
+| Company | Associated companies in the period | 326, or 327 and 328 when the period straddles 1 April | 0 | whole number, 0 or more |
+| Period | Start and end of the period of account | 30, 35; the accounts and computations periods | — | start on or after 1 April 2015; end no later than 12 months less a day after the start; end before today |
+| Accounts | the small-company form's fields | 145 (turnover); the computation's profit per accounts (profit before tax) | — | the balance sheet balances; the note's net book value equals the fixed assets (the checks `fileSmallCompanyAccounts.page.js` runs today, `formProblem`) |
+| Computation | Trade name | the computations' `BusinessNameDimension` | the principal activity | 2 characters or more |
+| Computation | Non-trading loan relationship credits (bank interest) | the computation line; box 170 | the accounts' interest receivable | 0 or more |
+| Computation | Depreciation added back | the computation line | the note's charge for the year, when a note is given | equals the note's charge when a note is given |
+| Computation | Amortisation added back | the computation line | 0 | 0 or more |
+| Computation | Entertaining added back | the computation line | 0 | 0 or more, no more than the cost of sales plus administrative expenses |
+| Capital allowances | Annual investment allowance | box 690 | 0 | 0 or more |
+| Capital allowances | Main pool writing down and balancing allowances | box 705 | 0 | 0 or more |
+| Capital allowances | Main pool balancing charges | box 710 | 0 | 0 or more |
+| Income and reliefs | Trading losses brought forward | box 160 (no more than box 155) | 0 | 0 or more |
+| Income and reliefs | Franked investment income or exempt ABGH distributions | box 620 | 0 | 0 or more |
+| Income and reliefs | Income Tax deducted from gross income | box 515 | 0 | no more than box 440, else a refusal |
+| Payments | Tax already paid and not repaid | box 595 | 0 | no more than box 525, else a refusal |
+| Payments | Corporation Tax per your own working (optional) | the £5 check only | empty | within £5 of box 440 |
+| Loans | Was a director's loan account overdrawn at the end of the period? | — | No | Yes is a refusal |
+| Declaration | Name and status of the person signing; the declaration | 975, 985 | status "Director" | 2 characters or more; the box ticked |
+
+**What the page works out.** Each worked box shows beside its sources, read-only, with its rule
+in one line.
+
+| Box | Worked as | Rule shown |
+|---|---|---|
+| computation total capital allowances | 690 + 705 − 710 | — |
+| computation adjusted profit, 155 | profit before tax − bank interest + depreciation + amortisation + entertaining − capital allowances | "Box 155 equals the computation's adjusted profit" |
+| 165 | 155 − 160 | — |
+| 235, 300, 315 | 165 + 170 | — |
+| 330, 335, 380, 385 | 315 split between financial years by days | 9198 |
+| 340, 345, 390, 395 | each share at its year's rate, to the penny | 9204, 9213 |
+| 329 | X when a share meets the small profits rate or marginal relief | — |
+| 430 | 345 + 395 | — |
+| 435 | diya-gl's marginal relief on 315, after associated companies and box 620 | — |
+| 440, 475, 510 | 430 − 435 | — |
+| 525, 528 | 440 − 515 | — |
+| 600 | 525 − 595 | — |
+| 1, 2 | the company lookup | — |
+
+The £5 check runs on both paths. On the book path it compares the worked 155 and 440 with the
+book's working sheet (`K22`, `K35`), as `deriveCt600Boxes` does today. On the typed path it
+compares 440 with the optional "your own working" field. In both cases a difference over £5
+stops the review and names both figures.
+
+**Refusals that stay.** Each one shows beside the field that causes it, in the error summary, and
+again on the server.
+
+| Refusal | Shown at |
+|---|---|
+| Company type other than 0 | the box 4 question |
+| Period over 12 months, or starting before 1 April 2015 | the period dates |
+| Trading loss (an adjusted profit below 0; box 780 has no input yet) | the computation total |
+| Net non-trading loan relationship debits | bank interest |
+| Tax paid beyond the charge (box 595 over 525), or Income Tax deducted beyond the charge (515 over 440): the repayment boxes | the field |
+| A director's loan account overdrawn (CT600A) | the loans question |
+| A book that is not a Company book | the drop card's status line |
+
+The refusal for 515 over 440 is new: today `deriveCt600Boxes` takes `max(440 − 515, 0)` and drops
+the excess, which is a repayment the return does not claim. CT3a adds the refusal on both paths.
+
+**Help beside each field.** Each label is CT1's label for that box, in HMRC's words from the CT600
+(2026) Version 3 form, and links to the Company Tax Return guide
+(https://www.gov.uk/guidance/the-company-tax-return-guide). The guide has anchors per section, not
+per box (read 2026-10-23), so each link goes to its section, and the label carries the box number:
+
+| Boxes | Guide section anchor |
+|---|---|
+| 1 to 4, 30, 35 | `#company-information`, `#about-this-return` |
+| 145 to 170 | `#income` |
+| 235 | `#profits-before-other-deductions-and-reliefs` |
+| 300, 315 | `#deductions-and-reliefs` |
+| 326 to 440 | `#tax-calculation` |
+| 475 to 528 | `#calculation-of-tax-outstanding-or-overpaid` |
+| 595, 600 | `#tax-reconciliation` |
+| 620 | `#indicators-and-information` |
+| 690 to 710 | `#information-about-capital-allowances-and-balancing-charges-or-disposal-values` |
+| 975, 985 | `#declaration` |
+
+One field table (`web/public/lib/ct600-fields.js`: field id, box, CT1 label, guide anchor, hint,
+check) feeds the form, the review and the help, so a box has one label everywhere. CT1 writes the
+labels; CT3b moves them from `BOX_MEANINGS` into this table.
+
+**Fill from your books.** The card (`web/public/widgets/books-import.js`) gains `kind: "ct600"`.
+It reads a DIYA-GL zip, a spreadsheets workbook or package zip, or JSON, through the bundle's
+`readBookSource`, calls `ct600FiguresFromBook`, and fills the same form fields (accounts section
+included). Then the customer reviews and changes them like typed figures. The JSON it accepts is
+a diya-gl book, or the figures model as `{ kind: "ct600", sourceFileName, packageVersion, period,
+figures }`, which the MCP tool `derive_company_tax_return` writes after CT3a. The `bookExport`
+textarea, its file input and the "accounts in the book export" radio leave the page. The
+"accounts just accepted by Companies House" offer stays as a second way to fill the accounts
+section until DF2a replaces it. BK1 adds the accounts kinds to the same card. Whichever of BK1 and
+CT3b lands second reuses the first's function that fills the small-company accounts fields.
+
+**The review: check your answers.** The GOV.UK pattern
+(https://design-system.service.gov.uk/patterns/check-answers/), as summary lists in the form's
+section order: company and period, accounts, computation, capital allowances, income and reliefs,
+the worked tax, payments, loans, declarant.
+
+- Every row is a key, a value and a "Change" link whose hidden text names the row ("Change box
+  690, Annual investment allowance").
+- A typed row's Change link opens the form view with every field populated and moves focus to
+  that field. A worked row's Change link goes to its first source field and shows the rule.
+- In the form, a "Return to the review" button replaces "Preview the return" once the customer has
+  reached the review. It runs the checks again. It returns to the review with focus on the
+  changed row.
+- The page keeps the figures in one object (`state.figures`). The review renders from that
+  object, and the form fields write to it on `input`. `startAgain` clears it. A view change pushes
+  a history entry (`#form`, `#review`, `#result`), so the browser's Back returns to the previous
+  view with the figures kept.
+- The preview call to `hmrcCtReturnPreviewPost.js` runs when the customer opens the review. The
+  review shows the server's boxes. If any box differs from the browser's box, the page stops with
+  "The figures changed on the way to the server. Check them again." (a defect, logged).
+- The raw iXBRL stays in the developer section (CT1).
+
+**Accounts on the typed path.**
+
+| Source | Status |
+|---|---|
+| The accounts section typed on this page (the small-company form's fields) | CT3b |
+| The accounts just accepted by Companies House in this browser session (`filedSmallCompanyAccounts`), filling the accounts section | stays; replaced by DF2a |
+| The accounts on the register, read from their iXBRL and filling the accounts section | IX2c |
+| A typed balance sheet as the micro-entity page has, with the P&L the CT600 needs | CT3d |
+
+What is attached is always the full FRS 102 1A document that `buildAccountsIxbrl` builds from the
+figures, so the accounts' company number and period agree with the CT600 (rules 1606, 7782) by
+construction.
+
+**What the computations iXBRL needs from typed figures.** The same as from a book: company name,
+company number, UTR, the period (start and end of the return and the period of account), the trade
+name, and the eight computation lines (`computationLinesFromResults`' shape). The typed path
+builds the lines in `deriveCt600FromFigures`; `buildCtComputations` does not change.
+
+**Design reviews.** The `ui-ux-pro-max` skill (its UX guideline search, 2026-10-23) and the
+`frontend-design` skill, applied to this design:
+
+| Review | Finding | Design change |
+|---|---|---|
+| ui-ux-pro-max: error placement | Each invalid field needs its error below it, linked by `aria-describedby`; a summary alone fails | Each live check writes a `<p id="<field>-error">` under its field; the field's `aria-describedby` names hint and error |
+| ui-ux-pro-max: focusable error summary | After a failed "Return to the review", focus moves to a summary at the top whose items link to each field; inline errors stay; focus does not move on every blur | One `role="alert"` summary with `tabindex="-1"`; checks run on blur and change, the summary only on the button |
+| ui-ux-pro-max: inline validation | Validate on blur, not on every keystroke | Checks run on `change` and `blur`; worked boxes update on `input` |
+| ui-ux-pro-max: dragging movements (WCAG 2.2 AA) | A drop zone needs a pointer and keyboard alternative | The card keeps its "Choose a file" button; the drop zone is extra |
+| ui-ux-pro-max: form labels, focus visible | A visible label on every input; no placeholder-only fields; a visible focus ring | The CT1 label is the `<label>`; the existing `submit.css` focus style |
+| ui-ux-pro-max: submit feedback | Show the state after each action | "Return to the review" shows the spinner while the preview runs; the drop card's status line says what it filled |
+| frontend-design: words | Name actions by what happens; one name through the flow | "Return to the review", "Send to HMRC", result "Sent to HMRC"; errors say what is wrong and how to fix it, with no apology |
+| frontend-design: structure is information | Numbering only for a true sequence | Box numbers are HMRC's own identifiers, shown as the label's start ("Box 690"), not as decoration; sections carry no step numbers |
+| frontend-design: one place for boldness | The worked tax is the one thing the customer came to see | The worked-tax section is the one emphasised block on the form (a bordered panel on the existing `submit.css` palette); every other section stays plain |
+| frontend-design: restraint | No new fonts, colours or motion on a tax form | `submit.css` tokens only; no animation beyond the existing spinner |
+
+**The build.**
+
+| Part | Files | Tests | Proof |
+|---|---|---|---|
+| CT3a the figures model | `app/services/ct600Figures.js` (new), `app/services/ct600Xml.js`, `app/services/hmrcCtReturnRequest.js`, `scripts/build-books-bundle.mjs`, `web/public/lib/books-bundle.js` (rebuilt), `app/unit-tests/services/ct600Figures.test.js` (new), `app/unit-tests/services/ct600Xml.test.js`, `app/unit-tests/services/hmrcCtReturnRequest.test.js` (~8) | each worked box; 9198 on a straddling period; 9204 and 9213 to the penny; the marginal relief band; each refusal, including 515 over 440; the £5 check both ways | `fixtures/diya-gl/precision-code-ltd` through `ct600FiguresFromResults` then `deriveCt600FromFigures` gives the same boxes and the same IRenvelope (before the IRmark) as today's `deriveCt600Boxes`; `node scripts/hmrc-tpvs-ct600.js` exits 0 |
+| CT3b the entry form and the card | `web/public/companies-house/fileCompanyTaxReturn.html`, `fileCompanyTaxReturn.page.js`, `web/public/lib/ct600-fields.js` (new), `web/public/widgets/books-import.js`, `web/public/submit.css`, `web/unit-tests/ct600-fields.test.js` (new), `web/browser-tests/fileCompanyTaxReturn.browser.test.js` (new) (~7) | every box `ct600Xml.js` can emit has a field-table row; each live check shows under its field and in the summary; a dropped `precision-code-ltd` zip fills every field | browser tests; the `visual-review` skill on the form's screenshots (`submit.css` changes) |
+| CT3c the review and the journeys | `fileCompanyTaxReturn.page.js`, `fileCompanyTaxReturn.html`, `behaviour-tests/companyTaxReturn.behaviour.test.js`, `behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js`, `web/browser-tests/fileCompanyTaxReturn.browser.test.js` (~5) | each Change link focuses its field with the value kept; Return to the review focuses the changed row; Back keeps the figures | the `simulator - companyTaxReturnBehaviour` job with a typed case and a book case through the card; the guide screenshots taken again; `visual-review` and `ui-ux-pro-max` on them |
+| CT3d a micro-entity's accounts for HMRC | `app/services/microEntityAccountsIxbrl.js` (a P&L for the HMRC copy), `hmrcCtReturnRequest.js`, the page, tests (~5) | an FRS 105 document with a P&L passes the concepts fixture | TPVS accepts it (`scripts/hmrc-tpvs-ct600.js` with a micro book) |
+
+CT3b and CT3c both edit the page, so CT3c follows CT3b. CT3b also needs CT1's labels. All four
+parts are Sonnet: CT3a's rules exist in `ct600Xml.js` today and move, with the fixture as the
+regression proof.
+
+**Open questions.**
+
+| # | Question | Answer from | Blocks |
+|---|---|---|---|
+| 13 | Box 705: the guide says it holds "total main pool allowances, including any Annual Investment Allowance" (read 2026-10-23); `ct600Xml.js` puts the AIA in 690 and leaves it out of 705, and TPVS accepted that. Which is right? | the CT600 (2026) form notes and the CT online validation rules v1.17a; a TPVS run each way | CT3a |
+| 14 | The CT600 for a micro-entity: is an FRS 105 document with a P&L the attachment HMRC wants, or FRS 102 1A? DIY Accounting Limited files FRS 105 accounts | HMRC's "Taxonomies accepted by HMRC"; TPVS | CT3d |
+
+**Rejected options.**
+
+| Option | Why not |
+|---|---|
+| A separate typed page beside the book page | two forms and two reviews that drift; the operator asked for one form and one review |
+| The server works the boxes and the browser shows them only after a preview call | no live checks beside each field, and a round trip per change |
+| The browser sends the boxes and the server trusts them, as today | the server cannot know the boxes are right; one module on both sides removes the question |
+| The CT600 box rules in diya-gl | the CT600 box map, the RIM version and TPVS live in this repository; a diya-gl release per rule change couples the two |
+| A copy of the box rules in the page script | two copies of the tax rules; the bundle already ships diya-gl to the browser |
+| The customer types every box, as on HMRC's own form | the worked boxes are arithmetic and HMRC's rules; typing them invites the errors the checks then report |
+| Attach the accounts filed at Companies House as they are | Companies House may hold micro or filleted accounts with no P&L, and what we file is always our own document |
+| Keep the JSON paste beside the card | the card reads every kind the paste read, and more |
+
+### Design: the accounts and the Company Tax Return filed together (DF1)
+
+The design DF2a, DF2b and DF2c build to. Today the two are separate journeys: after Companies House
+accepts the accounts, `fileSmallCompanyAccounts.page.js` writes `filedSmallCompanyAccounts` to
+sessionStorage, and `fileCompanyTaxReturn.page.js` (line 8) offers those accounts on a second
+company lookup and a second review.
+
+**The service this replaces.** HMRC's free joint service closed: "The 'File your accounts and
+Company Tax Return' online service closed on 31 March 2026." and "From 1 April 2026 you should use
+commercial software to file annual accounts and Company Tax Returns with HMRC." (GOV.UK, "Filing
+company accounts and tax returns if you previously used the HMRC online service",
+https://www.gov.uk/guidance/closure-of-the-service-to-file-your-company-accounts-and-tax-return,
+published 6 March 2025, last updated 1 April 2026, retrieved 2026-10-23.) Companies House accounts
+filing stays separate: software, its web service, or paper, until April 2028, when it becomes
+software only (GOV.UK news, "Companies House update to accounts filing from April 2028",
+https://www.gov.uk/government/news/companies-house-update-to-accounts-filing-from-april-2028,
+published and retrieved 2026-10-23).
+
+**One journey.** The CT600 page (`fileCompanyTaxReturn.html`) becomes the joint page. Its first
+form question after the company lookup is "Where are you sending these accounts?":
+
+| Answer | Sends |
+|---|---|
+| To HMRC with the Company Tax Return | the CT600 alone (CT2's journey) |
+| To Companies House and to HMRC with the Company Tax Return | both, in the order below |
+
+Filing the accounts at Companies House alone stays on `fileSmallCompanyAccounts.html`. Then the
+journey is CT2's: one company lookup, one entry form (typed or filled from the card), one
+check-your-answers review. The joint answer adds these to the form and the review:
+
+| Added | Where | Notes |
+|---|---|---|
+| The copy for Companies House: full or filleted | the accounts section | open question 3; HMRC always gets the full accounts |
+| What Companies House receives | the review | a summary row of the copy, and, when filleted, the parts left out (P&L, directors' report) |
+| The company authentication code | the send step, beside the Government Gateway user ID and password | typed, sent once with the Companies House call, never stored |
+
+Both documents come from the same figures in `state.figures`: `buildAccountsIxbrl` builds the
+Companies House copy (`filleted` as chosen) and the full copy for HMRC. So one balance sheet
+serves both, and the accounts the CT600 carries are the accounts on the register.
+
+**The order of the sends.** Companies House first, then HMRC.
+
+1. The page posts the accounts to `companiesHouseAccountsPost.js` and polls
+   `companiesHouseAccountsGet.js` as `fileSmallCompanyAccounts.page.js` does.
+2. On `ACCEPT`, the page posts the CT600 to `hmrcCtReturnPost.js` with the full accounts and
+   polls `hmrcCtReturnGet.js`.
+3. When Companies House is still `PENDING` or `PARKED` after the page's poll window, the page says
+   so and offers two buttons: "Send the Company Tax Return now" and "Wait for Companies House".
+   The figures stay in sessionStorage (`state.figures`; no codes, no password), so a reload of the
+   page resumes at the send step. The Government Gateway password is typed again for a later send.
+
+Companies House goes first because its rejections come from the accounts document and from the
+authentication code, and a fix there can change figures the CT600 carries. A CT600 sent after the
+accounts are accepted carries accounts that match the register.
+
+**When one is accepted and the other rejected.**
+
+| Companies House | HMRC | What the page does |
+|---|---|---|
+| gateway error (`GovTalkErrors`) | not sent | nothing is filed; the page shows the error in plain words (`companies-house-error-messages.js`); the customer fixes and sends again |
+| `REJECT` | not sent | shows the reject codes; Change links lead to the fields; the customer fixes and resends to Companies House; HMRC follows on `ACCEPT` |
+| `ACCEPT` | `REJECT` | the accepted filing is kept; the accounts section is locked and reads "Filed at Companies House on <date>, submission <number>"; the customer changes only the tax answers (computation, allowances, income and reliefs, payments, UTR, declarant) and resends the CT600 alone |
+| `ACCEPT` | `REJECT` naming the attached accounts | the fix needs amended accounts at Companies House first; DF2c |
+| `PENDING`, CT600 sent early | `ACCEPT` | the CT600 is kept; if Companies House then rejects and the fix changes the figures, the CT600 needs an amended return (`ReturnType="amended"`); DF2c |
+| `ACCEPT` | `ACCEPT` | both receipts show as one filing |
+
+**One record with two receipts.** The page makes a `jointFilingId` (a UUID) when the customer
+opens the review. Both posts carry it. `putAsyncRequest` stores it with each submission, and
+`companiesHouseAccountsGet.js` and `hmrcCtReturnGet.js` write it into each receipt. The receipts
+page (AX5, in HS1's house style) shows the two receipts under one entry: the Companies House
+submission number and status, and HMRC's IRmark. Each receipt stays a full receipt of its own, so
+a half-finished pair still shows the filing that was accepted.
+
+**The charge.** One token per filing sent, two for the pair (operator, 2026-10-10). Each send goes
+through its own Lambda and its own activity's metering. `bundleManagement.js` path matching decides
+which activity a call from the joint page charges (open question 1). DF2a answers that first and
+pins it with a unit test.
+
+**Open question 3, the Companies House copy.** The operator's to decide. The alternatives:
+
+| Option | For | Against |
+|---|---|---|
+| A. Full by default, filleted offered | one document to both bodies; the review shows one set of accounts; nothing hidden from the register by accident | the P&L becomes public unless the customer chooses to fillet |
+| B. Filleted by default, full offered | keeps the P&L and directors' report off the public register, which small companies often want | the review shows two different documents; a customer who wants full accounts must choose them |
+| C. Full only | the simplest build | takes away a choice the law gives (section 444) and Companies House keeps after April 2028 (the GOV.UK news above) |
+| D. Filleted only | the most private | takes away full accounts; an option the builder already supports goes unused |
+
+Recommendation: A. The customer files one set of accounts and sees one document; filleting is
+one choice in the accounts section, and its review row says what Companies House publishes.
+
+**The build.** The rows wait on both filings being live (B34c, B34g2b) and on CT2's review (CT3c).
+
+| Row | Files | Tests | Proof |
+|---|---|---|---|
+| DF2a the joint journey | `fileCompanyTaxReturn.html`, `fileCompanyTaxReturn.page.js`, `app/functions/companies-house/companiesHouseAccountsPost.js` and `companiesHouseAccountsGet.js` (`jointFilingId`), `app/functions/hmrc/hmrcCtReturnPost.js` and `hmrcCtReturnGet.js` (`jointFilingId`), `web/public/submit.catalogue.toml` if open question 1 needs it, `behaviour-tests/companyTaxReturn.behaviour.test.js` (~8) | the order of the sends; each row of the accepted-and-rejected table on the simulator (its Gov-Test-Scenario headers); the accounts lock after `ACCEPT`; both receipts carry the same `jointFilingId`; the metering charges two tokens for the pair | the `simulator - companyTaxReturnBehaviour` job with a joint case; the `visual-review` skill on its screenshots; the availability table on `mtd-calendar.html` gains the joint filing |
+| DF2b the live proof | the catalogue (`prod` on the activity), `REPORT_CAPABILITIES.md` (~2) | — | one joint filing for DIY Accounting Limited on prod, both accepted, both receipts under one entry |
+| DF2c amended filings | revised accounts at Companies House (the accounts TIS supports revised accounts from the 2021 taxonomy) and an amended CT600 (`ReturnType="amended"`), each from the locked state (~6) | each amended path on the simulator | one amended CT600 through TPVS |
+
+**Rejected options.**
+
+| Option | Why not |
+|---|---|
+| Keep the two journeys and the sessionStorage hand-off | two lookups and two reviews; the operator asked for one journey |
+| A third page for the joint filing | a third copy of the accounts form; the CT600 page already holds the full accounts form after CT2 |
+| HMRC first, then Companies House | a Companies House fix can change the figures, which then needs an amended CT600 |
+| Both sends at once | the same risk as HMRC first, and two sets of errors on one screen |
+| Send the CT600 only on a Companies House `ACCEPT`, with no early option | Companies House can stay `PENDING` for hours; the customer may need the CT600 in before its deadline |
+| Undo the accepted filing when the other is rejected | neither body withdraws an accepted filing; the accepted one stays and only the other is corrected |
+| Store the Government Gateway password or the authentication code for a later send | this plan's rule: codes are typed, sent once and never stored |
+
+### Design: iXBRL accounts as a diya-gl import (IX1)
+
+The design IX2a, IX2b and IX2c build to. A customer whose accounts exist as iXBRL (from other
+software, a tagging service, or a past filing downloaded from the register as `format=xhtml`)
+drops the file on the "Fill from your books" card. diya-gl reads it in the browser as it reads a
+books zip or a workbook. The customer goes through our journey and our review. What we file is
+always the document our builders make from the figures, never the uploaded file (operator,
+2026-10-23).
+
+**The reader.** `app/lib/ixbrl-reader.js` in diya-gl
+(`../spreadsheets.diyaccounting.co.uk/`) turns the bytes into a list of facts:
+`{ namespace, localName, contextRef, period: { instant } | { startDate, endDate }, dimensions:
+{ "<ns>#<Dimension>": "<ns>#<Member>" }, unit, decimals, value }`.
+
+| Item | Rule |
+|---|---|
+| Input kinds | inline XBRL 1.1 (`http://www.xbrl.org/2013/inlineXBRL`) and 1.0 (`http://www.xbrl.org/2008/inlineXBRL`) in `.html`, `.xhtml`, `.htm`; a plain XBRL instance (`xbrli:xbrl` root) in `.xml`, whose facts are child elements |
+| Parser | `@xmldom/xmldom` (pure JavaScript, runs in Node and in the books bundle); diya-gl carries no XML parser today |
+| Names | the prefix is resolved to its namespace URI on each element, never matched as text: DIY Accounting Limited's 2025 accounts use `uk-bus`, our builders use `bus`, for the same namespace |
+| Taxonomy | the namespace pattern `http://xbrl.frc.org.uk/(fr\|cd\|reports)/<YYYY-MM-DD>/<module>`; the date names the suite; the concept is the local name |
+| `ix:nonFraction` | value = the text of the innermost `ix:nonFraction` after the `format` transform, × 10^`scale` (default 0), negated when `sign="-"`; brackets in the text are display only |
+| `format` | numbers: `numdotdecimal`, `numcommadot`, `num-dot-decimal`, `numcommadecimal`, `num-comma-decimal`, `numdotcomma`, `numspacedot`, `numspacecomma`; zero: `nocontent`, `zerodash`, `fixed-zero`; across the transformation registries 1 (2010-04-20), 2 (2011-07-31), 3 (2015-02-26), 4 (2020-02-12) and 5; an unknown format refuses the file and names it |
+| `ix:nonNumeric` | text with `ix:exclude` removed and `ix:continuation` chains joined (`continuedAt`); dates through the date formats (`datedaymonthyear`, `datedaymonthyearen`, `date-day-monthname-year-en`, `dateslasheu`, `datedoteu` and their registry variants) to ISO; booleans through `booleantrue`, `booleanfalse` |
+| Hidden facts | `ix:hidden` facts count as facts |
+| Contexts | from `ix:resources` (or the instance): the entity identifier and scheme, the period, `xbrldi:explicitMember` and `xbrldi:typedMember`; a fact with no member on a dimension is that dimension's default (the total) |
+| Duplicates | the same concept, context and unit twice with different values refuses the file |
+| Units | GBP only (`iso4217:GBP`); shares and pure units read for the share note and employees |
+| Document sets | a multi-file iXBRL document set is refused with a message; the horizon is IX2d |
+
+**Which files.** Companies House takes FRS 101, FRS 102, IFRS and Charities taxonomies for the
+2022 to 2026 suites, and FRS 105 micro-entity accounts use the FRS 102 entry point (Companies
+House TIS for accounts, October 2026,
+https://assets.publishing.service.gov.uk/media/6ad89ab4b63982f71c3bd38c/TIS_October_2026.odt,
+retrieved 2026-10-23; the 2021 suite stopped when the 2025 suite went live in April 2025).
+
+| Suite | Reader |
+|---|---|
+| FRS 102 2022-01-01 to 2026-01-01 (micro-entity, small, dormant) | read; each local name is checked against that suite's concept list, generated by `scripts/generate-frc-taxonomy-concepts.js` into `fixtures/frc-taxonomy/frs-102-<year>-concepts.json` |
+| FRS 102 2014 to 2021 suites (past filings downloaded from the register) | read where the local name exists in the 2022 list; other facts go to the unmapped list |
+| FRS 101, IFRS, Charities, UKSEF | refused: "This file uses the <suite> taxonomy; the form takes FRS 102 and FRS 105 accounts" |
+| The old UK GAAP taxonomy (`http://www.xbrl.org/uk/gaap/...`) | refused with the same message; the horizon is IX2d |
+
+**What a file says about itself.** The reader reads these facts before any figure:
+
+| Fact | Gives |
+|---|---|
+| `bus:UKCompaniesHouseRegisteredNumber` and the context entity identifier | the company number |
+| `bus:EntityCurrentLegalOrRegisteredName` | the name |
+| `bus:StartDateForPeriodCoveredByReport`, `bus:EndDateForPeriodCoveredByReport`, `bus:BalanceSheetDate` | the period |
+| `bus:AccountingStandardsApplied` on `AccountingStandardsDimension` | `Micro-entities` gives the micro regime; `SmallEntities` or `FRS102` gives the small regime |
+| `bus:EntityDormantTruefalse`, `bus:EntityTradingStatus` | dormant and trading status |
+| the P&L facts, or `direp:StatementThatDirectorsHaveElectedNotToDeliverProfitLossAccountUnderSection4445ACompaniesAct2006` | full or filleted |
+
+**The mapping.** `app/lib/ixbrl-accounts.js` turns the facts into the accounts figures in the
+shape our forms and builders take (`smallCompany.balanceSheet.currentYear` and `priorYear`,
+`profitAndLoss`, `fixedAssetNote`, and the micro-entity lines). Current year = contexts ending on
+the period end; prior year = contexts ending on the day before the period start.
+
+| Concept (FRC local name; dimension and member where needed) | Figure | diya-gl account in the summary book |
+|---|---|---|
+| `FixedAssets` | `fixedAssets` | `0000` to `0040` by class from the note; `0010` plant and machinery when the file has no note |
+| `PropertyPlantEquipmentGrossCost`, `AdditionsOtherThanThroughBusinessCombinationsPropertyPlantEquipment`, `DisposalsPropertyPlantEquipment`, `AccumulatedDepreciationImpairmentPropertyPlantEquipment`, `IncreaseFromDepreciationChargeForYearPropertyPlantEquipment`, `DisposalsDecreaseInDepreciationImpairmentPropertyPlantEquipment`, on `PropertyPlantEquipmentClassesDimension` (`LandBuildings`, `PlantMachinery`, `FurnitureFittings`, `ComputerEquipment`, `MotorVehicles`) | `fixedAssetNote` per class | `openingBalances.fixedAssetCost` and `fixedAssetDepreciation` per class; one `fixedAssets[]` register entry per class |
+| `TotalInventories` | `stocks` | `1100`; `openingBalances.stock` |
+| `Debtors` (with or without `WithinOneYear`), `PrepaymentsAccruedIncomeNotExpressedWithinCurrentAssetSubtotal`, `CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset` | `debtors` (micro: inside `currentAssets`) | `1300`; `openingBalances.tradeDebtors` |
+| `CashBankOnHand` | `cashAtBank` | `1200`; `openingBalances.bankAccounts."1200"` |
+| `CurrentAssets` | `currentAssets` (micro) | the sum of the lines above; a check |
+| `TradeCreditorsTradePayables` (`WithinOneYear`) | `tradeCreditors` | `2100`; `openingBalances.tradeCreditors` |
+| `CorporationTaxPayable` | `corporationTax` | `2300`; `openingBalances.corporationTaxDue` |
+| `OtherCreditors`, `AccruedLiabilitiesNotExpressedWithinCreditorsSubtotal` (`WithinOneYear`) | `otherCreditors` | `2500` when tagged as directors' loans, else `2400`; the figure in `otherCreditors` either way |
+| `Creditors` on `WithinOneYear` | `creditorsWithinOneYear` (micro) | the sum; a check |
+| `Creditors` on `AfterOneYear` | `creditorsAfterOneYear` | `2600`; `openingBalances.longTermCreditors` |
+| `ProvisionsForLiabilitiesBalanceSheetSubtotal` | added to `creditorsAfterOneYear`, and named on the review | `2600` |
+| `Equity` on `ShareCapital` | `calledUpShareCapital` | `3000`; `openingBalances.shareCapital` |
+| `Equity` on `RetainedEarningsAccumulatedLosses` | `profitAndLossAccount` | `3100`; `openingBalances.retainedEarnings` |
+| `Equity` on `RevaluationReserve` and other reserves | added to `profitAndLossAccount`, and named on the review | `openingBalances.capitalReserves` |
+| `Equity` (no member), `NetAssetsLiabilities` | `capitalAndReserves`; a check | — |
+| `TurnoverRevenue` | `turnover` | `4000` |
+| `CostSales` | `costOfSales` | `5000` |
+| `AdministrativeExpenses` | `administrativeExpenses` | `5501` |
+| `OtherInterestReceivableSimilarIncomeFinanceIncome` | `interestReceivable` | `1200` receipt coded `K` (the ltd book's bank interest) |
+| `TaxTaxCreditOnProfitOrLossOnOrdinaryActivities` | `tax` | not posted: diya-gl works the tax; the file's figure is kept for the accounts we file |
+| `GrossProfitLoss`, `OperatingProfitLoss`, `ProfitLossOnOrdinaryActivitiesBeforeTax`, `ProfitLoss` | totals; checks | — |
+| FRS 105 micro P&L: `OtherOperatingIncomeFormat2`, `RawMaterialsConsumablesUsed`, `StaffCostsEmployeeBenefitsExpense`, `DepreciationAmortisationImpairmentExpense`, `OtherOperatingExpensesFormat2` | the micro P&L lines CT3d adds | `4003`, `5000`, `5101`, the register's depreciation, `5501` |
+| `AverageNumberEmployeesDuringPeriod` | `averageEmployees` | `employees` count |
+| `DescriptionPrincipalActivities` | `principalActivity` | `entityInformation.organizationDescription` |
+| `NameEntityOfficer` on `EntityOfficersDimension` | `directors` | `directors[]` |
+| `DirectorSigningFinancialStatements`, `DateAuthorisationFinancialStatementsForIssue` | the signer and the approval date | — |
+| `NumberSharesIssuedFullyPaid`, `NominalValueAllottedShareCapital` | the share note | — |
+
+A small-company file with a Format 2 P&L (the `Format2` concepts and no `CostSales`) fills the
+balance sheet and lists the P&L lines as unmapped: our small-company builder writes Format 1
+only. Every fact the table does not name goes to an "unmapped" list. The card names those facts
+on its status line, as it names unmapped figures today.
+
+**The summary book.** `app/lib/ixbrl-summary-book.js` writes a Company book (`"diya-gl:product" =
+"Company"`) for each year, so the books page, the MCP tools and a roll forward can use it.
+
+| Year | `openingBalances` | Lines |
+|---|---|---|
+| Current | the prior-year balance sheet from the file, stated directly | one journal entry per tagged P&L line, dated the period end, against `1200`; then one entry per balance sheet line for its movement (closing − opening − what the P&L lines moved), against `1200` |
+| Prior | the prior-year balance sheet with `3100` and `1200` each less the prior-year profit before tax (the file has no balance sheet before the prior year) | one journal entry per tagged prior-year P&L line, against `1200` |
+
+Each line's `documentReference` is `IXBRL-<localName>`, so a reader can trace a line back to its
+fact. `documentInfo.entriesComment` says the book is a summary from an iXBRL file, and that the
+prior-year opening balance sheet is worked back from the comparatives. The fixed asset register
+holds one entry per class, with the `depreciationRate` that gives the tagged charge.
+
+The totals the summary book reproduces through diya-gl's `calculatedResultsFor`, for each year,
+to the pound: turnover, profit before tax, `PubBalSht` fixed assets, current assets, creditors
+within and after one year, net assets, and capital and reserves. Corporation Tax is worked by
+diya-gl, so the tax line and the profit after tax can differ from the file. The import names that
+difference, and the accounts we file keep the file's own tax figure. IX2a proves each posting
+above reaches its cell. A posting that does not reach its cell is changed in the mapping, not in
+the test. That also applies when `ltd.js` does not read a register entry's own `depreciationRate`:
+IX2a then makes `ltd.js` read it (the schema already carries the field).
+
+**What an iXBRL file does not carry, and where the form asks for it.**
+
+| Not in the file | Asked |
+|---|---|
+| Transactions | nowhere: the summary book has one line per tagged line; the VAT and Income Tax kinds refuse an iXBRL file ("Accounts carry no VAT boxes; drop the book instead") |
+| Entertaining and other disallowables, amortisation not tagged | CT2's computation fields |
+| Capital allowances (AIA, pools, balancing charges), beyond the fixed asset note | CT2's capital allowance fields; the note's additions show beside the AIA field as a hint |
+| Losses brought forward, associated companies, franked investment income, Income Tax deducted, tax paid | CT2's fields |
+| The UTR, the director's loan question, the declaration | CT2's fields |
+| Accounting policies text, share class (where untagged) | the accounts section's fields |
+
+The depreciation added back defaults to the tagged charge (the note's charge, or
+`DepreciationAmortisationImpairmentExpense`).
+
+**The checks on import.** Each failure is a refusal on the card's status line, and nothing fills.
+
+| Check | Rule |
+|---|---|
+| Company | the file's company number equals the looked-up company's number |
+| Period | the file's period is the form's period when the form has one; on the CT600 page, CT2's period checks apply |
+| Balance | for each year: fixed assets + current assets − creditors within one year − creditors after one year − provisions = net assets = capital and reserves, within £1 of rounding |
+| Totals | each tagged total equals the sum of its tagged lines, within £1 |
+| Both years | a balance sheet and a P&L for the current and the prior year, unless the company was incorporated inside the period (first accounts, from the lookup's `date_of_creation`) |
+| Regime | the page's regime: a micro file on the micro page, a small file on the small page; the CT600 page takes both (micro through CT3d) |
+| Dormant | a dormant file only on the dormant case |
+
+**Where the reader runs.**
+
+| Repository | Change |
+|---|---|
+| spreadsheets (diya-gl) | `detectBookSource` gains `"ixbrl"` (a document carrying an inline XBRL namespace) and `"xbrl"` (an `xbrli:xbrl` root); `readBookSource` returns `{ kind, product: "ltd", book, lines, comparative: { book, lines }, accounts, unmapped }` for both |
+| submit | `scripts/build-books-bundle.mjs` needs no new entry: `readBookSource` is already exported; the bundle takes the new diya-gl release |
+| submit | `books-import.js` `ACCEPTED_FILES` adds `.xhtml,.html,.htm,.xml,application/xhtml+xml,text/html,application/xml`; each accounts kind (BK1) and `ct600` (CT3b) fill from `source.accounts` when `source.kind` is `"ixbrl"` or `"xbrl"`, and from the calculator otherwise |
+
+The file stays in the browser: the bundle reads it and only the figures the customer files reach
+the server.
+
+**Fixtures.**
+
+| Fixture | Where | What it proves |
+|---|---|---|
+| DIY Accounting Limited's accepted 2025 accounts (`https://find-and-update.company-information.service.gov.uk/company/06846849/filing-history/MzQ5NzEyNDg2NmFkaXF6a2N4/document?format=xhtml&download=1`; 78,227 bytes on 2026-10-23: FRS 105 micro-entity on the FRC 2024 suite, prefix `uk-bus`, a Format 2 P&L, three directors, both years, `ixt2:nocontent` zeros, two `ix:hidden` blocks) | `app/test/fixtures/ixbrl/diya-2025-accounts.xhtml` (spreadsheets) | the micro mapping; prefix resolution; zeros; the summary book's totals; expected values typed into the test from the document as rendered, not from the reader |
+| Three files from Companies House's free Accounts Data Product (`https://download.companieshouse.gov.uk/en_accountsdata.html`, daily files kept 60 days): a full FRS 102 1A Format 1 small company, a filleted small company, a dormant company, each with its download date | `app/test/fixtures/ixbrl/` (spreadsheets) | the small and dormant mappings, filleted detection, another vendor's tagging |
+| Our builders' output: `buildMicroEntityAccounts`, `buildSmallCompanyAccounts` full and filleted, and the dormant case, from the `fileSmallCompanyAccounts` behaviour fixture figures | generated in the test (submit) | the round trip: our document read back gives the figures it was built from |
+| Doctored copies: an unbalanced balance sheet, another company number, no prior year, `scale="3"`, `sign="-"`, a duplicate fact with two values, an unknown `format` | `app/test/fixtures/ixbrl/` (spreadsheets) | each refusal |
+
+**The build.**
+
+| Part | Repository | Files | Tests | Proof |
+|---|---|---|---|---|
+| IX2a the reader, the mapping and the summary book | spreadsheets, a `claude/*` branch and PR under its `CLAUDE.md`, then a diya-gl release | `app/lib/ixbrl-reader.js`, `app/lib/ixbrl-accounts.js`, `app/lib/ixbrl-summary-book.js` (new), `app/lib/diya-gl-interchange.js`, `diya-gl/package.json` (`@xmldom/xmldom`), `app/lib/calculators/ltd.js` only if the register rate needs it, `app/test/ixbrl-reader.test.js`, `app/test/ixbrl-accounts.test.js`, `app/test/ixbrl-summary-book.test.js`, `app/test/fixtures/ixbrl/` (~10) | every row of the reader and mapping tables; each refusal; the totals the summary book reproduces | the released package reads every fixture; `readBookSource` on the DIYA file gives its two years' totals |
+| IX2b the card and the accounts pages | submit | `package.json` (the diya-gl release), `web/public/lib/books-bundle.js` (rebuilt), `web/public/widgets/books-import.js`, `app/unit-tests/services/ixbrlRoundTrip.test.js` (new), `web/browser-tests/booksImport.browser.test.js`, `behaviour-tests/steps/behaviour-companies-house-accounts-steps.js` (~6) | the round trip for each builder; a dropped `.xhtml` fills the micro and small forms; the VAT kind refuses it | a behaviour step drops the DIYA fixture and a Data Product fixture and checks the filled form |
+| IX2c the CT600 page | submit | `books-import.js` (`ct600` from `source.accounts`), `fileCompanyTaxReturn.page.js`, `web/browser-tests/fileCompanyTaxReturn.browser.test.js`, `behaviour-tests/companyTaxReturn.behaviour.test.js` (~4) | the accounts section fills from the file; the computation's depreciation defaults to the tagged charge | the `simulator - companyTaxReturnBehaviour` job with an iXBRL case |
+| IX2d the horizons | spreadsheets | multi-file document sets, the old UK GAAP taxonomy, Format 2 small-company P&Ls (with a Format 2 small-company builder in submit) | — | — |
+
+IX2a is Sonnet with the fixtures as its acceptance. IX2b and IX2c are Sonnet. IX2b waits on IX2a's
+release and on BK1 (the accounts kinds). IX2c waits on IX2b and CT3b.
+
+**Rejected options.**
+
+| Option | Why not |
+|---|---|
+| File the uploaded document as it is | the operator's rule; and we cannot vouch for another tool's tagging or house style |
+| Read the file on the server | the file leaves the browser; the books card's promise is that only the filed figures do |
+| A reader in submit, outside diya-gl | the books page, the CLI and the MCP server then cannot read iXBRL; diya-gl is the one place every caller reads a file through |
+| The browser's `DOMParser` | it does not exist under Node, where the CLI, the MCP server and the tests run |
+| Regular expressions over the text | nested `ix:nonFraction`, `ix:exclude`, `ix:continuation` and namespace prefixes defeat them |
+| Match concepts by prefix | prefixes vary by vendor (`uk-bus` against `bus`); only the namespace URI is fixed |
+| Map every FRC concept | thousands of concepts; the table covers what our builders emit and what small-company files carry, and the rest is listed as unmapped |
+| One book holding both years | a diya-gl book covers one period; two books keep each year's totals in diya-gl's own shape |
+| Post the file's tax charge into the book | diya-gl works the tax; the file's charge is kept for the accounts and the difference is shown |
+
 ## Tasks
 
 The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
@@ -519,6 +1065,17 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 | B34g1 | The ETS proof: the TPVS-proven return through `buildCt600SubmissionRequest` with the SDST test credentials and vendor ID, polled and deleted | ~1 | Sonnet | O34g | Blocked |
 | B34g2a | The CT600 filing journey on the simulator: Lambdas, page, activity, receipts, per the B34h design | ~14 | Sonnet | — | On main (PR #511) |
 | B34g2b | One ETS filing from the page, polled and deleted; then `prod` on the activity (NEXT.md B34g2b) | ~2 | Sonnet | B34g1, O34g | Blocked |
+| CT3a | The CT600 figures model in one module for the browser and the server; the server derives the boxes; the precision-code-ltd regression and TPVS proof (the CT2 design) | ~8 | Sonnet | — | Ready |
+| CT3b | The typed entry form, the field table with CT1's labels, the live checks, the card's `ct600` kind (the CT2 design) | ~7 | Sonnet | CT3a, CT1 | Blocked |
+| CT3c | The check-your-answers review with Change links, history, and the typed and book behaviour cases (the CT2 design) | ~5 | Sonnet | CT3b | Blocked |
+| CT3d | A micro-entity's FRS 105 accounts with a P&L as the CT600 attachment (the CT2 design, open question 14) | ~5 | Sonnet | CT3a | Blocked |
+| DF2a | The joint journey on the CT600 page: the send-to question, Companies House then HMRC, the lock after `ACCEPT`, `jointFilingId` on both receipts (the DF1 design) | ~8 | Sonnet | CT3c, B34c, B34g2b | Blocked |
+| DF2b | One live joint filing for DIY Accounting Limited; `prod` on the activity (the DF1 design) | ~2 | Sonnet | DF2a | Blocked |
+| DF2c | Amended accounts at Companies House and an amended CT600 from the locked state (the DF1 design) | ~6 | Sonnet | DF2a | Blocked |
+| IX2a | The iXBRL reader, the mapping and the summary book in diya-gl, with the fixtures and a release (spreadsheets repository; the IX1 design) | ~10 | Sonnet | — | Ready |
+| IX2b | The card reads iXBRL on the accounts pages; the builders' round trip (the IX1 design) | ~6 | Sonnet | IX2a, BK1 | Blocked |
+| IX2c | The CT600 page fills its accounts section from an iXBRL file (the IX1 design) | ~4 | Sonnet | IX2b, CT3b | Blocked |
+| IX2d | Multi-file document sets, the old UK GAAP taxonomy, Format 2 small-company P&Ls (the IX1 design) | — | Sonnet | IX2a | Blocked |
 
 
 ## Task detail

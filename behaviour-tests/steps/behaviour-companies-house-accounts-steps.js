@@ -77,6 +77,11 @@ export async function previewAccounts(page, screenshotPath = defaultScreenshotPa
     await expect(page.locator("#previewView")).toBeVisible({ timeout: 15000 });
     const preview = await page.locator("#previewIxbrl").textContent();
     expect(preview).toContain("<?xml");
+    const rendered = page.frameLocator("#previewRendered");
+    await expect(rendered.locator("h2", { hasText: "Balance sheet" })).toBeVisible({ timeout: 15000 });
+    const renderedText = await rendered.locator("body").innerText();
+    expect(renderedText).toContain("Shareholders' funds");
+    expect(renderedText).not.toMatch(/xbrli|iso4217|\b(core|bus|direp):|\d{4}-\d{2}-\d{2}/);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-preview.png` });
   });
 }
@@ -182,11 +187,18 @@ export async function fillInSmallCompanyAccountsForm(page, accounts, { filleted 
   });
 }
 
-export async function verifyPreviewContains(page, expectedTexts, unexpectedTexts = [], screenshotPath = defaultScreenshotPath) {
+export async function verifyPreviewContains(
+  page,
+  { source = [], rendered = [], notRendered = [], notInSource = [] },
+  screenshotPath = defaultScreenshotPath,
+) {
   await test.step("The user sees the preview carry the expected accounts content", async () => {
     const preview = await page.locator("#previewIxbrl").textContent();
-    for (const text of expectedTexts) expect(preview).toContain(text);
-    for (const text of unexpectedTexts) expect(preview).not.toContain(text);
+    for (const text of source) expect(preview).toContain(text);
+    for (const text of notInSource) expect(preview).not.toContain(text);
+    const renderedText = await page.frameLocator("#previewRendered").locator("body").innerText();
+    for (const text of rendered) expect(renderedText).toContain(text);
+    for (const text of notRendered) expect(renderedText).not.toContain(text);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-preview-checked.png` });
   });
 }

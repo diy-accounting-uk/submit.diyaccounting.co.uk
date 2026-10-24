@@ -192,7 +192,7 @@ test.describe("HMRC Assist on the VAT return", () => {
   test("says HMRC Assist has no feedback when HMRC answers 204, and sends no acknowledgement", async ({ page }, testInfo) => {
     const user = await signInWithHmrcTestUser(page, testInfo);
     const traffic = recordAssistTraffic(page, "vat");
-    await sendTestScenarioOn(page, "**/api/v1/hmrc/vat/assist/report", "NO_MESSAGES");
+    await sendTestScenarioOn(page, "**/api/v1/hmrc/vat/assist/report", "NO_FEEDBACK");
 
     await openVatFormConnectedToHmrc(page, user);
     await fillInVatBoxesForOpenPeriod(page, undefined, screenshotPath);

@@ -246,15 +246,61 @@ export function buildContexts(input, options = {}) {
   return { xml: contextsXml, refs, entityIdentifierXml, periodXml };
 }
 
+// The Inline XBRL transformation registry 2 namespace. Companies House and HMRC both accept it,
+// and it carries the two transforms a printed set of accounts needs: figures with thousands
+// separators and dates written out in English.
+// eslint-disable-next-line sonarjs/no-clear-text-protocols -- transformation registry namespace, compared byte for byte, not fetched
+export const IXT2_NAMESPACE = "http://www.xbrl.org/inlineXBRL/transformation/2011-07-31";
+export const NUMBER_FORMAT = "ixt2:numdotdecimal";
+export const DATE_FORMAT = "ixt2:datedaymonthyearen";
+
+const MONTH_NAMES = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 /**
- * Format a monetary value as whole pounds, matching decimals="0". Returns the absolute value;
- * callers add sign="-" to the ix:nonFraction tag when the underlying figure is negative, per the
- * XBRL convention of reporting magnitudes against the concept's declared balance direction.
+ * Format a value as whole units with thousands separators, matching decimals="0" and the
+ * ixt2:numdotdecimal transform. Returns the magnitude; callers add sign="-" to the ix:nonFraction
+ * tag when the underlying figure is negative, and show the brackets outside the tag.
  * @param {number} value
  * @returns {string}
  */
 export function formatMonetary(value) {
-  return String(Math.round(Math.abs(value)));
+  return Math.round(Math.abs(value)).toLocaleString("en-GB");
+}
+
+/**
+ * An ISO date as printed accounts write it, the form ixt2:datedaymonthyearen reads back.
+ * @param {string} isoDate
+ * @returns {string} e.g. "31 December 2025"
+ */
+export function displayDate(isoDate) {
+  const [year, month, day] = isoDate.split("-").map(Number);
+  return `${day} ${MONTH_NAMES[month - 1]} ${year}`;
+}
+
+/**
+ * "year ended 31 December 2025" for a period of exactly one year, "period ended ..." otherwise.
+ * @param {string} periodStart
+ * @param {string} periodEnd
+ * @returns {string}
+ */
+export function periodEndedPhrase(periodStart, periodEnd) {
+  const start = new Date(`${periodStart}T00:00:00Z`);
+  start.setUTCFullYear(start.getUTCFullYear() + 1);
+  const isOneYear = previousDay(start.toISOString().slice(0, 10)) === periodEnd;
+  return `${isOneYear ? "year" : "period"} ended ${displayDate(periodEnd)}`;
 }
 
 /**
@@ -279,9 +325,13 @@ export function renderTextFact(conceptKey, contextRef, text) {
   return `<ix:nonNumeric name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}">${escapeXmlText(text)}</ix:nonNumeric>`;
 }
 
+export function renderDateFact(conceptKey, contextRef, isoDate) {
+  return `<ix:nonNumeric name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}" format="${DATE_FORMAT}">${displayDate(isoDate)}</ix:nonNumeric>`;
+}
+
 export function renderMonetaryFact(conceptKey, contextRef, unitRef, value) {
   const signAttribute = value < 0 ? ' sign="-"' : "";
-  return `<ix:nonFraction name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}" unitRef="${unitRef}" decimals="0"${signAttribute}>${formatMonetary(value)}</ix:nonFraction>`;
+  return `<ix:nonFraction name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}" unitRef="${unitRef}" decimals="0" format="${NUMBER_FORMAT}"${signAttribute}>${formatMonetary(value)}</ix:nonFraction>`;
 }
 
 export function dimensionMemberXml(dimension, member) {
@@ -299,16 +349,113 @@ export function buildDimensionedContext({ additionalContexts, entityIdentifierXm
 }
 
 /**
- * The balance sheet facts for one balance sheet date: fixed assets, current assets, net current
- * assets, total assets less current liabilities, creditors by maturity, net assets and the equity
- * components. Throws when capital and reserves does not equal the net assets derived from the lines.
+ * A figure as printed in a statement column: a tagged fact with its value, shown in brackets when
+ * it is a deduction from the lines above it or a negative amount (but not both).
+ * @param {string} factXml - the ix:nonFraction element
+ * @param {number} value
+ * @param {{deduction?: boolean}} [options]
+ * @returns {{xml: string, bracketed: boolean}}
  */
-export function assembleBalanceSheetFacts({ contextRef, entityIdentifierXml, periodXml, additionalContexts, unitRef, figures }) {
-  const facts = [];
+export function figure(factXml, value, { deduction = false } = {}) {
+  const bracketed = value !== 0 && deduction !== value < 0;
+  return { xml: bracketed ? `(${factXml})` : factXml, bracketed };
+}
 
-  facts.push(renderMonetaryFact("fixedAssets", contextRef, unitRef, figures.fixedAssets));
-  facts.push(renderMonetaryFact("currentAssets", contextRef, unitRef, figures.currentAssets));
+/**
+ * One statement laid out as printed accounts: a label column, an optional note column and one
+ * right-aligned figure column per heading, with a pound sign under each heading.
+ *
+ * Each row is {label, note?, cells?, style?, indent?}: cells holds one figure() result (or null
+ * for a blank cell) per column; style is "heading" (a label with no figures), "subtotal" (a rule
+ * above the figures) or "total" (a rule above and a double rule below).
+ *
+ * @param {object} table
+ * @param {string[]} table.columns - the heading of each figure column, e.g. ["2025", "2024"]
+ * @param {boolean} [table.notes] - whether the table carries a note column
+ * @param {object[]} table.rows
+ * @returns {string}
+ */
+export function statementTable({ columns, notes = false, rows }) {
+  const noteHeading = notes ? '<th class="note">Note</th>' : "";
+  const headings = columns.map((heading) => `<th class="figure">${escapeXmlText(heading)}</th>`).join("");
+  const pounds = columns.map(() => '<th class="figure">£</th>').join("");
+  const body = rows
+    .map((row) => {
+      const rowClass = row.style ? ` class="${row.style}"` : "";
+      const labelClass = row.indent ? ' class="label indent"' : ' class="label"';
+      const noteText = row.note ? escapeXmlText(String(row.note)) : "";
+      const noteCell = notes ? `<td class="note">${noteText}</td>` : "";
+      const cells = (row.cells ?? columns.map(() => null))
+        .map((cell) => {
+          if (!cell) return '<td class="figure"></td>';
+          return `<td class="figure${cell.bracketed ? "" : " positive"}">${cell.xml}</td>`;
+        })
+        .join("");
+      return `<tr${rowClass}><td${labelClass}>${escapeXmlText(row.label)}</td>${noteCell}${cells}</tr>`;
+    })
+    .join("\n");
+  return `<table class="statement">
+<thead><tr><th class="label"></th>${noteHeading}${headings}</tr><tr><th class="label"></th>${notes ? '<th class="note"></th>' : ""}${pounds}</tr></thead>
+<tbody>
+${body}
+</tbody>
+</table>`;
+}
 
+/**
+ * The heading every page of the accounts carries: the company name and registered number, then
+ * the page's title and the line under it.
+ * @param {object} heading
+ * @param {string} heading.companyName
+ * @param {string} heading.companyNumber
+ * @param {string} heading.title
+ * @param {string} heading.subtitleHtml - already escaped, may hold a tagged fact
+ * @returns {string}
+ */
+export function pageHeading({ companyName, companyNumber, title, subtitleHtml }) {
+  return `<p class="company">${escapeXmlText(companyName)}</p>
+<p class="registration">Registered number: ${escapeXmlText(companyNumber)}</p>
+<h2>${escapeXmlText(title)}</h2>
+<p class="subtitle">${subtitleHtml}</p>
+`;
+}
+
+/**
+ * The cover page: the company name and registered number tagged, the kind of accounts, and the
+ * period with its start and end dates tagged.
+ */
+export function coverPage({ refs, companyName, companyNumber, title, periodStart, periodEnd }) {
+  return `<div class="page cover">
+<p class="cover-name">${renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName)}</p>
+<p class="cover-line">Registered number: ${renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber)}</p>
+<p class="cover-title">${escapeXmlText(title)}</p>
+<p class="cover-line">for the ${escapeXmlText(periodEndedPhrase(periodStart, periodEnd))}</p>
+<p class="cover-line">Period from ${renderDateFact("startDateForPeriodCoveredByReport", refs.periodStartInstant, periodStart)} to ${renderDateFact("endDateForPeriodCoveredByReport", refs.currentInstant, periodEnd)}</p>
+</div>`;
+}
+
+/**
+ * The approval line under the balance sheet statements: the tagged approval date and the name of
+ * the director who signs.
+ */
+export function approvalHtml({ refs, dateOfApproval, directorName }) {
+  return `<p class="approval">Approved by the board of directors on ${renderDateFact("dateAuthorisationFinancialStatementsForIssue", refs.currentInstant, dateOfApproval)} and signed on its behalf by:</p>
+<p class="signature">${escapeXmlText(directorName)}<br/>Director</p>`;
+}
+
+function netLabel(base, values) {
+  return values.some((value) => value < 0) ? `${base} (liabilities)` : base;
+}
+
+/**
+ * The balance sheet facts for one balance sheet date, keyed by line: fixed assets, current
+ * assets, creditors by maturity, net current assets, total assets less current liabilities, net
+ * assets and the equity components, each one ix:nonFraction element with its value. Builds the
+ * dimensioned contexts the creditors and equity lines need. Throws when capital and reserves does
+ * not equal the net assets derived from the lines.
+ * @returns {Record<string, {xml: string, value: number}>}
+ */
+export function balanceSheetFacts({ contextRef, entityIdentifierXml, periodXml, additionalContexts, unitRef, figures }) {
   const netCurrentAssets = figures.currentAssets - figures.creditorsWithinOneYear;
   const totalAssetsLessCurrentLiabilities = figures.fixedAssets + netCurrentAssets;
   const netAssets = totalAssetsLessCurrentLiabilities - figures.creditorsAfterOneYear;
@@ -319,70 +466,151 @@ export function assembleBalanceSheetFacts({ contextRef, entityIdentifierXml, per
     );
   }
 
-  facts.push(renderMonetaryFact("netCurrentAssetsLiabilities", contextRef, unitRef, netCurrentAssets));
-  facts.push(renderMonetaryFact("totalAssetsLessCurrentLiabilities", contextRef, unitRef, totalAssetsLessCurrentLiabilities));
+  const dimensioned = (dimension, member, suffix) =>
+    buildDimensionedContext({
+      additionalContexts,
+      entityIdentifierXml,
+      periodXml,
+      dimensionXml: dimensionMemberXml(dimension, member),
+      id: `${contextRef}-${suffix}`,
+    });
+  const fact = (conceptKey, factContextRef, value) => ({ xml: renderMonetaryFact(conceptKey, factContextRef, unitRef, value), value });
 
-  const withinOneYearContextId = buildDimensionedContext({
-    additionalContexts,
-    entityIdentifierXml,
-    periodXml,
-    dimensionXml: dimensionMemberXml(DIMENSIONS.maturities, MEMBERS.withinOneYear),
-    id: `${contextRef}-within-one-year`,
-  });
-  facts.push(renderMonetaryFact("creditors", withinOneYearContextId, unitRef, figures.creditorsWithinOneYear));
-
-  const afterOneYearContextId = buildDimensionedContext({
-    additionalContexts,
-    entityIdentifierXml,
-    periodXml,
-    dimensionXml: dimensionMemberXml(DIMENSIONS.maturities, MEMBERS.afterOneYear),
-    id: `${contextRef}-after-one-year`,
-  });
-  facts.push(renderMonetaryFact("creditors", afterOneYearContextId, unitRef, figures.creditorsAfterOneYear));
-
-  facts.push(renderMonetaryFact("netAssetsLiabilities", contextRef, unitRef, netAssets));
-
-  const shareCapitalContextId = buildDimensionedContext({
-    additionalContexts,
-    entityIdentifierXml,
-    periodXml,
-    dimensionXml: dimensionMemberXml(DIMENSIONS.equityClasses, MEMBERS.shareCapital),
-    id: `${contextRef}-share-capital`,
-  });
-  facts.push(renderMonetaryFact("equity", shareCapitalContextId, unitRef, figures.calledUpShareCapital));
-
-  const profitAndLossContextId = buildDimensionedContext({
-    additionalContexts,
-    entityIdentifierXml,
-    periodXml,
-    dimensionXml: dimensionMemberXml(DIMENSIONS.equityClasses, MEMBERS.retainedEarningsAccumulatedLosses),
-    id: `${contextRef}-profit-and-loss-account`,
-  });
-  facts.push(renderMonetaryFact("equity", profitAndLossContextId, unitRef, figures.profitAndLossAccount));
-
-  facts.push(renderMonetaryFact("equity", contextRef, unitRef, figures.capitalAndReserves));
-
-  return facts.join("");
+  return {
+    fixedAssets: fact("fixedAssets", contextRef, figures.fixedAssets),
+    currentAssets: fact("currentAssets", contextRef, figures.currentAssets),
+    creditorsWithinOneYear: fact(
+      "creditors",
+      dimensioned(DIMENSIONS.maturities, MEMBERS.withinOneYear, "within-one-year"),
+      figures.creditorsWithinOneYear,
+    ),
+    netCurrentAssets: fact("netCurrentAssetsLiabilities", contextRef, netCurrentAssets),
+    totalAssetsLessCurrentLiabilities: fact("totalAssetsLessCurrentLiabilities", contextRef, totalAssetsLessCurrentLiabilities),
+    creditorsAfterOneYear: fact(
+      "creditors",
+      dimensioned(DIMENSIONS.maturities, MEMBERS.afterOneYear, "after-one-year"),
+      figures.creditorsAfterOneYear,
+    ),
+    netAssets: fact("netAssetsLiabilities", contextRef, netAssets),
+    calledUpShareCapital: fact(
+      "equity",
+      dimensioned(DIMENSIONS.equityClasses, MEMBERS.shareCapital, "share-capital"),
+      figures.calledUpShareCapital,
+    ),
+    profitAndLossAccount: fact(
+      "equity",
+      dimensioned(DIMENSIONS.equityClasses, MEMBERS.retainedEarningsAccumulatedLosses, "profit-and-loss-account"),
+      figures.profitAndLossAccount,
+    ),
+    capitalAndReserves: fact("equity", contextRef, figures.capitalAndReserves),
+  };
 }
 
 /**
- * Wrap rendered contexts, facts and visible prose in the iXBRL document shell.
+ * The balance sheet rows in the Companies Act format 1 order, one figure column per year. The
+ * current assets and creditors lines can carry indented sub-lines above their subtotal.
+ *
+ * @param {object} rowsInput
+ * @param {Array<Record<string, {xml: string, value: number}>>} rowsInput.years - balanceSheetFacts per column
+ * @param {object[]} [rowsInput.currentAssetLines] - {label, cells} rows shown under "Current assets"
+ * @param {object[]} [rowsInput.creditorLines] - {label, cells} rows shown under the creditors heading
+ * @param {object} [rowsInput.notes] - note numbers keyed by line (fixedAssets, calledUpShareCapital)
+ * @returns {object[]} statementTable rows
+ */
+export function balanceSheetRows({ years, currentAssetLines, creditorLines, notes = {} }) {
+  const cells = (line, options) => years.map((year) => figure(year[line].xml, year[line].value, options));
+  const values = (line) => years.map((year) => year[line].value);
+  const rows = [{ label: "Fixed assets", note: notes.fixedAssets, cells: cells("fixedAssets") }];
+  if (currentAssetLines) {
+    rows.push({ label: "Current assets", style: "heading" }, ...currentAssetLines.map((line) => ({ ...line, indent: true })));
+    rows.push({ label: "", style: "subtotal", cells: cells("currentAssets") });
+  } else {
+    rows.push({ label: "Current assets", cells: cells("currentAssets") });
+  }
+  if (creditorLines) {
+    rows.push(
+      { label: "Creditors: amounts falling due within one year", style: "heading" },
+      ...creditorLines.map((line) => ({ ...line, indent: true })),
+    );
+    rows.push({ label: "", style: "subtotal", cells: cells("creditorsWithinOneYear", { deduction: true }) });
+  } else {
+    rows.push({ label: "Creditors: amounts falling due within one year", cells: cells("creditorsWithinOneYear", { deduction: true }) });
+  }
+  rows.push(
+    { label: netLabel("Net current assets", values("netCurrentAssets")), style: "subtotal", cells: cells("netCurrentAssets") },
+    { label: "Total assets less current liabilities", cells: cells("totalAssetsLessCurrentLiabilities") },
+    {
+      label: "Creditors: amounts falling due after more than one year",
+      cells: cells("creditorsAfterOneYear", { deduction: true }),
+    },
+    { label: netLabel("Net assets", values("netAssets")), style: "total", cells: cells("netAssets") },
+    { label: "Capital and reserves", style: "heading" },
+    { label: "Called up share capital", note: notes.calledUpShareCapital, indent: true, cells: cells("calledUpShareCapital") },
+    { label: "Profit and loss account", indent: true, cells: cells("profitAndLossAccount") },
+    { label: "Shareholders' funds", style: "total", cells: cells("capitalAndReserves") },
+  );
+  return rows;
+}
+
+// The house style of every accounts and computations document: the layout of printed accounts,
+// held in the document itself because a filed iXBRL document can reference no stylesheet.
+export const DOCUMENT_STYLE = `
+body { font-family: "Times New Roman", Times, serif; font-size: 11pt; color: #000; background: #fff; margin: 0; }
+.page { max-width: 180mm; margin: 0 auto; padding: 12mm 10mm; page-break-after: always; }
+.page:last-child { page-break-after: auto; }
+.cover { text-align: center; padding-top: 40mm; }
+.cover-name { font-size: 16pt; font-weight: bold; margin-bottom: 18mm; }
+.cover-title { font-size: 13pt; font-weight: bold; margin-top: 14mm; }
+.cover-line { margin: 2mm 0; }
+.company { text-align: center; font-size: 13pt; font-weight: bold; margin: 0; }
+.registration { text-align: center; margin: 1mm 0 4mm 0; }
+h2 { text-align: center; font-size: 12pt; margin: 2mm 0; }
+h3 { font-size: 11pt; margin: 6mm 0 2mm 0; }
+.subtitle { text-align: center; margin: 0 0 6mm 0; }
+table.statement { width: 100%; border-collapse: collapse; margin: 4mm 0; }
+table.statement th, table.statement td { padding: 1mm 2mm; vertical-align: bottom; }
+table.statement th.label, table.statement td.label { text-align: left; }
+table.statement td.indent { padding-left: 8mm; }
+table.statement th.note, table.statement td.note { width: 10mm; text-align: center; }
+table.statement th.figure { text-align: right; width: 24mm; font-weight: bold; }
+table.statement td.figure { text-align: right; width: 24mm; white-space: nowrap; }
+table.statement td.positive { padding-right: 3.2mm; }
+table.statement tr.heading td { font-weight: bold; padding-top: 3mm; }
+table.statement tr.subtotal td.figure { border-top: 1px solid #000; }
+table.statement tr.total td { font-weight: bold; }
+table.statement tr.total td.figure { border-top: 1px solid #000; border-bottom: 3px double #000; }
+.approval { margin-top: 6mm; }
+.signature { margin-top: 8mm; }
+`;
+
+/**
+ * Wrap rendered contexts, hidden facts and the visible pages in the iXBRL document shell. The
+ * ix:header sits inside a hidden div, so a browser shows the pages and nothing of the header.
  * @param {object} parts
- * @param {string} parts.companyName
+ * @param {string} parts.title - the document title, e.g. "ACME LIMITED - Accounts"
  * @param {string} parts.contextsXml - every xbrli:context, already concatenated
- * @param {string} parts.bodyHtml - the visible document with its tagged facts
+ * @param {string} parts.hiddenFactsXml - facts with no place on the face of the accounts
+ * @param {string} parts.bodyHtml - the visible pages with their tagged facts
  * @returns {string}
  */
-export function renderAccountsDocument({ companyName, contextsXml, bodyHtml }) {
+export function renderAccountsDocument({ title, contextsXml, hiddenFactsXml, bodyHtml }) {
   const namespaceAttributes = Object.entries(NAMESPACES)
     .map(([prefix, uri]) => `xmlns:${prefix}="${uri}"`)
     .join(" ");
 
   return `<?xml version="1.0"?>
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL" xmlns:xbrli="http://www.xbrl.org/2003/instance" xmlns:xbrldi="http://xbrl.org/2006/xbrldi" xmlns:link="http://www.xbrl.org/2003/linkbase" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:iso4217="http://www.xbrl.org/2003/iso4217" ${namespaceAttributes}>
-<head><title>${escapeXmlText(companyName)} - annual accounts</title></head>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:ix="http://www.xbrl.org/2013/inlineXBRL" xmlns:ixt2="${IXT2_NAMESPACE}" xmlns:xbrli="http://www.xbrl.org/2003/instance" xmlns:xbrldi="http://xbrl.org/2006/xbrldi" xmlns:link="http://www.xbrl.org/2003/linkbase" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns:iso4217="http://www.xbrl.org/2003/iso4217" ${namespaceAttributes}>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+<title>${escapeXmlText(title)}</title>
+<style type="text/css">${DOCUMENT_STYLE}</style>
+</head>
 <body>
+<div style="display:none">
 <ix:header>
+<ix:hidden>
+${hiddenFactsXml}
+</ix:hidden>
 <ix:references><link:schemaRef xlink:type="simple" xlink:href="${FRS_102_ENTRY_POINT}"/></ix:references>
 <ix:resources>
 ${contextsXml}
@@ -391,6 +619,7 @@ ${contextsXml}
 <xbrli:unit id="shares"><xbrli:measure>xbrli:shares</xbrli:measure></xbrli:unit>
 </ix:resources>
 </ix:header>
+</div>
 ${bodyHtml}
 </body>
 </html>

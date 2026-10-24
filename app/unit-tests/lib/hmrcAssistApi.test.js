@@ -9,15 +9,15 @@ import { vatAssist, itsaAssist } from "@app/lib/hmrcAssistApi.js";
 const BASE = "https://hmrc.example";
 
 describe("vatAssist", () => {
-  const ids = { vrn: "123456789", reportId: "report-1", correlationId: "corr-1" };
+  const ids = { vrn: "123456789", reportId: "report-1", correlationId: "corr-1", presentedDateTime: "2026-06-09T10:30:00Z" };
 
-  test("builds the report URL", () => {
-    expect(vatAssist.reportUrl(BASE, ids)).toBe("https://hmrc.example/organisations/vat/123456789/assist/reports");
+  test("builds the feedback URL", () => {
+    expect(vatAssist.reportUrl(BASE, ids)).toBe("https://hmrc.example/organisations/vat-assist/feedback/123456789");
   });
 
-  test("builds the acknowledge URL", () => {
+  test("builds the acknowledge URL with the presented time as a query parameter", () => {
     expect(vatAssist.acknowledgeUrl(BASE, ids)).toBe(
-      "https://hmrc.example/organisations/vat/123456789/assist/reports/acknowledge/report-1/corr-1",
+      "https://hmrc.example/organisations/vat-assist/acknowledge/123456789/report-1/corr-1?presentedDateTime=2026-06-09T10%3A30%3A00Z",
     );
   });
 
@@ -49,8 +49,8 @@ describe("vatAssist", () => {
     });
   });
 
-  test("carries the VAT scopes and the version 1.0 Accept header", () => {
-    expect(vatAssist.scopes).toEqual(["read:vat", "write:vat"]);
+  test("carries the write:vat scope and the version 1.0 Accept header", () => {
+    expect(vatAssist.scopes).toEqual(["write:vat"]);
     expect(vatAssist.acceptHeader).toBe("application/vnd.hmrc.1.0+json");
   });
 });
@@ -79,7 +79,7 @@ describe("itsaAssist", () => {
 });
 
 describe("normaliseReport", () => {
-  const hmrcReport = {
+  const itsaReport = {
     reportId: "report-1",
     correlationId: "c".repeat(64),
     nino: "AA123456A",
@@ -89,27 +89,72 @@ describe("normaliseReport", () => {
     ],
   };
 
-  for (const [name, api] of [
-    ["vat", vatAssist],
-    ["itsa", itsaAssist],
-  ]) {
-    test(`${name} keeps ids, message text, links, paths and order unchanged`, () => {
-      const report = api.normaliseReport(hmrcReport);
-      expect(report.reportId).toBe("report-1");
-      expect(report.correlationId).toBe("c".repeat(64));
-      expect(report.messages.map((message) => message.title)).toEqual(["T1", "T2"]);
-      expect(report.messages[0]).toEqual({
+  test("itsa keeps ids, message text, links, paths and order unchanged", () => {
+    const report = itsaAssist.normaliseReport(itsaReport);
+    expect(report.reportId).toBe("report-1");
+    expect(report.correlationId).toBe("c".repeat(64));
+    expect(report.messages.map((message) => message.title)).toEqual(["T1", "T2"]);
+    expect(report.messages[0]).toEqual({
+      title: "T1",
+      body: "B1",
+      action: "A1",
+      links: [{ title: "L1", url: "https://www.gov.uk/one" }],
+      path: "/p1",
+    });
+    expect(report.messages[1].links).toEqual([]);
+  });
+
+  test("itsa returns no messages for a report without any", () => {
+    expect(itsaAssist.normaliseReport({ reportId: "r", correlationId: "c" }).messages).toEqual([]);
+  });
+});
+
+describe("vatAssist feedback response", () => {
+  const feedback = {
+    reportId: "report-1",
+    correlationId: "C".repeat(64),
+    englishFeedback: [
+      {
+        itemNumber: "1",
         title: "T1",
         body: "B1",
         action: "A1",
         links: [{ title: "L1", url: "https://www.gov.uk/one" }],
-        path: "/p1",
-      });
-      expect(report.messages[1].links).toEqual([]);
-    });
-  }
+        path: "vatDueSales",
+      },
+      { itemNumber: "2", title: "T2", body: "B2", path: "totalValuePurchasesExVAT" },
+    ],
+    welshFeedback: [
+      {
+        itemNumber: "1",
+        title: "W1",
+        body: "WB1",
+        action: "WA1",
+        links: [{ title: "WL1", url: "https://www.gov.uk/one" }],
+        path: "vatDueSales",
+      },
+    ],
+  };
 
-  test("returns no messages for a report without any", () => {
-    expect(vatAssist.normaliseReport({ reportId: "r", correlationId: "c" }).messages).toEqual([]);
+  test("normalises the English feedback to the shared shape, text, links, paths and order unchanged", () => {
+    const report = vatAssist.normaliseReport(feedback);
+    expect(report.reportId).toBe("report-1");
+    expect(report.correlationId).toBe("C".repeat(64));
+    expect(report.messages).toEqual([
+      { title: "T1", body: "B1", action: "A1", links: [{ title: "L1", url: "https://www.gov.uk/one" }], path: "vatDueSales" },
+      { title: "T2", body: "B2", action: undefined, links: [], path: "totalValuePurchasesExVAT" },
+    ]);
+  });
+
+  test("normalises the Welsh feedback the same way", () => {
+    expect(vatAssist.normaliseWelshMessages(feedback).map((message) => message.title)).toEqual(["W1"]);
+  });
+
+  test("a response with feedback is not the no-feedback answer", () => {
+    expect(vatAssist.isNoFeedback(feedback)).toBe(false);
+  });
+
+  test("a single message numbered 0 is the no-feedback answer", () => {
+    expect(vatAssist.isNoFeedback({ reportId: "r", englishFeedback: [{ itemNumber: "0", title: "none", body: "none" }] })).toBe(true);
   });
 });

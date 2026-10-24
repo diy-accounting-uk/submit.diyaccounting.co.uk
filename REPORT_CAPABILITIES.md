@@ -114,6 +114,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Test, validation and provisioning](#test-validation-and-provisioning-ch)
     - [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies: use when a test needs a real-shaped Companies House test company without a live entity.
     - [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts: use when the FRS 102/105 taxonomy fixture needs refreshing, or a generated iXBRL document needs checking against Companies House's validator.
+    - [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it: use when an accounts or CT computations iXBRL builder changes, or a document must be checked before it is filed.
     - [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack: use when adding, renaming or rewiring a Companies House Lambda function or its API Gateway route.
 - **[Billing and entitlements](#billing-and-entitlements-bill)**
   - [Bundle grants and entitlements](#bundle-grants-and-entitlements-bill)
@@ -213,6 +214,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks: use when requests the SensitivePathScan WAF rule blocked need to become an ops alert, or a block needs a false-positive check.
     - [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis: use when the previous day's AWS Security Lake data needs an automated threat and pattern review.
     - [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation: use when an operator investigating a firing alarm needs the right log groups, X-Ray filters and console links fast.
+    - [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm: use when a prod-env-hmrc-submission-failure or prod-env-itsa-submission-failure alarm needs the customer, what HMRC answered and their entitlement.
     - [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown: use when a deployment is being torn down and its alarms must not fire GitHub issues or Telegram alerts.
     - [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition: use when triage must confirm an alarm issue's stated window and transition really happened before acting on it.
     - [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget: use when auto-remediation for an alarm family must stop once its daily budget of remedies is spent.
@@ -341,6 +343,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing: use when a dashboard figure must be readable as a plain file, for the corpus index.
     - [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch: use when a business figure (active users, submissions, revenue, HMRC failures, cost) needs a CloudWatch metric for the dashboard.
     - [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow: use when a new ingestion job must join the nightly chain, or the chain's failure behaviour must be checked.
+    - [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch: use when a night of the analytics nightly did not run or failed, and it must run again for an explicit date.
   - [Site-side analytics and RUM](#site-side-analytics-and-rum-data)
     - [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic: use when a Lambda, RUM script or GA4 tag must agree on human, bot or synthetic.
     - [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages: use when a site page must load gtag.js with the correct measurement id, consent state and cross-domain linking.
@@ -456,6 +459,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally: use when a batch branch is about to take its first push, or a local pass has gone red in CI.
     - [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions: use when the operator asks which donors use submit, whether donors file, or for the donor-to-usage cross reference.
     - [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them: use when a major change to anything a person sees has passed its tests, a guide or site screenshot set was refreshed, or the operator asks for a visual, look or screenshot review.
+    - [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page: use when a design pass or visual review needs every page under web/public at phone and desktop width, light and dark, with the console errors each page logs.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -1279,7 +1283,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-preview-micro-entity-accounts-before-filing) Preview micro-entity accounts before filing · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House
 - [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC
 - [Filing infrastructure](#filing-infrastructure-ch): [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions · [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout · [CH-11](#ch-11-parse-xml-safely) Parse XML safely
-- [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
+- [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:area CH -->
 
 ### OAuth and identity (CH)
@@ -1449,6 +1453,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group test-validation-and-provisioning-ch -->
 - [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies
 - [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts
+- [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it
 - [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:group test-validation-and-provisioning-ch -->
 
@@ -1471,6 +1476,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/generate-frc-taxonomy-concepts.js, scripts/validate-accounts-ixbrl.js
 - **Keywords:** frc taxonomy, frs 102, frs 105, ixbrl, concepts fixture, xbrl validator, companies house, taxonomy schema
 - **Related:** CH-08, CH-07
+
+#### CH-16 Check an accounts iXBRL document as a reader sees it
+
+- **Use when:** an accounts or CT computations iXBRL builder changes, or a document must be checked before it is filed.
+- **Does:** ixbrlStructureProblems lists the structural problems in an iXBRL document without a taxonomy. It checks that the document is well-formed and the ix:header is hidden with one schemaRef. It checks that every context and unit reference resolves and every context is used. It checks the ixt2 transforms, duplicate facts, and the absence of scripts, links and images. The browser test opens each accounts case and the computations as XHTML. It asserts that no header text is visible, the balance sheet reads in order and nothing follows the last note. It saves each render under target/accounts-documents/.
+- **Run:** `npx vitest run app/unit-tests/lib/ixbrlStructure.test.js`; `npx playwright test --project=browser-tests web/browser-tests/accountsDocumentRendering.browser.test.js`
+- **Entry:** `app/lib/ixbrlStructure.js:ixbrlStructureProblems`; `app/test-helpers/accountsDocumentCases.js:accountsDocumentCases`
+- **Files:** app/lib/ixbrlStructure.js, app/test-helpers/accountsDocumentCases.js, app/unit-tests/lib/ixbrlStructure.test.js, web/browser-tests/accountsDocumentRendering.browser.test.js
+- **Keywords:** ixbrl, inline xbrl, accounts document, rendering, screenshot, header hidden, context, unit, transform, xhtml, validation
+- **Related:** CH-07, CH-08, CH-13, CH-15
 
 #### CH-14 Provision the Companies House CDK stack
 
@@ -2023,7 +2038,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:area OPS -->
 - [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
-- [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
+- [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
 - [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online) Record a real spreadsheet workbook in Collabora Online · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
@@ -2327,6 +2342,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks
 - [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis
 - [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation
+- [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm
 - [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown
 - [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition
 - [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget
@@ -2512,6 +2528,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/lib/alarmEvidence.js, app/unit-tests/lib/alarmEvidence.test.js, app/lib/alarmWindow.js, app/unit-tests/lib/alarmWindow.test.js, scripts/resolve-alarm-evidence.mjs, app/unit-tests/scripts/resolveAlarmEvidence.test.js
 - **Keywords:** alarm evidence, log groups, x-ray, console links, investigation, triage, time window
 - **Related:** OPS-71, OPS-80
+
+#### OPS-141 Look up the customer behind a submission-failure alarm
+
+- **Use when:** a prod-env-hmrc-submission-failure or prod-env-itsa-submission-failure alarm needs the customer, what HMRC answered and their entitlement.
+- **Does:** alarm-customer-lookup.mjs reads failure events from the activity_events_all view in Athena for the alarm's window. It then runs Query, never Scan, on the hmrc-api-requests and bundles tables by hashed sub, and Cognito ListUsers by sub. It writes one Markdown file with personal data. The customer-lookup job in alarm-triage.yml commits it to support/alarms/ in the private repository with a deploy key, then sends Telegram the alarm name, the issue link and the path.
+- **Run:** `node scripts/alarm-customer-lookup.mjs --alarm-name <alarm> --timestamp <iso> --issue-number <n> --issue-url <url> --out <file>`
+- **Entry:** `scripts/alarm-customer-lookup.mjs:collectCustomers`; `.github/workflows/alarm-triage.yml:customer-lookup`
+- **Files:** scripts/alarm-customer-lookup.mjs, app/unit-tests/scripts/alarmCustomerLookup.test.js, .github/workflows/alarm-triage.yml, .claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md
+- **Keywords:** customer lookup, submission failure, hashed sub, private repository, deploy key, telegram ping, athena, support alarms
+- **Related:** OPS-18, OPS-76
 
 #### OPS-77 Silence alarms during deployment teardown
 
@@ -3535,7 +3561,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:area DATA -->
 - [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake · [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake
 - [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
-- [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow
+- [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow · [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
@@ -3780,6 +3806,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing
 - [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch
 - [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow
+- [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch
 <!-- /generated:group nightly-publish-and-orchestration-data -->
 
 #### DATA-18 Publish the nightly operator dashboard snapshot
@@ -3831,6 +3858,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflowTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java, scripts/verify-ingestion-jobs.sh, scripts/verify-analytics-pipeline.sh
 - **Keywords:** step functions, nightly ingestion, parallel branch, eventbridge scheduler, lambda errors alarm, verify pipeline, verify ingestion jobs
 - **Related:** DATA-05, DATA-06, DATA-07, DATA-09, DATA-11, DATA-21
+
+#### DATA-60 Replay one analytics nightly by dispatch
+
+- **Use when:** a night of the analytics nightly did not run or failed, and it must run again for an explicit date.
+- **Does:** run-nightly.yml validates the date (format, calendar day, not in the future). It chains into the deployment role and starts the environment's analytics-nightly state machine with the input `{"date": "<date>"}`. Every task reads `date` from that input. The job polls the execution for up to 30 minutes and fails unless it ends `SUCCEEDED`. The `prod-env-analytics-nightly-missed` remedy row dispatches it with the day before the alarm fired.
+- **Run:** `gh workflow run run-nightly.yml -f environment-name=prod -f date=YYYY-MM-DD`
+- **Entry:** `.github/workflows/run-nightly.yml:run-nightly`
+- **Files:** .github/workflows/run-nightly.yml, app/data/alarm-remedies.json, .github/workflows/alarm-triage.yml
+- **Keywords:** replay nightly, missed night, backfill, state machine execution, start execution, analytics nightly missed, explicit date
+- **Related:** DATA-22, OPS-18
 
 ### Site-side analytics and RUM (DATA)
 
@@ -4465,7 +4502,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -4783,6 +4820,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally
 - [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions
 - [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them
+- [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -4981,6 +5019,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/visual-review/SKILL.md
 - **Keywords:** visual review, screenshot review, look pass, llm as judge, definition of done, realistic data, clipping, guide screenshots, ux review
 - **Related:** DEV-19, OPS-139
+
+#### DEV-47 Capture a screenshot of every site page
+
+- **Use when:** a design pass or visual review needs every page under web/public at phone and desktop width, light and dark, with the console errors each page logs.
+- **Does:** site-screenshots.mjs finds every .html page under web/public except tests/ and docs/. It starts the simulator lane when none answers, and stops what it started. It signs in once through the mock OAuth form. It opens each page at 1280 and 390 pixels, in light and dark colour schemes. It takes a full-page PNG as the page loads, and a second PNG after it submits an empty form when the page has a submit button. A page that redirects an anonymous visitor to sign-in is captured again, signed in. It writes index.json with page, width, theme, state, file and console errors.
+- **Run:** `npm run site:screenshots`; `node scripts/site-screenshots.mjs --only <part-of-page-path> --out <dir>`
+- **Entry:** `scripts/site-screenshots.mjs:main`
+- **Files:** scripts/site-screenshots.mjs, package.json
+- **Keywords:** site screenshots, page screenshots, whole-site design pass, console errors, dark mode, responsive, phone width, empty form, index.json
+- **Related:** DEV-14, DEV-46
 
 
 ## Spreadsheets and diya-gl (SS)
@@ -5697,6 +5745,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - account separation: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
 - account stack: [BILL-36](#bill-36-cdk-account-stack)
 - accounting year-end: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
+- accounts document: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - accounts filing: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - accounts staging: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
 - acm: [OPS-37](#ops-37-check-https-certificate-expiry)
@@ -5761,6 +5810,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - amount owed: [HMRC-04](#hmrc-04-retrieve-vat-liabilities)
 - analytics event: [SITE-04](#site-04-track-visits-via-session-beacon)
 - analytics lake: [OPS-25](#ops-25-record-dora-and-probe-metrics), [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
+- analytics nightly missed: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - analytics-pull: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - analytics_storage: [SITE-15](#site-15-show-and-persist-cookie-consent)
 - annual submission: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
@@ -5791,6 +5841,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - asset groups: [DATA-33](#data-33-read-the-google-ads-account-inventory)
 - async request: [SITE-09](#site-09-track-and-poll-async-api-requests), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - async request state: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state)
+- athena: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
 - athena link: [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
 - athena lookup: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - athena query: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
@@ -5828,7 +5879,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - awscustomresource: [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
 - axe: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard), [SS-45](#ss-45-run-compliance-checks)
 - axe-core: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
-- backfill: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
+- backfill: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [DATA-55](#data-55-pull-paypal-receipts-into-the-lake), [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - background poll: [DEV-31](#dev-31-watch-github-ci-to-green)
 - backlog: [DEV-27](#dev-27-render-the-open-work-board)
 - backlog work: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
@@ -6123,8 +6174,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - consent mode: [SITE-15](#site-15-show-and-persist-cookie-consent)
 - consent.analytics: [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - consent.rum: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum)
+- console errors: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - console links: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation), [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
 - consume token: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
+- context: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - continuous backups: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - contrast: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - conversion actions: [DATA-33](#data-33-read-the-google-ads-account-inventory)
@@ -6205,13 +6258,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - custom error page: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - customer id hashing: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
-- customer lookup: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
+- customer lookup: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - customer portal: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal)
 - cut: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
 - daily budget: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - daily cap: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
 - daily check: [OPS-48](#ops-48-verify-backup-health-daily)
 - daily cron: [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow)
+- dark mode: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - dashboard: [HMRC-09](#hmrc-09-retrieve-itsa-business-details)
 - dashboard snapshot: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - dashboards: [OPS-117](#ops-117-provision-the-observability-stack)
@@ -6257,6 +6311,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dependency updates: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
 - deploy destroy run: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - deploy environment: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
+- deploy key: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
 - deploy metrics row: [OPS-25](#ops-25-record-dora-and-probe-metrics)
 - deploy pipeline: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
 - deploy validation failure: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
@@ -6392,6 +6447,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - embedded metric format: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics)
 - embedded videos: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
 - emf: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics)
+- empty form: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - empty state: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - enable gcp apis: [DATA-40](#data-40-enable-required-google-cloud-apis)
 - encryption: [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack)
@@ -6447,6 +6503,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - expire records: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - expiry: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - expiry window: [OPS-12](#ops-12-clean-up-expired-test-users)
+- explicit date: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - export: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - export user data: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
 - export wiring: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
@@ -6623,12 +6680,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - haiku: [OPS-18](#ops-18-run-alarm-and-support-triage)
 - halt triage: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
 - hard failure: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
-- hashed sub: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure), [DATA-01](#data-01-publish-activity-events-to-the-bus)
+- hashed sub: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure), [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - hashedsub: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - hastokensforactivity: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - head request: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - header check: [DEV-20](#dev-20-check-spdx-licence-headers)
 - header footer diagram: [SITE-12](#site-12-map-the-site-structure)
+- header hidden: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - header injection: [DEV-20](#dev-20-check-spdx-licence-headers)
 - header nav footer: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - header validation: [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
@@ -6720,12 +6778,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - independent recalculation: [SS-01](#ss-01-run-the-diya-gl-calculation-engine)
 - index: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - index-only: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
+- index.json: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - indexeddb: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - infosec runbook: [OPS-64](#ops-64-runbook-information-security-operations)
 - infra-apply: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - infrastructure: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
 - init fill submit verify: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
 - init workflow: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
+- inline xbrl: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - installation token: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
 - intelligent tiering: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - intent to crystallise: [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations)
@@ -6761,7 +6821,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - itsa sandbox: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - itsa sandbox spike: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - itsa status: [HMRC-11](#hmrc-11-retrieve-itsa-status)
-- ixbrl: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
+- ixbrl: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - java cdk: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks)
 - job minutes: [DEV-37](#dev-37-write-the-session-report)
 - join button: [SITE-03](#site-03-capture-feedback-interest)
@@ -6918,6 +6978,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mileage: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - milestones: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - minimum functionality standards: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
+- missed night: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - mock billing: [SITE-08](#site-08-bootstrap-the-app-server), [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
 - mock oauth: [SITE-08](#site-08-bootstrap-the-app-server), [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
 - mock server: [DEV-01](#dev-01-run-the-http-simulator-server), [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
@@ -7061,6 +7122,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - page chrome: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - page layout: [SITE-12](#site-12-map-the-site-structure)
 - page requests: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
+- page screenshots: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - pages report: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - pagination: [CH-03](#ch-03-search-the-companies-house-register), [BILL-19](#bill-19-list-a-users-diya-gl-books)
 - paid landings: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
@@ -7104,6 +7166,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - permission grant: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - personal allowance: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - personal data package: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
+- phone width: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - physical pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
 - pii redaction: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs), [OPS-86](#ops-86-provide-structured-pii-redacting-logging)
 - pino logger: [OPS-86](#ops-86-provide-structured-pii-redacting-logging)
@@ -7177,6 +7240,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - privacy: [SITE-10](#site-10-serve-general-site-pages)
 - privacy banner: [SITE-15](#site-15-show-and-persist-cookie-consent)
 - private report: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
+- private repository: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
 - probe failure: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - probe issue: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - probe metrics: [OPS-25](#ops-25-record-dora-and-probe-metrics)
@@ -7300,8 +7364,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - remedy row: [OPS-21](#ops-21-auto-close-resolved-alarm-issues), [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope)
 - remove bundle: [BILL-03](#bill-03-delete-a-bundle)
 - removeline: [SS-04](#ss-04-apply-book-edits-and-derivations)
+- rendering: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - rental income: [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates)
 - rental property: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
+- replay nightly: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - report: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - report a vulnerability: [OPS-65](#ops-65-document-security-policy-and-disclosure)
 - report.json: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
@@ -7324,6 +7390,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - resource policy: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - resource_forbidden: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
 - responsible disclosure: [OPS-65](#ops-65-document-security-policy-and-disclosure)
+- responsive: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - restore drill: [OPS-50](#ops-50-drill-and-test-pitr-database-restoration)
 - restore permissions: [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
 - restore prod: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
@@ -7420,6 +7487,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - schema change: [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - schema tables: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - screen reader: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
+- screenshot: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - screenshot review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - screenshots: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video), [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
@@ -7497,6 +7565,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - single stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
 - single-file json: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
 - site map: [SITE-12](#site-12-map-the-site-structure)
+- site screenshots: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - site-video-capture: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy)
 - sitemap: [SS-25](#ss-25-generate-sitemaps)
 - sitemap.xml: [SS-25](#ss-25-generate-sitemaps)
@@ -7541,6 +7610,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - stale video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - standalone cdk app: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - standalone harness: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
+- start execution: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
+- state machine execution: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - statement: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - static analysis: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
 - static pages: [SITE-10](#site-10-serve-general-site-pages)
@@ -7582,7 +7653,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sub-agent persona: [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas)
 - subhasher: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - subject id salt: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
-- submission failure: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
+- submission failure: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - submissions daily: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - submit vat: [HMRC-01](#hmrc-01-submit-a-vat-return)
 - submit.bundle.js: [BILL-43](#bill-43-build-the-frontend-test-bundle)
@@ -7605,6 +7676,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - superseded deploy: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - supplier invoices: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - supply chain: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
+- support alarms: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
 - support category: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
 - support ticket: [SITE-05](#site-05-submit-support-tickets)
 - support ticket lookup: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
@@ -7639,6 +7711,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - telegram: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram), [OPS-72](#ops-72-forward-bedrock-budget-alerts), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - telegram alert: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance), [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - telegram forwarder: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
+- telegram ping: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
 - template: [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules)
 - terms: [SITE-10](#site-10-serve-general-site-pages)
 - test bundle: [BILL-43](#bill-43-build-the-frontend-test-bundle)
@@ -7699,6 +7772,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - transaction_status: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
 - transactionid: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - transcript: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
+- transform: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - trend: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - trend deep link: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - triage: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
@@ -7724,6 +7798,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - unattended agent workflow: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - unattended loop: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
 - undo stack: [SS-04](#ss-04-apply-book-edits-and-derivations)
+- unit: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - unit tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
 - unlimited sentinel: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - unlisted: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
@@ -7754,7 +7829,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - v2 schema: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
 - validate workflows: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - validatelines: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
-- validation: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
+- validation: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
 - validity: [BILL-08](#bill-08-check-a-passs-validity)
 - vat account: [HMRC-05](#hmrc-05-retrieve-vat-payments), [HMRC-06](#hmrc-06-retrieve-vat-penalties)
 - vat box config: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
@@ -7840,6 +7915,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - weekly verification: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
 - well-known: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - what does the repo do: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
+- whole-site design pass: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - window globals: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)
 - withdraw invite: [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite)
 - wopi: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
@@ -7865,6 +7941,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - x-ray console: [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
 - x-request-id: [SITE-17](#site-17-trace-and-secure-client-requests)
 - xbrl validator: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
+- xhtml: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - xls roundtrip: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - xlsx: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
 - xlsx export: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)

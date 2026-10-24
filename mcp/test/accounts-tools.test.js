@@ -146,7 +146,7 @@ describe("derive_micro_entity_accounts", () => {
     });
     expect(xhtml).toContain(answer.companyNumber);
     expect(xhtml).toContain("BrickWork Pro Ltd");
-    expect(xhtml).toContain(String(answer.balanceSheet.currentYear.fixedAssets));
+    expect(xhtml).toContain(new Intl.NumberFormat("en-GB").format(answer.balanceSheet.currentYear.fixedAssets));
     const path = join(scratch, "brickwork-pro-accounts.html");
     writeFileSync(path, xhtml);
     expect(xhtml.length).toBeGreaterThan(1000);

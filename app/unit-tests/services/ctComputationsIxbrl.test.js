@@ -48,6 +48,7 @@ function facts(document) {
       value: fact.textContent,
       contextRef: fact.getAttribute("contextRef"),
       sign: fact.getAttribute("sign"),
+      format: fact.getAttribute("format"),
     };
   }
   return byName;
@@ -92,15 +93,19 @@ describe("buildCtComputations", () => {
     const byName = facts(parseXmlDocument(xml));
     expect(byName["ct-comp:CompanyName"]).toMatchObject({ value: "Precision Code Ltd", contextRef: "companyInstant" });
     expect(byName["ct-comp:TaxReference"]).toMatchObject({ value: "8596148860", contextRef: "companyInstant" });
-    expect(byName["ct-comp:StartOfPeriodCoveredByReturn"].value).toBe("2025-04-01");
-    expect(byName["ct-comp:EndOfPeriodCoveredByReturn"].value).toBe("2026-03-31");
-    expect(byName["ct-comp:PeriodOfAccountStartDate"].value).toBe("2025-04-01");
-    expect(byName["ct-comp:PeriodOfAccountEndDate"].value).toBe("2026-03-31");
+    expect(byName["ct-comp:StartOfPeriodCoveredByReturn"]).toMatchObject({ value: "1 April 2025", format: "ixt2:datedaymonthyearen" });
+    expect(byName["ct-comp:EndOfPeriodCoveredByReturn"].value).toBe("31 March 2026");
+    expect(byName["ct-comp:PeriodOfAccountStartDate"].value).toBe("1 April 2025");
+    expect(byName["ct-comp:PeriodOfAccountEndDate"].value).toBe("31 March 2026");
     expect(byName["ct-comp:CompanyIsAPartnerInAFirm"]).toMatchObject({ value: "false", contextRef: "companyPeriod" });
-    expect(byName["ct-comp:ProfitLossPerAccounts"]).toMatchObject({ value: "171288", contextRef: "tradePeriod" });
+    expect(byName["ct-comp:ProfitLossPerAccounts"]).toMatchObject({
+      value: "171,288",
+      contextRef: "tradePeriod",
+      format: "ixt2:numdotdecimal",
+    });
     expect(byName["ct-comp:AdjustmentsNon-tradingLoanRelationshipCreditsPerAccounts"].value).toBe("340");
-    expect(byName["ct-comp:TotalCapitalAllowances"].value).toBe("64000");
-    expect(byName["ct-comp:AdjustedProfitForThePeriod"]).toMatchObject({ value: "123480", contextRef: "tradePeriod" });
+    expect(byName["ct-comp:TotalCapitalAllowances"].value).toBe("64,000");
+    expect(byName["ct-comp:AdjustedProfitForThePeriod"]).toMatchObject({ value: "123,480", contextRef: "tradePeriod" });
 
     const company = contextXml(xml, "companyInstant");
     expect(company).toContain('<xbrli:identifier scheme="http://www.companieshouse.gov.uk/">12345678</xbrli:identifier>');

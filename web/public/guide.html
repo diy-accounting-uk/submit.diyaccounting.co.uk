@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Step-by-step guide to submitting VAT returns using DIY Accounting Submit. Learn how to check obligations, enter your figures, and get your submission receipt."
+      content="Step-by-step guide to every journey in DIY Accounting Submit: VAT, Income Tax, Companies House, the company tax return, receipts, passes, bundles and your books."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/guide.html" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -20,37 +20,110 @@
     <link rel="stylesheet" href="submit.css" />
     <script src="./lib/analytics.js"></script>
     <style>
-      .guide-section {
+      .guide-intro {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2em;
+        border-radius: 8px;
+        margin-bottom: 2em;
+      }
+      .guide-intro h2 {
+        margin-top: 0;
+        color: white;
+      }
+      .guide-intro p {
+        margin-bottom: 0;
+        opacity: 0.95;
+      }
+      .guide-intro p + p {
+        margin-top: 0.75em;
+      }
+      .guide-group {
         margin: 2em 0;
-        padding-bottom: 2em;
-        border-bottom: 1px solid #e0e0e0;
       }
-      .guide-section:last-of-type {
-        border-bottom: none;
+      .guide-group > h2 {
+        margin-bottom: 0.25em;
       }
-      .guide-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 16px;
-        margin-top: 1em;
+      .guide-group-intro {
+        margin-top: 0;
+        color: #555;
       }
-      .guide-card {
+      .guide-journey {
         background: #fff;
         border: 1px solid #ddd;
         border-radius: 8px;
-        padding: 8px;
+        margin-top: 12px;
         box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
       }
-      .guide-card img {
+      .guide-journey > summary {
+        cursor: pointer;
+        padding: 12px 16px;
+        font-weight: 600;
+        color: #2c5aa0;
+      }
+      .guide-journey[open] > summary {
+        border-bottom: 1px solid #e0e0e0;
+      }
+      .guide-journey-note {
+        font-weight: normal;
+        font-size: 0.85em;
+        color: #666;
+        margin-left: 8px;
+      }
+      .guide-steps-list {
+        list-style: none;
+        counter-reset: guide-step;
+        margin: 0;
+        padding: 16px;
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 16px;
+      }
+      .guide-step {
+        counter-increment: guide-step;
+        background: #f8f9fa;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        padding: 8px;
+      }
+      .guide-step-title {
+        margin: 4px 0 6px;
+        font-size: 1em;
+        font-weight: 600;
+      }
+      .guide-step-title::before {
+        content: counter(guide-step);
+        display: inline-block;
+        background: #2c5aa0;
+        color: white;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        text-align: center;
+        line-height: 26px;
+        font-weight: bold;
+        margin-right: 8px;
+      }
+      .guide-thumb {
+        display: block;
+        width: 100%;
+        padding: 0;
+        border: 1px solid #eee;
+        border-radius: 4px;
+        background: none;
+        cursor: zoom-in;
+      }
+      .guide-thumb img {
+        display: block;
         width: 100%;
         height: auto;
         border-radius: 4px;
-        border: 1px solid #eee;
-        cursor: pointer;
-        transition: opacity 0.2s ease;
       }
-      .guide-card img:hover {
-        opacity: 0.9;
+      .guide-caption {
+        font-size: 0.95em;
+        color: #555;
+        margin: 8px 0 0;
+        line-height: 1.5;
       }
       /* Lightbox modal styles */
       .lightbox-overlay {
@@ -98,65 +171,9 @@
         color: rgba(255, 255, 255, 0.7);
         font-size: 14px;
       }
-      .guide-caption {
-        font-size: 0.95em;
-        color: #555;
-        margin-top: 8px;
-        line-height: 1.5;
-      }
-      .guide-steps {
-        background: #f8f9fa;
-        border: 1px solid #e0e0e0;
-        border-radius: 6px;
-        padding: 16px;
-        margin-top: 16px;
-      }
-      .guide-steps h3 {
-        margin-top: 0;
-        color: #2c5aa0;
-        font-size: 1.1em;
-      }
-      .guide-steps ol {
-        margin: 0;
-        padding-left: 1.5em;
-      }
-      .guide-steps li {
-        margin-bottom: 0.5em;
-      }
-      .step-number {
-        display: inline-block;
-        background: #2c5aa0;
-        color: white;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        text-align: center;
-        line-height: 28px;
-        font-weight: bold;
-        margin-right: 8px;
-      }
-      .guide-intro {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 2em;
-        border-radius: 8px;
-        margin-bottom: 2em;
-      }
-      .guide-intro h2 {
-        margin-top: 0;
-        color: white;
-      }
-      .guide-intro p {
-        margin-bottom: 0;
-        opacity: 0.95;
-      }
       @media (min-width: 700px) {
-        .guide-grid {
+        .guide-steps-list {
           grid-template-columns: 1fr 1fr;
-        }
-        .guide-grid.single {
-          grid-template-columns: 1fr;
-          max-width: 600px;
         }
       }
     </style>
@@ -166,14 +183,17 @@
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>User Guide</h1>
-      <p class="subtitle">How to submit your VAT return to HMRC</p>
+      <p class="subtitle">Every journey, step by step</p>
     </header>
 
     <main id="mainContent">
       <div class="form-container">
         <div class="guide-intro">
-          <h2>Submit your VAT return in 3 steps</h2>
-          <p>This guide walks you through checking your VAT obligations, entering your figures, and submitting to HMRC.</p>
+          <h2>Every journey, step by step</h2>
+          <p>
+            Pick a journey and open it to see its steps. Each step is a screenshot from a real recording of the product, with a line on what
+            to do. Select a screenshot to see it full size.
+          </p>
           <p>
             New here? Request a free day pass on the <a href="bundles.html">Bundles</a> page — no pass needed, and you get 3 free VAT
             submissions to try it out.
@@ -181,176 +201,8 @@
         </div>
       </div>
 
-      <!-- Step 1: Check Obligations -->
-      <section class="guide-section" id="obligations">
-        <h2><span class="step-number">1</span> Check Your VAT Obligations</h2>
-        <p>
-          Before submitting, check which VAT periods HMRC expects returns for. Open obligations show periods where you haven't yet
-          submitted.
-        </p>
-        <div class="guide-grid single">
-          <div class="guide-card">
-            <img
-              src="images/guide/obligations-with-results.png"
-              alt="VAT obligations screen showing a list of VAT periods with their due dates and status"
-            />
-            <div class="guide-caption">
-              <strong>VAT Obligations</strong> shows your VAT periods. Each row displays the period dates, due date, and whether the return
-              is Open (needs submitting) or Fulfilled (already submitted). Click <strong>Submit return</strong> to start a submission for an
-              open period.
-            </div>
-          </div>
-        </div>
-        <div class="guide-steps">
-          <h3>How to check obligations</h3>
-          <ol>
-            <li>Click <strong>Check VAT Obligations</strong> from the home page</li>
-            <li>Enter your 9-digit VAT registration number</li>
-            <li>Adjust the date range if needed (defaults to the current year)</li>
-            <li>Click <strong>Retrieve obligations</strong></li>
-            <li>Look for periods with <strong>Open</strong> status - these need returns</li>
-          </ol>
-        </div>
-      </section>
-
-      <!-- Step 2: Submit VAT Return -->
-      <section class="guide-section" id="submit">
-        <h2><span class="step-number">2</span> Submit Your VAT Return</h2>
-        <p>Enter your VAT figures in Boxes 1-9. Boxes 3 and 5 calculate automatically based on your other entries.</p>
-        <div class="guide-grid">
-          <div class="guide-card">
-            <img
-              src="images/guide/vat-return-form-filled.png"
-              alt="VAT return submission form showing all 9 boxes filled with example figures"
-            />
-            <div class="guide-caption">
-              <strong>VAT Return Submission form</strong> - Enter your figures from your accounting records. Box 1 is VAT on sales, Box 4 is
-              VAT you can reclaim, and Boxes 6-9 are turnover values in whole pounds.
-            </div>
-          </div>
-          <div class="guide-card">
-            <img
-              src="images/guide/submission-success-receipt.png"
-              alt="Successful submission screen showing the HMRC Form Bundle Number and processing date"
-            />
-            <div class="guide-caption">
-              <strong>Success!</strong> After HMRC accepts your return, you'll see a receipt with your Form Bundle Number. Save or print
-              this as proof of submission. The processing date confirms when HMRC received it.
-            </div>
-          </div>
-        </div>
-        <div class="guide-steps">
-          <h3>How to submit your return</h3>
-          <ol>
-            <li>Click <strong>Submit VAT Return</strong> from the home page</li>
-            <li>Enter your VAT registration number and select the VAT period</li>
-            <li>
-              Enter your figures:
-              <ul>
-                <li><strong>Box 1:</strong> VAT due on sales and other outputs</li>
-                <li><strong>Box 2:</strong> VAT due on acquisitions from EU (usually £0)</li>
-                <li><strong>Box 4:</strong> VAT reclaimed on purchases and other inputs</li>
-                <li><strong>Boxes 6-9:</strong> Turnover and EU trade values (whole pounds)</li>
-              </ul>
-            </li>
-            <li>Tick the declaration checkbox to confirm the information is true</li>
-            <li>Click <strong>Submit</strong> - you'll be redirected to HMRC to authorise</li>
-            <li>Log in with your Government Gateway credentials and grant permission</li>
-            <li><strong>Save your receipt</strong> showing the Form Bundle Number</li>
-          </ol>
-        </div>
-      </section>
-
-      <!-- Step 3: View and Verify -->
-      <section class="guide-section" id="view">
-        <h2><span class="step-number">3</span> View Your Submitted Return</h2>
-        <p>After submission, you can retrieve your return from HMRC to verify the figures were recorded correctly.</p>
-        <div class="guide-grid single">
-          <div class="guide-card">
-            <img src="images/guide/view-return-details.png" alt="View VAT Return screen showing all 9 box values as recorded by HMRC" />
-            <div class="guide-caption">
-              <strong>View VAT Return</strong> shows exactly what HMRC has on record. Use this to confirm your submission was recorded
-              correctly. All 9 boxes are displayed along with the period dates.
-            </div>
-          </div>
-        </div>
-        <div class="guide-steps">
-          <h3>How to view a submitted return</h3>
-          <ol>
-            <li>Click <strong>View VAT Return</strong> from the home page</li>
-            <li>Enter your VAT registration number</li>
-            <li>Select the period you want to view</li>
-            <li>Click <strong>Retrieve</strong> to see HMRC's record of your return</li>
-          </ol>
-        </div>
-      </section>
-
-      <!-- Additional: Receipts -->
-      <section class="guide-section" id="receipts">
-        <h2>Finding Your Receipts</h2>
-        <p>
-          Your submission receipts are saved securely in your account. Access them anytime from the <strong>Receipts</strong> link in the
-          navigation bar to see your submission history.
-        </p>
-        <div class="guide-steps">
-          <h3>Important notes about receipts</h3>
-          <ol>
-            <li>Receipts are stored securely in your account and accessible from any device</li>
-            <li>Log in to view your submission history</li>
-            <li>Your receipt includes the <strong>Form Bundle Number</strong> - quote this to HMRC if you ever need to prove submission</li>
-          </ol>
-        </div>
-      </section>
-
-      <!-- Additional: VAT Liabilities -->
-      <section class="guide-section" id="liabilities">
-        <h2>Checking Your VAT Liabilities</h2>
-        <p>VAT Liabilities shows the VAT charges HMRC has raised against your account, with the original and outstanding amounts owed.</p>
-        <div class="guide-steps">
-          <h3>How to check liabilities</h3>
-          <ol>
-            <li>Click <strong>VAT Liabilities</strong> from the home page</li>
-            <li>Enter your 9-digit VAT registration number</li>
-            <li>Adjust the date range if needed (defaults to the current year)</li>
-            <li>Click <strong>Retrieve liabilities</strong></li>
-            <li>Each row shows the charge type, original amount, outstanding amount, and due date</li>
-          </ol>
-        </div>
-      </section>
-
-      <!-- Additional: VAT Payments -->
-      <section class="guide-section" id="payments">
-        <h2>Checking Your VAT Payments</h2>
-        <p>VAT Payments shows the payments HMRC has recorded against your account, with the amount and the date each was received.</p>
-        <div class="guide-steps">
-          <h3>How to check payments</h3>
-          <ol>
-            <li>Click <strong>VAT Payments</strong> from the home page</li>
-            <li>Enter your 9-digit VAT registration number</li>
-            <li>Adjust the date range if needed (defaults to the current year)</li>
-            <li>Click <strong>Retrieve payments</strong></li>
-            <li>Each row shows the amount and the date it was received, or "Pending" if not yet received</li>
-          </ol>
-        </div>
-      </section>
-
-      <!-- Additional: VAT Penalties -->
-      <section class="guide-section" id="penalties">
-        <h2>Checking Your VAT Penalties</h2>
-        <p>
-          VAT Penalties shows any late submission or late payment penalties HMRC has recorded against your account in the last 24 months.
-          There is no date range to choose - HMRC always returns the trailing 24 months.
-        </p>
-        <div class="guide-steps">
-          <h3>How to check penalties</h3>
-          <ol>
-            <li>Click <strong>VAT Penalties</strong> from the home page</li>
-            <li>Enter your 9-digit VAT registration number</li>
-            <li>Click <strong>Retrieve penalties</strong></li>
-            <li>A summary shows your active and inactive penalty points; two tables list late submission and late payment penalties</li>
-          </ol>
-        </div>
-      </section>
+      <div id="guideJourneys"></div>
+      <noscript><p>The guide shows its steps with JavaScript on.</p></noscript>
     </main>
 
     <footer data-footer="full"></footer>

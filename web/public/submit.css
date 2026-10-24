@@ -654,7 +654,8 @@ label,
 
 input[type="text"],
 input[type="number"],
-input[type="date"] {
+input[type="date"],
+input[type="password"] {
   width: 100%;
   padding: 0.75em;
   border: 2px solid var(--color-border);
@@ -668,7 +669,8 @@ input[type="date"] {
 
 input[type="text"]:focus,
 input[type="number"]:focus,
-input[type="date"]:focus {
+input[type="date"]:focus,
+input[type="password"]:focus {
   outline: none;
   border-color: #2c5aa0;
 }
@@ -2353,4 +2355,28 @@ input[type="radio"] {
 }
 .books-import-status {
   white-space: pre-line;
+}
+
+/* ============================================
+   Developer-only sections and raw document previews
+   ============================================ */
+
+.developer-only-section {
+  display: none;
+}
+
+body.developer-mode .developer-only-section {
+  display: block;
+}
+
+.ixbrl-preview {
+  max-height: 24em;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  padding: 0.75em;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  font-size: 0.8em;
+  text-align: left;
 }

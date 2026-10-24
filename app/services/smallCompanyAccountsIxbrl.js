@@ -14,16 +14,27 @@ import {
   CONCEPTS,
   DIMENSIONS,
   MEMBERS,
+  NUMBER_FORMAT,
   qname,
   buildContexts,
   formatMonetary,
+  displayDate,
+  previousDay,
+  periodEndedPhrase,
   renderStatement,
   renderFixedFact,
   renderTextFact,
   renderMonetaryFact,
+  renderDateFact,
   dimensionMemberXml,
   buildDimensionedContext,
-  assembleBalanceSheetFacts,
+  balanceSheetFacts,
+  balanceSheetRows,
+  figure,
+  statementTable,
+  pageHeading,
+  coverPage,
+  approvalHtml,
   renderAccountsDocument,
 } from "./accountsIxbrlCommon.js";
 
@@ -172,113 +183,129 @@ function money(conceptKey, contextRef, value) {
   return renderMonetaryFact(conceptKey, contextRef, "GBP", value);
 }
 
-function row(label, currentXml, priorXml) {
-  return `<tr><td>${escapeXmlText(label)}</td><td>${currentXml}</td><td>${priorXml ?? ""}</td></tr>`;
+const PROFIT_AND_LOSS_ROW = {
+  turnover: {},
+  costOfSales: { deduction: true },
+  grossProfit: { style: "subtotal" },
+  administrativeExpenses: { deduction: true },
+  operatingProfit: { style: "subtotal" },
+  interestReceivable: {},
+  profitBeforeTax: { style: "subtotal" },
+  tax: { deduction: true },
+  profit: { style: "total" },
+};
+
+function profitAndLossPage({ heading, refs, current, prior, columns }) {
+  const rows = SMALL_COMPANY_PROFIT_AND_LOSS_LINES.map((line) => {
+    const { deduction, style } = PROFIT_AND_LOSS_ROW[line];
+    const conceptKey = PROFIT_AND_LOSS_CONCEPT_KEY[line];
+    const cells = [figure(money(conceptKey, refs.current, current[line]), current[line], { deduction })];
+    if (prior) cells.push(figure(money(conceptKey, refs.prior, prior[line]), prior[line], { deduction }));
+    return { label: PROFIT_AND_LOSS_LABEL[line], style, cells };
+  });
+  return `<div class="page">
+${heading}${statementTable({ columns: prior ? columns : columns.slice(0, 1), rows })}
+</div>`;
 }
 
-function table(headingText, hasPrior, rows) {
-  return `<h2>${escapeXmlText(headingText)}</h2>
-<table><thead><tr><th></th><th>Current year</th>${hasPrior ? "<th>Prior year</th>" : "<th></th>"}</tr></thead><tbody>
-${rows.join("\n")}
-</tbody></table>`;
-}
+const CURRENT_ASSET_SUB_LINES = [
+  ["Stocks", "totalInventories", "stocks"],
+  ["Debtors", "debtors", "debtors"],
+  ["Cash at bank and in hand", "cashBankOnHand", "cashAtBank"],
+];
 
-function profitAndLossHtml({ refs, current, prior }) {
-  const rows = SMALL_COMPANY_PROFIT_AND_LOSS_LINES.map((line) =>
-    row(
-      PROFIT_AND_LOSS_LABEL[line],
-      money(PROFIT_AND_LOSS_CONCEPT_KEY[line], refs.current, current[line]),
-      prior ? money(PROFIT_AND_LOSS_CONCEPT_KEY[line], refs.prior, prior[line]) : undefined,
+const CREDITOR_SUB_LINES = [
+  ["Trade creditors", "tradeCreditors", "tradeCreditors"],
+  ["Corporation tax", "corporationTaxPayable", "corporationTax"],
+  ["Other creditors", "otherCreditors", "otherCreditors"],
+];
+
+function subLineRows(lines, yearFigures, contextRefs, contextSuffix) {
+  return lines.map(([label, conceptKey, field]) => ({
+    label,
+    cells: yearFigures.map((figures, index) =>
+      figure(money(conceptKey, `${contextRefs[index]}${contextSuffix}`, figures[field]), figures[field]),
     ),
-  );
-  return table("Profit and loss account", Boolean(prior), rows);
+  }));
 }
 
-function balanceSheetHtml({ refs, current, prior, additionalContexts, entityIdentifierXml, periodXml }) {
-  const currentWithTotals = withBalanceSheetTotals(current);
-  const priorWithTotals = prior ? withBalanceSheetTotals(prior) : undefined;
-
-  const mainFacts = [
-    assembleBalanceSheetFacts({
-      contextRef: refs.currentInstant,
-      entityIdentifierXml,
-      periodXml: periodXml[refs.currentInstant],
-      additionalContexts,
-      unitRef: "GBP",
-      figures: currentWithTotals,
-    }),
-  ];
-  if (priorWithTotals) {
-    mainFacts.push(
-      assembleBalanceSheetFacts({
-        contextRef: refs.priorInstant,
-        entityIdentifierXml,
-        periodXml: periodXml[refs.priorInstant],
-        additionalContexts,
-        unitRef: "GBP",
-        figures: priorWithTotals,
-      }),
-    );
-  }
-
-  const lines = [
-    ["Stocks", "totalInventories", "stocks", ""],
-    ["Debtors", "debtors", "debtors", ""],
-    ["Cash at bank and in hand", "cashBankOnHand", "cashAtBank", ""],
-    ["Trade creditors", "tradeCreditors", "tradeCreditors", "-within-one-year"],
-    ["Corporation tax", "corporationTaxPayable", "corporationTax", "-within-one-year"],
-    ["Other creditors", "otherCreditors", "otherCreditors", "-within-one-year"],
-  ];
-  const rows = lines.map(([label, conceptKey, field, contextSuffix]) =>
-    row(
-      label,
-      money(conceptKey, `${refs.currentInstant}${contextSuffix}`, current[field]),
-      priorWithTotals ? money(conceptKey, `${refs.priorInstant}${contextSuffix}`, prior[field]) : undefined,
-    ),
-  );
-  return { html: table("Balance sheet", Boolean(priorWithTotals), rows), mainFacts: mainFacts.join("") };
-}
-
-function fixedAssetNoteFacts({ refs, fixedAssetNote, entityIdentifierXml, periodXml, additionalContexts }) {
-  const facts = [];
-  const htmlRows = [];
-  for (const className of FIXED_ASSET_CLASSES) {
+/**
+ * The fixed asset note as printed: one column per asset class and a total column, with the cost
+ * and depreciation movements and the net book values at both balance sheet dates. Each class's
+ * figures are tagged against its PropertyPlantEquipmentClassesDimension member and the totals
+ * against the undimensioned contexts.
+ */
+function fixedAssetNoteTable({ refs, fixedAssetNote, entityIdentifierXml, periodXml, additionalContexts }) {
+  const classNames = FIXED_ASSET_CLASSES.filter((className) => fixedAssetNote[className]);
+  const columns = [];
+  for (const className of classNames) {
     const classFigures = fixedAssetNote[className];
-    if (!classFigures) continue;
-    const member = MEMBERS[className];
-    const dimensionXml = dimensionMemberXml(DIMENSIONS.propertyPlantEquipmentClasses, member);
-    const instantRef = buildDimensionedContext({
-      additionalContexts,
-      entityIdentifierXml,
-      periodXml: periodXml[refs.currentInstant],
-      dimensionXml,
-      id: `${refs.currentInstant}-ppe-${className}`,
+    const dimensionXml = dimensionMemberXml(DIMENSIONS.propertyPlantEquipmentClasses, MEMBERS[className]);
+    const context = (periodKey, suffix) =>
+      buildDimensionedContext({
+        additionalContexts,
+        entityIdentifierXml,
+        periodXml: periodXml[periodKey],
+        dimensionXml,
+        id: `${periodKey}-ppe-${className}${suffix}`,
+      });
+    columns.push({
+      heading: FIXED_ASSET_CLASS_LABEL[className],
+      figures: { ...classFigures, ...fixedAssetClosingFigures(classFigures) },
+      refs: { opening: context(refs.priorInstant, ""), duration: context(refs.current, ""), closing: context(refs.currentInstant, "") },
     });
-    const durationRef = buildDimensionedContext({
-      additionalContexts,
-      entityIdentifierXml,
-      periodXml: periodXml[refs.current],
-      dimensionXml,
-      id: `${refs.current}-ppe-${className}`,
-    });
-    const closing = fixedAssetClosingFigures(classFigures);
-    facts.push(
-      money("propertyPlantEquipmentGrossCost", instantRef, closing.costAtEnd),
-      money("additionsPropertyPlantEquipment", durationRef, classFigures.additions),
-      money("disposalsPropertyPlantEquipment", durationRef, classFigures.disposals),
-      money("accumulatedDepreciationPropertyPlantEquipment", instantRef, closing.depreciationAtEnd),
-      money("depreciationChargePropertyPlantEquipment", durationRef, classFigures.depreciationCharge),
-      money("depreciationDisposalsPropertyPlantEquipment", durationRef, classFigures.depreciationOnDisposals),
-      money("propertyPlantEquipment", instantRef, closing.netBookValue),
-    );
-    htmlRows.push(
-      `<tr><td>${FIXED_ASSET_CLASS_LABEL[className]}</td><td>${money("propertyPlantEquipmentGrossCost", instantRef, closing.costAtEnd)}</td><td>${money("accumulatedDepreciationPropertyPlantEquipment", instantRef, closing.depreciationAtEnd)}</td><td>${money("propertyPlantEquipment", instantRef, closing.netBookValue)}</td></tr>`,
-    );
   }
-  return { facts, htmlRows };
+  const totals = {};
+  for (const field of [...FIXED_ASSET_CLASS_FIELDS, "costAtEnd", "depreciationAtEnd", "netBookValue"]) {
+    totals[field] = columns.reduce((total, column) => total + column.figures[field], 0);
+  }
+  columns.push({
+    heading: "Total",
+    figures: totals,
+    refs: { opening: refs.priorInstant, duration: refs.current, closing: refs.currentInstant },
+  });
+
+  const row = (label, conceptKey, refKey, valueOf, options = {}) => ({
+    label,
+    indent: options.indent,
+    style: options.style,
+    cells: columns.map((column) => {
+      const value = valueOf(column.figures);
+      return figure(money(conceptKey, column.refs[refKey], value), value, { deduction: options.deduction });
+    }),
+  });
+  const openingNetBookValue = (figures) => figures.costAtStart - figures.depreciationAtStart;
+  const startLabel = `At ${displayDate(refs.periodStartDate)}`;
+  const endLabel = `At ${displayDate(refs.periodEndDate)}`;
+  const priorEndLabel = `At ${displayDate(previousDay(refs.periodStartDate))}`;
+
+  return statementTable({
+    columns: columns.map((column) => column.heading),
+    rows: [
+      { label: "Cost", style: "heading" },
+      row(startLabel, "propertyPlantEquipmentGrossCost", "opening", (f) => f.costAtStart, { indent: true }),
+      row("Additions", "additionsPropertyPlantEquipment", "duration", (f) => f.additions, { indent: true }),
+      row("Disposals", "disposalsPropertyPlantEquipment", "duration", (f) => f.disposals, { indent: true, deduction: true }),
+      row(endLabel, "propertyPlantEquipmentGrossCost", "closing", (f) => f.costAtEnd, { indent: true, style: "subtotal" }),
+      { label: "Depreciation", style: "heading" },
+      row(startLabel, "accumulatedDepreciationPropertyPlantEquipment", "opening", (f) => f.depreciationAtStart, { indent: true }),
+      row("Charge for the year", "depreciationChargePropertyPlantEquipment", "duration", (f) => f.depreciationCharge, { indent: true }),
+      row("On disposals", "depreciationDisposalsPropertyPlantEquipment", "duration", (f) => f.depreciationOnDisposals, {
+        indent: true,
+        deduction: true,
+      }),
+      row(endLabel, "accumulatedDepreciationPropertyPlantEquipment", "closing", (f) => f.depreciationAtEnd, {
+        indent: true,
+        style: "subtotal",
+      }),
+      { label: "Net book value", style: "heading" },
+      row(endLabel, "propertyPlantEquipment", "closing", (f) => f.netBookValue, { indent: true, style: "total" }),
+      row(priorEndLabel, "propertyPlantEquipment", "opening", openingNetBookValue, { indent: true }),
+    ],
+  });
 }
 
-function directorsReportHtml({ input, refs, additionalContexts, entityIdentifierXml, periodXml }) {
+function directorsReportPage({ heading, input, refs, additionalContexts, entityIdentifierXml, periodXml }) {
   const directorFacts = input.directors.map((name, index) => {
     const contextRef = buildDimensionedContext({
       additionalContexts,
@@ -287,14 +314,19 @@ function directorsReportHtml({ input, refs, additionalContexts, entityIdentifier
       dimensionXml: dimensionMemberXml(DIMENSIONS.entityOfficers, { prefix: "bus", name: `Director${index + 1}` }),
       id: `${refs.current}-director-${index + 1}`,
     });
-    return `<li>${renderTextFact("nameEntityOfficer", contextRef, name)}</li>`;
+    return renderTextFact("nameEntityOfficer", contextRef, name);
   });
-  return `<h2>Directors' report</h2>
-<p>Principal activity: ${renderTextFact("descriptionPrincipalActivities", refs.current, input.principalActivity)}</p>
-<p>Directors who held office during the period:</p>
-<ul>${directorFacts.join("")}</ul>
+  return `<div class="page">
+${heading}<p>The directors present their report and the financial statements for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}.</p>
+<h3>Principal activity</h3>
+<p>${renderTextFact("descriptionPrincipalActivities", refs.current, input.principalActivity)}</p>
+<h3>Directors</h3>
+<p>The directors who held office during the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd).split(" ")[0])} were:</p>
+<p>${directorFacts.join("<br/>")}</p>
 <p>${renderStatement("statementSmallCompaniesRegimeDirectorsReport", refs.current)}</p>
-<p>Approved by the board on ${input.dateOfApproval} and signed on its behalf by ${escapeXmlText(input.directorName)}${renderFixedFact("directorSigningDirectorsReport", refs.current)}</p>`;
+<p class="approval">This report was approved by the board of directors on ${escapeXmlText(displayDate(input.dateOfApproval))} and signed on its behalf by:</p>
+<p class="signature">${escapeXmlText(input.directorName)}<br/>Director</p>
+</div>`;
 }
 
 /**
@@ -322,17 +354,19 @@ function directorsReportHtml({ input, refs, additionalContexts, entityIdentifier
 export function buildSmallCompanyAccounts(input) {
   const priorBalanceSheet = input.balanceSheet.prior;
   const priorProfitAndLoss = input.profitAndLoss.prior;
+  const hasFixedAssetNote = Boolean(input.fixedAssetNote) && Object.keys(input.fixedAssetNote).length > 0;
   const {
     xml: contextsXml,
     refs,
     entityIdentifierXml,
     periodXml,
   } = buildContexts(input, {
-    includePriorInstant: Boolean(priorBalanceSheet),
+    // The fixed asset note's opening balances sit at the prior balance sheet date.
+    includePriorInstant: Boolean(priorBalanceSheet) || hasFixedAssetNote,
     includePriorPeriod: Boolean(priorProfitAndLoss) && !input.filleted,
   });
   const additionalContexts = [];
-  const unrenderedFacts = [];
+  const hiddenFacts = [];
 
   const problems = [
     ...profitAndLossProblems(input.profitAndLoss.current).map((message) => `profitAndLoss.current: ${message}`),
@@ -345,17 +379,12 @@ export function buildSmallCompanyAccounts(input) {
     );
   }
 
-  unrenderedFacts.push(
-    `<ix:nonNumeric name="${qname(CONCEPTS.companiesHouseRegisteredNumber)}" contextRef="${refs.current}">${escapeXmlText(input.companyNumber)}</ix:nonNumeric>`,
-    `<ix:nonNumeric name="${qname(CONCEPTS.entityCurrentLegalOrRegisteredName)}" contextRef="${refs.current}">${escapeXmlText(input.companyName)}</ix:nonNumeric>`,
-    `<ix:nonNumeric name="${qname(CONCEPTS.balanceSheetDate)}" contextRef="${refs.currentInstant}">${input.periodEnd}</ix:nonNumeric>`,
-    `<ix:nonNumeric name="${qname(CONCEPTS.dateAuthorisationFinancialStatementsForIssue)}" contextRef="${refs.currentInstant}">${input.dateOfApproval}</ix:nonNumeric>`,
+  hiddenFacts.push(
     renderFixedFact("directorSigningFinancialStatements", refs.current),
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
-    `<ix:nonNumeric name="${qname(CONCEPTS.startDateForPeriodCoveredByReport)}" contextRef="${refs.periodStartInstant}">${input.periodStart}</ix:nonNumeric>`,
-    `<ix:nonNumeric name="${qname(CONCEPTS.endDateForPeriodCoveredByReport)}" contextRef="${refs.currentInstant}">${input.periodEnd}</ix:nonNumeric>`,
     renderFixedFact("entityTradingStatus", refs.current),
   );
+  if (!input.filleted) hiddenFacts.push(renderFixedFact("directorSigningDirectorsReport", refs.current));
 
   for (const [conceptKey, dimension, member, id] of [
     ["accountsStatusAuditedOrUnaudited", DIMENSIONS.accountsStatus, MEMBERS.auditExemptNoAccountantsReport, "accounts-status"],
@@ -370,57 +399,110 @@ export function buildSmallCompanyAccounts(input) {
       dimensionXml: dimensionMemberXml(dimension, member),
       id: `${refs.current}-${id}`,
     });
-    unrenderedFacts.push(renderFixedFact(conceptKey, contextRef));
+    hiddenFacts.push(renderFixedFact(conceptKey, contextRef));
   }
+
+  const balanceSheetYears = [withBalanceSheetTotals(input.balanceSheet.current)];
+  const balanceSheetRefs = [refs.currentInstant];
+  if (priorBalanceSheet) {
+    balanceSheetYears.push(withBalanceSheetTotals(priorBalanceSheet));
+    balanceSheetRefs.push(refs.priorInstant);
+  }
+  const years = balanceSheetYears.map((figures, index) =>
+    balanceSheetFacts({
+      contextRef: balanceSheetRefs[index],
+      entityIdentifierXml,
+      periodXml: periodXml[balanceSheetRefs[index]],
+      additionalContexts,
+      unitRef: "GBP",
+      figures,
+    }),
+  );
+  const columns = [input.periodEnd.slice(0, 4), (input.priorBalanceSheetDate || previousDay(input.periodStart)).slice(0, 4)];
 
   const statementKeys = input.filleted
     ? [...SMALL_COMPANY_STATEMENT_KEYS, "statementProfitAndLossNotDelivered"]
     : SMALL_COMPANY_STATEMENT_KEYS;
-  const statementsHtml = statementKeys.map((key) => `<p>${renderStatement(key, refs.current)}</p>`).join("\n");
 
-  const employeesFact = `<ix:nonFraction name="${qname(CONCEPTS.averageNumberEmployeesDuringPeriod)}" contextRef="${refs.current}" unitRef="pure" decimals="0">${formatMonetary(input.averageNumberOfEmployees)}</ix:nonFraction>`;
+  const notes = [
+    { title: "Accounting policies", html: `<p>${escapeXmlText(input.accountingPolicies)}</p>` },
+    {
+      title: "Employees",
+      html: `<p>The average number of employees during the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd).split(" ")[0])} was <ix:nonFraction name="${qname(CONCEPTS.averageNumberEmployeesDuringPeriod)}" contextRef="${refs.current}" unitRef="pure" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(input.averageNumberOfEmployees)}</ix:nonFraction>.</p>`,
+    },
+  ];
+  let fixedAssetNoteNumber;
+  if (hasFixedAssetNote) {
+    notes.push({
+      title: "Tangible fixed assets",
+      html: fixedAssetNoteTable({
+        refs: { ...refs, periodStartDate: input.periodStart, periodEndDate: input.periodEnd },
+        fixedAssetNote: input.fixedAssetNote,
+        entityIdentifierXml,
+        periodXml,
+        additionalContexts,
+      }),
+    });
+    fixedAssetNoteNumber = notes.length;
+  }
 
-  const balanceSheet = balanceSheetHtml({
-    refs,
-    current: input.balanceSheet.current,
-    prior: priorBalanceSheet,
-    additionalContexts,
-    entityIdentifierXml,
-    periodXml,
+  const period = escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd));
+  const heading = (title, subtitleHtml) =>
+    pageHeading({ companyName: input.companyName, companyNumber: input.companyNumber, title, subtitleHtml });
+
+  const pages = [
+    coverPage({
+      refs,
+      companyName: input.companyName,
+      companyNumber: input.companyNumber,
+      title: "Unaudited financial statements",
+      periodStart: input.periodStart,
+      periodEnd: input.periodEnd,
+    }),
+  ];
+  if (!input.filleted) {
+    pages.push(
+      directorsReportPage({
+        heading: heading("Directors' report", `for the ${period}`),
+        input,
+        refs,
+        additionalContexts,
+        entityIdentifierXml,
+        periodXml,
+      }),
+      profitAndLossPage({
+        heading: heading("Profit and loss account", `for the ${period}`),
+        refs,
+        current: input.profitAndLoss.current,
+        prior: priorProfitAndLoss,
+        columns,
+      }),
+    );
+  }
+  pages.push(`<div class="page">
+${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${statementTable({
+    columns: columns.slice(0, years.length),
+    notes: Boolean(fixedAssetNoteNumber),
+    rows: balanceSheetRows({
+      years,
+      currentAssetLines: subLineRows(CURRENT_ASSET_SUB_LINES, balanceSheetYears, balanceSheetRefs, ""),
+      creditorLines: subLineRows(CREDITOR_SUB_LINES, balanceSheetYears, balanceSheetRefs, "-within-one-year"),
+      notes: { fixedAssets: fixedAssetNoteNumber },
+    }),
+  })}
+${statementKeys.map((key) => `<p>${renderStatement(key, refs.current)}</p>`).join("\n")}
+${approvalHtml({ refs, dateOfApproval: input.dateOfApproval, directorName: input.directorName })}
+</div>`);
+  pages.push(`<div class="page">
+${heading("Notes to the financial statements", `for the ${period}`)}${notes
+    .map((note, index) => `<h3>${index + 1}. ${escapeXmlText(note.title)}</h3>\n${note.html}`)
+    .join("\n")}
+</div>`);
+
+  return renderAccountsDocument({
+    title: `${input.companyName} - Accounts`,
+    contextsXml: `${contextsXml}${additionalContexts.join("")}`,
+    hiddenFactsXml: hiddenFacts.join("\n"),
+    bodyHtml: pages.join("\n"),
   });
-
-  const sections = [];
-  if (!input.filleted) {
-    sections.push(profitAndLossHtml({ refs, current: input.profitAndLoss.current, prior: priorProfitAndLoss }));
-  }
-  sections.push(balanceSheet.html, `<div>${balanceSheet.mainFacts}</div>`);
-
-  sections.push(`<h2>Statements</h2>\n${statementsHtml}`);
-  sections.push(`<h2>Notes to the accounts</h2>
-<h3>Accounting policies</h3>
-<p>${escapeXmlText(input.accountingPolicies)}</p>
-<h3>Employees</h3>
-<p>The average number of employees during the period was ${employeesFact}</p>`);
-
-  if (input.fixedAssetNote) {
-    const note = fixedAssetNoteFacts({ refs, fixedAssetNote: input.fixedAssetNote, entityIdentifierXml, periodXml, additionalContexts });
-    sections.push(`<h3>Tangible fixed assets</h3>
-<table><thead><tr><th></th><th>Cost</th><th>Depreciation</th><th>Net book value</th></tr></thead><tbody>
-${note.htmlRows.join("\n")}
-</tbody></table>
-<div>${note.facts.join("")}</div>`);
-  }
-
-  if (!input.filleted) {
-    sections.push(directorsReportHtml({ input, refs, additionalContexts, entityIdentifierXml, periodXml }));
-  }
-
-  const bodyHtml = `<h1>${escapeXmlText(input.companyName)}</h1>
-<p>Company number ${escapeXmlText(input.companyNumber)}</p>
-<p>Annual accounts for the period from ${input.periodStart} to ${input.periodEnd}</p>
-<p>Approved on behalf of the board on ${input.dateOfApproval} by ${escapeXmlText(input.directorName)}</p>
-<div>${unrenderedFacts.join("\n")}</div>
-${sections.join("\n")}`;
-
-  return renderAccountsDocument({ companyName: input.companyName, contextsXml: `${contextsXml}${additionalContexts.join("")}`, bodyHtml });
 }

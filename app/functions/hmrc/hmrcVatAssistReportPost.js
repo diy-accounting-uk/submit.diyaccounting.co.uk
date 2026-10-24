@@ -55,7 +55,7 @@ async function call(params, requestContext) {
   const { hmrcResponse, hmrcResponseBody } = await postHmrcAssist({ url, body, acceptVersion: "1.0", context: requestContext });
 
   if (!hmrcResponse.ok) return { hmrcResponse, hmrcResponseBody, data: null };
-  if (hmrcResponse.status === 204) return { hmrcResponse, hmrcResponseBody, data: { statusCode: 204 } };
+  if (vatAssist.isNoFeedback(hmrcResponseBody)) return { hmrcResponse, hmrcResponseBody, data: { statusCode: 204 } };
 
   const report = vatAssist.normaliseReport(hmrcResponseBody);
   const requestedAt = new Date().toISOString();
@@ -68,6 +68,7 @@ async function call(params, requestContext) {
       reportId: report.reportId,
       correlationId: report.correlationId,
       messages: report.messages,
+      welshMessages: vatAssist.normaliseWelshMessages(hmrcResponseBody),
       figures,
       periodKey,
       vrn,
