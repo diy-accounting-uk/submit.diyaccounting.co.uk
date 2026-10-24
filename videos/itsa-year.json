@@ -378,7 +378,7 @@
           "action": "click",
           "target": "#submitBtn",
           "caption": "File it with HMRC.",
-          "headline": "File with HMRC",
+          "headline": "File self-employment update",
           "keyWord": "File"
         },
         {
@@ -464,7 +464,7 @@
           "action": "click",
           "target": "#submitBtn",
           "caption": "File it with HMRC.",
-          "headline": "File with HMRC",
+          "headline": "File property update",
           "keyWord": "File"
         },
         {
