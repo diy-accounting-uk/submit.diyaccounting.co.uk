@@ -164,7 +164,7 @@ export function accountsDocumentCases() {
     readFileSync(join(REPOSITORY_ROOT, "scripts", "fixtures", "companies-house-test-service-cases.json"), "utf8"),
   );
   const microCases = testServiceCases
-    .filter((testCase) => testCase.type === "accounts")
+    .filter((testCase) => testCase.type === "accounts" && !testCase.smallCompany)
     .map((testCase) => ({
       name: testCase.name,
       xhtml: buildMicroEntityAccounts(microInputFromTestServiceCase(testCase)),
