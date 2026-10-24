@@ -105,6 +105,11 @@ const ANNUAL_SECTIONS = [
   },
 ];
 
+// "Self-employment" reads in lower case mid-sentence; "UK property" keeps its capitals.
+function kindPhrase(kindName) {
+  return kindName.startsWith("UK") ? kindName : kindName.toLowerCase();
+}
+
 function isAmount(value) {
   return typeof value === "number" && Number.isFinite(value);
 }
@@ -227,8 +232,8 @@ export function annualCopyHtml({ kind, nino, businessId, taxYear, savedAt, sent,
 
   return customerCopyHtml({
     title: year
-      ? `Your copy of the ${kindName.toLowerCase()} annual submission for ${year}`
-      : `Your copy of the ${kindName.toLowerCase()} annual submission`,
+      ? `Your copy of the ${kindPhrase(kindName)} annual submission for ${year}`
+      : `Your copy of the ${kindPhrase(kindName)} annual submission`,
     reference: { label: "Business ID", value: nonEmptyText(businessId) || ABSENT },
     status: { kind: "accepted", text: "Accepted by HMRC" },
     date: saved || "Not recorded",
@@ -344,8 +349,8 @@ export function periodCopyHtml({ kind, period, nino, businessId, taxYear, period
 
   return customerCopyHtml({
     title: periodLine
-      ? `Your copy of the ${kindName.toLowerCase()} update for ${periodLine}`
-      : `Your copy of the ${kindName.toLowerCase()} update`,
+      ? `Your copy of the ${kindPhrase(kindName)} update for ${periodLine}`
+      : `Your copy of the ${kindPhrase(kindName)} update`,
     reference: { label: nonEmptyText(periodId) ? idLabel : "Reporting", value: reference },
     status: { kind: "accepted", text: "Held by HMRC" },
     date: retrieved ? `Retrieved ${retrieved}` : "Not recorded",
