@@ -35,6 +35,7 @@ import {
   approvalHtml,
   renderAccountsDocument,
   renderProductionSoftwareFacts,
+  buildOfficerContext,
 } from "./accountsIxbrlCommon.js";
 import { recordFigure, recordTable } from "../lib/submissionRecord.js";
 
@@ -307,13 +308,7 @@ function fixedAssetNoteTable({ refs, fixedAssetNote, entityIdentifierXml, period
 
 function directorsReportPage({ heading, input, refs, additionalContexts, entityIdentifierXml, periodXml }) {
   const directorFacts = input.directors.map((name, index) => {
-    const contextRef = buildDimensionedContext({
-      additionalContexts,
-      entityIdentifierXml,
-      periodXml: periodXml[refs.current],
-      dimensionXml: dimensionMemberXml(DIMENSIONS.entityOfficers, { prefix: "bus", name: `Director${index + 1}` }),
-      id: `${refs.current}-director-${index + 1}`,
-    });
+    const contextRef = buildOfficerContext({ additionalContexts, entityIdentifierXml, periodXml, refs, position: index + 1 });
     return renderTextFact("nameEntityOfficer", contextRef, name);
   });
   return `<div class="page">
@@ -324,7 +319,7 @@ ${heading}<p>The directors present their report and the financial statements for
 <p>The directors who held office during the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd).split(" ")[0])} were:</p>
 <p>${directorFacts.join("<br/>")}</p>
 <p>${renderStatement("statementSmallCompaniesRegimeDirectorsReport", refs.current)}</p>
-<p class="approval">This report was approved by the board of directors on ${escapeXmlText(displayDate(input.dateOfApproval))} and signed on its behalf by:</p>
+<p class="approval">This report was approved by the board of directors on ${renderDateFact("dateSigningDirectorsReport", refs.currentInstant, input.dateOfApproval)} and signed on its behalf by:</p>
 <p class="signature">${escapeXmlText(input.directorName)}<br/>Director</p>
 </div>`;
 }
@@ -385,11 +380,19 @@ export function buildSmallCompanyAccounts(input) {
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
     renderFixedFact("entityTradingStatus", refs.current),
   );
-  if (!input.filleted) hiddenFacts.push(renderFixedFact("directorSigningDirectorsReport", refs.current));
+  if (input.filleted) {
+    hiddenFacts.push(
+      `<ix:nonNumeric name="${qname(CONCEPTS.reportIncludesDetailedProfitLossStatement)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
+      `<ix:nonNumeric name="${qname(CONCEPTS.exemptionNotPublishingOwnProfitLossAccount)}" contextRef="${refs.current}">true</ix:nonNumeric>`,
+      renderTextFact("descriptionPrincipalActivities", refs.current, input.principalActivity),
+    );
+  } else {
+    hiddenFacts.push(renderFixedFact("directorSigningDirectorsReport", refs.current));
+  }
 
   for (const [conceptKey, dimension, member, id] of [
     ["accountsStatusAuditedOrUnaudited", DIMENSIONS.accountsStatus, MEMBERS.auditExemptNoAccountantsReport, "accounts-status"],
-    ["accountsType", DIMENSIONS.accountsType, MEMBERS.fullAccounts, "accounts-type"],
+    ["accountsType", DIMENSIONS.accountsType, input.filleted ? MEMBERS.filletedAccounts : MEMBERS.fullAccounts, "accounts-type"],
     ["accountingStandardsApplied", DIMENSIONS.accountingStandards, MEMBERS.frs102, "accounting-standards"],
     ["applicableLegislation", DIMENSIONS.applicableLegislation, MEMBERS.smallCompaniesRegimeForAccounts, "applicable-legislation"],
   ]) {
@@ -426,7 +429,10 @@ export function buildSmallCompanyAccounts(input) {
     : SMALL_COMPANY_STATEMENT_KEYS;
 
   const notes = [
-    { title: "Accounting policies", html: `<p>${escapeXmlText(input.accountingPolicies)}</p>` },
+    {
+      title: "Accounting policies",
+      html: `<p>${renderTextFact("generalDescriptionBasisMeasurement", refs.current, input.accountingPolicies)}</p>`,
+    },
     {
       title: "Employees",
       html: `<p>The average number of employees during the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd).split(" ")[0])} was <ix:nonFraction name="${qname(CONCEPTS.averageNumberEmployeesDuringPeriod)}" contextRef="${refs.current}" unitRef="pure" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(input.averageNumberOfEmployees)}</ix:nonFraction>.</p>`,
@@ -450,6 +456,18 @@ export function buildSmallCompanyAccounts(input) {
   const period = escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd));
   const heading = (title, subtitleHtml) =>
     pageHeading({ companyName: input.companyName, companyNumber: input.companyNumber, title, subtitleHtml });
+
+  // The directors' report of a full set tags the directors' names; a filleted set has no report, so
+  // the signing director is named as an officer on the approval line.
+  const officerContextRef = input.filleted
+    ? buildOfficerContext({
+        additionalContexts,
+        entityIdentifierXml,
+        periodXml,
+        refs,
+        position: Math.max(1, input.directors.indexOf(input.directorName) + 1),
+      })
+    : undefined;
 
   const pages = [
     coverPage({
@@ -492,7 +510,7 @@ ${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.curr
     }),
   })}
 ${statementKeys.map((key) => `<p>${renderStatement(key, refs.current)}</p>`).join("\n")}
-${approvalHtml({ refs, dateOfApproval: input.dateOfApproval, directorName: input.directorName })}
+${approvalHtml({ refs, dateOfApproval: input.dateOfApproval, directorName: input.directorName, officerContextRef })}
 </div>`);
   pages.push(`<div class="page">
 ${heading("Notes to the financial statements", `for the ${period}`)}${notes

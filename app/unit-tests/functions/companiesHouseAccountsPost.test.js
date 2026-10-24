@@ -490,7 +490,7 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
       const [submissionArgs] = mockBuildAccountsSubmission.mock.calls[0];
       expect(submissionArgs.ixbrl).toContain("section 444(5A)");
       expect(submissionArgs.ixbrl).not.toContain('name="core:TurnoverRevenue"');
-      expect(submissionArgs.ixbrl).not.toContain('name="bus:DescriptionPrincipalActivities"');
+      expect(submissionArgs.ixbrl).not.toContain('name="direp:DirectorSigningDirectorsReport"');
     });
 
     test("filing is full accounts when filleted is not given", async () => {

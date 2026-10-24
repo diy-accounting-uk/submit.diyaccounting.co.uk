@@ -29,6 +29,8 @@ import {
   approvalHtml,
   renderAccountsDocument,
   renderProductionSoftwareFacts,
+  renderTextFact,
+  buildOfficerContext,
 } from "./accountsIxbrlCommon.js";
 import { recordTable } from "../lib/submissionRecord.js";
 
@@ -114,6 +116,11 @@ export function buildMicroEntityAccounts(input) {
   hiddenFacts.push(renderFixedFact("directorSigningFinancialStatements", refs.current));
   hiddenFacts.push(...renderProductionSoftwareFacts(refs.current));
   hiddenFacts.push(
+    `<ix:nonNumeric name="${qname(CONCEPTS.reportIncludesDetailedProfitLossStatement)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
+    `<ix:nonNumeric name="${qname(CONCEPTS.exemptionNotPublishingOwnProfitLossAccount)}" contextRef="${refs.current}">true</ix:nonNumeric>`,
+  );
+  if (input.dormant) hiddenFacts.push(renderTextFact("descriptionPrincipalActivities", refs.current, "Dormant company"));
+  hiddenFacts.push(
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">${input.dormant ? "true" : "false"}</ix:nonNumeric>`,
   );
   if (input.dormant) {
@@ -133,7 +140,7 @@ export function buildMicroEntityAccounts(input) {
 
   for (const [conceptKey, dimension, member, id] of [
     ["accountsStatusAuditedOrUnaudited", DIMENSIONS.accountsStatus, MEMBERS.auditExemptNoAccountantsReport, "accounts-status"],
-    ["accountsType", DIMENSIONS.accountsType, MEMBERS.fullAccounts, "accounts-type"],
+    ["accountsType", DIMENSIONS.accountsType, MEMBERS.filletedAccounts, "accounts-type"],
     ["accountingStandardsApplied", DIMENSIONS.accountingStandards, MEMBERS.microEntities, "accounting-standards"],
   ]) {
     const contextRef = buildDimensionedContext({
@@ -174,7 +181,7 @@ export function buildMicroEntityAccounts(input) {
   const notes = [
     {
       title: "Accounting policies",
-      html: `<p>These financial statements have been prepared in accordance with FRS 105 The Financial Reporting Standard applicable to the Micro-entities Regime.</p>`,
+      html: `<p>${renderTextFact("statementComplianceWithReportingFramework", refs.current, "These financial statements have been prepared in accordance with FRS 105 The Financial Reporting Standard applicable to the Micro-entities Regime.")}</p>`,
     },
     {
       title: "Employees",
@@ -213,6 +220,8 @@ export function buildMicroEntityAccounts(input) {
     pageHeading({ companyName: input.companyName, companyNumber: input.companyNumber, title, subtitleHtml });
   const statementKeys = input.dormant ? DORMANT_STATEMENT_KEYS : STATEMENT_KEYS;
 
+  const officerContextRef = buildOfficerContext({ additionalContexts, entityIdentifierXml, periodXml, refs, position: 1 });
+
   const bodyHtml = `${coverPage({
     refs,
     companyName: input.companyName,
@@ -228,7 +237,7 @@ ${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.curr
     rows: balanceSheetRows({ years, notes: { calledUpShareCapital: shareCapitalNote } }),
   })}
 ${statementKeys.map((key) => `<p>${renderStatement(key, refs.current)}</p>`).join("\n")}
-${approvalHtml({ refs, dateOfApproval: input.dateOfApproval, directorName: input.directorName })}
+${approvalHtml({ refs, dateOfApproval: input.dateOfApproval, directorName: input.directorName, officerContextRef })}
 </div>
 <div class="page">
 ${heading("Notes to the financial statements", `for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}`)}${notes

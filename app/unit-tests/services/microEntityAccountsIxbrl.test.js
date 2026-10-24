@@ -228,6 +228,35 @@ describe("services/microEntityAccountsIxbrl", () => {
     });
   });
 
+  describe("buildMicroEntityAccounts descriptive facts", () => {
+    const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
+    const dormantXhtml = buildMicroEntityAccounts(DORMANT_INPUT);
+
+    test("reports filleted accounts, because no profit and loss account is delivered", () => {
+      for (const document of [xhtml, dormantXhtml]) {
+        expect(dimensionNames(document)).toContainEqual({ dimension: "bus:AccountsTypeDimension", member: "bus:FilletedAccounts" });
+        expect(hiddenText(document, "bus:ReportIncludesDetailedProfitLossStatementTruefalse")).toBe("false");
+        expect(hiddenText(document, "direp:EntityHasTakenExemptionUnderCompaniesActInNotPublishingItsOwnProfitLossAccountTruefalse")).toBe(
+          "true",
+        );
+      }
+    });
+
+    test("tags the report title, the authorising body and the signing director as an officer", () => {
+      expect(xhtml).toMatch(/name="bus:ReportTitle" contextRef="y2026">Unaudited micro-entity accounts</);
+      expect(xhtml).toMatch(/name="core:DescriptionBodyAuthorisingFinancialStatements" contextRef="y2026">the board of directors</);
+      expect(xhtml).toMatch(/name="bus:NameEntityOfficer" contextRef="y2026-director-1">Jo Smith</);
+      expect(xhtml).toMatch(
+        /name="core:StatementComplianceWithApplicableReportingFramework" contextRef="y2026">These financial statements/,
+      );
+    });
+
+    test("describes a dormant company's principal activity and leaves a trading company's out", () => {
+      expect(hiddenText(dormantXhtml, "bus:DescriptionPrincipalActivities")).toBe("Dormant company");
+      expect(hiddenText(xhtml, "bus:DescriptionPrincipalActivities")).toBeUndefined();
+    });
+  });
+
   describe("buildMicroEntityAccounts layout", () => {
     const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
     const document = parseXmlDocument(xhtml);

@@ -148,6 +148,18 @@ describe("services/smallCompanyAccountsIxbrl", () => {
       expect(hiddenText(xhtml, "bus:VersionProductionSoftware")).toBe(PACKAGE_VERSION);
     });
 
+    test("tags the report title, the authorising body, the report signing date and the basis of measurement", () => {
+      expect(xhtml).toMatch(/name="bus:ReportTitle" contextRef="y2026">Unaudited financial statements</);
+      expect(xhtml).toMatch(/name="core:DescriptionBodyAuthorisingFinancialStatements" contextRef="y2026">the board of directors</);
+      expect(xhtml).toMatch(/name="direp:DateSigningDirectorsReport" contextRef="e2026"[^>]*>1 September 2026</);
+      expect(xhtml).toMatch(/name="core:GeneralDescriptionBasisMeasurementUsedInPreparingFinancialStatements" contextRef="y2026">/);
+      expect(hiddenText(xhtml, "bus:ReportIncludesDetailedProfitLossStatementTruefalse")).toBeUndefined();
+    });
+
+    test("names each director once as an officer, and the signing line is plain text", () => {
+      expect(xhtml.match(/name="bus:NameEntityOfficer"/g)).toHaveLength(SAMPLE_INPUT.directors.length);
+    });
+
     test("every mandatory concept is present", () => {
       const names = factNames(xhtml);
       for (const key of SMALL_COMPANY_MANDATORY_CONCEPT_KEYS) {
@@ -319,6 +331,19 @@ describe("services/smallCompanyAccountsIxbrl", () => {
       expect(xhtml).toContain("section 444(5A) of the Companies Act 2006");
     });
 
+    test("reports filleted accounts, with the principal activity and the signing director named", () => {
+      expect(dimensionNames(xhtml)).toContainEqual({ dimension: "bus:AccountsTypeDimension", member: "bus:FilletedAccounts" });
+      expect(hiddenText(xhtml, "bus:DescriptionPrincipalActivities")).toBe(SAMPLE_INPUT.principalActivity);
+      expect(xhtml).toMatch(/name="bus:NameEntityOfficer" contextRef="y2026-director-1">Jo Smith</);
+    });
+
+    test("says in the hidden section that no profit and loss account is delivered", () => {
+      expect(hiddenText(xhtml, "bus:ReportIncludesDetailedProfitLossStatementTruefalse")).toBe("false");
+      expect(hiddenText(xhtml, "direp:EntityHasTakenExemptionUnderCompaniesActInNotPublishingItsOwnProfitLossAccountTruefalse")).toBe(
+        "true",
+      );
+    });
+
     test("omits the profit and loss account and the directors' report", () => {
       const names = factNames(xhtml);
       for (const name of [
@@ -327,8 +352,6 @@ describe("services/smallCompanyAccountsIxbrl", () => {
         "core:OperatingProfitLoss",
         "core:ProfitLossOnOrdinaryActivitiesBeforeTax",
         "core:ProfitLoss",
-        "bus:DescriptionPrincipalActivities",
-        "bus:NameEntityOfficer",
         "direp:DirectorSigningDirectorsReport",
         `direp:${CONCEPTS.statementSmallCompaniesRegimeDirectorsReport.name}`,
       ]) {
