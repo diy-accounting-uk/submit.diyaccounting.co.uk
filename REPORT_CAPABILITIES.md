@@ -389,6 +389,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools: use when a session needs the submission MCP's tool set, over stdio or one call across every practice client.
     - [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito: use when the MCP's own tools (cloud book open/save) need a signed-in DIY Accounting Submit session.
     - [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront: use when a chat client must reach the submission MCP at `/mcp` with OAuth, or the routes, stack, edge behaviours or rate rules behind that endpoint need tracing.
+    - [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness: use when a demonstration or recording needs a chat that makes real submission MCP tool calls without a model, on the local server or the ci lane.
   - [Book and derivation tools](#book-and-derivation-tools-mcp)
     - [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP: use when an MCP session needs to open or save a diya-gl book, locally or in the cloud.
     - [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing: use when a Company (ltd) book's FRS 105 balance-sheet lines are needed before a Companies House accounts filing.
@@ -4277,7 +4278,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## MCP and tools (MCP)
 
 <!-- generated:area MCP -->
-- [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito · [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront
+- [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito · [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront · [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness
 - [Book and derivation tools](#book-and-derivation-tools-mcp): [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP · [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing · [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools · [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures
 - [Filing and practice tools](#filing-and-practice-tools-mcp): [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API · [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation · [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client
 - [Finance data import](#finance-data-import-mcp): [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines · [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set · [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index · [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines · [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines) Parse PayPal statements into diya-gl lines · [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book
@@ -4290,6 +4291,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools
 - [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito
 - [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront
+- [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness
 <!-- /generated:group server-and-cli-mcp -->
 
 #### MCP-01 Expose the submission MCP server and tools
@@ -4320,6 +4322,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/mcp/mcpHttp.js, app/functions/mcp/mcpOauth.js, mcp/lib/http.js, app/data/dynamoDbMcpSessionRepository.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java, .github/workflows/deploy.yml
 - **Keywords:** hosted mcp, mcp http, streamable http, oauth facade, well-known, protected resource, mcp session, mcp rate limit, McpStack, deploy-mcp
 - **Related:** MCP-01, MCP-02
+
+#### MCP-19 Demonstrate the submission MCP in a scripted chat harness
+
+- **Use when:** a demonstration or recording needs a chat that makes real submission MCP tool calls without a model, on the local server or the ci lane.
+- **Does:** mcp-harness.html is a dev page that plays a scripted conversation from web/public/mcp-harness/<name>.json, chosen by `?script=`. Each tool turn posts to `/api/v1/dev/mcp-harness/call`. mcpHarness.js answers it in the local Express process and returns 404 when ENVIRONMENT_NAME is prod. mcp/lib/harness.js runs one tool of the full server over an in-memory MCP client. A tool that returns a link opens it in the page's browser-step frame. The page also shows the MCP configuration for Claude Code, stdio and a claude.ai connector.
+- **Run:** open `/mcp-harness.html` on the local server (`npm run start:proxy` or `npm run start:simulator`); `?script=list-vat-obligations` is the default script. Record it with `npx dotenv -e .env.simulator -- node scripts/site-video-capture.js --script videos/mcp-harness.json` (no npm script yet).
+- **Entry:** `web/public/mcp-harness.page.js`; `app/functions/mcp/mcpHarness.js:apiEndpoint`; `mcp/lib/harness.js:callHarnessTool`
+- **Files:** web/public/mcp-harness.html, web/public/mcp-harness.page.js, web/public/mcp-harness/list-vat-obligations.json, app/functions/mcp/mcpHarness.js, mcp/lib/harness.js, videos/mcp-harness.json, app/bin/server.js
+- **Keywords:** mcp harness, chat harness, scripted chat, mcp demo, list vat obligations demo, mcp-harness, harness endpoint, mcp recording
+- **Related:** MCP-01, MCP-18
 
 ### Book and derivation tools (MCP)
 
@@ -6064,6 +6076,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - channel uploads: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
 - charge reference: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - charges: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
+- chat harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - chat routing: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram)
 - check pass: [BILL-08](#bill-08-check-a-passs-validity)
 - checkip: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
@@ -6695,6 +6708,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - haiku: [OPS-18](#ops-18-run-alarm-and-support-triage)
 - halt triage: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
 - hard failure: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
+- harness endpoint: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - hashed sub: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure), [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - hashedsub: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - hastokensforactivity: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
@@ -6907,6 +6921,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - list domains: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions)
 - list passes: [BILL-09](#bill-09-list-a-users-issued-passes)
 - list secrets: [OPS-107](#ops-107-list-production-secrets-manager-entries)
+- list vat obligations demo: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - list_clients: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - list_vat_obligations: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - listlapsedbundleowners: [BILL-21](#bill-21-sweep-lapsed-diya-gl-books)
@@ -6967,14 +6982,18 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - maximize clicks bidding: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - mcp auth: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
 - mcp book tools: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
+- mcp demo: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp disclaimer: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
+- mcp harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp http: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp inspector: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
 - mcp rate limit: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp readme: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
+- mcp recording: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp server: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - mcp session: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp tools: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
+- mcp-harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp.html: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - mcpstack: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - measured figures: [DEV-37](#dev-37-write-the-session-report), [SS-56](#ss-56-write-the-session-report)
@@ -7509,6 +7528,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - screenshot review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - screenshots: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video), [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
+- scripted chat: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - sdst: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - se-derivations: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
 - search: [CH-03](#ch-03-search-the-companies-house-register)
