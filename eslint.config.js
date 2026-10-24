@@ -160,7 +160,7 @@ export default [
   },
   // Page scripts that import widgets load as modules
   {
-    files: ["web/public/videos*.page.js"],
+    files: ["web/public/videos*.page.js", "web/public/companies-house/fileCompanyTaxReturn.page.js"],
     languageOptions: { sourceType: "module" },
   },
   // Browser environment for gateway site

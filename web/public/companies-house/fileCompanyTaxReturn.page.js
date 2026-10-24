@@ -1,108 +1,45 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// File Company Tax Return: companyView -> formView -> previewView -> resultView. The Government
-// Gateway user ID and password are read from the page when the return is submitted, sent once and
-// held nowhere else.
+// File Company Tax Return: companyView -> formView -> previewView -> resultView. The customer
+// types the figures (or a book fills them through the "Fill from your books" card); the form
+// checks them as they are entered and works the tax out beside them. The Government Gateway user
+// ID and password are read from the page when the return is submitted, sent once and held nowhere
+// else.
+
+import {
+  ACCOUNTS_TEXT_FIELDS,
+  BALANCE_SHEET_FIELDS,
+  COMPUTATIONS_GUIDE_ANCHOR,
+  CT600_BOX_ROWS,
+  CT600_FORM_FIELDS,
+  FIXED_ASSET_CLASSES,
+  FIXED_ASSET_FIELDS,
+  MONEY_BOXES,
+  PROFIT_AND_LOSS_FIELDS,
+  SECTIONS,
+  STATEMENT_FIELDS,
+  accountsFormEntries,
+  accountsFromValues,
+  applyFormEntries,
+  balanceSheetId,
+  boxRow,
+  ct600RequestFromValues,
+  figuresFromValues,
+  financialYearOf,
+  formProblems,
+  guideUrl,
+  noteId,
+  profitAndLossId,
+  targetOfModelProblem,
+} from "../lib/ct600-fields.js";
 
 const FILED_ACCOUNTS_STORAGE_KEY = "filedSmallCompanyAccounts";
 const MAX_POLLS = 60;
-
-const COMPANY_TAX_RETURN_GUIDE_URL = "https://www.gov.uk/guidance/the-company-tax-return-guide";
-
-// HMRC's own box names from the CT600 (2026) Version 3 form and the Company Tax Return guide.
-const BOX_MEANINGS = {
-  1: "Company name",
-  2: "Company registration number",
-  3: "Tax reference (Unique Taxpayer Reference)",
-  4: "Type of company",
-  30: "Start of the period covered by the return",
-  35: "End of the period covered by the return",
-  145: "Total turnover from trade",
-  155: "Trading profits",
-  160: "Trading losses brought forward set against trading profits",
-  165: "Net trading profits",
-  170: "Bank, building society or other interest, and profits from non-trading loan relationships",
-  235: "Profits before other deductions and reliefs",
-  300: "Profits before qualifying donations and group relief",
-  315: "Profits chargeable to Corporation Tax",
-  326: "Number of associated companies in this period",
-  327: "Number of associated companies in the first financial year",
-  328: "Number of associated companies in the second financial year",
-  329: "Small profit rate or marginal relief entitlement",
-  330: "Financial year of the first tax rate",
-  335: "Amount of profit chargeable at the first rate",
-  340: "First rate of tax",
-  345: "Tax at the first rate",
-  380: "Financial year of the second tax rate",
-  385: "Amount of profit chargeable at the second rate",
-  390: "Second rate of tax",
-  395: "Tax at the second rate",
-  430: "Corporation Tax",
-  435: "Marginal relief",
-  440: "Corporation Tax chargeable",
-  475: "Net Corporation Tax liability",
-  510: "Tax chargeable",
-  515: "Income Tax deducted from gross income included in profits",
-  525: "Self-assessment of tax payable before restitution tax and coronavirus support scheme overpayments",
-  528: "Self-assessment of tax payable",
-  595: "Tax already paid (and not already repaid)",
-  600: "Tax outstanding",
-  620: "Franked investment income or exempt ABGH distributions",
-  690: "Annual investment allowance",
-  705: "Machinery and plant, main pool: allowances",
-  710: "Machinery and plant, main pool: balancing charges",
-  975: "Name of the person signing the declaration",
-  985: "Status of the person signing the declaration",
-};
-
-// The anchor of each box's section in the Company Tax Return guide.
-const BOX_GUIDE_ANCHORS = {
-  1: "company-name",
-  2: "company-registration-number",
-  3: "tax-reference",
-  4: "type-of-company",
-  30: "and-35-period-of-the-return",
-  35: "and-35-period-of-the-return",
-  145: "turnover",
-  155: "trading-profits",
-  160: "trading-losses-brought-forward-set-against-trading-profits",
-  165: "net-trading-profits",
-  170: "and-172-bank-building-society-or-other-interest-and-profits-from-non-trading-loan-relationships",
-  235: "profits-before-other-deductions-and-reliefs-1",
-  300: "profits-before-qualifying-donations-and-group-relief",
-  315: "profits-chargeable-to-corporation-tax",
-  326: "number-of-associated-companies-in-this-period",
-  327: "and-328-number-of-associated-companies-in-the-first-and-second-financial-years",
-  328: "and-328-number-of-associated-companies-in-the-first-and-second-financial-years",
-  329: "small-profit-rate-or-marginal-relief-entitlement",
-  330: "boxes-330-to-425",
-  335: "boxes-330-to-425",
-  340: "boxes-330-to-425",
-  345: "boxes-330-to-425",
-  380: "boxes-330-to-425",
-  385: "boxes-330-to-425",
-  390: "boxes-330-to-425",
-  395: "boxes-330-to-425",
-  430: "corporation-tax",
-  435: "marginal-relief",
-  440: "corporation-tax-chargeable",
-  475: "net-corporation-tax-liability",
-  510: "tax-chargeable",
-  515: "income-tax-deducted-from-gross-income-included-in-profits",
-  525: "self-assessment-of-tax-payable-before-restitution-tax-and-coronavirus-support-scheme-overpayments",
-  528: "self-assessment-of-tax-payable",
-  595: "tax-already-paid-and-not-already-repaid",
-  600: "tax-outstanding",
-  620: "franked-investment-income-or-exempt-abgh-distributions",
-  690: "annual-investment-allowance",
-  705: "and-710-machinery-and-plant--main-pool",
-  710: "and-710-machinery-and-plant--main-pool",
-  975: "declaration",
-  985: "declaration",
-};
-
-const MONEY_BOXES = new Set([145, 155, 315, 440]);
+const WORKED_TAX_ID = "workedTax";
+const SUMMARY_ID = "ct600-error-summary";
+const PLACEHOLDER_UTR = "0000000000";
+const PLACEHOLDER_TEXT = "Placeholder";
 
 // Each computation line in the order HMRC's computation prints it: a deduction shows in
 // brackets, a subtotal has a rule above it and the total a double rule below it.
@@ -117,10 +54,20 @@ const COMPUTATION_LINES = [
   { field: "adjustedProfit", meaning: "Adjusted profit", style: "total" },
 ];
 
-const COMPUTATIONS_GUIDE_ANCHOR = "and-90-accounts-and-computations";
-
 let company = null;
 let previewRequest = null;
+
+// bundle and taxData fill in once the books bundle has loaded; touched holds the error targets whose
+// field the customer has left; edited holds the ids the customer typed in, so a default stops following.
+const state = {
+  bundle: null,
+  bundlePromise: null,
+  taxData: {},
+  touched: new Set(),
+  edited: new Set(),
+  workingSheet: undefined,
+  problems: [],
+};
 
 function element(id) {
   return document.getElementById(id);
@@ -130,6 +77,13 @@ function showView(name) {
   for (const id of ["companyView", "formView", "previewView", "resultView"]) {
     element(id).style.display = id === name ? "block" : "none";
   }
+}
+
+function create(tag, attributes = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [name, value] of Object.entries(attributes)) node.setAttribute(name, value);
+  node.append(...children);
+  return node;
 }
 
 function paragraph(...parts) {
@@ -144,143 +98,6 @@ function paragraph(...parts) {
     }
   }
   return node;
-}
-
-function readFiledAccounts() {
-  try {
-    const stored = sessionStorage.getItem(FILED_ACCOUNTS_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-function offerFiledAccounts() {
-  const filed = readFiledAccounts();
-  if (!filed) return;
-  element("filedAccountsCompany").textContent = `${filed.companyName} (${filed.companyNumber})`;
-  element("accountsSourceFiledGroup").style.display = "block";
-}
-
-function filedAccountsSelected() {
-  return element("accountsSourceFiled").checked;
-}
-
-function loanOverdrawn() {
-  return element("loanOverdrawnYes").checked;
-}
-
-function renderLoanStop() {
-  element("loanOverdrawnStop").style.display = loanOverdrawn() ? "block" : "none";
-}
-
-async function handleCompanySubmit(event) {
-  event.preventDefault();
-  const companyNumber = window.normaliseCompanyNumber(element("companyNumber").value);
-  if (!companyNumber) {
-    window.showStatus("Please enter a company number.", "error");
-    return;
-  }
-
-  window.showLoading();
-  window.hideStatus();
-  try {
-    const profile = await window.getCompanyProfile(companyNumber);
-    company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
-    element("formCompanyName").textContent = company.companyName;
-    element("formCompanyNumber").textContent = company.companyNumber;
-    showView("formView");
-  } catch (error) {
-    console.error("Failed to look up the company:", error);
-    window.showStatus(error.message || "Failed to look up the company.", "error");
-  } finally {
-    window.hideLoading();
-  }
-}
-
-async function handleBookExportFile() {
-  const file = element("bookExportFile").files[0];
-  if (file) element("bookExport").value = await file.text();
-}
-
-function parseBookExport() {
-  let parsed;
-  try {
-    parsed = JSON.parse(element("bookExport").value);
-  } catch {
-    return { problem: "The book export is not valid JSON." };
-  }
-  if (!parsed?.figures || !parsed?.tradeName) {
-    return { problem: "The book export needs figures and tradeName." };
-  }
-  if (!filedAccountsSelected() && !parsed.smallCompany) {
-    return { problem: "The book export has no accounts. Choose the accounts from the Companies House filing, or use a fuller export." };
-  }
-  return { parsed };
-}
-
-function accountsFrom(exported) {
-  if (filedAccountsSelected()) {
-    const filed = readFiledAccounts();
-    return {
-      periodStart: filed.periodStart,
-      periodEnd: filed.periodEnd,
-      averageEmployees: filed.averageEmployees,
-      director: filed.director,
-      smallCompany: { ...filed.smallCompany, filleted: false },
-    };
-  }
-  return {
-    periodStart: exported.periodStart,
-    periodEnd: exported.periodEnd,
-    averageEmployees: exported.averageEmployees,
-    director: exported.director,
-    smallCompany: { ...exported.smallCompany, filleted: false },
-  };
-}
-
-function buildReturnRequest(exported) {
-  return {
-    companyNumber: company.companyNumber,
-    companyName: company.companyName,
-    ...accountsFrom(exported),
-    statementsAccepted: {
-      section477Exemption: element("statementSection477Exemption").checked,
-      membersNotRequiredAudit: element("statementMembersNotRequiredAudit").checked,
-      directorsResponsibilities: element("statementDirectorsResponsibilities").checked,
-      smallCompaniesRegime: element("statementSmallCompaniesRegime").checked,
-    },
-    tradeName: exported.tradeName,
-    figures: exported.figures,
-    utr: element("utr").value.trim(),
-    declarant: { name: element("declarantName").value.trim(), status: element("declarantStatus").value.trim() },
-    directorsLoanOverdrawn: false,
-    declarationAccepted: element("declarationAccepted").checked,
-  };
-}
-
-function formProblem() {
-  if (loanOverdrawn()) {
-    return "A director's loan account overdrawn at the end of the period needs supplementary page CT600A, which this service does not file.";
-  }
-  const accepted = [
-    "statementSection477Exemption",
-    "statementMembersNotRequiredAudit",
-    "statementDirectorsResponsibilities",
-    "statementSmallCompaniesRegime",
-  ].every((id) => element(id).checked);
-  if (!accepted) return "All four statements must be accepted before previewing.";
-  if (!element("declarationAccepted").checked) return "The declaration must be accepted before previewing.";
-  return null;
-}
-
-function guideLink(text, anchor) {
-  const link = document.createElement("a");
-  link.href = `${COMPANY_TAX_RETURN_GUIDE_URL}#${anchor}`;
-  link.target = "_blank";
-  link.rel = "noopener";
-  link.textContent = text;
-  return link;
 }
 
 function tableRow(...cells) {
@@ -319,12 +136,542 @@ function amountCell(row, text, style) {
   return row;
 }
 
+// --- The form -------------------------------------------------------------------------------
+
+function guideAnchorOf(field) {
+  return field.box ? boxRow(field.box)?.anchor : undefined;
+}
+
+function hintOf(field) {
+  const hint = create("p", { id: `${field.id}-hint`, class: "hint" }, field.hint ?? "");
+  const anchor = guideAnchorOf(field);
+  if (anchor) {
+    const link = create("a", { href: guideUrl(anchor), target: "_blank", rel: "noopener" }, "Company Tax Return guide");
+    hint.append(field.hint ? " " : "", link, ".");
+  }
+  return hint;
+}
+
+function inputFor(field) {
+  const money = field.type === "whole-pounds" || field.type === "pounds-and-pence";
+  const attributes = {
+    "type": field.type === "date" ? "date" : "text",
+    "id": field.id,
+    "name": field.id,
+    "data-error-target": field.target ?? field.id,
+    "aria-describedby": `${field.id}-hint`,
+  };
+  if (money) attributes.inputmode = "decimal";
+  if (field.type === "count") attributes.inputmode = "numeric";
+  if (field.inputmode) attributes.inputmode = field.inputmode;
+  if (field.maxlength) attributes.maxlength = String(field.maxlength);
+  if (field.spellcheck === false) attributes.spellcheck = "false";
+  const input = create("input", attributes);
+  if (field.default !== undefined) input.value = field.default;
+  if (!money) return input;
+  return create("div", { class: "input-prefix" }, create("span", { class: "prefix" }, "£"), input);
+}
+
+function errorHost(target) {
+  return create("div", { id: `${target}-errors` });
+}
+
+function textGroup(field) {
+  return create(
+    "div",
+    { class: "form-group" },
+    create("label", { for: field.id }, field.label),
+    hintOf(field),
+    errorHost(field.id),
+    inputFor(field),
+  );
+}
+
+function choiceGroup(field) {
+  const radio = (value, text, checked) => [
+    create("input", {
+      "type": "radio",
+      "id": `${field.id}${value === "no" ? "No" : "Yes"}`,
+      "name": field.id,
+      value,
+      "data-error-target": field.id,
+      "aria-describedby": `${field.id}-hint`,
+      ...(checked ? { checked: "" } : {}),
+    }),
+    create("label", { for: `${field.id}${value === "no" ? "No" : "Yes"}`, style: "display: inline; font-weight: normal" }, text),
+  ];
+  const hint = field.hint ? hintOf(field) : create("p", { id: `${field.id}-hint`, class: "hint" });
+  return create(
+    "div",
+    { class: "form-group" },
+    create("p", { id: field.id, class: "field-label", tabindex: "-1" }, field.label),
+    hint,
+    errorHost(field.id),
+    ...radio("no", "No", true),
+    ...radio("yes", "Yes", false),
+  );
+}
+
+function datesGroup(field) {
+  const dateField = (id, text) =>
+    create("div", { class: "form-group" }, create("label", { for: id }, text), inputFor({ id, type: "date", target: field.id }));
+  return create(
+    "div",
+    { "class": "form-group", "id": field.id, "role": "group", "aria-labelledby": `${field.id}-label`, "tabindex": "-1" },
+    create("p", { id: `${field.id}-label`, class: "field-label" }, field.label),
+    hintOf(field),
+    errorHost(field.id),
+    dateField("periodStart", "Period start"),
+    dateField("periodEnd", "Period end"),
+  );
+}
+
+function checkboxGroup(id, label, target = id) {
+  return create(
+    "div",
+    { class: "form-group" },
+    errorHost(target),
+    create("input", { "type": "checkbox", id, "name": id, "data-error-target": target }),
+    create("label", { for: id, style: "display: inline; font-weight: normal" }, label),
+  );
+}
+
+function fieldGroup(field) {
+  if (field.type === "choice") return choiceGroup(field);
+  if (field.type === "dates") return datesGroup(field);
+  if (field.type === "checkbox") return checkboxGroup(field.id, field.label);
+  return textGroup(field);
+}
+
+function amountGroup(id, label) {
+  return textGroup({ id, label, type: "whole-pounds", hint: "For example, £600 or £1,200" });
+}
+
+function accountsYear(prefix) {
+  return [
+    create("h4", {}, "Profit and loss account"),
+    ...PROFIT_AND_LOSS_FIELDS.map(([field, label]) => amountGroup(profitAndLossId(prefix, field), label)),
+    create("h4", {}, "Balance sheet"),
+    ...BALANCE_SHEET_FIELDS.map(([field, label]) => amountGroup(balanceSheetId(prefix, field), label)),
+  ];
+}
+
+function accountsTextGroup({ id, label, type }) {
+  if (type === "textarea") {
+    return create(
+      "div",
+      { class: "form-group" },
+      create("label", { for: id }, label),
+      errorHost(id),
+      create("textarea", { id, "name": id, "rows": "3", "data-error-target": id }),
+    );
+  }
+  return textGroup({ id, label, type, hint: "" });
+}
+
+function accountsSection() {
+  const note = FIXED_ASSET_CLASSES.map(([className, title]) =>
+    create("div", {}, create("h4", {}, title), ...FIXED_ASSET_FIELDS.map(([field, label]) => amountGroup(noteId(className, field), label))),
+  );
+  return [
+    create("p", { class: "hint" }, "HMRC takes the full accounts with the return, so they are part of this form. Whole pounds."),
+    create("h4", {}, "Current year"),
+    ...accountsYear("current"),
+    checkboxGroup("includeComparatives", "Include last year's figures"),
+    create("div", { id: "comparativeFields", style: "display: none" }, create("h4", {}, "Prior year"), ...accountsYear("prior")),
+    checkboxGroup("includeFixedAssetNote", "Include the tangible fixed assets note"),
+    create("div", { id: "fixedAssetNoteFields", style: "display: none" }, ...note),
+    ...ACCOUNTS_TEXT_FIELDS.map(accountsTextGroup),
+  ];
+}
+
+function workedTaxPanel() {
+  return create(
+    "section",
+    { "id": WORKED_TAX_ID, "class": "worked-tax", "aria-labelledby": "workedTaxHeading", "tabindex": "-1" },
+    create("h3", { id: "workedTaxHeading" }, "Tax worked out from your answers"),
+    create("p", { class: "hint" }, "These boxes are worked out and cannot be typed. Each shows the rule that gives it."),
+    errorHost(WORKED_TAX_ID),
+    create("p", { id: "workedTaxEmpty", class: "hint" }, "Fill in the period and the accounts and the tax appears here."),
+    create("dl", { id: "workedTaxRows", class: "worked-tax__list" }),
+  );
+}
+
+function sectionBody(sectionId) {
+  const fields = CT600_FORM_FIELDS.filter((field) => field.section === sectionId).map(fieldGroup);
+  if (sectionId === "accounts") return accountsSection();
+  if (sectionId === "declaration") {
+    return [
+      ...fields.slice(0, 2),
+      create("h4", {}, "Statements"),
+      ...STATEMENT_FIELDS.map(({ id, label }) => checkboxGroup(id, label)),
+      create("h4", {}, "Declaration"),
+      ...fields.slice(2),
+    ];
+  }
+  return fields;
+}
+
+function renderForm() {
+  const sections = [];
+  for (const { id, title } of SECTIONS) {
+    sections.push(create("section", { id: `section-${id}` }, create("h3", {}, title), ...sectionBody(id)));
+    if (id === "reliefs") sections.push(workedTaxPanel());
+  }
+  element("formSections").replaceChildren(...sections);
+  state.targets = new Set([...element("formSections").querySelectorAll("[data-error-target]")].map((node) => node.dataset.errorTarget));
+  state.targets.add(WORKED_TAX_ID);
+  state.touched = new Set();
+  state.edited = new Set();
+  state.workingSheet = undefined;
+  setDefaults();
+  refresh();
+}
+
+function toggleSections() {
+  element("comparativeFields").style.display = element("includeComparatives").checked ? "block" : "none";
+  element("fixedAssetNoteFields").style.display = element("includeFixedAssetNote").checked ? "block" : "none";
+}
+
+// --- Reading the form -----------------------------------------------------------------------
+
+function readValues() {
+  const values = {};
+  for (const control of element("returnForm").querySelectorAll("input, textarea")) {
+    if (control.type === "radio") {
+      if (control.checked) values[control.name] = control.value;
+    } else if (control.type === "checkbox") {
+      values[control.id] = control.checked;
+    } else {
+      values[control.id] = control.value;
+    }
+  }
+  return values;
+}
+
+function today() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function isIsoDate(text) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(text ?? "") && !Number.isNaN(Date.parse(text));
+}
+
+// Defaults follow what they come from until the customer types in them.
+function setDefaults() {
+  const follow = (id, text) => {
+    if (!state.edited.has(id)) element(id).value = text;
+  };
+  const interest = Number(element("currentInterestReceivable").value.replaceAll(",", "").replace("£", ""));
+  follow("nonTradingLoanRelationshipCredits", Number.isFinite(interest) && interest > 0 ? String(interest) : "0");
+  follow("tradeName", element("principalActivity").value.trim());
+  if (element("includeFixedAssetNote").checked) {
+    const charge = accountsFromValues(readValues()).smallCompany.fixedAssetNote;
+    const total = Object.values(charge ?? {}).reduce((sum, figures) => sum + figures.depreciationCharge, 0);
+    follow("depreciation", String(total));
+  }
+}
+
+// --- Checking and working the tax -----------------------------------------------------------
+
+async function ensureBundle() {
+  if (!state.bundlePromise) {
+    state.bundlePromise = import("../lib/books-bundle.js").then((bundle) => {
+      state.bundle = bundle;
+      return bundle;
+    });
+    state.bundlePromise.catch((error) => {
+      console.error("Failed to load the books bundle:", error);
+      state.bundlePromise = null;
+    });
+  }
+  return state.bundlePromise;
+}
+
+async function ensureTaxData(periodEnd) {
+  if (!isIsoDate(periodEnd) || !state.bundle) return;
+  const financialYear = financialYearOf(periodEnd);
+  if (financialYear in state.taxData) return;
+  state.taxData[financialYear] = null;
+  try {
+    state.taxData[financialYear] = await state.bundle.ltdTaxData(financialYear);
+  } catch (error) {
+    console.error(`No tax data for the financial year ${financialYear}:`, error);
+  }
+  refresh();
+}
+
+function taxDataByYear() {
+  return Object.fromEntries(Object.entries(state.taxData).filter(([, data]) => data));
+}
+
+function modelProblems(values) {
+  if (!state.bundle) return [];
+  const figures = figuresFromValues(values, company ?? { companyName: "", companyNumber: "" }, state.workingSheet);
+  const problems = state.bundle.validateCt600Figures(figures, { today: today(), taxDataByYear: taxDataByYear() });
+  return problems
+    .filter((problem) => !["companyName", "companyNumber"].includes(problem.field))
+    .map((problem) => ({
+      target: targetOfModelProblem(problem.field, state.targets),
+      message: problem.message,
+      refusal: problem.refusal,
+    }));
+}
+
+function orderOfTarget(target) {
+  const nodes = [...element("formSections").querySelectorAll("[id]")];
+  const index = nodes.findIndex((node) => node.id === target);
+  return index === -1 ? Number.MAX_SAFE_INTEGER : index;
+}
+
+// One problem per target: the form's own checks first, then the model's, in the order the form shows them.
+function evaluate(values) {
+  const merged = new Map();
+  for (const problem of [...formProblems(values), ...modelProblems(values)]) {
+    if (!merged.has(problem.target)) merged.set(problem.target, problem);
+  }
+  return [...merged.values()].sort((a, b) => orderOfTarget(a.target) - orderOfTarget(b.target));
+}
+
+function workedValue(box, value) {
+  if (box === 340 || box === 390) return `${value}%`;
+  if (box === 329) return "Yes";
+  if (box === 330 || box === 380) return String(value);
+  return `£${formatPounds(value)}`;
+}
+
+function renderWorkedTax(values) {
+  const rows = element("workedTaxRows");
+  if (!state.bundle) {
+    rows.replaceChildren();
+    return;
+  }
+  const figures = figuresFromValues(values, company ?? { companyName: "", companyNumber: "" }, state.workingSheet);
+  const placeholders = {
+    utr: figures.utr || PLACEHOLDER_UTR,
+    companyName: figures.companyName || PLACEHOLDER_TEXT,
+    companyNumber: figures.companyNumber || "00000000",
+    declarantName: figures.declarantName || PLACEHOLDER_TEXT,
+    declarantStatus: figures.declarantStatus || PLACEHOLDER_TEXT,
+  };
+  let derived;
+  try {
+    derived = state.bundle.deriveCt600FromFigures({ ...figures, ...placeholders }, taxDataByYear());
+  } catch {
+    element("workedTaxEmpty").style.display = "block";
+    rows.replaceChildren();
+    return;
+  }
+  element("workedTaxEmpty").style.display = "none";
+  const items = [
+    create(
+      "div",
+      { class: "worked-tax__row" },
+      create("dt", {}, "Adjusted profit in the computation"),
+      create("dd", {}, `£${formatPounds(derived.computationLines.adjustedProfit)}`),
+      create(
+        "dd",
+        { class: "hint" },
+        "Profit per the accounts, less bank interest, plus depreciation, amortisation and entertaining, less capital allowances",
+      ),
+    ),
+  ];
+  for (const row of CT600_BOX_ROWS.filter(
+    (candidate) => candidate.kind === "worked" && candidate.box in derived.boxes && candidate.box > 145,
+  )) {
+    items.push(
+      create(
+        "div",
+        { class: "worked-tax__row" },
+        create("dt", {}, `Box ${row.box}: ${row.label}`),
+        create("dd", {}, workedValue(row.box, derived.boxes[row.box])),
+        create("dd", { class: "hint" }, row.rule),
+      ),
+    );
+  }
+  rows.replaceChildren(...items);
+}
+
+// --- Showing problems -----------------------------------------------------------------------
+
+function clearError(target) {
+  const host = element(`${target}-errors`);
+  if (host) host.replaceChildren();
+  for (const control of document.querySelectorAll(`[data-error-target="${target}"]`)) {
+    control.removeAttribute("aria-invalid");
+    control.classList.remove("input--error");
+    const describedBy = (control.getAttribute("aria-describedby") ?? "").split(" ").filter((id) => id && id !== `${target}-error`);
+    control.setAttribute("aria-describedby", describedBy.join(" "));
+  }
+}
+
+function showError(problem) {
+  const { target, message } = problem;
+  clearError(target);
+  const host = element(`${target}-errors`);
+  if (!host) return;
+  host.append(
+    create("p", { id: `${target}-error`, class: "error-message" }, create("span", { class: "visually-hidden" }, "Error: "), message),
+  );
+  const controls = [...document.querySelectorAll(`[data-error-target="${target}"]`)];
+  if (target === WORKED_TAX_ID) controls.push(element(WORKED_TAX_ID));
+  for (const control of controls) {
+    control.setAttribute("aria-invalid", "true");
+    control.classList.add("input--error");
+    const describedBy = (control.getAttribute("aria-describedby") ?? "").split(" ").filter(Boolean);
+    control.setAttribute("aria-describedby", [...describedBy, `${target}-error`].join(" "));
+  }
+}
+
+function showTouchedErrors() {
+  const shown = new Set(state.problems.filter((problem) => state.touched.has(problem.target)).map((problem) => problem.target));
+  for (const target of state.targets) if (!shown.has(target)) clearError(target);
+  for (const problem of state.problems) if (shown.has(problem.target)) showError(problem);
+}
+
+function focusTarget(target) {
+  const field = CT600_FORM_FIELDS.find((candidate) => candidate.id === target);
+  const node = element(field?.focus ?? target);
+  node?.focus();
+  node?.scrollIntoView?.({ block: "center" });
+}
+
+function showSummary(problems) {
+  element(SUMMARY_ID)?.remove();
+  const list = create("ul", { class: "error-summary__list" });
+  for (const problem of problems) {
+    const link = create("a", { href: `#${problem.target}` }, problem.message);
+    link.addEventListener("click", (event) => {
+      event.preventDefault();
+      focusTarget(problem.target);
+    });
+    list.append(create("li", {}, link));
+  }
+  const summary = create(
+    "div",
+    { id: SUMMARY_ID, class: "error-summary", role: "alert", tabindex: "-1" },
+    create("h2", { class: "error-summary__title" }, "There is a problem"),
+    list,
+  );
+  element("returnForm").prepend(summary);
+  summary.focus();
+}
+
+function refresh() {
+  if (!element("formSections").firstChild) return;
+  const values = readValues();
+  state.problems = evaluate(values);
+  renderWorkedTax(values);
+  showTouchedErrors();
+  ensureTaxData(values.periodEnd);
+}
+
+function targetOf(control) {
+  return control?.dataset?.errorTarget;
+}
+
+function markTouched(control) {
+  const target = targetOf(control);
+  if (!target) return false;
+  state.touched.add(target);
+  return true;
+}
+
+function handleFormInput(event) {
+  const control = event.target;
+  if (control.id) state.edited.add(control.id);
+  setDefaults();
+  refresh();
+}
+
+function handleFormLeave(event) {
+  if (markTouched(event.target)) refresh();
+}
+
+function handleFormChange(event) {
+  if (event.target.id === "includeComparatives" || event.target.id === "includeFixedAssetNote") toggleSections();
+  if (markTouched(event.target)) {
+    setDefaults();
+    refresh();
+  }
+}
+
+// --- The company, the filed accounts and the card -------------------------------------------
+
+function readFiledAccounts() {
+  try {
+    const stored = sessionStorage.getItem(FILED_ACCOUNTS_STORAGE_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+function offerFiledAccounts() {
+  const filed = readFiledAccounts();
+  if (!filed) return;
+  element("filedAccountsCompany").textContent = `${filed.companyName} (${filed.companyNumber})`;
+  element("filedAccountsOffer").style.display = "block";
+}
+
+function useFiledAccounts() {
+  const filed = readFiledAccounts();
+  if (!filed) return;
+  const filledCount = applyFormEntries(accountsFormEntries(filed));
+  window.showStatus(`Filled ${filledCount} fields from the accounts Companies House accepted. Check them.`, "info");
+}
+
+function mountBooksCard() {
+  window.booksImport.mount(element("booksImport"), {
+    kind: "ct600",
+    onFilled: (workingSheet) => {
+      state.workingSheet = workingSheet;
+      refresh();
+    },
+  });
+}
+
+async function handleCompanySubmit(event) {
+  event.preventDefault();
+  const companyNumber = window.normaliseCompanyNumber(element("companyNumber").value);
+  if (!companyNumber) {
+    window.showStatus("Please enter a company number.", "error");
+    return;
+  }
+
+  window.showLoading();
+  window.hideStatus();
+  try {
+    const profile = await window.getCompanyProfile(companyNumber);
+    company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+    element("formCompanyName").textContent = company.companyName;
+    element("formCompanyNumber").textContent = company.companyNumber;
+    showView("formView");
+    await ensureBundle();
+    refresh();
+  } catch (error) {
+    console.error("Failed to look up the company:", error);
+    window.showStatus(error.message || "Failed to look up the company.", "error");
+  } finally {
+    window.hideLoading();
+  }
+}
+
+function guideLink(text, anchor) {
+  const link = document.createElement("a");
+  link.href = guideUrl(anchor);
+  link.target = "_blank";
+  link.rel = "noopener";
+  link.textContent = text;
+  return link;
+}
+
 function renderReview(preview) {
   const boxRows = Object.keys(preview.boxes)
     .map(Number)
     .sort((a, b) => a - b)
     .map((box) => {
-      const row = tableRow(box, guideLink(BOX_MEANINGS[box], BOX_GUIDE_ANCHORS[box]), preview.boxes[box]);
+      const row = tableRow(box, guideLink(boxRow(box).label, boxRow(box).anchor), preview.boxes[box]);
       return MONEY_BOXES.has(box) ? amountCell(row, formatPounds(preview.boxes[box])) : row;
     });
   element("ct600Table")
@@ -345,21 +692,18 @@ function renderReview(preview) {
 
 async function handleReturnFormSubmit(event) {
   event.preventDefault();
-  const problem = formProblem();
-  if (problem) {
-    window.showStatus(problem, "error");
-    return;
-  }
-  const { parsed, problem: exportProblem } = parseBookExport();
-  if (exportProblem) {
-    window.showStatus(exportProblem, "error");
-    return;
-  }
-
+  element(SUMMARY_ID)?.remove();
   window.showLoading();
   window.hideStatus();
   try {
-    previewRequest = buildReturnRequest(parsed);
+    await ensureBundle();
+    for (const target of state.targets) state.touched.add(target);
+    refresh();
+    if (state.problems.length > 0) {
+      showSummary(state.problems);
+      return;
+    }
+    previewRequest = ct600RequestFromValues(readValues(), company, state.workingSheet);
     const preview = await window.previewCtReturn(previewRequest);
     renderReview(preview);
     showView("previewView");
@@ -471,24 +815,28 @@ function startAgain() {
   company = null;
   previewRequest = null;
   element("companyForm").reset();
-  element("returnForm").reset();
   element("gatewayUserId").value = "";
   element("gatewayPassword").value = "";
-  element("declarationAccepted").checked = false;
-  renderLoanStop();
+  element(SUMMARY_ID)?.remove();
+  renderForm();
+  mountBooksCard();
   window.hideStatus();
   showView("companyView");
 }
 
+renderForm();
+mountBooksCard();
 offerFiledAccounts();
 updateGovTestScenarioVisibility();
 window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibility);
 
+const returnForm = element("returnForm");
+returnForm.addEventListener("input", handleFormInput);
+returnForm.addEventListener("change", handleFormChange);
+returnForm.addEventListener("focusout", handleFormLeave);
 element("companyForm").addEventListener("submit", handleCompanySubmit);
-element("returnForm").addEventListener("submit", handleReturnFormSubmit);
-element("bookExportFile").addEventListener("change", handleBookExportFile);
-element("loanOverdrawnYes").addEventListener("change", renderLoanStop);
-element("loanOverdrawnNo").addEventListener("change", renderLoanStop);
+returnForm.addEventListener("submit", handleReturnFormSubmit);
+element("useFiledAccountsBtn").addEventListener("click", useFiledAccounts);
 element("backToFormBtn").addEventListener("click", () => showView("formView"));
 element("submitReturnBtn").addEventListener("click", handleSubmitReturn);
 element("tryAgainBtn").addEventListener("click", () => showView("previewView"));

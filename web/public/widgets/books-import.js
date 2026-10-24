@@ -12,6 +12,11 @@
 //   kind "itsa-quarterly" fills the period summary fields for the period end on the form
 //   kind "itsa-annual"    fills allowances and adjustments through the page's own hooks:
 //                         { taxYear: () => string, fill: (figures) => { imported, unmapped } }
+//   kind "ct600"          fills the Company Tax Return form (period, computation figures, capital
+//                         allowances, reliefs and the accounts section) from a Company book; the
+//                         page's hook { onFilled: (workingSheet) => void } receives the book's own
+//                         trading profit and Corporation Tax for the page's check. It also accepts
+//                         the figures JSON the diya-submit MCP tool derive_company_tax_return writes.
 // The annual card also accepts the derived-figures JSON the diya-submit MCP tool
 // derive_itsa_annual_submission writes.
 //
@@ -271,6 +276,32 @@
     return applyAnnualFigures(figures, fileName, hooks);
   }
 
+  async function fillCt600({ bundle, source, fileName, hooks }) {
+    let figures;
+    let accounts;
+    try {
+      figures = await bundle.ct600FiguresFromBook(source.book, source.lines);
+      accounts = await bundle.smallCompanyAccountsFromBook(source.book, source.lines);
+    } catch (error) {
+      throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
+    }
+    const { formEntriesFromBook, applyFormEntries } = await import("../lib/ct600-fields.js");
+    const filled = applyFormEntries(formEntriesFromBook(figures, accounts));
+    hooks.onFilled(figures.workingSheet);
+    return `Filled ${plural(filled, "field")} from ${fileName} for the period ${figures.periodStart} to ${figures.periodEnd}. Check them, add the UTR, the statements and the declaration, then preview.`;
+  }
+
+  // The figures file is derive_company_tax_return's answer: { kind: "ct600", sourceFileName, packageVersion, period, figures }.
+  async function applyCt600Figures(parsed, fileName, hooks) {
+    if (!isPlainObject(parsed.figures) || !parsed.figures.periodStart || !parsed.figures.periodEnd) {
+      throw new Refusal(`${fileName} names no period in its figures. Nothing filled.`);
+    }
+    const { formEntriesFromFigures, applyFormEntries } = await import("../lib/ct600-fields.js");
+    const filled = applyFormEntries(formEntriesFromFigures(parsed.figures));
+    hooks.onFilled(parsed.figures.workingSheet);
+    return `Filled ${plural(filled, "field")} from ${fileName} for the period ${parsed.figures.periodStart} to ${parsed.figures.periodEnd}. The file carries the profit and loss account only: fill the balance sheet and the rest of the accounts, then preview.`;
+  }
+
   const HANDOFF_KEY = "booksHandoff";
   const MAX_HANDOFF_TEXT = 200;
   const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -402,10 +433,21 @@
     return applyAnnualFigures({ taxYear: handoff.period.taxYear, ...handoff.figures }, handoff.sourceFileName, hooks);
   }
 
+  // JSON that is the figures file and not a book: null when it is anything else, so the book reader answers.
+  function parseCt600Figures(text) {
+    try {
+      const parsed = JSON.parse(text);
+      return isPlainObject(parsed) && parsed.kind === "ct600" ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+
   const FILLERS = {
     "vat": { fill: fillVat, applyHandoff: applyVatHandoff, watched: ["periodStart", "periodEnd"] },
     "itsa-quarterly": { fill: fillItsaQuarterly, applyHandoff: applyQuarterlyHandoff, watched: ["taxYear", "periodEndDate"] },
     "itsa-annual": { fill: fillItsaAnnual, applyHandoff: applyAnnualHandoff, watched: [] },
+    "ct600": { fill: fillCt600, watched: [] },
   };
 
   function element(tag, attributes = {}, text = "") {
@@ -489,6 +531,10 @@
           return { figures: parseDerivedFigures(text) };
         }
       }
+      if (kind === "ct600" && startsLikeJson) {
+        const parsed = parseCt600Figures(new TextDecoder().decode(bytes));
+        if (parsed) return { ct600Figures: parsed };
+      }
       const bundle = await loadBundle();
       return { source: await bundle.readBookSource(bytes, file.name) };
     }
@@ -502,6 +548,8 @@
         const read = await readFile(file);
         if (read.figures) {
           say(applyAnnualFigures(read.figures, file.name, options));
+        } else if (read.ct600Figures) {
+          say(await applyCt600Figures(read.ct600Figures, file.name, options));
         } else {
           loaded = { source: read.source, fileName: file.name };
           say(await fillFromLoaded());
