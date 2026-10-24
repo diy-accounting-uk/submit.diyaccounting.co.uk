@@ -14,6 +14,7 @@ import {
   buildValidationError,
   http200OkResponse,
   http201CreatedResponse,
+  http409ConflictResponse,
   http500ServerErrorResponse,
   http502BadGatewayResponse,
   getHeader,
@@ -22,7 +23,7 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
-import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "../../services/hmrcCtReturnRequest.js";
+import { extractAndValidateCtReturnParameters, buildCtReturnDocuments, boxesThatDiffer } from "../../services/hmrcCtReturnRequest.js";
 import {
   buildCt600SubmissionRequest,
   parseTransactionEngineResponse,
@@ -92,6 +93,16 @@ export async function ingestHandler(event) {
   } catch (error) {
     logger.warn({ message: "Company Tax Return documents could not be built", error: error.message });
     return buildValidationError(request, [error.message], responseHeaders);
+  }
+
+  const differingBoxes = boxesThatDiffer(returnRequest.reviewedBoxes, documents.boxes);
+  if (differingBoxes.length > 0) {
+    return http409ConflictResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: `The figures changed after you reviewed them (box ${differingBoxes.join(", box ")}). Review the return again before you file it.`,
+      error: { differingBoxes },
+    });
   }
 
   // Forwarded so the simulator's Gov-Test-Scenario handling can be driven from the page's

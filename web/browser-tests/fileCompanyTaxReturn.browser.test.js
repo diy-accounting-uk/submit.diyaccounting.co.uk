@@ -102,7 +102,7 @@ test.describe("File Company Tax Return entry form", () => {
     return zip.generateAsync({ type: "nodebuffer" });
   }
 
-  async function serveRealSite(page, previewRequests = []) {
+  async function serveRealSite(page, previewRequests = [], submission = { requests: [], status: 409, body: {} }) {
     await page.addInitScript(() => {
       try {
         localStorage.setItem("cognitoIdToken", "mock-id-token");
@@ -142,6 +142,11 @@ test.describe("File Company Tax Return entry form", () => {
         await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
         return;
       }
+      if (url.pathname === "/api/v1/hmrc/ct/return" && route.request().method() === "POST") {
+        submission.requests.push(JSON.parse(route.request().postData()));
+        await route.fulfill({ status: submission.status, contentType: "application/json", body: JSON.stringify(submission.body) });
+        return;
+      }
       if (url.pathname.startsWith("/api/")) {
         await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
         return;
@@ -157,8 +162,8 @@ test.describe("File Company Tax Return entry form", () => {
     });
   }
 
-  async function openForm(page, previewRequests) {
-    await serveRealSite(page, previewRequests);
+  async function openForm(page, previewRequests, submission) {
+    await serveRealSite(page, previewRequests, submission);
     await page.goto(PAGE_URL, { waitUntil: "domcontentloaded" });
     await page.locator("#companyNumber").fill("12345678");
     await page.locator("#companyLookupBtn").click();
@@ -250,6 +255,26 @@ test.describe("File Company Tax Return entry form", () => {
     });
     expect(previewRequests[0].figures.workingSheet).toBeDefined();
     expect(previewRequests[0].smallCompany.filleted).toBe(false);
+  });
+
+  test("the submit carries the reviewed boxes, and a 409 returns the customer to the review with the message", async ({ page }) => {
+    const message = "The figures changed after you reviewed them (box 440). Review the return again before you file it.";
+    const submission = { requests: [], status: 409, body: { message, differingBoxes: ["440"] } };
+    await openForm(page, [], submission);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+
+    await expect.poll(() => submission.requests.length).toBe(1);
+    expect(submission.requests[0].reviewedBoxes).toEqual(PREVIEW_BOXES);
+    await expect(page.locator("#previewView")).toBeVisible();
+    await expect(page.locator("#statusMessagesContainer")).toContainText(message);
+    expect(new URL(page.url()).hash).toBe("#review");
   });
 
   test("each live check shows under its field when the customer leaves it, and again in the summary", async ({ page }) => {

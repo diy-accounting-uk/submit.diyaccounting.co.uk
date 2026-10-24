@@ -75,6 +75,32 @@ function validCredential(value) {
   return typeof value === "string" && value.length > 0 && value.length <= MAX_GATEWAY_CREDENTIAL_LENGTH;
 }
 
+function readReviewedBoxes(reviewedBoxes, required, errorMessages) {
+  if (reviewedBoxes === undefined && !required) return undefined;
+  if (!reviewedBoxes || typeof reviewedBoxes !== "object" || Array.isArray(reviewedBoxes)) {
+    errorMessages.push("Missing reviewedBoxes - the boxes the customer reviewed, box number to value");
+    return undefined;
+  }
+  for (const [box, value] of Object.entries(reviewedBoxes)) {
+    if (!/^\d{1,4}$/.test(box) || !(typeof value === "number" ? Number.isFinite(value) : typeof value === "string")) {
+      errorMessages.push(`Invalid reviewedBoxes entry for box ${box}`);
+    }
+  }
+  return reviewedBoxes;
+}
+
+/**
+ * The box numbers whose value differs between the boxes the customer reviewed and the boxes the
+ * server worked from the same request, in ascending order.
+ * @param {object} reviewedBoxes
+ * @param {object} workedBoxes
+ * @returns {string[]}
+ */
+export function boxesThatDiffer(reviewedBoxes, workedBoxes) {
+  const all = new Set([...Object.keys(reviewedBoxes), ...Object.keys(workedBoxes)]);
+  return [...all].filter((box) => reviewedBoxes[box] !== workedBoxes[box]).sort((a, b) => Number(a) - Number(b));
+}
+
 /**
  * Extract and validate a Company Tax Return request. Validation messages are appended to
  * errorMessages; the returned object is only usable when none were added.
@@ -83,8 +109,13 @@ function validCredential(value) {
  * @param {string[]} errorMessages
  * @param {object} [options]
  * @param {boolean} [options.requireGatewayCredentials] - true for the submit, false for the preview
+ * @param {boolean} [options.requireReviewedBoxes] - true for the submit, false for the preview
  */
-export function extractAndValidateCtReturnParameters(event, errorMessages, { requireGatewayCredentials = true } = {}) {
+export function extractAndValidateCtReturnParameters(
+  event,
+  errorMessages,
+  { requireGatewayCredentials = true, requireReviewedBoxes = true } = {},
+) {
   const body = parseRequestBody(event) || {};
   const accounts = extractAndValidateAccountsParameters(event, errorMessages, { requireCompanyAuthCode: false });
   if (accounts.regime !== "small-company") {
@@ -129,12 +160,15 @@ export function extractAndValidateCtReturnParameters(event, errorMessages, { req
     if (!validCredential(gatewayPassword)) errorMessages.push("Invalid gatewayPassword");
   }
 
+  const reviewedBoxes = readReviewedBoxes(body.reviewedBoxes, requireReviewedBoxes, errorMessages);
+
   return {
     accounts,
     utr,
     tradeName,
     declarant: { name: declarantName, status: declarantStatus },
     figures,
+    reviewedBoxes,
     gatewayUserId,
     gatewayPassword,
   };

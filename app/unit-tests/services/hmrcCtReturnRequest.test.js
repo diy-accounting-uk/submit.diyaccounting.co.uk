@@ -4,10 +4,18 @@
 // app/unit-tests/services/hmrcCtReturnRequest.test.js
 import { describe, test, beforeAll, expect } from "vitest";
 import { buildCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
-import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "@app/services/hmrcCtReturnRequest.js";
+import { extractAndValidateCtReturnParameters, buildCtReturnDocuments, boxesThatDiffer } from "@app/services/hmrcCtReturnRequest.js";
 import { parseXmlDocument, firstElementText } from "@app/lib/xmlDom.js";
 
 let baseBody;
+
+function withReviewedBoxes(body) {
+  const request = extractAndValidateCtReturnParameters({ body: JSON.stringify(body) }, [], {
+    requireGatewayCredentials: false,
+    requireReviewedBoxes: false,
+  });
+  return { ...body, reviewedBoxes: buildCtReturnDocuments(request).boxes };
+}
 
 function extract(overrides = {}, options) {
   const errors = [];
@@ -21,7 +29,7 @@ function extract(overrides = {}, options) {
 
 describe("extractAndValidateCtReturnParameters", () => {
   beforeAll(async () => {
-    baseBody = await buildCtReturnBodyFromBook();
+    baseBody = await withReviewedBoxes(await buildCtReturnBodyFromBook());
   });
 
   test("accepts a request built from a book export", () => {
@@ -37,6 +45,18 @@ describe("extractAndValidateCtReturnParameters", () => {
     const { request, errors } = extract({ gatewayUserId: undefined, gatewayPassword: undefined }, { requireGatewayCredentials: false });
     expect(errors).toEqual([]);
     expect(request.gatewayPassword).toBeUndefined();
+  });
+
+  test("requires reviewedBoxes on the submit and accepts their absence on the preview", () => {
+    expect(extract({ reviewedBoxes: undefined }).errors.join("\n")).toMatch(/reviewedBoxes/);
+    expect(extract({ reviewedBoxes: undefined }, { requireReviewedBoxes: false }).errors).toEqual([]);
+    expect(extract({ reviewedBoxes: [1] }).errors.join("\n")).toMatch(/reviewedBoxes/);
+    expect(extract({ reviewedBoxes: { abc: 1 } }).errors.join("\n")).toMatch(/box abc/);
+  });
+
+  test("lists the boxes that differ, in ascending order", () => {
+    expect(boxesThatDiffer({ 10: 1, 5: "a", 7: 3 }, { 10: 2, 5: "a", 8: 1 })).toEqual(["7", "8", "10"]);
+    expect(boxesThatDiffer({ 1: 1 }, { 1: 1 })).toEqual([]);
   });
 
   test("reports figures that are missing", () => {
@@ -66,7 +86,7 @@ describe("extractAndValidateCtReturnParameters", () => {
 
 describe("buildCtReturnDocuments", () => {
   beforeAll(async () => {
-    baseBody = await buildCtReturnBodyFromBook();
+    baseBody = await withReviewedBoxes(await buildCtReturnBodyFromBook());
   });
 
   test("builds a return whose three documents name the same company, UTR and period", () => {
