@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB">
+<html lang="en-GB" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <title>About - DIY Accounting Submit</title>
@@ -24,7 +24,7 @@
       /* Purple gradient backdrop contained within the portrait frame */
       #mainContent {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-card);
         padding: 1em;
       }
       header .subtitle {
@@ -229,13 +229,26 @@
     </header>
 
     <main id="mainContent">
-      <p class="hint" data-feature-status="summary">
-        <strong>Status of each feature.</strong> Production, which you can use for real: HMRC VAT, company lookup, registered office and
-        registered email. Sandbox, which runs against a test service: HMRC Income Tax (MTD), HMRC Assist for Income Tax, the Companies House
-        confirmation statement, PSC verification statement and accounts. Preview, which runs on our simulator only: HMRC Company Tax Return
-        (CT600) and HMRC Assist for VAT. Sandbox and preview features file nothing real.
-        <a href="mtd-calendar.html#availability">See the availability table</a>.
-      </p>
+      <div class="feature-status-summary" data-feature-status="summary">
+        <p>
+          <strong>Status of each feature.</strong> Sandbox and preview features file nothing real.
+          <a href="mtd-calendar.html#availability">See the availability table</a>.
+        </p>
+        <ul>
+          <li>
+            <span class="status-tag" data-status="production">Production</span> for real use: HMRC VAT, company lookup, registered office
+            and registered email.
+          </li>
+          <li>
+            <span class="status-tag" data-status="sandbox">Sandbox</span> against a test service: HMRC Income Tax (MTD), HMRC Assist for
+            Income Tax, the Companies House confirmation statement, PSC verification statement and accounts.
+          </li>
+          <li>
+            <span class="status-tag" data-status="preview">Preview</span> on our simulator only: HMRC Company Tax Return (CT600) and HMRC
+            Assist for VAT.
+          </li>
+        </ul>
+      </div>
       <!-- Hero Section -->
       <section class="hero-section">
         <h2>Submit Your VAT Returns<br />Direct to HMRC</h2>
@@ -335,7 +348,7 @@
       </section>
     </main>
 
-    <footer data-footer="full"></footer>
+    <footer></footer>
 
     <!-- Lightbox modal for expandable images -->
     <div class="lightbox-overlay" id="lightbox">

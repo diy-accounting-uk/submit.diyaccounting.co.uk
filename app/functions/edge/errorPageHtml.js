@@ -72,23 +72,17 @@ export function generateErrorHtml(statusCode, requestedUri = "") {
   </main>
 
   <footer>
-    <div class="footer-content">
-      <div class="footer-left">
-        <a href="/about.html">About</a>
-        <a href="/privacy.html">Privacy</a>
-        <a href="/terms.html">Terms</a>
-      </div>
-      <div class="footer-center">
-        <p>&copy; 2006-2026 DIY Accounting Limited</p>
-        <p>
-          Free to use.
-          <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a> available
-          under the
-          <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE" target="_blank" rel="noopener">PolyForm Internal Use License</a>.
-        </p>
-      </div>
-      <div class="footer-right"></div>
-    </div>
+    <nav class="footer-links" aria-label="Site information">
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/accessibility.html">Accessibility</a>
+      <a href="/help.html">Help</a>
+      <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a>
+    </nav>
+    <p class="footer-legal">
+      &copy; 2006-2026 DIY Accounting Limited. Free to use under the
+      <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE" target="_blank" rel="noopener">PolyForm Internal Use License</a>.
+    </p>
   </footer>
 
   <script>

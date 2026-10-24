@@ -130,7 +130,7 @@ function displayCalculation(calculation, nino, taxYear, calculationType) {
     list.id = "calculationMessagesList";
     allMessages.forEach((m) => {
       const { id, text } = messageLine(m);
-      const item = el("li", `status-message ${m.level}`);
+      const item = el("li", `status-message status-${m.level}`);
       if (id) item.append(el("strong", "", id.trim()), " ");
       item.append(text);
       list.append(item);

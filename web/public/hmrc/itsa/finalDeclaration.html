@@ -126,7 +126,7 @@
 
       <!-- Declaration form, shown after a successful retrieve -->
       <div id="declarationContainer" class="results-container" style="display: none">
-        <div id="calculationDisclaimer" class="status-message warning">
+        <div id="calculationDisclaimer" class="status-message status-warning">
           This is an estimate based on the information you've submitted so far. HMRC produced this calculation, and it may change if you
           submit more information.
         </div>
@@ -141,12 +141,12 @@
         </p>
         <div id="businessesList"></div>
         <p id="taxLiabilityAdjustmentLine" class="hint"></p>
-        <div id="unclaimedLossWarning" class="status-message warning" style="display: none" role="alert">
+        <div id="unclaimedLossWarning" class="status-message status-warning" style="display: none" role="alert">
           A business above shows a loss with no claim recorded against it. Visit Losses and Claims before declaring if you meant to carry it
           forward, sideways or back.
         </div>
 
-        <div id="notReadyForDeclaration" class="status-message error" style="display: none" role="alert"></div>
+        <div id="notReadyForDeclaration" class="status-message status-error" style="display: none" role="alert"></div>
 
         <div id="declarationSection">
           <div class="declaration-box">
@@ -164,7 +164,7 @@
         </div>
 
         <div id="recentSubmissionsChanged" style="display: none">
-          <div class="status-message error" role="alert">
+          <div class="status-message status-error" role="alert">
             A figure has changed since this calculation. Trigger a fresh calculation before declaring again.
           </div>
           <a href="taxCalculation.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
@@ -184,7 +184,7 @@
       </div>
     </main>
 
-    <footer data-footer="activity"></footer>
+    <footer></footer>
 
     <script src="../../widgets/page-chrome.js"></script>
     <script src="../../lib/env-loader.js"></script>
