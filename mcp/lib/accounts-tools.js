@@ -12,7 +12,8 @@ export {
   linesFromOpeningBalance,
   roundForFiling,
   profitAndLossFromPublishedAccount,
-  deriveMicroEntityAccounts,
-} from "../../app/services/microEntityAccounts.js";
+} from "../../app/services/microEntityAccountsFromResults.js";
+
+export { deriveMicroEntityAccounts } from "../../app/services/microEntityAccounts.js";
 
 export { deriveSmallCompanyAccounts } from "../../app/services/smallCompanyAccounts.js";

@@ -736,3 +736,107 @@ test.describe("books import from Google Drive", () => {
     expect(downloads).toEqual([]);
   });
 });
+
+const MICRO_URL = "http://localhost:3000/companies-house/fileMicroEntityAccounts.html";
+const SMALL_URL = "http://localhost:3000/companies-house/fileSmallCompanyAccounts.html";
+
+async function zippedFixtureBook(directory) {
+  const zip = new JSZip();
+  zip.file("book.toml", fs.readFileSync(path.join(process.cwd(), "fixtures/diya-gl", directory, "book.toml")));
+  zip.file("lines.jsonl", fs.readFileSync(path.join(process.cwd(), "fixtures/diya-gl", directory, "lines.jsonl")));
+  return zip.generateAsync({ type: "nodebuffer" });
+}
+
+async function openAccountsPage(page, url, companyNumber) {
+  await openPage(page, url);
+  await page.route(`**/api/v1/companies-house/company/${companyNumber}`, (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ companyNumber, companyName: "Example Ltd" }) }),
+  );
+  await page.locator("#companyNumber").fill(companyNumber);
+  await page.locator("#companyLookupBtn").click();
+  await expect(page.locator("#formView")).toBeVisible();
+}
+
+test.describe("books import on the micro-entity accounts page", () => {
+  test("fills the period, both balance sheets, the employees and the director from a dropped zip", async ({ page }) => {
+    await openAccountsPage(page, MICRO_URL, "12345678");
+    await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
+
+    await expect(page.locator("#booksImportStatus")).toContainText(
+      "from precision-code.diya-gl.zip for the period 2025-04-01 to 2026-03-31.",
+      { timeout: 60_000 },
+    );
+    await expect(page.locator("#periodStart")).toHaveValue("2025-04-01");
+    await expect(page.locator("#periodEnd")).toHaveValue("2026-03-31");
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("208990");
+    await expect(page.locator("#currentCurrentAssets")).toHaveValue("206175");
+    await expect(page.locator("#currentCreditorsWithinOneYear")).toHaveValue("49137");
+    await expect(page.locator("#currentCreditorsAfterOneYear")).toHaveValue("58000");
+    await expect(page.locator("#currentCalledUpShareCapital")).toHaveValue("100");
+    await expect(page.locator("#currentProfitAndLossAccount")).toHaveValue("307928");
+    await expect(page.locator("#currentCapitalAndReserves")).toHaveValue("308028");
+    await expect(page.locator("#priorFixedAssets")).toHaveValue("182902");
+    await expect(page.locator("#priorCapitalAndReserves")).toHaveValue("180802");
+    await expect(page.locator("#averageEmployees")).toHaveValue("3");
+    await expect(page.locator("#directorName")).toHaveValue("Carol Smith");
+    await expect(page.locator("#currentYearTotals")).toContainText("Matches capital and reserves.");
+    await expect(page.locator("#priorYearTotals")).toContainText("Matches capital and reserves.");
+    await expect(page.locator("#dormant")).not.toBeChecked();
+    await expect(page.locator("#directorDateApproved")).toHaveValue("");
+  });
+
+  test("a book for another company fills nothing", async ({ page }) => {
+    await openAccountsPage(page, MICRO_URL, "99999999");
+    await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
+
+    await expect(page.locator("#booksImportStatus")).toContainText(
+      "precision-code.diya-gl.zip is for company 12345678; this form is for company 99999999. Nothing filled.",
+      { timeout: 60_000 },
+    );
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("");
+  });
+
+  test("a book with no turnover, no costs and no change in reserves ticks the dormant box", async ({ page }) => {
+    await openAccountsPage(page, MICRO_URL, "87654321");
+    await chooseFile(page, "dormant.diya-gl.zip", await zippedFixtureBook("dormant-ltd"));
+
+    await expect(page.locator("#booksImportStatus")).toContainText("so the dormant box is ticked", { timeout: 60_000 });
+    await expect(page.locator("#dormant")).toBeChecked();
+    await expect(page.locator("#dormantFields")).toBeVisible();
+    await expect(page.locator("#currentCalledUpShareCapital")).toHaveValue("100");
+    await expect(page.locator("#currentProfitAndLossAccount")).toHaveValue("0");
+    await expect(page.locator("#priorProfitAndLossAccount")).toHaveValue("0");
+    await expect(page.locator("#averageEmployees")).toHaveValue("0");
+  });
+});
+
+test.describe("books import on the small company accounts page", () => {
+  test("fills the profit and loss account, the balance sheet, the fixed asset note, the employees and the directors", async ({ page }) => {
+    await openAccountsPage(page, SMALL_URL, "12345678");
+    await chooseFile(page, "precision-code.diya-gl.zip", await zippedFixtureBook("precision-code-ltd"));
+
+    await expect(page.locator("#booksImportStatus")).toContainText(
+      "from precision-code.diya-gl.zip for the period 2025-04-01 to 2026-03-31.",
+      { timeout: 60_000 },
+    );
+    await expect(page.locator("#currentTurnover")).toHaveValue("341283");
+    await expect(page.locator("#currentCostOfSales")).toHaveValue("18787");
+    await expect(page.locator("#currentAdministrativeExpenses")).toHaveValue("151548");
+    await expect(page.locator("#currentInterestReceivable")).toHaveValue("340");
+    await expect(page.locator("#currentTax")).toHaveValue("29062");
+    await expect(page.locator("#currentProfitAndLossTotals")).toContainText("Profit for the year: 142226.");
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("208990");
+    await expect(page.locator("#currentCashAtBank")).toHaveValue("192995");
+    await expect(page.locator("#currentProfitAndLossAccount")).toHaveValue("307928");
+    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Matches share capital plus the profit and loss reserve.");
+    await expect(page.locator("#includeFixedAssetNote")).toBeChecked();
+    await expect(page.locator("#noteLandBuildingsCostAtStart")).toHaveValue("200000");
+    await expect(page.locator("#notePlantMachineryAdditions")).toHaveValue("52500");
+    await expect(page.locator("#fixedAssetNoteTotals")).toContainText("Matches fixed assets.");
+    await expect(page.locator("#averageEmployees")).toHaveValue("3");
+    await expect(page.locator("#directors")).toHaveValue("Carol Smith\nDavid Brown\nEmma Wilson");
+    await expect(page.locator("#directorName")).toHaveValue("Carol Smith");
+    await expect(page.locator("#includeComparatives")).not.toBeChecked();
+    await expect(page.locator("#principalActivity")).toHaveValue("");
+  });
+});

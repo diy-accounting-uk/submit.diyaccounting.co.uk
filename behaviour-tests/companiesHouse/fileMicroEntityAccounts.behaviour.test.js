@@ -4,6 +4,7 @@
 // behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js
 
 import { test } from "../helpers/playwrightTestWithout.js";
+import { expect } from "@playwright/test";
 import fs from "node:fs";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
@@ -35,6 +36,10 @@ import {
   enterCompanyAuthCodeAndSubmit,
   verifyFilingAccepted,
   verifyFilingRejected,
+  writeFixtureBookZip,
+  fillAccountsFormFromBook,
+  completeMicroEntityAnswersTheBookLeaves,
+  completeSmallCompanyAnswersTheBookLeaves,
 } from "../steps/behaviour-companies-house-accounts-steps.js";
 import { companiesHouseLookupFixture } from "../steps/behaviour-companies-house-filing-steps.js";
 
@@ -307,6 +312,112 @@ test("Click through: file filleted small company accounts and see the filing acc
     },
     screenshotPath,
   );
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyFilingAccepted(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file micro-entity accounts from a book and see the filing accepted", async ({ page }, testInfo) => {
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"));
+
+  await signInWithResidentBundle(page, baseUrl);
+  await goToFileMicroEntityAccounts(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await fillAccountsFormFromBook(
+    page,
+    bookZipFile,
+    "for the period 2025-04-01 to 2026-03-31.",
+    {
+      periodStart: "2025-04-01",
+      periodEnd: "2026-03-31",
+      currentFixedAssets: "208990",
+      currentCurrentAssets: "206175",
+      currentCreditorsWithinOneYear: "49137",
+      currentCreditorsAfterOneYear: "58000",
+      currentCalledUpShareCapital: "100",
+      currentProfitAndLossAccount: "307928",
+      currentCapitalAndReserves: "308028",
+      priorFixedAssets: "182902",
+      priorCapitalAndReserves: "180802",
+      averageEmployees: "3",
+      directorName: "Carol Smith",
+    },
+    screenshotPath,
+  );
+  await completeMicroEntityAnswersTheBookLeaves(page, "2026-04-15", screenshotPath);
+  await previewAccounts(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyFilingAccepted(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: a book with no activity ticks the dormant box on the micro-entity form", async ({ page }, testInfo) => {
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+  const bookZipFile = await writeFixtureBookZip("dormant-ltd", companyNumber, testInfo.outputPath("books"));
+
+  await signInWithResidentBundle(page, baseUrl);
+  await goToFileMicroEntityAccounts(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await fillAccountsFormFromBook(
+    page,
+    bookZipFile,
+    "so the dormant box is ticked",
+    { currentCalledUpShareCapital: "100", currentProfitAndLossAccount: "0", priorProfitAndLossAccount: "0", averageEmployees: "0" },
+    screenshotPath,
+  );
+  await expect(page.locator("#dormant")).toBeChecked();
+  await expect(page.locator("#dormantFields")).toBeVisible();
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file small company accounts from a book and see the filing accepted", async ({ page }, testInfo) => {
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+  const bookZipFile = await writeFixtureBookZip("precision-code-ltd", companyNumber, testInfo.outputPath("books"));
+
+  await signInWithResidentBundle(page, baseUrl);
+  await goToFileSmallCompanyAccounts(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await fillAccountsFormFromBook(
+    page,
+    bookZipFile,
+    "for the period 2025-04-01 to 2026-03-31.",
+    {
+      periodStart: "2025-04-01",
+      periodEnd: "2026-03-31",
+      currentTurnover: "341283",
+      currentCostOfSales: "18787",
+      currentAdministrativeExpenses: "151548",
+      currentTax: "29062",
+      currentFixedAssets: "208990",
+      currentCashAtBank: "192995",
+      currentProfitAndLossAccount: "307928",
+      noteLandBuildingsCostAtStart: "200000",
+      averageEmployees: "3",
+      directors: "Carol Smith\nDavid Brown\nEmma Wilson",
+      directorName: "Carol Smith",
+    },
+    screenshotPath,
+  );
+  await completeSmallCompanyAnswersTheBookLeaves(
+    page,
+    {
+      principalActivity: "IT consultancy and software development",
+      accountingPolicies: "The accounts are prepared under the historical cost convention.",
+      dateApproved: "2026-04-15",
+    },
+    screenshotPath,
+  );
+  await previewAccounts(page, screenshotPath);
   await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
   await verifyFilingAccepted(page, screenshotPath);
 

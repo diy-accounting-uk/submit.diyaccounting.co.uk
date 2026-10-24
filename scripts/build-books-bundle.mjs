@@ -200,7 +200,7 @@ export default Ajv2020Stub;`,
 }
 
 // The bundle's public surface: the engine read, the three derivations, the CT600 figures
-// model (ct600Figures.js, the module the server works the boxes with), and the schemas
+// model (ct600Figures.js, the module the server works the boxes with), the two accounts derivations, and the schemas
 // registered so the read validates with no further setup.
 const ENTRY_SOURCE = `
 import bookSchema from "@diy-accounting-uk/diya-gl/dist/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-book-v2.schema.json";
@@ -218,6 +218,7 @@ import { calculateFromDiyaGl } from "@diy-accounting-uk/diya-gl/dist/app/lib/diy
 import { loadTaxDataForBook, productOf } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import { ct600FiguresFromResults, smallCompanyProfitAndLossFromPublishedAccount } from "./app/services/ct600Figures.js";
 import { smallCompanyAccountsFromResults } from "./app/services/smallCompanyAccountsFromResults.js";
+import { microEntityAccountsFromResults } from "./app/services/microEntityAccountsFromResults.js";
 export { deriveCt600FromFigures, validateCt600Figures } from "./app/services/ct600Figures.js";
 export async function ltdTaxData(financialYear) {
   return parseToml(readFileSync("data/ltd-" + financialYear + ".toml", "utf8"));
@@ -236,6 +237,11 @@ export async function smallCompanyAccountsFromBook(book, lines) {
   const scenario = diyaGlToScenario(book, lines, productOf(book));
   const accounts = smallCompanyAccountsFromResults(book, results, scenario);
   return { ...accounts, tradeName: book.entityInformation?.organizationDescription || accounts.companyName };
+}
+export async function microEntityAccountsFromBook(book, lines) {
+  const results = calculatedResultsFor(book, lines, await loadTaxDataForBook(book));
+  const scenario = diyaGlToScenario(book, lines, productOf(book));
+  return microEntityAccountsFromResults(book, results, scenario);
 }
 `;
 
