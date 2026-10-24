@@ -107,4 +107,61 @@ test.describe("guide.html", () => {
     await page.goto("http://localhost:3000/guide.html#view-penalties", { waitUntil: "load" });
     await expect(page.locator("details#view-penalties")).toHaveAttribute("open", "");
   });
+
+  test("the lightbox is a labelled dialog that takes focus, keeps it, and returns it on close", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/guide.html", { waitUntil: "load" });
+    const journey = page.locator("details.guide-journey#submit-return");
+    await journey.locator("summary").click();
+    const thumb = journey.locator(".guide-thumb").first();
+    await thumb.focus();
+    await page.keyboard.press("Enter");
+    const lightbox = page.locator("#lightbox");
+    await expect(lightbox).toHaveClass(/active/);
+    await expect(lightbox).toHaveAttribute("role", "dialog");
+    await expect(lightbox).toHaveAttribute("aria-modal", "true");
+    const close = lightbox.locator(".lightbox-close");
+    await expect(close).toBeFocused();
+    await page.keyboard.press("Tab");
+    await expect(close).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect(lightbox).not.toHaveClass(/active/);
+    await expect(thumb).toBeFocused();
+  });
+
+  test("the lightbox stacks above the fixed consent banner", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/guide.html", { waitUntil: "load" });
+    const lightboxZ = await page.locator("#lightbox").evaluate((node) => Number(getComputedStyle(node).zIndex));
+    expect(lightboxZ).toBeGreaterThan(10000);
+  });
+
+  test("a thumbnail reserves its space before it loads and the page does not scroll sideways at phone width", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/guide.html", { waitUntil: "load" });
+    const journeys = page.locator("details.guide-journey");
+    const count = await journeys.count();
+    for (let i = 0; i < count; i++) await journeys.nth(i).locator("summary").click();
+    const result = await page.evaluate(() => ({
+      sideways: document.documentElement.scrollWidth > window.innerWidth,
+      fixedAttributes: [...document.querySelectorAll(".guide-thumb img")].filter(
+        (img) => img.hasAttribute("width") || img.hasAttribute("height"),
+      ).length,
+      aspect: getComputedStyle(document.querySelector(".guide-thumb img")).aspectRatio,
+    }));
+    expect(result.sideways).toBe(false);
+    expect(result.fixedAttributes).toBe(0);
+    expect(result.aspect).toContain("auto");
+  });
+
+  test("changing the link hash to a journey opens it", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/guide.html", { waitUntil: "load" });
+    await expect(page.locator("details.guide-journey").first()).toBeVisible();
+    await page.evaluate(() => {
+      window.location.hash = "#view-payments";
+    });
+    await expect(page.locator("details#view-payments")).toHaveAttribute("open", "");
+  });
 });
