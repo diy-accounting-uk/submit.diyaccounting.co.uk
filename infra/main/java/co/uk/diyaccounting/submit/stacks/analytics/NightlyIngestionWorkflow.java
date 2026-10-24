@@ -25,6 +25,7 @@ import software.amazon.awscdk.services.scheduler.ScheduleExpression;
 import software.amazon.awscdk.services.scheduler.ScheduleProps;
 import software.amazon.awscdk.services.scheduler.TimeWindow;
 import software.amazon.awscdk.services.scheduler.targets.StepFunctionsStartExecution;
+import software.amazon.awscdk.services.stepfunctions.CatchProps;
 import software.amazon.awscdk.services.stepfunctions.Chain;
 import software.amazon.awscdk.services.stepfunctions.DefinitionBody;
 import software.amazon.awscdk.services.stepfunctions.Errors;
@@ -32,6 +33,7 @@ import software.amazon.awscdk.services.stepfunctions.JsonPath;
 import software.amazon.awscdk.services.stepfunctions.LogLevel;
 import software.amazon.awscdk.services.stepfunctions.LogOptions;
 import software.amazon.awscdk.services.stepfunctions.Parallel;
+import software.amazon.awscdk.services.stepfunctions.Pass;
 import software.amazon.awscdk.services.stepfunctions.RetryProps;
 import software.amazon.awscdk.services.stepfunctions.StateMachine;
 import software.amazon.awscdk.services.stepfunctions.StateMachineType;
@@ -50,8 +52,14 @@ import software.constructs.Construct;
  * once, since they share no data; then the data quality run; then the metrics publish; then the
  * raw export publish; then {@code Succeed}. Every task retries twice on {@code States.TaskFailed}
  * with a 60-second interval and a backoff rate of 2, on top of {@code retryOnServiceExceptions}.
- * There is no {@code Catch}: a failure anywhere ends the execution in {@code Failed} and stops
- * the metrics publish and raw export, which is the entire reason for this phase.
+ * A failure in a core task ends the execution in {@code Failed} and stops the metrics publish
+ * and raw export, which is the entire reason for this phase.
+ *
+ * <p>The optional jobs (company book pull, PayPal donations pull, Ads cost pull) are caught: each
+ * branch carries a {@code Catch} on {@code States.ALL} that goes to a {@code Pass} state storing
+ * the error under {@code $.failures.<job>}. An optional job's failure is recorded and does not
+ * fail the night, so its sibling jobs finish and the later tasks run. The job's own Lambda errors
+ * alarm is the signal for a caught failure.
  *
  * <p>Each task reads {@code $} directly rather than the previous task's output, so an explicit
  * {@code {"date": "..."}} on the execution input reaches every task unchanged and an empty input
@@ -163,17 +171,22 @@ public class NightlyIngestionWorkflow {
                 "operator effort pull",
                 props.operatorEffortPullLambda()));
         props.companyBookPullLambda()
-                .ifPresent(companyBookPullLambda -> ingestionParallel.branch(buildTask(
-                        scope, prefix + "-Nightly-CompanyBookPull", "company book pull", companyBookPullLambda)));
+                .ifPresent(companyBookPullLambda -> ingestionParallel.branch(buildOptionalTask(
+                        scope,
+                        prefix + "-Nightly-CompanyBookPull",
+                        "company book pull",
+                        "companyBookPull",
+                        companyBookPullLambda)));
         props.paypalDonationsPullLambda()
-                .ifPresent(paypalDonationsPullLambda -> ingestionParallel.branch(buildTask(
+                .ifPresent(paypalDonationsPullLambda -> ingestionParallel.branch(buildOptionalTask(
                         scope,
                         prefix + "-Nightly-PaypalDonationsPull",
                         "PayPal donations pull",
+                        "paypalDonationsPull",
                         paypalDonationsPullLambda)));
         props.adsCostPullLambda()
-                .ifPresent(adsCostPullLambda -> ingestionParallel.branch(
-                        buildTask(scope, prefix + "-Nightly-AdsCostPull", "Ads cost pull", adsCostPullLambda)));
+                .ifPresent(adsCostPullLambda -> ingestionParallel.branch(buildOptionalTask(
+                        scope, prefix + "-Nightly-AdsCostPull", "Ads cost pull", "adsCostPull", adsCostPullLambda)));
 
         var dataQualityTask =
                 buildTask(scope, prefix + "-Nightly-DataQuality", "data quality run", props.dataQualityRunLambda());
@@ -279,6 +292,22 @@ public class NightlyIngestionWorkflow {
         } else {
             this.executionsMissedAlarm = null;
         }
+    }
+
+    private static LambdaInvoke buildOptionalTask(
+            Construct scope, String id, String description, String failureKey, IFunction lambdaFunction) {
+        var task = buildTask(scope, id, description, lambdaFunction);
+        var recordFailure = Pass.Builder.create(scope, id + "-Failed")
+                .stateName(description + " failed, recorded")
+                .resultPath("$.failures." + failureKey)
+                .build();
+        task.addCatch(
+                recordFailure,
+                CatchProps.builder()
+                        .errors(List.of(Errors.ALL))
+                        .resultPath("$.failures." + failureKey)
+                        .build());
+        return task;
     }
 
     private static LambdaInvoke buildTask(Construct scope, String id, String description, IFunction lambdaFunction) {
