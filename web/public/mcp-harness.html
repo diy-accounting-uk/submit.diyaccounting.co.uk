@@ -1,0 +1,142 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>MCP Chat Harness (preview) - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="submit.css" />
+    <style>
+      body.page-wide {
+        max-width: none;
+      }
+      .harness-grid {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 1rem;
+      }
+      @media (max-width: 900px) {
+        .harness-grid {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      .harness-panel {
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        min-width: 0;
+      }
+      .harness-panel h2 {
+        margin-top: 0;
+        font-size: 1.1rem;
+      }
+      .harness-chat {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        min-height: 18rem;
+      }
+      .harness-turn {
+        padding: 0.6rem 0.8rem;
+        border-radius: 8px;
+        max-width: 90%;
+        line-height: 1.5;
+      }
+      .harness-turn[data-role="user"] {
+        align-self: flex-end;
+        background: #e8f0fe;
+      }
+      .harness-turn[data-role="assistant"] {
+        align-self: flex-start;
+        background: #f1f3f4;
+      }
+      .harness-turn[data-role="tool"] {
+        align-self: stretch;
+        max-width: 100%;
+        background: #fff8e1;
+        font-size: 0.9rem;
+      }
+      .harness-turn pre {
+        margin: 0.4rem 0 0;
+        max-height: 14rem;
+        overflow: auto;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+      }
+      .harness-controls {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 0.75rem;
+      }
+      .harness-frame {
+        width: 100%;
+        height: 26rem;
+        border: 1px solid #c4c7c5;
+        border-radius: 4px;
+        background: white;
+      }
+      .harness-config code,
+      .harness-config pre {
+        overflow-wrap: anywhere;
+        white-space: pre-wrap;
+      }
+      .harness-config pre {
+        background: #f1f3f4;
+        padding: 0.5rem;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body class="page-wide">
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
+      <h1>MCP Chat Harness (preview)</h1>
+      <p class="subtitle">A scripted conversation that makes real tool calls against the local or ci server</p>
+    </header>
+
+    <main id="mainContent">
+      <div class="harness-grid">
+        <section class="harness-panel" aria-labelledby="chatHeading">
+          <h2 id="chatHeading">Conversation</h2>
+          <p id="scriptTitle" class="hint"></p>
+          <div id="chat" class="harness-chat" role="log" aria-live="polite"></div>
+          <div class="harness-controls">
+            <button id="nextTurn" type="button">Next turn</button>
+            <button id="playAll" type="button">Play all</button>
+            <button id="restart" type="button">Restart</button>
+          </div>
+        </section>
+
+        <section class="harness-panel" aria-labelledby="browserHeading">
+          <h2 id="browserHeading">Browser step</h2>
+          <p id="browserStatus" class="hint">No browser step yet. A tool that hands back a link opens it here.</p>
+          <iframe id="browserStep" class="harness-frame" title="Browser step raised by the tool" hidden></iframe>
+        </section>
+      </div>
+
+      <section class="harness-panel harness-config" aria-labelledby="configHeading" style="margin-top: 1rem">
+        <h2 id="configHeading">MCP configuration</h2>
+        <p>Add the hosted server in Claude Code:</p>
+        <pre id="configHosted"></pre>
+        <p>Or run it from a checkout over stdio:</p>
+        <pre id="configStdio"></pre>
+        <p>In claude.ai, add a custom connector with this URL:</p>
+        <pre id="configConnector"></pre>
+        <p id="toolList" class="hint"></p>
+      </section>
+    </main>
+
+    <footer data-footer="full"></footer>
+
+    <script src="widgets/page-chrome.js"></script>
+    <script src="lib/env-loader.js"></script>
+    <script type="module" src="submit.js"></script>
+    <script src="mcp-harness.page.js"></script>
+  </body>
+</html>

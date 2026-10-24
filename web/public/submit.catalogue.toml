@@ -284,6 +284,16 @@ hmrcScopesRequired = ["write:vat", "read:vat"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
+id = "mcp-harness"
+name = "MCP chat harness (preview)"
+display = "never"
+bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
+tokenCost = 0
+metered = false
+paths = ["mcp-harness.html", "^/api/v1/dev/mcp-harness/.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "vat-obligations"
 name = "VAT Obligations (HMRC)"
 display = "always-with-upsell"
