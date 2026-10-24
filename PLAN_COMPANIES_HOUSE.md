@@ -110,17 +110,17 @@ The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarde
 - B34g1: ready (B34e's full accounts are on main); its ETS proof waits on O34g
 - B34g2a: on main (PR #511); the journey built and proven on the simulator, listed on ci and the local lanes
 - B34g2b: blocked by B34g1 and O34g; the ETS filing from the page
-- CT3a: ready (the CT2 design below)
-- CT3b: blocked by CT3a and CT1
-- CT3c: blocked by CT3b
-- CT3d: blocked by CT3a and open question 14
-- CT4: blocked by CT3c (the videos, on `NEXT.md`)
+- CT3a: on main (PR #533; the CT2 design below)
+- CT3b: on main (PR #534 the form and the card's `ct600` kind, PR #535 the visual pass); CT1 on main (PR #530)
+- CT3c: the review and the journeys on main (PR #535); the server-side figures check is ready (`NEXT.md` CT3c)
+- CT3d: ready (`NEXT.md` CT3d; it answers open question 14 by building the FRS 105 attachment)
+- CT4: ready (the videos, on `NEXT.md`)
 - DF2a: blocked by CT3c, B34c and B34g2b (the DF1 design below)
 - DF2b: blocked by DF2a
 - DF2c: blocked by DF2a
-- IX2a: ready (the IX1 design below); in the spreadsheets repository
+- IX2a: in flight (spreadsheets PR #167; the IX1 design below)
 - IX2b: blocked by IX2a's diya-gl release and BK1
-- IX2c: blocked by IX2b and CT3b
+- IX2c: blocked by IX2b
 - IX2d: blocked by IX2a
 
 ## Operator dates
@@ -1080,16 +1080,16 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 | B34g1 | The ETS proof: the TPVS-proven return through `buildCt600SubmissionRequest` with the SDST test credentials and vendor ID, polled and deleted | ~1 | Sonnet | O34g | Blocked |
 | B34g2a | The CT600 filing journey on the simulator: Lambdas, page, activity, receipts, per the B34h design | ~14 | Sonnet | — | On main (PR #511) |
 | B34g2b | One ETS filing from the page, polled and deleted; then `prod` on the activity (NEXT.md B34g2b) | ~2 | Sonnet | B34g1, O34g | Blocked |
-| CT3a | The CT600 figures model in one module for the browser and the server; the server derives the boxes; the precision-code-ltd regression and TPVS proof (the CT2 design) | ~8 | Sonnet | — | Ready |
-| CT3b | The typed entry form, the field table with CT1's labels, the live checks, the card's `ct600` kind (the CT2 design) | ~7 | Sonnet | CT3a, CT1 | Blocked |
-| CT3c | The check-your-answers review with Change links, history, and the typed and book behaviour cases (the CT2 design) | ~5 | Sonnet | CT3b | Blocked |
-| CT3d | A micro-entity's FRS 105 accounts with a P&L as the CT600 attachment (the CT2 design, open question 14) | ~5 | Sonnet | CT3a | Blocked |
+| CT3a | The CT600 figures model in one module for the browser and the server; the server derives the boxes; the precision-code-ltd regression and TPVS proof (the CT2 design) | ~8 | Sonnet | — | On main (PR #533) |
+| CT3b | The typed entry form, the field table with CT1's labels, the live checks, the card's `ct600` kind (the CT2 design) | ~7 | Sonnet | — | On main (PR #534, PR #535) |
+| CT3c | The check-your-answers review with Change links, history, and the typed and book behaviour cases (the CT2 design); the review and journeys are on main (PR #535), the server-side figures check remains (`NEXT.md` CT3c) | ~5 | Sonnet | — | Ready |
+| CT3d | A micro-entity's FRS 105 accounts with a P&L as the CT600 attachment (the CT2 design, open question 14) | ~5 | Sonnet | — | Ready |
 | DF2a | The joint journey on the CT600 page: the send-to question, Companies House then HMRC, the lock after `ACCEPT`, `jointFilingId` on both receipts (the DF1 design) | ~8 | Sonnet | CT3c, B34c, B34g2b | Blocked |
 | DF2b | One live joint filing for DIY Accounting Limited; `prod` on the activity (the DF1 design) | ~2 | Sonnet | DF2a | Blocked |
 | DF2c | Amended accounts at Companies House and an amended CT600 from the locked state (the DF1 design) | ~6 | Sonnet | DF2a | Blocked |
-| IX2a | The iXBRL reader, the mapping and the summary book in diya-gl, with the fixtures and a release (spreadsheets repository; the IX1 design) | ~10 | Sonnet | — | Ready |
+| IX2a | The iXBRL reader, the mapping and the summary book in diya-gl, with the fixtures and a release (spreadsheets repository; the IX1 design) | ~10 | Sonnet | — | In flight (spreadsheets PR #167) |
 | IX2b | The card reads iXBRL on the accounts pages; the builders' round trip (the IX1 design) | ~6 | Sonnet | IX2a, BK1 | Blocked |
-| IX2c | The CT600 page fills its accounts section from an iXBRL file (the IX1 design) | ~4 | Sonnet | IX2b, CT3b | Blocked |
+| IX2c | The CT600 page fills its accounts section from an iXBRL file (the IX1 design) | ~4 | Sonnet | IX2b | Blocked |
 | IX2d | Multi-file document sets, the old UK GAAP taxonomy, Format 2 small-company P&Ls (the IX1 design) | — | Sonnet | IX2a | Blocked |
 
 
