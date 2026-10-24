@@ -9,7 +9,10 @@
  * iXBRL and the IRmark and needs no credentials. Writes the submission and the response to the
  * output directory and exits non-zero unless TPVS answers a success response.
  *
- * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>]
+ * With --micro the attachment is the book's company filing as a micro-entity: FRS 105 accounts with
+ * the profit and loss account the return carries.
+ *
+ * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro]
  *   --book defaults to fixtures/diya-gl/precision-code-ltd; --out to target/hmrc-tpvs;
  *   --utr to 8596148860, the UTR HMRC's own CT600 samples use; --prior names a JSON file of the
  *   prior year's profit and loss lines, which the accounts then show as the comparative column
@@ -21,6 +24,8 @@ import { join } from "node:path";
 import { loadDiyaGlData } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
 import { deriveSmallCompanyAccounts } from "../app/services/smallCompanyAccounts.js";
 import { buildSmallCompanyAccounts } from "../app/services/smallCompanyAccountsIxbrl.js";
+import { buildMicroEntityAccounts } from "../app/services/microEntityAccountsIxbrl.js";
+import { deriveMicroEntityAccounts, microProfitAndLossYear } from "../app/services/microEntityAccounts.js";
 import { deriveCompanyTaxReturn, buildCt600IrEnvelope } from "../app/services/ct600Xml.js";
 import { buildCtComputations } from "../app/services/ctComputationsIxbrl.js";
 import {
@@ -38,6 +43,7 @@ function argument(name, fallback) {
 const bookDirectory = argument("--book", "fixtures/diya-gl/precision-code-ltd");
 const outputDirectory = argument("--out", "target/hmrc-tpvs");
 const utr = argument("--utr", "8596148860");
+const micro = process.argv.includes("--micro");
 const priorFile = argument("--prior", undefined);
 const priorYearProfitAndLoss = priorFile ? JSON.parse(readFileSync(priorFile, "utf8")) : undefined;
 
@@ -53,27 +59,44 @@ const company = {
   declarantName: directorName,
   declarantStatus: "Director",
 };
-const { boxes, computationLines, periodStart, periodEnd } = await deriveCompanyTaxReturn(session, company, { priorYearProfitAndLoss });
-
-const accountsIxbrl = buildSmallCompanyAccounts({
-  companyNumber: accounts.companyNumber,
-  companyName: accounts.companyName,
-  periodStart: accounts.periodStart,
-  periodEnd: accounts.periodEnd,
-  priorBalanceSheetDate: accounts.priorBalanceSheetDate,
-  averageNumberOfEmployees: accounts.averageNumberOfEmployees,
-  principalActivity: book.entityInformation?.organizationDescription || "Trading",
-  accountingPolicies: "The accounts are prepared under FRS 102 section 1A.",
-  directors: accounts.directors.length > 0 ? accounts.directors : [directorName],
-  directorName,
-  dateOfApproval: periodEnd,
-  balanceSheet: { current: accounts.balanceSheet.currentYear, prior: accounts.balanceSheet.priorYear },
-  profitAndLoss: {
-    current: accounts.profitAndLoss.currentYear,
-    ...(accounts.profitAndLoss.priorYear ? { prior: accounts.profitAndLoss.priorYear } : {}),
-  },
-  fixedAssetNote: accounts.fixedAssetNote,
+const { boxes, computationLines, periodStart, periodEnd, figures } = await deriveCompanyTaxReturn(session, company, {
+  priorYearProfitAndLoss,
 });
+
+const depreciation = figures.depreciation ?? 0;
+const microAccounts = micro ? await deriveMicroEntityAccounts(session) : undefined;
+const accountsIxbrl = micro
+  ? buildMicroEntityAccounts({
+      companyNumber: accounts.companyNumber,
+      companyName: accounts.companyName,
+      periodStart: accounts.periodStart,
+      periodEnd: accounts.periodEnd,
+      priorBalanceSheetDate: accounts.priorBalanceSheetDate,
+      averageNumberOfEmployees: accounts.averageNumberOfEmployees,
+      directorName,
+      dateOfApproval: periodEnd,
+      balanceSheet: { current: microAccounts.balanceSheet.currentYear, prior: microAccounts.balanceSheet.priorYear },
+      profitAndLoss: { current: microProfitAndLossYear(accounts.profitAndLoss.currentYear, depreciation) },
+    })
+  : buildSmallCompanyAccounts({
+      companyNumber: accounts.companyNumber,
+      companyName: accounts.companyName,
+      periodStart: accounts.periodStart,
+      periodEnd: accounts.periodEnd,
+      priorBalanceSheetDate: accounts.priorBalanceSheetDate,
+      averageNumberOfEmployees: accounts.averageNumberOfEmployees,
+      principalActivity: book.entityInformation?.organizationDescription || "Trading",
+      accountingPolicies: "The accounts are prepared under FRS 102 section 1A.",
+      directors: accounts.directors.length > 0 ? accounts.directors : [directorName],
+      directorName,
+      dateOfApproval: periodEnd,
+      balanceSheet: { current: accounts.balanceSheet.currentYear, prior: accounts.balanceSheet.priorYear },
+      profitAndLoss: {
+        current: accounts.profitAndLoss.currentYear,
+        ...(accounts.profitAndLoss.priorYear ? { prior: accounts.profitAndLoss.priorYear } : {}),
+      },
+      fixedAssetNote: accounts.fixedAssetNote,
+    });
 const computationsIxbrl = buildCtComputations({
   companyName: company.companyName,
   companyNumber: company.companyNumber,

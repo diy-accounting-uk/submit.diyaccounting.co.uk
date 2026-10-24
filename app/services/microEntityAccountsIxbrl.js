@@ -30,9 +30,77 @@ import {
   renderAccountsDocument,
   renderProductionSoftwareFacts,
   renderTextFact,
+  renderMonetaryFact,
   buildOfficerContext,
 } from "./accountsIxbrlCommon.js";
-import { recordTable } from "../lib/submissionRecord.js";
+import { recordFigure, recordTable } from "../lib/submissionRecord.js";
+
+// The FRS 105 micro-entity profit and loss account (Format 2) a Company Tax Return carries.
+export const MICRO_PROFIT_AND_LOSS_LINES = [
+  "turnover",
+  "otherIncome",
+  "rawMaterials",
+  "staffCosts",
+  "depreciation",
+  "otherCharges",
+  "profitBeforeTax",
+  "tax",
+  "profit",
+];
+
+const MICRO_PROFIT_AND_LOSS_CONCEPT_KEY = {
+  turnover: "turnoverRevenue",
+  otherIncome: "otherOperatingIncome",
+  rawMaterials: "rawMaterialsConsumablesUsed",
+  staffCosts: "staffCosts",
+  depreciation: "depreciationWrittenOff",
+  otherCharges: "otherOperatingExpenses",
+  profitBeforeTax: "profitLossBeforeTax",
+  tax: "taxOnProfitLoss",
+  profit: "profitLoss",
+};
+
+const MICRO_PROFIT_AND_LOSS_ROW = {
+  turnover: { label: "Turnover" },
+  otherIncome: { label: "Other income" },
+  rawMaterials: { label: "Raw materials and consumables", deduction: true },
+  staffCosts: { label: "Staff costs", deduction: true },
+  depreciation: { label: "Depreciation and other amounts written off assets", deduction: true },
+  otherCharges: { label: "Other charges", deduction: true },
+  profitBeforeTax: { label: "Profit or loss before tax", style: "subtotal" },
+  tax: { label: "Tax", deduction: true },
+  profit: { label: "Profit or loss for the financial year", style: "total" },
+};
+
+/**
+ * The identities a micro-entity profit and loss account must hold, as messages; empty when they hold.
+ * @param {object} figures - the lines of MICRO_PROFIT_AND_LOSS_LINES
+ * @returns {string[]}
+ */
+export function microProfitAndLossProblems(figures) {
+  const problems = [];
+  const beforeTax =
+    figures.turnover + figures.otherIncome - figures.rawMaterials - figures.staffCosts - figures.depreciation - figures.otherCharges;
+  if (figures.profitBeforeTax !== beforeTax) {
+    problems.push("profitBeforeTax must equal turnover plus otherIncome less rawMaterials, staffCosts, depreciation and otherCharges");
+  }
+  if (figures.profit !== figures.profitBeforeTax - figures.tax) problems.push("profit must equal profitBeforeTax less tax");
+  return problems;
+}
+
+function microProfitAndLossPage({ heading, refs, current, prior, columns }) {
+  const rows = MICRO_PROFIT_AND_LOSS_LINES.map((line) => {
+    const { label, deduction, style } = MICRO_PROFIT_AND_LOSS_ROW[line];
+    const conceptKey = MICRO_PROFIT_AND_LOSS_CONCEPT_KEY[line];
+    const fact = (contextRef, value) => renderMonetaryFact(conceptKey, contextRef, "GBP", value);
+    const cells = [recordFigure(fact(refs.current, current[line]), current[line], { deduction })];
+    if (prior) cells.push(recordFigure(fact(refs.prior, prior[line]), prior[line], { deduction }));
+    return { label, style, cells };
+  });
+  return `<div class="page">
+${heading}${recordTable({ columns: prior ? columns : columns.slice(0, 1), rows })}
+</div>`;
+}
 
 const MANDATORY_CONCEPT_KEYS = [
   "companiesHouseRegisteredNumber",
@@ -104,21 +172,42 @@ export function sharesIssuedFor(calledUpShareCapital, nominalValue) {
  * @param {object} input.balanceSheet.current - fixedAssets, currentAssets, creditorsWithinOneYear,
  *   creditorsAfterOneYear, calledUpShareCapital, profitAndLossAccount, capitalAndReserves
  * @param {object} [input.balanceSheet.prior] - the same shape as current, for the comparative year
+ * @param {{current: object, prior?: object}} [input.profitAndLoss] - MICRO_PROFIT_AND_LOSS_LINES; when
+ *   present the document is the full copy HMRC takes with a Company Tax Return, with the profit and
+ *   loss account and no section 444 exemption; when absent it is the Companies House copy
  * @returns {string} the XHTML document
  */
 export function buildMicroEntityAccounts(input) {
-  const { xml: contextsXml, refs, entityIdentifierXml, periodXml } = buildContexts(input);
+  const profitAndLoss = input.profitAndLoss;
+  const {
+    xml: contextsXml,
+    refs,
+    entityIdentifierXml,
+    periodXml,
+  } = buildContexts(input, { includePriorPeriod: Boolean(profitAndLoss?.prior) });
   const additionalContexts = [];
   const hiddenFacts = [];
+
+  if (profitAndLoss) {
+    const problems = [
+      ...microProfitAndLossProblems(profitAndLoss.current).map((message) => `profitAndLoss.current: ${message}`),
+      ...(profitAndLoss.prior ? microProfitAndLossProblems(profitAndLoss.prior).map((message) => `profitAndLoss.prior: ${message}`) : []),
+    ];
+    if (problems.length > 0) throw new Error(problems.join("; "));
+  }
 
   // DirectorSigningFinancialStatements is a fixed (zero-length) fact: it marks that a director
   // signed. The director's own name is the prose of the approval line.
   hiddenFacts.push(renderFixedFact("directorSigningFinancialStatements", refs.current));
   hiddenFacts.push(...renderProductionSoftwareFacts(refs.current));
   hiddenFacts.push(
-    `<ix:nonNumeric name="${qname(CONCEPTS.reportIncludesDetailedProfitLossStatement)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
-    `<ix:nonNumeric name="${qname(CONCEPTS.exemptionNotPublishingOwnProfitLossAccount)}" contextRef="${refs.current}">true</ix:nonNumeric>`,
+    `<ix:nonNumeric name="${qname(CONCEPTS.reportIncludesDetailedProfitLossStatement)}" contextRef="${refs.current}">${profitAndLoss ? "true" : "false"}</ix:nonNumeric>`,
   );
+  if (!profitAndLoss) {
+    hiddenFacts.push(
+      `<ix:nonNumeric name="${qname(CONCEPTS.exemptionNotPublishingOwnProfitLossAccount)}" contextRef="${refs.current}">true</ix:nonNumeric>`,
+    );
+  }
   if (input.dormant) hiddenFacts.push(renderTextFact("descriptionPrincipalActivities", refs.current, "Dormant company"));
   hiddenFacts.push(
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">${input.dormant ? "true" : "false"}</ix:nonNumeric>`,
@@ -140,7 +229,7 @@ export function buildMicroEntityAccounts(input) {
 
   for (const [conceptKey, dimension, member, id] of [
     ["accountsStatusAuditedOrUnaudited", DIMENSIONS.accountsStatus, MEMBERS.auditExemptNoAccountantsReport, "accounts-status"],
-    ["accountsType", DIMENSIONS.accountsType, MEMBERS.filletedAccounts, "accounts-type"],
+    ["accountsType", DIMENSIONS.accountsType, profitAndLoss ? MEMBERS.fullAccounts : MEMBERS.filletedAccounts, "accounts-type"],
     ["accountingStandardsApplied", DIMENSIONS.accountingStandards, MEMBERS.microEntities, "accounting-standards"],
   ]) {
     const contextRef = buildDimensionedContext({
@@ -239,6 +328,17 @@ ${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.curr
 ${statementKeys.map((key) => `<p>${renderStatement(key, refs.current)}</p>`).join("\n")}
 ${approvalHtml({ refs, dateOfApproval: input.dateOfApproval, directorName: input.directorName, officerContextRef })}
 </div>
+${
+  profitAndLoss
+    ? microProfitAndLossPage({
+        heading: heading("Profit and loss account", `for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}`),
+        refs,
+        current: profitAndLoss.current,
+        prior: profitAndLoss.prior,
+        columns: [input.periodEnd.slice(0, 4), ...(profitAndLoss.prior ? [refs.prior.slice(1)] : [])],
+      })
+    : ""
+}
 <div class="page">
 ${heading("Notes to the financial statements", `for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}`)}${notes
     .map((note, index) => `<h3>${index + 1}. ${escapeXmlText(note.title)}</h3>\n${note.html}`)

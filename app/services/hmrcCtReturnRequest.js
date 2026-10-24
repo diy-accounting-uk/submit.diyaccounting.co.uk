@@ -4,7 +4,8 @@
 // app/services/hmrcCtReturnRequest.js
 // Validates a Company Tax Return request (the accounts figures and the CT600 figures a book export
 // or the form supplies, plus the facts typed on the page) and builds the three documents the
-// Transaction Engine takes: the CT600 IRenvelope with the full FRS 102 accounts and the
+// Transaction Engine takes: the CT600 IRenvelope with the full accounts (FRS 102 section 1A for a
+// small company, FRS 105 with a profit and loss account for a micro-entity) and the
 // computations attached as iXBRL. The boxes and computation lines are worked here, from the figures. Shared by the preview and the submit Lambdas.
 
 import { parseRequestBody } from "../lib/httpResponseHelper.js";
@@ -13,6 +14,7 @@ import { extractAndValidateAccountsParameters, buildAccountsIxbrl } from "../fun
 import { buildCt600IrEnvelope, ltdTaxDataForPeriodEnd } from "./ct600Xml.js";
 import { deriveCt600FromFigures, validateCt600Figures } from "./ct600Figures.js";
 import { buildCtComputations } from "./ctComputationsIxbrl.js";
+import { MICRO_PROFIT_AND_LOSS_LINES, microProfitAndLossProblems } from "./microEntityAccountsIxbrl.js";
 
 const MAX_GATEWAY_CREDENTIAL_LENGTH = 128;
 
@@ -71,6 +73,33 @@ function readFigures(figures, { accounts, utr, declarant }, errorMessages) {
   return stitched;
 }
 
+function readMicroProfitAndLossYear(values, label, errorMessages) {
+  if (!values || typeof values !== "object" || Array.isArray(values)) {
+    errorMessages.push(`Missing ${label} - the micro-entity profit and loss account`);
+    return undefined;
+  }
+  const year = {};
+  for (const line of MICRO_PROFIT_AND_LOSS_LINES) {
+    if (!Number.isFinite(values[line])) errorMessages.push(`Invalid or missing ${label}.${line}`);
+    year[line] = values[line];
+  }
+  if (MICRO_PROFIT_AND_LOSS_LINES.every((line) => Number.isFinite(year[line]))) {
+    for (const problem of microProfitAndLossProblems(year)) errorMessages.push(`${label}: ${problem}`);
+  }
+  return year;
+}
+
+// A micro-entity request carries the profit and loss account beside its balance sheet, because the
+// Companies House copy of micro accounts omits it and HMRC takes it with the return.
+function attachMicroProfitAndLoss(accounts, profitAndLoss, errorMessages) {
+  if (accounts.dormant) errorMessages.push("A dormant company files no Company Tax Return profit and loss account: dormant must be false");
+  const current = readMicroProfitAndLossYear(profitAndLoss?.currentYear, "profitAndLoss.currentYear", errorMessages);
+  const prior = profitAndLoss?.priorYear
+    ? readMicroProfitAndLossYear(profitAndLoss.priorYear, "profitAndLoss.priorYear", errorMessages)
+    : undefined;
+  accounts.profitAndLoss = { current, ...(prior ? { prior } : {}) };
+}
+
 function validCredential(value) {
   return typeof value === "string" && value.length > 0 && value.length <= MAX_GATEWAY_CREDENTIAL_LENGTH;
 }
@@ -118,8 +147,8 @@ export function extractAndValidateCtReturnParameters(
 ) {
   const body = parseRequestBody(event) || {};
   const accounts = extractAndValidateAccountsParameters(event, errorMessages, { requireCompanyAuthCode: false });
-  if (accounts.regime !== "small-company") {
-    errorMessages.push("The Company Tax Return carries FRS 102 section 1A accounts: smallCompany is required");
+  if (accounts.regime === "micro-entity") {
+    attachMicroProfitAndLoss(accounts, body.profitAndLoss, errorMessages);
   } else if (accounts.filleted) {
     errorMessages.push("smallCompany.filleted must be false: HMRC takes the full accounts");
   }

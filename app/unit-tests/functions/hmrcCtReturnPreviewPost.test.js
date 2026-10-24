@@ -132,7 +132,7 @@ describe("hmrcCtReturnPreviewPost ingestHandler", () => {
     ["a missing trade name", { tradeName: "" }, /tradeName/],
     ["a missing declarant", { declarant: { name: "", status: "" } }, /declarant/],
     ["no figures", { figures: undefined }, /Missing figures/],
-    ["a filleted accounts copy", { smallCompany: undefined }, /smallCompany is required/],
+    ["accounts of neither regime", { smallCompany: undefined }, /Missing profitAndLoss.currentYear/],
   ])("answers 400 for %s", async (_label, overrides, message) => {
     const response = await hmrcCtReturnPreviewPostHandler(buildEvent({ body: { ...baseBody, ...overrides } }));
     expect(response.statusCode).toBe(400);

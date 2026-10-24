@@ -8,6 +8,7 @@
 
 import { loadDiyaGlData } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
 import { deriveSmallCompanyAccounts } from "../services/smallCompanyAccounts.js";
+import { deriveMicroEntityAccounts, microProfitAndLossYear } from "../services/microEntityAccounts.js";
 import { deriveCompanyTaxReturn } from "../services/ct600Xml.js";
 
 export const FIXTURE_BOOK_DIRECTORY = "fixtures/diya-gl/precision-code-ltd";
@@ -74,5 +75,32 @@ export async function buildCtReturnBodyFromBook({ bookDirectory = FIXTURE_BOOK_D
     declarant: { name: exported.director.name, status: "Director" },
     directorsLoanOverdrawn: false,
     declarationAccepted: true,
+  };
+}
+
+/**
+ * The same company filing as a micro-entity: its FRS 105 balance sheet from the book, the profit and
+ * loss account the Company Tax Return carries, and the micro statements in place of the small ones.
+ * @param {object} [options]
+ * @param {string} [options.bookDirectory]
+ * @param {string} [options.utr]
+ * @returns {Promise<object>} the request body, without Government Gateway credentials
+ */
+export async function buildMicroCtReturnBodyFromBook({ bookDirectory = FIXTURE_BOOK_DIRECTORY, utr = FIXTURE_UTR } = {}) {
+  const small = await buildCtReturnBodyFromBook({ bookDirectory, utr });
+  const { book, lines } = loadDiyaGlData(bookDirectory);
+  const micro = await deriveMicroEntityAccounts({ book, lines });
+  const { smallCompany, ...rest } = small;
+  const depreciation = small.figures.depreciation ?? 0;
+  return {
+    ...rest,
+    balanceSheet: micro.balanceSheet,
+    profitAndLoss: { currentYear: microProfitAndLossYear(smallCompany.profitAndLoss.currentYear, depreciation) },
+    statementsAccepted: {
+      section477Exemption: true,
+      membersNotRequiredAudit: true,
+      directorsResponsibilities: true,
+      microEntityProvisions: true,
+    },
   };
 }

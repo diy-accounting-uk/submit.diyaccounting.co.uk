@@ -3,7 +3,7 @@
 
 // app/unit-tests/services/hmrcCtReturnRequest.test.js
 import { describe, test, beforeAll, expect } from "vitest";
-import { buildCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
+import { buildCtReturnBodyFromBook, buildMicroCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments, boxesThatDiffer } from "@app/services/hmrcCtReturnRequest.js";
 import { parseXmlDocument, firstElementText } from "@app/lib/xmlDom.js";
 
@@ -128,5 +128,48 @@ describe("buildCtReturnDocuments", () => {
     expect(occurrences(buildCtReturnDocuments(withPrior.request).accountsIxbrl)).toBe(occurrences(withoutPrior) + 1);
     expect(withPrior.request.accounts.profitAndLoss.prior).toEqual(prior);
     expect(extract().request.accounts.profitAndLoss.prior).toBeUndefined();
+  });
+});
+
+describe("a micro-entity's Company Tax Return", () => {
+  let microBody;
+
+  beforeAll(async () => {
+    microBody = await buildMicroCtReturnBodyFromBook();
+  });
+
+  function extractMicro(overrides = {}) {
+    const errors = [];
+    const request = extractAndValidateCtReturnParameters(
+      { body: JSON.stringify({ ...microBody, gatewayUserId: "user", gatewayPassword: "pass", reviewedBoxes: {}, ...overrides }) },
+      errors,
+      { requireReviewedBoxes: false },
+    );
+    return { request, errors };
+  }
+
+  test("accepts a micro-entity request and carries its profit and loss account", () => {
+    const { request, errors } = extractMicro();
+    expect(errors).toEqual([]);
+    expect(request.accounts.regime).toBe("micro-entity");
+    expect(request.figures.profitAndLoss.current.turnover).toBe(microBody.profitAndLoss.currentYear.turnover);
+  });
+
+  test("attaches the FRS 105 document with the profit and loss account and the same boxes as the small company's", () => {
+    const { request } = extractMicro();
+    const documents = buildCtReturnDocuments(request);
+    expect(documents.accountsIxbrl).toContain("bus:Micro-entities");
+    expect(documents.accountsIxbrl).toContain("core:RawMaterialsConsumablesUsed");
+    expect(documents.accountsIxbrl).toContain("bus:FullAccounts");
+    const small = buildCtReturnDocuments(extract().request);
+    expect(documents.boxes).toEqual(small.boxes);
+    expect(documents.irEnvelopeXml).toContain("EncodedInlineXBRLDocument");
+  });
+
+  test("needs the profit and loss account, and refuses lines that do not add up or a dormant company", () => {
+    expect(extractMicro({ profitAndLoss: undefined }).errors.join("\n")).toMatch(/Missing profitAndLoss.currentYear/);
+    const broken = { currentYear: { ...microBody.profitAndLoss.currentYear, profit: 1 } };
+    expect(extractMicro({ profitAndLoss: broken }).errors.join("\n")).toMatch(/profit must equal profitBeforeTax less tax/);
+    expect(extractMicro({ dormant: true }).errors.join("\n")).toMatch(/dormant/);
   });
 });

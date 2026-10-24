@@ -222,3 +222,25 @@ export async function deriveMicroEntityAccounts(session) {
     notes,
   };
 }
+
+/**
+ * One year of a micro-entity profit and loss account (MICRO_PROFIT_AND_LOSS_LINES) from a small
+ * company's profit and loss lines. The book keeps no staff cost or raw material line, so every
+ * cost other than the depreciation charge is an other charge and interest receivable is other
+ * income. Turnover, profit before tax, tax and profit are the small company's own.
+ * @param {{turnover: number, costOfSales: number, administrativeExpenses: number, interestReceivable: number, profitBeforeTax: number, tax: number, profit: number}} year
+ * @param {number} depreciation - the depreciation charge within the costs, whole pounds
+ */
+export function microProfitAndLossYear(year, depreciation = 0) {
+  return {
+    turnover: year.turnover,
+    otherIncome: year.interestReceivable,
+    rawMaterials: 0,
+    staffCosts: 0,
+    depreciation,
+    otherCharges: year.costOfSales + year.administrativeExpenses - depreciation,
+    profitBeforeTax: year.profitBeforeTax,
+    tax: year.tax,
+    profit: year.profit,
+  };
+}
