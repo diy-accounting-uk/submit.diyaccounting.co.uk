@@ -28,6 +28,7 @@ import {
   coverPage,
   approvalHtml,
   renderAccountsDocument,
+  renderProductionSoftwareFacts,
 } from "./accountsIxbrlCommon.js";
 import { recordTable } from "../lib/submissionRecord.js";
 
@@ -111,6 +112,7 @@ export function buildMicroEntityAccounts(input) {
   // DirectorSigningFinancialStatements is a fixed (zero-length) fact: it marks that a director
   // signed. The director's own name is the prose of the approval line.
   hiddenFacts.push(renderFixedFact("directorSigningFinancialStatements", refs.current));
+  hiddenFacts.push(...renderProductionSoftwareFacts(refs.current));
   hiddenFacts.push(
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">${input.dormant ? "true" : "false"}</ix:nonNumeric>`,
   );

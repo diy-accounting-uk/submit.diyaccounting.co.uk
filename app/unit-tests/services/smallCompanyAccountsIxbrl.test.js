@@ -3,6 +3,7 @@
 
 // app/unit-tests/services/smallCompanyAccountsIxbrl.test.js
 
+import { readFileSync } from "node:fs";
 import { describe, test, expect } from "vitest";
 import {
   buildSmallCompanyAccounts,
@@ -126,6 +127,13 @@ function nonFractionValue(xhtml, name, contextRef) {
   return match ? Number(match[1].replaceAll(",", "")) : undefined;
 }
 
+const PACKAGE_VERSION = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url), "utf8")).version;
+
+function hiddenText(xhtml, name) {
+  const hidden = parseXmlDocument(xhtml).getElementsByTagName("ix:hidden")[0];
+  return Array.from(hidden.getElementsByTagName("ix:nonNumeric")).find((fact) => fact.getAttribute("name") === name)?.textContent;
+}
+
 describe("services/smallCompanyAccountsIxbrl", () => {
   describe("buildSmallCompanyAccounts, full accounts", () => {
     const xhtml = buildSmallCompanyAccounts(SAMPLE_INPUT);
@@ -133,6 +141,11 @@ describe("services/smallCompanyAccountsIxbrl", () => {
     test("parses as well-formed XML after a bare XML declaration", () => {
       expect(xhtml.split("\n")[0]).toBe('<?xml version="1.0"?>');
       expect(() => parseXmlDocument(xhtml)).not.toThrow();
+    });
+
+    test("names the production software and its package version in the hidden section", () => {
+      expect(hiddenText(xhtml, "bus:NameProductionSoftware")).toBe("DIY Accounting Submit");
+      expect(hiddenText(xhtml, "bus:VersionProductionSoftware")).toBe(PACKAGE_VERSION);
     });
 
     test("every mandatory concept is present", () => {

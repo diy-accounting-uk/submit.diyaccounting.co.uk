@@ -49,6 +49,8 @@ export const CONCEPTS = {
   dateAuthorisationFinancialStatementsForIssue: { prefix: "core", name: "DateAuthorisationFinancialStatementsForIssue" },
   directorSigningFinancialStatements: { prefix: "core", name: "DirectorSigningFinancialStatements" },
   entityDormantTruefalse: { prefix: "bus", name: "EntityDormantTruefalse" },
+  nameProductionSoftware: { prefix: "bus", name: "NameProductionSoftware" },
+  versionProductionSoftware: { prefix: "bus", name: "VersionProductionSoftware" },
   startDateForPeriodCoveredByReport: { prefix: "bus", name: "StartDateForPeriodCoveredByReport" },
   endDateForPeriodCoveredByReport: { prefix: "bus", name: "EndDateForPeriodCoveredByReport" },
   entityTradingStatus: { prefix: "bus", name: "EntityTradingStatus" },
@@ -325,6 +327,30 @@ export function renderFixedFact(conceptKey, contextRef) {
 
 export function renderTextFact(conceptKey, contextRef, text) {
   return `<ix:nonNumeric name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}">${escapeXmlText(text)}</ix:nonNumeric>`;
+}
+
+export const PRODUCTION_SOFTWARE_NAME = "DIY Accounting Submit";
+
+let cachedPackageVersion;
+
+export function packageVersion() {
+  if (!cachedPackageVersion) {
+    const packagePath = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "package.json");
+    cachedPackageVersion = JSON.parse(readFileSync(packagePath, "utf8")).version;
+  }
+  return cachedPackageVersion;
+}
+
+/**
+ * The hidden facts that name the software that produced the document, in the current period's context.
+ * @param {string} contextRef
+ * @returns {string[]}
+ */
+export function renderProductionSoftwareFacts(contextRef) {
+  return [
+    renderTextFact("nameProductionSoftware", contextRef, PRODUCTION_SOFTWARE_NAME),
+    renderTextFact("versionProductionSoftware", contextRef, packageVersion()),
+  ];
 }
 
 export function renderDateFact(conceptKey, contextRef, isoDate) {

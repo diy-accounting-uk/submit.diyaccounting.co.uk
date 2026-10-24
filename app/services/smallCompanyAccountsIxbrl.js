@@ -34,6 +34,7 @@ import {
   coverPage,
   approvalHtml,
   renderAccountsDocument,
+  renderProductionSoftwareFacts,
 } from "./accountsIxbrlCommon.js";
 import { recordFigure, recordTable } from "../lib/submissionRecord.js";
 
@@ -379,6 +380,7 @@ export function buildSmallCompanyAccounts(input) {
   }
 
   hiddenFacts.push(
+    ...renderProductionSoftwareFacts(refs.current),
     renderFixedFact("directorSigningFinancialStatements", refs.current),
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
     renderFixedFact("entityTradingStatus", refs.current),

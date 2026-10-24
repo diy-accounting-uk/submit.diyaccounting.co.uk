@@ -3,6 +3,7 @@
 
 // app/unit-tests/services/microEntityAccountsIxbrl.test.js
 
+import { readFileSync } from "node:fs";
 import { describe, test, expect } from "vitest";
 import {
   buildMicroEntityAccounts,
@@ -76,8 +77,21 @@ const DORMANT_INPUT = {
   },
 };
 
+const PACKAGE_VERSION = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url), "utf8")).version;
+
+function hiddenText(xhtml, name) {
+  const hidden = parseXmlDocument(xhtml).getElementsByTagName("ix:hidden")[0];
+  return Array.from(hidden.getElementsByTagName("ix:nonNumeric")).find((fact) => fact.getAttribute("name") === name)?.textContent;
+}
+
 describe("services/microEntityAccountsIxbrl", () => {
   describe("buildMicroEntityAccounts", () => {
+    test("names the production software and its package version in the hidden section", () => {
+      const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
+      expect(hiddenText(xhtml, "bus:NameProductionSoftware")).toBe("DIY Accounting Submit");
+      expect(hiddenText(xhtml, "bus:VersionProductionSoftware")).toBe(PACKAGE_VERSION);
+    });
+
     test("the first line is exactly the XML declaration with no leading whitespace", () => {
       const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
       const firstLine = xhtml.split("\n")[0];
@@ -262,6 +276,11 @@ describe("services/microEntityAccountsIxbrl", () => {
 
     test("parses as well-formed XML", () => {
       expect(() => parseXmlDocument(dormantXhtml)).not.toThrow();
+    });
+
+    test("names the production software and its package version in the hidden section", () => {
+      expect(hiddenText(dormantXhtml, "bus:NameProductionSoftware")).toBe("DIY Accounting Submit");
+      expect(hiddenText(dormantXhtml, "bus:VersionProductionSoftware")).toBe(PACKAGE_VERSION);
     });
 
     test("the section 480 statement is present and the section 477 statement is absent", () => {
