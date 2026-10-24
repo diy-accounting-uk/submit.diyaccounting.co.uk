@@ -38,6 +38,9 @@ step.
 
 ## In flight
 
+**COOL-DOWN is on since 2026-10-24T09:39:39Z.** No new board rows except a degradation. Agents commit
+and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+
 ## Machine-only
 
 - [ ] **AV1. Feature status on every page: the visual pass.** The status line (`p.hint[data-feature-status]`, 45 pages; a summary line on the index, bundles and video list pages, at the end of `bundles.html` so the subscription panel keeps the first phone screen) and the calendar's availability table are on main (PR #533) and live on prod-bd56363. Remainder: the `visual-review` pass over the status line and the availability table on prod (desktop and phone widths), the guide screenshots (`npm run video:walkthrough`) and the site screenshots (`npm run site:screenshots`) taken again, each fail fixed or written as a row. **Source**: operator, 2026-10-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~14 files.
