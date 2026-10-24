@@ -332,8 +332,8 @@ export function guideUrl(anchor) {
   return `${COMPANY_TAX_RETURN_GUIDE_URL}#${anchor}`;
 }
 
-// Boxes the page shows as money in the review.
-export const MONEY_BOXES = new Set([145, 155, 315, 440]);
+// Boxes the review shows as typed or coded text; every other box is an amount in pounds.
+export const TEXT_BOXES = new Set([1, 2, 3, 4, 30, 35, 326, 327, 328, 329, 330, 340, 380, 390, 975, 985]);
 
 export const SECTIONS = [
   { id: "company", title: "Company" },

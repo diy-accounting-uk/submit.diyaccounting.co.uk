@@ -15,10 +15,10 @@ import {
   CT600_FORM_FIELDS,
   FIXED_ASSET_CLASSES,
   FIXED_ASSET_FIELDS,
-  MONEY_BOXES,
   PROFIT_AND_LOSS_FIELDS,
   SECTIONS,
   STATEMENT_FIELDS,
+  TEXT_BOXES,
   accountsFormEntries,
   accountsFromValues,
   applyFormEntries,
@@ -145,6 +145,7 @@ function guideAnchorOf(field) {
 function hintOf(field) {
   const hint = create("p", { id: `${field.id}-hint`, class: "hint" }, field.hint ?? "");
   const anchor = guideAnchorOf(field);
+  if (!field.hint && !anchor) hint.hidden = true;
   if (anchor) {
     const link = create("a", { href: guideUrl(anchor), target: "_blank", rel: "noopener" }, "Company Tax Return guide");
     hint.append(field.hint ? " " : "", link, ".");
@@ -187,19 +188,29 @@ function textGroup(field) {
   );
 }
 
+const CONTROL_STYLE = "width: auto; flex: none; margin: 0.25rem 0 0";
+const CHOICE_LABEL_STYLE = "display: block; margin: 0; font-weight: normal";
+const CHOICE_ROW_STYLE = "display: flex; align-items: flex-start; gap: 0.6rem; margin-bottom: 0.5rem";
+
+function choiceRow(input, label) {
+  return create("div", { style: CHOICE_ROW_STYLE }, input, label);
+}
+
 function choiceGroup(field) {
-  const radio = (value, text, checked) => [
-    create("input", {
-      "type": "radio",
-      "id": `${field.id}${value === "no" ? "No" : "Yes"}`,
-      "name": field.id,
-      value,
-      "data-error-target": field.id,
-      "aria-describedby": `${field.id}-hint`,
-      ...(checked ? { checked: "" } : {}),
-    }),
-    create("label", { for: `${field.id}${value === "no" ? "No" : "Yes"}`, style: "display: inline; font-weight: normal" }, text),
-  ];
+  const radio = (value, text, checked) =>
+    choiceRow(
+      create("input", {
+        "type": "radio",
+        "id": `${field.id}${value === "no" ? "No" : "Yes"}`,
+        "name": field.id,
+        value,
+        "data-error-target": field.id,
+        "aria-describedby": `${field.id}-hint`,
+        "style": CONTROL_STYLE,
+        ...(checked ? { checked: "" } : {}),
+      }),
+      create("label", { for: `${field.id}${value === "no" ? "No" : "Yes"}`, style: CHOICE_LABEL_STYLE }, text),
+    );
   const hint = field.hint ? hintOf(field) : create("p", { id: `${field.id}-hint`, class: "hint" });
   return create(
     "div",
@@ -207,8 +218,8 @@ function choiceGroup(field) {
     create("p", { id: field.id, class: "field-label", tabindex: "-1" }, field.label),
     hint,
     errorHost(field.id),
-    ...radio("no", "No", true),
-    ...radio("yes", "Yes", false),
+    radio("no", "No", true),
+    radio("yes", "Yes", false),
   );
 }
 
@@ -231,8 +242,10 @@ function checkboxGroup(id, label, target = id) {
     "div",
     { class: "form-group" },
     errorHost(target),
-    create("input", { "type": "checkbox", id, "name": id, "data-error-target": target }),
-    create("label", { for: id, style: "display: inline; font-weight: normal" }, label),
+    choiceRow(
+      create("input", { "type": "checkbox", id, "name": id, "data-error-target": target, "style": CONTROL_STYLE }),
+      create("label", { for: id, style: CHOICE_LABEL_STYLE }, label),
+    ),
   );
 }
 
@@ -244,7 +257,7 @@ function fieldGroup(field) {
 }
 
 function amountGroup(id, label) {
-  return textGroup({ id, label, type: "whole-pounds", hint: "For example, £600 or £1,200" });
+  return textGroup({ id, label, type: "whole-pounds", hint: "" });
 }
 
 function accountsYear(prefix) {
@@ -274,7 +287,11 @@ function accountsSection() {
     create("div", {}, create("h4", {}, title), ...FIXED_ASSET_FIELDS.map(([field, label]) => amountGroup(noteId(className, field), label))),
   );
   return [
-    create("p", { class: "hint" }, "HMRC takes the full accounts with the return, so they are part of this form. Whole pounds."),
+    create(
+      "p",
+      { class: "hint" },
+      "HMRC takes the full accounts with the return, so they are part of this form. Enter whole pounds, for example 600 or 1,200.",
+    ),
     create("h4", {}, "Current year"),
     ...accountsYear("current"),
     checkboxGroup("includeComparatives", "Include last year's figures"),
@@ -315,7 +332,7 @@ function sectionBody(sectionId) {
 function renderForm() {
   const sections = [];
   for (const { id, title } of SECTIONS) {
-    sections.push(create("section", { id: `section-${id}` }, create("h3", {}, title), ...sectionBody(id)));
+    sections.push(create("section", { id: `section-${id}`, style: "margin-top: 2rem" }, create("h3", {}, title), ...sectionBody(id)));
     if (id === "reliefs") sections.push(workedTaxPanel());
   }
   element("formSections").replaceChildren(...sections);
@@ -672,7 +689,10 @@ function renderReview(preview) {
     .sort((a, b) => a - b)
     .map((box) => {
       const row = tableRow(box, guideLink(boxRow(box).label, boxRow(box).anchor), preview.boxes[box]);
-      return MONEY_BOXES.has(box) ? amountCell(row, formatPounds(preview.boxes[box])) : row;
+      if (box === 340 || box === 390) return tableRow(box, guideLink(boxRow(box).label, boxRow(box).anchor), `${preview.boxes[box]}%`);
+      if (box === 329) return tableRow(box, guideLink(boxRow(box).label, boxRow(box).anchor), "Yes");
+      if (TEXT_BOXES.has(box)) return row;
+      return amountCell(row, formatPounds(preview.boxes[box]));
     });
   element("ct600Table")
     .querySelector("tbody")
