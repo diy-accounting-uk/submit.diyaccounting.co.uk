@@ -357,6 +357,13 @@ async function doCheckHidden(page, step, ctx) {
   return { waitMs: 0, rect: null };
 }
 
+// Publishes the period the submit form holds as {{submittedPeriodStart}} and {{submittedPeriodEnd}}
+// without showing anything, so a later scene can read back the return this run filed on camera.
+async function doNotePeriod(page, step, ctx) {
+  await publishSubmittedPeriod(page, ctx);
+  return { waitMs: 0, rect: null };
+}
+
 async function doScroll(page, step, ctx) {
   let targetY;
   if (step.target) {
@@ -722,6 +729,7 @@ const HANDLERS = {
   dropFile: doDropFile,
   testScenario: doTestScenario,
   checkHidden: doCheckHidden,
+  notePeriod: doNotePeriod,
   scroll: doScroll,
   highlight: doHighlight,
   await: doAwait,

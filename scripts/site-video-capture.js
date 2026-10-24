@@ -177,6 +177,8 @@ function describeStep(step, waitMs, values, now) {
       return `selects "${step.value}" in ${describeTarget(step.target)}`;
     case "dropFile":
       return `drops ${step.name || path.basename(step.file)} onto ${describeTarget(step.target)}`;
+    case "notePeriod":
+      return "notes the period on the form";
     case "checkHidden":
       return `ticks ${describeTarget(step.target)}`;
     case "scroll":
@@ -697,7 +699,7 @@ async function main() {
         // A testScenario or checkHidden step sets a form value the viewer never sees, so the
         // transcript describes nothing about it; its caption, when it has one, is on screen and
         // so belongs in the transcript like any other.
-        const hiddenAction = step.action === "testScenario" || step.action === "checkHidden";
+        const hiddenAction = step.action === "testScenario" || step.action === "checkHidden" || step.action === "notePeriod";
         const caption = captionTextForStep(step);
         if (!offCamera && (!hiddenAction || caption))
           entries.push({ caption, description: hiddenAction ? null : description, note: step.note || null });
