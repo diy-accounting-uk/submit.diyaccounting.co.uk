@@ -26,6 +26,8 @@ import { enterCompanyNumberAndLookUp, verifyCompanyLookedUp } from "./steps/beha
 import {
   goToFileCompanyTaxReturn,
   fillInCompanyTaxReturnForm,
+  typeInCompanyTaxReturnForm,
+  changeAnAnswerFromTheReview,
   previewCompanyTaxReturn,
   setCtGovTestScenario,
   enterGatewayCredentialsAndSubmit,
@@ -111,22 +113,39 @@ async function signInWithResidentBundle(page, testUrl) {
   await goToHomePage(page, screenshotPath);
 }
 
-async function reachPreview(page, testInfo) {
+async function reachCompanyForm(page, testInfo) {
   addOnPageLogging(page);
   fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
-
-  const bookExport = await buildCtReturnExportFromBook();
 
   await signInWithResidentBundle(page, baseUrl);
   await goToFileCompanyTaxReturn(page, screenshotPath);
   await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
   await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+}
+
+async function reachPreview(page, testInfo) {
+  const bookExport = await buildCtReturnExportFromBook();
+  await reachCompanyForm(page, testInfo);
   await fillInCompanyTaxReturnForm(page, { utr: FIXTURE_UTR, declarantName: bookExport.director.name }, screenshotPath);
   await previewCompanyTaxReturn(page, screenshotPath);
 }
 
-test("Click through: file the Company Tax Return and see HMRC accept it with its IRmark", async ({ page }, testInfo) => {
+test("Click through: file the Company Tax Return from a book, change an answer from the review and see HMRC accept it with its IRmark", async ({
+  page,
+}, testInfo) => {
   await reachPreview(page, testInfo);
+  await changeAnAnswerFromTheReview(page, { fieldId: "declarantStatus", value: "Finance Director" }, screenshotPath);
+  await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
+  await verifyReturnAccepted(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: type the Company Tax Return, change an answer from the review and see HMRC accept it", async ({ page }, testInfo) => {
+  await reachCompanyForm(page, testInfo);
+  await typeInCompanyTaxReturnForm(page, screenshotPath);
+  await previewCompanyTaxReturn(page, screenshotPath);
+  await changeAnAnswerFromTheReview(page, { fieldId: "declarantStatus", value: "Finance Director" }, screenshotPath);
   await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
   await verifyReturnAccepted(page, screenshotPath);
 
