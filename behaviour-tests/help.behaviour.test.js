@@ -327,31 +327,32 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     console.log("STEP 9: Explore User Guide content");
     console.log("=".repeat(60));
 
-    // Check for guide sections
-    const guideSections = page.locator(".guide-section");
-    const sectionCount = await guideSections.count();
-    console.log(` Found ${sectionCount} guide sections`);
-    expect(sectionCount).toBeGreaterThan(0);
+    // The guide renders its journeys from videos/publish.json after the page loads
+    const journeys = page.locator("details.guide-journey");
+    await expect(journeys.first()).toBeVisible({ timeout: 15000 });
 
-    // Check for step numbers
-    const stepNumbers = page.locator(".step-number");
-    const stepCount = await stepNumbers.count();
-    console.log(` Found ${stepCount} step numbers`);
+    const groupCount = await page.locator("section.guide-group").count();
+    console.log(` Found ${groupCount} guide groups`);
+    expect(groupCount).toBeGreaterThan(0);
+
+    const journeyCount = await journeys.count();
+    console.log(` Found ${journeyCount} guide journeys`);
+    expect(journeyCount).toBeGreaterThan(0);
+
+    const stepCount = await page.locator("li.guide-step").count();
+    console.log(` Found ${stepCount} guide steps`);
     expect(stepCount).toBeGreaterThan(0);
 
-    // Check for guide cards with images
-    const guideCards = page.locator(".guide-card");
-    const cardCount = await guideCards.count();
-    console.log(` Found ${cardCount} guide cards with images`);
-    expect(cardCount).toBeGreaterThan(0);
+    const frameCount = await page.locator(".guide-thumb img").count();
+    console.log(` Found ${frameCount} guide frames with images`);
+    expect(frameCount).toBeGreaterThan(0);
 
-    // Check section headings
-    const obligationsSection = page.locator("#obligations");
-    const submitSection = page.locator("#submit");
-    const viewSection = page.locator("#view");
+    // Check the VAT journeys
+    const obligationsSection = page.locator("details#view-obligations");
+    const submitSection = page.locator("details#submit-return");
 
     await expect(obligationsSection).toBeVisible({ timeout: 5000 });
-    console.log(" Obligations section is visible");
+    console.log(" Obligations journey is visible");
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-11-guide-sections.png` });
 
