@@ -16,6 +16,12 @@ export const PAGE_PATH = join(ROOT, "web", "public", "mtd-calendar.html");
 
 export const DATED_FACTS = [
   {
+    id: "ch-identity-verification-2025-11",
+    date: "2025-11-18",
+    title: "Companies House: director and PSC identity verification",
+    text: "Identity verification is a legal requirement for directors and for people with significant control (PSCs). A director gives the personal code with the company's next confirmation statement. A PSC verifies and gives the personal code within a 14 day period that depends on the PSC's situation.",
+  },
+  {
     id: "vat-mtd-all-registered-2022-04",
     date: "2022-04-01",
     title: "VAT: every VAT-registered business",
@@ -59,6 +65,87 @@ export const FINAL_DECLARATION_FACT = {
   text: "Submit your tax return by 31 January following the end of the tax year. You can submit it earlier.",
 };
 
+export const COMPANY_YEARLY_FACTS = [
+  {
+    id: "ch-confirmation-statement-12-months",
+    title: "Companies House confirmation statement",
+    text: "File at least one confirmation statement every 12 months, even if nothing has changed.",
+    optional: "You can file early. You do not have to wait for the current review period to end.",
+  },
+  {
+    id: "ch-accounts-9-months",
+    title: "Companies House annual accounts",
+    text: "File the annual accounts with Companies House 9 months after the end of the company's financial year.",
+    optional: "You can file the accounts and the Company Tax Return together or separately.",
+  },
+  {
+    id: "ct600-12-months",
+    title: "Company Tax Return (CT600)",
+    text: "File the Company Tax Return with HMRC 12 months after the end of the accounting period it covers.",
+  },
+  {
+    id: "ct-payment-9-months-1-day",
+    title: "Corporation Tax payment",
+    text: "Pay Corporation Tax 9 months and 1 day after the end of the accounting period, when taxable profits are up to £1.5 million.",
+  },
+];
+
+// status is one of production, sandbox, preview or "not offered". A cell is [status, note?].
+export const CHANNELS = ["Web form", "diya-gl book drop", "Spreadsheets drop", "iXBRL drop", "MCP", "API"];
+const NOT_OFFERED = ["not offered"];
+export const AVAILABILITY = [
+  {
+    filing: "HMRC VAT return",
+    web: "hmrc/vat/submitVat.html",
+    video: "XUt2gdYxR1g",
+    cells: [
+      ["production"],
+      ["production"],
+      ["production"],
+      NOT_OFFERED,
+      ["production", "local server; the hosted connector derives figures only"],
+      NOT_OFFERED,
+    ],
+  },
+  {
+    filing: "HMRC Income Tax (MTD)",
+    web: "hmrc/itsa/dashboard.html",
+    video: "H1LRSZG984Q",
+    cells: [["sandbox"], ["sandbox"], ["sandbox"], NOT_OFFERED, ["sandbox", "figures only"], NOT_OFFERED],
+  },
+  {
+    filing: "HMRC Company Tax Return (CT600)",
+    web: "companies-house/fileCompanyTaxReturn.html",
+    cells: [["preview"], ["preview", "book export file"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
+  },
+  {
+    filing: "Companies House accounts (micro-entity, small company, dormant)",
+    web: "companies-house/fileMicroEntityAccounts.html",
+    video: "yPSpvLKrTJU",
+    cells: [["sandbox"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["sandbox", "micro-entity"], NOT_OFFERED],
+  },
+  {
+    filing: "Companies House confirmation statement",
+    web: "companies-house/fileConfirmationStatement.html",
+    video: "P0aG_mLfhZI",
+    cells: [["sandbox"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["sandbox"], NOT_OFFERED],
+  },
+  {
+    filing: "Companies House PSC verification statement",
+    cells: [["sandbox"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
+  },
+  {
+    filing: "Companies House registered office and registered email",
+    web: "companies-house/changeRegisteredOffice.html",
+    video: "sN_FhTnAqF4",
+    cells: [["production"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
+  },
+  {
+    filing: "Accounts and CT600 together (designed, not built)",
+    cells: [NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
+  },
+];
+
 export const UNDATED_FACTS = [
   {
     id: "itsa-mtd-partnerships-date-unset",
@@ -68,7 +155,37 @@ export const UNDATED_FACTS = [
 ];
 
 export function allFactIds() {
-  return [...DATED_FACTS, QUARTERLY_FACT, FINAL_DECLARATION_FACT, ...UNDATED_FACTS].map((f) => f.id);
+  return [...DATED_FACTS, QUARTERLY_FACT, FINAL_DECLARATION_FACT, ...COMPANY_YEARLY_FACTS, ...UNDATED_FACTS].map((f) => f.id);
+}
+
+function cellHtml([status, note]) {
+  return escapeHtml(status) + (note ? ` <span class="calendar-date">${escapeHtml(note)}</span>` : "");
+}
+
+function availabilityHtml() {
+  const rows = AVAILABILITY.map((row) => {
+    const links = [
+      row.web ? `<a href="${row.web}">Web form</a>` : "",
+      `<a href="guide.html">Guide</a>`,
+      row.video ? `<a href="https://www.youtube.com/watch?v=${row.video}" rel="noopener">Video</a>` : "",
+    ]
+      .filter(Boolean)
+      .join(", ");
+    const mcp = row.cells[4][0] === "not offered" ? "" : ` <a href="mcp.html">MCP</a>`;
+    return (
+      `<tr><th scope="row">${escapeHtml(row.filing)}</th>` +
+      row.cells.map((c) => `<td>${cellHtml(c)}</td>`).join("") +
+      `<td>${links}${mcp ? "," + mcp : ""}</td></tr>`
+    );
+  }).join("");
+  return (
+    `<div class="form-container" id="availability"><h2>What you can file, and how</h2>` +
+    `<p>Production means you can use it for real. Sandbox means it runs against a test service and files nothing real. Preview means it runs on our simulator only.</p>` +
+    `<!-- A change to what a business can file, or through which channel, or whether a feature is production, sandbox or preview, updates this table in the same change. -->` +
+    `<div class="table-scroll"><table class="deadline-table"><caption class="calendar-date">Availability by filing and channel</caption>` +
+    `<thead><tr><th scope="col">Filing</th>${CHANNELS.map((c) => `<th scope="col">${c}</th>`).join("")}<th scope="col">Docs and video</th></tr></thead>` +
+    `<tbody>${rows}</tbody></table></div></div>`
+  );
 }
 
 function sourcesHtml(factId, sources) {
@@ -82,6 +199,7 @@ function entryHtml(fact, sources, heading, extraHtml = "") {
     `<li class="calendar-entry" id="${fact.id}">` +
     `<h3>${heading}</h3>` +
     `<p>${escapeHtml(fact.text)}</p>` +
+    (fact.optional ? `<p><strong>Optional:</strong> ${escapeHtml(fact.optional)}</p>` : "") +
     extraHtml +
     sourcesHtml(fact.id, sources) +
     `</li>`
@@ -127,6 +245,9 @@ const STYLES = `
         color: var(--color-text-secondary);
         white-space: nowrap;
       }
+      .table-scroll {
+        overflow-x: auto;
+      }
       .deadline-table {
         border-collapse: collapse;
         margin: var(--spacing-sm) 0;
@@ -150,7 +271,8 @@ export function renderCalendarHtml(sources) {
     `</tbody></table>`;
   const yearly =
     entryHtml(QUARTERLY_FACT, sources, escapeHtml(QUARTERLY_FACT.title), deadlineTable) +
-    entryHtml(FINAL_DECLARATION_FACT, sources, escapeHtml(FINAL_DECLARATION_FACT.title));
+    entryHtml(FINAL_DECLARATION_FACT, sources, escapeHtml(FINAL_DECLARATION_FACT.title)) +
+    COMPANY_YEARLY_FACTS.map((f) => entryHtml(f, sources, escapeHtml(f.title))).join("");
   const undated = UNDATED_FACTS.map((f) => entryHtml(f, sources, escapeHtml(f.title))).join("");
 
   return `<!doctype html>
@@ -164,7 +286,7 @@ export function renderCalendarHtml(sources) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="When Making Tax Digital applies: VAT from April 2022, Income Tax from April 2026 by income level, quarterly update deadlines and the final declaration. Each date links to its gov.uk source."
+      content="What you can file and how, and when Making Tax Digital applies: VAT from April 2022, Income Tax from April 2026 by income level, quarterly updates, the final declaration and the Companies House and Corporation Tax dates. Each date links to its gov.uk source."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/mtd-calendar.html" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -194,6 +316,8 @@ export function renderCalendarHtml(sources) {
 
     <main id="mainContent">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      ${availabilityHtml()}
 
       <div class="form-container">
         <h2>Dates</h2>
