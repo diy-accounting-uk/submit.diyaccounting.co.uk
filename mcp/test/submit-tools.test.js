@@ -411,7 +411,7 @@ describe("submit-tools", () => {
       expect(result).toEqual(RENDER_MICRO_ENTITY_ACCOUNTS_RESPONSE);
       expect(result.ixbrl).toContain("<?xml");
       const [url, init] = mockFetch.mock.calls[0];
-      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/accounts/preview");
+      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/accounts/render");
       expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
       const body = JSON.parse(init.body);
       expect(body.companyAuthCode).toBeUndefined();
@@ -568,7 +568,7 @@ describe("submit-tools", () => {
       expect(result).toEqual(RENDER_CONFIRMATION_STATEMENT_RESPONSE);
       expect(result.confirmationStatementXml).toContain("ConfirmationAndVerificationStatement");
       const [url, init] = mockFetch.mock.calls[0];
-      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/confirmation-statement/preview");
+      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/confirmation-statement/render");
       expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
       const body = JSON.parse(init.body);
       expect(body.companyAuthCode).toBeUndefined();

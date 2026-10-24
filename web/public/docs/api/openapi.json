@@ -2326,11 +2326,11 @@
         "operationId" : "registerInterest"
       }
     },
-    "/companies-house/accounts/preview" : {
+    "/companies-house/accounts/render" : {
       "post" : {
-        "summary" : "Preview a micro-entity accounts filing",
+        "summary" : "Render a micro-entity accounts filing for review",
         "description" : "Renders the FRS 105 micro-entity iXBRL from the balance sheet without submitting it",
-        "operationId" : "previewCompaniesHouseAccounts"
+        "operationId" : "renderCompaniesHouseAccounts"
       }
     },
     "/hmrc/vat/obligation" : {
@@ -3548,11 +3548,11 @@
         }
       }
     },
-    "/companies-house/confirmation-statement/preview" : {
+    "/companies-house/confirmation-statement/render" : {
       "post" : {
-        "summary" : "Preview a confirmation statement filing",
+        "summary" : "Render a confirmation statement filing for review",
         "description" : "Renders the ConfirmationAndVerificationStatement body from the form's answers without submitting it",
-        "operationId" : "previewCompaniesHouseConfirmationStatement"
+        "operationId" : "renderCompaniesHouseConfirmationStatement"
       }
     }
   },

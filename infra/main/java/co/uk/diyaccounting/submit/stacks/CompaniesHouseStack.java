@@ -87,9 +87,9 @@ public class CompaniesHouseStack extends Stack {
     public Function companiesHouseRegisteredEmailAddressPostLambda;
     public ILogGroup companiesHouseRegisteredEmailAddressPostLambdaLogGroup;
 
-    public AbstractApiLambdaProps companiesHouseAccountsPreviewPostLambdaProps;
-    public Function companiesHouseAccountsPreviewPostLambda;
-    public ILogGroup companiesHouseAccountsPreviewPostLambdaLogGroup;
+    public AbstractApiLambdaProps companiesHouseAccountsRenderPostLambdaProps;
+    public Function companiesHouseAccountsRenderPostLambda;
+    public ILogGroup companiesHouseAccountsRenderPostLambdaLogGroup;
 
     public AbstractApiLambdaProps companiesHouseAccountsPostLambdaProps;
     public Function companiesHouseAccountsPostLambda;
@@ -123,9 +123,9 @@ public class CompaniesHouseStack extends Stack {
     public Function companiesHouseFilingDataPostLambda;
     public ILogGroup companiesHouseFilingDataPostLambdaLogGroup;
 
-    public AbstractApiLambdaProps companiesHouseConfirmationStatementPreviewPostLambdaProps;
-    public Function companiesHouseConfirmationStatementPreviewPostLambda;
-    public ILogGroup companiesHouseConfirmationStatementPreviewPostLambdaLogGroup;
+    public AbstractApiLambdaProps companiesHouseConfirmationStatementRenderPostLambdaProps;
+    public Function companiesHouseConfirmationStatementRenderPostLambda;
+    public ILogGroup companiesHouseConfirmationStatementRenderPostLambdaLogGroup;
 
     public AbstractApiLambdaProps companiesHouseConfirmationStatementPostLambdaProps;
     public Function companiesHouseConfirmationStatementPostLambda;
@@ -703,43 +703,42 @@ public class CompaniesHouseStack extends Stack {
                 activityBusArn,
                 false);
 
-        // The accounts filing route: preview renders the iXBRL only, the other two reach the XML
+        // The accounts filing route: render produces the iXBRL only, the other two reach the XML
         // Gateway with the presenter credentials, never the OAuth filing base URI or client secret
         // the six Lambdas above use.
-        var companiesHouseAccountsPreviewPostLambdaEnv = xmlGatewayFilingLambdaEnv(props);
-        var companiesHouseAccountsPreviewPostLambdaUrlOrigin = new ApiLambda(
+        var companiesHouseAccountsRenderPostLambdaEnv = xmlGatewayFilingLambdaEnv(props);
+        var companiesHouseAccountsRenderPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(props.sharedNames().companiesHouseAccountsPreviewPostIngestLambdaFunctionName)
+                        .idPrefix(props.sharedNames().companiesHouseAccountsRenderPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(
-                                props.sharedNames().companiesHouseAccountsPreviewPostIngestLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().companiesHouseAccountsPreviewPostIngestLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().companiesHouseAccountsPreviewPostIngestLambdaArn)
+                                props.sharedNames().companiesHouseAccountsRenderPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().companiesHouseAccountsRenderPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHouseAccountsRenderPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
-                                .companiesHouseAccountsPreviewPostIngestProvisionedConcurrencyLambdaAliasArn)
+                                .companiesHouseAccountsRenderPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseAccountsPreviewPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseAccountsPreviewPostLambdaUrlPath)
-                        .jwtAuthorizer(props.sharedNames().companiesHouseAccountsPreviewPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().companiesHouseAccountsPreviewPostLambdaCustomAuthorizer)
-                        .environment(companiesHouseAccountsPreviewPostLambdaEnv)
+                        .httpMethod(props.sharedNames().companiesHouseAccountsRenderPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouseAccountsRenderPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHouseAccountsRenderPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().companiesHouseAccountsRenderPostLambdaCustomAuthorizer)
+                        .environment(companiesHouseAccountsRenderPostLambdaEnv)
                         .build());
-        this.companiesHouseAccountsPreviewPostLambdaProps = companiesHouseAccountsPreviewPostLambdaUrlOrigin.apiProps;
-        this.companiesHouseAccountsPreviewPostLambda = companiesHouseAccountsPreviewPostLambdaUrlOrigin.ingestLambda;
-        this.companiesHouseAccountsPreviewPostLambdaLogGroup =
-                companiesHouseAccountsPreviewPostLambdaUrlOrigin.logGroup;
-        this.lambdaFunctionProps.add(this.companiesHouseAccountsPreviewPostLambdaProps);
+        this.companiesHouseAccountsRenderPostLambdaProps = companiesHouseAccountsRenderPostLambdaUrlOrigin.apiProps;
+        this.companiesHouseAccountsRenderPostLambda = companiesHouseAccountsRenderPostLambdaUrlOrigin.ingestLambda;
+        this.companiesHouseAccountsRenderPostLambdaLogGroup = companiesHouseAccountsRenderPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHouseAccountsRenderPostLambdaProps);
         infof(
-                "Created Lambda %s for Companies House accounts preview with ingestHandler %s",
-                this.companiesHouseAccountsPreviewPostLambda.getNode().getId(),
-                props.sharedNames().companiesHouseAccountsPreviewPostIngestLambdaHandler);
-        // No presenter secret grant: preview never reaches the gateway.
+                "Created Lambda %s for Companies House accounts render with ingestHandler %s",
+                this.companiesHouseAccountsRenderPostLambda.getNode().getId(),
+                props.sharedNames().companiesHouseAccountsRenderPostIngestLambdaHandler);
+        // No presenter secret grant: render never reaches the gateway.
         grantCompaniesHouseLambdaAccess(
-                this.companiesHouseAccountsPreviewPostLambda,
+                this.companiesHouseAccountsRenderPostLambda,
                 bundlesTable,
                 region,
                 account,
@@ -956,7 +955,7 @@ public class CompaniesHouseStack extends Stack {
         // The confirmation statement route: two public-data lookups (officers, PSCs - the API-key
         // client, same setting as the two company lookup Lambdas above), a synchronous filing-data
         // read (CompanyDataRequest and PaymentPeriodsRequest, through the gateway with the
-        // presenter credentials), and the preview/submit/poll trio the accounts route's own async
+        // presenter credentials), and the render/submit/poll trio the accounts route's own async
         // pattern already established, sharing its async-requests table so one submission number
         // space serves every form.
         var companiesHouseOfficersGetLambdaEnv = new PopulatedMap<String, String>()
@@ -1075,50 +1074,50 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHouseFilingDataPostLambda, bundlesTable, region, account, props, activityBusArn, false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseFilingDataPostLambda, props);
 
-        var companiesHouseConfirmationStatementPreviewPostLambdaEnv = xmlGatewayFilingLambdaEnv(props);
-        var companiesHouseConfirmationStatementPreviewPostLambdaUrlOrigin = new ApiLambda(
+        var companiesHouseConfirmationStatementRenderPostLambdaEnv = xmlGatewayFilingLambdaEnv(props);
+        var companiesHouseConfirmationStatementRenderPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
                         .idPrefix(props.sharedNames()
-                                .companiesHouseConfirmationStatementPreviewPostIngestLambdaFunctionName)
+                                .companiesHouseConfirmationStatementRenderPostIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
                         .ingestFunctionName(props.sharedNames()
-                                .companiesHouseConfirmationStatementPreviewPostIngestLambdaFunctionName)
+                                .companiesHouseConfirmationStatementRenderPostIngestLambdaFunctionName)
                         .ingestHandler(
-                                props.sharedNames().companiesHouseConfirmationStatementPreviewPostIngestLambdaHandler)
+                                props.sharedNames().companiesHouseConfirmationStatementRenderPostIngestLambdaHandler)
                         .ingestLambdaArn(
-                                props.sharedNames().companiesHouseConfirmationStatementPreviewPostIngestLambdaArn)
+                                props.sharedNames().companiesHouseConfirmationStatementRenderPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
                                 props.sharedNames()
-                                        .companiesHouseConfirmationStatementPreviewPostIngestProvisionedConcurrencyLambdaAliasArn)
+                                        .companiesHouseConfirmationStatementRenderPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestMemorySize(256)
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
-                        .httpMethod(props.sharedNames().companiesHouseConfirmationStatementPreviewPostLambdaHttpMethod)
-                        .urlPath(props.sharedNames().companiesHouseConfirmationStatementPreviewPostLambdaUrlPath)
+                        .httpMethod(props.sharedNames().companiesHouseConfirmationStatementRenderPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHouseConfirmationStatementRenderPostLambdaUrlPath)
                         .jwtAuthorizer(
-                                props.sharedNames().companiesHouseConfirmationStatementPreviewPostLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames()
-                                .companiesHouseConfirmationStatementPreviewPostLambdaCustomAuthorizer)
-                        .environment(companiesHouseConfirmationStatementPreviewPostLambdaEnv)
+                                props.sharedNames().companiesHouseConfirmationStatementRenderPostLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHouseConfirmationStatementRenderPostLambdaCustomAuthorizer)
+                        .environment(companiesHouseConfirmationStatementRenderPostLambdaEnv)
                         .build());
-        this.companiesHouseConfirmationStatementPreviewPostLambdaProps =
-                companiesHouseConfirmationStatementPreviewPostLambdaUrlOrigin.apiProps;
-        this.companiesHouseConfirmationStatementPreviewPostLambda =
-                companiesHouseConfirmationStatementPreviewPostLambdaUrlOrigin.ingestLambda;
-        this.companiesHouseConfirmationStatementPreviewPostLambdaLogGroup =
-                companiesHouseConfirmationStatementPreviewPostLambdaUrlOrigin.logGroup;
-        this.lambdaFunctionProps.add(this.companiesHouseConfirmationStatementPreviewPostLambdaProps);
+        this.companiesHouseConfirmationStatementRenderPostLambdaProps =
+                companiesHouseConfirmationStatementRenderPostLambdaUrlOrigin.apiProps;
+        this.companiesHouseConfirmationStatementRenderPostLambda =
+                companiesHouseConfirmationStatementRenderPostLambdaUrlOrigin.ingestLambda;
+        this.companiesHouseConfirmationStatementRenderPostLambdaLogGroup =
+                companiesHouseConfirmationStatementRenderPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHouseConfirmationStatementRenderPostLambdaProps);
         infof(
-                "Created Lambda %s for Companies House confirmation statement preview with ingestHandler %s",
-                this.companiesHouseConfirmationStatementPreviewPostLambda
+                "Created Lambda %s for Companies House confirmation statement render with ingestHandler %s",
+                this.companiesHouseConfirmationStatementRenderPostLambda
                         .getNode()
                         .getId(),
-                props.sharedNames().companiesHouseConfirmationStatementPreviewPostIngestLambdaHandler);
-        // No presenter secret grant: preview never reaches the gateway.
+                props.sharedNames().companiesHouseConfirmationStatementRenderPostIngestLambdaHandler);
+        // No presenter secret grant: render never reaches the gateway.
         grantCompaniesHouseLambdaAccess(
-                this.companiesHouseConfirmationStatementPreviewPostLambda,
+                this.companiesHouseConfirmationStatementRenderPostLambda,
                 bundlesTable,
                 region,
                 account,
@@ -1374,7 +1373,7 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseRegisteredOfficeAddressPostLambdaUrlOrigin,
                         companiesHouseRegisteredEmailEligibilityGetLambdaUrlOrigin,
                         companiesHouseRegisteredEmailAddressPostLambdaUrlOrigin,
-                        companiesHouseAccountsPreviewPostLambdaUrlOrigin,
+                        companiesHouseAccountsRenderPostLambdaUrlOrigin,
                         companiesHouseAccountsPostLambdaUrlOrigin,
                         companiesHouseAccountsGetLambdaUrlOrigin,
                         hmrcCtReturnPreviewPostLambdaUrlOrigin,
@@ -1383,7 +1382,7 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseOfficersGetLambdaUrlOrigin,
                         companiesHousePscGetLambdaUrlOrigin,
                         companiesHouseFilingDataPostLambdaUrlOrigin,
-                        companiesHouseConfirmationStatementPreviewPostLambdaUrlOrigin,
+                        companiesHouseConfirmationStatementRenderPostLambdaUrlOrigin,
                         companiesHouseConfirmationStatementPostLambdaUrlOrigin,
                         companiesHouseConfirmationStatementGetLambdaUrlOrigin,
                         companiesHousePscVerificationStatementPostLambdaUrlOrigin,
@@ -1422,8 +1421,8 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHouseRegisteredEmailAddressPostLambda.getFunctionArn());
         cfnOutput(
                 this,
-                "CompaniesHouseAccountsPreviewPostLambdaArn",
-                this.companiesHouseAccountsPreviewPostLambda.getFunctionArn());
+                "CompaniesHouseAccountsRenderPostLambdaArn",
+                this.companiesHouseAccountsRenderPostLambda.getFunctionArn());
         cfnOutput(this, "CompaniesHouseAccountsPostLambdaArn", this.companiesHouseAccountsPostLambda.getFunctionArn());
         cfnOutput(this, "CompaniesHouseAccountsGetLambdaArn", this.companiesHouseAccountsGetLambda.getFunctionArn());
         cfnOutput(this, "HmrcCtReturnPreviewPostLambdaArn", this.hmrcCtReturnPreviewPostLambda.getFunctionArn());
@@ -1437,8 +1436,8 @@ public class CompaniesHouseStack extends Stack {
                 this.companiesHouseFilingDataPostLambda.getFunctionArn());
         cfnOutput(
                 this,
-                "CompaniesHouseConfirmationStatementPreviewPostLambdaArn",
-                this.companiesHouseConfirmationStatementPreviewPostLambda.getFunctionArn());
+                "CompaniesHouseConfirmationStatementRenderPostLambdaArn",
+                this.companiesHouseConfirmationStatementRenderPostLambda.getFunctionArn());
         cfnOutput(
                 this,
                 "CompaniesHouseConfirmationStatementPostLambdaArn",
@@ -1559,7 +1558,7 @@ public class CompaniesHouseStack extends Stack {
     }
 
     // Shared environment for every Lambda that reaches the XML Gateway (the accounts and
-    // confirmation statement preview/submit/poll routes, plus the confirmation statement's filing
+    // confirmation statement render/submit/poll routes, plus the confirmation statement's filing
     // data lookup): the bundles table, activity bus and environment name every Companies House
     // Lambda carries, plus the XML Gateway URI, blank until B34.6b's sandbox proof lands (and, for
     // prod, until the ci-only gate lifts) - PopulatedMap rejects a blank value outright, so it is
@@ -1595,7 +1594,7 @@ public class CompaniesHouseStack extends Stack {
 
     // Every route that calls resolvePresenterCredentials() (accounts submit/poll, confirmation
     // statement filing data/submit/poll) calls grantCompaniesHousePresenterSecretsAccess: the two
-    // preview Lambdas render their form body and never reach the gateway, so neither must carry
+    // render Lambdas render their form body and never reach the gateway, so neither must carry
     // secretsmanager:GetSecretValue on either presenter secret.
     private static void grantCompaniesHousePresenterSecretsAccess(Function fn, CompaniesHouseStackProps props) {
         grantWildcardSecretAccess(fn, props.companiesHousePresenterIdArn());

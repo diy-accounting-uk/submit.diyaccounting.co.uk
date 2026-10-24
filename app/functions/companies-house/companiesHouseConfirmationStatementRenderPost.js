@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// app/functions/companies-house/companiesHouseConfirmationStatementPreviewPost.js
+// app/functions/companies-house/companiesHouseConfirmationStatementRenderPost.js
 // Renders the ConfirmationAndVerificationStatement body from the form's answers, so the page can
 // show it before anything reaches the Companies House XML Gateway. Never calls the gateway; the
 // directors' personal codes are masked in the rendered body before it leaves this Lambda, the same
-// way the company authentication code never reaches the accounts preview.
+// way the company authentication code never reaches the accounts render.
 
 import { createLogger } from "../../lib/logger.js";
 import { extractRequest, buildValidationError, http200OkResponse } from "../../lib/httpResponseHelper.js";
@@ -17,13 +17,13 @@ import { extractAndValidateConfirmationStatementParameters } from "./companiesHo
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
-const logger = createLogger({ source: "app/functions/companies-house/companiesHouseConfirmationStatementPreviewPost.js" });
+const logger = createLogger({ source: "app/functions/companies-house/companiesHouseConfirmationStatementRenderPost.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  registerLambdaRoute(app, "post", "/api/v1/companies-house/confirmation-statement/preview", ingestHandler);
-  registerLambdaRoute(app, "head", "/api/v1/companies-house/confirmation-statement/preview", ingestHandler);
+  registerLambdaRoute(app, "post", "/api/v1/companies-house/confirmation-statement/render", ingestHandler);
+  registerLambdaRoute(app, "head", "/api/v1/companies-house/confirmation-statement/render", ingestHandler);
 }
 /* v8 ignore stop */
 
@@ -85,8 +85,8 @@ export async function ingestHandler(event) {
   }
 
   await publishActivityEvent({
-    event: "companies-house-confirmation-statement-previewed",
-    summary: "Companies House confirmation statement previewed",
+    event: "companies-house-confirmation-statement-rendered",
+    summary: "Companies House confirmation statement rendered",
     userSub,
   });
 

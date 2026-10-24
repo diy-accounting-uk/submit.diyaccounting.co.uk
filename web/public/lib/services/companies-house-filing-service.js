@@ -201,8 +201,8 @@ export async function getTransaction(transactionId) {
  * @param {object} accounts
  * @returns {Promise<{ixbrl: string}>}
  */
-export async function previewMicroEntityAccounts(accounts) {
-  const response = await fetchWithIdToken("/api/v1/companies-house/accounts/preview", {
+export async function renderMicroEntityAccounts(accounts) {
+  const response = await fetchWithIdToken("/api/v1/companies-house/accounts/render", {
     method: "POST",
     headers: JSON_CONTENT_TYPE_HEADERS,
     body: JSON.stringify(accounts),
@@ -216,7 +216,7 @@ export async function previewMicroEntityAccounts(accounts) {
 
 /**
  * Generate the iXBRL and submit it through the Companies House XML Gateway.
- * @param {object} accounts - the same shape previewMicroEntityAccounts takes, plus companyAuthCode
+ * @param {object} accounts - the same shape renderMicroEntityAccounts takes, plus companyAuthCode
  * @param {object} [extraHeaders] - e.g. a developer-mode Gov-Test-Scenario override
  * @returns {Promise<{submissionNumber: string, gatewayTimestamp: string, pollInterval: number}>}
  */
@@ -264,7 +264,7 @@ if (typeof window !== "undefined") {
   window.putRegisteredEmailAddress = putRegisteredEmailAddress;
   window.closeCompaniesHouseTransaction = closeTransaction;
   window.getCompaniesHouseTransaction = getTransaction;
-  window.previewMicroEntityAccounts = previewMicroEntityAccounts;
+  window.renderMicroEntityAccounts = renderMicroEntityAccounts;
   window.submitMicroEntityAccounts = submitMicroEntityAccounts;
   window.pollMicroEntityAccounts = pollMicroEntityAccounts;
 }

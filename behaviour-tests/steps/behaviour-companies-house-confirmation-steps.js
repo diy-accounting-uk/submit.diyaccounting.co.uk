@@ -151,7 +151,7 @@ export async function acceptLawfulPurposeStatement(page, screenshotPath = defaul
   });
 }
 
-export async function previewConfirmationStatement(page, screenshotPath = defaultScreenshotPath) {
+export async function renderConfirmationStatement(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user previews the confirmation statement", async () => {
     await loggedClick(page, "#previewBtn", "Previewing the confirmation statement", { screenshotPath });
     await page.waitForLoadState("networkidle");

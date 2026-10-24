@@ -163,7 +163,7 @@ async function handleAccountsFormSubmit(event) {
   hideStatus();
   try {
     const accounts = buildAccountsPayload();
-    const preview = await window.previewMicroEntityAccounts(accounts);
+    const preview = await window.renderMicroEntityAccounts(accounts);
     document.getElementById("previewIxbrl").textContent = preview.ixbrl;
     document.getElementById("previewRendered").srcdoc = preview.ixbrl;
     showView("previewView");

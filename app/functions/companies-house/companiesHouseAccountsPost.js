@@ -76,7 +76,7 @@ export function buildAccountsIxbrl(accounts) {
   return accounts.regime === "small-company" ? buildSmallCompanyAccounts(accounts) : buildMicroEntityAccounts(accounts);
 }
 
-// Extracts and validates the accounts filing request. Shared with the preview Lambda, which
+// Extracts and validates the accounts filing request. Shared with the render Lambda, which
 // never needs the company authentication code because it never reaches the gateway.
 export function extractAndValidateAccountsParameters(event, errorMessages, { requireCompanyAuthCode = true, clientId } = {}) {
   const parsedBody = parseRequestBody(event) || {};

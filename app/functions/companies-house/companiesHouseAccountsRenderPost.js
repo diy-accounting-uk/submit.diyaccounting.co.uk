@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// app/functions/companies-house/companiesHouseAccountsPreviewPost.js
+// app/functions/companies-house/companiesHouseAccountsRenderPost.js
 // Renders the FRS 105 micro-entity iXBRL from the balance sheet the user entered, so the page can
 // show it before anything reaches the Companies House XML Gateway. Never calls the gateway and
 // never needs the company authentication code.
@@ -15,13 +15,13 @@ import { extractAndValidateAccountsParameters, buildAccountsIxbrl } from "./comp
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
-const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPreviewPost.js" });
+const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsRenderPost.js" });
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  registerLambdaRoute(app, "post", "/api/v1/companies-house/accounts/preview", ingestHandler);
-  registerLambdaRoute(app, "head", "/api/v1/companies-house/accounts/preview", ingestHandler);
+  registerLambdaRoute(app, "post", "/api/v1/companies-house/accounts/render", ingestHandler);
+  registerLambdaRoute(app, "head", "/api/v1/companies-house/accounts/render", ingestHandler);
 }
 /* v8 ignore stop */
 
@@ -63,8 +63,8 @@ export async function ingestHandler(event) {
   }
 
   await publishActivityEvent({
-    event: "companies-house-accounts-previewed",
-    summary: "Companies House micro-entity accounts previewed",
+    event: "companies-house-accounts-rendered",
+    summary: "Companies House micro-entity accounts rendered",
     userSub,
   });
 

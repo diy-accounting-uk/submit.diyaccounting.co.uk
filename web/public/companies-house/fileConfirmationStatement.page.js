@@ -529,7 +529,7 @@ async function handleReviewFormSubmit(event) {
   showLoading();
   hideStatus();
   try {
-    const preview = await window.previewConfirmationStatement(payload);
+    const preview = await window.renderConfirmationStatement(payload);
     document.getElementById("previewXml").textContent = preview.confirmationStatementXml;
 
     // filingData.paymentPeriodPaid only reflects Companies House's own PaymentPeriodsRequest

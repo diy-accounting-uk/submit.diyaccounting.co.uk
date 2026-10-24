@@ -33,7 +33,7 @@ import {
   tryPreviewWithBlankPersonalCodes,
   fillInDirectorPersonalCodes,
   acceptLawfulPurposeStatement,
-  previewConfirmationStatement,
+  renderConfirmationStatement,
   setGovTestScenario,
   submitConfirmationStatementFiling,
   verifyFilingAccepted,
@@ -150,7 +150,7 @@ test("Click through: file a confirmation statement end to end and see the filing
   }
   await fillInDirectorPersonalCodes(page, undefined, screenshotPath);
   await acceptLawfulPurposeStatement(page, screenshotPath);
-  await previewConfirmationStatement(page, screenshotPath);
+  await renderConfirmationStatement(page, screenshotPath);
   await submitConfirmationStatementFiling(page, screenshotPath);
   await verifyFilingAccepted(page, screenshotPath);
 
@@ -189,7 +189,7 @@ test("Click through: file a confirmation statement shows the reject reason Compa
   }
   await fillInDirectorPersonalCodes(page, undefined, screenshotPath);
   await acceptLawfulPurposeStatement(page, screenshotPath);
-  await previewConfirmationStatement(page, screenshotPath);
+  await renderConfirmationStatement(page, screenshotPath);
   await setGovTestScenario(page, "CS_SHAREHOLDERS_REQUIRED", screenshotPath);
   await submitConfirmationStatementFiling(page, screenshotPath);
   await verifyFilingRejected(page, "11686", screenshotPath);
@@ -260,7 +260,7 @@ test("Click through: file a confirmation statement pays the fee via checkout and
   await verifyReviewFormPopulated(page, screenshotPath);
   await fillInDirectorPersonalCodes(page, undefined, screenshotPath);
   await acceptLawfulPurposeStatement(page, screenshotPath);
-  await previewConfirmationStatement(page, screenshotPath);
+  await renderConfirmationStatement(page, screenshotPath);
 
   // Fee due, no charge paid yet: "Pay and submit" redirects to the simulator's auto-completing
   // checkout and back, landing on authView - the company authentication code is never carried
@@ -270,7 +270,7 @@ test("Click through: file a confirmation statement pays the fee via checkout and
   await verifyReviewFormPopulated(page, screenshotPath);
   await fillInDirectorPersonalCodes(page, undefined, screenshotPath);
   await acceptLawfulPurposeStatement(page, screenshotPath);
-  await previewConfirmationStatement(page, screenshotPath);
+  await renderConfirmationStatement(page, screenshotPath);
   await submitConfirmationStatementFiling(page, screenshotPath);
   await verifyFilingAccepted(page, screenshotPath);
 
