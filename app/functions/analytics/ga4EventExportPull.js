@@ -12,9 +12,9 @@
 // GA4's daily export table for a day usually lands within 24 hours of that day ending, so this
 // job targets D-2, not D-1: at 03:15 the D-1 table may not exist yet, and D-2 gives about 27
 // hours of margin. GA4's export also writes no table at all for a day with zero events, so a
-// missing target table is only treated as a lagging or broken export, worth the Telegram alarm,
-// when the dataset has no table for a later day either; otherwise the target day is written as
-// the zero-row day it was.
+// missing target table is only treated as a lagging export, worth the Telegram alarm, when the
+// dataset's newest table is the target day's own intraday table; otherwise the target day is
+// written as the zero-row day it was.
 
 import { gzipSync } from "zlib";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -94,21 +94,23 @@ export function toTableDateSuffix(dateStr) {
 }
 
 /**
- * Whether GA4's export has a daily or intraday table for any day after `tableDateSuffix`. GA4's
- * export writes no `events_YYYYMMDD` table at all for a day with zero events, so a later table's
- * existence is what tells a missing target table apart from an export that is simply lagging.
+ * Whether the export is lagging for `tableDateSuffix`: true only when the dataset's newest daily
+ * or intraday table is the target day's own intraday table, so the day's data is arriving and its
+ * daily table has not landed yet. GA4's export writes no `events_YYYYMMDD` table for a day with
+ * zero events, so a dataset whose newest table is older than the day is a quiet export (a
+ * property with no traffic), and a dataset with a later table skipped the day because it had no
+ * events.
  *
  * @param {BigQuery} bigQuery
  * @param {string} datasetId
  * @param {string} tableDateSuffix - "YYYYMMDD"
  * @returns {Promise<boolean>}
  */
-async function hasLaterExportTable(bigQuery, datasetId, tableDateSuffix) {
+async function isExportLaggingForDay(bigQuery, datasetId, tableDateSuffix) {
   const [tables] = await bigQuery.dataset(datasetId).getTables();
-  return tables.some((table) => {
-    const match = EXPORT_TABLE_ID_PATTERN.exec(table.id);
-    return match !== null && match[1] > tableDateSuffix;
-  });
+  const suffixes = tables.map((table) => EXPORT_TABLE_ID_PATTERN.exec(table.id)?.[1]).filter((suffix) => suffix !== undefined);
+  const newest = suffixes.reduce((max, suffix) => (suffix > max ? suffix : max), "");
+  return newest === tableDateSuffix;
 }
 
 function isDatasetNotFound(error) {
@@ -215,23 +217,26 @@ export async function handler(event = {}) {
   const tableName = `events_${tableDateSuffix}`;
   const [tableExists] = await bigQuery.dataset(datasetId).table(tableName).exists();
   if (!tableExists) {
-    let datasetMissing = false;
-    let laterTableExists = false;
+    let exportLagging = false;
     try {
-      laterTableExists = await hasLaterExportTable(bigQuery, datasetId, tableDateSuffix);
+      exportLagging = await isExportLaggingForDay(bigQuery, datasetId, tableDateSuffix);
     } catch (error) {
       if (!isDatasetNotFound(error)) throw error;
-      datasetMissing = true;
       logger.warn({
         message: "GA4 BigQuery export dataset does not exist yet; writing a zero-row day",
         dataset: `${projectId}.${datasetId}`,
         date: targetDate,
       });
     }
-    if (!datasetMissing && !laterTableExists) {
+    if (exportLagging) {
       throw new Error(`GA4 BigQuery export table ${projectId}.${datasetId}.${tableName} does not exist for ${targetDate}`);
     }
 
+    logger.warn({
+      message: "GA4 BigQuery export has no table for the day and none for it is arriving; writing a zero-row day",
+      table: `${projectId}.${datasetId}.${tableName}`,
+      date: targetDate,
+    });
     const s3Client = getS3Client();
     const key = await putEventsObject(s3Client, bucket, targetDate, []);
     logger.info({ message: "GA4 BigQuery event export pull found no events for the day", date: targetDate, key });
