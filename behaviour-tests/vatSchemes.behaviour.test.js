@@ -18,6 +18,7 @@ import {
   runLocalOAuth2Server,
   runLocalDynamoDb,
   saveHmrcTestUserToFiles,
+  takeScreenshot,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn, goToHomePageUsingMainNav } from "./steps/behaviour-steps.js";
 import {
@@ -388,7 +389,7 @@ test.describe("VAT Exemption Not Applicable", () => {
     console.log("[VAT Exemption Test] App is designed for VAT-registered businesses");
     console.log("[VAT Exemption Test] VAT exempt businesses do not file VAT returns");
 
-    await page.screenshot({ path: `${screenshotPath}/vat-exemption-not-applicable.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/vat-exemption-not-applicable.png`, readerView: true });
 
     // This test passes by documenting the expected behavior
     expect(true).toBe(true);

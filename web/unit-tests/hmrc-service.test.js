@@ -160,6 +160,18 @@ describe("hmrc-service submitVat error handling", () => {
 
     await expect(submitVat("111222333", vatData, "test-token")).rejects.toThrow(/Failed to submit VAT/);
   });
+
+  test("reads the failure to the customer without the raw response body", async () => {
+    authorizedFetch.mockResolvedValueOnce({
+      ok: false,
+      status: 500,
+      statusText: "Internal Server Error",
+      json: () => Promise.resolve({ message: "An unexpected error occurred", hmrcResponse: { code: "X" } }),
+    });
+
+    const error = await submitVat("111222333", vatData, "test-token").catch((caught) => caught);
+    expect(error.message).toBe("Failed to submit VAT (HTTP 500). An unexpected error occurred");
+  });
 });
 
 describe("hmrc-service getBusinessDetails", () => {

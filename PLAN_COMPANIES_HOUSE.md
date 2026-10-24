@@ -738,7 +738,7 @@ regression proof.
 
 | # | Question | Answer from | Blocks |
 |---|---|---|---|
-| 13 | Box 705: the guide says it holds "total main pool allowances, including any Annual Investment Allowance" (read 2026-10-23); `ct600Xml.js` puts the AIA in 690 and leaves it out of 705, and TPVS accepted that. Which is right? | the CT600 (2026) form notes and the CT online validation rules v1.17a; a TPVS run each way | CT3a |
+| 13 | Box 705: the guide says "Enter the total allowances including any Annual Investment Allowance claimed, in respect of the main pool in box 705" and, for box 690, "Enter the amount of Annual Investment Allowance included in the calculation of trading profits or losses" (https://www.gov.uk/guidance/the-company-tax-return-guide, read 2026-10-24). Answered: 705 includes the AIA. `ct600Figures.js` files 705 as AIA plus main pool allowances; TPVS accepts it | the CT600 guide | settled in CT3a |
 | 14 | The CT600 for a micro-entity: is an FRS 105 document with a P&L the attachment HMRC wants, or FRS 102 1A? DIY Accounting Limited files FRS 105 accounts | HMRC's "Taxonomies accepted by HMRC"; TPVS | CT3d |
 
 **Rejected options.**

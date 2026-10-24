@@ -47,9 +47,9 @@ tools are not registered.
 | `list_vat_obligations` | VAT obligations for `vrn` (or `clientId`), filtered by `from`, `to`, `status`. Needs `hmrcAccessToken`; optional `hmrcAccount`, `govTestScenario`. |
 | `submit_vat_return` | Files the seven confirmed boxes (`vatDueSales`, `vatDueAcquisitions`, `vatReclaimedCurrPeriod`, `totalValueSalesExVAT`, `totalValuePurchasesExVAT`, `totalValueGoodsSuppliedExVAT`, `totalAcquisitionsExVAT`) for `periodStart` to `periodEnd`, for `vatNumber` or `clientId`. Needs `hmrcAccessToken`. Answers `receipt`, `periodKey`, `receiptId`. |
 | `get_vat_receipt` | A stored receipt by `name` (`<receiptId>.json`); optional `clientId`. |
-| `preview_micro_entity_accounts` | The rendered micro-entity iXBRL for confirmed figures, without reaching the Companies House gateway. Inputs: `companyNumber`, `companyName`, `periodStart`, `periodEnd`, `balanceSheet`, `averageEmployees`, `director`, `statementsAccepted`. |
-| `submit_micro_entity_accounts` | Files the same figures with `companyAuthCode`; answers `submissionNumber`. |
-| `poll_accounts_submission` | The filing's outcome for a `submissionNumber`: `PENDING`, `ACCEPT` (with `receiptId`) or `REJECT` (with `rejections`). |
+| `render_micro_entity_accounts_sandbox` | The rendered micro-entity iXBRL for confirmed figures, without reaching the Companies House gateway. Inputs: `companyNumber`, `companyName`, `periodStart`, `periodEnd`, `balanceSheet`, `averageEmployees`, `director`, `statementsAccepted`. |
+| `submit_micro_entity_accounts_sandbox` | Files the same figures with `companyAuthCode`; answers `submissionNumber`. |
+| `poll_accounts_submission_sandbox` | The filing's outcome for a `submissionNumber`: `PENDING`, `ACCEPT` (with `receiptId`) or `REJECT` (with `rejections`). |
 
 The filing tools call the deployed REST API at `DIYA_SUBMIT_BASE_URL` with the MCP's own sign-in bearer (`sign_in`), and poll a 202 answer to its terminal status. They validate required inputs before any request.
 

@@ -21,7 +21,7 @@ const HANDLERS = {
   list_vat_obligations: listVatObligations,
   submit_vat_return: submitVatReturn,
   get_vat_receipt: getVatReceipt,
-  submit_micro_entity_accounts: submitMicroEntityAccounts,
+  submit_micro_entity_accounts_sandbox: submitMicroEntityAccounts,
   open_book: openBook,
   save_book: saveBook,
 };

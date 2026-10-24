@@ -61,7 +61,7 @@ export function resolveConfirmationStatementCompanyAuthCode(envFilePath) {
 }
 
 export async function goToFileConfirmationStatement(page, screenshotPath = defaultScreenshotPath) {
-  const activityButtonText = "File Confirmation Statement (Companies House)";
+  const activityButtonText = "File Confirmation Statement (Companies House, sandbox)";
   await test.step(`The user navigates to ${activityButtonText} and sees the company lookup form`, async () => {
     await page.waitForTimeout(500);
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting File Confirmation Statement", {

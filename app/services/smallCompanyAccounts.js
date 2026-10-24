@@ -13,6 +13,7 @@ import { calculatedResultsFor } from "@diy-accounting-uk/diya-gl/dist/app/bin/ex
 import { diyaGlToScenario } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
 import { loadTaxDataForBook, productOf } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import { FIXED_ASSET_CLASSES } from "./smallCompanyAccountsIxbrl.js";
+import { smallCompanyProfitAndLossFromPublishedAccount } from "./ct600Figures.js";
 
 const BALANCE_TOLERANCE = 0.005;
 
@@ -155,38 +156,6 @@ export function roundSmallCompanyBalanceSheet(lines) {
 }
 
 /**
- * The full profit and loss account for the financial year, in whole pounds, from the engine's
- * published account. Turnover, cost of sales, administrative expenses, profit before tax and tax
- * are rounded; gross profit, operating profit and the interest line are derived from them so every
- * subtotal holds exactly.
- * @param {Object} sheet - results["PubP&L"]
- */
-export function smallCompanyProfitAndLossFromPublishedAccount(sheet) {
-  if (!sheet)
-    throw new Error(
-      "The book's product carries no published profit and loss account; only a Company (ltd) book answers small company accounts",
-    );
-  const turnover = Math.round(sheet.F9 ?? 0);
-  const costOfSales = Math.round(sheet.F16 ?? 0);
-  const administrativeExpenses = Math.round(sheet.F44 ?? 0);
-  const profitBeforeTax = Math.round(sheet.F49 ?? 0);
-  const tax = Math.round(sheet.F50 ?? 0);
-  const grossProfit = turnover - costOfSales;
-  const operatingProfit = grossProfit - administrativeExpenses;
-  return {
-    turnover,
-    costOfSales,
-    grossProfit,
-    administrativeExpenses,
-    operatingProfit,
-    interestReceivable: profitBeforeTax - operatingProfit,
-    profitBeforeTax,
-    tax,
-    profit: profitBeforeTax - tax,
-  };
-}
-
-/**
  * The tangible fixed asset note, per asset class that holds anything, from the engine's published
  * notes, in whole pounds with each class's closing net book value rounded from its own movements.
  * @param {Object} sheet - results.PubNotes
@@ -206,8 +175,10 @@ export function fixedAssetNoteFromPublishedNotes(sheet) {
  * derive_small_company_accounts: the figures a small company accounts filing takes, from the
  * session's loaded book.
  * @param {Object} session
+ * @param {Object} [options]
+ * @param {Object} [options.priorYearProfitAndLoss] - the prior year's profit and loss lines, whole pounds, when the company has them; the book publishes none
  */
-export async function deriveSmallCompanyAccounts(session) {
+export async function deriveSmallCompanyAccounts(session, { priorYearProfitAndLoss } = {}) {
   if (!session.book || !session.lines) throw new Error("No book is loaded. Call open_book first.");
   const { book, lines } = session;
   const info = book.documentInfo ?? {};
@@ -232,7 +203,9 @@ export async function deriveSmallCompanyAccounts(session) {
     "Whole pounds: capital and reserves is derived from the rounded sub-lines, and the profit and loss account is the remainder after share capital.",
     "The interest line is profit before tax less operating profit, so every profit and loss subtotal holds after rounding.",
     "The average number of employees is the count of the book's employees table; confirm it before filing.",
-    "The book publishes no prior-year profit and loss account: supply the comparatives when the company has them, or leave them out.",
+    priorYearProfitAndLoss
+      ? "The prior year's profit and loss account is the one supplied with the request; the book publishes none."
+      : "The book publishes no prior-year profit and loss account: supply the comparatives when the company has them, or leave them out.",
     "The principal activity and the accounting policies text are typed on the page; the book holds neither.",
   ];
   if (capitalReserve)
@@ -249,7 +222,7 @@ export async function deriveSmallCompanyAccounts(session) {
     averageNumberOfEmployees: (book.employees ?? []).length,
     directors: (book.directors ?? []).map((director) => director.name).filter(Boolean),
     directorName: book.directors?.[0]?.name ?? null,
-    profitAndLoss: { currentYear: profitAndLoss },
+    profitAndLoss: { currentYear: profitAndLoss, ...(priorYearProfitAndLoss ? { priorYear: priorYearProfitAndLoss } : {}) },
     balanceSheet: { currentYear, priorYear },
     fixedAssetNote,
     derivation: {

@@ -287,7 +287,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": true,
-      "note": "The test service accepts the accounts submission at submit and answers every GetSubmissionStatus poll with PENDING for the runner's full ten-minute wall clock (harness runs 38023791050 and 38025557309 under the replacement test presenter), unlike the statement cases, which settle on their first poll. A later poll of the submission number through the ci API is the follow-up; a terminal StatusCode there is pinned here when it appears."
+      "note": "The test service accepts the accounts submission at submit and answers every GetSubmissionStatus poll with PENDING for the runner's full ten-minute wall clock (harness runs 38023791050 and 38025557309 under the replacement test presenter), unlike the statement cases, which settle on their first poll. A later poll of the submission number through the ci API is the follow-up; a terminal StatusCode there is pinned here when it appears. Submission 00004K filed in run 40054805187 (2026-10-24, after the printed-layout fixes): POLL_TIMEOUT, every poll PENDING."
     }
   },
   {
@@ -332,11 +332,129 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": true,
-      "note": "The test service answers every accounts poll with PENDING, as the micro-entity-accounts case does. The dormant document carries the section 480 statement, the trading-status member and the share note."
+      "note": "The test service answers every accounts poll with PENDING, as the micro-entity-accounts case does. The dormant document carries the section 480 statement, the trading-status member and the share note. Submission 00004L filed in run 40054815287 (2026-10-24, after the printed-layout fixes): POLL_TIMEOUT, every poll PENDING."
     },
     "dormant": true,
     "dormantTradingStatus": "neverTraded",
     "shareClass": "ordinaryShares",
     "nominalValue": 1
+  },
+  {
+    "name": "small-company-accounts-full",
+    "type": "accounts",
+    "companyNumber": "03176906",
+    "companyName": "MILLENNIUM STADIUM PLC",
+    "companyAuthCode": "AUTH11",
+    "periodStart": "2025-01-01",
+    "periodEnd": "2025-12-31",
+    "averageEmployees": 4,
+    "director": {
+      "name": "Maldwyn Beynon",
+      "dateApproved": "2026-01-15"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "smallCompaniesRegime": true
+    },
+    "smallCompany": {
+      "filleted": false,
+      "principalActivity": "Stadium operation and events",
+      "accountingPolicies": "Historical cost convention.",
+      "directors": ["Maldwyn Beynon"],
+      "balanceSheet": {
+        "currentYear": {
+          "fixedAssets": 1000,
+          "stocks": 500,
+          "debtors": 2500,
+          "cashAtBank": 2000,
+          "tradeCreditors": 1000,
+          "corporationTax": 700,
+          "otherCreditors": 300,
+          "creditorsAfterOneYear": 0,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 3900,
+          "capitalAndReserves": 4000
+        }
+      },
+      "profitAndLoss": {
+        "currentYear": {
+          "turnover": 20000,
+          "costOfSales": 5000,
+          "grossProfit": 15000,
+          "administrativeExpenses": 12000,
+          "operatingProfit": 3000,
+          "interestReceivable": 0,
+          "profitBeforeTax": 3000,
+          "tax": 600,
+          "profit": 2400
+        }
+      }
+    },
+    "expectedOutcome": {
+      "status": "POLL_TIMEOUT",
+      "pinned": false,
+      "note": "Full FRS 102 section 1A accounts with profit and loss account. Awaits the merge of its branch and the next dispatch of this case on main; no submission number yet."
+    }
+  },
+  {
+    "name": "small-company-accounts-filleted",
+    "type": "accounts",
+    "companyNumber": "03176906",
+    "companyName": "MILLENNIUM STADIUM PLC",
+    "companyAuthCode": "AUTH11",
+    "periodStart": "2025-01-01",
+    "periodEnd": "2025-12-31",
+    "averageEmployees": 4,
+    "director": {
+      "name": "Maldwyn Beynon",
+      "dateApproved": "2026-01-15"
+    },
+    "statementsAccepted": {
+      "section477Exemption": true,
+      "membersNotRequiredAudit": true,
+      "directorsResponsibilities": true,
+      "smallCompaniesRegime": true
+    },
+    "smallCompany": {
+      "filleted": true,
+      "principalActivity": "Stadium operation and events",
+      "accountingPolicies": "Historical cost convention.",
+      "directors": ["Maldwyn Beynon"],
+      "balanceSheet": {
+        "currentYear": {
+          "fixedAssets": 1000,
+          "stocks": 500,
+          "debtors": 2500,
+          "cashAtBank": 2000,
+          "tradeCreditors": 1000,
+          "corporationTax": 700,
+          "otherCreditors": 300,
+          "creditorsAfterOneYear": 0,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 3900,
+          "capitalAndReserves": 4000
+        }
+      },
+      "profitAndLoss": {
+        "currentYear": {
+          "turnover": 20000,
+          "costOfSales": 5000,
+          "grossProfit": 15000,
+          "administrativeExpenses": 12000,
+          "operatingProfit": 3000,
+          "interestReceivable": 0,
+          "profitBeforeTax": 3000,
+          "tax": 600,
+          "profit": 2400
+        }
+      }
+    },
+    "expectedOutcome": {
+      "status": "POLL_TIMEOUT",
+      "pinned": false,
+      "note": "Filleted FRS 102 section 1A accounts (section 444(5A), no profit and loss account). Awaits the merge of its branch and the next dispatch of this case on main; no submission number yet."
+    }
   }
 ]

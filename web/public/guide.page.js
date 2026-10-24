@@ -172,8 +172,6 @@ function frameStep(scene) {
   image.src = scene.thumb;
   image.alt = `${scene.headline}: ${scene.caption}`;
   image.loading = "lazy";
-  image.width = 480;
-  image.height = 270;
   open.append(image);
   item.append(open, el("p", "guide-caption", scene.caption));
   return item;
@@ -226,21 +224,41 @@ function openFromHash() {
 function setUpLightbox(container) {
   const lightbox = document.getElementById("lightbox");
   const lightboxImg = document.getElementById("lightbox-image");
+  const closeControl = lightbox.querySelector(".lightbox-close");
+  let opener = null;
+  lightbox.setAttribute("role", "dialog");
+  lightbox.setAttribute("aria-modal", "true");
+  lightbox.setAttribute("aria-label", "Full size screenshot");
+  closeControl.setAttribute("role", "button");
+  closeControl.setAttribute("aria-label", "Close full size screenshot");
+  closeControl.tabIndex = 0;
   const close = () => {
     lightbox.classList.remove("active");
     document.body.style.overflow = "";
+    if (opener) opener.focus();
+    opener = null;
   };
   container.addEventListener("click", (event) => {
     const thumb = event.target.closest(".guide-thumb");
     if (!thumb) return;
+    opener = thumb;
     lightboxImg.src = thumb.dataset.full;
     lightboxImg.alt = thumb.querySelector("img").alt;
     lightbox.classList.add("active");
     document.body.style.overflow = "hidden";
+    closeControl.focus();
   });
   lightbox.addEventListener("click", close);
   document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape" && lightbox.classList.contains("active")) close();
+    if (!lightbox.classList.contains("active")) return;
+    if (event.key === "Escape") close();
+    else if (event.key === "Tab") {
+      event.preventDefault();
+      closeControl.focus();
+    } else if ((event.key === "Enter" || event.key === " ") && document.activeElement === closeControl) {
+      event.preventDefault();
+      close();
+    }
   });
 }
 
@@ -253,6 +271,7 @@ async function init() {
     const manifest = await response.json();
     render(container, manifest.videos);
     openFromHash();
+    window.addEventListener("hashchange", openFromHash);
   } catch (error) {
     container.append(el("p", "", "The guide could not load its steps. Reload the page to try again."));
     console.error("guide: could not load", MANIFEST_URL, error);

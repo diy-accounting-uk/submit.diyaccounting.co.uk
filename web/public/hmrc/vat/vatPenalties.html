@@ -29,6 +29,7 @@
     </header>
 
     <main id="mainContent">
+      <p class="hint" data-feature-status="production"><strong>Status: production.</strong> This reads your real records at HMRC.</p>
       <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
@@ -73,7 +74,7 @@
               </div>
               <label for="testScenario">Test scenario (Developer/Synthetic only)</label>
               <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios</p>
-              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+              <select id="testScenario" style="width: 100%" name="testScenario" aria-describedby="testScenario-hint">
                 <option value="">Default (No penalties)</option>
                 <option value="DEFAULT">HMRC Default (Multiple penalties)</option>
                 <option value="NO_PENALTIES">No Penalties</option>

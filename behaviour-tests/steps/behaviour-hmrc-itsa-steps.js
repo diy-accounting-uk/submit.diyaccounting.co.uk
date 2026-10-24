@@ -18,7 +18,7 @@ import { waitForSuccessOrError } from "../helpers/waitForSuccessOrError.js";
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-hmrc-itsa-steps";
 
 export async function initItsaBusinessDetails(page, screenshotPath = defaultScreenshotPath) {
-  const activityButtonText = "Self Assessment (HMRC)";
+  const activityButtonText = "Self Assessment (HMRC, sandbox)";
   await test.step(`The user navigates to ${activityButtonText} and sees the business details form`, async () => {
     await page.waitForTimeout(500);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-business-details.png` });
@@ -177,7 +177,7 @@ export async function verifyItsaBusinessDetailsResults(page, businessDetailsQuer
   });
 }
 
-// Obligations does not have its own home-page activity button - the "Self Assessment (HMRC)"
+// Obligations does not have its own home-page activity button - the "Self Assessment (HMRC, sandbox)"
 // button opens the ITSA dashboard, which links to this page. This step navigates directly,
 // the way behaviour-bundle-steps.js does for usage.html.
 export async function initItsaObligations(page, screenshotPath = defaultScreenshotPath) {

@@ -18,6 +18,7 @@ import {
   runLocalOAuth2Server,
   runLocalDynamoDb,
   saveHmrcTestUserToFiles,
+  takeScreenshot,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
 import { clickLogIn, loginWithCognitoOrMockAuth, verifyLoggedInStatus } from "./steps/behaviour-login-steps.js";
@@ -136,7 +137,7 @@ test.describe("9-Box VAT Validation Error Tests", () => {
       expect(roundedValue).toBe(5001);
     }
 
-    await page.screenshot({ path: `${screenshotPath}/validation-box6-decimal.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/validation-box6-decimal.png`, readerView: true });
   });
 
   test("INVALID_NET_VAT_DUE: Box 5 cannot be negative", async ({ page }, testInfo) => {
@@ -169,7 +170,7 @@ test.describe("9-Box VAT Validation Error Tests", () => {
     expect(parseFloat(box5Value)).toBeGreaterThanOrEqual(0);
     console.log(`Box 5 calculated as: ${box5Value} (should be non-negative)`);
 
-    await page.screenshot({ path: `${screenshotPath}/validation-box5-nonnegative.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/validation-box5-nonnegative.png`, readerView: true });
   });
 
   test("INVALID_TOTAL_VAT_DUE: Box 3 must equal Box 1 + Box 2", async ({ page }, testInfo) => {
@@ -198,6 +199,6 @@ test.describe("9-Box VAT Validation Error Tests", () => {
     expect(isReadOnly).not.toBeNull();
     console.log("Box 3 is read-only - user cannot enter incorrect calculation");
 
-    await page.screenshot({ path: `${screenshotPath}/validation-box3-calculation.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/validation-box3-calculation.png`, readerView: true });
   });
 });

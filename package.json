@@ -46,6 +46,7 @@
     "update:java": "./scripts/update-java.sh",
     "bundle": "node scripts/bundle-for-tests.js",
     "bundle:books": "node scripts/build-books-bundle.mjs",
+    "generate:submission-record": "node scripts/generate-submission-record.mjs",
     "build:mtd-calendar": "node scripts/build-mtd-calendar.mjs",
     "build:rates-page": "node scripts/build-rates-page.mjs",
     "verify:tax-sources": "node scripts/verify-tax-sources.mjs",

@@ -167,7 +167,7 @@
           "action": "click",
           "target": {
             "role": "button",
-            "name": "Self Assessment (HMRC)"
+            "name": "Self Assessment (HMRC, sandbox)"
           },
           "expectsNavigation": true,
           "caption": "Making Tax Digital for Income Tax starts from one dashboard.",

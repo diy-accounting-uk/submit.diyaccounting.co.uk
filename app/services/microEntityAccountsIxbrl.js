@@ -24,12 +24,12 @@ import {
   buildDimensionedContext,
   balanceSheetFacts,
   balanceSheetRows,
-  statementTable,
   pageHeading,
   coverPage,
   approvalHtml,
   renderAccountsDocument,
 } from "./accountsIxbrlCommon.js";
+import { recordTable } from "../lib/submissionRecord.js";
 
 const MANDATORY_CONCEPT_KEYS = [
   "companiesHouseRegisteredNumber",
@@ -220,7 +220,7 @@ export function buildMicroEntityAccounts(input) {
     periodEnd: input.periodEnd,
   })}
 <div class="page">
-${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${statementTable({
+${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${recordTable({
     columns,
     notes: Boolean(shareCapitalNote),
     rows: balanceSheetRows({ years, notes: { calledUpShareCapital: shareCapitalNote } }),

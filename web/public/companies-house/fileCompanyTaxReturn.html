@@ -29,6 +29,10 @@
     </header>
 
     <main id="mainContent">
+      <p class="hint" data-feature-status="preview">
+        <strong>Status: preview.</strong> This runs on our simulator and HMRC's TPVS only. We await HMRC's test-service credentials. Nothing
+        you send reaches HMRC.
+      </p>
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
@@ -86,8 +90,8 @@
           <div class="form-group">
             <label for="bookExportFile">Book export file (JSON)</label>
             <p id="bookExport-hint" class="hint">
-              The export of the company's diya-gl book: the CT600 boxes, the computation lines and the accounts figures. Choose the file, or
-              paste its contents in the box below.
+              The export of the company's diya-gl book: the figures the CT600 boxes, the computation lines and the accounts are worked from.
+              Choose the file, or paste its contents in the box below.
             </p>
             <input type="file" id="bookExportFile" name="bookExportFile" accept=".json,application/json" />
           </div>

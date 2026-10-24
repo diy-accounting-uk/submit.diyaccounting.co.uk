@@ -8,13 +8,17 @@ import { pathToFileURL } from "node:url";
 const bundleUrl = pathToFileURL(path.join(process.cwd(), "web/public/lib/books-bundle.js")).href;
 
 describe("books-bundle.js", () => {
-  it("exposes the book reader and the three filing derivations", async () => {
+  it("exposes the book reader, the three filing derivations and the CT600 figures model", async () => {
     const bundle = await import(bundleUrl);
     expect(Object.keys(bundle).sort()).toEqual([
+      "ct600FiguresFromBook",
+      "deriveCt600FromFigures",
       "deriveItsaAnnualSubmission",
       "deriveItsaQuarterlyUpdate",
       "deriveVatReturn",
+      "ltdTaxData",
       "readBookSource",
+      "validateCt600Figures",
     ]);
     for (const name of Object.keys(bundle)) {
       expect(typeof bundle[name]).toBe("function");

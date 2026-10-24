@@ -154,10 +154,38 @@ describe("ga4EventExportPull", () => {
       expect(mockCreateQueryJob).not.toHaveBeenCalled();
     });
 
-    test("a missing table throws, and no object is written", async () => {
+    test("a missing table in a dataset whose newest table is older than the day writes a zero-row day", async () => {
       mockTableExists.mockResolvedValue([false]);
+      mockGetTables.mockResolvedValue([[{ id: "events_20260810" }, { id: "events_20260815" }, { id: "events_intraday_20260816" }]]);
 
-      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/does not exist/);
+      const result = await handler({ date: "2026-08-20" });
+
+      expect(result).toEqual({
+        date: "2026-08-20",
+        key: "curated/ga4_bq/events/dt=2026-08-20/events.json.gz",
+        count: 0,
+      });
+      expect(mockCreateQueryJob).not.toHaveBeenCalled();
+      expect(gunzipSync(mockS3Send.mock.calls[0][0].input.Body).toString("utf8")).toBe("");
+    });
+
+    test("a missing table in an empty dataset writes a zero-row day", async () => {
+      mockTableExists.mockResolvedValue([false]);
+      mockGetTables.mockResolvedValue([[]]);
+
+      const result = await handler({ date: "2026-08-20" });
+
+      expect(result.count).toBe(0);
+      expect(mockS3Send).toHaveBeenCalledTimes(1);
+    });
+
+    test("a missing daily table with the day's own intraday table present throws, and no object is written", async () => {
+      mockTableExists.mockResolvedValue([false]);
+      mockGetTables.mockResolvedValue([[{ id: "events_20260819" }, { id: "events_intraday_20260820" }]]);
+
+      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(
+        /GA4 BigQuery export table .*\.events_20260820 does not exist for 2026-08-20/,
+      );
       expect(mockCreateQueryJob).not.toHaveBeenCalled();
       expect(mockS3Send).not.toHaveBeenCalled();
     });
@@ -177,15 +205,6 @@ describe("ga4EventExportPull", () => {
       expect(mockS3Send).toHaveBeenCalledTimes(1);
       const body = gunzipSync(mockS3Send.mock.calls[0][0].input.Body).toString("utf8");
       expect(body).toBe("");
-    });
-
-    test("a missing table with only earlier or equal export tables present still throws", async () => {
-      mockTableExists.mockResolvedValue([false]);
-      mockGetTables.mockResolvedValue([[{ id: "events_20260819" }, { id: "events_intraday_20260820" }]]);
-
-      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/does not exist/);
-      expect(mockCreateQueryJob).not.toHaveBeenCalled();
-      expect(mockS3Send).not.toHaveBeenCalled();
     });
 
     test("a missing dataset writes a zero-row day", async () => {

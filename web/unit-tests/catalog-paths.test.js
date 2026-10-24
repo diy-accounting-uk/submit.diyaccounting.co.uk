@@ -41,3 +41,16 @@ describe("catalogue paths", () => {
     expect(activity.paths).toContain("companies-house/fileCompanyTaxReturn.html");
   });
 });
+
+describe("catalogue activity status names", () => {
+  it("every activity without prod in its environments names its status, sandbox or preview", () => {
+    const tomlText = fs.readFileSync(path.join(process.cwd(), "web/public/submit.catalogue.toml"), "utf-8");
+    const activities = TOML.parse(tomlText).activities;
+    const unnamed = activities
+      .filter((activity) => Array.isArray(activity.environments) && !activity.environments.includes("prod"))
+      .filter((activity) => !/\b(sandbox|preview)\b/i.test(activity.name))
+      .map((activity) => `${activity.id}: ${activity.name}`);
+
+    expect(unnamed).toEqual([]);
+  });
+});

@@ -19,6 +19,7 @@ export async function goToReceiptsPageUsingMainNav(page, screenshotPath = defaul
     await page.waitForTimeout(500);
     await takeScreenshot(page, {
       path: `${screenshotPath}/${timestamp()}-03-receipts-page.png`,
+      readerView: true,
     });
   });
 }
@@ -27,7 +28,7 @@ export async function verifyAtLeastOneClickableReceipt(page, screenshotPath = de
   await test.step("The user reviews the receipts list and opens the first receipt when available", async () => {
     // Check if we have receipts in the table
     console.log("Checking receipts page...");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-receipts-page.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-receipts-page.png`, readerView: true });
     const receiptsTable = page.locator("#receiptsTable");
     await expect(receiptsTable).toBeVisible({ timeout: 10000 });
 
@@ -44,6 +45,7 @@ export async function verifyAtLeastOneClickableReceipt(page, screenshotPath = de
       await page.waitForTimeout(500);
       await takeScreenshot(page, {
         path: `${screenshotPath}/${timestamp()}-04-receipt-detail.png`,
+        readerView: true,
       });
     } else {
       console.log("No receipts found in table");

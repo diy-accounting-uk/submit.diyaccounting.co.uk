@@ -74,6 +74,15 @@ test.describe("Receipts page - receipt details", () => {
     expectCleanFigures(expect, names);
   });
 
+  test("shows the processing date as a date and time, not the stored timestamp", async ({ page }) => {
+    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
+
+    const processingDate = page.locator('#receiptContent [data-hmrc-field="processingDate"] td');
+    await expect(processingDate).toContainText("30 September 2026");
+    await expect(processingDate).not.toContainText("T10:15");
+    await expect(processingDate).not.toContainText("Z");
+  });
+
   test("shows an ITSA receipt with nested values as Parent: field rows", async ({ page }) => {
     await showReceipt(page, "2026-10-01T09:00:00.000Z-2026-27-Q1", ITSA_RECEIPT);
 

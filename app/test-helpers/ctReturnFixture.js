@@ -3,7 +3,7 @@
 
 // app/test-helpers/ctReturnFixture.js
 // Builds a Company Tax Return request body from a diya-gl Company book fixture: the accounts
-// figures, the CT600 boxes and the computation lines a book export supplies, plus the facts the
+// figures, the CT600 figures a book export supplies, plus the facts the
 // page asks the user to type.
 
 import { loadDiyaGlData } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
@@ -14,7 +14,7 @@ export const FIXTURE_BOOK_DIRECTORY = "fixtures/diya-gl/precision-code-ltd";
 export const FIXTURE_UTR = "8596148860";
 
 /**
- * The figures a book export supplies: the accounts, the CT600 boxes and the computation lines.
+ * The figures a book export supplies: the accounts and the CT600 figures.
  * @param {object} [options]
  * @param {string} [options.bookDirectory]
  * @returns {Promise<object>}
@@ -24,7 +24,7 @@ export async function buildCtReturnExportFromBook({ bookDirectory = FIXTURE_BOOK
   const session = { book, lines };
   const accounts = await deriveSmallCompanyAccounts(session);
   const directorName = accounts.directorName || "A Director";
-  const { boxes, computationLines, periodStart, periodEnd } = await deriveCompanyTaxReturn(session, {
+  const { figures, periodEnd } = await deriveCompanyTaxReturn(session, {
     companyName: accounts.companyName,
     companyNumber: accounts.companyNumber,
     utr: FIXTURE_UTR,
@@ -49,8 +49,7 @@ export async function buildCtReturnExportFromBook({ bookDirectory = FIXTURE_BOOK
       profitAndLoss: { currentYear: accounts.profitAndLoss.currentYear },
       fixedAssetNote: accounts.fixedAssetNote,
     },
-    boxes: { ...boxes, 30: periodStart, 35: periodEnd },
-    computationLines,
+    figures,
   };
 }
 

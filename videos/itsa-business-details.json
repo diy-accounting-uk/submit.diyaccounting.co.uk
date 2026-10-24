@@ -112,7 +112,7 @@
         },
         {
           "action": "await",
-          "until": "button:has-text('Self Assessment (HMRC)')",
+          "until": "button:has-text('Self Assessment (HMRC, sandbox)')",
           "label": "Waiting for the subscription to unlock the activity"
         },
         {
@@ -145,7 +145,7 @@
           "action": "click",
           "target": {
             "role": "button",
-            "name": "Self Assessment (HMRC)"
+            "name": "Self Assessment (HMRC, sandbox)"
           },
           "expectsNavigation": true,
           "caption": "Making Tax Digital for Income Tax starts from one dashboard.",

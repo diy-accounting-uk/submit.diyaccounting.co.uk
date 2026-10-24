@@ -117,7 +117,16 @@
         display: block;
         width: 100%;
         height: auto;
+        aspect-ratio: auto 480 / 518;
         border-radius: 4px;
+      }
+      .guide-thumb:focus-visible {
+        outline: 3px solid #2c5aa0;
+        outline-offset: 2px;
+      }
+      .lightbox-close:focus-visible {
+        outline: 3px solid #fff;
+        outline-offset: 4px;
       }
       .guide-caption {
         font-size: 0.95em;
@@ -134,7 +143,7 @@
         width: 100%;
         height: 100%;
         background: rgba(0, 0, 0, 0.9);
-        z-index: 9999;
+        z-index: 10001;
         cursor: pointer;
         justify-content: center;
         align-items: center;
@@ -187,6 +196,13 @@
     </header>
 
     <main id="mainContent">
+      <p class="hint" data-feature-status="summary">
+        <strong>Status of each feature.</strong> Production, which you can use for real: HMRC VAT, company lookup, registered office and
+        registered email. Sandbox, which runs against a test service: HMRC Income Tax (MTD), HMRC Assist for Income Tax, the Companies House
+        confirmation statement, PSC verification statement and accounts. Preview, which runs on our simulator only: HMRC Company Tax Return
+        (CT600) and HMRC Assist for VAT. Sandbox and preview features file nothing real.
+        <a href="mtd-calendar.html#availability">See the availability table</a>.
+      </p>
       <div class="form-container">
         <div class="guide-intro">
           <h2>Every journey, step by step</h2>

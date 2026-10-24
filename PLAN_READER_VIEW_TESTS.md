@@ -33,6 +33,10 @@ Only visible text nodes count (computed display, visibility, opacity, box size).
 | Suite | Step | Status |
 |-------|------|--------|
 | companyTaxReturn | `previewCompanyTaxReturn` screenshot | on |
+| getVatLiabilities, getVatObligations, getVatPayments, getVatPenalties, getVatReturn | filled form, results, error | on |
+| postVatReturn, postVatReturnFraudPreventionHeaders, submitVat, vatSchemes | filled 9-box form, error, receipt, receipts list and detail | on |
+| vatValidation | the three validation shots | on |
+| hmrcAssist | connected, boxes filled, assist messages | on |
 
 Next: the accounts preview steps, then each step of each journey.
 
@@ -42,3 +46,10 @@ Next: the accounts preview steps, then each step of each journey.
 |------|------|--------------------|--------|-----|--------|
 | companyTaxReturn | preview | the iXBRL source starting `<?xml` printed in `#previewIxbrl` for every user | developer-only block shown with developer mode off | CT1 | |
 | Companies House accounts | preview | contexts as text at the top, figures as a run of digits at the foot (rejected by the XML team 2026-10-23) | rendered accounts not styled as a document | AX | |
+| getVatLiabilities, getVatObligations, getVatPayments, getVatPenalties, getVatReturn | fill-in with developer mode on | the test-scenario select 246px wide under 704px text inputs | select unstyled in the developer section | select fills the form width on the six VAT pages | RV3 |
+| getVatReturn, submitVat | fill-in | period start and end date inputs 141px wide beside full-width fields | flex children shrink to content | each date field takes `flex: 1 1 12em` | RV3 |
+| postVatReturn | submission error | status line prints `Body: {"message":"An unexpected error occurred","hmrcRes…` | thrown message carried the raw response body | `hmrc-service.js` throws `Failed … (HTTP n). <message>`; the full response goes to the console | RV3 |
+| submitVat | receipt detail | processing date printed as `2026-10-23T09:27:15.096Z` | stored timestamp shown as stored | receipts page formats it as a long date and time | RV3 |
+| submitVat | receipt detail | the value column headed "Amount" over text values (`DD`, a name, a date) | shared field table has one fixed header | open | |
+| submitVat | submission result | "Submitting…" and "Still processing…" stay above "VAT return processed" | earlier progress messages not removed on success | open | |
+| submitVat | receipts page | footer text offset to the right of the page centre | open | open | |

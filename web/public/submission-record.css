@@ -1,0 +1,275 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* The house style of every submission record: a VAT return, an Income Tax update or final
+   declaration, a confirmation statement, accounts and a CT600 computation.
+
+   Three sections, in this order:
+   1. The record. The plain content as printed accounts lay it out. Every selector starts with
+      .submission-record. scripts/generate-submission-record.mjs writes this section, with that
+      scope removed and the bare scope read as body, into app/lib/submissionRecordStyle.js. The
+      filed iXBRL documents carry that copy inline, because a filed document can link to no
+      stylesheet.
+   2. The record on a site page. Rules that undo submit.css inside the record, so that the
+      record on a page renders as the standalone document does.
+   3. The customer copy. DIY Accounting's frame around the record: the brand, the submission
+      number, status and date, an explanation beside each section and the links back into the
+      journey. Nothing in this section styles anything inside .submission-record. */
+
+/* record:start */
+.submission-record {
+  font-family: "Times New Roman", Times, serif;
+  font-size: 11pt;
+  color: #000;
+  background: #fff;
+  margin: 0;
+}
+.submission-record .page {
+  max-width: 180mm;
+  margin: 0 auto;
+  padding: 12mm 10mm;
+  page-break-after: always;
+}
+.submission-record .page:last-child {
+  page-break-after: auto;
+}
+.submission-record .cover {
+  text-align: center;
+  padding-top: 40mm;
+}
+.submission-record .cover-name {
+  font-size: 16pt;
+  font-weight: bold;
+  margin-bottom: 18mm;
+}
+.submission-record .cover-title {
+  font-size: 13pt;
+  font-weight: bold;
+  margin-top: 14mm;
+}
+.submission-record .cover-line {
+  margin: 2mm 0;
+}
+.submission-record .entity {
+  text-align: center;
+  font-size: 13pt;
+  font-weight: bold;
+  margin: 0;
+}
+.submission-record .reference {
+  text-align: center;
+  margin: 1mm 0 4mm 0;
+}
+.submission-record h2 {
+  text-align: center;
+  font-size: 12pt;
+  margin: 2mm 0;
+}
+.submission-record h3 {
+  font-size: 11pt;
+  margin: 6mm 0 2mm 0;
+}
+.submission-record .subtitle {
+  text-align: center;
+  margin: 0 0 6mm 0;
+}
+.submission-record table.statement {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 4mm 0;
+}
+.submission-record table.statement th,
+.submission-record table.statement td {
+  padding: 1mm 2mm;
+  vertical-align: bottom;
+}
+.submission-record table.statement th.label,
+.submission-record table.statement td.label {
+  text-align: left;
+}
+.submission-record table.statement td.indent {
+  padding-left: 8mm;
+}
+.submission-record table.statement th.note,
+.submission-record table.statement td.note {
+  width: 10mm;
+  text-align: center;
+}
+.submission-record table.statement th.figure {
+  text-align: right;
+  width: 24mm;
+  font-weight: bold;
+}
+.submission-record table.statement td.figure {
+  text-align: right;
+  width: 24mm;
+  white-space: nowrap;
+}
+.submission-record table.statement td.positive {
+  padding-right: 3.2mm;
+}
+.submission-record table.statement tr.heading td {
+  font-weight: bold;
+  padding-top: 3mm;
+}
+.submission-record table.statement tr.subtotal td.figure {
+  border-top: 1px solid #000;
+}
+.submission-record table.statement tr.total td {
+  font-weight: bold;
+}
+.submission-record table.statement tr.total td.figure {
+  border-top: 1px solid #000;
+  border-bottom: 3px double #000;
+}
+.submission-record .approval {
+  margin-top: 6mm;
+}
+.submission-record .signature {
+  margin-top: 8mm;
+}
+/* record:end */
+
+/* The record on a site page: submit.css sets every margin and padding to 0, uses border-box
+   sizing, and colours headings. The standalone document has none of that. */
+.submission-record,
+.submission-record * {
+  box-sizing: content-box;
+}
+.submission-record {
+  line-height: normal;
+}
+.submission-record p {
+  margin: 1em 0;
+}
+.submission-record h2,
+.submission-record h3 {
+  color: inherit;
+  text-shadow: none;
+}
+.submission-record th {
+  font-weight: bold;
+}
+
+/* The customer copy. */
+.customer-copy {
+  font-family: var(--font-family-base, Arial, sans-serif);
+  color: var(--color-text-primary, #333);
+  margin: 1.5em 0;
+}
+.customer-copy-header {
+  border-bottom: 2px solid var(--color-brand-primary, #2c5aa0);
+  padding-bottom: 0.75em;
+  margin-bottom: 1.5em;
+}
+.customer-copy-brand {
+  color: var(--color-brand-primary, #2c5aa0);
+  font-weight: 600;
+  margin: 0 0 0.25em 0;
+}
+.customer-copy-title {
+  font-size: 1.5em;
+  margin: 0 0 0.75em 0;
+}
+.customer-copy-submission {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em 2.5em;
+  margin: 0;
+}
+.customer-copy-submission dt {
+  color: var(--color-text-hint, #505a5f);
+  font-size: 0.9em;
+}
+.customer-copy-submission dd {
+  margin: 0;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+.customer-copy-status {
+  border-left: 4px solid var(--color-text-hint, #505a5f);
+  padding-left: 0.5em;
+}
+.customer-copy-status[data-status="accepted"] {
+  border-left-color: var(--color-success, #28a745);
+}
+.customer-copy-status[data-status="rejected"] {
+  border-left-color: var(--color-error, #dc3545);
+}
+.customer-copy-status[data-status="pending"] {
+  border-left-color: var(--color-warning, #ffc107);
+}
+.customer-copy-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75em;
+  margin-bottom: 2em;
+}
+.customer-copy-section-heading {
+  font-size: 1.1em;
+  margin: 0;
+}
+.customer-copy-explanation {
+  max-width: 65ch;
+  line-height: 1.5;
+  color: var(--color-text-primary, #333);
+  margin: 0;
+}
+.customer-copy-sheet {
+  overflow-x: auto;
+  border: 1px solid var(--color-border, #ddd);
+  background: #fff;
+}
+.customer-copy-sheet:focus-visible {
+  outline: 3px solid var(--color-focus, #005ea5);
+  outline-offset: 2px;
+}
+.customer-copy-links ul {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75em 2em;
+  margin: 0;
+  padding: 0;
+}
+.customer-copy-links a {
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+}
+
+@media (min-width: 64em) {
+  .customer-copy-section {
+    grid-template-columns: minmax(0, 180mm) minmax(14em, 1fr);
+    column-gap: 2em;
+    align-items: start;
+  }
+  .customer-copy-section-heading,
+  .customer-copy-explanation {
+    grid-column: 2;
+  }
+  .customer-copy-sheet {
+    grid-column: 1;
+    grid-row: 1 / span 2;
+  }
+}
+
+@media print {
+  .customer-copy-brand,
+  .customer-copy-section-heading,
+  .customer-copy-explanation,
+  .customer-copy-links {
+    display: none;
+  }
+  .customer-copy-header {
+    border-bottom: 1px solid #000;
+  }
+  .customer-copy-section {
+    display: block;
+    margin: 0;
+  }
+  .customer-copy-sheet {
+    border: none;
+    overflow: visible;
+  }
+}

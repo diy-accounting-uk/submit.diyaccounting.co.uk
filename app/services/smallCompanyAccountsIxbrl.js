@@ -30,13 +30,12 @@ import {
   buildDimensionedContext,
   balanceSheetFacts,
   balanceSheetRows,
-  figure,
-  statementTable,
   pageHeading,
   coverPage,
   approvalHtml,
   renderAccountsDocument,
 } from "./accountsIxbrlCommon.js";
+import { recordFigure, recordTable } from "../lib/submissionRecord.js";
 
 export const SMALL_COMPANY_BALANCE_SHEET_LINES = [
   "fixedAssets",
@@ -199,12 +198,12 @@ function profitAndLossPage({ heading, refs, current, prior, columns }) {
   const rows = SMALL_COMPANY_PROFIT_AND_LOSS_LINES.map((line) => {
     const { deduction, style } = PROFIT_AND_LOSS_ROW[line];
     const conceptKey = PROFIT_AND_LOSS_CONCEPT_KEY[line];
-    const cells = [figure(money(conceptKey, refs.current, current[line]), current[line], { deduction })];
-    if (prior) cells.push(figure(money(conceptKey, refs.prior, prior[line]), prior[line], { deduction }));
+    const cells = [recordFigure(money(conceptKey, refs.current, current[line]), current[line], { deduction })];
+    if (prior) cells.push(recordFigure(money(conceptKey, refs.prior, prior[line]), prior[line], { deduction }));
     return { label: PROFIT_AND_LOSS_LABEL[line], style, cells };
   });
   return `<div class="page">
-${heading}${statementTable({ columns: prior ? columns : columns.slice(0, 1), rows })}
+${heading}${recordTable({ columns: prior ? columns : columns.slice(0, 1), rows })}
 </div>`;
 }
 
@@ -224,7 +223,7 @@ function subLineRows(lines, yearFigures, contextRefs, contextSuffix) {
   return lines.map(([label, conceptKey, field]) => ({
     label,
     cells: yearFigures.map((figures, index) =>
-      figure(money(conceptKey, `${contextRefs[index]}${contextSuffix}`, figures[field]), figures[field]),
+      recordFigure(money(conceptKey, `${contextRefs[index]}${contextSuffix}`, figures[field]), figures[field]),
     ),
   }));
 }
@@ -271,7 +270,7 @@ function fixedAssetNoteTable({ refs, fixedAssetNote, entityIdentifierXml, period
     style: options.style,
     cells: columns.map((column) => {
       const value = valueOf(column.figures);
-      return figure(money(conceptKey, column.refs[refKey], value), value, { deduction: options.deduction });
+      return recordFigure(money(conceptKey, column.refs[refKey], value), value, { deduction: options.deduction });
     }),
   });
   const openingNetBookValue = (figures) => figures.costAtStart - figures.depreciationAtStart;
@@ -279,7 +278,7 @@ function fixedAssetNoteTable({ refs, fixedAssetNote, entityIdentifierXml, period
   const endLabel = `At ${displayDate(refs.periodEndDate)}`;
   const priorEndLabel = `At ${displayDate(previousDay(refs.periodStartDate))}`;
 
-  return statementTable({
+  return recordTable({
     columns: columns.map((column) => column.heading),
     rows: [
       { label: "Cost", style: "heading" },
@@ -480,7 +479,7 @@ export function buildSmallCompanyAccounts(input) {
     );
   }
   pages.push(`<div class="page">
-${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${statementTable({
+${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${recordTable({
     columns: columns.slice(0, years.length),
     notes: Boolean(fixedAssetNoteNumber),
     rows: balanceSheetRows({

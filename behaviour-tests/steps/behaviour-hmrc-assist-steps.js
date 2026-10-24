@@ -77,7 +77,7 @@ export async function connectToHmrcFromVatForm(page, { vrn, username, password }
     if (!(await page.locator("#vatNumber").inputValue())) {
       await loggedFill(page, "#vatNumber", vrn, "Entering VAT number again", { screenshotPath });
     }
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-connected-to-hmrc.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-connected-to-hmrc.png`, readerView: true });
   });
 }
 
@@ -124,6 +124,6 @@ export async function verifyAssistMessagesInOrder(page, expectedMessages, screen
       }
     }
     await items.last().scrollIntoViewIfNeeded();
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-assist-messages.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-assist-messages.png`, readerView: true });
   });
 }

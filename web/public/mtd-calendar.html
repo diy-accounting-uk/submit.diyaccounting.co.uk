@@ -9,7 +9,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="When Making Tax Digital applies: VAT from April 2022, Income Tax from April 2026 by income level, quarterly update deadlines and the final declaration. Each date links to its gov.uk source."
+      content="What you can file and how, and when Making Tax Digital applies: VAT from April 2022, Income Tax from April 2026 by income level, quarterly updates, the final declaration and the Companies House and Corporation Tax dates. Each date links to its gov.uk source."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/mtd-calendar.html" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -58,6 +58,9 @@
         color: var(--color-text-secondary);
         white-space: nowrap;
       }
+      .table-scroll {
+        overflow-x: auto;
+      }
       .deadline-table {
         border-collapse: collapse;
         margin: var(--spacing-sm) 0;
@@ -88,6 +91,274 @@
     <main id="mainContent">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
+      <div class="form-container" id="business-types">
+        <h2>Which dates apply to your business</h2>
+        <p>
+          Find your business type, then follow the link in each column to its dates. Making Tax Digital for Income Tax covers sole traders
+          and landlords registered for Self Assessment, so a limited company is outside it. Partnerships have no date yet. A taxi or private
+          hire driver, and a sole trader with employees, follow the sole trader rules.
+        </p>
+        <div class="table-scroll">
+          <table class="deadline-table">
+            <caption class="calendar-date">
+              Business type against what applies
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Business type</th>
+                <th scope="col">Not VAT registered</th>
+                <th scope="col">VAT registered</th>
+                <th scope="col">Income Tax (MTD)</th>
+                <th scope="col">Companies House filings</th>
+                <th scope="col">Companies House accounts</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="rowgroup" colspan="6">Self-employed</th>
+              </tr>
+              <tr>
+                <th scope="row">Sole trader</th>
+                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td>
+                  <a href="#itsa-mtd-over-50k-2026-04">Dates by income</a><br /><a href="#itsa-quarterly-update-deadlines"
+                    >Quarterly updates</a
+                  ><br /><a href="#itsa-final-declaration-deadline">Final declaration</a>
+                </td>
+                <td>Not applicable</td>
+                <td>Not applicable</td>
+              </tr>
+              <tr>
+                <th scope="row">Taxi and private hire driver</th>
+                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td>
+                  <a href="#itsa-mtd-over-50k-2026-04">Dates by income</a><br /><a href="#itsa-quarterly-update-deadlines"
+                    >Quarterly updates</a
+                  ><br /><a href="#itsa-final-declaration-deadline">Final declaration</a>
+                </td>
+                <td>Not applicable</td>
+                <td>Not applicable</td>
+              </tr>
+              <tr>
+                <th scope="row">Partnership</th>
+                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td><a href="#itsa-mtd-partnerships-date-unset">No date yet</a></td>
+                <td>Not applicable</td>
+                <td>Not applicable</td>
+              </tr>
+              <tr>
+                <th scope="row">Landlord</th>
+                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td>
+                  <a href="#itsa-mtd-over-50k-2026-04">Dates by income</a><br /><a href="#itsa-quarterly-update-deadlines"
+                    >Quarterly updates</a
+                  ><br /><a href="#itsa-final-declaration-deadline">Final declaration</a>
+                </td>
+                <td>Not applicable</td>
+                <td>Not applicable</td>
+              </tr>
+              <tr>
+                <th scope="row">Sole trader with employees</th>
+                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td>
+                  <a href="#itsa-mtd-over-50k-2026-04">Dates by income</a><br /><a href="#itsa-quarterly-update-deadlines"
+                    >Quarterly updates</a
+                  ><br /><a href="#itsa-final-declaration-deadline">Final declaration</a>
+                </td>
+                <td>Not applicable</td>
+                <td>Not applicable</td>
+              </tr>
+            </tbody>
+            <tbody>
+              <tr>
+                <th scope="rowgroup" colspan="6">Limited company</th>
+              </tr>
+              <tr>
+                <th scope="row">Owner-managed company with one director</th>
+                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td>Not in this rule</td>
+                <td>
+                  <a href="#ch-confirmation-statement-12-months">Confirmation statement</a><br /><a href="#ch-identity-verification-2025-11"
+                    >Identity verification</a
+                  >
+                </td>
+                <td>
+                  <a href="#ch-accounts-9-months">Annual accounts</a><br /><a href="#ct600-12-months">Company Tax Return</a><br /><a
+                    href="#ct-payment-9-months-1-day"
+                    >Corporation Tax payment</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Property company</th>
+                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td>Not in this rule</td>
+                <td>
+                  <a href="#ch-confirmation-statement-12-months">Confirmation statement</a><br /><a href="#ch-identity-verification-2025-11"
+                    >Identity verification</a
+                  >
+                </td>
+                <td>
+                  <a href="#ch-accounts-9-months">Annual accounts</a><br /><a href="#ct600-12-months">Company Tax Return</a><br /><a
+                    href="#ct-payment-9-months-1-day"
+                    >Corporation Tax payment</a
+                  >
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Small company</th>
+                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td>Not in this rule</td>
+                <td>
+                  <a href="#ch-confirmation-statement-12-months">Confirmation statement</a><br /><a href="#ch-identity-verification-2025-11"
+                    >Identity verification</a
+                  >
+                </td>
+                <td>
+                  <a href="#ch-accounts-9-months">Annual accounts</a><br /><a href="#ct600-12-months">Company Tax Return</a><br /><a
+                    href="#ct-payment-9-months-1-day"
+                    >Corporation Tax payment</a
+                  >
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="form-container" id="availability">
+        <h2>What you can file, and how</h2>
+        <p>
+          Production means you can use it for real. Sandbox means it runs against a test service and files nothing real. Preview means it
+          runs on our simulator only.
+        </p>
+        <!-- A change to what a business can file, or through which channel, or whether a feature is production, sandbox or preview, updates this table in the same change. -->
+        <div class="table-scroll">
+          <table class="deadline-table">
+            <caption class="calendar-date">
+              Availability by filing and channel
+            </caption>
+            <thead>
+              <tr>
+                <th scope="col">Filing</th>
+                <th scope="col">Web form</th>
+                <th scope="col">diya-gl book drop</th>
+                <th scope="col">Spreadsheets drop</th>
+                <th scope="col">iXBRL drop</th>
+                <th scope="col">MCP</th>
+                <th scope="col">API</th>
+                <th scope="col">Docs and video</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">HMRC VAT return</th>
+                <td>production</td>
+                <td>production</td>
+                <td>production</td>
+                <td>not offered</td>
+                <td>production <span class="calendar-date">local server; the hosted connector derives figures only</span></td>
+                <td>not offered</td>
+                <td>
+                  <a href="hmrc/vat/submitVat.html">Web form</a>, <a href="guide.html">Guide</a>,
+                  <a href="https://www.youtube.com/watch?v=XUt2gdYxR1g" rel="noopener">Video</a>, <a href="mcp.html">MCP</a>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">HMRC Income Tax (MTD)</th>
+                <td>sandbox</td>
+                <td>sandbox</td>
+                <td>sandbox</td>
+                <td>not offered</td>
+                <td>sandbox <span class="calendar-date">figures only</span></td>
+                <td>not offered</td>
+                <td>
+                  <a href="hmrc/itsa/dashboard.html">Web form</a>, <a href="guide.html">Guide</a>,
+                  <a href="https://www.youtube.com/watch?v=H1LRSZG984Q" rel="noopener">Video</a>, <a href="mcp.html">MCP</a>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">HMRC Company Tax Return (CT600)</th>
+                <td>preview</td>
+                <td>preview <span class="calendar-date">book export file</span></td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td><a href="companies-house/fileCompanyTaxReturn.html">Web form</a>, <a href="guide.html">Guide</a></td>
+              </tr>
+              <tr>
+                <th scope="row">Companies House accounts (micro-entity, small company, dormant)</th>
+                <td>sandbox</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>sandbox <span class="calendar-date">micro-entity</span></td>
+                <td>not offered</td>
+                <td>
+                  <a href="companies-house/fileMicroEntityAccounts.html">Web form</a>, <a href="guide.html">Guide</a>,
+                  <a href="https://www.youtube.com/watch?v=yPSpvLKrTJU" rel="noopener">Video</a>, <a href="mcp.html">MCP</a>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Companies House confirmation statement</th>
+                <td>sandbox</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>sandbox</td>
+                <td>not offered</td>
+                <td>
+                  <a href="companies-house/fileConfirmationStatement.html">Web form</a>, <a href="guide.html">Guide</a>,
+                  <a href="https://www.youtube.com/watch?v=P0aG_mLfhZI" rel="noopener">Video</a>, <a href="mcp.html">MCP</a>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Companies House PSC verification statement</th>
+                <td>sandbox</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td><a href="guide.html">Guide</a></td>
+              </tr>
+              <tr>
+                <th scope="row">Companies House registered office and registered email</th>
+                <td>production</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>
+                  <a href="companies-house/changeRegisteredOffice.html">Web form</a>, <a href="guide.html">Guide</a>,
+                  <a href="https://www.youtube.com/watch?v=sN_FhTnAqF4" rel="noopener">Video</a>
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Accounts and CT600 together (designed, not built)</th>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td>not offered</td>
+                <td><a href="guide.html">Guide</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="form-container">
         <h2>Dates</h2>
         <p>Each entry shows the words from the gov.uk page it comes from and the day we read that page.</p>
@@ -98,6 +369,7 @@
               All VAT-registered businesses use Making Tax Digital for VAT, whatever their turnover. Your first VAT period starting on or
               after 1 April 2022 is the first one under the rule.
             </p>
+            <p class="relevant-for"><strong>Relevant for:</strong> every business type in the table, once it is VAT registered.</p>
             <blockquote class="source-quote">
               <p>Businesses need to have signed up to Making Tax Digital for their first VAT return starting on or after 1 April 2022.</p>
               <footer>
@@ -108,11 +380,52 @@
               </footer>
             </blockquote>
           </li>
+          <li class="calendar-entry" id="ch-identity-verification-2025-11">
+            <h3><span class="calendar-date">18 November 2025</span>Companies House: director and PSC identity verification</h3>
+            <p>
+              Identity verification is a legal requirement for directors and for people with significant control (PSCs). A director gives
+              the personal code with the company's next confirmation statement. A PSC verifies and gives the personal code within a 14 day
+              period that depends on the PSC's situation.
+            </p>
+            <p class="relevant-for">
+              <strong>Relevant for:</strong> Owner-managed company with one director, Property company, Small company.
+            </p>
+            <blockquote class="source-quote">
+              <p>You will need to provide your Companies House personal code as part of your company’s next confirmation statement.</p>
+              <footer>
+                <a href="https://www.gov.uk/guidance/when-you-need-to-verify-your-identity-for-companies-house" rel="noopener"
+                  >gov.uk/guidance/when-you-need-to-verify-your-identity-for-companies-house</a
+                >
+                <span class="retrieved">Retrieved 24 October 2026</span>
+              </footer>
+            </blockquote>
+            <blockquote class="source-quote">
+              <p>Identity verification is now a legal requirement.</p>
+              <footer>
+                <a href="https://www.gov.uk/guidance/when-you-need-to-verify-your-identity-for-companies-house" rel="noopener"
+                  >gov.uk/guidance/when-you-need-to-verify-your-identity-for-companies-house</a
+                >
+                <span class="retrieved">Retrieved 24 October 2026</span>
+              </footer>
+            </blockquote>
+            <blockquote class="source-quote">
+              <p>PSCs must verify their identity and provide their Companies House personal code.</p>
+              <footer>
+                <a href="https://www.gov.uk/guidance/when-you-need-to-verify-your-identity-for-companies-house" rel="noopener"
+                  >gov.uk/guidance/when-you-need-to-verify-your-identity-for-companies-house</a
+                >
+                <span class="retrieved">Retrieved 24 October 2026</span>
+              </footer>
+            </blockquote>
+          </li>
           <li class="calendar-entry" id="itsa-mtd-over-50k-2026-04">
             <h3><span class="calendar-date">6 April 2026</span>Income Tax: qualifying income over £50,000</h3>
             <p>
               Sole traders and landlords with qualifying income over £50,000 in the 2024 to 2025 tax year use Making Tax Digital for Income
               Tax.
+            </p>
+            <p class="relevant-for">
+              <strong>Relevant for:</strong> Sole trader, Taxi and private hire driver, Landlord, Sole trader with employees.
             </p>
             <blockquote class="source-quote">
               <p>£50,000 for the 2024 to 2025 tax year, you should’ve started using Making Tax Digital for Income Tax from 6 April 2026</p>
@@ -123,10 +436,22 @@
                 <span class="retrieved">Retrieved 30 September 2026</span>
               </footer>
             </blockquote>
+            <blockquote class="source-quote">
+              <p>you’re a sole trader or a landlord registered for Self Assessment</p>
+              <footer>
+                <a href="https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax" rel="noopener"
+                  >gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax</a
+                >
+                <span class="retrieved">Retrieved 24 October 2026</span>
+              </footer>
+            </blockquote>
           </li>
           <li class="calendar-entry" id="itsa-mtd-over-30k-2027-04">
             <h3><span class="calendar-date">6 April 2027</span>Income Tax: qualifying income over £30,000</h3>
             <p>The rule reaches qualifying income over £30,000 in the 2025 to 2026 tax year.</p>
+            <p class="relevant-for">
+              <strong>Relevant for:</strong> Sole trader, Taxi and private hire driver, Landlord, Sole trader with employees.
+            </p>
             <blockquote class="source-quote">
               <p>£30,000 for the 2025 to 2026 tax year, you will need to use it from 6 April 2027</p>
               <footer>
@@ -136,10 +461,22 @@
                 <span class="retrieved">Retrieved 30 September 2026</span>
               </footer>
             </blockquote>
+            <blockquote class="source-quote">
+              <p>you’re a sole trader or a landlord registered for Self Assessment</p>
+              <footer>
+                <a href="https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax" rel="noopener"
+                  >gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax</a
+                >
+                <span class="retrieved">Retrieved 24 October 2026</span>
+              </footer>
+            </blockquote>
           </li>
           <li class="calendar-entry" id="itsa-mtd-over-20k-2028-04">
             <h3><span class="calendar-date">6 April 2028</span>Income Tax: qualifying income over £20,000</h3>
             <p>The rule reaches qualifying income over £20,000 in the 2026 to 2027 tax year.</p>
+            <p class="relevant-for">
+              <strong>Relevant for:</strong> Sole trader, Taxi and private hire driver, Landlord, Sole trader with employees.
+            </p>
             <blockquote class="source-quote">
               <p>£20,000 for the 2026 to 2027 tax year, you will need to use it from 6 April 2028</p>
               <footer>
@@ -147,6 +484,15 @@
                   >gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax</a
                 >
                 <span class="retrieved">Retrieved 30 September 2026</span>
+              </footer>
+            </blockquote>
+            <blockquote class="source-quote">
+              <p>you’re a sole trader or a landlord registered for Self Assessment</p>
+              <footer>
+                <a href="https://www.gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax" rel="noopener"
+                  >gov.uk/guidance/find-out-if-and-when-you-need-to-use-making-tax-digital-for-income-tax</a
+                >
+                <span class="retrieved">Retrieved 24 October 2026</span>
               </footer>
             </blockquote>
           </li>
@@ -159,6 +505,9 @@
           <li class="calendar-entry" id="itsa-quarterly-update-deadlines">
             <h3>Income Tax quarterly updates</h3>
             <p>Send an update for each quarter by its deadline. These are the standard update periods.</p>
+            <p class="relevant-for">
+              <strong>Relevant for:</strong> Sole trader, Taxi and private hire driver, Landlord, Sole trader with employees.
+            </p>
             <table class="deadline-table">
               <caption class="calendar-date">
                 Standard update periods and deadlines
@@ -204,6 +553,9 @@
           <li class="calendar-entry" id="itsa-final-declaration-deadline">
             <h3>Income Tax final declaration</h3>
             <p>Submit your tax return by 31 January following the end of the tax year. You can submit it earlier.</p>
+            <p class="relevant-for">
+              <strong>Relevant for:</strong> Sole trader, Taxi and private hire driver, Landlord, Sole trader with employees.
+            </p>
             <blockquote class="source-quote">
               <p>
                 You must submit your tax return by 31 January following the end of the relevant tax year, but you can submit it earlier.
@@ -216,6 +568,90 @@
               </footer>
             </blockquote>
           </li>
+          <li class="calendar-entry" id="ch-confirmation-statement-12-months">
+            <h3>Companies House confirmation statement</h3>
+            <p>File at least one confirmation statement every 12 months, even if nothing has changed.</p>
+            <p class="relevant-for">
+              <strong>Relevant for:</strong> Owner-managed company with one director, Property company, Small company.
+            </p>
+            <p><strong>Optional:</strong> You can file early. You do not have to wait for the current review period to end.</p>
+            <blockquote class="source-quote">
+              <p>You must review your records and file at least one confirmation statement every 12 months.</p>
+              <footer>
+                <a href="https://www.gov.uk/guidance/confirmation-statement-guidance" rel="noopener"
+                  >gov.uk/guidance/confirmation-statement-guidance</a
+                >
+                <span class="retrieved">Retrieved 24 October 2026</span>
+              </footer>
+            </blockquote>
+            <blockquote class="source-quote">
+              <p>You do not have to wait until your current review period has ended before filing your confirmation statement.</p>
+              <footer>
+                <a href="https://www.gov.uk/guidance/confirmation-statement-guidance" rel="noopener"
+                  >gov.uk/guidance/confirmation-statement-guidance</a
+                >
+                <span class="retrieved">Retrieved 24 October 2026</span>
+              </footer>
+            </blockquote>
+          </li>
+          <li class="calendar-entry" id="ch-accounts-9-months">
+            <h3>Companies House annual accounts</h3>
+            <p>File the annual accounts with Companies House 9 months after the end of the company's financial year.</p>
+            <p class="relevant-for">
+              <strong>Relevant for:</strong> Owner-managed company with one director, Property company, Small company.
+            </p>
+            <p><strong>Optional:</strong> You can file the accounts and the Company Tax Return together or separately.</p>
+            <blockquote class="source-quote">
+              <p>File annual accounts with Companies House 9 months after your company’s financial year ends</p>
+              <footer>
+                <a href="https://www.gov.uk/prepare-file-annual-accounts-for-limited-company" rel="noopener"
+                  >gov.uk/prepare-file-annual-accounts-for-limited-company</a
+                >
+                <span class="retrieved">Retrieved 24 October 2026</span>
+              </footer>
+            </blockquote>
+            <blockquote class="source-quote">
+              <p>You can file with Companies House and HMRC together or separately.</p>
+              <footer>
+                <a href="https://www.gov.uk/prepare-file-annual-accounts-for-limited-company" rel="noopener"
+                  >gov.uk/prepare-file-annual-accounts-for-limited-company</a
+                >
+                <span class="retrieved">Retrieved 24 October 2026</span>
+              </footer>
+            </blockquote>
+          </li>
+          <li class="calendar-entry" id="ct600-12-months">
+            <h3>Company Tax Return (CT600)</h3>
+            <p>File the Company Tax Return with HMRC 12 months after the end of the accounting period it covers.</p>
+            <p class="relevant-for">
+              <strong>Relevant for:</strong> Owner-managed company with one director, Property company, Small company.
+            </p>
+            <blockquote class="source-quote">
+              <p>The deadline for your tax return is 12 months after the end of the accounting period it covers.</p>
+              <footer>
+                <a href="https://www.gov.uk/company-tax-returns/deadline-and-penalties" rel="noopener"
+                  >gov.uk/company-tax-returns/deadline-and-penalties</a
+                >
+                <span class="retrieved">Retrieved 24 October 2026</span>
+              </footer>
+            </blockquote>
+          </li>
+          <li class="calendar-entry" id="ct-payment-9-months-1-day">
+            <h3>Corporation Tax payment</h3>
+            <p>
+              Pay Corporation Tax 9 months and 1 day after the end of the accounting period, when taxable profits are up to £1.5 million.
+            </p>
+            <p class="relevant-for">
+              <strong>Relevant for:</strong> Owner-managed company with one director, Property company, Small company.
+            </p>
+            <blockquote class="source-quote">
+              <p>You must pay your Corporation Tax 9 months and 1 day after the end of your accounting period.</p>
+              <footer>
+                <a href="https://www.gov.uk/pay-corporation-tax" rel="noopener">gov.uk/pay-corporation-tax</a>
+                <span class="retrieved">Retrieved 24 October 2026</span>
+              </footer>
+            </blockquote>
+          </li>
         </ol>
       </div>
 
@@ -225,6 +661,7 @@
           <li class="calendar-entry" id="itsa-mtd-partnerships-date-unset">
             <h3>Income Tax: partnerships</h3>
             <p>Partnerships will use Making Tax Digital for Income Tax. HMRC has not yet set the date.</p>
+            <p class="relevant-for"><strong>Relevant for:</strong> Partnership.</p>
             <blockquote class="source-quote">
               <p>
                 Partnerships will also need to use Making Tax Digital for Income Tax in the future. We’ll set out the timeline for this at a

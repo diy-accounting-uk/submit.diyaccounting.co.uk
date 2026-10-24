@@ -9,12 +9,14 @@
  * iXBRL and the IRmark and needs no credentials. Writes the submission and the response to the
  * output directory and exits non-zero unless TPVS answers a success response.
  *
- * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>]
+ * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>]
  *   --book defaults to fixtures/diya-gl/precision-code-ltd; --out to target/hmrc-tpvs;
- *   --utr to 8596148860, the UTR HMRC's own CT600 samples use.
+ *   --utr to 8596148860, the UTR HMRC's own CT600 samples use; --prior names a JSON file of the
+ *   prior year's profit and loss lines, which the accounts then show as the comparative column
+ *   (a book publishes none).
  */
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { loadDiyaGlData } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
 import { deriveSmallCompanyAccounts } from "../app/services/smallCompanyAccounts.js";
@@ -36,10 +38,12 @@ function argument(name, fallback) {
 const bookDirectory = argument("--book", "fixtures/diya-gl/precision-code-ltd");
 const outputDirectory = argument("--out", "target/hmrc-tpvs");
 const utr = argument("--utr", "8596148860");
+const priorFile = argument("--prior", undefined);
+const priorYearProfitAndLoss = priorFile ? JSON.parse(readFileSync(priorFile, "utf8")) : undefined;
 
 const { book, lines } = loadDiyaGlData(bookDirectory);
 const session = { book, lines };
-const accounts = await deriveSmallCompanyAccounts(session);
+const accounts = await deriveSmallCompanyAccounts(session, { priorYearProfitAndLoss });
 const directorName = accounts.directorName || "A Director";
 const company = {
   companyName: accounts.companyName,
@@ -49,7 +53,7 @@ const company = {
   declarantName: directorName,
   declarantStatus: "Director",
 };
-const { boxes, computationLines, periodStart, periodEnd } = await deriveCompanyTaxReturn(session, company);
+const { boxes, computationLines, periodStart, periodEnd } = await deriveCompanyTaxReturn(session, company, { priorYearProfitAndLoss });
 
 const accountsIxbrl = buildSmallCompanyAccounts({
   companyNumber: accounts.companyNumber,
@@ -64,7 +68,10 @@ const accountsIxbrl = buildSmallCompanyAccounts({
   directorName,
   dateOfApproval: periodEnd,
   balanceSheet: { current: accounts.balanceSheet.currentYear, prior: accounts.balanceSheet.priorYear },
-  profitAndLoss: { current: accounts.profitAndLoss.currentYear },
+  profitAndLoss: {
+    current: accounts.profitAndLoss.currentYear,
+    ...(accounts.profitAndLoss.priorYear ? { prior: accounts.profitAndLoss.priorYear } : {}),
+  },
   fixedAssetNote: accounts.fixedAssetNote,
 });
 const computationsIxbrl = buildCtComputations({

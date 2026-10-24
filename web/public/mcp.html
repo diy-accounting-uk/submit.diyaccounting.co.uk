@@ -136,6 +136,13 @@
     </header>
 
     <main id="mainContent">
+      <p class="hint" data-feature-status="summary">
+        <strong>Status of each feature.</strong> Production, which you can use for real: HMRC VAT, company lookup, registered office and
+        registered email. Sandbox, which runs against a test service: HMRC Income Tax (MTD), HMRC Assist for Income Tax, the Companies House
+        confirmation statement, PSC verification statement and accounts. Preview, which runs on our simulator only: HMRC Company Tax Return
+        (CT600) and HMRC Assist for VAT. Sandbox and preview features file nothing real.
+        <a href="mtd-calendar.html#availability">See the availability table</a>.
+      </p>
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
       <div class="mcp-page">
@@ -185,19 +192,20 @@
             <dt><code>derive_micro_entity_accounts</code>, <code>derive_small_company_accounts</code></dt>
             <dd>The accounts figures for the current and prior year.</dd>
             <dt>
-              <code>preview_micro_entity_accounts</code>, <code>submit_micro_entity_accounts</code>, <code>poll_accounts_submission</code>
+              <code>render_micro_entity_accounts_sandbox</code>, <code>submit_micro_entity_accounts_sandbox</code>,
+              <code>poll_accounts_submission_sandbox</code>
             </dt>
-            <dd>Preview the filing, file confirmed accounts with Companies House, and check the outcome.</dd>
+            <dd>Render the filing, file confirmed accounts with Companies House, and check the outcome.</dd>
             <dt>
-              <code>get_confirmation_statement_data</code>, <code>preview_confirmation_statement</code>,
-              <code>submit_confirmation_statement</code>, <code>poll_confirmation_statement</code>
+              <code>get_confirmation_statement_data_sandbox</code>, <code>render_confirmation_statement_sandbox</code>,
+              <code>submit_confirmation_statement_sandbox</code>, <code>poll_confirmation_statement_sandbox</code>
             </dt>
-            <dd>Read the company's confirmation statement data, preview the statement, file it and check the outcome.</dd>
+            <dd>Read the company's confirmation statement data, render the statement, file it and check the outcome.</dd>
             <dt><code>list_clients</code>, <code>add_client</code>, <code>move_book_to_client</code></dt>
             <dd>For a practice: list its clients, add one, and move a book under a client.</dd>
           </dl>
           <p>
-            A filing tool takes the figures its derive or preview tool returned, so you see and approve the figures before anything reaches
+            A filing tool takes the figures its derive or render tool returned, so you see and approve the figures before anything reaches
             Companies House. Submitting a VAT return to HMRC is done in the web app or with the submission MCP below.
           </p>
         </div>
@@ -288,9 +296,10 @@
             <dt><code>derive_micro_entity_accounts</code></dt>
             <dd>The seven micro-entity balance sheet figures for the current and prior year.</dd>
             <dt>
-              <code>preview_micro_entity_accounts</code>, <code>submit_micro_entity_accounts</code>, <code>poll_accounts_submission</code>
+              <code>render_micro_entity_accounts_sandbox</code>, <code>submit_micro_entity_accounts_sandbox</code>,
+              <code>poll_accounts_submission_sandbox</code>
             </dt>
-            <dd>Preview the filing, file confirmed accounts with Companies House, and check the filing's outcome.</dd>
+            <dd>Render the filing, file confirmed accounts with Companies House, and check the filing's outcome.</dd>
             <dt><code>derive_itsa_quarterly_update</code>, <code>derive_itsa_annual_submission</code></dt>
             <dd>The Self Employment figures for one quarter and for the year, from a self-employed book.</dd>
           </dl>

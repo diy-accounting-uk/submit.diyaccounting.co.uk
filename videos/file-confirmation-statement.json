@@ -90,7 +90,7 @@
         { "action": "click", "target": { "role": "link", "name": "Activities" } },
         {
           "action": "await",
-          "until": "button:has-text('File Confirmation Statement (Companies House)')",
+          "until": "button:has-text('File Confirmation Statement (Companies House, sandbox)')",
           "label": "Waiting for the subscription to unlock the activity"
         },
         { "action": "hold", "ms": 500 }
@@ -103,7 +103,7 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "button", "name": "File Confirmation Statement (Companies House)" },
+          "target": { "role": "button", "name": "File Confirmation Statement (Companies House, sandbox)" },
           "expectsNavigation": true,
           "caption": "Open File Confirmation Statement to find the company.",
           "headline": "Open the activity",

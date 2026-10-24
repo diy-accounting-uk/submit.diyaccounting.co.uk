@@ -2,69 +2,73 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // app/services/hmrcCtReturnRequest.js
-// Validates a Company Tax Return request (the accounts figures, the CT600 boxes and the
-// computation lines a book export supplies, plus the facts typed on the page) and builds the three
-// documents the Transaction Engine takes: the CT600 IRenvelope with the full FRS 102 accounts and
-// the computations attached as iXBRL. Shared by the preview and the submit Lambdas.
+// Validates a Company Tax Return request (the accounts figures and the CT600 figures a book export
+// or the form supplies, plus the facts typed on the page) and builds the three documents the
+// Transaction Engine takes: the CT600 IRenvelope with the full FRS 102 accounts and the
+// computations attached as iXBRL. The boxes and computation lines are worked here, from the figures. Shared by the preview and the submit Lambdas.
 
 import { parseRequestBody } from "../lib/httpResponseHelper.js";
 import { isValidIsoDate } from "../lib/hmrcValidation.js";
 import { extractAndValidateAccountsParameters, buildAccountsIxbrl } from "../functions/companies-house/companiesHouseAccountsPost.js";
-import { buildCt600IrEnvelope } from "./ct600Xml.js";
+import { buildCt600IrEnvelope, ltdTaxDataForPeriodEnd } from "./ct600Xml.js";
+import { deriveCt600FromFigures, validateCt600Figures } from "./ct600Figures.js";
 import { buildCtComputations } from "./ctComputationsIxbrl.js";
 
-export const REQUIRED_CT600_BOXES = [30, 35, 145, 315, 440, 475, 510, 525, 528, 600];
+const MAX_GATEWAY_CREDENTIAL_LENGTH = 128;
 
-const COMPUTATION_LINE_FIELDS = [
-  "profitLossPerAccounts",
+// The figures the customer or a book supplies. The company name and number, the UTR, the
+// declarant and the profit and loss account come from the rest of the request.
+const FIGURES_FIELDS = [
+  "periodStart",
+  "periodEnd",
+  "companyType",
+  "associatedCompanies",
   "nonTradingLoanRelationshipCredits",
   "depreciation",
   "amortisation",
   "entertaining",
-  "adjustedProfitBeforeCapitalAllowances",
-  "totalCapitalAllowances",
-  "adjustedProfit",
+  "annualInvestmentAllowance",
+  "mainPoolAllowances",
+  "mainPoolBalancingCharges",
+  "lossesBroughtForward",
+  "frankedInvestmentIncome",
+  "incomeTaxDeducted",
+  "taxAlreadyPaid",
+  "ownCorporationTax",
+  "workingSheet",
 ];
 
-const MAX_GATEWAY_CREDENTIAL_LENGTH = 128;
+// Fields the rest of the request already validates under their own names.
+const REQUEST_VALIDATED_FIELDS = new Set(["utr", "companyName", "companyNumber", "declarantName", "declarantStatus"]);
 
-function readBoxes(boxes, errorMessages) {
-  if (!boxes || typeof boxes !== "object" || Array.isArray(boxes)) {
-    errorMessages.push("Missing boxes - the CT600 boxes from the book export");
+function readFigures(figures, { accounts, utr, declarant }, errorMessages) {
+  if (!figures || typeof figures !== "object" || Array.isArray(figures)) {
+    errorMessages.push("Missing figures - the CT600 figures from the book export or the form");
     return undefined;
   }
   const checked = {};
-  for (const [key, value] of Object.entries(boxes)) {
-    if (!/^\d{1,4}$/.test(key)) {
-      errorMessages.push(`Invalid box number ${key}`);
-      continue;
-    }
-    if (typeof value === "number" ? !Number.isFinite(value) : typeof value !== "string" || value === "") {
-      errorMessages.push(`Invalid value for box ${key}`);
-      continue;
-    }
-    checked[Number(key)] = value;
+  for (const field of FIGURES_FIELDS) {
+    if (figures[field] !== undefined) checked[field] = figures[field];
   }
-  for (const box of REQUIRED_CT600_BOXES) {
-    if (checked[box] === undefined) errorMessages.push(`Missing box ${box}`);
+  const stitched = {
+    ...checked,
+    companyName: accounts.companyName,
+    companyNumber: accounts.companyNumber,
+    utr,
+    declarantName: declarant.name,
+    declarantStatus: declarant.status,
+    profitAndLoss: accounts.profitAndLoss,
+  };
+  const working = figures.workingSheet;
+  if (working !== undefined && !(Number.isFinite(working?.tradingProfit) && Number.isFinite(working?.corporationTax))) {
+    errorMessages.push("figures.workingSheet needs a numeric tradingProfit and corporationTax");
+    return stitched;
   }
-  for (const box of [30, 35]) {
-    if (checked[box] !== undefined && !isValidIsoDate(checked[box])) errorMessages.push(`Box ${box} must be YYYY-MM-DD`);
+  if (!accounts.profitAndLoss) return stitched;
+  for (const problem of validateCt600Figures(stitched)) {
+    if (!REQUEST_VALIDATED_FIELDS.has(problem.field)) errorMessages.push(problem.message);
   }
-  return checked;
-}
-
-function readComputationLines(lines, errorMessages) {
-  if (!lines || typeof lines !== "object" || Array.isArray(lines)) {
-    errorMessages.push("Missing computationLines - the computation lines from the book export");
-    return undefined;
-  }
-  const checked = {};
-  for (const field of COMPUTATION_LINE_FIELDS) {
-    if (!Number.isFinite(lines[field])) errorMessages.push(`Invalid or missing computationLines.${field}`);
-    checked[field] = lines[field];
-  }
-  return checked;
+  return stitched;
 }
 
 function validCredential(value) {
@@ -109,17 +113,9 @@ export function extractAndValidateCtReturnParameters(event, errorMessages, { req
   }
   if (body.declarationAccepted !== true) errorMessages.push("The declarant must accept the declaration");
 
-  const boxes = readBoxes(body.boxes, errorMessages);
-  const computationLines = readComputationLines(body.computationLines, errorMessages);
-
-  if (boxes && computationLines) {
-    const adjustedProfit = Math.max(computationLines.adjustedProfit, 0);
-    if ((boxes[155] ?? 0) !== adjustedProfit) {
-      errorMessages.push(`Box 155 (${boxes[155] ?? 0}) must equal the computation's adjusted profit (${adjustedProfit})`);
-    }
-  }
-  if (boxes && accounts.periodStart && accounts.periodEnd && isValidIsoDate(boxes[30]) && isValidIsoDate(boxes[35])) {
-    if (accounts.periodEnd < boxes[30] || accounts.periodStart > boxes[35]) {
+  const figures = readFigures(body.figures, { accounts, utr, declarant: { name: declarantName, status: declarantStatus } }, errorMessages);
+  if (figures && accounts.periodStart && accounts.periodEnd && isValidIsoDate(figures.periodStart) && isValidIsoDate(figures.periodEnd)) {
+    if (accounts.periodEnd < figures.periodStart || accounts.periodStart > figures.periodEnd) {
       errorMessages.push("The accounts period does not overlap the return period");
     }
   }
@@ -138,40 +134,34 @@ export function extractAndValidateCtReturnParameters(event, errorMessages, { req
     utr,
     tradeName,
     declarant: { name: declarantName, status: declarantStatus },
-    boxes,
-    computationLines,
+    figures,
     gatewayUserId,
     gatewayPassword,
   };
 }
 
 /**
- * Build the CT600 IRenvelope and the two attachments for a validated request. The typed company
- * facts overwrite the book export's, so the return, the accounts and the computations name the
- * same company, UTR and declarant.
+ * Build the CT600 IRenvelope and the two attachments for a validated request. The server works
+ * every box and computation line from the figures, so the return, the accounts and the
+ * computations name the same company, UTR and declarant.
  * @param {ReturnType<typeof extractAndValidateCtReturnParameters>} request
- * @returns {{irEnvelopeXml: string, accountsIxbrl: string, computationsIxbrl: string, boxes: object}}
+ * @returns {{irEnvelopeXml: string, accountsIxbrl: string, computationsIxbrl: string, boxes: object, computationLines: object, worked: object}}
  */
-export function buildCtReturnDocuments({ accounts, utr, tradeName, declarant, boxes, computationLines }) {
-  const returnBoxes = {
-    ...boxes,
-    1: accounts.companyName,
-    2: accounts.companyNumber,
-    3: utr,
-    4: 0,
-    975: declarant.name,
-    985: declarant.status,
-  };
+export function buildCtReturnDocuments({ accounts, utr, tradeName, figures }) {
+  const { boxes, computationLines, worked, periodStart, periodEnd } = deriveCt600FromFigures(
+    figures,
+    ltdTaxDataForPeriodEnd(figures.periodEnd),
+  );
   const accountsIxbrl = buildAccountsIxbrl(accounts);
   const computationsIxbrl = buildCtComputations({
     companyName: accounts.companyName,
     companyNumber: accounts.companyNumber,
     utr,
-    periodStart: returnBoxes[30],
-    periodEnd: returnBoxes[35],
+    periodStart,
+    periodEnd,
     tradeName,
     lines: computationLines,
   });
-  const irEnvelopeXml = buildCt600IrEnvelope({ boxes: returnBoxes, accountsIxbrl, computationsIxbrl });
-  return { irEnvelopeXml, accountsIxbrl, computationsIxbrl, boxes: returnBoxes };
+  const irEnvelopeXml = buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl });
+  return { irEnvelopeXml, accountsIxbrl, computationsIxbrl, boxes, computationLines, worked };
 }

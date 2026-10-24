@@ -199,8 +199,9 @@ export default Ajv2020Stub;`,
   };
 }
 
-// The bundle's public surface: the engine read, the three derivations, and the
-// schemas registered so the read validates with no further setup.
+// The bundle's public surface: the engine read, the three derivations, the CT600 figures
+// model (ct600Figures.js, the module the server works the boxes with), and the schemas
+// registered so the read validates with no further setup.
 const ENTRY_SOURCE = `
 import bookSchema from "@diy-accounting-uk/diya-gl/dist/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-book-v2.schema.json";
 import linesSchema from "@diy-accounting-uk/diya-gl/dist/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-lines-v2.schema.json";
@@ -210,6 +211,25 @@ import { readBookSource as readBookSourceWith } from "@diy-accounting-uk/diya-gl
 import { PRODUCTS } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 export const readBookSource = (bytes, name) => readBookSourceWith(bytes, name, { products: PRODUCTS });
 export { deriveVatReturn, deriveItsaQuarterlyUpdate, deriveItsaAnnualSubmission } from "@diy-accounting-uk/diya-gl";
+import { parse as parseToml } from "smol-toml";
+import { readFileSync } from "node:fs";
+import { diyaGlToScenario } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
+import { calculateFromDiyaGl } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-calculator.js";
+import { loadTaxDataForBook, productOf } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
+import { ct600FiguresFromResults, smallCompanyProfitAndLossFromPublishedAccount } from "./app/services/ct600Figures.js";
+export { deriveCt600FromFigures, validateCt600Figures } from "./app/services/ct600Figures.js";
+export async function ltdTaxData(financialYear) {
+  return parseToml(readFileSync("data/ltd-" + financialYear + ".toml", "utf8"));
+}
+function calculatedResultsFor(book, lines, taxData) {
+  const packageName = productOf(book);
+  return calculateFromDiyaGl(book, lines, packageName, taxData, diyaGlToScenario(book, lines, packageName));
+}
+export async function ct600FiguresFromBook(book, lines) {
+  const results = calculatedResultsFor(book, lines, await loadTaxDataForBook(book));
+  const profitAndLoss = { currentYear: smallCompanyProfitAndLossFromPublishedAccount(results["PubP&L"]) };
+  return ct600FiguresFromResults(results, { profitAndLoss });
+}
 `;
 
 async function main() {
