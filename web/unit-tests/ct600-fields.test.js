@@ -213,7 +213,15 @@ describe("the precision-code-ltd book filling the form", () => {
 
   test("the request the form builds passes the server's checks and works the same boxes as the book", () => {
     const values = valuesFromEntries(bookEntries);
-    const body = { ...ct600RequestFromValues(values, COMPANY, bookFigures.workingSheet), gatewayUserId: "user", gatewayPassword: "pass" };
+    const previewBody = ct600RequestFromValues(values, COMPANY, bookFigures.workingSheet);
+    const previewErrors = [];
+    const previewRequest = extractAndValidateCtReturnParameters({ body: JSON.stringify(previewBody) }, previewErrors, {
+      requireGatewayCredentials: false,
+      requireReviewedBoxes: false,
+    });
+    expect(previewErrors).toEqual([]);
+    const reviewedBoxes = buildCtReturnDocuments(previewRequest).boxes;
+    const body = { ...previewBody, reviewedBoxes, gatewayUserId: "user", gatewayPassword: "pass" };
     const errors = [];
     const request = extractAndValidateCtReturnParameters({ body: JSON.stringify(body) }, errors);
     expect(errors).toEqual([]);
