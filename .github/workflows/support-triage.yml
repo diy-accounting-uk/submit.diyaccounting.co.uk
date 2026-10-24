@@ -25,6 +25,22 @@ on:
         description: the support issue to triage again
         required: true
         type: string
+      gmail-thread-id:
+        description: the Gmail thread of the customer's message in the support mailbox; empty skips the draft
+        required: false
+        type: string
+      reply-to:
+        description: the customer's address, for the Gmail draft
+        required: false
+        type: string
+      reply-subject:
+        description: the subject of the customer's message, for the Gmail draft
+        required: false
+        type: string
+      reply-message-id:
+        description: the Message-ID header of the customer's message, for the Gmail draft
+        required: false
+        type: string
 
 permissions:
   id-token: write
@@ -324,6 +340,50 @@ jobs:
             cat /tmp/support-reply.md
           } >> "$GITHUB_STEP_SUMMARY"
 
+      # The draft goes into the support mailbox unsent; this workflow has no send step and the
+      # key's only scope is gmail.compose. The thread comes from the dispatch inputs and never
+      # from the issue body, which is public text. A public-form ticket carries no address, so it
+      # has no thread and the draft waits for a dispatch that names one.
+      - name: Stop when no Gmail draft can be made
+        if: steps.role.outputs.configured == 'true'
+        id: draft-key
+        env:
+          SUPPORT_GMAIL_DRAFT_KEY: ${{ secrets.SUPPORT_GMAIL_DRAFT_KEY }}
+          GMAIL_THREAD_ID: ${{ inputs.gmail-thread-id }}
+        run: |
+          if [ -z "${SUPPORT_GMAIL_DRAFT_KEY}" ]; then
+            echo "SUPPORT_GMAIL_DRAFT_KEY is not set on the prod environment, so no Gmail draft is made" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "configured=false" | tee -a "$GITHUB_OUTPUT"
+          elif [ -z "${GMAIL_THREAD_ID}" ]; then
+            echo "No Gmail thread was given, so no Gmail draft is made" | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "configured=false" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "configured=true" | tee -a "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install dependencies for the Gmail draft
+        if: steps.draft-key.outputs.configured == 'true'
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+
+      - name: Put the drafted reply in the support mailbox
+        if: steps.draft-key.outputs.configured == 'true'
+        id: gmail-draft
+        continue-on-error: true
+        env:
+          SUPPORT_GMAIL_DRAFT_KEY: ${{ secrets.SUPPORT_GMAIL_DRAFT_KEY }}
+          GMAIL_THREAD_ID: ${{ inputs.gmail-thread-id }}
+          REPLY_TO: ${{ inputs.reply-to }}
+          REPLY_SUBJECT: ${{ inputs.reply-subject }}
+          REPLY_MESSAGE_ID: ${{ inputs.reply-message-id }}
+        run: |
+          set -euo pipefail
+          node scripts/support-gmail-draft.mjs \
+            --thread-id "$GMAIL_THREAD_ID" --to "$REPLY_TO" --subject "$REPLY_SUBJECT" \
+            --in-reply-to "$REPLY_MESSAGE_ID" --body-file /tmp/support-reply.md \
+            --issue-number "$ISSUE_NUMBER" --out /tmp/support-draft-row.json | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "row=$(cat /tmp/support-draft-row.json)" >> "$GITHUB_OUTPUT"
+          echo "key=curated/support-drafts/dt=$(date -u +%F)/${{ github.run_id }}-${{ github.run_attempt }}.json" >> "$GITHUB_OUTPUT"
+
       - name: Add the matched label
         if: steps.role.outputs.configured == 'true'
         env:
@@ -358,6 +418,16 @@ jobs:
         run: |
           echo "failing the run: triage stopped after using its 60-turn budget" | tee -a "$GITHUB_STEP_SUMMARY"
           exit 1
+
+      # The acceptance measure: one row per draft. Comparing these rows with the mail the
+      # mailbox later sent gives the share of drafts sent as written.
+      - name: Write the support draft row to the lake
+        if: steps.gmail-draft.outcome == 'success' && steps.assume-triage-role.outcome == 'success'
+        uses: ./.github/actions/dora-row
+        with:
+          bucket: 'prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: ${{ steps.gmail-draft.outputs.key }}
+          row: ${{ steps.gmail-draft.outputs.row }}
 
       # Agent-run ledger row for the one-stop dashboard (v_agent_runs_daily). The triage job's own
       # skipped-budget row (above) covers the case where this job never ran at all; every outcome

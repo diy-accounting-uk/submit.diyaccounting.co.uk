@@ -2375,10 +2375,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-18 Run alarm and support triage
 
 - **Use when:** an [ALARM] or support issue needs an automated first-pass triage.
-- **Does:** run-triage-agent executes claude -p against Bedrock, Haiku with Sonnet escalation for complex cases. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue and support-triage.yml from a support issue.
+- **Does:** run-triage-agent executes claude -p against Bedrock, Haiku with Sonnet escalation for complex cases. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue and support-triage.yml from a support issue. When a dispatch names a Gmail thread and SUPPORT_GMAIL_DRAFT_KEY is set, support-triage.yml also puts the drafted reply into the support mailbox as an unsent draft with scripts/support-gmail-draft.mjs.
 - **Run:** `gh workflow run alarm-triage.yml`; `gh workflow run support-triage.yml`; security-review.yml runs it too (OPS-31)
 - **Entry:** `.github/actions/run-triage-agent/action.yml`
-- **Files:** .github/actions/run-triage-agent/action.yml, .github/workflows/alarm-triage.yml, .github/workflows/support-triage.yml, app/unit-tests/supportTriageWorkflow.test.js
+- **Files:** .github/actions/run-triage-agent/action.yml, .github/workflows/alarm-triage.yml, .github/workflows/support-triage.yml, app/unit-tests/supportTriageWorkflow.test.js, scripts/support-gmail-draft.mjs, app/unit-tests/scripts/supportGmailDraft.test.js
 - **Keywords:** triage agent, alarm triage, support triage, claude -p, bedrock, haiku, sonnet escalation
 - **Related:** OPS-17, OPS-19, OPS-20, OPS-23
 

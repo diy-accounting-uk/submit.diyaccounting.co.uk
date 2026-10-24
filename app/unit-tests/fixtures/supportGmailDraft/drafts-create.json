@@ -1,0 +1,26 @@
+{
+  "request": {
+    "url": "https://gmail.googleapis.com/gmail/v1/users/me/drafts",
+    "method": "POST",
+    "message": {
+      "threadId": "18f3a1b2c3d4e5f6",
+      "headers": [
+        "To: customer@example.com",
+        "Subject: Re: Cannot connect to HMRC",
+        "In-Reply-To: <CAF123@mail.example.com>",
+        "References: <CAF123@mail.example.com>",
+        "MIME-Version: 1.0",
+        "Content-Type: text/plain; charset=UTF-8",
+        "Content-Transfer-Encoding: 8bit"
+      ],
+      "body": "The guide explains how to reconnect to HMRC.\nA person will check your case."
+    }
+  },
+  "response": {
+    "status": 200,
+    "body": {
+      "id": "r-5521908300415112345",
+      "message": { "id": "18f3a1b2c3d4e600", "threadId": "18f3a1b2c3d4e5f6", "labelIds": ["DRAFT"] }
+    }
+  }
+}
