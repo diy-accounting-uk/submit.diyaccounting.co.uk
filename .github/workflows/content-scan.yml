@@ -48,10 +48,11 @@ jobs:
             BASE_SHA="${{ github.event.pull_request.base.sha }}"
           else
             BASE_SHA="${{ github.event.before }}"
-            if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
-              # First push of a new branch: there is no previous head, so the lines the branch
-              # adds are the ones since it left main. main's own lines were scanned when they
-              # were pushed there.
+            if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+              # First push of a new branch, or a force push whose previous head is no longer an
+              # object the checkout holds: there is no previous head to diff from, so the lines the
+              # branch adds are the ones since it left main. main's own lines were scanned when
+              # they were pushed there.
               BASE_SHA="$(git merge-base origin/main "${{ github.sha }}")"
             fi
           fi
