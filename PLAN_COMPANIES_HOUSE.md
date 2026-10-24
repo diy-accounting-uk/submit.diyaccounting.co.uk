@@ -832,7 +832,7 @@ through its own Lambda and its own activity's metering. `bundleManagement.js` pa
 which activity a call from the joint page charges (open question 1). DF2a answers that first and
 pins it with a unit test.
 
-**Open question 3, the Companies House copy.** The operator's to decide. The alternatives:
+**Open question 3, the Companies House copy.** Answer (operator, 2026-10-24): A, full by default with filleted offered. The alternatives considered:
 
 | Option | For | Against |
 |---|---|---|
