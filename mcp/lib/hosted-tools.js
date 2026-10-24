@@ -21,6 +21,7 @@ export const HOSTED_TOOL_NAMES = [
   "derive_itsa_annual_submission",
   "get_vat_receipt",
   "render_micro_entity_accounts_sandbox",
+  "request_companies_house_codes",
   "submit_micro_entity_accounts_sandbox",
   "poll_accounts_submission_sandbox",
   "get_confirmation_statement_data_sandbox",

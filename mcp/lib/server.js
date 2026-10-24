@@ -32,6 +32,7 @@ import {
   renderConfirmationStatement,
   submitConfirmationStatement,
   pollConfirmationStatement,
+  requestCompaniesHouseCodes,
 } from "./submit-tools.js";
 
 const PACKAGE_JSON = resolve(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
@@ -79,7 +80,6 @@ const confirmationStatementDirectorSchema = z.object({
   otherForenames: z.string().optional(),
   surname: z.string(),
   dob: z.string().describe("YYYY-MM-DD"),
-  personalCode: z.string().describe("The director's 11-character Companies House personal code"),
   nameMismatchReason: z.string().optional().describe("Required when the director's register name differs from Companies House's own"),
 });
 
@@ -331,14 +331,35 @@ export const TOOLS = {
     description:
       "Files confirmed micro-entity accounts through the Companies House XML Gateway, over the deployed API, for " +
       "companyNumber or, when clientId is given instead, for that practice client's own company number; returns the " +
-      "submission number. Takes the company authentication code on this one call only; it is not stored.",
+      "submission number. The company authentication code is not an argument: the user types it on the link " +
+      "request_companies_house_codes answers, and this call names that entry by codesEntryId. The entry is used up by this call.",
     inputSchema: {
       ...accountsFilingInputSchema,
       companyNumber: accountsFilingInputSchema.companyNumber.optional().describe("Required unless clientId is given"),
       clientId: z.string().optional().describe("A practice client's id, to resolve companyNumber from the client row instead"),
-      companyAuthCode: z.string().describe("The company's Companies House authentication code"),
+      codesEntryId: z
+        .string()
+        .describe("The entryId request_companies_house_codes answered, once the user has typed the codes on its link"),
     },
     handler: submitMicroEntityAccounts,
+  },
+  request_companies_house_codes: {
+    description:
+      "Answers a link where the user types the Companies House codes a filing needs, so the codes never appear in " +
+      "the chat. Answers {entryId, url, expiresAt}: show the user the url, wait for them to say they have saved the " +
+      "codes, then pass entryId as codesEntryId to the filing tool. The link works for ten minutes and its entry is " +
+      "used up by one filing call; ask again for a second filing. kind accounts is for submit_micro_entity_accounts_sandbox, " +
+      "confirmation-statement-data for get_confirmation_statement_data_sandbox, and confirmation-statement (with " +
+      "directors, in the order the filing lists them) for submit_confirmation_statement_sandbox. Over the deployed API.",
+    inputSchema: {
+      kind: z.enum(["accounts", "confirmation-statement", "confirmation-statement-data"]).describe("Which filing the codes are for"),
+      companyNumber: z.string().describe("The 8-character Companies House company number"),
+      directors: z
+        .array(z.object({ forename: z.string(), surname: z.string() }))
+        .optional()
+        .describe("Confirmation statement only: the directors in filing order; the page asks for one personal code each"),
+    },
+    handler: requestCompaniesHouseCodes,
   },
   poll_accounts_submission_sandbox: {
     description: "Accepted, rejected with reasons, or pending, for a submitted micro-entity accounts filing, over the deployed API.",
@@ -351,11 +372,14 @@ export const TOOLS = {
     description:
       "The register data a confirmation statement form is built from -- MadeUpDate, NextDueDate, SIC codes, " +
       "RegisteredEmailAddress, officers, PSCs, StatementOfCapital, Shareholdings, TradingOnMarket, DTR5Applies, the PSC " +
-      "exemption flags, and whether the payment period is paid -- over the deployed API. Takes the company " +
-      "authentication code on this one call only; it is not stored.",
+      "exemption flags, and whether the payment period is paid -- over the deployed API. The company " +
+      "authentication code is not an argument: the user types it on the link request_companies_house_codes " +
+      "(kind confirmation-statement-data) answers, and this call names that entry by codesEntryId, which it uses up.",
     inputSchema: {
       companyNumber: z.string().describe("The 8-character Companies House company number"),
-      companyAuthCode: z.string().describe("The company's Companies House authentication code"),
+      codesEntryId: z
+        .string()
+        .describe("The entryId request_companies_house_codes answered, once the user has typed the codes on its link"),
       madeUpDate: z.string().describe("The confirmation statement's made-up date, YYYY-MM-DD"),
       companyType: z.string().optional().describe("The company type, when the gateway needs it to resolve the request"),
     },
@@ -372,11 +396,14 @@ export const TOOLS = {
   submit_confirmation_statement_sandbox: {
     description:
       "Files a confirmed confirmation statement through the Companies House XML Gateway, over the deployed API; " +
-      "returns the submission number. Takes the company authentication code and every director's personal code on " +
-      "this one call only; neither is stored.",
+      "returns the submission number. The company authentication code and every director's personal code are not " +
+      "arguments: the user types them on the link request_companies_house_codes (kind confirmation-statement, with " +
+      "the directors in the order given here) answers, and this call names that entry by codesEntryId, which it uses up.",
     inputSchema: {
       ...confirmationStatementFilingInputSchema,
-      companyAuthCode: z.string().describe("The company's Companies House authentication code"),
+      codesEntryId: z
+        .string()
+        .describe("The entryId request_companies_house_codes answered, once the user has typed the codes on its link"),
     },
     handler: submitConfirmationStatement,
   },

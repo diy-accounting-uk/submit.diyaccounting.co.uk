@@ -19,6 +19,7 @@ import {
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
+import { applyCodesEntry } from "../../services/companiesHouseCodesEntry.js";
 import { isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
 import { isValidIsoDate } from "../../lib/hmrcValidation.js";
 import {
@@ -96,8 +97,14 @@ export async function ingestHandler(event) {
     });
   }
 
+  const codes = await applyCodesEntry(event, { userSub, kind: "confirmation-statement-data" });
+  if (codes.failure) {
+    return buildValidationError(request, [codes.failure], responseHeaders);
+  }
+  const filingEvent = codes.event;
+
   const errorMessages = [];
-  const { companyNumber, companyAuthCode, madeUpDate, companyType } = extractAndValidateParameters(event, errorMessages);
+  const { companyNumber, companyAuthCode, madeUpDate, companyType } = extractAndValidateParameters(filingEvent, errorMessages);
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);

@@ -239,3 +239,9 @@ HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/hmrc/hmrcCtReturnPreviewPos
 PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME  app/functions/hmrc/hmrcCtReturnPreviewPost.js  app/data/dynamoDbPracticeClientRepository.js getClient()/createClient(); reached here only via an unrelated re-export (e.g. BundleAuthorizationError from bundleManagement.js), never called by this handler
 HMRC_TRANSACTION_ENGINE_URL  app/functions/hmrc/hmrcCtReturnGet.js  app/services/hmrcTransactionEngine.js getTransactionEngineSubmissionUrl(): set only on the simulator lanes; unset means the External Test Service or the live service by the gateway-test flag
 HMRC_TRANSACTION_ENGINE_URL  app/functions/hmrc/hmrcCtReturnPost.js  app/services/hmrcTransactionEngine.js getTransactionEngineSubmissionUrl(): set only on the simulator lanes; unset means the External Test Service or the live service by the gateway-test flag
+
+# --- codes entry handler: imports the format checks from companiesHouseApi.js only (bucket b) ---
+BUNDLE_DYNAMODB_TABLE_NAME  app/functions/mcp/mcpCodesEntry.js  app/data/dynamoDbBundleRepository.js via bundleManagement.js's enforceBundles; reached here only via companiesHouseApi.js, whose isValidCompanyNumber and isValidCompaniesHousePersonalCode are the only exports this handler calls
+COMPANIES_HOUSE_BASE_URI  app/functions/mcp/mcpCodesEntry.js  app/services/companiesHouseApi.js getCompaniesHouseBaseUri(); this handler calls only the two format checks
+HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME  app/functions/mcp/mcpCodesEntry.js  app/data/dynamoDbHmrcApiRequestRepository.js via httpResponseHelper.js's performTokenExchange(); this handler imports other helpers from that file
+PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME  app/functions/mcp/mcpCodesEntry.js  app/data/dynamoDbPracticeClientRepository.js getClient()/createClient(); reached here only via companiesHouseApi.js, never called by this handler

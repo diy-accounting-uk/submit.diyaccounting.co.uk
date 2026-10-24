@@ -41,6 +41,7 @@ import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
+import { applyCodesEntry } from "../../services/companiesHouseCodesEntry.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
 
@@ -322,8 +323,14 @@ export async function ingestHandler(event) {
     });
   }
 
+  const codes = await applyCodesEntry(event, { userSub, kind: "accounts" });
+  if (codes.failure) {
+    return buildValidationError(request, [codes.failure], responseHeaders);
+  }
+  const filingEvent = codes.event;
+
   const errorMessages = [];
-  const accounts = extractAndValidateAccountsParameters(event, errorMessages, { clientId });
+  const accounts = extractAndValidateAccountsParameters(filingEvent, errorMessages, { clientId });
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);

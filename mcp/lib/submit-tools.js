@@ -272,7 +272,8 @@ export async function renderMicroEntityAccounts(session, params = {}) {
 
 /**
  * submit_micro_entity_accounts_sandbox: files confirmed figures with the company authentication code
- * (6 to 8 characters — Companies House's own format, checked by the route, not by this tool), for
+ * the user typed on the page request_companies_house_codes linked to (the call carries the entry's
+ * id, never the code; the route takes the entry once), for
  * companyNumber or, when clientId is given instead, for that practice client's own company number
  * (companiesHouseAccountsPost.js resolves it from the client row; a client that is not this
  * practice's own, or not yet authorised for Companies House filing, answers 403). Returns
@@ -281,12 +282,12 @@ export async function renderMicroEntityAccounts(session, params = {}) {
  * unlike list_vat_obligations and submit_vat_return.
  * @param {Object} session
  * @param {Object} params - as renderMicroEntityAccounts, but companyNumber is optional when
- *   clientId is given, plus companyAuthCode
+ *   clientId is given, plus codesEntryId
  */
 export async function submitMicroEntityAccounts(session, params = {}) {
-  const companyAuthCode = requireField("submit_micro_entity_accounts_sandbox", params, "companyAuthCode");
+  const codesEntryId = requireField("submit_micro_entity_accounts_sandbox", params, "codesEntryId");
   const body = accountsFilingBody("submit_micro_entity_accounts_sandbox", params, { allowClientId: true });
-  return callSubmitApi(session, "/api/v1/companies-house/accounts", { method: "POST", body: { ...body, companyAuthCode } });
+  return callSubmitApi(session, "/api/v1/companies-house/accounts", { method: "POST", body: { ...body, codesEntryId } });
 }
 
 /**
@@ -309,17 +310,17 @@ export async function pollAccountsSubmission(session, params = {}) {
  * resolve a company from a practice client's row, so this tool takes companyNumber only, not
  * clientId. Takes the company authentication code on this one call only; it is not stored.
  * @param {Object} session
- * @param {{companyNumber: string, companyAuthCode: string, madeUpDate: string, companyType?: string}} params
+ * @param {{companyNumber: string, codesEntryId: string, madeUpDate: string, companyType?: string}} params
  */
 export async function getConfirmationStatementData(session, params = {}) {
   const companyNumber = requireField("get_confirmation_statement_data_sandbox", params, "companyNumber");
-  const companyAuthCode = requireField("get_confirmation_statement_data_sandbox", params, "companyAuthCode");
+  const codesEntryId = requireField("get_confirmation_statement_data_sandbox", params, "codesEntryId");
   const madeUpDate = requireField("get_confirmation_statement_data_sandbox", params, "madeUpDate");
   const { companyType } = params;
 
   return callSubmitApi(session, `/api/v1/companies-house/company/${encodeURIComponent(companyNumber)}/filing-data`, {
     method: "POST",
-    body: { companyAuthCode, madeUpDate, ...(companyType !== undefined ? { companyType } : {}) },
+    body: { codesEntryId, madeUpDate, ...(companyType !== undefined ? { companyType } : {}) },
   });
 }
 
@@ -360,6 +361,8 @@ function confirmationStatementFilingBody(toolName, params) {
   };
 }
 
+const RENDER_PLACEHOLDER_PERSONAL_CODE = "AAAAAA00000";
+
 /**
  * render_confirmation_statement_sandbox: the rendered ConfirmationAndVerificationStatement body for
  * confirmed answers, without reaching the Companies House XML Gateway. Every director's personal
@@ -368,27 +371,31 @@ function confirmationStatementFilingBody(toolName, params) {
  * @param {{companyNumber: string, companyName: string, dateSigned: string, reviewDate: string,
  *   sicCodes?: string[], statementOfCapital?: Object, shareholdings?: Object[],
  *   registeredEmailAddress?: string, lawfulPurposeStatementAccepted: true, stateConfirmationAccepted: true,
- *   directors: {forename: string, surname: string, dob: string, personalCode: string}[]}} params
+ *   directors: {forename: string, surname: string, dob: string}[]}} params
  */
 export async function renderConfirmationStatement(session, params = {}) {
   const body = confirmationStatementFilingBody("render_confirmation_statement_sandbox", params);
+  // The route validates a personal code on every director and masks it in the rendered body, so a
+  // preview sends a code-shaped placeholder and the user never types a real one into the chat.
+  body.directors = body.directors.map((director) => ({ ...director, personalCode: RENDER_PLACEHOLDER_PERSONAL_CODE }));
   return callSubmitApi(session, "/api/v1/companies-house/confirmation-statement/render", { method: "POST", body });
 }
 
 /**
  * submit_confirmation_statement_sandbox: files confirmed answers with the company authentication code
- * (6 to 8 characters — Companies House's own format, checked by the route, not by this tool) and
- * every director's personal code (11 characters each, carried on the directors array). Returns
+ * and every director's personal code, which the user typed on the page request_companies_house_codes
+ * linked to; the directors array must list the directors that link was minted for, in the same
+ * order, and the route puts each personal code on its director. Returns
  * {submissionNumber, gatewayTimestamp, pollInterval}; poll_confirmation_statement_sandbox takes the
  * submissionNumber to reach the filing's outcome. This route answers synchronously (200/201),
  * unlike list_vat_obligations and submit_vat_return.
  * @param {Object} session
- * @param {Object} params - as renderConfirmationStatement, plus companyAuthCode
+ * @param {Object} params - as renderConfirmationStatement without the personal codes, plus codesEntryId
  */
 export async function submitConfirmationStatement(session, params = {}) {
-  const companyAuthCode = requireField("submit_confirmation_statement_sandbox", params, "companyAuthCode");
+  const codesEntryId = requireField("submit_confirmation_statement_sandbox", params, "codesEntryId");
   const body = confirmationStatementFilingBody("submit_confirmation_statement_sandbox", params);
-  return callSubmitApi(session, "/api/v1/companies-house/confirmation-statement", { method: "POST", body: { ...body, companyAuthCode } });
+  return callSubmitApi(session, "/api/v1/companies-house/confirmation-statement", { method: "POST", body: { ...body, codesEntryId } });
 }
 
 /**
@@ -402,4 +409,26 @@ export async function submitConfirmationStatement(session, params = {}) {
 export async function pollConfirmationStatement(session, params = {}) {
   const submissionNumber = requireField("poll_confirmation_statement_sandbox", params, "submissionNumber");
   return callSubmitApi(session, `/api/v1/companies-house/confirmation-statement/${encodeURIComponent(submissionNumber)}`);
+}
+
+const CODES_KINDS = ["accounts", "confirmation-statement", "confirmation-statement-data"];
+
+/**
+ * request_companies_house_codes: mints a codes entry and answers the link where the user types the
+ * Companies House codes. The entry expires in ten minutes and the first filing call that names it
+ * uses it up. Answers {entryId, url, expiresAt}; the filing tool takes entryId as codesEntryId.
+ * @param {Object} session
+ * @param {{kind: "accounts"|"confirmation-statement"|"confirmation-statement-data", companyNumber: string,
+ *   directors?: {forename: string, surname: string}[]}} params - directors are the confirmation
+ *   statement's directors, in the order the filing lists them
+ */
+export async function requestCompaniesHouseCodes(session, params = {}) {
+  const kind = requireField("request_companies_house_codes", params, "kind");
+  if (!CODES_KINDS.includes(kind)) throw new Error(`request_companies_house_codes kind must be one of ${CODES_KINDS.join(", ")}`);
+  const companyNumber = requireField("request_companies_house_codes", params, "companyNumber");
+  const directors = kind === "confirmation-statement" ? requireField("request_companies_house_codes", params, "directors") : undefined;
+  return callSubmitApi(session, "/api/v1/mcp/codes-entries", {
+    method: "POST",
+    body: { kind, companyNumber, ...(directors ? { directors } : {}) },
+  });
 }

@@ -22,6 +22,7 @@ import {
   renderConfirmationStatement,
   submitConfirmationStatement,
   pollConfirmationStatement,
+  requestCompaniesHouseCodes,
 } from "../lib/submit-tools.js";
 import { createSession } from "../lib/book-tools.js";
 import { TOOLS } from "../lib/server.js";
@@ -99,7 +100,7 @@ const CONFIRMATION_STATEMENT_PARAMS = {
   reviewDate: "2026-03-01",
   lawfulPurposeStatementAccepted: true,
   stateConfirmationAccepted: true,
-  directors: [{ forename: "Jo", surname: "Brick", dob: "1980-04-12", personalCode: "AB123CD45E" }],
+  directors: [{ forename: "Jo", surname: "Brick", dob: "1980-04-12" }],
 };
 
 describe("submit-tools", () => {
@@ -433,26 +434,27 @@ describe("submit-tools", () => {
   });
 
   describe("submit_micro_entity_accounts_sandbox", () => {
-    it("posts the balance sheet with the company authentication code and returns the submission number", async () => {
+    it("posts the balance sheet with the codes entry id and returns the submission number", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await submitMicroEntityAccounts(session, { ...ACCOUNTS_PARAMS, companyAuthCode: "Sim0123" });
+      const result = await submitMicroEntityAccounts(session, { ...ACCOUNTS_PARAMS, codesEntryId: "entry-1" });
 
       expect(result).toEqual(SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE);
       const [, init] = mockFetch.mock.calls[0];
       const body = JSON.parse(init.body);
-      expect(body.companyAuthCode).toBe("Sim0123");
+      expect(body.codesEntryId).toBe("entry-1");
+      expect(body.companyAuthCode).toBeUndefined();
     });
 
-    it("requires companyAuthCode", async () => {
-      await expect(submitMicroEntityAccounts(session, ACCOUNTS_PARAMS)).rejects.toThrow("companyAuthCode");
+    it("requires codesEntryId", async () => {
+      await expect(submitMicroEntityAccounts(session, ACCOUNTS_PARAMS)).rejects.toThrow("codesEntryId");
     });
 
     it("requires companyNumber, or clientId", async () => {
       const withoutCompanyNumber = { ...ACCOUNTS_PARAMS };
       delete withoutCompanyNumber.companyNumber;
-      await expect(submitMicroEntityAccounts(session, { ...withoutCompanyNumber, companyAuthCode: "Sim0123" })).rejects.toThrow(
+      await expect(submitMicroEntityAccounts(session, { ...withoutCompanyNumber, codesEntryId: "entry-1" })).rejects.toThrow(
         "companyNumber",
       );
     });
@@ -466,7 +468,7 @@ describe("submit-tools", () => {
       await submitMicroEntityAccounts(session, {
         ...withoutCompanyNumber,
         clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
-        companyAuthCode: "Sim0123",
+        codesEntryId: "entry-1",
       });
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body);
@@ -503,13 +505,13 @@ describe("submit-tools", () => {
   });
 
   describe("get_confirmation_statement_data_sandbox", () => {
-    it("posts the authentication code and made-up date and returns the register data", async () => {
+    it("posts the codes entry id and made-up date and returns the register data", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, CONFIRMATION_STATEMENT_DATA_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
       const result = await getConfirmationStatementData(session, {
         companyNumber: "12345678",
-        companyAuthCode: "Sim0123",
+        codesEntryId: "entry-1",
         madeUpDate: "2026-03-01",
       });
 
@@ -520,24 +522,25 @@ describe("submit-tools", () => {
       expect(init.method).toBe("POST");
       expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
       const body = JSON.parse(init.body);
-      expect(body.companyAuthCode).toBe("Sim0123");
+      expect(body.codesEntryId).toBe("entry-1");
+      expect(body.companyAuthCode).toBeUndefined();
       expect(body.madeUpDate).toBe("2026-03-01");
     });
 
     it("requires companyNumber", async () => {
-      await expect(getConfirmationStatementData(session, { companyAuthCode: "Sim0123", madeUpDate: "2026-03-01" })).rejects.toThrow(
+      await expect(getConfirmationStatementData(session, { codesEntryId: "entry-1", madeUpDate: "2026-03-01" })).rejects.toThrow(
         "companyNumber",
       );
     });
 
-    it("requires companyAuthCode", async () => {
+    it("requires codesEntryId", async () => {
       await expect(getConfirmationStatementData(session, { companyNumber: "12345678", madeUpDate: "2026-03-01" })).rejects.toThrow(
-        "companyAuthCode",
+        "codesEntryId",
       );
     });
 
     it("requires madeUpDate", async () => {
-      await expect(getConfirmationStatementData(session, { companyNumber: "12345678", companyAuthCode: "Sim0123" })).rejects.toThrow(
+      await expect(getConfirmationStatementData(session, { companyNumber: "12345678", codesEntryId: "entry-1" })).rejects.toThrow(
         "madeUpDate",
       );
     });
@@ -548,7 +551,7 @@ describe("submit-tools", () => {
 
       await getConfirmationStatementData(session, {
         companyNumber: "12345678",
-        companyAuthCode: "Sim0123",
+        codesEntryId: "entry-1",
         madeUpDate: "2026-03-01",
         companyType: "plc",
       });
@@ -572,7 +575,7 @@ describe("submit-tools", () => {
       expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
       const body = JSON.parse(init.body);
       expect(body.companyAuthCode).toBeUndefined();
-      expect(body.directors[0].personalCode).toBe("AB123CD45E");
+      expect(body.directors[0].personalCode).toBe("AAAAAA00000");
     });
 
     it("requires at least one director", async () => {
@@ -624,27 +627,28 @@ describe("submit-tools", () => {
   });
 
   describe("submit_confirmation_statement_sandbox", () => {
-    it("posts the form body with the company authentication code and returns the submission number", async () => {
+    it("posts the form body with the codes entry id and returns the submission number", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_CONFIRMATION_STATEMENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await submitConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, companyAuthCode: "Sim0123" });
+      const result = await submitConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, codesEntryId: "entry-1" });
 
       expect(result).toEqual(SUBMIT_CONFIRMATION_STATEMENT_RESPONSE);
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/confirmation-statement");
       const body = JSON.parse(init.body);
-      expect(body.companyAuthCode).toBe("Sim0123");
-      expect(body.directors[0].personalCode).toBe("AB123CD45E");
+      expect(body.codesEntryId).toBe("entry-1");
+      expect(body.companyAuthCode).toBeUndefined();
+      expect(body.directors[0].personalCode).toBeUndefined();
     });
 
-    it("requires companyAuthCode", async () => {
-      await expect(submitConfirmationStatement(session, CONFIRMATION_STATEMENT_PARAMS)).rejects.toThrow("companyAuthCode");
+    it("requires codesEntryId", async () => {
+      await expect(submitConfirmationStatement(session, CONFIRMATION_STATEMENT_PARAMS)).rejects.toThrow("codesEntryId");
     });
 
     it("requires at least one director", async () => {
       await expect(
-        submitConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, directors: [], companyAuthCode: "Sim0123" }),
+        submitConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, directors: [], codesEntryId: "entry-1" }),
       ).rejects.toThrow("director");
     });
 
@@ -656,7 +660,7 @@ describe("submit-tools", () => {
         .mockResolvedValueOnce(jsonResponse(201, SUBMIT_CONFIRMATION_STATEMENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const promise = submitConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, companyAuthCode: "Sim0123" });
+      const promise = submitConfirmationStatement(session, { ...CONFIRMATION_STATEMENT_PARAMS, codesEntryId: "entry-1" });
       await vi.runAllTimersAsync();
       const result = await promise;
 
@@ -704,6 +708,65 @@ describe("submit-tools", () => {
       expect(TOOLS.render_confirmation_statement_sandbox.handler).toBe(renderConfirmationStatement);
       expect(TOOLS.submit_confirmation_statement_sandbox.handler).toBe(submitConfirmationStatement);
       expect(TOOLS.poll_confirmation_statement_sandbox.handler).toBe(pollConfirmationStatement);
+    });
+  });
+
+  describe("request_companies_house_codes", () => {
+    it("posts the kind and company number and answers the link", async () => {
+      const answer = {
+        entryId: "11111111-2222-4333-8444-555555555555",
+        url: "https://submit.diyaccounting.co.uk/companies-house/mcpCodes.html?entry=x",
+      };
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, answer));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await requestCompaniesHouseCodes(session, { kind: "accounts", companyNumber: "12345678" });
+
+      expect(result).toEqual(answer);
+      const [url, init] = mockFetch.mock.calls[0];
+      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/mcp/codes-entries");
+      expect(init.method).toBe("POST");
+      expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
+      expect(JSON.parse(init.body)).toEqual({ kind: "accounts", companyNumber: "12345678" });
+    });
+
+    it("sends the directors for a confirmation statement and requires them", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, { entryId: "x", url: "y" }));
+      vi.stubGlobal("fetch", mockFetch);
+      const directors = [{ forename: "Jo", surname: "Brick" }];
+
+      await requestCompaniesHouseCodes(session, { kind: "confirmation-statement", companyNumber: "12345678", directors });
+
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body).directors).toEqual(directors);
+      await expect(requestCompaniesHouseCodes(session, { kind: "confirmation-statement", companyNumber: "12345678" })).rejects.toThrow(
+        "directors",
+      );
+    });
+
+    it("refuses a kind it does not know", async () => {
+      await expect(requestCompaniesHouseCodes(session, { kind: "vat", companyNumber: "12345678" })).rejects.toThrow("kind");
+    });
+  });
+
+  describe("the tool schemas", () => {
+    it("carry no argument that holds a Companies House code", () => {
+      const holdsCode = (name) => /authcode|personalcode/i.test(name);
+      for (const [toolName, tool] of Object.entries(TOOLS)) {
+        const argumentNames = JSON.stringify(Object.keys(tool.inputSchema));
+        expect(holdsCode(argumentNames), toolName).toBe(false);
+      }
+      const directorsSchema = TOOLS.submit_confirmation_statement_sandbox.inputSchema.directors;
+      expect(JSON.stringify(directorsSchema.element.shape)).not.toMatch(/personalCode/i);
+    });
+
+    it("name the entry on each tool that files or reads with the codes", () => {
+      for (const name of [
+        "submit_micro_entity_accounts_sandbox",
+        "submit_confirmation_statement_sandbox",
+        "get_confirmation_statement_data_sandbox",
+      ]) {
+        expect(Object.keys(TOOLS[name].inputSchema), name).toContain("codesEntryId");
+      }
     });
   });
 });
