@@ -112,10 +112,10 @@ The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarde
 - B34g2b: blocked by B34g1 and O34g; the ETS filing from the page
 - CT3a: on main (PR #533; the CT2 design below)
 - CT3b: on main (PR #534 the form and the card's `ct600` kind, PR #535 the visual pass); CT1 on main (PR #530)
-- CT3c: the review and the journeys on main (PR #535); the server-side figures check is ready (`NEXT.md` CT3c)
-- CT3d: ready (`NEXT.md` CT3d; it answers open question 14 by building the FRS 105 attachment)
+- CT3c: on main (PR #535 the review and the journeys, PR #536 the reviewed-boxes check)
+- CT3d: the FRS 105 attachment with a profit and loss account on main (PR #536, TPVS accepted); the page's micro-entity entry path is `NEXT.md` CT3e
 - CT4: ready (the videos, on `NEXT.md`)
-- DF2a: blocked by CT3c, B34c and B34g2b (the DF1 design below)
+- DF2a: blocked by B34c and B34g2b (the DF1 design below)
 - DF2b: blocked by DF2a
 - DF2c: blocked by DF2a
 - IX2a: in flight (spreadsheets PR #167; the IX1 design below)
@@ -1105,8 +1105,8 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 | B34g2b | One ETS filing from the page, polled and deleted; then `prod` on the activity (NEXT.md B34g2b) | ~2 | Sonnet | B34g1, O34g | Blocked |
 | CT3a | The CT600 figures model in one module for the browser and the server; the server derives the boxes; the precision-code-ltd regression and TPVS proof (the CT2 design) | ~8 | Sonnet | — | On main (PR #533) |
 | CT3b | The typed entry form, the field table with CT1's labels, the live checks, the card's `ct600` kind (the CT2 design) | ~7 | Sonnet | — | On main (PR #534, PR #535) |
-| CT3c | The check-your-answers review with Change links, history, and the typed and book behaviour cases (the CT2 design); the review and journeys are on main (PR #535), the server-side figures check remains (`NEXT.md` CT3c) | ~5 | Sonnet | — | Ready |
-| CT3d | A micro-entity's FRS 105 accounts with a P&L as the CT600 attachment (the CT2 design, open question 14) | ~5 | Sonnet | — | Ready |
+| CT3c | The check-your-answers review with Change links, history, and the typed and book behaviour cases (the CT2 design); the submit refuses figures that differ from the reviewed boxes | ~5 | Sonnet | — | On main (PR #535, PR #536) |
+| CT3d | A micro-entity's FRS 105 accounts with a P&L as the CT600 attachment (the CT2 design, open question 14); the page's entry path is `NEXT.md` CT3e | ~5 | Sonnet | — | On main (PR #536) |
 | DF2a | The joint journey on the CT600 page: the send-to question, Companies House then HMRC, the lock after `ACCEPT`, `jointFilingId` on both receipts (the DF1 design) | ~8 | Sonnet | CT3c, B34c, B34g2b | Blocked |
 | DF2b | One live joint filing for DIY Accounting Limited; `prod` on the activity (the DF1 design) | ~2 | Sonnet | DF2a | Blocked |
 | DF2c | Amended accounts at Companies House and an amended CT600 from the locked state (the DF1 design) | ~6 | Sonnet | DF2a | Blocked |
