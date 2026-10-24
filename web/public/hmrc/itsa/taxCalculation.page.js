@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+import { calculationCopyHtml, mountCopy } from "../../lib/itsa-calculation-record.js";
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
@@ -55,41 +57,57 @@ function el(tag, className, text) {
   return node;
 }
 
+const TAX_BREAKDOWN_VALUE_IDS = {
+  "taxCalculation.incomeTax.totalIncomeTaxDue": "incomeTaxAmount",
+  "taxCalculation.nics.totalNic": "nicsAmount",
+  "taxCalculation.totalTaxDeducted": "totalTaxDeductedAmount",
+};
+
+const JOURNEY_LINKS = [
+  { href: "dashboard.html", text: "Back to Income Tax" },
+  { href: "lossesAndClaims.html", text: "Check your losses and claims" },
+];
+
+function messageList(value) {
+  return Array.isArray(value) ? value.filter((message) => message && typeof message === "object") : [];
+}
+
+function messageLine(message) {
+  const id = typeof message.id === "string" && message.id.trim() ? `${message.id.trim()}: ` : "";
+  const text = typeof message.text === "string" ? message.text : "";
+  return { id, text };
+}
+
 function displayCalculation(calculation, nino, taxYear, calculationType) {
   const figures = document.getElementById("calculationFigures");
   const messagesContainer = document.getElementById("calculationMessages");
   const calc = calculation?.calculation;
   const messages = {
-    info: calculation?.messages?.info || [],
-    warnings: calculation?.messages?.warnings || [],
-    errors: calculation?.messages?.errors || [],
+    info: messageList(calculation?.messages?.info),
+    warnings: messageList(calculation?.messages?.warnings),
+    errors: messageList(calculation?.messages?.errors),
   };
 
-  const calculationId = calculation?.metadata?.calculationId;
+  const calculationId = typeof calculation?.metadata?.calculationId === "string" ? calculation.metadata.calculationId : "";
   hmrcAssistDraft = calc && calculationId ? { nino, taxYear, calculationId } : null;
   hmrcAssist.reset();
 
-  if (calc) {
+  const continueLink = document.getElementById("continueToFinalDeclaration");
+  if (calc && typeof calc === "object") {
     figures.style.display = "block";
-    const taxCalculation = calc.taxCalculation || {};
-    document.getElementById("totalIncomeTaxAndNicsDue").textContent = HmrcFieldTable.formatMoney(taxCalculation.totalIncomeTaxAndNicsDue);
-    renderTaxBreakdown(calc);
-    HmrcFieldTable.mountFieldTable(
-      document.getElementById("allowancesAndDeductions"),
-      HmrcFieldTable.allowanceRows(calc.allowancesAndDeductions),
-      { caption: "Allowances and deductions", emptyText: "HMRC's calculation carries no allowances or deductions." },
+    const breakdownRows = HmrcFieldTable.taxCalculationRows(calc).map((row) => ({ ...row, valueId: TAX_BREAKDOWN_VALUE_IDS[row.field] }));
+    const allowanceRows = HmrcFieldTable.allowanceRows(calc.allowancesAndDeductions);
+    mountCopy(
+      document.getElementById("calculationCopy"),
+      calculationCopyHtml({ calculation, nino, taxYear, calculationType, breakdownRows, allowanceRows, links: JOURNEY_LINKS }),
     );
-
-    renderBusinessProfitAndLoss(calc.businessProfitAndLoss || []);
-
-    document.getElementById("calculationIdDisplay").textContent = `Calculation ID: ${calculation.metadata?.calculationId || "-"}`;
+    HmrcFieldTable.mountFieldKey(document.getElementById("fieldKey"), [...breakdownRows, ...allowanceRows]);
 
     // Gate on the calculationType the customer requested, not HMRC's echoed metadata -
     // the sandbox's default (no Gov-Test-Scenario) retrieve response is a fixed example
     // unrelated to what was actually triggered, so its calculationType never matches.
-    const continueLink = document.getElementById("continueToFinalDeclaration");
-    if (calculationType === "intent-to-finalise") {
-      const params = new URLSearchParams({ nino, taxYear, calculationId: calculation.metadata.calculationId, calculationType });
+    if (calculationType === "intent-to-finalise" && calculationId) {
+      const params = new URLSearchParams({ nino, taxYear, calculationId, calculationType });
       document.getElementById("continueToFinalDeclarationLink").href = `finalDeclaration.html?${params}`;
       continueLink.style.display = "block";
     } else {
@@ -97,6 +115,7 @@ function displayCalculation(calculation, nino, taxYear, calculationType) {
     }
   } else {
     figures.style.display = "none";
+    continueLink.style.display = "none";
   }
 
   const allMessages = [
@@ -110,66 +129,17 @@ function displayCalculation(calculation, nino, taxYear, calculationType) {
     const list = el("ul");
     list.id = "calculationMessagesList";
     allMessages.forEach((m) => {
+      const { id, text } = messageLine(m);
       const item = el("li", `status-message ${m.level}`);
-      item.append(el("strong", "", `${m.id ?? ""}:`), ` ${m.text ?? ""}`);
+      if (id) item.append(el("strong", "", id.trim()), " ");
+      item.append(text);
       list.append(item);
     });
     messagesContainer.replaceChildren(el("h3", "", "Messages"), list);
   }
 }
 
-const TAX_BREAKDOWN_VALUE_IDS = {
-  "taxCalculation.incomeTax.totalIncomeTaxDue": "incomeTaxAmount",
-  "taxCalculation.nics.totalNic": "nicsAmount",
-  "taxCalculation.totalTaxDeducted": "totalTaxDeductedAmount",
-};
-
-function renderTaxBreakdown(calc) {
-  const rows = HmrcFieldTable.taxCalculationRows(calc).map((row) => ({ ...row, valueId: TAX_BREAKDOWN_VALUE_IDS[row.field] }));
-  HmrcFieldTable.mountFieldTable(document.getElementById("taxBreakdown"), rows, {
-    caption: "Income Tax and National Insurance",
-  });
-}
-
-// One row per business HMRC's calculation carries - a customer with one business sees one
-// row. Where a row carries a loss figure (a brought-forward loss, one used this year, the
-// adjusted loss itself, or the taxable profit after it is deducted) that figure shows too,
-// so a customer can see the loss they claimed on Losses and Claims actually being used.
-function renderBusinessProfitAndLoss(businessProfitAndLoss) {
-  const container = document.getElementById("businessProfitAndLossTable");
-  if (!businessProfitAndLoss || businessProfitAndLoss.length === 0) {
-    container.replaceChildren();
-    return;
-  }
-
-  const lossFields = [
-    ["totalBroughtForwardIncomeTaxLosses", "Brought forward losses"],
-    ["broughtForwardIncomeTaxLossesUsed", "Brought forward losses used"],
-    ["adjustedIncomeTaxLoss", "Adjusted loss"],
-    ["taxableProfitAfterIncomeTaxLossesDeduction", "Taxable profit after losses deducted"],
-  ];
-
-  const headerRow = document.createElement("tr");
-  ["Business", "Taxable profit", ...lossFields.map(([, label]) => label)].forEach((heading) => headerRow.append(el("th", "", heading)));
-  const thead = document.createElement("thead");
-  thead.append(headerRow);
-
-  const tbody = document.createElement("tbody");
-  businessProfitAndLoss.forEach((entry) => {
-    const name = entry.incomeSourceName || entry.incomeSourceType || entry.incomeSourceId;
-    const row = document.createElement("tr");
-    row.append(
-      el("td", "", `${name ?? ""} (${entry.incomeSourceId ?? ""})`),
-      el("td", "field-amount", HmrcFieldTable.formatMoney(entry.taxableProfit)),
-      ...lossFields.map(([key]) => el("td", "field-amount", HmrcFieldTable.formatMoney(entry[key]))),
-    );
-    tbody.append(row);
-  });
-
-  const table = el("table", "results-table");
-  table.append(thead, tbody);
-  container.replaceChildren(table);
-}
+window.displayCalculation = displayCalculation;
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
   const accessToken = sessionStorage.getItem("hmrcAccessToken");

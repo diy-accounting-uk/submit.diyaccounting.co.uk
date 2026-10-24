@@ -191,7 +191,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
       });
     });
 
-    await expect(page.locator("#calculationIdDisplay")).toContainText("shown-calc-id");
+    await expect(page.locator(".customer-copy-header")).toContainText("shown-calc-id");
   });
 
   // The gap this page exists to catch is a business the customer has that HMRC did not count,
@@ -242,11 +242,88 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     });
 
     const businessesList = page.locator("#businessesList");
-    await expect(businessesList).toContainText("self-employment");
-    await expect(businessesList).toContainText("XAIS12345678901");
-    await expect(businessesList).toContainText("uk-property");
-    await expect(businessesList).toContainText("XAIS12345678902");
-    await expect(businessesList).toContainText("2024-04-05");
+    await expect(businessesList).toContainText("Self-employment (XAIS12345678901)");
+    await expect(businessesList).toContainText("UK property (XAIS12345678902)");
+    await expect(businessesList).toContainText("5 April 2024");
+    await expect(businessesList).not.toContainText("2024-04-05");
+  });
+
+  test("shows a dash for a business end date HMRC leaves out or gives as no date, and never an empty bracket pair", async ({ page }) => {
+    await loadPage(page);
+    await showBusinessesAndLossPositions(
+      page,
+      {
+        metadata: { calculationId: "calc-8", calculationType: "intent-to-finalise" },
+        calculation: { taxCalculation: { totalIncomeTaxAndNicsDue: 10 } },
+        inputs: {
+          incomeSources: {
+            businessIncomeSources: [
+              null,
+              { incomeSourceType: "self-employment" },
+              { incomeSourceId: "XAIS1", latestPeriodEndDate: "soon" },
+            ],
+          },
+        },
+      },
+      {},
+    );
+    const text = await page.locator("#businessesList").innerText();
+    expect(text).not.toMatch(/undefined|null|NaN|\(\)/);
+    await expect(page.locator("#businessesList tbody tr")).toHaveCount(2);
+    await expect(page.locator("#businessesList")).toContainText("Not checked: HMRC gave no business ID");
+    await expect(page.locator("#businessesList tbody tr").nth(1).locator("td").nth(1)).toHaveText("—");
+  });
+
+  test("keeps the declaration closed when HMRC's calculation carries no total", async ({ page }) => {
+    await loadPage(page);
+    await page.evaluate(() => {
+      document.getElementById("declarationContainer").style.display = "block";
+      window.displayCalculation({ metadata: { calculationId: "calc-0", calculationType: "intent-to-finalise" }, calculation: {} });
+    });
+    await expect(page.locator("#notReadyForDeclaration")).toContainText("no total");
+    await expect(page.locator("#declarationSection")).toBeHidden();
+    await expect(page.locator("#totalIncomeTaxAndNicsDue")).toHaveText("—");
+  });
+
+  test("shows the declaration as made, with the figures, the calculation id and the receipt time", async ({ page }) => {
+    await serveSiteStyles(page);
+    await loadPage(page);
+    const calculation = {
+      metadata: { calculationId: "calc-done", calculationType: "intent-to-finalise", calculationTimestamp: "2026-10-24T13:03:44.000Z" },
+      calculation: {
+        taxCalculation: {
+          totalIncomeTaxAndNicsDue: 7654.32,
+          incomeTax: { totalIncomeTaxDue: 6200.12 },
+          nics: { totalNic: 1454.2 },
+          totalTaxDeducted: 0,
+        },
+      },
+    };
+    for (const [width, height] of [
+      [1280, 1100],
+      [390, 900],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate((figures) => {
+        document.getElementById("retrieveForm").style.display = "none";
+        document.getElementById("finalDeclarationResults").style.display = "block";
+        window.showDeclarationCopy(
+          { nino: "AB123456C", taxYear: "2025-26", calculationId: "calc-done", totalIncomeTaxAndNicsDue: 7654.32 },
+          { receiptId: "2026-10-24T13:20:05.123Z-calc-done" },
+        );
+        return figures;
+      }, calculation);
+      const copy = page.locator("#declarationCopy");
+      await expect(copy.locator(".customer-copy-status")).toHaveText("Accepted by HMRC");
+      await expect(copy.locator(".customer-copy-submission")).toContainText("24 October 2026 at 14:20");
+      await expect(copy.locator(".customer-copy-submission")).toContainText("calc-done");
+      await expect(copy.locator("#declaredTotalDue")).toHaveText("7,654.32");
+      await expect(copy).toContainText("I confirm this information is correct and complete");
+      expectCleanFigures(expect, await copy.innerText());
+      const pageOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(pageOverflow).toBeLessThanOrEqual(0);
+      await page.screenshot({ path: screenshotPath(`finalDeclaration-made-${width}`).replace("-1280.png", ".png"), fullPage: true });
+    }
   });
 
   test("shows a loss with no claim recorded, and warns above the tick", async ({ page }) => {
@@ -315,28 +392,20 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
       });
     });
 
-    await expect(page.locator("#totalIncomeTaxAndNicsDue")).toHaveText("£7,654.32");
-    await expect(page.locator("#incomeTaxAmount")).toHaveText("£6,200.12");
-    await expect(page.locator("#totalTaxDeductedAmount")).toHaveText("-£99,999,999,999.99");
+    const allowances = page.locator('section[aria-label="Allowances and deductions"]');
+    await expect(page.locator("#totalIncomeTaxAndNicsDue")).toHaveText("7,654.32");
+    await expect(page.locator("#incomeTaxAmount")).toHaveText("6,200.12");
+    await expect(page.locator("#totalTaxDeductedAmount")).toHaveText("(99,999,999,999.99)");
 
-    const table = page.locator("#allowancesAndDeductions table.field-table");
-    const row = (field) => table.locator(`tr[data-hmrc-field="${field}"]`);
-    await expect(row("pensionContributions").locator(".field-name")).toHaveText("Pension contributions");
-    await expect(row("pensionContributions").locator("td.field-amount")).toHaveText("£5,000.99");
-    await expect(row("marriageAllowanceTransferOut.transferredOutAmount").locator("td.field-amount")).toHaveText("£1,260.00");
-    await expect(row("annuityPayments.rate").locator("td.field-amount")).toHaveText("20%");
-    await expect(row("personalAllowance").locator(".field-definition")).toContainText("The personal allowance available for the tax year.");
+    const table = allowances.locator("table.statement");
+    const row = (label) => table.locator("tbody tr", { has: page.locator("td.label", { hasText: new RegExp(`^${label}$`) }) });
+    await expect(row("Pension contributions").locator("td.figure")).toHaveText("5,000.99");
+    await expect(row("Marriage Allowance transferred out").locator("td.figure")).toHaveText("1,260.00");
+    await expect(row("Annual payments tax rate").locator("td.figure")).toHaveText("20%");
     await expect(table.locator("tbody tr")).toHaveCount(12);
-    for (const cells of await table.locator("tbody tr").evaluateAll((rows) => rows.map((r) => r.children.length))) {
-      expect(cells).toBe(2);
-    }
-    const amountAlign = await row("personalAllowance")
-      .locator("td.field-amount")
-      .evaluate((el) => getComputedStyle(el).textAlign);
-    expect(amountAlign).toBe("right");
 
     expectCleanFigures(expect, await page.locator("#declarationContainer").innerText());
-    await expect(page.locator(".field-table-source a").first()).toHaveAttribute("href", /individual-calculations-api\/8\.0/);
+    await expect(page.locator("#fieldKey .field-table-source a").first()).toHaveAttribute("href", /individual-calculations-api\/8\.0/);
 
     await page.locator("#declarationContainer").screenshot({ path: screenshotPath("finalDeclaration") });
   });
@@ -379,7 +448,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     await page.locator("#testScenario").selectOption("FINAL_DECLARATION_RECEIVED");
     await page.locator("#retrieveBtn").click();
 
-    await expect(page.locator("#totalIncomeTaxAndNicsDue")).toHaveText("£1,700.00");
+    await expect(page.locator("#totalIncomeTaxAndNicsDue")).toHaveText("1,700.00");
     await page.locator("#declarationTick").check();
     await page.locator("#submitDeclarationBtn").click();
     await expect(page.locator("#finalDeclarationResults")).toBeVisible();

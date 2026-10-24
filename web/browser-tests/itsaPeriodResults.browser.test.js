@@ -57,6 +57,29 @@ test.describe("ITSA period results", () => {
     expect(await amountOf(page, "#periodDetails", "turnover").evaluate((el) => getComputedStyle(el).textAlign)).toBe("right");
   });
 
+  test("period views print a dash, never a raw value, for a date or figure HMRC gives in an unexpected shape", async ({ page }) => {
+    await loadPage(page, "selfEmploymentPeriodView.html");
+    await page.evaluate(() =>
+      window.displayPeriod({
+        periodDates: { periodStartDate: "2023-13-45", periodEndDate: { nested: true } },
+        periodIncome: { turnover: "12" },
+        periodExpenses: { costOfGoods: null },
+      }),
+    );
+    for (const field of ["periodStartDate", "periodEndDate", "turnover", "costOfGoods"]) {
+      await expect(amountOf(page, "#periodDetails", field)).toHaveText("—");
+    }
+    await page.evaluate(() => window.displayPeriod(null));
+    expectCleanFigures(expect, (await page.locator("#periodDetails th, #periodDetails td").allInnerTexts()).join(" "));
+    expect(await page.locator("#periodDetails").innerText()).not.toMatch(/null|\[object|Invalid/);
+
+    await loadPage(page, "ukPropertyPeriodView.html");
+    await page.evaluate(() => window.displayPeriod({ fromDate: "yesterday", toDate: 20230705, ukNonFhlProperty: { income: "5000" } }));
+    await expect(amountOf(page, "#periodDetails", "fromDate")).toHaveText("yesterday");
+    await expect(amountOf(page, "#periodDetails", "periodAmount")).toHaveText("—");
+    expect(await page.locator("#periodDetails").innerText()).not.toMatch(/undefined|NaN|null|\[object/);
+  });
+
   test("UK property period view shows sterling amounts for a period and for a cumulative total", async ({ page }) => {
     await loadPage(page, "ukPropertyPeriodView.html");
     await page.evaluate(() =>

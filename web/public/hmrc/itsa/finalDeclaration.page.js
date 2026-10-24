@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+import { calculationCopyHtml, declarationCopyHtml, mountCopy, formatLongDate, businessLabel } from "../../lib/itsa-calculation-record.js";
+
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
@@ -46,8 +48,9 @@ function initializePage() {
 // agreed to on screen and what gets sent to HMRC must be the same thing.
 function updateSubmitEnabled() {
   const ticked = document.getElementById("declarationTick").checked;
+  const hasTotal = isAmount(retrievedCalculation?.calculation?.taxCalculation?.totalIncomeTaxAndNicsDue);
   const isFinaliseType = (requestedCalculationType || retrievedCalculation?.metadata?.calculationType) === "intent-to-finalise";
-  document.getElementById("submitDeclarationBtn").disabled = !(ticked && isFinaliseType);
+  document.getElementById("submitDeclarationBtn").disabled = !(ticked && isFinaliseType && hasTotal);
 }
 
 async function runRetrieveCalculation(nino, taxYear, calculationId, testScenario, runFraudPreventionHeaderValidation, accessToken) {
@@ -74,6 +77,16 @@ const TAX_BREAKDOWN_VALUE_IDS = {
   "taxCalculation.totalTaxDeducted": "totalTaxDeductedAmount",
 };
 
+const CALCULATION_LINKS = [
+  { href: "taxCalculation.html", text: "Calculate again" },
+  { href: "lossesAndClaims.html", text: "Check your losses and claims" },
+];
+
+const DECLARATION_LINKS = [
+  { href: "../receipt/receipts.html", text: "Your receipts" },
+  { href: "dashboard.html", text: "Back to Income Tax" },
+];
+
 function el(tag, className, text) {
   const node = document.createElement(tag);
   if (className) node.className = className;
@@ -81,39 +94,52 @@ function el(tag, className, text) {
   return node;
 }
 
+function breakdownRowsOf(calc) {
+  return HmrcFieldTable.taxCalculationRows(calc).map((row) => ({ ...row, valueId: TAX_BREAKDOWN_VALUE_IDS[row.field] }));
+}
+
+function isAmount(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
 function displayCalculation(calculation) {
   retrievedCalculation = calculation;
-  const calc = calculation?.calculation || {};
-  const taxCalculation = calc.taxCalculation || {};
-  document.getElementById("totalIncomeTaxAndNicsDue").textContent = HmrcFieldTable.formatMoney(taxCalculation.totalIncomeTaxAndNicsDue);
-  const breakdownRows = HmrcFieldTable.taxCalculationRows(calc).map((row) => ({
-    ...row,
-    valueId: TAX_BREAKDOWN_VALUE_IDS[row.field],
-  }));
-  HmrcFieldTable.mountFieldTable(document.getElementById("taxBreakdown"), breakdownRows, {
-    caption: "Income Tax and National Insurance",
-  });
-  HmrcFieldTable.mountFieldTable(
-    document.getElementById("allowancesAndDeductions"),
-    HmrcFieldTable.allowanceRows(calc.allowancesAndDeductions),
-    { caption: "Allowances and deductions", emptyText: "HMRC's calculation carries no allowances or deductions." },
+  const calc = calculation?.calculation && typeof calculation.calculation === "object" ? calculation.calculation : {};
+  const breakdownRows = breakdownRowsOf(calc);
+  const allowanceRows = HmrcFieldTable.allowanceRows(calc.allowancesAndDeductions);
+  mountCopy(
+    document.getElementById("calculationCopy"),
+    calculationCopyHtml({
+      calculation,
+      nino: retrievedNino,
+      taxYear: retrievedTaxYear,
+      calculationType: requestedCalculationType || calculation?.metadata?.calculationType,
+      breakdownRows,
+      allowanceRows,
+      links: CALCULATION_LINKS,
+    }),
   );
+  HmrcFieldTable.mountFieldKey(document.getElementById("fieldKey"), [...breakdownRows, ...allowanceRows]);
 
-  document.getElementById("calculationIdDisplay").textContent = `Calculation ID: ${calculation.metadata?.calculationId || "-"}`;
   document.getElementById("hmrcAssistUnacknowledged").hidden = !window.hmrcAssistMessages.unacknowledgedFor(
     "itsa",
-    calculation.metadata?.calculationId,
+    calculation?.metadata?.calculationId,
   );
 
   // The final declaration only ever confirms an intent-to-finalise calculation - anything
   // else (an in-year estimate, say) is refused here rather than sent to HMRC. Prefer the
   // type carried from the Tax Calculation page (see initializePage) over HMRC's own
   // retrieved metadata, which the sandbox's default scenario echoes as a fixed example.
-  const effectiveCalculationType = requestedCalculationType || calculation.metadata?.calculationType;
+  const effectiveCalculationType = requestedCalculationType || calculation?.metadata?.calculationType;
   const notReady = document.getElementById("notReadyForDeclaration");
   const declarationSection = document.getElementById("declarationSection");
   if (effectiveCalculationType !== "intent-to-finalise") {
     notReady.textContent = `This calculation is a ${effectiveCalculationType || "different"} calculation, not an intent to finalise. Trigger an intent to finalise calculation before declaring.`;
+    notReady.style.display = "block";
+    declarationSection.style.display = "none";
+  } else if (!isAmount(calc.taxCalculation?.totalIncomeTaxAndNicsDue)) {
+    notReady.textContent =
+      "HMRC's calculation gives no total for Income Tax and National Insurance, so there is nothing to declare yet. Trigger a fresh calculation.";
     notReady.style.display = "block";
     declarationSection.style.display = "none";
   } else {
@@ -163,7 +189,9 @@ function describeClaims(claims) {
 // shows a loss with no claim recorded is visible before the tick, not after.
 async function displayBusinessesAndLossPositions(calculation, nino, taxYear, accessToken) {
   const container = document.getElementById("businessesList");
-  const businesses = calculation?.inputs?.incomeSources?.businessIncomeSources || [];
+  const businesses = (calculation?.inputs?.incomeSources?.businessIncomeSources || []).filter(
+    (entry) => entry && typeof entry === "object",
+  );
 
   if (businesses.length === 0) {
     container.replaceChildren(el("p", "no-data", "HMRC counted no businesses in this calculation."));
@@ -176,19 +204,20 @@ async function displayBusinessesAndLossPositions(calculation, nino, taxYear, acc
 
   const profitAndLossByBusiness = {};
   (calculation?.calculation?.businessProfitAndLoss || []).forEach((entry) => {
-    profitAndLossByBusiness[entry.incomeSourceId] = entry;
+    if (entry && typeof entry === "object") profitAndLossByBusiness[entry.incomeSourceId] = entry;
   });
 
   const rows = await Promise.all(
     businesses.map(async (business) => {
       const profitAndLoss = profitAndLossByBusiness[business.incomeSourceId] || {};
       const hasLoss = Number(profitAndLoss.netLoss || 0) > 0 || Number(profitAndLoss.adjustedIncomeTaxLoss || 0) > 0;
-      const claims = await fetchClaims(nino, business.incomeSourceId, taxYear, accessToken);
-      return { business, hasLoss, claims };
+      const checkable = typeof business.incomeSourceId === "string" && business.incomeSourceId !== "";
+      const claims = checkable ? await fetchClaims(nino, business.incomeSourceId, taxYear, accessToken) : null;
+      return { business, hasLoss, claims, checkable };
     }),
   );
 
-  const anyUnclaimedLoss = rows.some((row) => row.hasLoss && !row.claims);
+  const anyUnclaimedLoss = rows.some((row) => row.checkable && row.hasLoss && !row.claims);
 
   const headerRow = document.createElement("tr");
   ["Business", "Latest period end date", "Loss position"].forEach((heading) => headerRow.append(el("th", "", heading)));
@@ -196,15 +225,19 @@ async function displayBusinessesAndLossPositions(calculation, nino, taxYear, acc
   thead.append(headerRow);
 
   const tbody = document.createElement("tbody");
-  rows.forEach(({ business, hasLoss, claims }) => {
-    const cellText = hasLoss && !claims ? "Loss shown, no claim recorded" : describeClaims(claims);
+  rows.forEach(({ business, hasLoss, claims, checkable }) => {
+    const cellText = !checkable
+      ? "Not checked: HMRC gave no business ID"
+      : hasLoss && !claims
+        ? "Loss shown, no claim recorded"
+        : describeClaims(claims);
     const lossCell = document.createElement("td");
-    if (hasLoss && !claims) lossCell.append(el("strong", "", cellText ?? ""));
+    if (checkable && hasLoss && !claims) lossCell.append(el("strong", "", cellText ?? ""));
     else lossCell.textContent = cellText ?? "";
     const row = document.createElement("tr");
     row.append(
-      el("td", "", `${business.incomeSourceType ?? ""} (${business.incomeSourceId ?? ""})`),
-      el("td", "", business.latestPeriodEndDate || "-"),
+      el("td", "", businessLabel({ incomeSourceType: business.incomeSourceType, incomeSourceId: business.incomeSourceId })),
+      el("td", "", formatLongDate(business.latestPeriodEndDate) || HmrcFieldTable.formatIsoDate(null)),
       lossCell,
     );
     tbody.append(row);
@@ -220,6 +253,31 @@ async function displayBusinessesAndLossPositions(calculation, nino, taxYear, acc
   document.getElementById("taxLiabilityAdjustmentLine").textContent = taxLiabilityAdjustments
     ? "A tax liability adjustment is recorded for this tax year."
     : "No tax liability adjustment is recorded for this tax year.";
+}
+
+// The declaration as made: the figures the customer confirmed, the calculation id, and the time
+// the receipt carries. After an HMRC sign-in redirect the page no longer holds the calculation,
+// so the copy then carries the total that was sent and the calculation id.
+function showDeclarationCopy(declarationDetails, result) {
+  const held = retrievedCalculation?.calculation ? retrievedCalculation : null;
+  const calculation = held || {
+    metadata: { calculationId: declarationDetails.calculationId },
+    calculation: { taxCalculation: { totalIncomeTaxAndNicsDue: declarationDetails.totalIncomeTaxAndNicsDue } },
+  };
+  const receiptId = typeof result?.receiptId === "string" ? result.receiptId : "";
+  const filedAt = /^(\d{4}-\d{2}-\d{2}T[\d:.]+Z)-/.exec(receiptId)?.[1] || new Date().toISOString();
+  mountCopy(
+    document.getElementById("declarationCopy"),
+    declarationCopyHtml({
+      calculation,
+      nino: declarationDetails.nino,
+      taxYear: declarationDetails.taxYear,
+      calculationId: declarationDetails.calculationId,
+      filedAt,
+      breakdownRows: held ? breakdownRowsOf(held.calculation) : [],
+      links: DECLARATION_LINKS,
+    }),
+  );
 }
 
 async function ensureAuthorizedThen(pendingKey, pendingValue, scope, run) {
@@ -313,7 +371,8 @@ async function handleSubmitDeclaration() {
         showLoading();
         hideStatus();
         showStatus("Submitting final declaration...", "info");
-        await runSubmitDeclaration(declarationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        const result = await runSubmitDeclaration(declarationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        showDeclarationCopy(declarationDetails, result);
         document.getElementById("declarationContainer").style.display = "none";
         document.getElementById("finalDeclarationResults").style.display = "block";
         hideStatus();
@@ -370,12 +429,13 @@ async function continueAfterOAuth() {
     } else if (pendingSubmit) {
       showLoading();
       showStatus("Submitting final declaration...", "info");
-      await runSubmitDeclaration(
+      const result = await runSubmitDeclaration(
         pendingSubmit.declarationDetails,
         pendingSubmit.testScenario,
         pendingSubmit.runFraudPreventionHeaderValidation,
         accessToken,
       );
+      showDeclarationCopy(pendingSubmit.declarationDetails, result);
       document.getElementById("declarationContainer").style.display = "none";
       document.getElementById("finalDeclarationResults").style.display = "block";
       hideStatus();
@@ -411,6 +471,10 @@ function handleOAuthCallback() {
 
 document.getElementById("itsaFinalDeclarationRetrieveForm").addEventListener("submit", handleRetrieveFormSubmission);
 document.getElementById("submitDeclarationBtn").addEventListener("click", handleSubmitDeclaration);
+
+window.displayCalculation = displayCalculation;
+window.displayBusinessesAndLossPositions = displayBusinessesAndLossPositions;
+window.showDeclarationCopy = showDeclarationCopy;
 
 document.getElementById("newSearchBtn")?.addEventListener("click", () => {
   document.getElementById("finalDeclarationResults").style.display = "none";
