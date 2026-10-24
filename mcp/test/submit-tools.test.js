@@ -743,6 +743,39 @@ describe("submit-tools", () => {
       );
     });
 
+    it("names the practice clients for a batch entry and needs no company number", async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce(
+          jsonResponse(200, {
+            clients: [
+              { clientId: "c1", displayName: "Alpha Ltd" },
+              { clientId: "c2", displayName: "Beta Ltd" },
+              { clientId: "c3", displayName: "Gamma" },
+            ],
+          }),
+        )
+        .mockResolvedValueOnce(jsonResponse(201, { entryId: "x", url: "y" }));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await requestCompaniesHouseCodes(session, { kind: "accounts", clientIds: ["c2", "c1"] });
+
+      expect(mockFetch.mock.calls[0][0]).toBe("https://submit.diyaccounting.co.uk/api/v1/practice/clients");
+      expect(JSON.parse(mockFetch.mock.calls[1][1].body)).toEqual({
+        kind: "accounts",
+        clients: [
+          { clientId: "c2", displayName: "Beta Ltd" },
+          { clientId: "c1", displayName: "Alpha Ltd" },
+        ],
+      });
+    });
+
+    it("refuses a client id that is not in the practice's list and an empty list", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(jsonResponse(200, { clients: [] })));
+      await expect(requestCompaniesHouseCodes(session, { kind: "accounts", clientIds: ["nope"] })).rejects.toThrow("nope");
+      await expect(requestCompaniesHouseCodes(session, { kind: "accounts", clientIds: [] })).rejects.toThrow("clientIds");
+    });
+
     it("refuses a kind it does not know", async () => {
       await expect(requestCompaniesHouseCodes(session, { kind: "vat", companyNumber: "12345678" })).rejects.toThrow("kind");
     });

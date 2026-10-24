@@ -3,11 +3,19 @@
 
 // app/unit-tests/services/hmrcCtReturnRequest.test.js
 import { describe, test, beforeAll, expect } from "vitest";
-import { buildCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
-import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "@app/services/hmrcCtReturnRequest.js";
+import { buildCtReturnBodyFromBook, buildMicroCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
+import { extractAndValidateCtReturnParameters, buildCtReturnDocuments, boxesThatDiffer } from "@app/services/hmrcCtReturnRequest.js";
 import { parseXmlDocument, firstElementText } from "@app/lib/xmlDom.js";
 
 let baseBody;
+
+function withReviewedBoxes(body) {
+  const request = extractAndValidateCtReturnParameters({ body: JSON.stringify(body) }, [], {
+    requireGatewayCredentials: false,
+    requireReviewedBoxes: false,
+  });
+  return { ...body, reviewedBoxes: buildCtReturnDocuments(request).boxes };
+}
 
 function extract(overrides = {}, options) {
   const errors = [];
@@ -21,7 +29,7 @@ function extract(overrides = {}, options) {
 
 describe("extractAndValidateCtReturnParameters", () => {
   beforeAll(async () => {
-    baseBody = await buildCtReturnBodyFromBook();
+    baseBody = await withReviewedBoxes(await buildCtReturnBodyFromBook());
   });
 
   test("accepts a request built from a book export", () => {
@@ -37,6 +45,18 @@ describe("extractAndValidateCtReturnParameters", () => {
     const { request, errors } = extract({ gatewayUserId: undefined, gatewayPassword: undefined }, { requireGatewayCredentials: false });
     expect(errors).toEqual([]);
     expect(request.gatewayPassword).toBeUndefined();
+  });
+
+  test("requires reviewedBoxes on the submit and accepts their absence on the preview", () => {
+    expect(extract({ reviewedBoxes: undefined }).errors.join("\n")).toMatch(/reviewedBoxes/);
+    expect(extract({ reviewedBoxes: undefined }, { requireReviewedBoxes: false }).errors).toEqual([]);
+    expect(extract({ reviewedBoxes: [1] }).errors.join("\n")).toMatch(/reviewedBoxes/);
+    expect(extract({ reviewedBoxes: { abc: 1 } }).errors.join("\n")).toMatch(/box abc/);
+  });
+
+  test("lists the boxes that differ, in ascending order", () => {
+    expect(boxesThatDiffer({ 10: 1, 5: "a", 7: 3 }, { 10: 2, 5: "a", 8: 1 })).toEqual(["7", "8", "10"]);
+    expect(boxesThatDiffer({ 1: 1 }, { 1: 1 })).toEqual([]);
   });
 
   test("reports figures that are missing", () => {
@@ -66,7 +86,7 @@ describe("extractAndValidateCtReturnParameters", () => {
 
 describe("buildCtReturnDocuments", () => {
   beforeAll(async () => {
-    baseBody = await buildCtReturnBodyFromBook();
+    baseBody = await withReviewedBoxes(await buildCtReturnBodyFromBook());
   });
 
   test("builds a return whose three documents name the same company, UTR and period", () => {
@@ -108,5 +128,48 @@ describe("buildCtReturnDocuments", () => {
     expect(occurrences(buildCtReturnDocuments(withPrior.request).accountsIxbrl)).toBe(occurrences(withoutPrior) + 1);
     expect(withPrior.request.accounts.profitAndLoss.prior).toEqual(prior);
     expect(extract().request.accounts.profitAndLoss.prior).toBeUndefined();
+  });
+});
+
+describe("a micro-entity's Company Tax Return", () => {
+  let microBody;
+
+  beforeAll(async () => {
+    microBody = await buildMicroCtReturnBodyFromBook();
+  });
+
+  function extractMicro(overrides = {}) {
+    const errors = [];
+    const request = extractAndValidateCtReturnParameters(
+      { body: JSON.stringify({ ...microBody, gatewayUserId: "user", gatewayPassword: "pass", reviewedBoxes: {}, ...overrides }) },
+      errors,
+      { requireReviewedBoxes: false },
+    );
+    return { request, errors };
+  }
+
+  test("accepts a micro-entity request and carries its profit and loss account", () => {
+    const { request, errors } = extractMicro();
+    expect(errors).toEqual([]);
+    expect(request.accounts.regime).toBe("micro-entity");
+    expect(request.figures.profitAndLoss.current.turnover).toBe(microBody.profitAndLoss.currentYear.turnover);
+  });
+
+  test("attaches the FRS 105 document with the profit and loss account and the same boxes as the small company's", () => {
+    const { request } = extractMicro();
+    const documents = buildCtReturnDocuments(request);
+    expect(documents.accountsIxbrl).toContain("bus:Micro-entities");
+    expect(documents.accountsIxbrl).toContain("core:RawMaterialsConsumablesUsed");
+    expect(documents.accountsIxbrl).toContain("bus:FullAccounts");
+    const small = buildCtReturnDocuments(extract().request);
+    expect(documents.boxes).toEqual(small.boxes);
+    expect(documents.irEnvelopeXml).toContain("EncodedInlineXBRLDocument");
+  });
+
+  test("needs the profit and loss account, and refuses lines that do not add up or a dormant company", () => {
+    expect(extractMicro({ profitAndLoss: undefined }).errors.join("\n")).toMatch(/Missing profitAndLoss.currentYear/);
+    const broken = { currentYear: { ...microBody.profitAndLoss.currentYear, profit: 1 } };
+    expect(extractMicro({ profitAndLoss: broken }).errors.join("\n")).toMatch(/profit must equal profitBeforeTax less tax/);
+    expect(extractMicro({ dormant: true }).errors.join("\n")).toMatch(/dormant/);
   });
 });

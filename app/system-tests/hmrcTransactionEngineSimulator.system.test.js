@@ -45,6 +45,7 @@ describe("System: HMRC Transaction Engine simulator", () => {
     const request = extractAndValidateCtReturnParameters(
       { body: JSON.stringify({ ...(await buildCtReturnBodyFromBook()), gatewayUserId: "user", gatewayPassword: "pass" }) },
       errors,
+      { requireReviewedBoxes: false },
     );
     expect(errors).toEqual([]);
     signed = buildCt600SubmissionRequest({

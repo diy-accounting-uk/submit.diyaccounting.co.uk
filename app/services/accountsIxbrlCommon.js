@@ -109,6 +109,11 @@ export const CONCEPTS = {
   profitLossBeforeTax: { prefix: "core", name: "ProfitLossOnOrdinaryActivitiesBeforeTax" },
   taxOnProfitLoss: { prefix: "core", name: "TaxTaxCreditOnProfitOrLossOnOrdinaryActivities" },
   profitLoss: { prefix: "core", name: "ProfitLoss" },
+  otherOperatingIncome: { prefix: "core", name: "OtherOperatingIncomeFormat2" },
+  rawMaterialsConsumablesUsed: { prefix: "core", name: "RawMaterialsConsumablesUsed" },
+  staffCosts: { prefix: "core", name: "StaffCostsEmployeeBenefitsExpense" },
+  depreciationWrittenOff: { prefix: "core", name: "DepreciationAmortisationImpairmentExpense" },
+  otherOperatingExpenses: { prefix: "core", name: "OtherOperatingExpensesFormat2" },
 
   fixedAssets: { prefix: "core", name: "FixedAssets" },
   currentAssets: { prefix: "core", name: "CurrentAssets" },

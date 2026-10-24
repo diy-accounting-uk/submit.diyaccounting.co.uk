@@ -1067,6 +1067,29 @@ release and on BK1 (the accounts kinds). IX2c waits on IX2b and CT3b.
 | One book holding both years | a diya-gl book covers one period; two books keep each year's totals in diya-gl's own shape |
 | Post the file's tax charge into the book | diya-gl works the tax; the file's charge is kept for the accounts and the difference is shown |
 
+## Fill from your books: the audit
+
+The 35 pages under `web/public/hmrc/` (26) and `web/public/companies-house/` (9), checked for figures a set of accounts holds. 14 pages take such figures. 6 fill from a book today: four have the card, and BK1 adds the micro-entity page (with its dormant case) and the small company page. 4 wait on a derivation or a page change. 4 take adjustments or losses that no book holds. The other 21 take identifiers, dates, codes or declarations, or show figures HMRC returns.
+
+The bundle (`web/public/lib/books-bundle.js`) exports `readBookSource`, `deriveVatReturn`, `deriveItsaQuarterlyUpdate`, `deriveItsaAnnualSubmission`, `ct600FiguresFromBook`, `deriveCt600FromFigures`, `validateCt600Figures`, `ltdTaxData` and `smallCompanyAccountsFromBook`. BK1 adds `microEntityAccountsFromBook`. diya-gl carries four products (`bst`, `taxi`, `se`, `ltd`) and no property product.
+
+| Page | Figures | Derived today | Not yet | Card kind |
+|---|---|---|---|---|
+| `hmrc/vat/submitVat.html` | the nine VAT boxes, period | all nine, from a VAT-registered Company or Sole Trader book | none | `vat` (mounted) |
+| `hmrc/itsa/selfEmploymentPeriod.html` | turnover, other income, itemised and disallowable expenses | all, per period | none | `itsa-quarterly` (mounted) |
+| `hmrc/itsa/annualSubmission.html` | allowances, adjustments | those the SE derivation maps | fields the form has and the derivation leaves empty | `itsa-annual` (mounted) |
+| `companies-house/fileCompanyTaxReturn.html` | period, computations, reliefs, accounts section | all from a Company book | none | `ct600` (mounted) |
+| `companies-house/fileMicroEntityAccounts.html` | period, seven balance-sheet lines for two years, employees, director | all of these (`deriveMicroEntityAccounts`) | director approval date, statements | `micro-entity-accounts` (BK1) |
+| `companies-house/fileMicroEntityAccounts.html`, dormant case | the same lines; dormant flag | the lines, and whether the book shows no turnover and no profit | trading history, share class, nominal value | `dormant-accounts` (BK1) |
+| `companies-house/fileSmallCompanyAccounts.html` | profit and loss, balance sheet, fixed asset note, two years, employees, directors | current year, fixed asset note, employees, directors (`deriveSmallCompanyAccounts`); the prior balance sheet is derived and left blank on the form, because the prior profit and loss has no source | prior-year profit and loss (the book publishes none), approval date, statements | `small-company-accounts` (BK1) |
+| `hmrc/itsa/ukPropertyPeriod.html`, `ukPropertyPeriodAmend.html` | rent income, premises, repairs, finance, professional fees, other costs | nothing | a property product or a property derivation in diya-gl | `uk-property-quarterly` (needs diya-gl) |
+| `hmrc/itsa/ukPropertyAnnualSubmission.html` | allowances, adjustments, rent-a-room, non-resident flag | nothing | the same derivation | `uk-property-annual` (needs diya-gl) |
+| `hmrc/itsa/selfEmploymentPeriodAmend.html` | turnover, other income, costs for one period | the figures, by period end date | the page names the period by an HMRC period id and no end date | `itsa-quarterly` (needs a period lookup) |
+| `hmrc/itsa/adjustments.html`, `ukPropertyAdjustments.html` | accounting adjustments to an HMRC summary | nothing | an adjustment changes HMRC's calculation, so no book holds it | none |
+| `hmrc/itsa/lossesAndClaims.html` | brought-forward loss amounts, claims | nothing | no diya-gl product holds losses | `itsa-losses` (needs diya-gl) |
+| `hmrc/itsa/taxLiabilityAdjustments.html` | liability adjustments | nothing | HMRC holds these, no book does | none |
+| The other 21: `hmrc/vat/` list and view pages (5), `hmrc/receipt/receipts.html`, `hmrc/itsa/` business details, dashboard, final declaration, obligations, period lists and views, tax calculation (9), `companies-house/` search, registered office, registered email, confirmation statement, callback, MCP codes (6) | identifiers, dates, codes, declarations; figures HMRC returns | nothing to fill | none | none |
+
 ## Tasks
 
 The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.

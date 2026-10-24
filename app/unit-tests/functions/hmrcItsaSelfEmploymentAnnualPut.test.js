@@ -234,6 +234,31 @@ describe("hmrcItsaSelfEmploymentAnnualPut ingestHandler", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
+  test.each([
+    ["answers HMRC's correlation id from a 204 that carries the header", { "X-CorrelationId": "7a1c-0042" }, "7a1c-0042"],
+    ["answers a null correlation id when HMRC sends no header", {}, null],
+  ])("%s", async (_name, hmrcHeaders, expected) => {
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "resident", tokensGranted: 100, tokensConsumed: 0 }], Count: 1 };
+      }
+      return {};
+    });
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 204,
+      headers: new Headers(hmrcHeaders),
+      json: () => Promise.reject(new Error("no body")),
+      text: () => Promise.resolve(""),
+    });
+
+    const event = buildAnnualEvent();
+    const response = await hmrcItsaSelfEmploymentAnnualPutHandler(event);
+    expect(response.statusCode).toBe(200);
+    expect(parseResponseBody(response).correlationId).toBe(expected);
+  });
+
   test("returns 200 on success", async () => {
     mockHmrcSuccess(mockFetch, {});
 

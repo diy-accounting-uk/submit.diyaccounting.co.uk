@@ -7,6 +7,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildLambdaEvent } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, parseResponseBody } from "@app/test-helpers/mockHelpers.js";
 import { buildCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
+import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "@app/services/hmrcCtReturnRequest.js";
 import { TRANSACTION_ENGINE_TEST_SUBMISSION_URL } from "@app/services/hmrcTransactionEngine.js";
 
 const mockSend = vi.fn();
@@ -108,7 +109,12 @@ function buildEvent({
 
 describe("hmrcCtReturnPost ingestHandler", () => {
   beforeAll(async () => {
-    baseBody = await buildCtReturnBodyFromBook();
+    const body = await buildCtReturnBodyFromBook();
+    const request = extractAndValidateCtReturnParameters({ body: JSON.stringify(body) }, [], {
+      requireGatewayCredentials: false,
+      requireReviewedBoxes: false,
+    });
+    baseBody = { ...body, reviewedBoxes: buildCtReturnDocuments(request).boxes };
   });
 
   beforeEach(() => {
@@ -186,6 +192,38 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     const lib = await import("@aws-sdk/lib-dynamodb");
     const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
     expect(update.input.ExpressionAttributeValues[":data"].pollUrl).toBe("http://localhost:9000/hmrc-transaction-engine/poll");
+  });
+
+  test("answers 409 naming the boxes that differ from the reviewed boxes, and calls nothing", async () => {
+    const reviewedBoxes = { ...baseBody.reviewedBoxes, 155: baseBody.reviewedBoxes[155] + 1 };
+    const response = await hmrcCtReturnPostHandler(
+      buildEvent({ body: { ...baseBody, reviewedBoxes, gatewayUserId: USER_ID, gatewayPassword: PASSWORD } }),
+    );
+    expect(response.statusCode).toBe(409);
+    const body = parseResponseBody(response);
+    expect(body.differingBoxes).toEqual(["155"]);
+    expect(body.message).toContain("box 155");
+    expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    expect(JSON.stringify(body)).not.toContain(PASSWORD);
+  });
+
+  test("answers 409 when a reviewed box is missing", async () => {
+    const { 155: _dropped, ...reviewedBoxes } = baseBody.reviewedBoxes;
+    const response = await hmrcCtReturnPostHandler(
+      buildEvent({ body: { ...baseBody, reviewedBoxes, gatewayUserId: USER_ID, gatewayPassword: PASSWORD } }),
+    );
+    expect(response.statusCode).toBe(409);
+    expect(parseResponseBody(response).differingBoxes).toContain("155");
+  });
+
+  test("answers 400 when reviewedBoxes is absent", async () => {
+    const { reviewedBoxes: _removed, ...withoutReviewed } = baseBody;
+    const response = await hmrcCtReturnPostHandler(
+      buildEvent({ body: { ...withoutReviewed, gatewayUserId: USER_ID, gatewayPassword: PASSWORD } }),
+    );
+    expect(response.statusCode).toBe(400);
+    expect(JSON.stringify(parseResponseBody(response))).toMatch(/reviewedBoxes/);
+    expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
   });
 
   test("never logs the Government Gateway user ID or password", async () => {

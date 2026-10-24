@@ -116,6 +116,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies: use when a test needs a real-shaped Companies House test company without a live entity.
     - [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts: use when the FRS 102/105 taxonomy fixture needs refreshing, or a generated iXBRL document needs checking against Companies House's validator.
     - [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it: use when an accounts or CT computations iXBRL builder changes, or a document must be checked before it is filed.
+    - [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does: use when accounts test or live submissions are about to go to Companies House, or the operator asks for a walk-through of the review results.
     - [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack: use when adding, renaming or rewiring a Companies House Lambda function or its API Gateway route.
 - **[Billing and entitlements](#billing-and-entitlements-bill)**
   - [Bundle grants and entitlements](#bundle-grants-and-entitlements-bill)
@@ -1297,7 +1298,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-render-micro-entity-accounts-for-review) Render micro-entity accounts for review · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House
 - [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC
 - [Filing infrastructure](#filing-infrastructure-ch): [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions · [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout · [CH-11](#ch-11-parse-xml-safely) Parse XML safely
-- [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
+- [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:area CH -->
 
 ### OAuth and identity (CH)
@@ -1468,6 +1469,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies
 - [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts
 - [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it
+- [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does
 - [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:group test-validation-and-provisioning-ch -->
 
@@ -1500,6 +1502,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/lib/ixbrlStructure.js, app/test-helpers/accountsDocumentCases.js, app/unit-tests/lib/ixbrlStructure.test.js, web/browser-tests/accountsDocumentRendering.browser.test.js
 - **Keywords:** ixbrl, inline xbrl, accounts document, rendering, screenshot, header hidden, context, unit, transform, xhtml, validation
 - **Related:** CH-07, CH-08, CH-13, CH-15
+
+#### CH-17 Review accounts filings as the Companies House XML team does
+
+- **Use when:** accounts test or live submissions are about to go to Companies House, or the operator asks for a walk-through of the review results.
+- **Does:** The companies-house-review skill reads the XML team's emails and checks the sources for newer versions. companies-house-review.mjs rebuilds each accounts case in the test-service fixture as filed. It picks the example of the same type from an Accounts Data Product zip. It renders both in Chromium and runs the test validator. It judges each criterion and writes findings.md and walkthrough.md under target/companies-house-review/<date>/.
+- **Run:** `/companies-house-review`; `node scripts/companies-house-review.mjs --adp-zip <Accounts_Bulk_Data-YYYY-MM-DD.zip> [--skip-validator]`
+- **Entry:** `.claude/skills/companies-house-review/SKILL.md`; `scripts/companies-house-review.mjs:main`
+- **Files:** .claude/skills/companies-house-review/SKILL.md, scripts/companies-house-review.mjs, scripts/fixtures/companies-house-test-service-cases.json
+- **Keywords:** companies house, xml gateway, accounts review, ixbrl, accounts data product, example accounts, filleted, micro-entity, dormant, findings, walkthrough
+- **Related:** CH-13, CH-16
 
 #### CH-14 Provision the Companies House CDK stack
 
@@ -4425,10 +4437,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### MCP-20 Take Companies House codes on a page instead of in the chat
 
 - **Use when:** a Companies House filing through the MCP needs the company authentication code or a director's personal code, or the codes link, its entry or its seal needs tracing.
-- **Does:** request_companies_house_codes posts to `/api/v1/mcp/codes-entries` and answers a link to companies-house/mcpCodes.html. The user types the codes there; mcpCodesEntry.js seals them with AES-256-GCM under a key derived from the MCP blob key and stores them in the mcp-sessions table for ten minutes. The accounts, confirmation statement and filing data routes take the entry by `codesEntryId` once (applyCodesEntry deletes it as it reads it, for its owner only), so no tool argument holds a code.
+- **Does:** request_companies_house_codes posts to `/api/v1/mcp/codes-entries` and answers a link to companies-house/mcpCodes.html. The user types the codes there; mcpCodesEntry.js seals them with AES-256-GCM under a key derived from the MCP blob key and stores them in the mcp-sessions table for ten minutes. The accounts, confirmation statement and filing data routes take the entry by `codesEntryId` once (applyCodesEntry deletes it as it reads it, for its owner only), so no tool argument holds a code. With `clientIds`, the entry is a batch entry: the tool names each practice client from the client list, the page asks for one company authentication code per client by name, and filling it stores each client's code sealed as an item of its own under `codes:<entryId>/<clientId>`. The filing route deletes only the item of the client named by the body's `clientId` (takeCodesEntryForClient, DeleteItem as before, so no infra change), so `run_for_clients` with `submit_micro_entity_accounts_sandbox` passes one `codesEntryId` for every client. A batch entry is for `accounts` and `confirmation-statement-data`.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/mcp/mcpCodesEntry.js`; `app/services/companiesHouseCodesEntry.js`; `app/data/dynamoDbCodesEntryRepository.js`; `mcp/lib/submit-tools.js:requestCompaniesHouseCodes`
-- **Files:** app/functions/mcp/mcpCodesEntry.js, app/services/companiesHouseCodesEntry.js, app/data/dynamoDbCodesEntryRepository.js, app/lib/codesSeal.js, app/lib/mcpBlobKey.js, web/public/companies-house/mcpCodes.html, web/public/companies-house/mcpCodes.page.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStack.java
+- **Files:** app/functions/mcp/mcpCodesEntry.js, app/services/companiesHouseCodesEntry.js, app/data/dynamoDbCodesEntryRepository.js, app/lib/codesSeal.js, app/lib/mcpBlobKey.js, mcp/lib/server.js, mcp/lib/batch-tools.js, web/public/companies-house/mcpCodes.html, web/public/companies-house/mcpCodes.page.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStack.java
 - **Keywords:** companies house codes, company authentication code, personal code, codes entry, codesEntryId, request_companies_house_codes, mcpCodes, codes link
 - **Related:** MCP-07, MCP-18
 
@@ -5781,8 +5793,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - account separation: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
 - account stack: [BILL-36](#bill-36-cdk-account-stack)
 - accounting year-end: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
+- accounts data product: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - accounts document: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - accounts filing: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
+- accounts review: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - accounts staging: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
 - acm: [OPS-37](#ops-37-check-https-certificate-expiry)
 - acm certificate: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate), [SS-37](#ss-37-request-acm-certificates)
@@ -6179,7 +6193,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - commit signatures: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
 - commits: [DATA-07](#data-07-pull-github-operator-effort-data)
 - community page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
-- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
+- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - companies house codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - company accounts: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
@@ -6448,6 +6462,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dora runs daily: [DATA-31](#data-31-sql-views-dora-and-operations)
 - dora-row action: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - dora_runs: [DATA-11](#data-11-run-glue-data-quality-checks)
+- dormant: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - double rule: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - download page: [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - downloads by product: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
@@ -6536,6 +6551,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - events_* export: [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries)
 - evidence: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - evidence links: [OPS-97](#ops-97-compile-the-compliance-audit-report)
+- example accounts: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - examples directory: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - excel: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
 - excel skill: [SS-58](#ss-58-excel-xml-manipulation-reference)
@@ -6582,12 +6598,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - filing base url: [CH-09](#ch-09-query-and-submit-document-transactions)
 - filing callback: [CH-01](#ch-01-exchange-a-companies-house-oauth-token)
 - filing periods: [HMRC-03](#hmrc-03-retrieve-vat-obligations)
+- filleted: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - filleted accounts: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - final declaration: [HMRC-10](#hmrc-10-retrieve-itsa-obligations), [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - final declaration obligation: [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations)
 - finance import: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
 - finance staging path: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - find command: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
+- findings: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - findings report: [OPS-62](#ops-62-report-accessibility-penetration-testing)
 - finish-only rerun: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - fire and forget: [DATA-01](#data-01-publish-activity-events-to-the-bus)
@@ -6869,7 +6887,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - itsa sandbox: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - itsa sandbox spike: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - itsa status: [HMRC-11](#hmrc-11-retrieve-itsa-status)
-- ixbrl: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
+- ixbrl: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - ixbrl style: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - java cdk: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks)
 - job minutes: [DEV-37](#dev-37-write-the-session-report)
@@ -7026,7 +7044,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mfa: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - mfa claim: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - mfa context: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
-- micro-entity: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
+- micro-entity: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - micro-entity accounts: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - migration: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
 - migration runner: [OPS-16](#ops-16-run-dynamodb-data-migrations)
@@ -7951,7 +7969,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - wait for main deploy: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
 - wake: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - wake skill: [SS-55](#ss-55-resume-normal-work-from-cool-down)
-- walkthrough: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
+- walkthrough: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - warm route: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - watch: [DEV-31](#dev-31-watch-github-ci-to-green)
 - watch ci: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
@@ -8007,7 +8025,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - xlsx export: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - xlsx xml: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - xml: [CH-11](#ch-11-parse-xml-safely)
-- xml gateway: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-11](#ch-11-parse-xml-safely), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
+- xml gateway: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-11](#ch-11-parse-xml-safely), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - xml submission: [CH-05](#ch-05-file-a-change-of-registered-office-address)
 - xmldom: [CH-11](#ch-11-parse-xml-safely)
 - xxe: [CH-11](#ch-11-parse-xml-safely)

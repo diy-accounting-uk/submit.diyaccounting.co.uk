@@ -287,7 +287,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": true,
-      "note": "Filed as 00004K on the test service, run 40054805187 (2026-10-24); PENDING at every poll to 08:30 UTC (poll run 40075346100)."
+      "note": "Filed as 00004O on the test service, run 40131698334 (2026-10-24); PENDING at every poll (poll run 40135105521, 2026-10-24)."
     }
   },
   {
@@ -332,7 +332,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": true,
-      "note": "Filed as 00004L on the test service, run 40054815287 (2026-10-24); PENDING at every poll to 08:30 UTC (poll run 40076901566)."
+      "note": "Filed as 00004P on the test service, run 40132638565 (2026-10-24); PENDING at every poll (poll run 40135915159, 2026-10-24)."
     },
     "dormant": true,
     "dormantTradingStatus": "neverTraded",
@@ -395,7 +395,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Filed as 00004M on the test service, run 40073881620 (2026-10-24); PENDING at every poll to 08:30 UTC (poll run 40077639196)."
+      "note": "Filed as 00004Q on the test service, run 40133448752 (2026-10-24); PENDING at every poll (poll run 40136706428, 2026-10-24)."
     }
   },
   {
@@ -454,7 +454,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Filed as 00004N on the test service, run 40073889332 (2026-10-24); PENDING at every poll to 08:30 UTC (poll run 40075360805)."
+      "note": "Filed as 00004R on the test service, run 40134274618 (2026-10-24); PENDING at every poll (poll run 40137533502, 2026-10-24)."
     }
   }
 ]

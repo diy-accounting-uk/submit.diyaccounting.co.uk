@@ -17,6 +17,12 @@
 //                         page's hook { onFilled: (workingSheet) => void } receives the book's own
 //                         trading profit and Corporation Tax for the page's check. It also accepts
 //                         the figures JSON the diya-submit MCP tool derive_company_tax_return writes.
+//   kind "micro-entity-accounts"  fills the period, the seven balance-sheet lines for both years, the
+//                         average number of employees and the director from a Company book, and ticks the
+//                         dormant box when the book shows no turnover, no costs and no change in reserves
+//   kind "small-company-accounts"  fills the period, the current year's profit and loss account and
+//                         balance sheet, the fixed asset note, the employees and the directors from a
+//                         Company book; the book holds no prior year profit and loss, so the prior year stays blank
 // The annual card also accepts the derived-figures JSON the diya-submit MCP tool
 // derive_itsa_annual_submission writes.
 //
@@ -302,6 +308,137 @@
     return `Filled ${plural(filled, "field")} from ${fileName} for the period ${parsed.figures.periodStart} to ${parsed.figures.periodEnd}. The file carries the profit and loss account only: fill the balance sheet and the rest of the accounts, then preview.`;
   }
 
+  // Both accounts pages name the company the customer looked up. A book for another company fills nothing.
+  function refuseOtherCompany(accounts, fileName) {
+    const formNumber = (document.getElementById("formCompanyNumber")?.textContent || "").trim().toUpperCase();
+    const bookNumber = String(accounts.companyNumber || "")
+      .trim()
+      .toUpperCase();
+    if (formNumber && bookNumber && formNumber !== bookNumber) {
+      throw new Refusal(`${fileName} is for company ${bookNumber}; this form is for company ${formNumber}. Nothing filled.`);
+    }
+  }
+
+  function setChecked(id, checked) {
+    const box = document.getElementById(id);
+    if (!box || box.checked === checked) return;
+    box.checked = checked;
+    box.dispatchEvent(new Event("change", { bubbles: true }));
+  }
+
+  function upperFirst(text) {
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+
+  // Sets "<prefix><Field>" for each figure and returns how many fields it set.
+  function setFigures(prefix, figures, names) {
+    let filled = 0;
+    names.forEach((name) => {
+      if (typeof figures[name] === "number" && setField(prefix + upperFirst(name), figureText(figures[name]))) filled += 1;
+    });
+    return filled;
+  }
+
+  const MICRO_BALANCE_SHEET_LINES = [
+    "fixedAssets",
+    "currentAssets",
+    "creditorsWithinOneYear",
+    "creditorsAfterOneYear",
+    "calledUpShareCapital",
+    "profitAndLossAccount",
+    "capitalAndReserves",
+  ];
+
+  function showsNoActivity(accounts) {
+    const { turnover, costs, profit } = accounts.profitAndLoss;
+    const { currentYear, priorYear } = accounts.balanceSheet;
+    return turnover === 0 && costs === 0 && profit === 0 && currentYear.profitAndLossAccount === priorYear.profitAndLossAccount;
+  }
+
+  async function fillMicroEntityAccounts({ bundle, source, fileName }) {
+    let accounts;
+    try {
+      accounts = await bundle.microEntityAccountsFromBook(source.book, source.lines);
+    } catch (error) {
+      throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
+    }
+    refuseOtherCompany(accounts, fileName);
+    let filled = 0;
+    setField("periodStart", accounts.periodStart);
+    setField("periodEnd", accounts.periodEnd);
+    filled += 2;
+    filled += setFigures("current", accounts.balanceSheet.currentYear, MICRO_BALANCE_SHEET_LINES);
+    filled += setFigures("prior", accounts.balanceSheet.priorYear, MICRO_BALANCE_SHEET_LINES);
+    setField("averageEmployees", String(accounts.averageNumberOfEmployees));
+    filled += 1;
+    if (accounts.directorName) {
+      setField("directorName", accounts.directorName);
+      filled += 1;
+    }
+    const dormant = showsNoActivity(accounts);
+    if (dormant) setChecked("dormant", true);
+    const dormantText = dormant
+      ? " The book shows no turnover, no costs and no change in reserves, so the dormant box is ticked: confirm the company was dormant, then choose its trading history, share class and nominal value."
+      : "";
+    return `Filled ${plural(filled, "field")} from ${fileName} for the period ${accounts.periodStart} to ${accounts.periodEnd}. Check them, add the date approved and the statements, then preview.${dormantText}`;
+  }
+
+  const SMALL_PROFIT_AND_LOSS_LINES = ["turnover", "costOfSales", "administrativeExpenses", "interestReceivable", "tax"];
+  const SMALL_BALANCE_SHEET_LINES = [
+    "fixedAssets",
+    "stocks",
+    "debtors",
+    "cashAtBank",
+    "tradeCreditors",
+    "corporationTax",
+    "otherCreditors",
+    "creditorsAfterOneYear",
+    "calledUpShareCapital",
+    "profitAndLossAccount",
+  ];
+  const FIXED_ASSET_NOTE_LINES = [
+    "costAtStart",
+    "additions",
+    "disposals",
+    "depreciationAtStart",
+    "depreciationCharge",
+    "depreciationOnDisposals",
+  ];
+
+  async function fillSmallCompanyAccounts({ bundle, source, fileName }) {
+    let accounts;
+    try {
+      accounts = await bundle.smallCompanyAccountsFromBook(source.book, source.lines);
+    } catch (error) {
+      throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
+    }
+    refuseOtherCompany(accounts, fileName);
+    let filled = 0;
+    setField("periodStart", accounts.periodStart);
+    setField("periodEnd", accounts.periodEnd);
+    filled += 2;
+    filled += setFigures("current", accounts.profitAndLoss.currentYear, SMALL_PROFIT_AND_LOSS_LINES);
+    filled += setFigures("current", accounts.balanceSheet.currentYear, SMALL_BALANCE_SHEET_LINES);
+    const noteClasses = Object.entries(accounts.fixedAssetNote || {});
+    if (noteClasses.length > 0) {
+      setChecked("includeFixedAssetNote", true);
+      noteClasses.forEach(([className, figures]) => {
+        filled += setFigures("note" + upperFirst(className), figures, FIXED_ASSET_NOTE_LINES);
+      });
+    }
+    setField("averageEmployees", String(accounts.averageNumberOfEmployees));
+    filled += 1;
+    if (accounts.directors.length > 0) {
+      setField("directors", accounts.directors.join("\n"));
+      filled += 1;
+    }
+    if (accounts.directorName) {
+      setField("directorName", accounts.directorName);
+      filled += 1;
+    }
+    return `Filled ${plural(filled, "field")} from ${fileName} for the period ${accounts.periodStart} to ${accounts.periodEnd}. The book holds no prior year profit and loss account, so the prior year is yours to add. Check the figures, add the principal activity, the accounting policies, the date approved and the statements, then preview.`;
+  }
+
   const HANDOFF_KEY = "booksHandoff";
   const MAX_HANDOFF_TEXT = 200;
   const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -448,6 +585,8 @@
     "itsa-quarterly": { fill: fillItsaQuarterly, applyHandoff: applyQuarterlyHandoff, watched: ["taxYear", "periodEndDate"] },
     "itsa-annual": { fill: fillItsaAnnual, applyHandoff: applyAnnualHandoff, watched: [] },
     "ct600": { fill: fillCt600, watched: [] },
+    "micro-entity-accounts": { fill: fillMicroEntityAccounts, watched: [] },
+    "small-company-accounts": { fill: fillSmallCompanyAccounts, watched: [] },
   };
 
   function element(tag, attributes = {}, text = "") {

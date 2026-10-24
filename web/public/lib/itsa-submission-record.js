@@ -179,19 +179,22 @@ function entriesTable(columnHeading, entries, idPrefix) {
   });
 }
 
-function referenceLines({ nino, businessId }) {
+function referenceLines({ nino, businessId, correlationId }) {
   const lines = [];
   const formattedNino = formatNino(nino);
   if (formattedNino) lines.push(`National Insurance number ${escapeRecordText(formattedNino)}`);
   const id = nonEmptyText(businessId);
   if (id) lines.push(`Business ID ${escapeRecordText(id)}`);
+  const hmrcCorrelationId = nonEmptyText(correlationId);
+  if (hmrcCorrelationId) lines.push(`HMRC correlation ID ${escapeRecordText(hmrcCorrelationId)}`);
   return lines;
 }
 
 /**
  * The customer copy of an annual submission as saved: the adjustments, allowances and other
  * details that were sent, the business and the date HMRC accepted them. HMRC answers a save
- * without an id of its own, so the business ID is the reference.
+ * without an id of its own, so the business ID is the reference and HMRC's correlation ID,
+ * when it sent one, is the second reference line.
  *
  * @param {object} input
  * @param {"self-employment"|"uk-property"} input.kind
@@ -199,11 +202,12 @@ function referenceLines({ nino, businessId }) {
  * @param {string} [input.businessId]
  * @param {string} [input.taxYear] - e.g. "2024-25"
  * @param {string} [input.savedAt] - ISO timestamp of the save
+ * @param {string|null} [input.correlationId] - HMRC's X-CorrelationId for the save
  * @param {{adjustments?: object, allowances?: object, nonFinancials?: object}} [input.sent]
  * @param {{href: string, text: string}[]} [input.links]
  * @returns {string}
  */
-export function annualCopyHtml({ kind, nino, businessId, taxYear, savedAt, sent, links = [] }) {
+export function annualCopyHtml({ kind, nino, businessId, taxYear, savedAt, correlationId, sent, links = [] }) {
   const year = nonEmptyText(taxYear);
   const saved = formatTimestamp(savedAt);
   const kindName = KIND_NAMES[kind] || "Business";
@@ -212,7 +216,7 @@ export function annualCopyHtml({ kind, nino, businessId, taxYear, savedAt, sent,
 
   const recordHead = recordHeading({
     nameHtml: escapeRecordText(`${kindName} annual submission`),
-    referenceHtml: referenceLines({ nino, businessId }),
+    referenceHtml: referenceLines({ nino, businessId, correlationId }),
     title: year ? `Tax year ${year}` : "Tax year",
     subtitleHtml: escapeRecordText(saved ? `Saved with HMRC on ${saved}` : "Saved with HMRC"),
   });

@@ -12,7 +12,8 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
   getResourceName: () => "test-mcp-sessions",
 }));
 
-const { createCodesEntry, getCodesEntry, fillCodesEntry, takeCodesEntry } = await import("@app/data/dynamoDbCodesEntryRepository.js");
+const { createCodesEntry, getCodesEntry, fillCodesEntry, fillCodesEntryForClients, takeCodesEntry, takeCodesEntryForClient } =
+  await import("@app/data/dynamoDbCodesEntryRepository.js");
 
 const OWNER = "hashed-owner";
 const DIRECTORS = [{ forename: "Jo", surname: "Brick" }];
@@ -102,5 +103,55 @@ describe("dynamoDbCodesEntryRepository", () => {
     await fillCodesEntry(pending.entryId, "sealed-text");
     vi.useFakeTimers({ now: Date.now() + 11 * 60 * 1000, toFake: ["Date"] });
     expect(await takeCodesEntry(pending.entryId, OWNER)).toBeNull();
+  });
+
+  describe("a batch entry", () => {
+    const CLIENTS = [
+      { clientId: "client-a", displayName: "Alpha Ltd" },
+      { clientId: "client-b", displayName: "Beta Ltd" },
+    ];
+
+    async function filledBatch() {
+      const { entryId } = await createCodesEntry({ hashedSub: OWNER, kind: "accounts", clients: CLIENTS });
+      await fillCodesEntryForClients(entryId, { "client-a": "sealed-a", "client-b": "sealed-b" });
+      return entryId;
+    }
+
+    test("reads its clients without any sealed value", async () => {
+      const entryId = await filledBatch();
+      const entry = await getCodesEntry(entryId);
+      expect(entry.clients).toEqual(CLIENTS);
+      expect(entry.companyNumber).toBeUndefined();
+      expect(JSON.stringify(entry)).not.toContain("sealed-");
+    });
+
+    test("gives up one client's value at a time and holds no value once the last is taken", async () => {
+      const entryId = await filledBatch();
+      expect((await takeCodesEntryForClient(entryId, OWNER, "client-b")).sealed).toBe("sealed-b");
+      expect(await takeCodesEntryForClient(entryId, OWNER, "client-b")).toBeNull();
+      expect((await takeCodesEntryForClient(entryId, OWNER, "client-a")).sealed).toBe("sealed-a");
+      expect([...table.items.values()].some((item) => item.sealed !== undefined)).toBe(false);
+    });
+
+    test("fills once", async () => {
+      const entryId = await filledBatch();
+      expect(await fillCodesEntryForClients(entryId, { "client-a": "again" })).toBe(false);
+      expect((await takeCodesEntryForClient(entryId, OWNER, "client-a")).sealed).toBe("sealed-a");
+    });
+
+    test("is not handed over whole, to another user, or for a client it does not name", async () => {
+      const entryId = await filledBatch();
+      expect(await takeCodesEntry(entryId, OWNER)).toBeNull();
+      expect(await takeCodesEntryForClient(entryId, "someone-else", "client-a")).toBeNull();
+      expect(await takeCodesEntryForClient(entryId, OWNER, "client-z")).toBeNull();
+      expect(table.items.has(`codes:${entryId}/client-a`)).toBe(true);
+    });
+
+    test("is not a way into a single entry", async () => {
+      const { entryId } = await createCodesEntry({ hashedSub: OWNER, kind: "accounts", companyNumber: "12345678" });
+      await fillCodesEntry(entryId, "sealed-text");
+      expect(await takeCodesEntryForClient(entryId, OWNER, "client-a")).toBeNull();
+      expect(table.items.has(`codes:${entryId}`)).toBe(true);
+    });
   });
 });

@@ -6,6 +6,9 @@
 // the filing goes through the XML Gateway with the operator's presenter credentials, so this
 // steps file only needs the Cognito sign-in already covered by behaviour-login-steps.js.
 
+import fs from "node:fs";
+import path from "node:path";
+import JSZip from "jszip";
 import { expect, test } from "@playwright/test";
 import { loggedClick, loggedFill, timestamp, takeScreenshot } from "../helpers/behaviour-helpers.js";
 
@@ -200,5 +203,73 @@ export async function verifyPreviewContains(
     for (const text of rendered) expect(renderedText).toContain(text);
     for (const text of notRendered) expect(renderedText).not.toContain(text);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-preview-checked.png` });
+  });
+}
+
+const bookFixturesDirectory = path.resolve(process.cwd(), "fixtures/diya-gl");
+
+/**
+ * Zip a fixture book (book.toml and lines.jsonl) for the "Fill from your books" card, with the
+ * company number the sandbox looks up in place of the fixture's own, and return the file's path.
+ */
+export async function writeFixtureBookZip(fixtureName, companyNumber, outputDirectory) {
+  const directory = path.join(bookFixturesDirectory, fixtureName);
+  const bookToml = fs
+    .readFileSync(path.join(directory, "book.toml"), "utf8")
+    .replace(/("diya-gl:companyNumber" = ")\d+(")/, `$1${companyNumber}$2`);
+  const zip = new JSZip();
+  zip.file("book.toml", bookToml);
+  zip.file("lines.jsonl", fs.readFileSync(path.join(directory, "lines.jsonl")));
+  fs.mkdirSync(outputDirectory, { recursive: true });
+  const zipFile = path.join(outputDirectory, `${fixtureName}.diya-gl.zip`);
+  fs.writeFileSync(zipFile, await zip.generateAsync({ type: "nodebuffer" }));
+  return zipFile;
+}
+
+/**
+ * Drop a book on the accounts form's "Fill from your books" card and check the fields it fills.
+ * expectedFields maps an input id to the value the book supplies.
+ */
+export async function fillAccountsFormFromBook(page, bookZipFile, expectedStatus, expectedFields, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user drops a book on Fill from your books and the accounts form fills", async () => {
+    await expect(page.locator("#booksImportDrop")).toBeVisible();
+    await page.locator("#booksImportFile").setInputFiles(bookZipFile);
+    await expect(page.locator("#booksImportStatus")).toContainText(expectedStatus, { timeout: 60_000 });
+    for (const [id, value] of Object.entries(expectedFields)) {
+      await expect(page.locator(`#${id}`)).toHaveValue(value);
+    }
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accounts-form-filled-from-book.png` });
+  });
+}
+
+/**
+ * The answers a book leaves to the user on the micro-entity form: the date the director approved
+ * the accounts and the four statements.
+ */
+export async function completeMicroEntityAnswersTheBookLeaves(page, dateApproved, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user adds the approval date and the statements the book does not hold", async () => {
+    await loggedFill(page, "#directorDateApproved", dateApproved, "Date approved");
+    await page.check("#statementSection477Exemption");
+    await page.check("#statementMembersNotRequiredAudit");
+    await page.check("#statementDirectorsResponsibilities");
+    await page.check("#statementMicroEntityProvisions");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accounts-form-completed.png` });
+  });
+}
+
+/**
+ * The answers a book leaves to the user on the small company form: the principal activity, the
+ * accounting policies, the date approved and the statements.
+ */
+export async function completeSmallCompanyAnswersTheBookLeaves(page, answers, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user adds the activity, the policies, the approval date and the statements the book does not hold", async () => {
+    await loggedFill(page, "#principalActivity", answers.principalActivity, "Principal activity");
+    await loggedFill(page, "#accountingPolicies", answers.accountingPolicies, "Accounting policies");
+    await loggedFill(page, "#directorDateApproved", answers.dateApproved, "Date approved");
+    await page.check("#statementSection477Exemption");
+    await page.check("#statementMembersNotRequiredAudit");
+    await page.check("#statementDirectorsResponsibilities");
+    await page.check("#statementSmallCompaniesRegime");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accounts-form-completed.png` });
   });
 }

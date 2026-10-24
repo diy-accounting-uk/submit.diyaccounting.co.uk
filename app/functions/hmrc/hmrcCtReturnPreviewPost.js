@@ -44,7 +44,10 @@ export async function ingestHandler(event) {
   }
 
   const errorMessages = [];
-  const returnRequest = extractAndValidateCtReturnParameters(event, errorMessages, { requireGatewayCredentials: false });
+  const returnRequest = extractAndValidateCtReturnParameters(event, errorMessages, {
+    requireGatewayCredentials: false,
+    requireReviewedBoxes: false,
+  });
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }

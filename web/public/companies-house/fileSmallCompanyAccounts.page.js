@@ -377,3 +377,5 @@ document.getElementById("changeCompanyLink").addEventListener("click", (event) =
   event.preventDefault();
   showView("companyView");
 });
+
+window.booksImport.mount(document.getElementById("booksImport"), { kind: "small-company-accounts" });

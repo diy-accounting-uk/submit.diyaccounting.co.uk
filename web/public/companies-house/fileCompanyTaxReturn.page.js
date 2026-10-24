@@ -64,6 +64,7 @@ const VIEW_HASH = { companyView: "company", formView: "form", previewView: "revi
 
 let company = null;
 let previewRequest = null;
+let reviewedPreview = null;
 let currentView = "companyView";
 let reviewReached = false;
 let changing = null;
@@ -793,6 +794,7 @@ async function handleReturnFormSubmit(event) {
     previewRequest = ct600RequestFromValues(readValues(), company, state.workingSheet);
     const preview = await window.previewCtReturn(previewRequest);
     renderReview(preview);
+    reviewedPreview = preview;
     reviewReached = true;
     element("previewBtn").textContent = RETURN_TO_REVIEW;
     showView("previewView");
@@ -902,7 +904,10 @@ async function handleSubmitReturn() {
   try {
     const scenario = element("govTestScenario").value.trim();
     const scenarioHeaders = scenario ? { "Gov-Test-Scenario": scenario } : {};
-    const submission = await window.submitCtReturn({ ...previewRequest, gatewayUserId, gatewayPassword }, scenarioHeaders);
+    const submission = await window.submitCtReturn(
+      { ...previewRequest, reviewedBoxes: reviewedPreview.boxes, gatewayUserId, gatewayPassword },
+      scenarioHeaders,
+    );
     element("gatewayPassword").value = "";
     element("returnResult").replaceChildren(
       paragraph("Return ", { strong: submission.correlationId }, " accepted by the gateway. Waiting for HMRC..."),
@@ -915,6 +920,7 @@ async function handleSubmitReturn() {
     showOutcome(outcome);
   } catch (error) {
     console.error("Company Tax Return submission failed:", error);
+    if (error.status === 409) showView("previewView");
     window.showStatus(error.message || "Failed to file the Company Tax Return with HMRC.", "error");
   } finally {
     window.hideLoading();
@@ -929,6 +935,7 @@ function updateGovTestScenarioVisibility() {
 function startAgain() {
   company = null;
   previewRequest = null;
+  reviewedPreview = null;
   reviewReached = false;
   changing = null;
   element("previewBtn").textContent = PREVIEW_THE_RETURN;

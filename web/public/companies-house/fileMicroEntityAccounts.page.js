@@ -297,3 +297,5 @@ document.getElementById("changeCompanyLink").addEventListener("click", (event) =
   event.preventDefault();
   showView("companyView");
 });
+
+window.booksImport.mount(document.getElementById("booksImport"), { kind: "micro-entity-accounts" });
