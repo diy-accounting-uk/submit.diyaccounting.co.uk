@@ -249,7 +249,8 @@ function businessTypesHtml() {
         `<tbody><tr><th scope="rowgroup" colspan="${BUSINESS_COLUMNS.length + 1}">${g}</th></tr>` +
         BUSINESS_TYPES.filter((t) => t.group === g)
           .map(
-            (t) => `<tr><th scope="row">${escapeHtml(t.label)}</th>${BUSINESS_CELLS[t.id].map((c) => `<td>${cell(c)}</td>`).join("")}</tr>`,
+            (t) =>
+              `<tr><th scope="row">${escapeHtml(t.label)}</th>${BUSINESS_CELLS[t.id].map((c, i) => `<td data-label="${BUSINESS_COLUMNS[i]}">${cell(c)}</td>`).join("")}</tr>`,
           )
           .join("") +
         `</tbody>`,
@@ -258,7 +259,7 @@ function businessTypesHtml() {
   return (
     `<div class="form-container" id="business-types"><h2>Which dates apply to your business</h2>` +
     `<p>Find your business type, then follow the link in each column to its dates. Making Tax Digital for Income Tax covers sole traders and landlords registered for Self Assessment, so a limited company is outside it. Partnerships have no date yet. A taxi or private hire driver, and a sole trader with employees, follow the sole trader rules.</p>` +
-    `<div class="table-scroll"><table class="deadline-table"><caption class="calendar-date">Business type against what applies</caption>` +
+    `<div class="table-scroll"><table class="deadline-table stacked-table"><caption class="calendar-date">Business type against what applies</caption>` +
     `<thead><tr><th scope="col">Business type</th>${BUSINESS_COLUMNS.map((c) => `<th scope="col">${c}</th>`).join("")}</tr></thead>${body}</table></div></div>`
   );
 }
@@ -279,15 +280,15 @@ function availabilityHtml() {
     const mcp = row.cells[4][0] === "not offered" ? "" : ` <a href="mcp.html">MCP</a>`;
     return (
       `<tr><th scope="row">${escapeHtml(row.filing)}</th>` +
-      row.cells.map((c) => `<td>${cellHtml(c)}</td>`).join("") +
-      `<td>${links}${mcp ? "," + mcp : ""}</td></tr>`
+      row.cells.map((c, i) => `<td data-label="${CHANNELS[i]}">${cellHtml(c)}</td>`).join("") +
+      `<td data-label="Docs and video">${links}${mcp ? "," + mcp : ""}</td></tr>`
     );
   }).join("");
   return (
     `<div class="form-container" id="availability"><h2>What you can file, and how</h2>` +
     `<p>Production means you can use it for real. Sandbox means it runs against a test service and files nothing real. Preview means it runs on our simulator only.</p>` +
     `<!-- A change to what a business can file, or through which channel, or whether a feature is production, sandbox or preview, updates this table in the same change. -->` +
-    `<div class="table-scroll"><table class="deadline-table"><caption class="calendar-date">Availability by filing and channel</caption>` +
+    `<div class="table-scroll"><table class="deadline-table stacked-table"><caption class="calendar-date">Availability by filing and channel</caption>` +
     `<thead><tr><th scope="col">Filing</th>${CHANNELS.map((c) => `<th scope="col">${c}</th>`).join("")}<th scope="col">Docs and video</th></tr></thead>` +
     `<tbody>${rows}</tbody></table></div></div>`
   );
@@ -356,13 +357,40 @@ const STYLES = `
       }
       .deadline-table {
         border-collapse: collapse;
+        width: 100%;
         margin: var(--spacing-sm) 0;
       }
       .deadline-table th,
       .deadline-table td {
         border: 1px solid var(--color-border);
-        padding: var(--spacing-xs) var(--spacing-sm);
+        padding: var(--spacing-xs);
         text-align: left;
+      }
+      @media (max-width: 600px) {
+        .stacked-table,
+        .stacked-table tbody,
+        .stacked-table tr,
+        .stacked-table th,
+        .stacked-table td {
+          display: block;
+        }
+        .stacked-table thead {
+          position: absolute;
+          left: -9999px;
+        }
+        .stacked-table tr {
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-sm);
+          margin-bottom: var(--spacing-sm);
+        }
+        .stacked-table th,
+        .stacked-table td {
+          border: 0;
+        }
+        .stacked-table td[data-label]::before {
+          content: attr(data-label) ": ";
+          font-weight: bold;
+        }
       }`;
 
 export function renderCalendarHtml(sources) {

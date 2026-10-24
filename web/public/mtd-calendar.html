@@ -63,13 +63,40 @@
       }
       .deadline-table {
         border-collapse: collapse;
+        width: 100%;
         margin: var(--spacing-sm) 0;
       }
       .deadline-table th,
       .deadline-table td {
         border: 1px solid var(--color-border);
-        padding: var(--spacing-xs) var(--spacing-sm);
+        padding: var(--spacing-xs);
         text-align: left;
+      }
+      @media (max-width: 600px) {
+        .stacked-table,
+        .stacked-table tbody,
+        .stacked-table tr,
+        .stacked-table th,
+        .stacked-table td {
+          display: block;
+        }
+        .stacked-table thead {
+          position: absolute;
+          left: -9999px;
+        }
+        .stacked-table tr {
+          border: 1px solid var(--color-border);
+          border-radius: var(--radius-sm);
+          margin-bottom: var(--spacing-sm);
+        }
+        .stacked-table th,
+        .stacked-table td {
+          border: 0;
+        }
+        .stacked-table td[data-label]::before {
+          content: attr(data-label) ": ";
+          font-weight: bold;
+        }
       }
     </style>
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
@@ -99,7 +126,7 @@
           hire driver, and a sole trader with employees, follow the sole trader rules.
         </p>
         <div class="table-scroll">
-          <table class="deadline-table">
+          <table class="deadline-table stacked-table">
             <caption class="calendar-date">
               Business type against what applies
             </caption>
@@ -119,59 +146,59 @@
               </tr>
               <tr>
                 <th scope="row">Sole trader</th>
-                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
-                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
-                <td>
+                <td data-label="Not VAT registered"><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td data-label="VAT registered"><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td data-label="Income Tax (MTD)">
                   <a href="#itsa-mtd-over-50k-2026-04">Dates by income</a><br /><a href="#itsa-quarterly-update-deadlines"
                     >Quarterly updates</a
                   ><br /><a href="#itsa-final-declaration-deadline">Final declaration</a>
                 </td>
-                <td>Not applicable</td>
-                <td>Not applicable</td>
+                <td data-label="Companies House filings">Not applicable</td>
+                <td data-label="Companies House accounts">Not applicable</td>
               </tr>
               <tr>
                 <th scope="row">Taxi and private hire driver</th>
-                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
-                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
-                <td>
+                <td data-label="Not VAT registered"><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td data-label="VAT registered"><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td data-label="Income Tax (MTD)">
                   <a href="#itsa-mtd-over-50k-2026-04">Dates by income</a><br /><a href="#itsa-quarterly-update-deadlines"
                     >Quarterly updates</a
                   ><br /><a href="#itsa-final-declaration-deadline">Final declaration</a>
                 </td>
-                <td>Not applicable</td>
-                <td>Not applicable</td>
+                <td data-label="Companies House filings">Not applicable</td>
+                <td data-label="Companies House accounts">Not applicable</td>
               </tr>
               <tr>
                 <th scope="row">Partnership</th>
-                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
-                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
-                <td><a href="#itsa-mtd-partnerships-date-unset">No date yet</a></td>
-                <td>Not applicable</td>
-                <td>Not applicable</td>
+                <td data-label="Not VAT registered"><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td data-label="VAT registered"><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td data-label="Income Tax (MTD)"><a href="#itsa-mtd-partnerships-date-unset">No date yet</a></td>
+                <td data-label="Companies House filings">Not applicable</td>
+                <td data-label="Companies House accounts">Not applicable</td>
               </tr>
               <tr>
                 <th scope="row">Landlord</th>
-                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
-                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
-                <td>
+                <td data-label="Not VAT registered"><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td data-label="VAT registered"><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td data-label="Income Tax (MTD)">
                   <a href="#itsa-mtd-over-50k-2026-04">Dates by income</a><br /><a href="#itsa-quarterly-update-deadlines"
                     >Quarterly updates</a
                   ><br /><a href="#itsa-final-declaration-deadline">Final declaration</a>
                 </td>
-                <td>Not applicable</td>
-                <td>Not applicable</td>
+                <td data-label="Companies House filings">Not applicable</td>
+                <td data-label="Companies House accounts">Not applicable</td>
               </tr>
               <tr>
                 <th scope="row">Sole trader with employees</th>
-                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
-                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
-                <td>
+                <td data-label="Not VAT registered"><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td data-label="VAT registered"><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td data-label="Income Tax (MTD)">
                   <a href="#itsa-mtd-over-50k-2026-04">Dates by income</a><br /><a href="#itsa-quarterly-update-deadlines"
                     >Quarterly updates</a
                   ><br /><a href="#itsa-final-declaration-deadline">Final declaration</a>
                 </td>
-                <td>Not applicable</td>
-                <td>Not applicable</td>
+                <td data-label="Companies House filings">Not applicable</td>
+                <td data-label="Companies House accounts">Not applicable</td>
               </tr>
             </tbody>
             <tbody>
@@ -180,15 +207,15 @@
               </tr>
               <tr>
                 <th scope="row">Owner-managed company with one director</th>
-                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
-                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
-                <td>Not in this rule</td>
-                <td>
+                <td data-label="Not VAT registered"><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td data-label="VAT registered"><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td data-label="Income Tax (MTD)">Not in this rule</td>
+                <td data-label="Companies House filings">
                   <a href="#ch-confirmation-statement-12-months">Confirmation statement</a><br /><a href="#ch-identity-verification-2025-11"
                     >Identity verification</a
                   >
                 </td>
-                <td>
+                <td data-label="Companies House accounts">
                   <a href="#ch-accounts-9-months">Annual accounts</a><br /><a href="#ct600-12-months">Company Tax Return</a><br /><a
                     href="#ct-payment-9-months-1-day"
                     >Corporation Tax payment</a
@@ -197,15 +224,15 @@
               </tr>
               <tr>
                 <th scope="row">Property company</th>
-                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
-                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
-                <td>Not in this rule</td>
-                <td>
+                <td data-label="Not VAT registered"><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td data-label="VAT registered"><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td data-label="Income Tax (MTD)">Not in this rule</td>
+                <td data-label="Companies House filings">
                   <a href="#ch-confirmation-statement-12-months">Confirmation statement</a><br /><a href="#ch-identity-verification-2025-11"
                     >Identity verification</a
                   >
                 </td>
-                <td>
+                <td data-label="Companies House accounts">
                   <a href="#ch-accounts-9-months">Annual accounts</a><br /><a href="#ct600-12-months">Company Tax Return</a><br /><a
                     href="#ct-payment-9-months-1-day"
                     >Corporation Tax payment</a
@@ -214,15 +241,15 @@
               </tr>
               <tr>
                 <th scope="row">Small company</th>
-                <td><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
-                <td><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
-                <td>Not in this rule</td>
-                <td>
+                <td data-label="Not VAT registered"><a href="#vat-mtd-all-registered-2022-04">No VAT dates</a></td>
+                <td data-label="VAT registered"><a href="#vat-mtd-all-registered-2022-04">VAT returns</a></td>
+                <td data-label="Income Tax (MTD)">Not in this rule</td>
+                <td data-label="Companies House filings">
                   <a href="#ch-confirmation-statement-12-months">Confirmation statement</a><br /><a href="#ch-identity-verification-2025-11"
                     >Identity verification</a
                   >
                 </td>
-                <td>
+                <td data-label="Companies House accounts">
                   <a href="#ch-accounts-9-months">Annual accounts</a><br /><a href="#ct600-12-months">Company Tax Return</a><br /><a
                     href="#ct-payment-9-months-1-day"
                     >Corporation Tax payment</a
@@ -242,7 +269,7 @@
         </p>
         <!-- A change to what a business can file, or through which channel, or whether a feature is production, sandbox or preview, updates this table in the same change. -->
         <div class="table-scroll">
-          <table class="deadline-table">
+          <table class="deadline-table stacked-table">
             <caption class="calendar-date">
               Availability by filing and channel
             </caption>
@@ -261,98 +288,102 @@
             <tbody>
               <tr>
                 <th scope="row">HMRC VAT return</th>
-                <td>production</td>
-                <td>production</td>
-                <td>production</td>
-                <td>not offered</td>
-                <td>production <span class="calendar-date">local server; the hosted connector derives figures only</span></td>
-                <td>not offered</td>
-                <td>
+                <td data-label="Web form">production</td>
+                <td data-label="diya-gl book drop">production</td>
+                <td data-label="Spreadsheets drop">production</td>
+                <td data-label="iXBRL drop">not offered</td>
+                <td data-label="MCP">
+                  production <span class="calendar-date">local server; the hosted connector derives figures only</span>
+                </td>
+                <td data-label="API">not offered</td>
+                <td data-label="Docs and video">
                   <a href="hmrc/vat/submitVat.html">Web form</a>, <a href="guide.html">Guide</a>,
                   <a href="https://www.youtube.com/watch?v=XUt2gdYxR1g" rel="noopener">Video</a>, <a href="mcp.html">MCP</a>
                 </td>
               </tr>
               <tr>
                 <th scope="row">HMRC Income Tax (MTD)</th>
-                <td>sandbox</td>
-                <td>sandbox</td>
-                <td>sandbox</td>
-                <td>not offered</td>
-                <td>sandbox <span class="calendar-date">figures only</span></td>
-                <td>not offered</td>
-                <td>
+                <td data-label="Web form">sandbox</td>
+                <td data-label="diya-gl book drop">sandbox</td>
+                <td data-label="Spreadsheets drop">sandbox</td>
+                <td data-label="iXBRL drop">not offered</td>
+                <td data-label="MCP">sandbox <span class="calendar-date">figures only</span></td>
+                <td data-label="API">not offered</td>
+                <td data-label="Docs and video">
                   <a href="hmrc/itsa/dashboard.html">Web form</a>, <a href="guide.html">Guide</a>,
                   <a href="https://www.youtube.com/watch?v=H1LRSZG984Q" rel="noopener">Video</a>, <a href="mcp.html">MCP</a>
                 </td>
               </tr>
               <tr>
                 <th scope="row">HMRC Company Tax Return (CT600)</th>
-                <td>preview</td>
-                <td>preview <span class="calendar-date">book export file</span></td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td><a href="companies-house/fileCompanyTaxReturn.html">Web form</a>, <a href="guide.html">Guide</a></td>
+                <td data-label="Web form">preview</td>
+                <td data-label="diya-gl book drop">preview <span class="calendar-date">book export file</span></td>
+                <td data-label="Spreadsheets drop">not offered</td>
+                <td data-label="iXBRL drop">not offered</td>
+                <td data-label="MCP">not offered</td>
+                <td data-label="API">not offered</td>
+                <td data-label="Docs and video">
+                  <a href="companies-house/fileCompanyTaxReturn.html">Web form</a>, <a href="guide.html">Guide</a>
+                </td>
               </tr>
               <tr>
                 <th scope="row">Companies House accounts (micro-entity, small company, dormant)</th>
-                <td>sandbox</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>sandbox <span class="calendar-date">micro-entity</span></td>
-                <td>not offered</td>
-                <td>
+                <td data-label="Web form">sandbox</td>
+                <td data-label="diya-gl book drop">not offered</td>
+                <td data-label="Spreadsheets drop">not offered</td>
+                <td data-label="iXBRL drop">not offered</td>
+                <td data-label="MCP">sandbox <span class="calendar-date">micro-entity</span></td>
+                <td data-label="API">not offered</td>
+                <td data-label="Docs and video">
                   <a href="companies-house/fileMicroEntityAccounts.html">Web form</a>, <a href="guide.html">Guide</a>,
                   <a href="https://www.youtube.com/watch?v=yPSpvLKrTJU" rel="noopener">Video</a>, <a href="mcp.html">MCP</a>
                 </td>
               </tr>
               <tr>
                 <th scope="row">Companies House confirmation statement</th>
-                <td>sandbox</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>sandbox</td>
-                <td>not offered</td>
-                <td>
+                <td data-label="Web form">sandbox</td>
+                <td data-label="diya-gl book drop">not offered</td>
+                <td data-label="Spreadsheets drop">not offered</td>
+                <td data-label="iXBRL drop">not offered</td>
+                <td data-label="MCP">sandbox</td>
+                <td data-label="API">not offered</td>
+                <td data-label="Docs and video">
                   <a href="companies-house/fileConfirmationStatement.html">Web form</a>, <a href="guide.html">Guide</a>,
                   <a href="https://www.youtube.com/watch?v=P0aG_mLfhZI" rel="noopener">Video</a>, <a href="mcp.html">MCP</a>
                 </td>
               </tr>
               <tr>
                 <th scope="row">Companies House PSC verification statement</th>
-                <td>sandbox</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td><a href="guide.html">Guide</a></td>
+                <td data-label="Web form">sandbox</td>
+                <td data-label="diya-gl book drop">not offered</td>
+                <td data-label="Spreadsheets drop">not offered</td>
+                <td data-label="iXBRL drop">not offered</td>
+                <td data-label="MCP">not offered</td>
+                <td data-label="API">not offered</td>
+                <td data-label="Docs and video"><a href="guide.html">Guide</a></td>
               </tr>
               <tr>
                 <th scope="row">Companies House registered office and registered email</th>
-                <td>production</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>
+                <td data-label="Web form">production</td>
+                <td data-label="diya-gl book drop">not offered</td>
+                <td data-label="Spreadsheets drop">not offered</td>
+                <td data-label="iXBRL drop">not offered</td>
+                <td data-label="MCP">not offered</td>
+                <td data-label="API">not offered</td>
+                <td data-label="Docs and video">
                   <a href="companies-house/changeRegisteredOffice.html">Web form</a>, <a href="guide.html">Guide</a>,
                   <a href="https://www.youtube.com/watch?v=sN_FhTnAqF4" rel="noopener">Video</a>
                 </td>
               </tr>
               <tr>
                 <th scope="row">Accounts and CT600 together (designed, not built)</th>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td>not offered</td>
-                <td><a href="guide.html">Guide</a></td>
+                <td data-label="Web form">not offered</td>
+                <td data-label="diya-gl book drop">not offered</td>
+                <td data-label="Spreadsheets drop">not offered</td>
+                <td data-label="iXBRL drop">not offered</td>
+                <td data-label="MCP">not offered</td>
+                <td data-label="API">not offered</td>
+                <td data-label="Docs and video"><a href="guide.html">Guide</a></td>
               </tr>
             </tbody>
           </table>
