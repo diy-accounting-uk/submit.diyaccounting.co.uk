@@ -295,6 +295,82 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#previewView")).toBeHidden();
   });
 
+  async function reachReview(page) {
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+  }
+
+  test("the review lists every answer with a Change link whose hidden text names the row", async ({ page }) => {
+    await reachReview(page);
+    const row = page.locator("#review-row-annualInvestmentAllowance");
+    await expect(row).toContainText("Box 690: Annual investment allowance");
+    await expect(row).toContainText("£52500");
+    await expect(row.getByRole("link", { name: "Change Box 690: Annual investment allowance" })).toBeVisible();
+    await expect(page.locator("#review-row-currentTurnover")).toContainText("Turnover, this year");
+    await expect(page.locator("#review-row-declarationAccepted")).toContainText("Yes");
+    await expect(page.locator("#review-box-440").getByRole("link", { name: /^Change box 440/ })).toBeVisible();
+    await expect(page.locator("#review-line-totalCapitalAllowances").getByRole("link", { name: /Change/ })).toBeVisible();
+  });
+
+  test("a Change link opens the form with the value kept and focus on the field, and Return to the review focuses the row", async ({
+    page,
+  }) => {
+    await reachReview(page);
+    await page
+      .locator("#review-row-declarantStatus")
+      .getByRole("link", { name: /Change/ })
+      .click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#declarantStatus")).toBeFocused();
+    await expect(page.locator("#declarantStatus")).toHaveValue("Director");
+    await expect(page.locator("#annualInvestmentAllowance")).toHaveValue("52500");
+    await expect(page.locator("#previewBtn")).toHaveText("Return to the review");
+
+    await page.locator("#declarantStatus").fill("Finance Director");
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await expect(page.locator("#review-row-declarantStatus")).toBeFocused();
+    await expect(page.locator("#review-row-declarantStatus")).toContainText("Finance Director");
+  });
+
+  test("a Change link on a worked box opens its first source field with the other answers kept", async ({ page }) => {
+    await reachReview(page);
+    await page
+      .locator("#review-box-440")
+      .getByRole("link", { name: /Change/ })
+      .click();
+    await expect(page.locator("#periodStart")).toBeFocused();
+    await expect(page.locator("#periodEnd")).toHaveValue("2026-03-31");
+    await expect(page.locator("#utr")).toHaveValue("8596148860");
+  });
+
+  test("a Change link that fails the checks returns to the form with the summary, not the review", async ({ page }) => {
+    await reachReview(page);
+    await page
+      .locator("#review-row-utr")
+      .getByRole("link", { name: /Change/ })
+      .click();
+    await page.locator("#utr").fill("123");
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#ct600-error-summary")).toBeFocused();
+    await expect(page.locator("#formView")).toBeVisible();
+  });
+
+  test("the browser's Back button moves from the review to the form with the figures kept", async ({ page }) => {
+    await reachReview(page);
+    await expect(page).toHaveURL(/#review$/);
+    await page.goBack();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page).toHaveURL(/#form$/);
+    await expect(page.locator("#currentTurnover")).toHaveValue("341283");
+    await expect(page.locator("#utr")).toHaveValue("8596148860");
+    await page.goForward();
+    await expect(page.locator("#previewView")).toBeVisible();
+  });
+
   test("a refusal and the 5 pound check name the figures beside the worked tax", async ({ page }) => {
     await openForm(page);
     await dropBook(page);

@@ -332,8 +332,8 @@ export function guideUrl(anchor) {
   return `${COMPANY_TAX_RETURN_GUIDE_URL}#${anchor}`;
 }
 
-// Boxes the page shows as money in the review.
-export const MONEY_BOXES = new Set([145, 155, 315, 440]);
+// Boxes the review shows as typed or coded text; every other box is an amount in pounds.
+export const TEXT_BOXES = new Set([1, 2, 3, 4, 30, 35, 326, 327, 328, 329, 330, 340, 380, 390, 975, 985]);
 
 export const SECTIONS = [
   { id: "company", title: "Company" },
@@ -1103,4 +1103,147 @@ export function formEntriesFromFigures(figures) {
   if (figures.declarantName) entries.push(["declarantName", figures.declarantName]);
   if (figures.declarantStatus) entries.push(["declarantStatus", figures.declarantStatus]);
   return entries;
+}
+
+// --- The review ------------------------------------------------------------------------------
+
+// The first field a review row's Change link opens. A worked box points at its first source field.
+const TURNOVER_FIELD = profitAndLossId("current", "turnover");
+
+export const BOX_SOURCE_FIELD = {
+  3: "utr",
+  4: "companyType",
+  30: "period",
+  35: "period",
+  145: TURNOVER_FIELD,
+  155: TURNOVER_FIELD,
+  160: "lossesBroughtForward",
+  165: TURNOVER_FIELD,
+  170: "nonTradingLoanRelationshipCredits",
+  235: TURNOVER_FIELD,
+  300: TURNOVER_FIELD,
+  315: TURNOVER_FIELD,
+  326: "associatedCompanies",
+  327: "associatedCompanies",
+  328: "associatedCompanies",
+  329: "period",
+  330: "period",
+  335: "period",
+  340: "period",
+  345: "period",
+  380: "period",
+  385: "period",
+  390: "period",
+  395: "period",
+  430: "period",
+  435: "associatedCompanies",
+  440: "period",
+  475: "period",
+  510: "period",
+  515: "incomeTaxDeducted",
+  525: "incomeTaxDeducted",
+  528: "incomeTaxDeducted",
+  595: "taxAlreadyPaid",
+  600: "taxAlreadyPaid",
+  620: "frankedInvestmentIncome",
+  690: "annualInvestmentAllowance",
+  705: "mainPoolAllowances",
+  710: "mainPoolBalancingCharges",
+  975: "declarantName",
+  985: "declarantStatus",
+};
+
+export const COMPUTATION_SOURCE_FIELD = {
+  profitLossPerAccounts: TURNOVER_FIELD,
+  nonTradingLoanRelationshipCredits: "nonTradingLoanRelationshipCredits",
+  depreciation: "depreciation",
+  amortisation: "amortisation",
+  entertaining: "entertaining",
+  adjustedProfitBeforeCapitalAllowances: TURNOVER_FIELD,
+  totalCapitalAllowances: "annualInvestmentAllowance",
+  adjustedProfit: TURNOVER_FIELD,
+};
+
+const NOT_GIVEN = "Not given";
+
+function answerText(field, values) {
+  if (field.type === "dates") return values.periodStart || values.periodEnd ? `${values.periodStart} to ${values.periodEnd}` : NOT_GIVEN;
+  if (field.type === "choice") return values[field.id] === "yes" ? "Yes" : "No";
+  if (field.type === "checkbox") return values[field.id] === true ? "Yes" : "No";
+  const typed = String(values[field.id] ?? "").trim();
+  if (typed === "") return NOT_GIVEN;
+  return field.type === WHOLE || field.type === "pounds-and-pence" ? `£${typed.replace(/^£/, "")}` : typed;
+}
+
+function amountRows(ids, values) {
+  return ids.map(({ id, label }) => ({ id, label, value: answerText({ id, type: WHOLE }, values) }));
+}
+
+function accountsRows(values) {
+  const years =
+    values.includeComparatives === true
+      ? [
+          ["current", "this year"],
+          ["prior", "last year"],
+        ]
+      : [["current", "this year"]];
+  const rows = [];
+  for (const [prefix, when] of years) {
+    rows.push(
+      ...amountRows(
+        PROFIT_AND_LOSS_FIELDS.map(([field, label]) => ({ id: profitAndLossId(prefix, field), label: `${label}, ${when}` })),
+        values,
+      ),
+      ...amountRows(
+        BALANCE_SHEET_FIELDS.map(([field, label]) => ({ id: balanceSheetId(prefix, field), label: `${label}, ${when}` })),
+        values,
+      ),
+    );
+  }
+  if (values.includeFixedAssetNote === true) {
+    for (const [className, title] of FIXED_ASSET_CLASSES) {
+      rows.push(
+        ...amountRows(
+          FIXED_ASSET_FIELDS.map(([field, label]) => ({ id: noteId(className, field), label: `${title}: ${label}` })),
+          values,
+        ),
+      );
+    }
+  }
+  for (const field of ACCOUNTS_TEXT_FIELDS) {
+    const typed = String(values[field.id] ?? "").trim();
+    rows.push({
+      id: field.id,
+      label: field.label.replace(/ \(one name per line\)$/, ""),
+      value: typed === "" ? NOT_GIVEN : typed.replaceAll("\n", ", "),
+    });
+  }
+  return rows;
+}
+
+/**
+ * The review's answers in the form's section order: every typed field and every accounts figure
+ * with the element id its Change link opens.
+ * @param {Record<string, string|boolean>} values - the form's values
+ * @returns {Array<{id: string, title: string, rows: Array<{id: string, label: string, value: string}>}>}
+ */
+export function reviewAnswers(values) {
+  return SECTIONS.map(({ id, title }) => {
+    const rows = CT600_FORM_FIELDS.filter((field) => field.section === id).map((field) => ({
+      id: field.id,
+      label: field.label,
+      value: answerText(field, values),
+    }));
+    if (id === "accounts") rows.push(...accountsRows(values));
+    if (id === "declaration") {
+      rows.push(
+        ...STATEMENT_FIELDS.map((statement) => ({
+          id: statement.id,
+          label: statement.label,
+          value: answerText({ id: statement.id, type: "checkbox" }, values),
+        })),
+      );
+    }
+    return { id, title, rows };
+  });
 }

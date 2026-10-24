@@ -389,6 +389,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools: use when a session needs the submission MCP's tool set, over stdio or one call across every practice client.
     - [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito: use when the MCP's own tools (cloud book open/save) need a signed-in DIY Accounting Submit session.
     - [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront: use when a chat client must reach the submission MCP at `/mcp` with OAuth, or the routes, stack, edge behaviours or rate rules behind that endpoint need tracing.
+    - [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness: use when a demonstration or recording needs a chat that makes real submission MCP tool calls without a model, on the local server or the ci lane.
   - [Book and derivation tools](#book-and-derivation-tools-mcp)
     - [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP: use when an MCP session needs to open or save a diya-gl book, locally or in the cloud.
     - [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing: use when a Company (ltd) book's FRS 105 balance-sheet lines are needed before a Companies House accounts filing.
@@ -398,6 +399,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API: use when confirmed VAT or accounts figures must be filed, fetched or polled against the deployed API.
     - [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation: use when a practice's client list must be read or grown, or an HMRC Agent Authorisation invitation sent or checked.
     - [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client: use when one submission or book tool must run once per client in a practice's list.
+    - [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat) Take Companies House codes on a page instead of in the chat: use when a Companies House filing through the MCP needs the company authentication code or a director's personal code, or the codes link, its entry or its seal needs tracing.
   - [Finance data import](#finance-data-import-mcp)
     - [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines: use when a NatWest current-account CSV export must become validated diya-gl bank lines for a book.
     - [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set: use when a finished trading year's Company package workbooks must seed a new book.toml for the following year.
@@ -2374,10 +2376,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-18 Run alarm and support triage
 
 - **Use when:** an [ALARM] or support issue needs an automated first-pass triage.
-- **Does:** run-triage-agent executes claude -p against Bedrock, Haiku with Sonnet escalation for complex cases. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue and support-triage.yml from a support issue.
+- **Does:** run-triage-agent executes claude -p against Bedrock, Haiku with Sonnet escalation for complex cases. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue and support-triage.yml from a support issue. When a dispatch names a Gmail thread and SUPPORT_GMAIL_DRAFT_KEY is set, support-triage.yml also puts the drafted reply into the support mailbox as an unsent draft with scripts/support-gmail-draft.mjs.
 - **Run:** `gh workflow run alarm-triage.yml`; `gh workflow run support-triage.yml`; security-review.yml runs it too (OPS-31)
 - **Entry:** `.github/actions/run-triage-agent/action.yml`
-- **Files:** .github/actions/run-triage-agent/action.yml, .github/workflows/alarm-triage.yml, .github/workflows/support-triage.yml, app/unit-tests/supportTriageWorkflow.test.js
+- **Files:** .github/actions/run-triage-agent/action.yml, .github/workflows/alarm-triage.yml, .github/workflows/support-triage.yml, app/unit-tests/supportTriageWorkflow.test.js, scripts/support-gmail-draft.mjs, app/unit-tests/scripts/supportGmailDraft.test.js
 - **Keywords:** triage agent, alarm triage, support triage, claude -p, bedrock, haiku, sonnet escalation
 - **Related:** OPS-17, OPS-19, OPS-20, OPS-23
 
@@ -4277,9 +4279,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## MCP and tools (MCP)
 
 <!-- generated:area MCP -->
-- [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito · [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront
+- [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito · [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront · [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness
 - [Book and derivation tools](#book-and-derivation-tools-mcp): [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP · [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing · [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools · [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures
-- [Filing and practice tools](#filing-and-practice-tools-mcp): [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API · [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation · [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client
+- [Filing and practice tools](#filing-and-practice-tools-mcp): [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API · [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation · [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client · [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat) Take Companies House codes on a page instead of in the chat
 - [Finance data import](#finance-data-import-mcp): [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines · [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set · [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index · [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines · [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines) Parse PayPal statements into diya-gl lines · [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book
 - [Documentation and disclaimer](#documentation-and-disclaimer-mcp): [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference · [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site
 <!-- /generated:area MCP -->
@@ -4290,6 +4292,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools
 - [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito
 - [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront
+- [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness
 <!-- /generated:group server-and-cli-mcp -->
 
 #### MCP-01 Expose the submission MCP server and tools
@@ -4320,6 +4323,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/mcp/mcpHttp.js, app/functions/mcp/mcpOauth.js, mcp/lib/http.js, app/data/dynamoDbMcpSessionRepository.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java, .github/workflows/deploy.yml
 - **Keywords:** hosted mcp, mcp http, streamable http, oauth facade, well-known, protected resource, mcp session, mcp rate limit, McpStack, deploy-mcp
 - **Related:** MCP-01, MCP-02
+
+#### MCP-19 Demonstrate the submission MCP in a scripted chat harness
+
+- **Use when:** a demonstration or recording needs a chat that makes real submission MCP tool calls without a model, on the local server or the ci lane.
+- **Does:** mcp-harness.html is a dev page that plays a scripted conversation from web/public/mcp-harness/<name>.json, chosen by `?script=`. Each tool turn posts to `/api/v1/dev/mcp-harness/call`. mcpHarness.js answers it in the local Express process and returns 404 when ENVIRONMENT_NAME is prod. mcp/lib/harness.js runs one tool of the full server over an in-memory MCP client. A tool that returns a link opens it in the page's browser-step frame. The page also shows the MCP configuration for Claude Code, stdio and a claude.ai connector.
+- **Run:** open `/mcp-harness.html` on the local server (`npm run start:proxy` or `npm run start:simulator`); `?script=list-vat-obligations` is the default script. Record it with `npx dotenv -e .env.simulator -- node scripts/site-video-capture.js --script videos/mcp-harness.json` (no npm script yet).
+- **Entry:** `web/public/mcp-harness.page.js`; `app/functions/mcp/mcpHarness.js:apiEndpoint`; `mcp/lib/harness.js:callHarnessTool`
+- **Files:** web/public/mcp-harness.html, web/public/mcp-harness.page.js, web/public/mcp-harness/list-vat-obligations.json, app/functions/mcp/mcpHarness.js, mcp/lib/harness.js, videos/mcp-harness.json, app/bin/server.js
+- **Keywords:** mcp harness, chat harness, scripted chat, mcp demo, list vat obligations demo, mcp-harness, harness endpoint, mcp recording
+- **Related:** MCP-01, MCP-18
 
 ### Book and derivation tools (MCP)
 
@@ -4376,6 +4389,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API
 - [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation
 - [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client
+- [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat) Take Companies House codes on a page instead of in the chat
 <!-- /generated:group filing-and-practice-tools-mcp -->
 
 #### MCP-07 File VAT returns and accounts via API
@@ -4407,6 +4421,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** mcp/lib/batch-tools.js, mcp/test/batch-tools.test.js
 - **Keywords:** run_for_clients, batch tools, all-clients, per-client loop, practice batch run
 - **Related:** MCP-01, MCP-08
+
+#### MCP-20 Take Companies House codes on a page instead of in the chat
+
+- **Use when:** a Companies House filing through the MCP needs the company authentication code or a director's personal code, or the codes link, its entry or its seal needs tracing.
+- **Does:** request_companies_house_codes posts to `/api/v1/mcp/codes-entries` and answers a link to companies-house/mcpCodes.html. The user types the codes there; mcpCodesEntry.js seals them with AES-256-GCM under a key derived from the MCP blob key and stores them in the mcp-sessions table for ten minutes. The accounts, confirmation statement and filing data routes take the entry by `codesEntryId` once (applyCodesEntry deletes it as it reads it, for its owner only), so no tool argument holds a code.
+- **Run:** no command; see Does and Entry
+- **Entry:** `app/functions/mcp/mcpCodesEntry.js`; `app/services/companiesHouseCodesEntry.js`; `app/data/dynamoDbCodesEntryRepository.js`; `mcp/lib/submit-tools.js:requestCompaniesHouseCodes`
+- **Files:** app/functions/mcp/mcpCodesEntry.js, app/services/companiesHouseCodesEntry.js, app/data/dynamoDbCodesEntryRepository.js, app/lib/codesSeal.js, app/lib/mcpBlobKey.js, web/public/companies-house/mcpCodes.html, web/public/companies-house/mcpCodes.page.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStack.java
+- **Keywords:** companies house codes, company authentication code, personal code, codes entry, codesEntryId, request_companies_house_codes, mcpCodes, codes link
+- **Related:** MCP-07, MCP-18
 
 ### Finance data import (MCP)
 
@@ -6064,6 +6088,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - channel uploads: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
 - charge reference: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - charges: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
+- chat harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - chat routing: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram)
 - check pass: [BILL-08](#bill-08-check-a-passs-validity)
 - checkip: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
@@ -6136,6 +6161,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloudwatch rum: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
 - co-authored-by claude: [DATA-07](#data-07-pull-github-operator-effort-data)
 - codeql: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
+- codes entry: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
+- codes link: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
+- codesentryid: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - coding agent: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - cognito: [SITE-01](#site-01-sign-customers-in-via-cognito), [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle), [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - cognito client id: [DATA-44](#data-44-assert-google-oauth-client-configuration)
@@ -6153,7 +6181,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - community page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
+- companies house codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - company accounts: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
+- company authentication code: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - company background page: [SITE-11](#site-11-promote-sibling-products-and-partners)
 - company book id: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - company book owner prefix: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
@@ -6695,6 +6725,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - haiku: [OPS-18](#ops-18-run-alarm-and-support-triage)
 - halt triage: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
 - hard failure: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
+- harness endpoint: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - hashed sub: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure), [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - hashedsub: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - hastokensforactivity: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
@@ -6907,6 +6938,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - list domains: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions)
 - list passes: [BILL-09](#bill-09-list-a-users-issued-passes)
 - list secrets: [OPS-107](#ops-107-list-production-secrets-manager-entries)
+- list vat obligations demo: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - list_clients: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - list_vat_obligations: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - listlapsedbundleowners: [BILL-21](#bill-21-sweep-lapsed-diya-gl-books)
@@ -6967,15 +6999,20 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - maximize clicks bidding: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - mcp auth: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
 - mcp book tools: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
+- mcp demo: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp disclaimer: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
+- mcp harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp http: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp inspector: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
 - mcp rate limit: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp readme: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
+- mcp recording: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp server: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - mcp session: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp tools: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
+- mcp-harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp.html: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
+- mcpcodes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - mcpstack: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - measured figures: [DEV-37](#dev-37-write-the-session-report), [SS-56](#ss-56-write-the-session-report)
 - measurement id: [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events)
@@ -7183,6 +7220,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - period key hidden: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
 - permission grant: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - personal allowance: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
+- personal code: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - personal data package: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
 - phone width: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - physical pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
@@ -7394,6 +7432,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - repository structure check: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
 - request cache: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - request-holding-cert.yml: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
+- request_companies_house_codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - requestidprefix: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - required env vars: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - required status check: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
@@ -7509,6 +7548,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - screenshot review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - screenshots: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video), [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
+- scripted chat: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - sdst: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - se-derivations: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
 - search: [CH-03](#ch-03-search-the-companies-house-register)

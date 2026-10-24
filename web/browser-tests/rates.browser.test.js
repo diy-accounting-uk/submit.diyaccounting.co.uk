@@ -126,7 +126,7 @@ test.describe("rates.html", () => {
 
   test("the navigation links to the rates page", async ({ page }) => {
     await openRatesPage(page);
-    await expect(page.locator("nav.main-nav a:has-text('HMRC Tax Rates and Allowances')")).toHaveAttribute("href", "rates.html");
+    await expect(page.locator("nav.main-nav a:has-text('Tax rates')")).toHaveAttribute("href", "rates.html");
   });
 
   for (const width of [1280, 1920]) {

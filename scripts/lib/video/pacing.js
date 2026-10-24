@@ -34,6 +34,7 @@ const STEP_GROUP = {
   dropFile: 2,
   testScenario: null,
   checkHidden: null,
+  notePeriod: null,
   scroll: 3,
   highlight: 2,
   sheetPrepare: null,

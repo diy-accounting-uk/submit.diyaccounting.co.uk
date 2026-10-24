@@ -357,6 +357,22 @@ Companies House pages (`web/public/companies-house/`):
 - **Work**: section 2.2 tokens with light and dark; every 2.3 component; findings 1.1 to 1.8, 1.10, 1.11 and 1.15 to 1.18 where the fix is shared. The `novalidate` switch and the error summary wiring go in a shared form helper the page rows call.
 - **Pages to check**: all 75, through a DS1 re-run against the stored set.
 
+#### DS3 result: before and after
+
+Before is DS1's stored set (`target/site-screenshots/`, 432 PNGs). After is `node scripts/site-screenshots.mjs --out target/ds3-after` on the DS3 branch (436 PNGs, 76 pages).
+
+| Check | Before | After |
+|---|---|---|
+| Dark PNG differs from light | 0 pairs | 154 of 218 pairs; the 64 equal pairs are the light-pinned pages below and `images/favicon/IMPLEMENTATION.html` |
+| 390 PNG wider than 390 px | 2 | 0 |
+| Content starts at 390 px (index, Submit VAT, ITSA obligations) | 410 px (index) | 230 px, of which the title and a two-line subtitle take 130 px |
+| Footer variants | 4, right of centre | 1, left-aligned |
+| Pages with console errors | 9 | 9, the same messages |
+
+- **Light pin**: 28 pages still paint raw colours in an inline `<style>`, a `style` attribute or their page script. They carry `<html data-theme="light">`, so dark mode does not reach them until DS4, DS5 or DS6 moves those colours onto tokens and drops the attribute: `about`, `accessibility`, `bundles`, `companies-house/fileMicroEntityAccounts`, `diy-accounting-limited`, `diy-accounting-spreadsheets`, `guide`, `help`, `hmrc/itsa/dashboard`, `hmrc/receipt/receipts`, `index`, `mcp-harness`, `mcp`, `operator/dashboard`, `passes/generate-digital`, `passes/generate-physical`, `policybee`, `practice`, `privacy`, `spreadsheets`, `terms`, `usage` and the six `videos*` pages.
+- **For the page rows**: the error summary and inline errors use `web/public/lib/form-errors.js`; a page adds `novalidate` to its form and calls it. The signed-out panel is `.signed-out-panel` (an `h2`, a paragraph and a `.btn` Log in link). Each page row moves its `h1` to the page name (1.11); the header band already shows the brand.
+- **Contrast** (WCAG relative luminance): light ink 14.4, muted 7.5, rule 3.06, brand 6.8, white on brand 6.8, ok 5.6, error 5.8, warn 6.8, info 7.1 on their tints; dark ink 13.7, muted 7.8, rule 3.6, brand 7.8, ink on brand 8.6, ok 8.1, error 7.1, warn 9.0, info 6.7.
+
 ### DS4: the HMRC pages
 
 - **Pages**: the 26 under `web/public/hmrc/`: 6 under `vat/`, `receipt/receipts.html` and 19 under `itsa/`. Section 3, HMRC list.

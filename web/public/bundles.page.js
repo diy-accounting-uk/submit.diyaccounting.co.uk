@@ -765,18 +765,9 @@ function showPassStatus(message, type) {
   el.textContent = message;
   el.style.display = "block";
   el.style.backgroundColor =
-    type === "success"
-      ? "var(--color-success-bg, #d4edda)"
-      : type === "error"
-        ? "var(--color-error-bg, #f8d7da)"
-        : "var(--color-info-bg, #d1ecf1)";
-  el.style.color =
-    type === "success"
-      ? "var(--color-success-text, #155724)"
-      : type === "error"
-        ? "var(--color-error-text, #721c24)"
-        : "var(--color-info-text, #0c5460)";
-  el.style.border = `1px solid ${type === "success" ? "var(--color-success-border, #c3e6cb)" : type === "error" ? "var(--color-error-border, #f5c6cb)" : "var(--color-info-border, #bee5eb)"}`;
+    type === "success" ? "var(--c-ok-tint, #d4edda)" : type === "error" ? "var(--c-error-tint, #f8d7da)" : "var(--c-info-tint, #d1ecf1)";
+  el.style.color = type === "success" ? "var(--c-ok, #155724)" : type === "error" ? "var(--c-error, #721c24)" : "var(--c-info, #0c5460)";
+  el.style.border = `1px solid ${type === "success" ? "var(--c-ok, #c3e6cb)" : type === "error" ? "var(--c-error, #f5c6cb)" : "var(--c-info, #bee5eb)"}`;
 }
 
 async function redeemPassCode(code) {

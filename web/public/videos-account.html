@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB">
+<html lang="en-GB" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <title>Account and passes walkthrough videos - DIY Accounting Submit</title>
@@ -23,7 +23,7 @@
     <style>
       #mainContent {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-card);
         padding: 1em;
       }
       .videos-page {
@@ -59,13 +59,13 @@
       .video-contents-nav h2 {
         margin: 0 0 0.75em;
         font-size: 1.3em;
-        color: var(--color-text-primary);
+        color: var(--c-ink);
       }
       .video-contents-nav h3 {
         margin: 1em 0 0.4em;
         font-size: 1em;
         font-weight: 600;
-        color: var(--color-text-secondary);
+        color: var(--c-ink-muted);
       }
       .video-contents-nav .video-contents-groups > h3:first-child {
         margin-top: 0;
@@ -78,11 +78,11 @@
         margin: 0.3em 0;
       }
       .video-contents-nav a {
-        color: var(--color-brand-primary);
+        color: var(--c-brand);
       }
       .video-contents-nav a:hover,
       .video-contents-nav a:focus-visible {
-        color: var(--color-brand-primary-dark);
+        color: var(--c-brand-strong);
       }
       .video-frame {
         position: relative;
@@ -124,13 +124,26 @@
     </header>
 
     <main id="mainContent">
-      <p class="hint" data-feature-status="summary">
-        <strong>Status of each feature.</strong> Production, which you can use for real: HMRC VAT, company lookup, registered office and
-        registered email. Sandbox, which runs against a test service: HMRC Income Tax (MTD), HMRC Assist for Income Tax, the Companies House
-        confirmation statement, PSC verification statement and accounts. Preview, which runs on our simulator only: HMRC Company Tax Return
-        (CT600) and HMRC Assist for VAT. Sandbox and preview features file nothing real.
-        <a href="mtd-calendar.html#availability">See the availability table</a>.
-      </p>
+      <div class="feature-status-summary" data-feature-status="summary">
+        <p>
+          <strong>Status of each feature.</strong> Sandbox and preview features file nothing real.
+          <a href="mtd-calendar.html#availability">See the availability table</a>.
+        </p>
+        <ul>
+          <li>
+            <span class="status-tag" data-status="production">Production</span> for real use: HMRC VAT, company lookup, registered office
+            and registered email.
+          </li>
+          <li>
+            <span class="status-tag" data-status="sandbox">Sandbox</span> against a test service: HMRC Income Tax (MTD), HMRC Assist for
+            Income Tax, the Companies House confirmation statement, PSC verification statement and accounts.
+          </li>
+          <li>
+            <span class="status-tag" data-status="preview">Preview</span> on our simulator only: HMRC Company Tax Return (CT600) and HMRC
+            Assist for VAT.
+          </li>
+        </ul>
+      </div>
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
       <div class="videos-page">
@@ -152,7 +165,7 @@
       </div>
     </main>
 
-    <footer data-footer="full"></footer>
+    <footer></footer>
 
     <script src="widgets/page-chrome.js"></script>
     <script src="lib/env-loader.js"></script>

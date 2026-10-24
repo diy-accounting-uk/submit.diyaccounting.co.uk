@@ -5,7 +5,13 @@
   "description": "A signed-in walk through HMRC Assist on the VAT return: fill in the nine boxes for an open period, ask HMRC Assist to check them, read its messages, then submit the return.",
   "auth": "user",
   "environments": ["simulator"],
-  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/vat/submitVat.html"],
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/hmrc/vat/submitVat.html",
+    "web/public/hmrc/vat/viewVatReturn.html"
+  ],
   "viewport": {
     "width": 1920,
     "height": 1080
@@ -387,6 +393,91 @@
           "action": "still",
           "name": "receipt"
         },
+        {
+          "action": "hold",
+          "ms": 1500
+        }
+      ]
+    },
+    {
+      "id": "record",
+      "chapter": "Your record",
+      "still": true,
+      "steps": [
+        { "action": "notePeriod" },
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Activities"
+          },
+          "caption": "Back to the activities, to read the return you filed.",
+          "headline": "Read back what you filed",
+          "keyWord": "filed"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        },
+        {
+          "action": "click",
+          "target": "button:has-text('View VAT Return (HMRC)')",
+          "caption": "Open the return you have just sent.",
+          "headline": "Open View VAT Return",
+          "keyWord": "View"
+        },
+        {
+          "action": "await",
+          "until": "#vatReturnForm",
+          "label": "Opening the return form"
+        },
+        {
+          "action": "fill",
+          "target": "#periodStart",
+          "value": "{{submittedPeriodStart}}",
+          "caption": "Then the period you filed.",
+          "headline": "Choose the period",
+          "keyWord": "period"
+        },
+        { "action": "fill", "target": "#periodEnd", "value": "{{submittedPeriodEnd}}" },
+        { "action": "hold", "ms": 700 },
+        {
+          "action": "click",
+          "target": "#retrieveBtn",
+          "caption": "Ask HMRC for the return on file.",
+          "headline": "Ask HMRC for the record",
+          "keyWord": "record"
+        },
+        {
+          "action": "await",
+          "until": "#returnResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 450000,
+          "caption": "HMRC sends back the return as it holds it.",
+          "headline": "HMRC sends the record",
+          "keyWord": "record"
+        },
+        {
+          "action": "scroll",
+          "target": ".customer-copy-section:nth-of-type(2)"
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "point",
+          "target": ".customer-copy-section:last-of-type .approval",
+          "caption": "This is your record: the totals and the declaration, as submitted.",
+          "headline": "Your record, as submitted",
+          "keyWord": "record",
+          "dwellMs": 600
+        },
+        {
+          "action": "still",
+          "name": "submission-record"
+        },
+        { "action": "hold", "ms": 4000 },
         {
           "action": "hold",
           "ms": 1500

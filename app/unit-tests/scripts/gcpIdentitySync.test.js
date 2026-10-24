@@ -443,3 +443,42 @@ describe("planWhenApiDisabled", () => {
     expect(planWhenApiDisabled(new Error("500 from GET https://x: boom"), config, false)).toBeNull();
   });
 });
+
+describe("gcp-identity-sync delegated service accounts", () => {
+  const withAccount = `${SAMPLE_TOML}
+[[delegated_service_account]]
+account_id = "support-gmail-draft"
+display_name = "Support reply drafts"
+mailbox = "support@diyaccounting.co.uk"
+scopes = ["https://www.googleapis.com/auth/gmail.compose"]
+`;
+
+  it("the committed file declares the support draft account with the compose scope only", () => {
+    const config = loadConfigFromRoot();
+    expect(config.delegatedAccounts).toEqual([
+      {
+        accountId: "support-gmail-draft",
+        displayName: "Support reply drafts",
+        mailbox: "support@diyaccounting.co.uk",
+        scopes: ["https://www.googleapis.com/auth/gmail.compose"],
+      },
+    ]);
+  });
+
+  it("plans to create a delegated account that does not exist", () => {
+    const config = parseConfig(withAccount);
+    const live = { ...liveMatching(config), delegatedAccounts: { "support-gmail-draft": null } };
+    expect(planIdentity(config, live).map((a) => a.kind)).toEqual(["create-delegated-service-account"]);
+  });
+
+  it("plans nothing once the delegated account exists", () => {
+    const config = parseConfig(withAccount);
+    const live = { ...liveMatching(config), delegatedAccounts: { "support-gmail-draft": { email: "x" } } };
+    expect(planIdentity(config, live)).toEqual([]);
+  });
+
+  it("refuses a delegated account with no scopes", () => {
+    const bad = withAccount.replace('scopes = ["https://www.googleapis.com/auth/gmail.compose"]', "scopes = []");
+    expect(() => parseConfig(bad)).toThrow(/scopes/);
+  });
+});

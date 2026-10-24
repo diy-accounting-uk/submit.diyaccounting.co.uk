@@ -135,6 +135,7 @@ describe("the server", () => {
       "poll_confirmation_statement_sandbox",
       "render_confirmation_statement_sandbox",
       "render_micro_entity_accounts_sandbox",
+      "request_companies_house_codes",
       "run_for_clients",
       "save_book",
       "sign_in",

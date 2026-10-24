@@ -49,6 +49,8 @@ export const CONCEPTS = {
   dateAuthorisationFinancialStatementsForIssue: { prefix: "core", name: "DateAuthorisationFinancialStatementsForIssue" },
   directorSigningFinancialStatements: { prefix: "core", name: "DirectorSigningFinancialStatements" },
   entityDormantTruefalse: { prefix: "bus", name: "EntityDormantTruefalse" },
+  nameProductionSoftware: { prefix: "bus", name: "NameProductionSoftware" },
+  versionProductionSoftware: { prefix: "bus", name: "VersionProductionSoftware" },
   startDateForPeriodCoveredByReport: { prefix: "bus", name: "StartDateForPeriodCoveredByReport" },
   endDateForPeriodCoveredByReport: { prefix: "bus", name: "EndDateForPeriodCoveredByReport" },
   entityTradingStatus: { prefix: "bus", name: "EntityTradingStatus" },
@@ -86,6 +88,16 @@ export const CONCEPTS = {
 
   descriptionPrincipalActivities: { prefix: "bus", name: "DescriptionPrincipalActivities" },
   nameEntityOfficer: { prefix: "bus", name: "NameEntityOfficer" },
+  reportTitle: { prefix: "bus", name: "ReportTitle" },
+  descriptionBodyAuthorisingFinancialStatements: { prefix: "core", name: "DescriptionBodyAuthorisingFinancialStatements" },
+  dateSigningDirectorsReport: { prefix: "direp", name: "DateSigningDirectorsReport" },
+  generalDescriptionBasisMeasurement: { prefix: "core", name: "GeneralDescriptionBasisMeasurementUsedInPreparingFinancialStatements" },
+  statementComplianceWithReportingFramework: { prefix: "core", name: "StatementComplianceWithApplicableReportingFramework" },
+  reportIncludesDetailedProfitLossStatement: { prefix: "bus", name: "ReportIncludesDetailedProfitLossStatementTruefalse" },
+  exemptionNotPublishingOwnProfitLossAccount: {
+    prefix: "direp",
+    name: "EntityHasTakenExemptionUnderCompaniesActInNotPublishingItsOwnProfitLossAccountTruefalse",
+  },
   directorSigningDirectorsReport: { prefix: "direp", name: "DirectorSigningDirectorsReport" },
 
   turnoverRevenue: { prefix: "core", name: "TurnoverRevenue" },
@@ -143,6 +155,7 @@ export const MEMBERS = {
   smallCompaniesRegimeForAccounts: { prefix: "bus", name: "SmallCompaniesRegimeForAccounts" },
   auditExemptNoAccountantsReport: { prefix: "bus", name: "AuditExempt-NoAccountantsReport" },
   fullAccounts: { prefix: "bus", name: "FullAccounts" },
+  filletedAccounts: { prefix: "bus", name: "FilletedAccounts" },
   shareCapital: { prefix: "core", name: "ShareCapital" },
   neverTraded: { prefix: "bus", name: "EntityHasNeverTraded" },
   noLongerTrading: { prefix: "bus", name: "EntityNoLongerTradingButTradedInPast" },
@@ -327,6 +340,30 @@ export function renderTextFact(conceptKey, contextRef, text) {
   return `<ix:nonNumeric name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}">${escapeXmlText(text)}</ix:nonNumeric>`;
 }
 
+export const PRODUCTION_SOFTWARE_NAME = "DIY Accounting Submit";
+
+let cachedPackageVersion;
+
+export function packageVersion() {
+  if (!cachedPackageVersion) {
+    const packagePath = join(dirname(fileURLToPath(import.meta.url)), "..", "..", "package.json");
+    cachedPackageVersion = JSON.parse(readFileSync(packagePath, "utf8")).version;
+  }
+  return cachedPackageVersion;
+}
+
+/**
+ * The hidden facts that name the software that produced the document, in the current period's context.
+ * @param {string} contextRef
+ * @returns {string[]}
+ */
+export function renderProductionSoftwareFacts(contextRef) {
+  return [
+    renderTextFact("nameProductionSoftware", contextRef, PRODUCTION_SOFTWARE_NAME),
+    renderTextFact("versionProductionSoftware", contextRef, packageVersion()),
+  ];
+}
+
 export function renderDateFact(conceptKey, contextRef, isoDate) {
   return `<ix:nonNumeric name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}" format="${DATE_FORMAT}">${displayDate(isoDate)}</ix:nonNumeric>`;
 }
@@ -377,19 +414,38 @@ export function coverPage({ refs, companyName, companyNumber, title, periodStart
   return `<div class="page cover">
 <p class="cover-name">${renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName)}</p>
 <p class="cover-line">Registered number: ${renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber)}</p>
-<p class="cover-title">${escapeXmlText(title)}</p>
+<p class="cover-title">${renderTextFact("reportTitle", refs.current, title)}</p>
 <p class="cover-line">for the ${escapeXmlText(periodEndedPhrase(periodStart, periodEnd))}</p>
 <p class="cover-line">Period from ${renderDateFact("startDateForPeriodCoveredByReport", refs.periodStartInstant, periodStart)} to ${renderDateFact("endDateForPeriodCoveredByReport", refs.currentInstant, periodEnd)}</p>
 </div>`;
 }
 
 /**
- * The approval line under the balance sheet statements: the tagged approval date and the name of
- * the director who signs.
+ * The approval line under the balance sheet statements: the board that approves, the tagged
+ * approval date and the name of the director who signs. A director's name is tagged as an officer
+ * when the caller passes the context that names the officer; the directors' report tags the
+ * names of a full set of accounts, so it passes none.
+ * @param {object} approval
+ * @param {string} [approval.officerContextRef] - the dimensioned context of the signing director
  */
-export function approvalHtml({ refs, dateOfApproval, directorName }) {
-  return `<p class="approval">Approved by the board of directors on ${renderDateFact("dateAuthorisationFinancialStatementsForIssue", refs.currentInstant, dateOfApproval)} and signed on its behalf by:</p>
-<p class="signature">${escapeXmlText(directorName)}<br/>Director</p>`;
+export function approvalHtml({ refs, dateOfApproval, directorName, officerContextRef }) {
+  const signature = officerContextRef ? renderTextFact("nameEntityOfficer", officerContextRef, directorName) : escapeXmlText(directorName);
+  return `<p class="approval">Approved by ${renderTextFact("descriptionBodyAuthorisingFinancialStatements", refs.current, "the board of directors")} on ${renderDateFact("dateAuthorisationFinancialStatementsForIssue", refs.currentInstant, dateOfApproval)} and signed on its behalf by:</p>
+<p class="signature">${signature}<br/>Director</p>`;
+}
+
+/**
+ * The context that names a director as an officer of the entity over the current period.
+ * @returns {string} the context id
+ */
+export function buildOfficerContext({ additionalContexts, entityIdentifierXml, periodXml, refs, position }) {
+  return buildDimensionedContext({
+    additionalContexts,
+    entityIdentifierXml,
+    periodXml: periodXml[refs.current],
+    dimensionXml: dimensionMemberXml(DIMENSIONS.entityOfficers, { prefix: "bus", name: `Director${position}` }),
+    id: `${refs.current}-director-${position}`,
+  });
 }
 
 function netLabel(base, values) {

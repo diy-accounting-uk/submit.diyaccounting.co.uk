@@ -5,7 +5,7 @@
 
 import { describe, test, expect } from "vitest";
 
-import { buildStripeProductsFromCatalog } from "../../../infra/stripe/lib/stripeCatalogue.js";
+import { buildStripeProductsFromCatalog, stripeProductName } from "../../../infra/stripe/lib/stripeCatalogue.js";
 import {
   parseArgs,
   parseConfig,
@@ -56,7 +56,7 @@ describe("buildStripeProductsFromCatalog", () => {
 
     expect(confirmationStatementPrices).toHaveLength(1);
     expect(confirmationStatementPrices[0]).toMatchObject({
-      name: "File Confirmation Statement (Companies House, sandbox)",
+      name: "File Confirmation Statement (Companies House)",
       priceAmount: 6135,
       currency: "gbp",
       interval: "submission",
@@ -107,6 +107,22 @@ describe("buildStripeProductsFromCatalog", () => {
   test("returns an empty list when the requested bundle does not exist", () => {
     const products = buildStripeProductsFromCatalog(catalog, { bundleId: "no-such-bundle" });
     expect(products).toEqual([]);
+  });
+});
+
+describe("stripeProductName", () => {
+  test("drops a trailing sandbox, preview or production status inside the final parentheses", () => {
+    expect(stripeProductName("File Confirmation Statement (Companies House, sandbox)")).toBe(
+      "File Confirmation Statement (Companies House)",
+    );
+    expect(stripeProductName("File Company Tax Return (HMRC, preview)")).toBe("File Company Tax Return (HMRC)");
+    expect(stripeProductName("Self Assessment (HMRC, Production)")).toBe("Self Assessment (HMRC)");
+  });
+
+  test("keeps a name whose parentheses carry no status", () => {
+    expect(stripeProductName("Resident VAT")).toBe("Resident VAT");
+    expect(stripeProductName("File Small Company Accounts (Companies House)")).toBe("File Small Company Accounts (Companies House)");
+    expect(stripeProductName("Self Assessment (HMRC, sandbox) reads")).toBe("Self Assessment (HMRC, sandbox) reads");
   });
 });
 

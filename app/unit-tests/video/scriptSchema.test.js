@@ -76,6 +76,16 @@ describe("testScenario steps", () => {
   });
 });
 
+describe("notePeriod steps", () => {
+  const withStep = (auth, step) =>
+    baseScript({ auth, scenes: [{ id: "form", chapter: "Form", steps: [{ action: "goto", url: "/" }, step] }] });
+
+  test("takes no target and needs a signed-in script", () => {
+    expect(() => validateScript(withStep("user", { action: "notePeriod" }))).not.toThrow();
+    expect(() => validateScript(withStep("none", { action: "notePeriod" }))).toThrow(/auth to be "user"/);
+  });
+});
+
 describe("checkHidden steps", () => {
   const withStep = (auth, step) =>
     baseScript({ auth, scenes: [{ id: "form", chapter: "Form", steps: [{ action: "goto", url: "/" }, step] }] });

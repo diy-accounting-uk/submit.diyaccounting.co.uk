@@ -50,14 +50,16 @@ class McpStackTest {
     }
 
     @Test
-    void stackWiresTwoApiLambdasAndCreatesNoSecret() {
+    void stackWiresThreeApiLambdasAndCreatesNoSecret() {
         McpStack stack = synthMcpStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 2);
+        template.resourceCountIs("AWS::Lambda::Function", 3);
         template.resourceCountIs("AWS::SecretsManager::Secret", 0);
         for (String functionName : List.of(
-                stack.mcpHttpLambdaProps.ingestFunctionName(), stack.mcpOauthLambdaProps.ingestFunctionName())) {
+                stack.mcpHttpLambdaProps.ingestFunctionName(),
+                stack.mcpOauthLambdaProps.ingestFunctionName(),
+                stack.mcpCodesEntryLambdaProps.ingestFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
         }
@@ -188,7 +190,7 @@ class McpStackTest {
     }
 
     @Test
-    void routesAreMcpAnyAndTheOauthDiscoveryAndActionPathsWithNoAuthoriser() {
+    void routesAreMcpAnyTheOauthPathsAndTheCodesEntryPathsWithOnlyTheMintSignedIn() {
         McpStack stack = synthMcpStack();
 
         var routes = stack.lambdaFunctionProps.stream()
@@ -200,9 +202,16 @@ class McpStackTest {
                         "GET /.well-known/oauth-authorization-server",
                         "GET /.well-known/oauth-protected-resource",
                         "GET /.well-known/oauth-protected-resource/mcp",
-                        "ANY /mcp/oauth/{action}"),
+                        "ANY /mcp/oauth/{action}",
+                        "POST /api/v1/mcp/codes-entries",
+                        "GET /api/v1/mcp/codes-entries/{entryId}",
+                        "PUT /api/v1/mcp/codes-entries/{entryId}"),
                 routes);
         for (AbstractApiLambdaProps props : stack.lambdaFunctionProps) {
+            if (props.urlPath().equals("/api/v1/mcp/codes-entries")) {
+                assertTrue(props.jwtAuthorizer(), "minting a codes entry needs the signed-in user");
+                continue;
+            }
             assertFalse(props.jwtAuthorizer(), props.urlPath() + " must have no JWT authoriser");
             assertFalse(props.customAuthorizer(), props.urlPath() + " must have no custom authoriser");
             assertFalse(props.booksJwtAuthorizer(), props.urlPath() + " must have no books authoriser");
@@ -211,7 +220,7 @@ class McpStackTest {
     }
 
     @Test
-    void everyRouteResolvesToOneOfTheTwoFunctions() {
+    void everyRouteResolvesToOneOfTheThreeFunctions() {
         McpStack stack = synthMcpStack();
 
         var functionNames = stack.lambdaFunctionProps.stream()
@@ -219,8 +228,35 @@ class McpStackTest {
                 .distinct()
                 .toList();
         assertEquals(
-                List.of(stack.mcpHttpLambdaProps.ingestFunctionName(), stack.mcpOauthLambdaProps.ingestFunctionName()),
+                List.of(
+                        stack.mcpHttpLambdaProps.ingestFunctionName(),
+                        stack.mcpOauthLambdaProps.ingestFunctionName(),
+                        stack.mcpCodesEntryLambdaProps.ingestFunctionName()),
                 functionNames);
+    }
+
+    @Test
+    void theCodesEntryFunctionReadsAndWritesTheSessionsTableAndReadsTheBlobKeyAndTheSalt() {
+        McpStack stack = synthMcpStack();
+        Template template = Template.fromStack(stack);
+        SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
+
+        var variables = environmentVariables(template, stack.mcpCodesEntryLambdaProps.ingestFunctionName());
+        assertEquals("docs-env-mcp-sessions", variables.get("MCP_SESSIONS_DYNAMODB_TABLE_NAME"));
+        assertEquals(sharedNames.baseUrl, variables.get("DIY_SUBMIT_BASE_URL"));
+        assertTrue(variables.containsKey("MCP_OAUTH_BLOB_KEY_SECRET_ARN"));
+        var statements = iamStatementsForFunction(template, stack.mcpCodesEntryLambdaProps.ingestFunctionName());
+        assertTrue(
+                statements.stream()
+                        .anyMatch(statement -> actionsOf(statement).contains("dynamodb:PutItem")
+                                && actionsOf(statement).contains("dynamodb:DeleteItem")),
+                "expected the codes entry function to write the sessions table");
+        assertEquals(
+                2,
+                statements.stream()
+                        .filter(statement -> actionsOf(statement).contains("secretsmanager:GetSecretValue"))
+                        .count(),
+                "expected the blob key and the salt");
     }
 
     @SuppressWarnings("unchecked")

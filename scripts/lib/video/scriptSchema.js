@@ -40,6 +40,7 @@ const STEP_REQUIRED_FIELDS = {
   dropFile: ["target", "file"],
   testScenario: ["value"],
   checkHidden: ["target"],
+  notePeriod: [],
   scroll: [],
   highlight: ["target"],
   sheetPrepare: [],
@@ -65,6 +66,7 @@ const STEP_REQUIRED_FIELDS = {
 const USER_ONLY_ACTIONS = new Set([
   "testScenario",
   "checkHidden",
+  "notePeriod",
   "login",
   "hostedUiLogin",
   "consent",

@@ -189,13 +189,12 @@ function buildConsentBanner() {
   banner.id = "consent-banner";
   banner.setAttribute("role", "region");
   banner.setAttribute("aria-label", "Cookie consent");
-  banner.style.cssText =
-    "position:fixed;bottom:0;left:0;right:0;background:#ddd;color:#111;padding:12px 16px;z-index:9999;display:flex;gap:12px;flex-wrap:wrap;align-items:center;justify-content:center;font-size:14px";
+  banner.className = "consent-banner";
   banner.innerHTML = `
-    <span>We use cookies to monitor performance and understand how people use this site. We'll only turn them on if you say yes. See our <a href="/privacy.html" style="color:#316497">privacy policy</a>.</span>
-    <div style="display:flex;gap:8px">
-      <button id="consent-accept" class="btn" style="padding:6px 10px;min-height:44px">Accept</button>
-      <button id="consent-decline" class="btn" style="padding:6px 10px;min-height:44px;background:#555;border-color:#555">Decline</button>
+    <p class="consent-banner-text">We use cookies to monitor performance and understand how people use this site. We'll only turn them on if you say yes. See our <a href="/privacy.html">privacy policy</a>.</p>
+    <div class="consent-banner-actions">
+      <button id="consent-accept" class="btn">Accept</button>
+      <button id="consent-decline" class="btn btn-secondary">Decline</button>
     </div>`;
   return banner;
 }
@@ -363,12 +362,11 @@ function handleActivityStartClick(event) {
 function ensurePrivacyLink() {
   const anchors = Array.from(document.querySelectorAll('body > footer a[href$="privacy.html"]'));
   if (anchors.length) return;
-  const footer = document.querySelector("body > footer .footer-left") || document.querySelector("body > footer");
+  const footer = document.querySelector("body > footer .footer-links") || document.querySelector("body > footer");
   if (!footer) return;
   const link = document.createElement("a");
   link.href = "/privacy.html";
-  link.textContent = "privacy";
-  link.style.marginLeft = "8px";
+  link.textContent = "Privacy";
   footer.appendChild(link);
 }
 

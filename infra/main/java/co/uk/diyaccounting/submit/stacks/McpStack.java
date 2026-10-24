@@ -44,6 +44,7 @@ public class McpStack extends Stack {
     private static final int MCP_HTTP_RESERVED_CONCURRENCY = 10;
     private static final int MCP_OAUTH_MEMORY_MB = 256;
     private static final int MCP_OAUTH_TIMEOUT_SECONDS = 8;
+    private static final int MCP_CODES_ENTRY_RESERVED_CONCURRENCY = 5;
 
     public AbstractApiLambdaProps mcpHttpLambdaProps;
     public Function mcpHttpLambda;
@@ -52,6 +53,10 @@ public class McpStack extends Stack {
     public AbstractApiLambdaProps mcpOauthLambdaProps;
     public Function mcpOauthLambda;
     public ILogGroup mcpOauthLambdaLogGroup;
+
+    public AbstractApiLambdaProps mcpCodesEntryLambdaProps;
+    public Function mcpCodesEntryLambda;
+    public ILogGroup mcpCodesEntryLambdaLogGroup;
 
     public ISecret oauthBlobKeySecret;
 
@@ -218,11 +223,67 @@ public class McpStack extends Stack {
         this.oauthBlobKeySecret.grantRead(this.mcpOauthLambda);
         infof("Created MCP OAuth Lambda %s", this.mcpOauthLambda.getNode().getId());
 
+        // ============================================================================
+        // Companies House codes entry Lambda: a signed-in POST mints an entry, and the codes
+        // page reads and fills it by its id (no authoriser on the item routes). The codes are
+        // sealed under a key derived from the blob key before they reach the sessions table.
+        // ============================================================================
+        var mcpCodesEntryEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("DIY_SUBMIT_BASE_URL", sharedNames.baseUrl)
+                .with("MCP_SESSIONS_DYNAMODB_TABLE_NAME", mcpSessionsTable.getTableName())
+                .with("MCP_OAUTH_BLOB_KEY_SECRET_ARN", this.oauthBlobKeySecret.getSecretArn());
+        var mcpCodesEntryApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(sharedNames.mcpCodesEntryIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                        .ingestFunctionName(sharedNames.mcpCodesEntryIngestLambdaFunctionName)
+                        .ingestHandler(sharedNames.mcpCodesEntryIngestLambdaHandler)
+                        .ingestLambdaArn(sharedNames.mcpCodesEntryIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                sharedNames.mcpCodesEntryIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .ingestReservedConcurrentExecutions(Optional.of(MCP_CODES_ENTRY_RESERVED_CONCURRENCY))
+                        .provisionedConcurrencyAliasName(sharedNames.provisionedConcurrencyAliasName)
+                        .httpMethod(sharedNames.mcpCodesEntryLambdaHttpMethod)
+                        .urlPath(sharedNames.mcpCodesEntryLambdaUrlPath)
+                        .jwtAuthorizer(sharedNames.mcpCodesEntryLambdaJwtAuthorizer)
+                        .customAuthorizer(sharedNames.mcpCodesEntryLambdaCustomAuthorizer)
+                        .environment(mcpCodesEntryEnv)
+                        .build());
+        this.mcpCodesEntryLambdaProps = mcpCodesEntryApiLambda.apiProps;
+        this.mcpCodesEntryLambda = mcpCodesEntryApiLambda.ingestLambda;
+        this.mcpCodesEntryLambdaLogGroup = mcpCodesEntryApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.mcpCodesEntryLambdaProps);
+        for (var itemMethod : List.of(HttpMethod.GET, HttpMethod.PUT)) {
+            this.lambdaFunctionProps.add(ApiLambdaProps.builder()
+                    .from(this.mcpCodesEntryLambdaProps)
+                    .httpMethod(itemMethod)
+                    .urlPath(sharedNames.mcpCodesEntryItemUrlPath)
+                    .jwtAuthorizer(false)
+                    .customAuthorizer(false)
+                    .build());
+        }
+        mcpSessionsTable.grantReadWriteData(this.mcpCodesEntryLambda);
+        this.oauthBlobKeySecret.grantRead(this.mcpCodesEntryLambda);
+        SubHashSaltHelper.grantSaltAccess(this.mcpCodesEntryLambda, region, account, props.envName());
+        infof(
+                "Created MCP codes entry Lambda %s",
+                this.mcpCodesEntryLambda.getNode().getId());
+
         Lambda.appStackHealthAlarm(
-                this, props.envName(), props.resourceNamePrefix(), "mcp", List.of(mcpHttpApiLambda, mcpOauthApiLambda));
+                this,
+                props.envName(),
+                props.resourceNamePrefix(),
+                "mcp",
+                List.of(mcpHttpApiLambda, mcpOauthApiLambda, mcpCodesEntryApiLambda));
 
         cfnOutput(this, "McpHttpLambdaArn", this.mcpHttpLambda.getFunctionArn());
         cfnOutput(this, "McpOauthLambdaArn", this.mcpOauthLambda.getFunctionArn());
+        cfnOutput(this, "McpCodesEntryLambdaArn", this.mcpCodesEntryLambda.getFunctionArn());
         cfnOutput(this, "McpOauthBlobKeySecretArn", this.oauthBlobKeySecret.getSecretArn());
 
         infof(

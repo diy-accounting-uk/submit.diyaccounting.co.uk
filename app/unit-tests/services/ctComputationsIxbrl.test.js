@@ -4,6 +4,7 @@
 // app/unit-tests/services/ctComputationsIxbrl.test.js
 
 import { describe, test, expect, beforeAll } from "vitest";
+import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { loadDiyaGlData } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
 import { calculatedResultsFor } from "@diy-accounting-uk/diya-gl/dist/app/bin/export.js";
@@ -86,6 +87,13 @@ describe("buildCtComputations", () => {
     for (const concept of COMPUTATIONS_CONCEPTS) expect(declared.has(`ct-comp:${concept}`), concept).toBe(true);
     const xml = buildCtComputations(INPUT);
     for (const name of xml.match(/name="ct-comp:[^"]+"/g)) expect(declared.has(name.slice(6, -1)), name).toBe(true);
+  });
+
+  test("names the production software and its package version on the instant context", () => {
+    const byName = facts(parseXmlDocument(buildCtComputations(INPUT)));
+    const version = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url), "utf8")).version;
+    expect(byName["ct-comp:NameOfProductionSoftware"]).toMatchObject({ value: "DIY Accounting Submit", contextRef: "companyInstant" });
+    expect(byName["ct-comp:VersionOfProductionSoftware"]).toMatchObject({ value: version, contextRef: "companyInstant" });
   });
 
   test("tags the mandatory items on the company context and the lines on the UK trade context", () => {

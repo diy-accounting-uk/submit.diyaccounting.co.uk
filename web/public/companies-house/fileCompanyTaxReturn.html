@@ -69,7 +69,7 @@
           Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). This is not the company you meant?
           <a href="#" id="changeCompanyLink">Change company</a>.
         </p>
-        <div id="booksImport"></div>
+        <div id="booksImport" style="margin-top: 1.5rem"></div>
         <div class="form-group" id="filedAccountsOffer" style="display: none">
           <p class="hint">
             The accounts just accepted by Companies House for <span id="filedAccountsCompany"></span> can fill the accounts section.
@@ -85,7 +85,7 @@
       <!-- Review view -->
       <div id="previewView" class="results-container" style="display: none">
         <h2>Review</h2>
-        <p>These are the figures HMRC will receive. Nothing has been sent to HMRC yet.</p>
+        <p>Check your answers. These are the figures HMRC will receive. Nothing has been sent to HMRC yet.</p>
         <p>
           Each box name links to its section in the
           <a id="companyTaxReturnGuideLink" href="https://www.gov.uk/guidance/the-company-tax-return-guide" target="_blank" rel="noopener"
@@ -99,6 +99,8 @@
             >CT600 (2026) Version 3</a
           >.
         </p>
+        <h3>Your answers</h3>
+        <div id="reviewAnswers"></div>
         <h3>CT600 boxes</h3>
         <table id="ct600Table" class="results-table">
           <thead>
@@ -106,6 +108,7 @@
               <th scope="col">Box</th>
               <th scope="col">Meaning</th>
               <th scope="col">Value (amounts in £)</th>
+              <th scope="col">Change</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -116,6 +119,7 @@
             <tr>
               <th scope="col">Line</th>
               <th scope="col" style="text-align: right">£</th>
+              <th scope="col">Change</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -165,7 +169,7 @@
       </div>
     </main>
 
-    <footer data-footer="activity"></footer>
+    <footer></footer>
 
     <script src="../widgets/page-chrome.js"></script>
     <script src="../lib/env-loader.js"></script>

@@ -22,6 +22,7 @@ import {
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
+import { applyCodesEntry } from "../../services/companiesHouseCodesEntry.js";
 import {
   isValidCompanyNumber,
   isValidCompaniesHousePersonalCode,
@@ -241,8 +242,14 @@ export async function ingestHandler(event) {
     });
   }
 
+  const codes = await applyCodesEntry(event, { userSub, kind: "confirmation-statement" });
+  if (codes.failure) {
+    return buildValidationError(request, [codes.failure], responseHeaders);
+  }
+  const filingEvent = codes.event;
+
   const errorMessages = [];
-  const statement = extractAndValidateConfirmationStatementParameters(event, errorMessages);
+  const statement = extractAndValidateConfirmationStatementParameters(filingEvent, errorMessages);
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);

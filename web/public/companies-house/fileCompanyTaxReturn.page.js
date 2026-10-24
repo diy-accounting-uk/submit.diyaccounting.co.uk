@@ -9,16 +9,18 @@
 
 import {
   ACCOUNTS_TEXT_FIELDS,
+  BOX_SOURCE_FIELD,
+  COMPUTATION_SOURCE_FIELD,
   BALANCE_SHEET_FIELDS,
   COMPUTATIONS_GUIDE_ANCHOR,
   CT600_BOX_ROWS,
   CT600_FORM_FIELDS,
   FIXED_ASSET_CLASSES,
   FIXED_ASSET_FIELDS,
-  MONEY_BOXES,
   PROFIT_AND_LOSS_FIELDS,
   SECTIONS,
   STATEMENT_FIELDS,
+  TEXT_BOXES,
   accountsFormEntries,
   accountsFromValues,
   applyFormEntries,
@@ -31,6 +33,7 @@ import {
   guideUrl,
   noteId,
   profitAndLossId,
+  reviewAnswers,
   targetOfModelProblem,
 } from "../lib/ct600-fields.js";
 
@@ -54,8 +57,16 @@ const COMPUTATION_LINES = [
   { field: "adjustedProfit", meaning: "Adjusted profit", style: "total" },
 ];
 
+const HIDDEN_TEXT_STYLE = "position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap";
+const RETURN_TO_REVIEW = "Return to the review";
+const PREVIEW_THE_RETURN = "Preview the return";
+const VIEW_HASH = { companyView: "company", formView: "form", previewView: "review", resultView: "result" };
+
 let company = null;
 let previewRequest = null;
+let currentView = "companyView";
+let reviewReached = false;
+let changing = null;
 
 // bundle and taxData fill in once the books bundle has loaded; touched holds the error targets whose
 // field the customer has left; edited holds the ids the customer typed in, so a default stops following.
@@ -73,10 +84,24 @@ function element(id) {
   return document.getElementById(id);
 }
 
-function showView(name) {
-  for (const id of ["companyView", "formView", "previewView", "resultView"]) {
+function showView(name, { push = true } = {}) {
+  for (const id of Object.keys(VIEW_HASH)) {
     element(id).style.display = id === name ? "block" : "none";
   }
+  if (push && name !== currentView) history.pushState({ view: name }, "", `#${VIEW_HASH[name]}`);
+  currentView = name;
+}
+
+// The browser's Back and Forward move between the views the customer has been to. A view whose
+// content does not exist yet falls back to the form, or to the company lookup before a company.
+function viewForHistory(hash) {
+  const name = Object.keys(VIEW_HASH).find((id) => `#${VIEW_HASH[id]}` === hash) ?? "companyView";
+  if (name === "companyView" || company) {
+    if (name === "previewView" && !previewRequest) return "formView";
+    if (name === "resultView") return element("returnResult").firstChild ? "resultView" : "formView";
+    return name;
+  }
+  return "companyView";
 }
 
 function create(tag, attributes = {}, ...children) {
@@ -123,8 +148,7 @@ function formatPounds(value, deduction = false) {
   return amount !== 0 && deduction !== amount < 0 ? `(${text})` : text;
 }
 
-function amountCell(row, text, style) {
-  const cell = row.lastElementChild;
+function amountCell(cell, text, style) {
   cell.textContent = text;
   cell.style.textAlign = "right";
   cell.style.whiteSpace = "nowrap";
@@ -133,7 +157,6 @@ function amountCell(row, text, style) {
     cell.style.borderBottom = "3px double currentColor";
     cell.style.fontWeight = "bold";
   }
-  return row;
 }
 
 // --- The form -------------------------------------------------------------------------------
@@ -145,6 +168,7 @@ function guideAnchorOf(field) {
 function hintOf(field) {
   const hint = create("p", { id: `${field.id}-hint`, class: "hint" }, field.hint ?? "");
   const anchor = guideAnchorOf(field);
+  if (!field.hint && !anchor) hint.hidden = true;
   if (anchor) {
     const link = create("a", { href: guideUrl(anchor), target: "_blank", rel: "noopener" }, "Company Tax Return guide");
     hint.append(field.hint ? " " : "", link, ".");
@@ -187,19 +211,29 @@ function textGroup(field) {
   );
 }
 
+const CONTROL_STYLE = "width: auto; flex: none; margin: 0.25rem 0 0";
+const CHOICE_LABEL_STYLE = "display: block; margin: 0; font-weight: normal";
+const CHOICE_ROW_STYLE = "display: flex; align-items: flex-start; gap: 0.6rem; margin-bottom: 0.5rem";
+
+function choiceRow(input, label) {
+  return create("div", { style: CHOICE_ROW_STYLE }, input, label);
+}
+
 function choiceGroup(field) {
-  const radio = (value, text, checked) => [
-    create("input", {
-      "type": "radio",
-      "id": `${field.id}${value === "no" ? "No" : "Yes"}`,
-      "name": field.id,
-      value,
-      "data-error-target": field.id,
-      "aria-describedby": `${field.id}-hint`,
-      ...(checked ? { checked: "" } : {}),
-    }),
-    create("label", { for: `${field.id}${value === "no" ? "No" : "Yes"}`, style: "display: inline; font-weight: normal" }, text),
-  ];
+  const radio = (value, text, checked) =>
+    choiceRow(
+      create("input", {
+        "type": "radio",
+        "id": `${field.id}${value === "no" ? "No" : "Yes"}`,
+        "name": field.id,
+        value,
+        "data-error-target": field.id,
+        "aria-describedby": `${field.id}-hint`,
+        "style": CONTROL_STYLE,
+        ...(checked ? { checked: "" } : {}),
+      }),
+      create("label", { for: `${field.id}${value === "no" ? "No" : "Yes"}`, style: CHOICE_LABEL_STYLE }, text),
+    );
   const hint = field.hint ? hintOf(field) : create("p", { id: `${field.id}-hint`, class: "hint" });
   return create(
     "div",
@@ -207,8 +241,8 @@ function choiceGroup(field) {
     create("p", { id: field.id, class: "field-label", tabindex: "-1" }, field.label),
     hint,
     errorHost(field.id),
-    ...radio("no", "No", true),
-    ...radio("yes", "Yes", false),
+    radio("no", "No", true),
+    radio("yes", "Yes", false),
   );
 }
 
@@ -231,8 +265,10 @@ function checkboxGroup(id, label, target = id) {
     "div",
     { class: "form-group" },
     errorHost(target),
-    create("input", { "type": "checkbox", id, "name": id, "data-error-target": target }),
-    create("label", { for: id, style: "display: inline; font-weight: normal" }, label),
+    choiceRow(
+      create("input", { "type": "checkbox", id, "name": id, "data-error-target": target, "style": CONTROL_STYLE }),
+      create("label", { for: id, style: CHOICE_LABEL_STYLE }, label),
+    ),
   );
 }
 
@@ -244,7 +280,7 @@ function fieldGroup(field) {
 }
 
 function amountGroup(id, label) {
-  return textGroup({ id, label, type: "whole-pounds", hint: "For example, £600 or £1,200" });
+  return textGroup({ id, label, type: "whole-pounds", hint: "" });
 }
 
 function accountsYear(prefix) {
@@ -274,7 +310,11 @@ function accountsSection() {
     create("div", {}, create("h4", {}, title), ...FIXED_ASSET_FIELDS.map(([field, label]) => amountGroup(noteId(className, field), label))),
   );
   return [
-    create("p", { class: "hint" }, "HMRC takes the full accounts with the return, so they are part of this form. Whole pounds."),
+    create(
+      "p",
+      { class: "hint" },
+      "HMRC takes the full accounts with the return, so they are part of this form. Enter whole pounds, for example 600 or 1,200.",
+    ),
     create("h4", {}, "Current year"),
     ...accountsYear("current"),
     checkboxGroup("includeComparatives", "Include last year's figures"),
@@ -315,7 +355,7 @@ function sectionBody(sectionId) {
 function renderForm() {
   const sections = [];
   for (const { id, title } of SECTIONS) {
-    sections.push(create("section", { id: `section-${id}` }, create("h3", {}, title), ...sectionBody(id)));
+    sections.push(create("section", { id: `section-${id}`, style: "margin-top: 2rem" }, create("h3", {}, title), ...sectionBody(id)));
     if (id === "reliefs") sections.push(workedTaxPanel());
   }
   element("formSections").replaceChildren(...sections);
@@ -666,24 +706,71 @@ function guideLink(text, anchor) {
   return link;
 }
 
+function changeLink(fieldId, label) {
+  const link = create("a", { "href": `#${fieldId}`, "class": "review-change", "data-field": fieldId }, "Change");
+  link.append(create("span", { style: HIDDEN_TEXT_STYLE }, ` ${label}`));
+  return link;
+}
+
+function companyChangeLink() {
+  const link = create("a", { "href": "#company", "class": "review-change", "data-field": "company" }, "Change");
+  link.append(create("span", { style: HIDDEN_TEXT_STYLE }, " company"));
+  return link;
+}
+
+function renderAnswers() {
+  const values = readValues();
+  const tables = reviewAnswers(values).map(({ id, title, rows }) => {
+    const body = rows.map((row) => {
+      const tr = tableRow(row.label, row.value, changeLink(row.id, row.label));
+      tr.id = `review-row-${row.id}`;
+      tr.tabIndex = -1;
+      return tr;
+    });
+    return create(
+      "section",
+      { id: `review-${id}` },
+      create("h4", {}, title),
+      create(
+        "table",
+        { class: "results-table" },
+        create("thead", {}, create("tr", {}, ...["Question", "Answer", "Change"].map((text) => create("th", { scope: "col" }, text)))),
+        create("tbody", {}, ...body),
+      ),
+    );
+  });
+  element("reviewAnswers").replaceChildren(...tables);
+}
+
 function renderReview(preview) {
+  renderAnswers();
   const boxRows = Object.keys(preview.boxes)
     .map(Number)
     .sort((a, b) => a - b)
     .map((box) => {
-      const row = tableRow(box, guideLink(boxRow(box).label, boxRow(box).anchor), preview.boxes[box]);
-      return MONEY_BOXES.has(box) ? amountCell(row, formatPounds(preview.boxes[box])) : row;
+      const label = guideLink(boxRow(box).label, boxRow(box).anchor);
+      const source = BOX_SOURCE_FIELD[box];
+      const change = source ? changeLink(source, `box ${box}, ${boxRow(box).label}`) : companyChangeLink();
+      let row;
+      if (box === 340 || box === 390) row = tableRow(box, label, `${preview.boxes[box]}%`, change);
+      else if (box === 329) row = tableRow(box, label, "Yes", change);
+      else if (TEXT_BOXES.has(box)) row = tableRow(box, label, preview.boxes[box], change);
+      else {
+        row = tableRow(box, label, "", change);
+        amountCell(row.children[2], formatPounds(preview.boxes[box]));
+      }
+      row.id = `review-box-${box}`;
+      return row;
     });
   element("ct600Table")
     .querySelector("tbody")
     .replaceChildren(...boxRows);
-  const lineRows = COMPUTATION_LINES.map(({ field, meaning, deduction, style }) =>
-    amountCell(
-      tableRow(guideLink(meaning, COMPUTATIONS_GUIDE_ANCHOR), ""),
-      formatPounds(preview.computationLines[field], deduction),
-      style,
-    ),
-  );
+  const lineRows = COMPUTATION_LINES.map(({ field, meaning, deduction, style }) => {
+    const row = tableRow(guideLink(meaning, COMPUTATIONS_GUIDE_ANCHOR), "", changeLink(COMPUTATION_SOURCE_FIELD[field], meaning));
+    amountCell(row.children[1], formatPounds(preview.computationLines[field], deduction), style);
+    row.id = `review-line-${field}`;
+    return row;
+  });
   element("computationsTable")
     .querySelector("tbody")
     .replaceChildren(...lineRows);
@@ -706,13 +793,41 @@ async function handleReturnFormSubmit(event) {
     previewRequest = ct600RequestFromValues(readValues(), company, state.workingSheet);
     const preview = await window.previewCtReturn(previewRequest);
     renderReview(preview);
+    reviewReached = true;
+    element("previewBtn").textContent = RETURN_TO_REVIEW;
     showView("previewView");
+    if (changing) {
+      focusReviewRow(changing);
+      changing = null;
+    }
   } catch (error) {
     console.error("Failed to preview the Company Tax Return:", error);
     window.showStatus(error.message || "Failed to preview the Company Tax Return.", "error");
   } finally {
     window.hideLoading();
   }
+}
+
+function focusReviewRow(fieldId) {
+  const row = element(`review-row-${fieldId}`);
+  if (!row) return;
+  row.focus();
+  row.scrollIntoView?.({ block: "center" });
+}
+
+// A Change link opens the form with every answer kept and puts focus on the answer it names.
+function handleChangeClick(event) {
+  const link = event.target.closest?.("a.review-change");
+  if (!link) return;
+  event.preventDefault();
+  const fieldId = link.dataset.field;
+  if (fieldId === "company") {
+    showView("companyView");
+    return;
+  }
+  changing = fieldId;
+  showView("formView");
+  focusTarget(fieldId);
 }
 
 function renderErrors(outcome) {
@@ -814,6 +929,10 @@ function updateGovTestScenarioVisibility() {
 function startAgain() {
   company = null;
   previewRequest = null;
+  reviewReached = false;
+  changing = null;
+  element("previewBtn").textContent = PREVIEW_THE_RETURN;
+  element("returnResult").replaceChildren();
   element("companyForm").reset();
   element("gatewayUserId").value = "";
   element("gatewayPassword").value = "";
@@ -837,6 +956,9 @@ returnForm.addEventListener("focusout", handleFormLeave);
 element("companyForm").addEventListener("submit", handleCompanySubmit);
 returnForm.addEventListener("submit", handleReturnFormSubmit);
 element("useFiledAccountsBtn").addEventListener("click", useFiledAccounts);
+element("previewView").addEventListener("click", handleChangeClick);
+window.addEventListener("popstate", () => showView(viewForHistory(location.hash), { push: false }));
+history.replaceState({ view: currentView }, "", `#${VIEW_HASH[currentView]}`);
 element("backToFormBtn").addEventListener("click", () => showView("formView"));
 element("submitReturnBtn").addEventListener("click", handleSubmitReturn);
 element("tryAgainBtn").addEventListener("click", () => showView("previewView"));

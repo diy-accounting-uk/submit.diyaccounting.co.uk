@@ -157,17 +157,17 @@
 
 /* The customer copy. */
 .customer-copy {
-  font-family: var(--font-family-base, Arial, sans-serif);
-  color: var(--color-text-primary, #333);
+  font-family: var(--font-text, Arial, sans-serif);
+  color: var(--c-ink, #333);
   margin: 1.5em 0;
 }
 .customer-copy-header {
-  border-bottom: 2px solid var(--color-brand-primary, #2c5aa0);
+  border-bottom: 2px solid var(--c-brand, #2c5aa0);
   padding-bottom: 0.75em;
   margin-bottom: 1.5em;
 }
 .customer-copy-brand {
-  color: var(--color-brand-primary, #2c5aa0);
+  color: var(--c-brand, #2c5aa0);
   font-weight: 600;
   margin: 0 0 0.25em 0;
 }
@@ -185,7 +185,7 @@
   text-align: left;
 }
 .customer-copy-submission dt {
-  color: var(--color-text-hint, #505a5f);
+  color: var(--c-ink-muted, #505a5f);
   font-size: 0.9em;
 }
 .customer-copy-submission dd {
@@ -194,17 +194,17 @@
   font-variant-numeric: tabular-nums;
 }
 .customer-copy-status {
-  border-left: 4px solid var(--color-text-hint, #505a5f);
+  border-left: 4px solid var(--c-ink-muted, #505a5f);
   padding-left: 0.5em;
 }
 .customer-copy-status[data-status="accepted"] {
-  border-left-color: var(--color-success, #28a745);
+  border-left-color: var(--c-ok, #28a745);
 }
 .customer-copy-status[data-status="rejected"] {
-  border-left-color: var(--color-error, #dc3545);
+  border-left-color: var(--c-error, #dc3545);
 }
 .customer-copy-status[data-status="pending"] {
-  border-left-color: var(--color-warning, #ffc107);
+  border-left-color: var(--c-warn, #ffc107);
 }
 .customer-copy-section {
   display: grid;
@@ -219,16 +219,16 @@
 .customer-copy-explanation {
   max-width: 65ch;
   line-height: 1.5;
-  color: var(--color-text-primary, #333);
+  color: var(--c-ink, #333);
   margin: 0;
 }
 .customer-copy-sheet {
   overflow-x: auto;
-  border: 1px solid var(--color-border, #ddd);
+  border: 1px solid var(--c-rule-subtle, #ddd);
   background: #fff;
 }
 .customer-copy-sheet:focus-visible {
-  outline: 3px solid var(--color-focus, #005ea5);
+  outline: 3px solid var(--c-focus-ink, #005ea5);
   outline-offset: 2px;
 }
 .customer-copy-links ul {

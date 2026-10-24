@@ -1367,6 +1367,16 @@ public class SubmitSharedNames {
     public boolean mcpOauthLambdaJwtAuthorizer;
     public boolean mcpOauthLambdaCustomAuthorizer;
 
+    public String mcpCodesEntryIngestLambdaHandler;
+    public String mcpCodesEntryIngestLambdaFunctionName;
+    public String mcpCodesEntryIngestLambdaArn;
+    public String mcpCodesEntryIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod mcpCodesEntryLambdaHttpMethod;
+    public String mcpCodesEntryLambdaUrlPath;
+    public String mcpCodesEntryItemUrlPath;
+    public boolean mcpCodesEntryLambdaJwtAuthorizer;
+    public boolean mcpCodesEntryLambdaCustomAuthorizer;
+
     public String diyaGlListGetIngestLambdaHandler;
     public String diyaGlListGetIngestLambdaFunctionName;
     public String diyaGlListGetIngestLambdaArn;
@@ -5205,6 +5215,24 @@ public class SubmitSharedNames {
         this.mcpOauthIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, mcpOauthLambdaHandlerDashed);
         this.mcpOauthIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.mcpOauthIngestLambdaArn, this.provisionedConcurrencyAliasName);
+
+        // Companies House codes entry: a signed-in tool call mints an entry (POST); the page on the
+        // returned link reads and fills it by its unguessable id, so the item routes carry no authoriser
+        this.mcpCodesEntryLambdaHttpMethod = HttpMethod.POST;
+        this.mcpCodesEntryLambdaUrlPath = "/api/v1/mcp/codes-entries";
+        this.mcpCodesEntryItemUrlPath = "/api/v1/mcp/codes-entries/{entryId}";
+        this.mcpCodesEntryLambdaJwtAuthorizer = true;
+        this.mcpCodesEntryLambdaCustomAuthorizer = false;
+        var mcpCodesEntryLambdaHandlerName = "mcpCodesEntry.ingestHandler";
+        var mcpCodesEntryLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(mcpCodesEntryLambdaHandlerName);
+        this.mcpCodesEntryIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, mcpCodesEntryLambdaHandlerDashed);
+        this.mcpCodesEntryIngestLambdaHandler =
+                "%s/mcp/%s".formatted(appLambdaHandlerPrefix, mcpCodesEntryLambdaHandlerName);
+        this.mcpCodesEntryIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, mcpCodesEntryLambdaHandlerDashed);
+        this.mcpCodesEntryIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.mcpCodesEntryIngestLambdaArn, this.provisionedConcurrencyAliasName);
 
         // Alarm-to-GitHub-issue Lambda (EventBridge target, not API)
         var alarmToGithubIssueLambdaHandlerName = "alarmToGithubIssue.handler";

@@ -2,7 +2,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB">
+<html lang="en-GB" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <title>Operator Dashboard - DIY Accounting Submit</title>
@@ -22,7 +22,7 @@
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="../lib/analytics.js"></script>
     <style>
-      /* This page carries its own width: the shared body { max-width: var(--max-width-content) }
+      /* This page carries its own width: the shared body { max-width: var(--content-max) }
          rule in submit.css (800px) is right for prose pages, but the tables here (up to 13
          columns) need the full window width to read comfortably without wrapping every header. */
       body.page-wide {
@@ -30,17 +30,17 @@
       }
       .objective {
         background: white;
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-card);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        padding: var(--spacing-lg);
-        margin: 0 0 var(--spacing-lg) 0;
+        padding: var(--space-5);
+        margin: 0 0 var(--space-5) 0;
         /* Narrow-screen fallback: a table wider than its card scrolls inside the card
            rather than pushing the card, and so the page, wider than the viewport. */
         overflow-x: auto;
       }
       .objective h2 {
         margin: 0 0 0.75em 0;
-        font-size: var(--font-size-lg);
+        font-size: var(--step-1);
       }
       .objective-empty {
         color: #777;
@@ -79,7 +79,7 @@
       #snapshotMeta {
         color: #666;
         font-size: 0.9em;
-        margin: 0 0 var(--spacing-lg) 0;
+        margin: 0 0 var(--space-5) 0;
       }
 
       /* Activity column: wide enough that a long catalogue name (e.g. "Change Registered
@@ -102,7 +102,7 @@
       #activitiesTable thead tr:first-child th:nth-child(3),
       #activitiesTable thead tr:last-child th:nth-child(7),
       #activitiesTable tbody td:nth-child(8) {
-        border-left: 2px solid var(--color-brand-primary);
+        border-left: 2px solid var(--c-brand);
       }
 
       #reinvestmentTable th:nth-child(2),
@@ -124,7 +124,7 @@
       .side-panels {
         display: grid;
         grid-template-columns: 1fr;
-        gap: var(--spacing-lg);
+        gap: var(--space-5);
       }
 
       /* #objectivesContainer and the two panels in .side-panels are empty until
@@ -135,7 +135,7 @@
          wrap onto more lines and need more. The browser test measures the rendered
          heights at 390, 700, 900 and 1280 px and fails when a reservation falls short. */
       #objectivesContainer {
-        min-height: 1900px;
+        min-height: 2150px;
       }
       #visitorsPanel {
         min-height: 200px;
@@ -274,7 +274,7 @@
       </div>
     </main>
 
-    <footer data-footer="full"></footer>
+    <footer></footer>
 
     <script src="../widgets/page-chrome.js"></script>
     <script src="../lib/env-loader.js"></script>

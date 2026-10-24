@@ -294,7 +294,7 @@
             "name": "Activities"
           },
           "caption": "Back to the activities, to ask again.",
-          "headline": "Back to activities",
+          "headline": "Back to ask again",
           "keyWord": "activities"
         },
         {
@@ -319,7 +319,7 @@
           "text": "{{hmrcVatNumber}}",
           "clear": true,
           "caption": "The same VAT registration number.",
-          "headline": "Same VAT number",
+          "headline": "Same number, asked again",
           "keyWord": "number"
         },
         {
@@ -374,7 +374,7 @@
             "name": "Activities"
           },
           "caption": "Back to the activities, to view a return.",
-          "headline": "Back to activities",
+          "headline": "Back to view a return",
           "keyWord": "activities"
         },
         {
@@ -399,7 +399,7 @@
           "text": "{{hmrcVatNumber}}",
           "clear": true,
           "caption": "The same VAT registration number.",
-          "headline": "Same VAT number",
+          "headline": "Same number, to view",
           "keyWord": "number"
         },
         {

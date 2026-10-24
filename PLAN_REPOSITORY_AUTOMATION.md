@@ -713,13 +713,15 @@ share of the closed alarm issues that close themselves against the 43% this tabl
 
 ### Phase 4. Support
 
-Status: the inbound triage is on main (`support-triage.yml`, 254f7da71). The `customer-lookup` job in `alarm-triage.yml` runs `scripts/alarm-customer-lookup.mjs` for `prod-env-hmrc-submission-failure` and `prod-env-itsa-submission-failure` issues, commits `support/alarms/<issue>-<alarm>.md` to the private repository with the `PRIVATE_REPO_DEPLOY_KEY` deploy key, and pings the ops Telegram chat with no personal data. Open: create the deploy key and the `prod` secret; the support-mail check in the file stays a pointer until the mailbox is reachable from the job; reply drafts go into the support@ mailbox as unsent Gmail drafts under a credential limited to that mailbox and to drafts (`NEXT.md` RA5).
+Status: the inbound triage is on main (`support-triage.yml`, 254f7da71). The `customer-lookup` job in `alarm-triage.yml` runs `scripts/alarm-customer-lookup.mjs` for `prod-env-hmrc-submission-failure` and `prod-env-itsa-submission-failure` issues, commits `support/alarms/<issue>-<alarm>.md` to the private repository with the `PRIVATE_REPO_DEPLOY_KEY` deploy key, and pings the ops Telegram chat with no personal data. Open: create the deploy key and the `prod` secret; the support-mail check in the file stays a pointer until the mailbox is reachable from the job; reply drafts go into the support@ mailbox as unsent Gmail drafts under a credential limited to that mailbox and to drafts. The draft step is built: `scripts/support-gmail-draft.mjs` calls `users.drafts.create` with `threadId` through a service account with domain-wide delegation and the one scope `gmail.compose`; `support-triage.yml` runs it when `SUPPORT_GMAIL_DRAFT_KEY` is set on `prod` and a dispatch names the Gmail thread, and skips cleanly otherwise. The service account is declared in `infra/google/gcp/identity.toml`. Open: create the account and key, then approve its delegation (`NEXT.md` ORA5a, ORA5). A public-form ticket carries no address or thread, so drafts on every ticket need the support mail path to supply the thread.
 
 - Inbound triage and labelling on `issues: [opened]`, beside alarm-triage.
 - The customer lookup fires from the alarm issue rather than from a person asking, and writes to the private repository only.
 - Reply drafting into Gmail, which `../private.diyaccounting.co.uk/strategy/STRATEGY.md` W4 already names.
 - Replies stay drafts until the acceptance rate is measured. Then one class of reply, a settled
   answer matched to a published article, sends on its own.
+
+Acceptance measure: each draft writes one row to `curated/support-drafts/dt=<date>/` in the analytics lake (draft id, thread id, issue number, time). A draft is accepted when the mailbox later sent a message on that thread whose body equals the draft's, edited when the body differs, and rejected when the draft was deleted unsent. Acceptance rate is accepted drafts over drafts older than seven days. The comparison reads the mailbox with the operator's own access; the draft key cannot read it.
 
 Proves: the operator reads drafts rather than raw mail, and the acceptance rate says which classes
 can send.
@@ -805,7 +807,7 @@ runaway loop stops without a person. The operator names the reserve floor.
 and costs the operator every reply. Sending one narrow class, a settled answer matched to a
 published article, once the acceptance rate clears a threshold, is the middle. Sending anything
 the model judges safe is the far end and is not proposed. Recommendation: the middle, with the
-threshold set from the first fifty drafts rather than chosen now. Support volume fell about 97%
+threshold set from the first fifty drafts rather than chosen now. The measure is the Phase 4 acceptance rate, one lake row per draft. Support volume fell about 97%
 after 2018, so the saving is small and the risk is not, which argues for patience here rather than
 speed.
 

@@ -320,36 +320,36 @@ const STYLES = `
         margin: 0;
       }
       .calendar-entry {
-        border-left: 4px solid var(--color-brand-primary);
-        padding: var(--spacing-xs) var(--spacing-md);
-        margin-bottom: var(--spacing-lg);
+        border-left: 4px solid var(--c-brand);
+        padding: var(--space-1) var(--space-4);
+        margin-bottom: var(--space-5);
         text-align: left;
       }
       .calendar-entry h3 {
-        margin: 0 0 var(--spacing-xs);
+        margin: 0 0 var(--space-1);
       }
       .calendar-date {
         display: block;
-        font-size: var(--font-size-sm);
-        color: var(--color-text-secondary);
+        font-size: var(--step--1);
+        color: var(--c-ink-muted);
       }
       .source-quote {
-        margin: var(--spacing-sm) 0 0;
-        padding: var(--spacing-sm) var(--spacing-md);
-        background: var(--color-background);
-        border: 1px solid var(--color-border);
-        border-radius: var(--radius-sm);
-        font-size: var(--font-size-sm);
-        color: var(--color-text-hint);
+        margin: var(--space-2) 0 0;
+        padding: var(--space-2) var(--space-4);
+        background: var(--c-canvas);
+        border: 1px solid var(--c-rule-subtle);
+        border-radius: var(--radius-control);
+        font-size: var(--step--1);
+        color: var(--c-ink-muted);
       }
       .source-quote p {
-        margin: 0 0 var(--spacing-xs);
+        margin: 0 0 var(--space-1);
       }
       .source-quote footer {
         overflow-wrap: anywhere;
       }
       .retrieved {
-        color: var(--color-text-secondary);
+        color: var(--c-ink-muted);
         white-space: nowrap;
       }
       .table-scroll {
@@ -358,12 +358,12 @@ const STYLES = `
       .deadline-table {
         border-collapse: collapse;
         width: 100%;
-        margin: var(--spacing-sm) 0;
+        margin: var(--space-2) 0;
       }
       .deadline-table th,
       .deadline-table td {
-        border: 1px solid var(--color-border);
-        padding: var(--spacing-xs);
+        border: 1px solid var(--c-rule-subtle);
+        padding: var(--space-1);
         text-align: left;
       }
       @media (max-width: 600px) {
@@ -379,9 +379,9 @@ const STYLES = `
           left: -9999px;
         }
         .stacked-table tr {
-          border: 1px solid var(--color-border);
-          border-radius: var(--radius-sm);
-          margin-bottom: var(--spacing-sm);
+          border: 1px solid var(--c-rule-subtle);
+          border-radius: var(--radius-control);
+          margin-bottom: var(--space-2);
         }
         .stacked-table th,
         .stacked-table td {
@@ -472,7 +472,7 @@ export function renderCalendarHtml(sources) {
       </div>
     </main>
 
-    <footer data-footer="full"></footer>
+    <footer></footer>
 
     <script src="widgets/page-chrome.js"></script>
     <script src="lib/env-loader.js"></script>

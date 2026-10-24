@@ -625,6 +625,18 @@
           }
         },
         {
+          "if": { "properties": { "action": { "const": "notePeriod" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action"],
+            "description": "Reads the VAT period the submit form holds and publishes it as {{submittedPeriodStart}} and {{submittedPeriodEnd}}, so a later scene can open the return this run filed. Shows nothing. Place it while the submit page is still open. Needs auth \"user\".",
+            "properties": {
+              "action": {},
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
           "if": { "properties": { "action": { "const": "hmrcAuthorise" } } },
           "then": {
             "additionalProperties": false,

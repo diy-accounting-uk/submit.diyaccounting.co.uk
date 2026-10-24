@@ -35,7 +35,8 @@ vi.mock("@aws-sdk/client-secrets-manager", () => ({
   },
 }));
 
-const { ingestHandler, resetBlobKeyCache, resourceMatches, cutScope } = await import("@app/functions/mcp/mcpOauth.js");
+const { ingestHandler, resourceMatches, cutScope } = await import("@app/functions/mcp/mcpOauth.js");
+const { resetBlobKeyCache } = await import("@app/lib/mcpBlobKey.js");
 const { signBlob, verifyBlob } = await import("@app/lib/mcpOauthBlob.js");
 const { clearClientMetadataCache } = await import("@app/lib/mcpOauthClients.js");
 

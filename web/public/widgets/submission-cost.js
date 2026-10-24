@@ -154,7 +154,7 @@
   }
 
   function renderExhausted(container, resetDate) {
-    container.className = "submission-cost status-message warning";
+    container.className = "submission-cost status-message status-warning";
     container.textContent = "";
     const lead = resetDate
       ? `You have no tokens left. Your allowance refreshes on ${resetDate}, or you can `

@@ -293,7 +293,7 @@
         {
           "scene": "obligations-again",
           "step": 0,
-          "headline": "Back to activities",
+          "headline": "Back to ask again",
           "caption": "Back to the activities, to ask again.",
           "startSeconds": 112,
           "thumb": "videos/view-return/obligations-again-0-thumb.webp",
@@ -311,7 +311,7 @@
         {
           "scene": "obligations-again",
           "step": 4,
-          "headline": "Same VAT number",
+          "headline": "Same number, asked again",
           "caption": "The same VAT registration number.",
           "startSeconds": 126,
           "thumb": "videos/view-return/obligations-again-4-thumb.webp",
@@ -338,7 +338,7 @@
         {
           "scene": "view-return",
           "step": 0,
-          "headline": "Back to activities",
+          "headline": "Back to view a return",
           "caption": "Back to the activities, to view a return.",
           "startSeconds": 151,
           "thumb": "videos/view-return/view-return-0-thumb.webp",
@@ -356,7 +356,7 @@
         {
           "scene": "view-return",
           "step": 4,
-          "headline": "Same VAT number",
+          "headline": "Same number, to view",
           "caption": "The same VAT registration number.",
           "startSeconds": 166,
           "thumb": "videos/view-return/view-return-4-thumb.webp",
@@ -1111,7 +1111,7 @@
         {
           "scene": "quarterly-update-self-employment",
           "step": 9,
-          "headline": "File with HMRC",
+          "headline": "File self-employment update",
           "caption": "File it with HMRC.",
           "startSeconds": 146,
           "thumb": "videos/itsa-year/quarterly-update-self-employment-9-thumb.webp",
@@ -1156,7 +1156,7 @@
         {
           "scene": "quarterly-update-uk-property",
           "step": 9,
-          "headline": "File with HMRC",
+          "headline": "File property update",
           "caption": "File it with HMRC.",
           "startSeconds": 188,
           "thumb": "videos/itsa-year/quarterly-update-uk-property-9-thumb.webp",
@@ -4138,7 +4138,7 @@
         {
           "scene": "april",
           "step": 12,
-          "headline": "Add the purchase",
+          "headline": "Add the plants purchase",
           "caption": "Add it.",
           "startSeconds": 111,
           "thumb": "videos/accounting-diya-gl-profit/april-12-thumb.webp",
@@ -4210,7 +4210,7 @@
         {
           "scene": "may",
           "step": 10,
-          "headline": "Add the purchase",
+          "headline": "Add the leaflets purchase",
           "caption": "Add it.",
           "startSeconds": 169,
           "thumb": "videos/accounting-diya-gl-profit/may-10-thumb.webp",

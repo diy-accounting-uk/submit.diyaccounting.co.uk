@@ -27,6 +27,9 @@ import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
+import software.amazon.awscdk.services.secretsmanager.ISecret;
+import software.amazon.awscdk.services.secretsmanager.Secret;
+import software.amazon.awscdk.services.ssm.StringParameter;
 import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
@@ -247,6 +250,19 @@ public class CompaniesHouseStack extends Stack {
                 this,
                 "ImportedActivityChargesTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().activityChargesTableName);
+
+        // Lookup existing DynamoDB MCP sessions table and the key that seals the codes held in it:
+        // the three Lambdas that read the codes a user typed on the codes page take their entry
+        // from this table, once, and open it with this key.
+        ITable mcpSessionsTable = Table.fromTableName(
+                this,
+                "ImportedMcpSessionsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().mcpSessionsTableName);
+        ISecret codesSealKeySecret = Secret.fromSecretCompleteArn(
+                this,
+                props.resourceNamePrefix() + "-CodesSealKey",
+                StringParameter.valueForStringParameter(
+                        this, props.sharedNames().mcpOauthBlobKeySecretArnParameterName));
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
@@ -752,6 +768,7 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
                 .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+        withCodesEntryEnv(companiesHouseAccountsPostLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         withPresenterSecretArns(companiesHouseAccountsPostLambdaEnv, props);
         if (XML_GATEWAY_TEST_ENV_NAME.equals(props.envName())) {
             companiesHouseAccountsPostLambdaEnv.with(
@@ -789,6 +806,7 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseAccountsPostLambda, bundlesTable, region, account, props, activityBusArn, false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseAccountsPostLambda, props);
+        grantCodesEntryAccess(this.companiesHouseAccountsPostLambda, mcpSessionsTable, codesSealKeySecret);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHouseAccountsPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
         // Read-only: resolves a client-scoped request's client row when enforceBundles checks it.
@@ -1040,6 +1058,7 @@ public class CompaniesHouseStack extends Stack {
 
         var companiesHouseFilingDataPostLambdaEnv =
                 xmlGatewayFilingLambdaEnv(props).with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+        withCodesEntryEnv(companiesHouseFilingDataPostLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         withPresenterSecretArns(companiesHouseFilingDataPostLambdaEnv, props);
         var companiesHouseFilingDataPostLambdaUrlOrigin = new ApiLambda(
                 this,
@@ -1073,6 +1092,7 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHouseLambdaAccess(
                 this.companiesHouseFilingDataPostLambda, bundlesTable, region, account, props, activityBusArn, false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseFilingDataPostLambda, props);
+        grantCodesEntryAccess(this.companiesHouseFilingDataPostLambda, mcpSessionsTable, codesSealKeySecret);
 
         var companiesHouseConfirmationStatementRenderPostLambdaEnv = xmlGatewayFilingLambdaEnv(props);
         var companiesHouseConfirmationStatementRenderPostLambdaUrlOrigin = new ApiLambda(
@@ -1131,6 +1151,7 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
                 .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+        withCodesEntryEnv(companiesHouseConfirmationStatementPostLambdaEnv, mcpSessionsTable, codesSealKeySecret);
         withPresenterSecretArns(companiesHouseConfirmationStatementPostLambdaEnv, props);
         if (XML_GATEWAY_TEST_ENV_NAME.equals(props.envName())) {
             companiesHouseConfirmationStatementPostLambdaEnv.with(
@@ -1185,6 +1206,7 @@ public class CompaniesHouseStack extends Stack {
                 activityBusArn,
                 false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseConfirmationStatementPostLambda, props);
+        grantCodesEntryAccess(this.companiesHouseConfirmationStatementPostLambda, mcpSessionsTable, codesSealKeySecret);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHouseConfirmationStatementPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
         activityChargesTable.grant(
@@ -1492,6 +1514,20 @@ public class CompaniesHouseStack extends Stack {
         if (grantApiKeyAccess) {
             grantSecretRead(fn, props.companiesHouseApiKeyArn());
         }
+    }
+
+    // The environment a Lambda needs to take a codes entry: the table that holds it and the secret
+    // that opens it.
+    private static void withCodesEntryEnv(
+            PopulatedMap<String, String> env, ITable mcpSessionsTable, ISecret codesSealKeySecret) {
+        env.with("MCP_SESSIONS_DYNAMODB_TABLE_NAME", mcpSessionsTable.getTableName())
+                .with("MCP_OAUTH_BLOB_KEY_SECRET_ARN", codesSealKeySecret.getSecretArn());
+    }
+
+    // Taking an entry reads it and deletes it, in one conditional delete.
+    private static void grantCodesEntryAccess(Function fn, ITable mcpSessionsTable, ISecret codesSealKeySecret) {
+        mcpSessionsTable.grant(fn, "dynamodb:DeleteItem");
+        codesSealKeySecret.grantRead(fn);
     }
 
     private static void grantSecretRead(Function fn, String secretArn) {

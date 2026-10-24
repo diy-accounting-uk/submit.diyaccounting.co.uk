@@ -14,6 +14,8 @@ import { ltdTaxDataForPeriodEnd } from "@app/services/ct600Xml.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "@app/services/hmrcCtReturnRequest.js";
 import { deriveSmallCompanyAccounts } from "@app/services/smallCompanyAccounts.js";
 import {
+  BOX_SOURCE_FIELD,
+  COMPUTATION_SOURCE_FIELD,
   CT600_BOX_ROWS,
   CT600_FORM_FIELDS,
   STATEMENT_FIELDS,
@@ -25,6 +27,7 @@ import {
   formProblems,
   parsePounds,
   requestFigures,
+  reviewAnswers,
   targetOfModelProblem,
 } from "../public/lib/ct600-fields.js";
 
@@ -292,5 +295,74 @@ describe("the form's own checks", () => {
   test("a financial year starts on 1 April", () => {
     expect(financialYearOf("2026-03-31")).toBe(2025);
     expect(financialYearOf("2026-04-01")).toBe(2026);
+  });
+});
+
+describe("the review", () => {
+  const values = {
+    utr: "8596148860",
+    companyType: "no",
+    periodStart: "2025-04-01",
+    periodEnd: "2026-03-31",
+    currentTurnover: "341283",
+    annualInvestmentAllowance: "52500",
+    loanOverdrawn: "no",
+    declarationAccepted: true,
+    includeComparatives: false,
+    includeFixedAssetNote: false,
+    directors: "Carol Smith\nDavid Brown",
+  };
+  const rowOf = (id) =>
+    reviewAnswers(values)
+      .flatMap((section) => section.rows)
+      .find((row) => row.id === id);
+
+  test("lists the form's sections in order, each typed field once", () => {
+    const sections = reviewAnswers(values);
+    expect(sections.map((section) => section.id)).toEqual([
+      "company",
+      "period",
+      "accounts",
+      "computation",
+      "allowances",
+      "reliefs",
+      "payments",
+      "loans",
+      "declaration",
+    ]);
+    const ids = sections.flatMap((section) => section.rows.map((row) => row.id));
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const field of CT600_FORM_FIELDS) expect(ids).toContain(field.id);
+  });
+
+  test("shows answers as the customer reads them", () => {
+    expect(rowOf("annualInvestmentAllowance").value).toBe("£52500");
+    expect(rowOf("period").value).toBe("2025-04-01 to 2026-03-31");
+    expect(rowOf("loanOverdrawn").value).toBe("No");
+    expect(rowOf("declarationAccepted").value).toBe("Yes");
+    expect(rowOf("statementSection477Exemption").value).toBe("No");
+    expect(rowOf("directors").value).toBe("Carol Smith, David Brown");
+    expect(rowOf("currentTurnover").label).toBe("Turnover, this year");
+    expect(rowOf("lossesBroughtForward").value).toBe("Not given");
+  });
+
+  test("leaves out last year's figures and the fixed asset note until they are included", () => {
+    expect(rowOf("priorTurnover")).toBeUndefined();
+    expect(rowOf("noteLandBuildingsCostAtStart")).toBeUndefined();
+    const included = reviewAnswers({ ...values, includeComparatives: true, includeFixedAssetNote: true });
+    const ids = included.flatMap((section) => section.rows.map((row) => row.id));
+    expect(ids).toContain("priorTurnover");
+    expect(ids).toContain("noteLandBuildingsCostAtStart");
+  });
+
+  test("every Change link target is a row in the review", () => {
+    const ids = new Set(reviewAnswers(values).flatMap((section) => section.rows.map((row) => row.id)));
+    for (const [box, id] of Object.entries(BOX_SOURCE_FIELD)) expect(ids.has(id), `box ${box} -> ${id}`).toBe(true);
+    for (const [line, id] of Object.entries(COMPUTATION_SOURCE_FIELD)) expect(ids.has(id), `${line} -> ${id}`).toBe(true);
+  });
+
+  test("every box the page can show has a Change target, but the company's name and number", () => {
+    const withoutTarget = CT600_BOX_ROWS.map((row) => row.box).filter((box) => !(box in BOX_SOURCE_FIELD));
+    expect(withoutTarget).toEqual([1, 2]);
   });
 });

@@ -12,7 +12,16 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { escapeXmlText } from "../lib/xmlDom.js";
-import { DATE_FORMAT, IXT2_NAMESPACE, NUMBER_FORMAT, displayDate, formatMonetary, periodEndedPhrase } from "./accountsIxbrlCommon.js";
+import {
+  DATE_FORMAT,
+  IXT2_NAMESPACE,
+  NUMBER_FORMAT,
+  PRODUCTION_SOFTWARE_NAME,
+  displayDate,
+  formatMonetary,
+  packageVersion,
+  periodEndedPhrase,
+} from "./accountsIxbrlCommon.js";
 import { recordFigure, recordHeading, recordTable } from "../lib/submissionRecord.js";
 import { RECORD_STYLE } from "../lib/submissionRecordStyle.js";
 
@@ -206,6 +215,8 @@ ${computationTable}
 <ix:header>
 <ix:hidden>
 <ix:nonNumeric name="ct-comp:CompanyIsAPartnerInAFirm" contextRef="companyPeriod">false</ix:nonNumeric>
+<ix:nonNumeric name="ct-comp:NameOfProductionSoftware" contextRef="companyInstant">${escapeXmlText(PRODUCTION_SOFTWARE_NAME)}</ix:nonNumeric>
+<ix:nonNumeric name="ct-comp:VersionOfProductionSoftware" contextRef="companyInstant">${escapeXmlText(packageVersion())}</ix:nonNumeric>
 </ix:hidden>
 <ix:references><link:schemaRef xlink:type="simple" xlink:href="${CT_COMP_ENTRY_POINT}"/></ix:references>
 <ix:resources>

@@ -3,9 +3,10 @@
 
 // Page Chrome Widget
 //
-// Renders the header icons/auth-section and the main nav around a page's own
-// <h1> (and optional <p class="subtitle">), and fills in the footer, so that
-// markup shared by every page lives once instead of being copy-pasted per page.
+// Renders the header band (home, help and the account row) and the main nav
+// above a page's own <h1> (and optional <p class="subtitle">), and fills in the
+// footer, so that markup shared by every page lives once instead of being
+// copy-pasted per page.
 //
 // Every page keeps its <h1> (and subtitle) as plain static HTML inside
 // <header> - only the surrounding chrome is built here - so a page's title is
@@ -18,7 +19,7 @@
 //
 // A page opts in with:
 //   <header><p class="chrome-fallback"><a href="...">DIY Accounting Submit</a></p><h1>...</h1></header>
-//   <footer data-footer="full|activity|activity-boxed"></footer>
+//   <footer></footer>
 //   <script src="widgets/page-chrome.js"></script>   (adjusted for page depth)
 //
 // The script tag's own src encodes how many directories up the site root is
@@ -40,7 +41,7 @@
     { label: "Practice", target: "practice.html" },
     { label: "Spreadsheets", target: "spreadsheets.html" },
     { label: "MTD calendar", target: "mtd-calendar.html" },
-    { label: "HMRC Tax Rates and Allowances", target: "rates.html" },
+    { label: "Tax rates", target: "rates.html" },
   ];
 
   function findOwnScript() {
@@ -78,6 +79,7 @@
       '<svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="' +
       HOME_ICON_PATH +
       '" /></svg>' +
+      '<span class="brand-name">DIY Accounting Submit</span>' +
       "</a>" +
       '<a href="' +
       rootPrefix +
@@ -102,64 +104,52 @@
     const homeHref = rootPrefix === "" ? "./" : rootPrefix;
     const links = NAV_LINKS.map(function (link) {
       const href = link.target === "" ? homeHref : rootPrefix + link.target;
-      const active = isActiveTarget(link.target, pathname) ? ' class="active"' : "";
+      const active = isActiveTarget(link.target, pathname) ? ' class="active" aria-current="page"' : "";
       return '<a href="' + href + '"' + active + ">" + link.label + "</a>";
     });
     return '<nav class="main-nav" aria-label="Main navigation">' + links.join("") + "</nav>";
   }
 
-  function buildFooterHtml(rootPrefix, variant) {
-    const showLegal = variant === "full";
-    const boxed = variant === "full" || variant === "activity-boxed";
-
+  // The developer links stay hidden until developer mode shows them.
+  function buildFooterHtml(rootPrefix) {
     const devLinks =
       '<a href="#" id="viewSourceLink" style="display: none">view source</a>' +
-      '<a id="latestTestsLink" style="display: inline" target="_blank" href="' +
+      '<a id="latestTestsLink" style="display: none" target="_blank" href="' +
       rootPrefix +
       'tests/index.html">tests</a>' +
-      '<a id="apiDocsLink" style="display: inline" target="_blank" href="' +
+      '<a id="apiDocsLink" style="display: none" target="_blank" href="' +
       rootPrefix +
       'docs/api/index.html">api</a>';
 
-    const legalLinks = showLegal
-      ? '<a href="' +
-        rootPrefix +
-        'privacy.html">privacy</a>' +
-        '<a href="' +
-        rootPrefix +
-        'terms.html">terms</a>' +
-        '<a href="' +
-        rootPrefix +
-        'accessibility.html">accessibility</a>' +
-        '<a href="#" data-cookie-choices>Cookie choices</a>'
-      : "";
+    const siteLinks =
+      '<a href="' +
+      rootPrefix +
+      'privacy.html">Privacy</a>' +
+      '<a href="' +
+      rootPrefix +
+      'terms.html">Terms</a>' +
+      '<a href="' +
+      rootPrefix +
+      'accessibility.html">Accessibility</a>' +
+      '<a href="#" data-cookie-choices>Cookie choices</a>' +
+      '<a href="' +
+      rootPrefix +
+      'help.html">Help</a>' +
+      '<a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a>';
 
-    const center =
-      '<div class="footer-center">' +
-      "<p>&copy; 2006-2026 DIY Accounting Limited</p>" +
-      "<p>Free to use. " +
-      '<a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a> ' +
-      "available under the " +
+    return (
+      '<nav class="footer-links" aria-label="Site information">' +
+      siteLinks +
+      devLinks +
+      "</nav>" +
+      '<p class="footer-legal">&copy; 2006-2026 DIY Accounting Limited. Free to use under the ' +
       '<a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE" target="_blank" rel="noopener">PolyForm Internal Use License</a>.' +
-      "</p>" +
-      "</div>";
-
-    if (boxed) {
-      return (
-        '<div class="footer-content">' +
-        '<div class="footer-left">' +
-        devLinks +
-        legalLinks +
-        "</div>" +
-        center +
-        '<div class="footer-right"></div>' +
-        "</div>"
-      );
-    }
-
-    return '<div class="footer-left">' + devLinks + legalLinks + "</div>" + '<div class="footer-content">' + center + "</div>";
+      "</p>"
+    );
   }
 
+  // The nav goes straight after the header band, so the reading order and the
+  // tab order match what the eye sees: band, nav, then the page's own title.
   function renderHeader(header, rootPrefix) {
     const pathname = window.location.pathname;
     const navHtml = buildNavHtml(rootPrefix, pathname);
@@ -168,13 +158,11 @@
     const fallback = header.querySelector(".chrome-fallback");
     if (fallback) fallback.remove();
 
-    header.insertAdjacentHTML("afterbegin", headerNavHtml);
-    header.insertAdjacentHTML("beforeend", navHtml);
+    header.insertAdjacentHTML("afterbegin", headerNavHtml + navHtml);
   }
 
   function renderFooter(footer, rootPrefix) {
-    const variant = footer.getAttribute("data-footer") || "full";
-    footer.innerHTML = buildFooterHtml(rootPrefix, variant);
+    footer.innerHTML = buildFooterHtml(rootPrefix);
   }
 
   function renderPageChrome() {

@@ -9,6 +9,20 @@
 
 import { getBundlePrices, getActivityPrices } from "../../../app/services/productCatalog.js";
 
+// A catalogue display name may end, inside its final parentheses, with the feature's status:
+// "File Confirmation Statement (Companies House, sandbox)". Stripe shows the product to the
+// customer, so the status is dropped: "File Confirmation Statement (Companies House)".
+const TRAILING_STATUS = /,\s*(production|sandbox|preview)\)$/i;
+
+/**
+ * The Stripe product name for a catalogue display name, without its trailing status.
+ * @param {string} displayName
+ * @returns {string}
+ */
+export function stripeProductName(displayName) {
+  return displayName.replace(TRAILING_STATUS, ")");
+}
+
 // One entry per (catalogue item, price) pair, for either a bundle's `[[bundles.prices]]`
 // table or an activity's `[[activities.prices]]` table - shared shape, `getPrices` picks
 // which. An item with no Stripe price rows is skipped.
@@ -19,7 +33,7 @@ function stripeProductEntries(items, getPrices, bundleId) {
       const prices = getPrices(item);
       return prices.map((price) => ({
         bundleId: item.id,
-        name: item.name,
+        name: stripeProductName(item.name),
         description: item.description,
         priceAmount: price.amount,
         currency: price.currency,

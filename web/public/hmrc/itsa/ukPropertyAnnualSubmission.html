@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../submission-record.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -291,15 +292,14 @@
 
       <!-- Results Display -->
       <div id="annualSubmissionResults" class="results-container" style="display: none">
-        <h3>Annual submission saved</h3>
-        <p>HMRC has accepted the annual submission.</p>
+        <div id="annualSubmissionCopy"></div>
         <div class="button-group">
           <button type="button" id="newSearchBtn" class="secondary-button">Load another</button>
         </div>
       </div>
     </main>
 
-    <footer data-footer="activity"></footer>
+    <footer></footer>
 
     <script src="../../widgets/page-chrome.js"></script>
     <script src="../../lib/env-loader.js"></script>

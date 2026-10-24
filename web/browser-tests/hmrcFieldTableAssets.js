@@ -79,6 +79,7 @@ export async function servePageScripts(page) {
 export async function serveItsaPageScripts(page) {
   await serveFile(page, "**/lib/submission-record.js", "lib/submission-record.js", "application/javascript");
   await serveFile(page, "**/lib/itsa-calculation-record.js", "lib/itsa-calculation-record.js", "application/javascript");
+  await serveFile(page, "**/lib/itsa-submission-record.js", "lib/itsa-submission-record.js", "application/javascript");
   await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
   return page.route("**/hmrc/itsa/*.page.js", async (route) => {
     const fileName = path.basename(new URL(route.request().url()).pathname);

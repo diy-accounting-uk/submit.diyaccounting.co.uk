@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB">
+<html lang="en-GB" data-theme="light">
   <head>
     <meta charset="UTF-8" />
     <title>ITSA dashboard - DIY Accounting Submit</title>
@@ -23,18 +23,18 @@
       .dashboard-steps {
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-lg);
-        margin: var(--spacing-lg) 0;
+        gap: var(--space-5);
+        margin: var(--space-5) 0;
       }
       .dashboard-step {
         background: white;
-        border-radius: var(--radius-lg);
+        border-radius: var(--radius-card);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        padding: var(--spacing-lg);
+        padding: var(--space-5);
       }
       .dashboard-step h2 {
         margin: 0 0 0.25em 0;
-        font-size: var(--font-size-lg);
+        font-size: var(--step-1);
       }
       .dashboard-step p {
         margin: 0 0 0.75em 0;
@@ -46,8 +46,8 @@
       .dashboard-divider {
         display: flex;
         align-items: center;
-        gap: var(--spacing-md);
-        margin: var(--spacing-md) 0;
+        gap: var(--space-4);
+        margin: var(--space-4) 0;
         color: #666;
       }
       .dashboard-divider::before,
@@ -59,8 +59,8 @@
       .business-picker-list {
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-sm);
-        margin: var(--spacing-sm) 0;
+        gap: var(--space-2);
+        margin: var(--space-2) 0;
       }
       .business-picker-option {
         display: flex;
@@ -130,7 +130,7 @@
         </form>
         <div id="businessPickerResults" style="display: none">
           <div id="businessPickerList" class="business-picker-list"></div>
-          <div id="foreignPropertyDiversionNote" class="status-message warning" style="display: none" role="alert">
+          <div id="foreignPropertyDiversionNote" class="status-message status-warning" style="display: none" role="alert">
             This service does not yet handle foreign property or other income. Finish that part of your return with other MTD-compatible
             software or HMRC's online service - see
             <a
@@ -253,7 +253,7 @@
       </div>
     </main>
 
-    <footer data-footer="activity"></footer>
+    <footer></footer>
 
     <script src="../../widgets/page-chrome.js"></script>
     <script src="../../lib/env-loader.js"></script>

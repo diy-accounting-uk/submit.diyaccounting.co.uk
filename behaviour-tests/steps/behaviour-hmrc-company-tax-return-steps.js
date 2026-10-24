@@ -55,6 +55,61 @@ export async function fillInCompanyTaxReturnForm(page, { utr, declarantName }, s
   });
 }
 
+const TYPED_ANSWERS = {
+  utr: "8596148860",
+  periodStart: "2025-04-01",
+  periodEnd: "2026-03-31",
+  currentTurnover: "100000",
+  currentCostOfSales: "40000",
+  currentAdministrativeExpenses: "30000",
+  currentInterestReceivable: "0",
+  currentTax: "0",
+  currentCashAtBank: "30100",
+  currentCalledUpShareCapital: "100",
+  currentProfitAndLossAccount: "30000",
+  principalActivity: "Software consultancy",
+  accountingPolicies: "The accounts are prepared under FRS 102 section 1A.",
+  directors: "Carol Smith",
+  averageEmployees: "2",
+  directorName: "Carol Smith",
+  directorDateApproved: "2026-06-01",
+  declarantName: "Carol Smith",
+};
+
+export async function typeInCompanyTaxReturnForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user types every figure, the statements and the declaration into the form", async () => {
+    for (const [id, value] of Object.entries(TYPED_ANSWERS)) {
+      await loggedFill(page, `#${id}`, value, id);
+    }
+    await page.check("#statementSection477Exemption");
+    await page.check("#statementMembersNotRequiredAudit");
+    await page.check("#statementDirectorsResponsibilities");
+    await page.check("#statementSmallCompaniesRegime");
+    await page.check("#declarationAccepted");
+    await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-return-form-typed.png` });
+  });
+}
+
+export async function changeAnAnswerFromTheReview(page, { fieldId, value }, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user changes ${fieldId} from the review and returns to the review with that answer focused`, async () => {
+    await expect(page.locator("#previewView")).toContainText("Your answers");
+    await page
+      .locator(`#review-row-${fieldId}`)
+      .getByRole("link", { name: /Change/ })
+      .click();
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator(`#${fieldId}`)).toBeFocused();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-change-answer.png` });
+    await loggedFill(page, `#${fieldId}`, value, fieldId);
+    await loggedClick(page, "#previewBtn", "Returning to the review", { screenshotPath });
+    await expect(page.locator("#previewView")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator(`#review-row-${fieldId}`)).toBeFocused();
+    await expect(page.locator(`#review-row-${fieldId}`)).toContainText(value);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-review-changed.png`, readerView: true });
+  });
+}
+
 export async function previewCompanyTaxReturn(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user previews the return and sees the CT600 and computations tables", async () => {
     await loggedClick(page, "#previewBtn", "Previewing the return", { screenshotPath });

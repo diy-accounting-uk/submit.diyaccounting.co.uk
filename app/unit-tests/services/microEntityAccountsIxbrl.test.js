@@ -3,6 +3,7 @@
 
 // app/unit-tests/services/microEntityAccountsIxbrl.test.js
 
+import { readFileSync } from "node:fs";
 import { describe, test, expect } from "vitest";
 import {
   buildMicroEntityAccounts,
@@ -76,8 +77,21 @@ const DORMANT_INPUT = {
   },
 };
 
+const PACKAGE_VERSION = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url), "utf8")).version;
+
+function hiddenText(xhtml, name) {
+  const hidden = parseXmlDocument(xhtml).getElementsByTagName("ix:hidden")[0];
+  return Array.from(hidden.getElementsByTagName("ix:nonNumeric")).find((fact) => fact.getAttribute("name") === name)?.textContent;
+}
+
 describe("services/microEntityAccountsIxbrl", () => {
   describe("buildMicroEntityAccounts", () => {
+    test("names the production software and its package version in the hidden section", () => {
+      const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
+      expect(hiddenText(xhtml, "bus:NameProductionSoftware")).toBe("DIY Accounting Submit");
+      expect(hiddenText(xhtml, "bus:VersionProductionSoftware")).toBe(PACKAGE_VERSION);
+    });
+
     test("the first line is exactly the XML declaration with no leading whitespace", () => {
       const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
       const firstLine = xhtml.split("\n")[0];
@@ -214,6 +228,35 @@ describe("services/microEntityAccountsIxbrl", () => {
     });
   });
 
+  describe("buildMicroEntityAccounts descriptive facts", () => {
+    const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
+    const dormantXhtml = buildMicroEntityAccounts(DORMANT_INPUT);
+
+    test("reports filleted accounts, because no profit and loss account is delivered", () => {
+      for (const document of [xhtml, dormantXhtml]) {
+        expect(dimensionNames(document)).toContainEqual({ dimension: "bus:AccountsTypeDimension", member: "bus:FilletedAccounts" });
+        expect(hiddenText(document, "bus:ReportIncludesDetailedProfitLossStatementTruefalse")).toBe("false");
+        expect(hiddenText(document, "direp:EntityHasTakenExemptionUnderCompaniesActInNotPublishingItsOwnProfitLossAccountTruefalse")).toBe(
+          "true",
+        );
+      }
+    });
+
+    test("tags the report title, the authorising body and the signing director as an officer", () => {
+      expect(xhtml).toMatch(/name="bus:ReportTitle" contextRef="y2026">Unaudited micro-entity accounts</);
+      expect(xhtml).toMatch(/name="core:DescriptionBodyAuthorisingFinancialStatements" contextRef="y2026">the board of directors</);
+      expect(xhtml).toMatch(/name="bus:NameEntityOfficer" contextRef="y2026-director-1">Jo Smith</);
+      expect(xhtml).toMatch(
+        /name="core:StatementComplianceWithApplicableReportingFramework" contextRef="y2026">These financial statements/,
+      );
+    });
+
+    test("describes a dormant company's principal activity and leaves a trading company's out", () => {
+      expect(hiddenText(dormantXhtml, "bus:DescriptionPrincipalActivities")).toBe("Dormant company");
+      expect(hiddenText(xhtml, "bus:DescriptionPrincipalActivities")).toBeUndefined();
+    });
+  });
+
   describe("buildMicroEntityAccounts layout", () => {
     const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
     const document = parseXmlDocument(xhtml);
@@ -262,6 +305,11 @@ describe("services/microEntityAccountsIxbrl", () => {
 
     test("parses as well-formed XML", () => {
       expect(() => parseXmlDocument(dormantXhtml)).not.toThrow();
+    });
+
+    test("names the production software and its package version in the hidden section", () => {
+      expect(hiddenText(dormantXhtml, "bus:NameProductionSoftware")).toBe("DIY Accounting Submit");
+      expect(hiddenText(dormantXhtml, "bus:VersionProductionSoftware")).toBe(PACKAGE_VERSION);
     });
 
     test("the section 480 statement is present and the section 477 statement is absent", () => {

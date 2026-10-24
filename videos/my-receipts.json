@@ -119,6 +119,15 @@
           "dwellMs": 500
         },
         { "action": "hold", "ms": 1500 },
+        {
+          "action": "point",
+          "target": "#receiptContent .customer-copy-links",
+          "caption": "This is your record of the submission: its number, its status and its date.",
+          "headline": "Your record, as submitted",
+          "keyWord": "record",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 4000 },
         { "action": "still", "name": "my-receipts-detail" },
         { "action": "hold", "ms": 1500 }
       ]

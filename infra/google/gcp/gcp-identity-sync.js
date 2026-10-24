@@ -60,6 +60,19 @@ function assertDisplayName(what, displayName) {
   }
 }
 
+function readDelegatedAccounts(parsed) {
+  const delegated = Array.isArray(parsed.delegated_service_account) ? parsed.delegated_service_account : [];
+  for (const account of delegated) {
+    if (!account.account_id) throw new Error("a delegated_service_account is missing its account_id");
+    if (!account.mailbox) throw new Error(`delegated_service_account ${account.account_id}: mailbox is required`);
+    if (!Array.isArray(account.scopes) || account.scopes.length === 0) {
+      throw new Error(`delegated_service_account ${account.account_id}: scopes must be a non-empty array`);
+    }
+    assertDisplayName(`delegated_service_account ${account.account_id}`, account.display_name ? String(account.display_name) : "");
+  }
+  return delegated;
+}
+
 export function parseConfig(tomlString) {
   const parsed = TOML.parse(tomlString);
   const project = parsed.project;
@@ -92,6 +105,7 @@ export function parseConfig(tomlString) {
       throw new Error(`org_policy ${policy.constraint}: allowed_values must be a non-empty array`);
     }
   }
+  const delegated = readDelegatedAccounts(parsed);
   return {
     project: { id: String(project.id), number: project.number ? String(project.number) : null },
     serviceAccount: { email: String(serviceAccount.email) },
@@ -106,6 +120,12 @@ export function parseConfig(tomlString) {
       attributeMapping: Object.fromEntries(Object.entries(provider.attribute_mapping).map(([k, v]) => [k, String(v)])),
       attributeCondition: provider.attribute_condition ? String(provider.attribute_condition) : "",
       principalSet: String(provider.principal_set),
+    })),
+    delegatedAccounts: delegated.map((account) => ({
+      accountId: String(account.account_id),
+      displayName: account.display_name ? String(account.display_name) : "",
+      mailbox: String(account.mailbox),
+      scopes: account.scopes.map(String),
     })),
     orgPolicies: orgPolicies.map((policy) => ({
       constraint: String(policy.constraint),
@@ -223,6 +243,15 @@ export function planIdentity(config, live) {
   const missing = wantedMembers.filter((member) => !liveMembers.has(member));
   if (missing.length > 0) {
     actions.push({ kind: "bind-workload-identity-user", serviceAccount: config.serviceAccount.email, members: missing });
+  }
+  for (const account of config.delegatedAccounts ?? []) {
+    if (!live.delegatedAccounts?.[account.accountId]) {
+      actions.push({
+        kind: "create-delegated-service-account",
+        accountId: account.accountId,
+        body: { accountId: account.accountId, serviceAccount: { displayName: account.displayName } },
+      });
+    }
   }
   return actions;
 }
@@ -410,7 +439,16 @@ async function readLiveState(token, config) {
     token,
     {},
   );
-  return { pool, providers, policy: policy ?? { bindings: [] } };
+  const delegatedAccounts = {};
+  for (const account of config.delegatedAccounts ?? []) {
+    const email = `${account.accountId}@${config.project.id}.iam.gserviceaccount.com`;
+    delegatedAccounts[account.accountId] = await googleRequest(
+      "GET",
+      `${IAM_BASE}/projects/${config.project.id}/serviceAccounts/${email}`,
+      token,
+    );
+  }
+  return { pool, providers, policy: policy ?? { bindings: [] }, delegatedAccounts };
 }
 
 /**
@@ -447,6 +485,8 @@ function describe(action) {
       return `provider ${action.name}: differs on ${action.fields.join(", ")} (would update)`;
     case "bind-workload-identity-user":
       return `${action.serviceAccount}: ${WORKLOAD_IDENTITY_USER_ROLE} missing for ${action.members.join(", ")} (would bind)`;
+    case "create-delegated-service-account":
+      return `service account ${action.accountId}: missing (would create)`;
     default:
       return `${action.kind}`;
   }
@@ -503,6 +543,8 @@ async function applyAction(token, action, config, live) {
       const body = { policy: { ...policy, bindings } };
       return googleRequest("POST", `${IAM_BASE}/projects/-/serviceAccounts/${action.serviceAccount}:setIamPolicy`, token, body);
     }
+    case "create-delegated-service-account":
+      return googleRequest("POST", `${IAM_BASE}/projects/${config.project.id}/serviceAccounts`, token, action.body);
     default:
       throw new Error(`Unknown action ${action.kind}`);
   }

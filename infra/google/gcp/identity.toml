@@ -77,6 +77,17 @@ display_name = "GitHub Actions + submit Lambdas"
     "attribute.account" = "assertion.account"
     "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"
 
+# The service account that drafts support replies into the support mailbox. It holds no project
+# role. Domain-wide delegation lets it act as the mailbox with the scopes listed here, and the
+# Workspace admin console grants the same scopes to its client ID (Security > API controls >
+# Manage domain-wide delegation). The key goes to the prod GitHub environment secret
+# SUPPORT_GMAIL_DRAFT_KEY; scripts/support-gmail-draft.mjs reads it.
+[[delegated_service_account]]
+account_id = "support-gmail-draft"
+display_name = "Support reply drafts"
+mailbox = "support@diyaccounting.co.uk"
+scopes = ["https://www.googleapis.com/auth/gmail.compose"]
+
 # An exposed service-account key must be disabled automatically, not just alerted on, so a leak
 # stops working before anyone reads the alert.
 [[org_policy]]

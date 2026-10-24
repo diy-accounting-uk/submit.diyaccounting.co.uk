@@ -24,22 +24,22 @@
 
 .field-table thead th {
   padding: 0.4em 1em 0.4em 0;
-  border-bottom: 2px solid var(--color-border-dark, #0b0c0c);
-  color: var(--color-text-hint, #505a5f);
-  font-size: var(--font-size-sm, 0.9em);
-  font-weight: var(--font-weight-semibold, 600);
+  border-bottom: 2px solid var(--c-rule, #0b0c0c);
+  color: var(--c-ink-muted, #505a5f);
+  font-size: var(--step--1, 0.9em);
+  font-weight: var(--weight-strong, 600);
   text-align: left;
 }
 
 .field-table tbody th,
 .field-table tbody td {
   padding: 0.6em 1em 0.6em 0;
-  border-bottom: 1px solid var(--color-border, #ddd);
+  border-bottom: 1px solid var(--c-rule-subtle, #ddd);
   vertical-align: top;
 }
 
 .field-table tbody th {
-  font-weight: var(--font-weight-normal, 400);
+  font-weight: var(--weight-text, 400);
   text-align: left;
 }
 
@@ -50,49 +50,49 @@
 }
 
 .field-table td.field-amount {
-  color: var(--color-text-primary, #333);
-  font-weight: var(--font-weight-semibold, 600);
+  color: var(--c-ink, #333);
+  font-weight: var(--weight-strong, 600);
 }
 
 .field-name {
   display: block;
-  color: var(--color-text-primary, #333);
-  font-weight: var(--font-weight-semibold, 600);
+  color: var(--c-ink, #333);
+  font-weight: var(--weight-strong, 600);
 }
 
 .field-definition {
   display: block;
   max-width: 60ch;
   margin-top: 0.2em;
-  color: var(--color-text-hint, #505a5f);
-  font-size: var(--font-size-sm, 0.9em);
+  color: var(--c-ink-muted, #505a5f);
+  font-size: var(--step--1, 0.9em);
   line-height: 1.4;
 }
 
 .field-table .field-row-total th,
 .field-table .field-row-total td {
-  border-top: 1px solid var(--color-border-dark, #0b0c0c);
-  border-bottom: 3px double var(--color-border-dark, #0b0c0c);
+  border-top: 1px solid var(--c-rule, #0b0c0c);
+  border-bottom: 3px double var(--c-rule, #0b0c0c);
 }
 
 .field-table .field-row-total .field-name,
 .field-table .field-row-total td.field-amount {
-  font-weight: var(--font-weight-bold, 700);
+  font-weight: var(--weight-strong, 700);
 }
 
 .field-table-source {
   margin: 0.5em 0 1.5em;
-  color: var(--color-text-hint, #505a5f);
-  font-size: var(--font-size-xs, 0.85em);
+  color: var(--c-ink-muted, #505a5f);
+  font-size: var(--step--1, 0.85em);
 }
 
 /* VAT Return boxes keep their grid; each box carries its definition under the figure. */
 .box-definition {
   flex-basis: 100%;
   margin: 0.2em 0 0;
-  color: var(--color-text-hint, #505a5f);
-  font-size: var(--font-size-sm, 0.9em);
-  font-weight: var(--font-weight-normal, 400);
+  color: var(--c-ink-muted, #505a5f);
+  font-size: var(--step--1, 0.9em);
+  font-weight: var(--weight-text, 400);
   line-height: 1.4;
 }
 

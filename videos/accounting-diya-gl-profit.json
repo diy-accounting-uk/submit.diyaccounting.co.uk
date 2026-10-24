@@ -184,7 +184,7 @@
           "action": "click",
           "target": "[data-add-entry=\"purchases\"]",
           "caption": "Add it.",
-          "headline": "Add the purchase",
+          "headline": "Add the plants purchase",
           "keyWord": "Add"
         },
         {
@@ -256,7 +256,7 @@
           "action": "click",
           "target": "[data-add-entry=\"purchases\"]",
           "caption": "Add it.",
-          "headline": "Add the purchase",
+          "headline": "Add the leaflets purchase",
           "keyWord": "Add"
         }
       ]
