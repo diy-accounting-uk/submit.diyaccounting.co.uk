@@ -131,6 +131,33 @@ test.describe("videos.html (index)", () => {
   });
 });
 
+test.describe("page load", () => {
+  const PAGES = ["videos.html", ...Object.values(AREA_PAGES)];
+
+  for (const pageName of new Set(PAGES)) {
+    test(`${pageName} requests nothing that is missing and logs no console error`, async ({ page }) => {
+      const failedRequests = [];
+      const consoleErrors = [];
+      page.on("response", (response) => {
+        if (response.status() >= 400) failedRequests.push(`${response.status()} ${response.url()}`);
+      });
+      page.on("console", (message) => {
+        if (message.type() === "error") consoleErrors.push(message.text());
+      });
+      await serveRealSite(page);
+      await page.goto(`http://localhost:3000/${pageName}`, { waitUntil: "domcontentloaded" });
+      await page.waitForLoadState("networkidle");
+      await page.evaluate(async () => {
+        for (const image of document.images) image.loading = "eager";
+        await Promise.all([...document.images].map((image) => image.decode().catch(() => {})));
+      });
+      await page.waitForLoadState("networkidle");
+      expect(failedRequests).toEqual([]);
+      expect(consoleErrors).toEqual([]);
+    });
+  }
+});
+
 test.describe("area pages", () => {
   for (const [group, areaPage] of Object.entries(AREA_PAGES)) {
     const groupVideos = EMBEDDED.filter((v) => v.group === group);
