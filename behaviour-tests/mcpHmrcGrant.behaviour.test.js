@@ -21,7 +21,7 @@ import {
   runLocalHttpServer,
   runLocalOAuth2Server,
 } from "./helpers/behaviour-helpers.js";
-import { fillInHmrcAuth, goToHmrcAuth, grantPermissionHmrcAuth, initHmrcAuth, submitHmrcAuth } from "./steps/behaviour-hmrc-steps.js";
+import { grantMcpHmrcAccessInBrowser } from "./steps/behaviour-mcp-hmrc-grant-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -117,18 +117,11 @@ test("the MCP starts an HMRC grant, the user consents in the browser, and the VA
     expect(String(pending.result)).toContain("not finished granting HMRC access");
   });
 
-  await test.step("The user opens the link and grants access on HMRC's pages", async () => {
-    await page.goto(authorisation.url);
-    await goToHmrcAuth(page, screenshotPath);
-    await initHmrcAuth(page, screenshotPath);
-    await fillInHmrcAuth(page, "mcp-grant-user", "mcp-grant-password", screenshotPath);
-    await submitHmrcAuth(page, screenshotPath);
-    await grantPermissionHmrcAuth(page, screenshotPath);
+  await test.step("The user opens the link, grants access on HMRC's pages and lands on Submit's callback page", async () => {
+    await grantMcpHmrcAccessInBrowser(page, authorisation.url, "mcp-grant-user", "mcp-grant-password", screenshotPath);
   });
 
   await test.step("Submit's callback page stores the grant and sends the user back to the chat", async () => {
-    await expect(page).toHaveURL(/\/activities\/submitVatCallback\.html$/);
-    await expect(page.locator("#statusMessagesContainer")).toContainText("HMRC access granted. Go back to your chat to carry on.");
     const stored = await page.evaluate(() => sessionStorage.getItem("hmrcAccessToken"));
     expect(stored).toBeNull();
     await page.screenshot({ path: `${screenshotPath}/callback-granted.png` });
