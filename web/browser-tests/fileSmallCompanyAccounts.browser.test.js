@@ -136,12 +136,16 @@ test.describe("File small company accounts page", () => {
       Array.from(document.querySelectorAll("input[data-money]")).map((input) => ({
         id: input.id,
         prefix: input.parentElement.querySelector(".prefix")?.textContent,
+        label: document.querySelector(`label[for="${input.id}"]`)?.textContent,
+        inLedger: Boolean(input.closest(".ledger")),
         hint: document.getElementById(input.getAttribute("aria-describedby"))?.textContent,
       })),
     );
     expect(report.length).toBeGreaterThan(50);
     for (const entry of report) {
       expect(entry.prefix, entry.id).toBe("£");
+      expect(entry.label, entry.id).toBeTruthy();
+      expect(entry.inLedger, entry.id).toBe(true);
       expect(entry.hint, entry.id).toContain("For example");
     }
   });

@@ -152,11 +152,8 @@ function toggleSections() {
 
 async function handleCompanySubmit(event) {
   event.preventDefault();
+  if (!window.formErrors.requireFields(["companyNumber"])) return;
   const companyNumber = window.normaliseCompanyNumber(document.getElementById("companyNumber").value);
-  if (!companyNumber) {
-    showStatus("Please enter a company number.", "error");
-    return;
-  }
 
   showLoading();
   hideStatus();
@@ -229,23 +226,27 @@ function formProblem() {
   if (note && netBookValueOf(note) !== readPounds("currentFixedAssets")) {
     return "The tangible fixed assets note's net book value must equal the fixed assets before previewing.";
   }
-  const accepted = [
-    "statementSection477Exemption",
-    "statementMembersNotRequiredAudit",
-    "statementDirectorsResponsibilities",
-    "statementSmallCompaniesRegime",
-  ].every((id) => document.getElementById(id).checked);
-  if (!accepted) return "All four statements must be accepted before previewing.";
   return null;
 }
 
+const STATEMENT_MESSAGES = {
+  statementSection477Exemption: "Confirm the company is entitled to exemption from audit under section 477",
+  statementMembersNotRequiredAudit: "Confirm the members have not required the company to obtain an audit",
+  statementDirectorsResponsibilities: "Confirm the directors acknowledge their responsibilities",
+  statementSmallCompaniesRegime: "Confirm the accounts follow the small companies regime",
+};
+
 async function handleAccountsFormSubmit(event) {
   event.preventDefault();
+  const form = event.currentTarget;
+  if (!window.formErrors.requireFormFields(form)) return;
+  if (window.formErrors.reportMoneyProblems(form)) return;
   const problem = formProblem();
   if (problem) {
     showStatus(problem, "error");
     return;
   }
+  if (!window.formErrors.requireChecked(STATEMENT_MESSAGES)) return;
 
   showLoading();
   hideStatus();
@@ -283,6 +284,7 @@ function renderRejections(rejections) {
     return;
   }
   container.style.display = "block";
+  container.className = "outcome outcome--error";
   container.replaceChildren(...rejections.map((entry) => paragraph(`${entry.rejectCode}: ${entry.description}`)));
 }
 
@@ -311,11 +313,13 @@ async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
 }
 
 async function handleSubmitFiling() {
-  const companyAuthCode = document.getElementById("companyAuthCode").value.trim();
+  const companyAuthCodeInput = document.getElementById("companyAuthCode");
+  const companyAuthCode = companyAuthCodeInput.value.trim();
   if (companyAuthCode.length < 6 || companyAuthCode.length > 8) {
-    showStatus("Enter the 6 to 8 character company authentication code.", "error");
+    window.formErrors.showFormErrors([{ input: companyAuthCodeInput, message: "Enter the 6 to 8 character company authentication code" }]);
     return;
   }
+  window.formErrors.clearFormErrors();
 
   showLoading();
   hideStatus();
@@ -340,6 +344,7 @@ async function handleSubmitFiling() {
     document
       .getElementById("filingResult")
       .replaceChildren(paragraph("Submission ", { strong: outcome.submissionNumber }, " was ", { strong: outcome.statusCode }, "."));
+    document.getElementById("filingResult").className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
     renderRejections(outcome.rejections);
     showFilingCopyLink(outcome);
     if (outcome.statusCode === "ACCEPT") {

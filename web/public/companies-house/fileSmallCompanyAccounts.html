@@ -38,22 +38,28 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Company entry view -->
-      <div id="companyView" class="form-container">
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to file with Companies House"
+        data-sign-in-text="Log in to look up your company and file with Companies House. The filing is made from your account."
+      >
         <h2>Which company?</h2>
-        <form id="companyForm">
+        <form id="companyForm" novalidate>
           <div class="form-group">
             <label for="companyNumber">Company number</label>
             <p id="companyNumber-hint" class="hint">
-              The 8-character company number, for example 00000001. Not sure of the number?
-              <a href="companySearch.html">Search Companies House</a> for it first.
+              8 characters, for example 00000001. Do not know it? <a href="companySearch.html">Search Companies House</a>.
             </p>
             <input
               type="text"
               id="companyNumber"
               name="companyNumber"
+              class="input--code"
               required
               value=""
-              placeholder="e.g., 00000001"
+              autocomplete="off"
               aria-describedby="companyNumber-hint"
               spellcheck="false"
             />
@@ -70,1077 +76,1406 @@
           <a href="#" id="changeCompanyLink">Change company</a>.
         </p>
         <div id="booksImport"></div>
-        <form id="accountsForm">
-          <h3>Period</h3>
-          <div class="form-group">
-            <label for="periodStart">Period start</label>
-            <input type="date" id="periodStart" name="periodStart" required />
-          </div>
-          <div class="form-group">
-            <label for="periodEnd">Period end</label>
-            <input type="date" id="periodEnd" name="periodEnd" required />
-          </div>
-
-          <h3>What Companies House receives</h3>
-          <div class="form-group">
-            <input type="radio" id="copyFull" name="copy" value="full" checked />
-            <label for="copyFull" style="display: inline; font-weight: normal">
-              Full accounts: the profit and loss account, the balance sheet, the notes and the directors' report
-            </label>
-          </div>
-          <div class="form-group">
-            <input type="radio" id="copyFilleted" name="copy" value="filleted" aria-describedby="copyFilleted-hint" />
-            <label for="copyFilleted" style="display: inline; font-weight: normal">
-              Filleted accounts: the balance sheet and the notes, with the profit and loss account and the directors' report left out
-            </label>
-            <p id="copyFilleted-hint" class="hint">
-              Section 444 of the Companies Act 2006 lets a small company deliver accounts without its profit and loss account. The company's
-              members still receive the full accounts.
-            </p>
-          </div>
-
-          <h3>Current year</h3>
-          <h4>Profit and loss account</h4>
-          <div class="form-group">
-            <label for="currentTurnover">Turnover</label>
-            <p id="currentTurnover-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentTurnover"
-                name="currentTurnover"
-                required
-                aria-describedby="currentTurnover-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
+        <form id="accountsForm" novalidate>
+          <section class="form-section">
+            <h3>Period</h3>
+            <div class="form-group">
+              <label for="periodStart">Period start</label>
+              <input type="date" id="periodStart" name="periodStart" required />
             </div>
-          </div>
-          <div class="form-group">
-            <label for="currentCostOfSales">Cost of sales</label>
-            <p id="currentCostOfSales-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentCostOfSales"
-                name="currentCostOfSales"
-                required
-                aria-describedby="currentCostOfSales-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
+            <div class="form-group">
+              <label for="periodEnd">Period end</label>
+              <input type="date" id="periodEnd" name="periodEnd" required />
             </div>
-          </div>
-          <div class="form-group">
-            <label for="currentAdministrativeExpenses">Administrative expenses</label>
-            <p id="currentAdministrativeExpenses-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentAdministrativeExpenses"
-                name="currentAdministrativeExpenses"
-                required
-                aria-describedby="currentAdministrativeExpenses-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
+          </section>
+          <section class="form-section">
+            <h3>What Companies House receives</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="copyFull" name="copy" value="full" checked /><label for="copyFull"
+                  >Full accounts: the profit and loss account, the balance sheet, the notes and the directors' report</label
+                >
+              </div>
             </div>
-          </div>
-          <div class="form-group">
-            <label for="currentInterestReceivable">Interest receivable and similar income</label>
-            <p id="currentInterestReceivable-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentInterestReceivable"
-                name="currentInterestReceivable"
-                value="0"
-                aria-describedby="currentInterestReceivable-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="copyFilleted" name="copy" value="filleted" aria-describedby="copyFilleted-hint" /><label
+                  for="copyFilleted"
+                  >Filleted accounts: the balance sheet and the notes, with the profit and loss account and the directors' report left
+                  out</label
+                >
+              </div>
+              <p id="copyFilleted-hint" class="hint">
+                Section 444 of the Companies Act 2006 lets a small company deliver accounts without its profit and loss account. The
+                company's members still receive the full accounts.
+              </p>
             </div>
-          </div>
-          <div class="form-group">
-            <label for="currentTax">Tax on profit on ordinary activities</label>
-            <p id="currentTax-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentTax"
-                name="currentTax"
-                value="0"
-                aria-describedby="currentTax-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <p id="currentProfitAndLossTotals" class="hint"></p>
-          <h4>Balance sheet</h4>
-          <div class="form-group">
-            <label for="currentFixedAssets">Fixed assets</label>
-            <p id="currentFixedAssets-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentFixedAssets"
-                name="currentFixedAssets"
-                required
-                aria-describedby="currentFixedAssets-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentStocks">Stocks</label>
-            <p id="currentStocks-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentStocks"
-                name="currentStocks"
-                required
-                aria-describedby="currentStocks-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentDebtors">Debtors</label>
-            <p id="currentDebtors-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentDebtors"
-                name="currentDebtors"
-                required
-                aria-describedby="currentDebtors-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentCashAtBank">Cash at bank and in hand</label>
-            <p id="currentCashAtBank-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentCashAtBank"
-                name="currentCashAtBank"
-                required
-                aria-describedby="currentCashAtBank-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentTradeCreditors">Trade creditors (due within one year)</label>
-            <p id="currentTradeCreditors-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentTradeCreditors"
-                name="currentTradeCreditors"
-                required
-                aria-describedby="currentTradeCreditors-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentCorporationTax">Corporation tax (due within one year)</label>
-            <p id="currentCorporationTax-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentCorporationTax"
-                name="currentCorporationTax"
-                required
-                aria-describedby="currentCorporationTax-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentOtherCreditors">Other creditors (due within one year)</label>
-            <p id="currentOtherCreditors-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentOtherCreditors"
-                name="currentOtherCreditors"
-                required
-                aria-describedby="currentOtherCreditors-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentCreditorsAfterOneYear">Creditors: amounts falling due after more than one year</label>
-            <p id="currentCreditorsAfterOneYear-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentCreditorsAfterOneYear"
-                name="currentCreditorsAfterOneYear"
-                required
-                value="0"
-                aria-describedby="currentCreditorsAfterOneYear-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentCalledUpShareCapital">Called up share capital</label>
-            <p id="currentCalledUpShareCapital-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentCalledUpShareCapital"
-                name="currentCalledUpShareCapital"
-                required
-                aria-describedby="currentCalledUpShareCapital-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentProfitAndLossAccount">Profit and loss account reserve</label>
-            <p id="currentProfitAndLossAccount-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentProfitAndLossAccount"
-                name="currentProfitAndLossAccount"
-                required
-                aria-describedby="currentProfitAndLossAccount-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <p id="currentBalanceSheetTotals" class="hint"></p>
-
-          <div class="form-group">
-            <input type="checkbox" id="includeComparatives" name="includeComparatives" aria-describedby="includeComparatives-hint" />
-            <label for="includeComparatives" style="display: inline; font-weight: normal">Include prior-year comparatives</label>
-            <p id="includeComparatives-hint" class="hint">
-              Fill in the prior year only when you have its figures. Nothing is filled in for you, and a prior year left out is left out of
-              the accounts.
-            </p>
-          </div>
-          <div id="comparativeFields" style="display: none">
-            <h3>Prior year</h3>
+          </section>
+          <section class="form-section">
+            <h3>Current year</h3>
             <h4>Profit and loss account</h4>
-            <div class="form-group">
-              <label for="priorTurnover">Turnover</label>
-              <p id="priorTurnover-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorTurnover"
-                  name="priorTurnover"
-                  aria-describedby="priorTurnover-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="priorCostOfSales">Cost of sales</label>
-              <p id="priorCostOfSales-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorCostOfSales"
-                  name="priorCostOfSales"
-                  aria-describedby="priorCostOfSales-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="priorAdministrativeExpenses">Administrative expenses</label>
-              <p id="priorAdministrativeExpenses-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorAdministrativeExpenses"
-                  name="priorAdministrativeExpenses"
-                  aria-describedby="priorAdministrativeExpenses-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="priorInterestReceivable">Interest receivable and similar income</label>
-              <p id="priorInterestReceivable-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorInterestReceivable"
-                  name="priorInterestReceivable"
-                  value="0"
-                  aria-describedby="priorInterestReceivable-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="priorTax">Tax on profit on ordinary activities</label>
-              <p id="priorTax-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorTax"
-                  name="priorTax"
-                  value="0"
-                  aria-describedby="priorTax-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <p id="priorProfitAndLossTotals" class="hint"></p>
+            <p id="ledgerHint1" class="hint">Whole pounds. For example, £600 or £1,200.</p>
+            <table class="ledger ledger--one-year">
+              <thead>
+                <tr>
+                  <th scope="col">Line</th>
+                  <th scope="col" class="ledger__figure">Amount (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Turnover</th>
+                  <td class="ledger__figure">
+                    <label for="currentTurnover" class="visually-hidden">Turnover, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentTurnover"
+                        name="currentTurnover"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter turnover this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Cost of sales</th>
+                  <td class="ledger__figure">
+                    <label for="currentCostOfSales" class="visually-hidden">Cost of sales, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCostOfSales"
+                        name="currentCostOfSales"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter cost of sales this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Administrative expenses</th>
+                  <td class="ledger__figure">
+                    <label for="currentAdministrativeExpenses" class="visually-hidden">Administrative expenses, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentAdministrativeExpenses"
+                        name="currentAdministrativeExpenses"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter administrative expenses this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Interest receivable and similar income</th>
+                  <td class="ledger__figure">
+                    <label for="currentInterestReceivable" class="visually-hidden">Interest receivable and similar income, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentInterestReceivable"
+                        name="currentInterestReceivable"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter interest receivable and similar income this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Tax on profit on ordinary activities</th>
+                  <td class="ledger__figure">
+                    <label for="currentTax" class="visually-hidden">Tax on profit on ordinary activities, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentTax"
+                        name="currentTax"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter tax on profit on ordinary activities this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p id="currentProfitAndLossTotals" class="hint"></p>
             <h4>Balance sheet</h4>
-            <div class="form-group">
-              <label for="priorFixedAssets">Fixed assets</label>
-              <p id="priorFixedAssets-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorFixedAssets"
-                  name="priorFixedAssets"
-                  aria-describedby="priorFixedAssets-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="priorStocks">Stocks</label>
-              <p id="priorStocks-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorStocks"
-                  name="priorStocks"
-                  aria-describedby="priorStocks-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="priorDebtors">Debtors</label>
-              <p id="priorDebtors-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorDebtors"
-                  name="priorDebtors"
-                  aria-describedby="priorDebtors-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="priorCashAtBank">Cash at bank and in hand</label>
-              <p id="priorCashAtBank-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorCashAtBank"
-                  name="priorCashAtBank"
-                  aria-describedby="priorCashAtBank-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="priorTradeCreditors">Trade creditors (due within one year)</label>
-              <p id="priorTradeCreditors-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorTradeCreditors"
-                  name="priorTradeCreditors"
-                  aria-describedby="priorTradeCreditors-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="priorCorporationTax">Corporation tax (due within one year)</label>
-              <p id="priorCorporationTax-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorCorporationTax"
-                  name="priorCorporationTax"
-                  aria-describedby="priorCorporationTax-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="priorOtherCreditors">Other creditors (due within one year)</label>
-              <p id="priorOtherCreditors-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorOtherCreditors"
-                  name="priorOtherCreditors"
-                  aria-describedby="priorOtherCreditors-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="priorCreditorsAfterOneYear">Creditors: amounts falling due after more than one year</label>
-              <p id="priorCreditorsAfterOneYear-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorCreditorsAfterOneYear"
-                  name="priorCreditorsAfterOneYear"
-                  value="0"
-                  aria-describedby="priorCreditorsAfterOneYear-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="priorCalledUpShareCapital">Called up share capital</label>
-              <p id="priorCalledUpShareCapital-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorCalledUpShareCapital"
-                  name="priorCalledUpShareCapital"
-                  aria-describedby="priorCalledUpShareCapital-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="priorProfitAndLossAccount">Profit and loss account reserve</label>
-              <p id="priorProfitAndLossAccount-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="priorProfitAndLossAccount"
-                  name="priorProfitAndLossAccount"
-                  aria-describedby="priorProfitAndLossAccount-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <p id="priorBalanceSheetTotals" class="hint"></p>
-          </div>
+            <p id="ledgerHint2" class="hint">Whole pounds. For example, £600 or £1,200.</p>
+            <table class="ledger ledger--one-year">
+              <thead>
+                <tr>
+                  <th scope="col">Line</th>
+                  <th scope="col" class="ledger__figure">Amount (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Fixed assets</th>
+                  <td class="ledger__figure">
+                    <label for="currentFixedAssets" class="visually-hidden">Fixed assets, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentFixedAssets"
+                        name="currentFixedAssets"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter fixed assets this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Stocks</th>
+                  <td class="ledger__figure">
+                    <label for="currentStocks" class="visually-hidden">Stocks, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentStocks"
+                        name="currentStocks"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter stocks this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Debtors</th>
+                  <td class="ledger__figure">
+                    <label for="currentDebtors" class="visually-hidden">Debtors, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentDebtors"
+                        name="currentDebtors"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter debtors this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Cash at bank and in hand</th>
+                  <td class="ledger__figure">
+                    <label for="currentCashAtBank" class="visually-hidden">Cash at bank and in hand, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentCashAtBank"
+                        name="currentCashAtBank"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter cash at bank and in hand this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Trade creditors (due within one year)</th>
+                  <td class="ledger__figure">
+                    <label for="currentTradeCreditors" class="visually-hidden">Trade creditors (due within one year), this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentTradeCreditors"
+                        name="currentTradeCreditors"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter trade creditors (due within one year) this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Corporation tax (due within one year)</th>
+                  <td class="ledger__figure">
+                    <label for="currentCorporationTax" class="visually-hidden">Corporation tax (due within one year), this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentCorporationTax"
+                        name="currentCorporationTax"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter corporation tax (due within one year) this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Other creditors (due within one year)</th>
+                  <td class="ledger__figure">
+                    <label for="currentOtherCreditors" class="visually-hidden">Other creditors (due within one year), this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentOtherCreditors"
+                        name="currentOtherCreditors"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter other creditors (due within one year) this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Creditors: amounts falling due after more than one year</th>
+                  <td class="ledger__figure">
+                    <label for="currentCreditorsAfterOneYear" class="visually-hidden"
+                      >Creditors: amounts falling due after more than one year, this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentCreditorsAfterOneYear"
+                        name="currentCreditorsAfterOneYear"
+                        required
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter creditors: amounts falling due after more than one year this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Called up share capital</th>
+                  <td class="ledger__figure">
+                    <label for="currentCalledUpShareCapital" class="visually-hidden">Called up share capital, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentCalledUpShareCapital"
+                        name="currentCalledUpShareCapital"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter called up share capital this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Profit and loss account reserve</th>
+                  <td class="ledger__figure">
+                    <label for="currentProfitAndLossAccount" class="visually-hidden">Profit and loss account reserve, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentProfitAndLossAccount"
+                        name="currentProfitAndLossAccount"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter profit and loss account reserve this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p id="currentBalanceSheetTotals" class="hint"></p>
 
-          <h3>Tangible fixed assets note</h3>
-          <div class="form-group">
-            <input type="checkbox" id="includeFixedAssetNote" name="includeFixedAssetNote" aria-describedby="includeFixedAssetNote-hint" />
-            <label for="includeFixedAssetNote" style="display: inline; font-weight: normal">Include the tangible fixed assets note</label>
-            <p id="includeFixedAssetNote-hint" class="hint">
-              Leave an asset class at 0 to leave it out. The classes' net book value must equal the fixed assets above.
-            </p>
-          </div>
-          <div id="fixedAssetNoteFields" style="display: none">
-            <h4>Land and buildings</h4>
             <div class="form-group">
-              <label for="noteLandBuildingsCostAtStart">Cost at the start of the period</label>
-              <p id="noteLandBuildingsCostAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
+              <div class="choice">
                 <input
-                  type="text"
-                  id="noteLandBuildingsCostAtStart"
-                  name="noteLandBuildingsCostAtStart"
-                  value="0"
-                  aria-describedby="noteLandBuildingsCostAtStart-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
+                  type="checkbox"
+                  id="includeComparatives"
+                  name="includeComparatives"
+                  aria-describedby="includeComparatives-hint"
+                /><label for="includeComparatives">Include prior-year comparatives</label>
+              </div>
+              <p id="includeComparatives-hint" class="hint">
+                Fill in the prior year only when you have its figures. Nothing is filled in for you, and a prior year left out is left out
+                of the accounts.
+              </p>
+            </div>
+            <div id="comparativeFields" class="form-section" style="display: none">
+              <h3>Prior year</h3>
+              <h4>Profit and loss account</h4>
+              <p id="ledgerHint3" class="hint">Whole pounds. For example, £600 or £1,200.</p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th scope="col">Line</th>
+                    <th scope="col" class="ledger__figure">Amount (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Turnover</th>
+                    <td class="ledger__figure">
+                      <label for="priorTurnover" class="visually-hidden">Turnover, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorTurnover"
+                          name="priorTurnover"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter turnover last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Cost of sales</th>
+                    <td class="ledger__figure">
+                      <label for="priorCostOfSales" class="visually-hidden">Cost of sales, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorCostOfSales"
+                          name="priorCostOfSales"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter cost of sales last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Administrative expenses</th>
+                    <td class="ledger__figure">
+                      <label for="priorAdministrativeExpenses" class="visually-hidden">Administrative expenses, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorAdministrativeExpenses"
+                          name="priorAdministrativeExpenses"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter administrative expenses last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Interest receivable and similar income</th>
+                    <td class="ledger__figure">
+                      <label for="priorInterestReceivable" class="visually-hidden">Interest receivable and similar income, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorInterestReceivable"
+                          name="priorInterestReceivable"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter interest receivable and similar income last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Tax on profit on ordinary activities</th>
+                    <td class="ledger__figure">
+                      <label for="priorTax" class="visually-hidden">Tax on profit on ordinary activities, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorTax"
+                          name="priorTax"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter tax on profit on ordinary activities last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p id="priorProfitAndLossTotals" class="hint"></p>
+              <h4>Balance sheet</h4>
+              <p id="ledgerHint4" class="hint">Whole pounds. For example, £600 or £1,200.</p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th scope="col">Line</th>
+                    <th scope="col" class="ledger__figure">Amount (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Fixed assets</th>
+                    <td class="ledger__figure">
+                      <label for="priorFixedAssets" class="visually-hidden">Fixed assets, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorFixedAssets"
+                          name="priorFixedAssets"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter fixed assets last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Stocks</th>
+                    <td class="ledger__figure">
+                      <label for="priorStocks" class="visually-hidden">Stocks, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorStocks"
+                          name="priorStocks"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter stocks last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Debtors</th>
+                    <td class="ledger__figure">
+                      <label for="priorDebtors" class="visually-hidden">Debtors, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorDebtors"
+                          name="priorDebtors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter debtors last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Cash at bank and in hand</th>
+                    <td class="ledger__figure">
+                      <label for="priorCashAtBank" class="visually-hidden">Cash at bank and in hand, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorCashAtBank"
+                          name="priorCashAtBank"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter cash at bank and in hand last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Trade creditors (due within one year)</th>
+                    <td class="ledger__figure">
+                      <label for="priorTradeCreditors" class="visually-hidden">Trade creditors (due within one year), last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorTradeCreditors"
+                          name="priorTradeCreditors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter trade creditors (due within one year) last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Corporation tax (due within one year)</th>
+                    <td class="ledger__figure">
+                      <label for="priorCorporationTax" class="visually-hidden">Corporation tax (due within one year), last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorCorporationTax"
+                          name="priorCorporationTax"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter corporation tax (due within one year) last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Other creditors (due within one year)</th>
+                    <td class="ledger__figure">
+                      <label for="priorOtherCreditors" class="visually-hidden">Other creditors (due within one year), last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorOtherCreditors"
+                          name="priorOtherCreditors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter other creditors (due within one year) last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Creditors: amounts falling due after more than one year</th>
+                    <td class="ledger__figure">
+                      <label for="priorCreditorsAfterOneYear" class="visually-hidden"
+                        >Creditors: amounts falling due after more than one year, last year</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorCreditorsAfterOneYear"
+                          name="priorCreditorsAfterOneYear"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter creditors: amounts falling due after more than one year last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Called up share capital</th>
+                    <td class="ledger__figure">
+                      <label for="priorCalledUpShareCapital" class="visually-hidden">Called up share capital, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorCalledUpShareCapital"
+                          name="priorCalledUpShareCapital"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter called up share capital last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Profit and loss account reserve</th>
+                    <td class="ledger__figure">
+                      <label for="priorProfitAndLossAccount" class="visually-hidden">Profit and loss account reserve, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorProfitAndLossAccount"
+                          name="priorProfitAndLossAccount"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter profit and loss account reserve last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p id="priorBalanceSheetTotals" class="hint"></p>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Tangible fixed assets note</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="checkbox"
+                  id="includeFixedAssetNote"
+                  name="includeFixedAssetNote"
+                  aria-describedby="includeFixedAssetNote-hint"
+                /><label for="includeFixedAssetNote">Include the tangible fixed assets note</label>
+              </div>
+              <p id="includeFixedAssetNote-hint" class="hint">
+                Leave an asset class at 0 to leave it out. The classes' net book value must equal the fixed assets above.
+              </p>
+            </div>
+            <div id="fixedAssetNoteFields" style="display: none">
+              <h4>Land and buildings</h4>
+              <p id="ledgerHint5" class="hint">Whole pounds. For example, £600 or £1,200.</p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th scope="col">Line</th>
+                    <th scope="col" class="ledger__figure">Amount (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Cost at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="noteLandBuildingsCostAtStart" class="visually-hidden">Cost at the start of the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint5"
+                          type="text"
+                          id="noteLandBuildingsCostAtStart"
+                          name="noteLandBuildingsCostAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter cost at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Additions</th>
+                    <td class="ledger__figure">
+                      <label for="noteLandBuildingsAdditions" class="visually-hidden">Additions</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint5"
+                          type="text"
+                          id="noteLandBuildingsAdditions"
+                          name="noteLandBuildingsAdditions"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter additions"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Disposals (cost)</th>
+                    <td class="ledger__figure">
+                      <label for="noteLandBuildingsDisposals" class="visually-hidden">Disposals (cost)</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint5"
+                          type="text"
+                          id="noteLandBuildingsDisposals"
+                          name="noteLandBuildingsDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter disposals (cost)"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="noteLandBuildingsDepreciationAtStart" class="visually-hidden"
+                        >Depreciation at the start of the period</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint5"
+                          type="text"
+                          id="noteLandBuildingsDepreciationAtStart"
+                          name="noteLandBuildingsDepreciationAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation charge for the period</th>
+                    <td class="ledger__figure">
+                      <label for="noteLandBuildingsDepreciationCharge" class="visually-hidden">Depreciation charge for the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint5"
+                          type="text"
+                          id="noteLandBuildingsDepreciationCharge"
+                          name="noteLandBuildingsDepreciationCharge"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation charge for the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation on disposals</th>
+                    <td class="ledger__figure">
+                      <label for="noteLandBuildingsDepreciationOnDisposals" class="visually-hidden">Depreciation on disposals</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint5"
+                          type="text"
+                          id="noteLandBuildingsDepreciationOnDisposals"
+                          name="noteLandBuildingsDepreciationOnDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation on disposals"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <h4>Plant and machinery</h4>
+              <p id="ledgerHint6" class="hint">Whole pounds. For example, £600 or £1,200.</p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th scope="col">Line</th>
+                    <th scope="col" class="ledger__figure">Amount (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Cost at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="notePlantMachineryCostAtStart" class="visually-hidden">Cost at the start of the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint6"
+                          type="text"
+                          id="notePlantMachineryCostAtStart"
+                          name="notePlantMachineryCostAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter cost at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Additions</th>
+                    <td class="ledger__figure">
+                      <label for="notePlantMachineryAdditions" class="visually-hidden">Additions</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint6"
+                          type="text"
+                          id="notePlantMachineryAdditions"
+                          name="notePlantMachineryAdditions"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter additions"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Disposals (cost)</th>
+                    <td class="ledger__figure">
+                      <label for="notePlantMachineryDisposals" class="visually-hidden">Disposals (cost)</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint6"
+                          type="text"
+                          id="notePlantMachineryDisposals"
+                          name="notePlantMachineryDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter disposals (cost)"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="notePlantMachineryDepreciationAtStart" class="visually-hidden"
+                        >Depreciation at the start of the period</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint6"
+                          type="text"
+                          id="notePlantMachineryDepreciationAtStart"
+                          name="notePlantMachineryDepreciationAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation charge for the period</th>
+                    <td class="ledger__figure">
+                      <label for="notePlantMachineryDepreciationCharge" class="visually-hidden">Depreciation charge for the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint6"
+                          type="text"
+                          id="notePlantMachineryDepreciationCharge"
+                          name="notePlantMachineryDepreciationCharge"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation charge for the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation on disposals</th>
+                    <td class="ledger__figure">
+                      <label for="notePlantMachineryDepreciationOnDisposals" class="visually-hidden">Depreciation on disposals</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint6"
+                          type="text"
+                          id="notePlantMachineryDepreciationOnDisposals"
+                          name="notePlantMachineryDepreciationOnDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation on disposals"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <h4>Fixtures and fittings</h4>
+              <p id="ledgerHint7" class="hint">Whole pounds. For example, £600 or £1,200.</p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th scope="col">Line</th>
+                    <th scope="col" class="ledger__figure">Amount (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Cost at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="noteFurnitureFittingsCostAtStart" class="visually-hidden">Cost at the start of the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint7"
+                          type="text"
+                          id="noteFurnitureFittingsCostAtStart"
+                          name="noteFurnitureFittingsCostAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter cost at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Additions</th>
+                    <td class="ledger__figure">
+                      <label for="noteFurnitureFittingsAdditions" class="visually-hidden">Additions</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint7"
+                          type="text"
+                          id="noteFurnitureFittingsAdditions"
+                          name="noteFurnitureFittingsAdditions"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter additions"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Disposals (cost)</th>
+                    <td class="ledger__figure">
+                      <label for="noteFurnitureFittingsDisposals" class="visually-hidden">Disposals (cost)</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint7"
+                          type="text"
+                          id="noteFurnitureFittingsDisposals"
+                          name="noteFurnitureFittingsDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter disposals (cost)"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="noteFurnitureFittingsDepreciationAtStart" class="visually-hidden"
+                        >Depreciation at the start of the period</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint7"
+                          type="text"
+                          id="noteFurnitureFittingsDepreciationAtStart"
+                          name="noteFurnitureFittingsDepreciationAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation charge for the period</th>
+                    <td class="ledger__figure">
+                      <label for="noteFurnitureFittingsDepreciationCharge" class="visually-hidden"
+                        >Depreciation charge for the period</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint7"
+                          type="text"
+                          id="noteFurnitureFittingsDepreciationCharge"
+                          name="noteFurnitureFittingsDepreciationCharge"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation charge for the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation on disposals</th>
+                    <td class="ledger__figure">
+                      <label for="noteFurnitureFittingsDepreciationOnDisposals" class="visually-hidden">Depreciation on disposals</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint7"
+                          type="text"
+                          id="noteFurnitureFittingsDepreciationOnDisposals"
+                          name="noteFurnitureFittingsDepreciationOnDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation on disposals"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <h4>Computer equipment</h4>
+              <p id="ledgerHint8" class="hint">Whole pounds. For example, £600 or £1,200.</p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th scope="col">Line</th>
+                    <th scope="col" class="ledger__figure">Amount (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Cost at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="noteComputerEquipmentCostAtStart" class="visually-hidden">Cost at the start of the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint8"
+                          type="text"
+                          id="noteComputerEquipmentCostAtStart"
+                          name="noteComputerEquipmentCostAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter cost at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Additions</th>
+                    <td class="ledger__figure">
+                      <label for="noteComputerEquipmentAdditions" class="visually-hidden">Additions</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint8"
+                          type="text"
+                          id="noteComputerEquipmentAdditions"
+                          name="noteComputerEquipmentAdditions"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter additions"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Disposals (cost)</th>
+                    <td class="ledger__figure">
+                      <label for="noteComputerEquipmentDisposals" class="visually-hidden">Disposals (cost)</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint8"
+                          type="text"
+                          id="noteComputerEquipmentDisposals"
+                          name="noteComputerEquipmentDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter disposals (cost)"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="noteComputerEquipmentDepreciationAtStart" class="visually-hidden"
+                        >Depreciation at the start of the period</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint8"
+                          type="text"
+                          id="noteComputerEquipmentDepreciationAtStart"
+                          name="noteComputerEquipmentDepreciationAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation charge for the period</th>
+                    <td class="ledger__figure">
+                      <label for="noteComputerEquipmentDepreciationCharge" class="visually-hidden"
+                        >Depreciation charge for the period</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint8"
+                          type="text"
+                          id="noteComputerEquipmentDepreciationCharge"
+                          name="noteComputerEquipmentDepreciationCharge"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation charge for the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation on disposals</th>
+                    <td class="ledger__figure">
+                      <label for="noteComputerEquipmentDepreciationOnDisposals" class="visually-hidden">Depreciation on disposals</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint8"
+                          type="text"
+                          id="noteComputerEquipmentDepreciationOnDisposals"
+                          name="noteComputerEquipmentDepreciationOnDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation on disposals"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <h4>Motor vehicles</h4>
+              <p id="ledgerHint9" class="hint">Whole pounds. For example, £600 or £1,200.</p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th scope="col">Line</th>
+                    <th scope="col" class="ledger__figure">Amount (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Cost at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="noteMotorVehiclesCostAtStart" class="visually-hidden">Cost at the start of the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint9"
+                          type="text"
+                          id="noteMotorVehiclesCostAtStart"
+                          name="noteMotorVehiclesCostAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter cost at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Additions</th>
+                    <td class="ledger__figure">
+                      <label for="noteMotorVehiclesAdditions" class="visually-hidden">Additions</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint9"
+                          type="text"
+                          id="noteMotorVehiclesAdditions"
+                          name="noteMotorVehiclesAdditions"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter additions"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Disposals (cost)</th>
+                    <td class="ledger__figure">
+                      <label for="noteMotorVehiclesDisposals" class="visually-hidden">Disposals (cost)</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint9"
+                          type="text"
+                          id="noteMotorVehiclesDisposals"
+                          name="noteMotorVehiclesDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter disposals (cost)"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="noteMotorVehiclesDepreciationAtStart" class="visually-hidden"
+                        >Depreciation at the start of the period</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint9"
+                          type="text"
+                          id="noteMotorVehiclesDepreciationAtStart"
+                          name="noteMotorVehiclesDepreciationAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation charge for the period</th>
+                    <td class="ledger__figure">
+                      <label for="noteMotorVehiclesDepreciationCharge" class="visually-hidden">Depreciation charge for the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint9"
+                          type="text"
+                          id="noteMotorVehiclesDepreciationCharge"
+                          name="noteMotorVehiclesDepreciationCharge"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation charge for the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Depreciation on disposals</th>
+                    <td class="ledger__figure">
+                      <label for="noteMotorVehiclesDepreciationOnDisposals" class="visually-hidden">Depreciation on disposals</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint9"
+                          type="text"
+                          id="noteMotorVehiclesDepreciationOnDisposals"
+                          name="noteMotorVehiclesDepreciationOnDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation on disposals"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p id="fixedAssetNoteTotals" class="hint"></p>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Directors and activity</h3>
+            <div class="form-group">
+              <label for="principalActivity">Principal activity</label>
+              <input type="text" id="principalActivity" name="principalActivity" required />
+            </div>
+            <div class="form-group">
+              <label for="accountingPolicies">Accounting policies</label>
+              <textarea id="accountingPolicies" name="accountingPolicies" rows="4" required></textarea>
+            </div>
+            <div class="form-group">
+              <label for="averageEmployees">Average number of employees during the period</label>
+              <input type="number" id="averageEmployees" name="averageEmployees" required step="1" min="0" />
+            </div>
+            <div class="form-group">
+              <label for="directors">Directors who held office during the period</label>
+              <p id="directors-hint" class="hint">One name on each line.</p>
+              <textarea id="directors" name="directors" rows="3" required aria-describedby="directors-hint"></textarea>
+            </div>
+            <div class="form-group">
+              <label for="directorName">Director approving the accounts</label>
+              <input type="text" id="directorName" name="directorName" required />
+            </div>
+            <div class="form-group">
+              <label for="directorDateApproved">Date approved</label>
+              <input type="date" id="directorDateApproved" name="directorDateApproved" required />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Statements</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="statementSection477Exemption" name="statementSection477Exemption" /><label
+                  for="statementSection477Exemption"
+                  >The company is entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small
+                  companies.</label
+                >
               </div>
             </div>
             <div class="form-group">
-              <label for="noteLandBuildingsAdditions">Additions</label>
-              <p id="noteLandBuildingsAdditions-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteLandBuildingsAdditions"
-                  name="noteLandBuildingsAdditions"
-                  value="0"
-                  aria-describedby="noteLandBuildingsAdditions-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
+              <div class="choice">
+                <input type="checkbox" id="statementMembersNotRequiredAudit" name="statementMembersNotRequiredAudit" /><label
+                  for="statementMembersNotRequiredAudit"
+                  >The members have not required the company to obtain an audit for the year in question.</label
+                >
               </div>
             </div>
             <div class="form-group">
-              <label for="noteLandBuildingsDisposals">Disposals (cost)</label>
-              <p id="noteLandBuildingsDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteLandBuildingsDisposals"
-                  name="noteLandBuildingsDisposals"
-                  value="0"
-                  aria-describedby="noteLandBuildingsDisposals-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
+              <div class="choice">
+                <input type="checkbox" id="statementDirectorsResponsibilities" name="statementDirectorsResponsibilities" /><label
+                  for="statementDirectorsResponsibilities"
+                  >The directors acknowledge their responsibilities for complying with the requirements of the Companies Act 2006 with
+                  respect to accounting records and the preparation of accounts.</label
+                >
               </div>
             </div>
             <div class="form-group">
-              <label for="noteLandBuildingsDepreciationAtStart">Depreciation at the start of the period</label>
-              <p id="noteLandBuildingsDepreciationAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteLandBuildingsDepreciationAtStart"
-                  name="noteLandBuildingsDepreciationAtStart"
-                  value="0"
-                  aria-describedby="noteLandBuildingsDepreciationAtStart-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
+              <div class="choice">
+                <input type="checkbox" id="statementSmallCompaniesRegime" name="statementSmallCompaniesRegime" /><label
+                  for="statementSmallCompaniesRegime"
+                  >These accounts have been prepared in accordance with the provisions applicable to companies subject to the small
+                  companies regime.</label
+                >
               </div>
             </div>
-            <div class="form-group">
-              <label for="noteLandBuildingsDepreciationCharge">Depreciation charge for the period</label>
-              <p id="noteLandBuildingsDepreciationCharge-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteLandBuildingsDepreciationCharge"
-                  name="noteLandBuildingsDepreciationCharge"
-                  value="0"
-                  aria-describedby="noteLandBuildingsDepreciationCharge-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteLandBuildingsDepreciationOnDisposals">Depreciation on disposals</label>
-              <p id="noteLandBuildingsDepreciationOnDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteLandBuildingsDepreciationOnDisposals"
-                  name="noteLandBuildingsDepreciationOnDisposals"
-                  value="0"
-                  aria-describedby="noteLandBuildingsDepreciationOnDisposals-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <h4>Plant and machinery</h4>
-            <div class="form-group">
-              <label for="notePlantMachineryCostAtStart">Cost at the start of the period</label>
-              <p id="notePlantMachineryCostAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="notePlantMachineryCostAtStart"
-                  name="notePlantMachineryCostAtStart"
-                  value="0"
-                  aria-describedby="notePlantMachineryCostAtStart-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="notePlantMachineryAdditions">Additions</label>
-              <p id="notePlantMachineryAdditions-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="notePlantMachineryAdditions"
-                  name="notePlantMachineryAdditions"
-                  value="0"
-                  aria-describedby="notePlantMachineryAdditions-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="notePlantMachineryDisposals">Disposals (cost)</label>
-              <p id="notePlantMachineryDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="notePlantMachineryDisposals"
-                  name="notePlantMachineryDisposals"
-                  value="0"
-                  aria-describedby="notePlantMachineryDisposals-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="notePlantMachineryDepreciationAtStart">Depreciation at the start of the period</label>
-              <p id="notePlantMachineryDepreciationAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="notePlantMachineryDepreciationAtStart"
-                  name="notePlantMachineryDepreciationAtStart"
-                  value="0"
-                  aria-describedby="notePlantMachineryDepreciationAtStart-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="notePlantMachineryDepreciationCharge">Depreciation charge for the period</label>
-              <p id="notePlantMachineryDepreciationCharge-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="notePlantMachineryDepreciationCharge"
-                  name="notePlantMachineryDepreciationCharge"
-                  value="0"
-                  aria-describedby="notePlantMachineryDepreciationCharge-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="notePlantMachineryDepreciationOnDisposals">Depreciation on disposals</label>
-              <p id="notePlantMachineryDepreciationOnDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="notePlantMachineryDepreciationOnDisposals"
-                  name="notePlantMachineryDepreciationOnDisposals"
-                  value="0"
-                  aria-describedby="notePlantMachineryDepreciationOnDisposals-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <h4>Fixtures and fittings</h4>
-            <div class="form-group">
-              <label for="noteFurnitureFittingsCostAtStart">Cost at the start of the period</label>
-              <p id="noteFurnitureFittingsCostAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteFurnitureFittingsCostAtStart"
-                  name="noteFurnitureFittingsCostAtStart"
-                  value="0"
-                  aria-describedby="noteFurnitureFittingsCostAtStart-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteFurnitureFittingsAdditions">Additions</label>
-              <p id="noteFurnitureFittingsAdditions-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteFurnitureFittingsAdditions"
-                  name="noteFurnitureFittingsAdditions"
-                  value="0"
-                  aria-describedby="noteFurnitureFittingsAdditions-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteFurnitureFittingsDisposals">Disposals (cost)</label>
-              <p id="noteFurnitureFittingsDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteFurnitureFittingsDisposals"
-                  name="noteFurnitureFittingsDisposals"
-                  value="0"
-                  aria-describedby="noteFurnitureFittingsDisposals-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteFurnitureFittingsDepreciationAtStart">Depreciation at the start of the period</label>
-              <p id="noteFurnitureFittingsDepreciationAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteFurnitureFittingsDepreciationAtStart"
-                  name="noteFurnitureFittingsDepreciationAtStart"
-                  value="0"
-                  aria-describedby="noteFurnitureFittingsDepreciationAtStart-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteFurnitureFittingsDepreciationCharge">Depreciation charge for the period</label>
-              <p id="noteFurnitureFittingsDepreciationCharge-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteFurnitureFittingsDepreciationCharge"
-                  name="noteFurnitureFittingsDepreciationCharge"
-                  value="0"
-                  aria-describedby="noteFurnitureFittingsDepreciationCharge-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteFurnitureFittingsDepreciationOnDisposals">Depreciation on disposals</label>
-              <p id="noteFurnitureFittingsDepreciationOnDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteFurnitureFittingsDepreciationOnDisposals"
-                  name="noteFurnitureFittingsDepreciationOnDisposals"
-                  value="0"
-                  aria-describedby="noteFurnitureFittingsDepreciationOnDisposals-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <h4>Computer equipment</h4>
-            <div class="form-group">
-              <label for="noteComputerEquipmentCostAtStart">Cost at the start of the period</label>
-              <p id="noteComputerEquipmentCostAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteComputerEquipmentCostAtStart"
-                  name="noteComputerEquipmentCostAtStart"
-                  value="0"
-                  aria-describedby="noteComputerEquipmentCostAtStart-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteComputerEquipmentAdditions">Additions</label>
-              <p id="noteComputerEquipmentAdditions-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteComputerEquipmentAdditions"
-                  name="noteComputerEquipmentAdditions"
-                  value="0"
-                  aria-describedby="noteComputerEquipmentAdditions-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteComputerEquipmentDisposals">Disposals (cost)</label>
-              <p id="noteComputerEquipmentDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteComputerEquipmentDisposals"
-                  name="noteComputerEquipmentDisposals"
-                  value="0"
-                  aria-describedby="noteComputerEquipmentDisposals-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteComputerEquipmentDepreciationAtStart">Depreciation at the start of the period</label>
-              <p id="noteComputerEquipmentDepreciationAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteComputerEquipmentDepreciationAtStart"
-                  name="noteComputerEquipmentDepreciationAtStart"
-                  value="0"
-                  aria-describedby="noteComputerEquipmentDepreciationAtStart-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteComputerEquipmentDepreciationCharge">Depreciation charge for the period</label>
-              <p id="noteComputerEquipmentDepreciationCharge-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteComputerEquipmentDepreciationCharge"
-                  name="noteComputerEquipmentDepreciationCharge"
-                  value="0"
-                  aria-describedby="noteComputerEquipmentDepreciationCharge-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteComputerEquipmentDepreciationOnDisposals">Depreciation on disposals</label>
-              <p id="noteComputerEquipmentDepreciationOnDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteComputerEquipmentDepreciationOnDisposals"
-                  name="noteComputerEquipmentDepreciationOnDisposals"
-                  value="0"
-                  aria-describedby="noteComputerEquipmentDepreciationOnDisposals-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <h4>Motor vehicles</h4>
-            <div class="form-group">
-              <label for="noteMotorVehiclesCostAtStart">Cost at the start of the period</label>
-              <p id="noteMotorVehiclesCostAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteMotorVehiclesCostAtStart"
-                  name="noteMotorVehiclesCostAtStart"
-                  value="0"
-                  aria-describedby="noteMotorVehiclesCostAtStart-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteMotorVehiclesAdditions">Additions</label>
-              <p id="noteMotorVehiclesAdditions-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteMotorVehiclesAdditions"
-                  name="noteMotorVehiclesAdditions"
-                  value="0"
-                  aria-describedby="noteMotorVehiclesAdditions-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteMotorVehiclesDisposals">Disposals (cost)</label>
-              <p id="noteMotorVehiclesDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteMotorVehiclesDisposals"
-                  name="noteMotorVehiclesDisposals"
-                  value="0"
-                  aria-describedby="noteMotorVehiclesDisposals-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteMotorVehiclesDepreciationAtStart">Depreciation at the start of the period</label>
-              <p id="noteMotorVehiclesDepreciationAtStart-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteMotorVehiclesDepreciationAtStart"
-                  name="noteMotorVehiclesDepreciationAtStart"
-                  value="0"
-                  aria-describedby="noteMotorVehiclesDepreciationAtStart-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteMotorVehiclesDepreciationCharge">Depreciation charge for the period</label>
-              <p id="noteMotorVehiclesDepreciationCharge-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteMotorVehiclesDepreciationCharge"
-                  name="noteMotorVehiclesDepreciationCharge"
-                  value="0"
-                  aria-describedby="noteMotorVehiclesDepreciationCharge-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <div class="form-group">
-              <label for="noteMotorVehiclesDepreciationOnDisposals">Depreciation on disposals</label>
-              <p id="noteMotorVehiclesDepreciationOnDisposals-money-hint" class="hint">For example, £600 or £1,200</p>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="noteMotorVehiclesDepreciationOnDisposals"
-                  name="noteMotorVehiclesDepreciationOnDisposals"
-                  value="0"
-                  aria-describedby="noteMotorVehiclesDepreciationOnDisposals-money-hint"
-                  inputmode="decimal"
-                  data-money="whole-pounds"
-                />
-              </div>
-            </div>
-            <p id="fixedAssetNoteTotals" class="hint"></p>
-          </div>
-
-          <h3>Directors and activity</h3>
-          <div class="form-group">
-            <label for="principalActivity">Principal activity</label>
-            <input type="text" id="principalActivity" name="principalActivity" required />
-          </div>
-          <div class="form-group">
-            <label for="accountingPolicies">Accounting policies</label>
-            <textarea id="accountingPolicies" name="accountingPolicies" rows="4" required></textarea>
-          </div>
-          <div class="form-group">
-            <label for="averageEmployees">Average number of employees during the period</label>
-            <input type="number" id="averageEmployees" name="averageEmployees" required step="1" min="0" />
-          </div>
-          <div class="form-group">
-            <label for="directors">Directors who held office during the period</label>
-            <p id="directors-hint" class="hint">One name on each line.</p>
-            <textarea id="directors" name="directors" rows="3" required aria-describedby="directors-hint"></textarea>
-          </div>
-          <div class="form-group">
-            <label for="directorName">Director approving the accounts</label>
-            <input type="text" id="directorName" name="directorName" required />
-          </div>
-          <div class="form-group">
-            <label for="directorDateApproved">Date approved</label>
-            <input type="date" id="directorDateApproved" name="directorDateApproved" required />
-          </div>
-
-          <h3>Statements</h3>
-          <div class="form-group">
-            <input type="checkbox" id="statementSection477Exemption" name="statementSection477Exemption" />
-            <label for="statementSection477Exemption" style="display: inline; font-weight: normal">
-              The company is entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small companies.
-            </label>
-          </div>
-          <div class="form-group">
-            <input type="checkbox" id="statementMembersNotRequiredAudit" name="statementMembersNotRequiredAudit" />
-            <label for="statementMembersNotRequiredAudit" style="display: inline; font-weight: normal">
-              The members have not required the company to obtain an audit for the year in question.
-            </label>
-          </div>
-          <div class="form-group">
-            <input type="checkbox" id="statementDirectorsResponsibilities" name="statementDirectorsResponsibilities" />
-            <label for="statementDirectorsResponsibilities" style="display: inline; font-weight: normal">
-              The directors acknowledge their responsibilities for complying with the requirements of the Companies Act 2006 with respect to
-              accounting records and the preparation of accounts.
-            </label>
-          </div>
-          <div class="form-group">
-            <input type="checkbox" id="statementSmallCompaniesRegime" name="statementSmallCompaniesRegime" />
-            <label for="statementSmallCompaniesRegime" style="display: inline; font-weight: normal">
-              These accounts have been prepared in accordance with the provisions applicable to companies subject to the small companies
-              regime.
-            </label>
-          </div>
+          </section>
 
           <button type="submit" id="previewBtn" class="btn">Preview accounts</button>
         </form>
@@ -1150,37 +1485,36 @@
       <div id="previewView" class="results-container" style="display: none">
         <h2>Preview</h2>
         <p>These are the accounts as they will be filed. Nothing has been submitted to Companies House yet.</p>
-        <iframe
-          id="previewRendered"
-          class="accounts-preview-frame"
-          title="The accounts as they will be filed"
-          sandbox=""
-          style="width: 100%; height: 80vh; border: 1px solid #b1b4b6; background: #fff"
-        ></iframe>
+        <iframe id="previewRendered" class="accounts-preview-frame" title="The accounts as they will be filed" sandbox=""></iframe>
         <pre id="previewIxbrl" class="ixbrl-preview developer-only-section"></pre>
-        <div class="form-group">
-          <label for="companyAuthCode">Company authentication code</label>
-          <p id="companyAuthCode-hint" class="hint">
-            The 6 to 8 character code Companies House issued for this company. Not stored - used only for this filing.
-          </p>
-          <input
-            type="text"
-            id="companyAuthCode"
-            name="companyAuthCode"
-            required
-            minlength="6"
-            maxlength="8"
-            aria-describedby="companyAuthCode-hint"
-            spellcheck="false"
-          />
-        </div>
-        <div class="form-group" id="govTestScenarioGroup" style="display: none">
-          <label for="govTestScenario">Gov-Test-Scenario</label>
-          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
-        </div>
-        <div class="button-group">
-          <button type="button" id="backToFormBtn" class="secondary-button">Back</button>
-          <button type="button" id="submitFilingBtn" class="btn">Submit to Companies House</button>
+        <div class="send-step">
+          <h3>Send to Companies House</h3>
+          <div class="form-group">
+            <label for="companyAuthCode">Company authentication code</label>
+            <p id="companyAuthCode-hint" class="hint">
+              The 6 to 8 character code Companies House issued for this company. Not stored - used only for this filing.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <div class="form-group" id="govTestScenarioGroup" style="display: none">
+            <label for="govTestScenario">Gov-Test-Scenario</label>
+            <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+          </div>
+          <div class="button-group">
+            <button type="button" id="backToFormBtn" class="secondary-button">Back</button>
+            <button type="button" id="submitFilingBtn" class="btn">Submit to Companies House</button>
+          </div>
         </div>
       </div>
 
@@ -1212,7 +1546,9 @@
     <script src="../lib/money-input.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
     <script src="../widgets/auth-status.js"></script>
+    <script src="../lib/form-errors.js"></script>
     <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
     <script src="../widgets/books-import.js"></script>
     <script src="fileSmallCompanyAccounts.page.js"></script>
   </body>

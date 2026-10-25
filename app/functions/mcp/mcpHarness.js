@@ -24,13 +24,21 @@ function isProd() {
   return (process.env.ENVIRONMENT_NAME || "").toLowerCase() === "prod";
 }
 
-async function grantDayGuestBundle(origin, bearer) {
+// The simulator user holds the bundles the harness scripts need. day-guest is self-service. A
+// practice's client filings need resident-pro, which the simulator's mock checkout grants as it
+// completes a subscription.
+async function grantSimulatorBundles(origin, bearer) {
+  const headers = { "Authorization": `Bearer ${bearer}`, "Content-Type": "application/json" };
   try {
-    await fetch(`${origin}/api/v1/bundle`, {
+    await fetch(`${origin}/api/v1/bundle`, { method: "POST", headers, body: JSON.stringify({ bundleId: "day-guest" }) });
+    const checkout = await fetch(`${origin}/api/v1/billing/checkout`, {
       method: "POST",
-      headers: { "Authorization": `Bearer ${bearer}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ bundleId: "day-guest" }),
+      headers,
+      body: JSON.stringify({ bundleId: "resident-pro" }),
     });
+    const { checkoutUrl } = await checkout.json();
+    const { pathname, search } = new URL(checkoutUrl);
+    await fetch(`${origin}${pathname}${search}`, { redirect: "manual" });
   } catch {
     // The tool call that needs the bundle reports its absence.
   }
@@ -48,7 +56,7 @@ async function sessionFor(httpRequest) {
     const bearer = callerBearer ?? unsignedJwt(SIMULATOR_USER_SUB);
     const session = createSession({ credentials: { accessToken: async () => bearer, idToken: async () => null }, pollBudgetMs: 20000 });
     sessions.set(cacheKey, session);
-    if (!callerBearer) await grantDayGuestBundle(origin, bearer);
+    if (!callerBearer) await grantSimulatorBundles(origin, bearer);
   }
   return sessions.get(cacheKey);
 }

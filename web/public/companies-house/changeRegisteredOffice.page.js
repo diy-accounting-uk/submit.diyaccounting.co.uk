@@ -65,11 +65,8 @@ function renderAddressList(target, address) {
 
 async function handleCompanySubmit(event) {
   event.preventDefault();
+  if (!window.formErrors.requireFields(["companyNumber"])) return;
   const companyNumber = window.normaliseCompanyNumber(document.getElementById("companyNumber").value);
-  if (!companyNumber) {
-    showStatus("Please enter a company number.", "error");
-    return;
-  }
 
   showLoading();
   hideStatus();
@@ -88,11 +85,8 @@ async function handleCompanySubmit(event) {
 
 function handleFormSubmit(event) {
   event.preventDefault();
-  const accepted = document.getElementById("acceptOfficeStatement").checked;
-  if (!accepted) {
-    showStatus("You must confirm the section 86(2) appropriate address statement to continue.", "error");
-    return;
-  }
+  if (!window.formErrors.requireFormFields(event.currentTarget)) return;
+  if (!window.formErrors.requireChecked({ acceptOfficeStatement: "Confirm the section 86(2) appropriate address statement" })) return;
 
   filing = {
     ...filing,
@@ -148,13 +142,17 @@ function renderFilingResult(transaction) {
   const container = document.getElementById("filingResult");
   const filings = transaction.filings || [];
   const headlineParagraph = document.createElement("p");
+  headlineParagraph.className = "outcome__title";
   const strong = document.createElement("strong");
   if (filings.some((entry) => entry.status === "rejected")) {
     strong.textContent = "Companies House rejected the change.";
+    container.className = "outcome outcome--error";
   } else if (filings.length > 0 && filings.every((entry) => entry.status === "accepted")) {
     strong.textContent = "Companies House accepted the change.";
+    container.className = "outcome outcome--ok";
   } else {
     strong.textContent = "Companies House is still processing the change.";
+    container.className = "outcome";
   }
   headlineParagraph.append(strong);
   const paragraphs = [headlineParagraph];

@@ -52,8 +52,8 @@ function renderSearchResults(results) {
 
 async function submitCompanySearch(event) {
   event.preventDefault();
+  if (!window.formErrors.requireFields(["companyQuery"])) return;
   const query = document.getElementById("companyQuery").value.trim();
-  if (!query) return;
 
   window.showLoading ? window.showLoading() : null;
   window.hideStatus ? window.hideStatus() : null;

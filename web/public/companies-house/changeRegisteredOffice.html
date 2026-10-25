@@ -37,21 +37,28 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Company entry view -->
-      <div id="companyView" class="form-container">
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to file with Companies House"
+        data-sign-in-text="Log in to look up your company and file with Companies House. The filing is made from your account."
+      >
         <h2>Which company?</h2>
-        <form id="companyForm">
+        <form id="companyForm" novalidate>
           <div class="form-group">
             <label for="companyNumber">Company number</label>
             <p id="companyNumber-hint" class="hint">
-              The 8-character company number, for example 00000001. Not sure of the number?
-              <a href="companySearch.html">Search Companies House</a> for it first.
+              8 characters, for example 00000001. Do not know it? <a href="companySearch.html">Search Companies House</a>.
             </p>
             <input
               type="text"
               id="companyNumber"
               name="companyNumber"
+              class="input--code"
               required
               value=""
+              autocomplete="off"
               aria-describedby="companyNumber-hint"
               spellcheck="false"
             />
@@ -69,7 +76,7 @@
           <h3>Current address</h3>
           <dl id="currentAddressList"></dl>
         </div>
-        <form id="officeAddressForm">
+        <form id="officeAddressForm" novalidate>
           <h3>New address</h3>
           <div class="form-group">
             <label for="premises">Premises</label>
@@ -109,11 +116,12 @@
             </select>
           </div>
           <div class="form-group">
-            <input type="checkbox" id="acceptOfficeStatement" name="acceptOfficeStatement" />
-            <label for="acceptOfficeStatement" style="display: inline; font-weight: normal">
-              I confirm this is an appropriate address under section 86(2) of the Companies Act 2006 - somewhere the company's officers can
-              be reached and documents delivered to them can be recorded.
-            </label>
+            <div class="choice">
+              <input type="checkbox" id="acceptOfficeStatement" name="acceptOfficeStatement" /><label for="acceptOfficeStatement"
+                >I confirm this is an appropriate address under section 86(2) of the Companies Act 2006 - somewhere the company's officers
+                can be reached and documents delivered to them can be recorded.</label
+              >
+            </div>
           </div>
           <button type="submit" id="continueBtn" class="btn">Continue</button>
         </form>
@@ -151,7 +159,9 @@
     <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
     <script src="../widgets/auth-status.js"></script>
+    <script src="../lib/form-errors.js"></script>
     <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
     <script src="changeRegisteredOffice.page.js"></script>
   </body>
 </html>

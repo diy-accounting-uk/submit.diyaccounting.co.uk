@@ -192,8 +192,8 @@ test.describe("Change Registered Office Address page", () => {
     await delay(200);
 
     await expect(page.locator("#reviewView")).toBeHidden();
-    const messages = await page.evaluate(() => window.__statusMessages);
-    expect(messages.some((m) => m.message.includes("section 86(2)"))).toBe(true);
+    await expect(page.locator("#form-error-summary")).toContainText("section 86(2)");
+    await expect(page.locator("#acceptOfficeStatement-error")).toContainText("section 86(2)");
   });
 
   test("moves to the review view with the new address after accepting the statement", async ({ page }) => {

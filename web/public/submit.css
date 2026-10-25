@@ -760,12 +760,17 @@ dd {
     font-size: var(--step-0);
   }
 
+  .main-nav a {
+    font-size: var(--step--1);
+  }
+
   .main-nav {
-    gap: var(--space-4);
+    --nav-fade: var(--space-5);
+    gap: var(--space-3);
     margin-right: calc(-1 * var(--gutter));
-    padding-right: var(--gutter);
-    mask-image: linear-gradient(to right, #000 85%, transparent);
-    -webkit-mask-image: linear-gradient(to right, #000 85%, transparent);
+    padding-right: calc(var(--gutter) + var(--nav-fade));
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--nav-fade)), transparent);
+    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--nav-fade)), transparent);
   }
 }
 
@@ -2710,8 +2715,23 @@ input.hmrc-assist-highlight {
     color: var(--c-ink-muted);
   }
 
+  .ledger td.ledger__figure {
+    flex-wrap: wrap;
+  }
+
+  .ledger td.ledger__figure::before {
+    order: 1;
+  }
+
   .ledger td.ledger__figure .input-prefix {
     flex: 1;
+    order: 2;
+  }
+
+  .ledger td.ledger__figure .error-message {
+    flex: 1 0 100%;
+    order: 3;
+    margin-top: var(--space-1);
   }
 
   .ledger--one-year td.ledger__figure::before {
@@ -2953,6 +2973,61 @@ body.developer-mode .developer-only-section {
   font-family: var(--font-code);
   font-size: var(--step--1);
   text-align: left;
+}
+
+/* A company number or an authentication code is a few characters, so the field is a few characters wide. */
+.input--code {
+  max-width: 14rem;
+  font-family: var(--font-code);
+  letter-spacing: 0.04em;
+}
+
+/* A filed document inside the customer copy, and what a printed copy leaves out. */
+.submission-record iframe.filed-document {
+  display: block;
+  width: 100%;
+  height: 40em;
+  border: 0;
+  background: #fff;
+}
+
+@media print {
+  .skip-link,
+  body > header,
+  body > footer,
+  .filing-actions,
+  .filing-notice,
+  #signedOutPanel {
+    display: none !important;
+  }
+
+  .submission-record iframe.filed-document {
+    height: auto;
+  }
+}
+
+/* The rendered accounts, as Companies House will receive them, in a frame on the page. */
+.accounts-preview-frame {
+  display: block;
+  width: 100%;
+  height: 80vh;
+  border: 1px solid var(--c-rule);
+  border-radius: var(--radius-control);
+  background: #fff;
+  margin-bottom: var(--space-4);
+}
+
+/* Print and save actions beside a filed copy, and the note under them. */
+.filing-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3) var(--space-5);
+  margin: var(--space-4) 0;
+}
+
+.filing-notice {
+  margin: var(--space-4) 0;
+  color: var(--c-ink-muted);
 }
 
 .worked-tax:focus {

@@ -48,7 +48,6 @@ async function showFiling(receiptName) {
 function start() {
   const receiptName = new URLSearchParams(window.location.search).get("receipt");
   if (!localStorage.getItem("cognitoIdToken")) {
-    element("unauthenticatedHint").style.display = "block";
     return;
   }
   if (!receiptName) {

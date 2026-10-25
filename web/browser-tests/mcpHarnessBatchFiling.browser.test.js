@@ -13,6 +13,9 @@ import path from "path";
 const PUBLIC_DIR = path.join(process.cwd(), "web/public");
 const readPublic = (relativePath) => fs.readFileSync(path.join(PUBLIC_DIR, relativePath), "utf-8");
 
+// MCP_HARNESS_BASE_URL names a running local server (npm run start:simulator prints its port);
+// with it set, the second test drives that server with no stubbed endpoint.
+const LIVE_BASE_URL = process.env.MCP_HARNESS_BASE_URL?.replace(/\/+$/, "");
 const ORIGIN = "http://localhost:3000";
 const ENTRY_ID = "11111111-2222-4333-8444-555555555555";
 const CLIENTS = [
@@ -87,6 +90,7 @@ async function setupRoutes(page) {
 }
 
 test("the harness files accounts for two clients through one codes link", async ({ page }) => {
+  test.skip(Boolean(LIVE_BASE_URL), "the live-server test covers this journey");
   const { calls, puts } = await setupRoutes(page);
   await page.goto(`${ORIGIN}/mcp-harness.html?script=file-accounts-for-clients`, { waitUntil: "domcontentloaded" });
 
@@ -127,4 +131,44 @@ test("the harness files accounts for two clients through one codes link", async 
   await expect(filingCard).toContainText("Beta Ltd");
   expect(JSON.parse(await filingCard.locator("pre").textContent()).rows).toHaveLength(2);
   await page.screenshot({ path: "target/mcp-harness-screenshots/batch-result.png" });
+});
+
+test("the harness files accounts for two clients through one codes link on the local server", async ({ page }) => {
+  test.skip(!LIVE_BASE_URL, "set MCP_HARNESS_BASE_URL to a running local server");
+  test.setTimeout(120000);
+  await page.goto(`${LIVE_BASE_URL}/mcp-harness.html?script=file-accounts-for-clients`, { waitUntil: "domcontentloaded" });
+
+  for (let turn = 0; turn < 6; turn += 1) await page.locator("#nextTurn").click();
+  for (const turnId of ["alpha", "beta", "clients", "codes"]) {
+    await expect(page.locator(`.harness-turn[data-turn-id="${turnId}"]`)).toHaveAttribute("data-outcome", "ok", { timeout: 30000 });
+  }
+
+  const codesFrame = page.frameLocator("#browserStep");
+  await expect(page.locator("#browserStatus")).toContainText("mcpCodes.html?entry=");
+  await expect(codesFrame.locator("#clientCodeFields label")).toHaveCount(2);
+  const labels = await codesFrame.locator("#clientCodeFields label").allTextContents();
+  await codesFrame.locator("#clientCode0").fill(COMPANY_CODE);
+  await codesFrame.locator("#clientCode1").fill(COMPANY_CODE);
+  await codesFrame.locator("#saveCodesBtn").click();
+  await expect(codesFrame.locator("#codesDoneView")).toBeVisible();
+  await page.screenshot({ path: "target/mcp-harness-screenshots/batch-codes-live.png" });
+
+  await page.locator("#nextTurn").click();
+  await page.locator("#nextTurn").click();
+  const filingCard = page.locator('.harness-turn[data-turn-id="filing"]');
+  await expect(filingCard).toHaveAttribute("data-outcome", /.+/, { timeout: 60000 });
+  const filing = JSON.parse(await filingCard.locator("pre").textContent());
+  await page.screenshot({ path: "target/mcp-harness-screenshots/batch-result-live.png" });
+
+  // One row per client, each from the one codes entry. No route yet grants a client the
+  // Companies House accounts filing authorisation the filing checks for, so every row is refused
+  // with "Client is not authorised for Companies House filing". When that grant exists these rows
+  // turn ok and this assertion changes.
+  expect(filing.rows).toHaveLength(2);
+  expect(filing.rows.map((row) => row.displayName).sort()).toEqual(["Alpha Ltd", "Beta Ltd"]);
+  expect(labels).toEqual(["Company authentication code for Alpha Ltd", "Company authentication code for Beta Ltd"]);
+  for (const row of filing.rows) {
+    expect(row.ok).toBe(false);
+    expect(row.error).toBe("Client is not authorised for Companies House filing");
+  }
 });

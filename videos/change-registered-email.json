@@ -7,10 +7,12 @@
   "companiesHouseTestCompany": true,
   "environments": ["ci"],
   "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/companies-house/changeRegisteredEmail.html"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 90,
     "betweenActionsMs": 700,
@@ -21,7 +23,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -30,13 +31,14 @@
     "charsPerSecond": 15,
     "minMs": 1500,
     "fadeMs": 250,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
-
   "finalHoldMs": 3000,
-
   "scenes": [
     {
       "id": "home",
@@ -59,7 +61,10 @@
           "headline": "Sign in, faster",
           "keyWord": "faster"
         },
-        { "action": "hold", "ms": 300 }
+        {
+          "action": "hold",
+          "ms": 300
+        }
       ]
     },
     {
@@ -68,15 +73,25 @@
       "still": true,
       "fastForward": true,
       "steps": [
-        { "action": "click", "target": "a.login-link" },
-        { "action": "login" },
-        { "action": "consent" },
+        {
+          "action": "click",
+          "target": "a.login-link"
+        },
+        {
+          "action": "login"
+        },
+        {
+          "action": "consent"
+        },
         {
           "action": "await",
           "until": "button:has-text('Change Registered Email Address (Companies House)')",
           "label": "Waiting for the activity to appear"
         },
-        { "action": "hold", "ms": 500 }
+        {
+          "action": "hold",
+          "ms": 500
+        }
       ]
     },
     {
@@ -86,13 +101,20 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "button", "name": "Change Registered Email Address (Companies House)" },
+          "target": {
+            "role": "button",
+            "name": "Change Registered Email Address (Companies House)"
+          },
           "expectsNavigation": true,
           "caption": "Open Change Registered Email Address to find the company.",
           "headline": "Open the activity",
           "keyWord": "email"
         },
-        { "action": "await", "until": "#companyForm", "label": "Opening the company lookup form" },
+        {
+          "action": "await",
+          "until": "#companyForm",
+          "label": "Opening the company lookup form"
+        },
         {
           "action": "type",
           "target": "#companyNumber",
@@ -116,8 +138,15 @@
           "keyWord": "Grant",
           "timeoutMs": 60000
         },
-        { "action": "await", "until": "#formView", "label": "Checking eligibility" },
-        { "action": "hold", "ms": 500 }
+        {
+          "action": "await",
+          "until": "#formView",
+          "label": "Checking eligibility"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
       ]
     },
     {
@@ -147,7 +176,10 @@
           "headline": "Review before filing",
           "keyWord": "Review"
         },
-        { "action": "hold", "ms": 700 }
+        {
+          "action": "hold",
+          "ms": 700
+        }
       ]
     },
     {
@@ -163,7 +195,11 @@
           "headline": "Review before filing",
           "keyWord": "Review"
         },
-        { "action": "point", "target": "#reviewEmailAddress", "dwellMs": 400 },
+        {
+          "action": "point",
+          "target": "#reviewEmailAddress",
+          "dwellMs": 400
+        },
         {
           "action": "click",
           "target": "#submitFilingBtn",
@@ -171,7 +207,10 @@
           "headline": "File the change",
           "keyWord": "File"
         },
-        { "action": "hold", "ms": 500 }
+        {
+          "action": "hold",
+          "ms": 500
+        }
       ]
     },
     {
@@ -188,10 +227,34 @@
           "headline": "The filing outcome",
           "keyWord": "outcome"
         },
-        { "action": "point", "target": "#filingResult", "dwellMs": 500 },
-        { "action": "hold", "ms": 1500 },
-        { "action": "still", "name": "change-registered-email-result" },
-        { "action": "hold", "ms": 1500 }
+        {
+          "action": "point",
+          "target": "#filingResult",
+          "dwellMs": 500
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        },
+        {
+          "action": "scroll",
+          "target": "#filingResult"
+        },
+        {
+          "action": "hold",
+          "ms": 4000
+        },
+        {
+          "action": "still",
+          "name": "change-registered-email-result"
+        },
+        {
+          "action": "hold",
+          "ms": 6500,
+          "caption": "The reference and the outcome are the record of this change.",
+          "headline": "The filing record",
+          "keyWord": "record"
+        }
       ]
     }
   ]

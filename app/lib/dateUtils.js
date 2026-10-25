@@ -14,24 +14,22 @@
  * @returns {{ttl: number, ttl_datestamp: string}} TTL as Unix epoch seconds and ISO datestamp
  */
 export function calculateTtl(baseDate, offset = {}) {
-  const ttlDate = new Date(baseDate.getTime());
+  // Months use UTC calendar fields. Days, hours and minutes are fixed lengths of epoch time,
+  // so a clock change between the base date and the TTL does not shift the result.
+  let ttlMs = baseDate.getTime();
 
   if (offset.months) {
-    ttlDate.setMonth(ttlDate.getMonth() + offset.months);
-  }
-  if (offset.days) {
-    ttlDate.setDate(ttlDate.getDate() + offset.days);
-  }
-  if (offset.hours) {
-    ttlDate.setHours(ttlDate.getHours() + offset.hours);
-  }
-  if (offset.minutes) {
-    ttlDate.setMinutes(ttlDate.getMinutes() + offset.minutes);
+    const monthDate = new Date(ttlMs);
+    monthDate.setUTCMonth(monthDate.getUTCMonth() + offset.months);
+    ttlMs = monthDate.getTime();
   }
 
+  const fixedSeconds = (offset.days || 0) * 86400 + (offset.hours || 0) * 3600 + (offset.minutes || 0) * 60;
+  const ttl = Math.floor(ttlMs / 1000) + fixedSeconds;
+
   return {
-    ttl: Math.floor(ttlDate.getTime() / 1000),
-    ttl_datestamp: ttlDate.toISOString(),
+    ttl,
+    ttl_datestamp: new Date(ttl * 1000).toISOString(),
   };
 }
 

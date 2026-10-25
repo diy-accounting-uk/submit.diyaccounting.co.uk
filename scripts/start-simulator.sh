@@ -4,6 +4,20 @@
 
 # Simulator environment start script
 # Runs entirely locally without Docker or an external HMRC API
+#
+# Ports: dynalite, the HTTP simulator and the web server each take an OS-assigned port. The web
+# server prints its port on standard output as a line "Listening at http://127.0.0.1:<port>".
+# A caller that needs the base URL starts this script with its output redirected to a file, then
+# reads that line from the file (for example, with grep -o 'Listening at .*').
+#
+# Links the server builds for a browser (the MCP codes link, the OAuth callbacks) use
+# DIY_SUBMIT_BASE_URL, which .env.simulator sets to port 3000. A caller that opens those links
+# sets TEST_SERVER_HTTP_PORT to a free port it chose; this script then points DIY_SUBMIT_BASE_URL
+# and MCP_PUBLIC_HOSTS at http://localhost:<port>/ so the links open on the running server.
+#
+# Tables: dynalite creates every table whose *_TABLE_NAME variable .env.simulator sets (the
+# practice clients table among them), through ensureConfiguredTablesExist in app/bin/dynamodb.js,
+# the same list the behaviour-test helper uses.
 
 set -euo pipefail
 
@@ -94,7 +108,13 @@ export COMPANIES_HOUSE_FILING_BASE_URI="$SIMULATOR_URL"
 export COMPANIES_HOUSE_XMLGW_URI="$SIMULATOR_URL/v1-0/xmlgw/Gateway"
 export HMRC_TRANSACTION_ENGINE_URL="$SIMULATOR_URL/hmrc-transaction-engine/submission"
 
+WEB_PORT="${TEST_SERVER_HTTP_PORT:-0}"
+if [[ "$WEB_PORT" != '0' ]]; then
+  export DIY_SUBMIT_BASE_URL="http://localhost:$WEB_PORT/"
+  export MCP_PUBLIC_HOSTS="localhost:$WEB_PORT,127.0.0.1:$WEB_PORT"
+fi
+
 echo 'Starting web server...' >&2
 # Foreground process; when this exits, cleanup will run and terminate the others.
 # TEST_SERVER_HTTP_PORT=0 picks an ephemeral port too; app/bin/server.js logs the real one.
-TEST_SERVER_HTTP_PORT=0 npm run server:simulator
+TEST_SERVER_HTTP_PORT="$WEB_PORT" npm run server:simulator

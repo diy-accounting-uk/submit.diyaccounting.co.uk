@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <title>File Micro-entity Accounts - DIY Accounting Submit</title>
@@ -19,17 +19,6 @@
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="../lib/analytics.js"></script>
-    <style>
-      .accounts-preview-frame {
-        display: block;
-        width: 100%;
-        height: 32em;
-        border: 1px solid #dee2e6;
-        border-radius: 4px;
-        background: #fff;
-        margin-bottom: 1em;
-      }
-    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
@@ -49,22 +38,28 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Company entry view -->
-      <div id="companyView" class="form-container">
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to file with Companies House"
+        data-sign-in-text="Log in to look up your company and file with Companies House. The filing is made from your account."
+      >
         <h2>Which company?</h2>
-        <form id="companyForm">
+        <form id="companyForm" novalidate>
           <div class="form-group">
             <label for="companyNumber">Company number</label>
             <p id="companyNumber-hint" class="hint">
-              The 8-character company number, for example 00000001. Not sure of the number?
-              <a href="companySearch.html">Search Companies House</a> for it first.
+              8 characters, for example 00000001. Do not know it? <a href="companySearch.html">Search Companies House</a>.
             </p>
             <input
               type="text"
               id="companyNumber"
               name="companyNumber"
+              class="input--code"
               required
               value=""
-              placeholder="e.g., 00000001"
+              autocomplete="off"
               aria-describedby="companyNumber-hint"
               spellcheck="false"
             />
@@ -81,329 +76,387 @@
           <a href="#" id="changeCompanyLink">Change company</a>.
         </p>
         <div id="booksImport"></div>
-        <form id="accountsForm">
-          <h3>Period</h3>
-          <div class="form-group">
-            <label for="periodStart">Period start</label>
-            <input type="date" id="periodStart" name="periodStart" required />
-          </div>
-          <div class="form-group">
-            <label for="periodEnd">Period end</label>
-            <input type="date" id="periodEnd" name="periodEnd" required />
-          </div>
-
-          <h3>Balance sheet - current year</h3>
-          <div class="form-group">
-            <label for="currentFixedAssets">Fixed assets</label>
-            <p id="currentFixedAssets-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentFixedAssets"
-                name="currentFixedAssets"
-                required
-                aria-describedby="currentFixedAssets-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentCurrentAssets">Current assets</label>
-            <p id="currentCurrentAssets-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentCurrentAssets"
-                name="currentCurrentAssets"
-                required
-                aria-describedby="currentCurrentAssets-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentCreditorsWithinOneYear">Creditors: amounts falling due within one year</label>
-            <p id="currentCreditorsWithinOneYear-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentCreditorsWithinOneYear"
-                name="currentCreditorsWithinOneYear"
-                required
-                aria-describedby="currentCreditorsWithinOneYear-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentCreditorsAfterOneYear">Creditors: amounts falling due after more than one year</label>
-            <p id="currentCreditorsAfterOneYear-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentCreditorsAfterOneYear"
-                name="currentCreditorsAfterOneYear"
-                required
-                value="0"
-                aria-describedby="currentCreditorsAfterOneYear-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentCalledUpShareCapital">Called up share capital</label>
-            <p id="currentCalledUpShareCapital-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentCalledUpShareCapital"
-                name="currentCalledUpShareCapital"
-                required
-                aria-describedby="currentCalledUpShareCapital-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentProfitAndLossAccount">Profit and loss account</label>
-            <p id="currentProfitAndLossAccount-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentProfitAndLossAccount"
-                name="currentProfitAndLossAccount"
-                required
-                aria-describedby="currentProfitAndLossAccount-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="currentCapitalAndReserves">Capital and reserves</label>
-            <p id="currentCapitalAndReserves-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="currentCapitalAndReserves"
-                name="currentCapitalAndReserves"
-                required
-                aria-describedby="currentCapitalAndReserves-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <p id="currentYearTotals" class="hint"></p>
-
-          <h3>Balance sheet - prior year</h3>
-          <div class="form-group">
-            <label for="priorFixedAssets">Fixed assets</label>
-            <p id="priorFixedAssets-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="priorFixedAssets"
-                name="priorFixedAssets"
-                required
-                aria-describedby="priorFixedAssets-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="priorCurrentAssets">Current assets</label>
-            <p id="priorCurrentAssets-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="priorCurrentAssets"
-                name="priorCurrentAssets"
-                required
-                aria-describedby="priorCurrentAssets-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="priorCreditorsWithinOneYear">Creditors: amounts falling due within one year</label>
-            <p id="priorCreditorsWithinOneYear-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="priorCreditorsWithinOneYear"
-                name="priorCreditorsWithinOneYear"
-                required
-                aria-describedby="priorCreditorsWithinOneYear-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="priorCreditorsAfterOneYear">Creditors: amounts falling due after more than one year</label>
-            <p id="priorCreditorsAfterOneYear-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="priorCreditorsAfterOneYear"
-                name="priorCreditorsAfterOneYear"
-                required
-                value="0"
-                aria-describedby="priorCreditorsAfterOneYear-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="priorCalledUpShareCapital">Called up share capital</label>
-            <p id="priorCalledUpShareCapital-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="priorCalledUpShareCapital"
-                name="priorCalledUpShareCapital"
-                required
-                aria-describedby="priorCalledUpShareCapital-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="priorProfitAndLossAccount">Profit and loss account</label>
-            <p id="priorProfitAndLossAccount-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="priorProfitAndLossAccount"
-                name="priorProfitAndLossAccount"
-                required
-                aria-describedby="priorProfitAndLossAccount-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="priorCapitalAndReserves">Capital and reserves</label>
-            <p id="priorCapitalAndReserves-money-hint" class="hint">For example, £600 or £1,200</p>
-            <div class="input-prefix">
-              <span class="prefix">£</span>
-              <input
-                type="text"
-                id="priorCapitalAndReserves"
-                name="priorCapitalAndReserves"
-                required
-                aria-describedby="priorCapitalAndReserves-money-hint"
-                inputmode="decimal"
-                data-money="whole-pounds"
-              />
-            </div>
-          </div>
-          <p id="priorYearTotals" class="hint"></p>
-
-          <h3>Employees and director</h3>
-          <div class="form-group">
-            <label for="averageEmployees">Average number of employees during the period</label>
-            <input type="number" id="averageEmployees" name="averageEmployees" required step="1" min="0" />
-          </div>
-          <div class="form-group">
-            <label for="directorName">Director approving the balance sheet</label>
-            <input type="text" id="directorName" name="directorName" required />
-          </div>
-          <div class="form-group">
-            <label for="directorDateApproved">Date approved</label>
-            <input type="date" id="directorDateApproved" name="directorDateApproved" required />
-          </div>
-
-          <h3>Dormant company</h3>
-          <div class="form-group">
-            <input type="checkbox" id="dormant" name="dormant" aria-describedby="dormant-hint" />
-            <label for="dormant" style="display: inline; font-weight: normal">The company was dormant throughout the period</label>
-            <p id="dormant-hint" class="hint">
-              Under the Companies Act 2006 a company is dormant when it had no significant accounting transaction in the period. Filing fees
-              to Companies House and shares allotted on incorporation do not count as significant. Its profit and loss account must end the
-              period where it began.
-            </p>
-          </div>
-          <div id="dormantFields" style="display: none">
+        <form id="accountsForm" novalidate>
+          <section class="form-section">
+            <h3>Period</h3>
             <div class="form-group">
-              <label for="dormantTradingStatus">Trading history</label>
-              <select id="dormantTradingStatus" name="dormantTradingStatus">
-                <option value="neverTraded">The company has never traded</option>
-                <option value="noLongerTrading">The company traded in the past and no longer trades</option>
-              </select>
+              <label for="periodStart">Period start</label>
+              <input type="date" id="periodStart" name="periodStart" required />
             </div>
             <div class="form-group">
-              <label for="shareClass">Share class</label>
-              <select id="shareClass" name="shareClass">
-                <option value="ordinaryShares">Ordinary</option>
-                <option value="preferenceShares">Preference</option>
-                <option value="deferredShares">Deferred</option>
-                <option value="otherShares">Other</option>
-              </select>
+              <label for="periodEnd">Period end</label>
+              <input type="date" id="periodEnd" name="periodEnd" required />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Balance sheet</h3>
+            <p id="ledgerHint1" class="hint">Whole pounds. For example, £600 or £1,200. Both years are needed.</p>
+            <table class="ledger">
+              <thead>
+                <tr>
+                  <th scope="col">Line</th>
+                  <th scope="col" class="ledger__figure">This year (£)</th>
+                  <th scope="col" class="ledger__figure">Prior year (£)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row">Fixed assets</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentFixedAssets" class="visually-hidden">Fixed assets, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentFixedAssets"
+                        name="currentFixedAssets"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter fixed assets for this year"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorFixedAssets" class="visually-hidden">Fixed assets, last year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorFixedAssets"
+                        name="priorFixedAssets"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter fixed assets for last year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Current assets</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentCurrentAssets" class="visually-hidden">Current assets, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCurrentAssets"
+                        name="currentCurrentAssets"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter current assets for this year"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorCurrentAssets" class="visually-hidden">Current assets, last year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorCurrentAssets"
+                        name="priorCurrentAssets"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter current assets for last year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Creditors: amounts falling due within one year</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentCreditorsWithinOneYear" class="visually-hidden"
+                      >Creditors: amounts falling due within one year, this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCreditorsWithinOneYear"
+                        name="currentCreditorsWithinOneYear"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter creditors: amounts falling due within one year for this year"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorCreditorsWithinOneYear" class="visually-hidden"
+                      >Creditors: amounts falling due within one year, last year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorCreditorsWithinOneYear"
+                        name="priorCreditorsWithinOneYear"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter creditors: amounts falling due within one year for last year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Creditors: amounts falling due after more than one year</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentCreditorsAfterOneYear" class="visually-hidden"
+                      >Creditors: amounts falling due after more than one year, this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCreditorsAfterOneYear"
+                        name="currentCreditorsAfterOneYear"
+                        required
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter creditors: amounts falling due after more than one year for this year"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorCreditorsAfterOneYear" class="visually-hidden"
+                      >Creditors: amounts falling due after more than one year, last year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorCreditorsAfterOneYear"
+                        name="priorCreditorsAfterOneYear"
+                        required
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter creditors: amounts falling due after more than one year for last year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Called up share capital</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentCalledUpShareCapital" class="visually-hidden">Called up share capital, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCalledUpShareCapital"
+                        name="currentCalledUpShareCapital"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter called up share capital for this year"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorCalledUpShareCapital" class="visually-hidden">Called up share capital, last year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorCalledUpShareCapital"
+                        name="priorCalledUpShareCapital"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter called up share capital for last year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Profit and loss account</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentProfitAndLossAccount" class="visually-hidden">Profit and loss account, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentProfitAndLossAccount"
+                        name="currentProfitAndLossAccount"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter profit and loss account for this year"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorProfitAndLossAccount" class="visually-hidden">Profit and loss account, last year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorProfitAndLossAccount"
+                        name="priorProfitAndLossAccount"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter profit and loss account for last year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Capital and reserves</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentCapitalAndReserves" class="visually-hidden">Capital and reserves, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCapitalAndReserves"
+                        name="currentCapitalAndReserves"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter capital and reserves for this year"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorCapitalAndReserves" class="visually-hidden">Capital and reserves, last year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorCapitalAndReserves"
+                        name="priorCapitalAndReserves"
+                        required
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter capital and reserves for last year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <p id="currentYearTotals" class="hint"></p>
+            <p id="priorYearTotals" class="hint"></p>
+          </section>
+          <section class="form-section">
+            <h3>Employees and director</h3>
+            <div class="form-group">
+              <label for="averageEmployees">Average number of employees during the period</label>
+              <input type="number" id="averageEmployees" name="averageEmployees" required step="1" min="0" />
             </div>
             <div class="form-group">
-              <label for="nominalValue">Nominal value of each share, in pounds</label>
-              <div class="input-prefix">
-                <span class="prefix">£</span>
-                <input type="text" id="nominalValue" name="nominalValue" inputmode="decimal" aria-describedby="nominalValue-hint" />
+              <label for="directorName">Director approving the balance sheet</label>
+              <input type="text" id="directorName" name="directorName" required />
+            </div>
+            <div class="form-group">
+              <label for="directorDateApproved">Date approved</label>
+              <input type="date" id="directorDateApproved" name="directorDateApproved" required />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Dormant company</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="dormant" name="dormant" aria-describedby="dormant-hint" /><label for="dormant"
+                  >The company was dormant throughout the period</label
+                >
               </div>
-              <p id="nominalValue-hint" class="hint">
-                For example, 1 or 0.01. The called up share capital divided by this is the number of shares.
+              <p id="dormant-hint" class="hint">
+                Under the Companies Act 2006 a company is dormant when it had no significant accounting transaction in the period. Filing
+                fees to Companies House and shares allotted on incorporation do not count as significant. Its profit and loss account must
+                end the period where it began.
               </p>
             </div>
-          </div>
-
-          <h3>Statements</h3>
-          <div class="form-group">
-            <input type="checkbox" id="statementSection477Exemption" name="statementSection477Exemption" />
-            <label for="statementSection477Exemption" id="statementSection477ExemptionLabel" style="display: inline; font-weight: normal">
-              The company is entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small companies.
-            </label>
-          </div>
-          <div class="form-group">
-            <input type="checkbox" id="statementMembersNotRequiredAudit" name="statementMembersNotRequiredAudit" />
-            <label for="statementMembersNotRequiredAudit" style="display: inline; font-weight: normal">
-              The members have not required the company to obtain an audit for the year in question.
-            </label>
-          </div>
-          <div class="form-group">
-            <input type="checkbox" id="statementDirectorsResponsibilities" name="statementDirectorsResponsibilities" />
-            <label for="statementDirectorsResponsibilities" style="display: inline; font-weight: normal">
-              The directors acknowledge their responsibilities for complying with the requirements of the Companies Act 2006 with respect to
-              accounting records and the preparation of accounts.
-            </label>
-          </div>
-          <div class="form-group">
-            <input type="checkbox" id="statementMicroEntityProvisions" name="statementMicroEntityProvisions" />
-            <label for="statementMicroEntityProvisions" style="display: inline; font-weight: normal">
-              These accounts have been prepared in accordance with the provisions applicable to companies subject to the small companies
-              regime and in accordance with the provisions available to micro-entities.
-            </label>
-          </div>
+            <div id="dormantFields" style="display: none">
+              <div class="form-group">
+                <label for="dormantTradingStatus">Trading history</label>
+                <select id="dormantTradingStatus" name="dormantTradingStatus">
+                  <option value="neverTraded">The company has never traded</option>
+                  <option value="noLongerTrading">The company traded in the past and no longer trades</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="shareClass">Share class</label>
+                <select id="shareClass" name="shareClass">
+                  <option value="ordinaryShares">Ordinary</option>
+                  <option value="preferenceShares">Preference</option>
+                  <option value="deferredShares">Deferred</option>
+                  <option value="otherShares">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="nominalValue">Nominal value of each share, in pounds</label>
+                <div class="input-prefix">
+                  <span class="prefix">£</span>
+                  <input type="text" id="nominalValue" name="nominalValue" inputmode="decimal" aria-describedby="nominalValue-hint" />
+                </div>
+                <p id="nominalValue-hint" class="hint">
+                  For example, 1 or 0.01. The called up share capital divided by this is the number of shares.
+                </p>
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Statements</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="statementSection477Exemption" name="statementSection477Exemption" /><label
+                  for="statementSection477Exemption"
+                  id="statementSection477ExemptionLabel"
+                  >The company is entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small
+                  companies.</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="statementMembersNotRequiredAudit" name="statementMembersNotRequiredAudit" /><label
+                  for="statementMembersNotRequiredAudit"
+                  >The members have not required the company to obtain an audit for the year in question.</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="statementDirectorsResponsibilities" name="statementDirectorsResponsibilities" /><label
+                  for="statementDirectorsResponsibilities"
+                  >The directors acknowledge their responsibilities for complying with the requirements of the Companies Act 2006 with
+                  respect to accounting records and the preparation of accounts.</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="statementMicroEntityProvisions" name="statementMicroEntityProvisions" /><label
+                  for="statementMicroEntityProvisions"
+                  >These accounts have been prepared in accordance with the provisions applicable to companies subject to the small
+                  companies regime and in accordance with the provisions available to micro-entities.</label
+                >
+              </div>
+            </div>
+          </section>
 
           <button type="submit" id="previewBtn" class="btn">Preview accounts</button>
         </form>
@@ -413,37 +466,36 @@
       <div id="previewView" class="results-container" style="display: none">
         <h2>Preview</h2>
         <p>These are the accounts as they will be filed. Nothing has been submitted to Companies House yet.</p>
-        <iframe
-          id="previewRendered"
-          class="accounts-preview-frame"
-          title="The accounts as they will be filed"
-          sandbox=""
-          style="width: 100%; height: 80vh; border: 1px solid #b1b4b6; background: #fff"
-        ></iframe>
+        <iframe id="previewRendered" class="accounts-preview-frame" title="The accounts as they will be filed" sandbox=""></iframe>
         <pre id="previewIxbrl" class="ixbrl-preview developer-only-section"></pre>
-        <div class="form-group">
-          <label for="companyAuthCode">Company authentication code</label>
-          <p id="companyAuthCode-hint" class="hint">
-            The 6 to 8 character code Companies House issued for this company. Not stored - used only for this filing.
-          </p>
-          <input
-            type="text"
-            id="companyAuthCode"
-            name="companyAuthCode"
-            required
-            minlength="6"
-            maxlength="8"
-            aria-describedby="companyAuthCode-hint"
-            spellcheck="false"
-          />
-        </div>
-        <div class="form-group" id="govTestScenarioGroup" style="display: none">
-          <label for="govTestScenario">Gov-Test-Scenario</label>
-          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
-        </div>
-        <div class="button-group">
-          <button type="button" id="backToFormBtn" class="secondary-button">Back</button>
-          <button type="button" id="submitFilingBtn" class="btn">Submit to Companies House</button>
+        <div class="send-step">
+          <h3>Send to Companies House</h3>
+          <div class="form-group">
+            <label for="companyAuthCode">Company authentication code</label>
+            <p id="companyAuthCode-hint" class="hint">
+              The 6 to 8 character code Companies House issued for this company. Not stored - used only for this filing.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <div class="form-group" id="govTestScenarioGroup" style="display: none">
+            <label for="govTestScenario">Gov-Test-Scenario</label>
+            <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+          </div>
+          <div class="button-group">
+            <button type="button" id="backToFormBtn" class="secondary-button">Back</button>
+            <button type="button" id="submitFilingBtn" class="btn">Submit to Companies House</button>
+          </div>
         </div>
       </div>
 
@@ -471,7 +523,9 @@
     <script src="../lib/money-input.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
     <script src="../widgets/auth-status.js"></script>
+    <script src="../lib/form-errors.js"></script>
     <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
     <script src="../widgets/books-import.js"></script>
     <script src="fileMicroEntityAccounts.page.js"></script>
   </body>

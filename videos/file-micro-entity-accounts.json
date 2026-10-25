@@ -305,9 +305,33 @@
           "keyWord": "filing",
           "dwellMs": 600
         },
-        { "action": "hold", "ms": 2500 },
+        { "action": "hold", "ms": 1500 },
+        {
+          "action": "click",
+          "target": "#filingCopyLink",
+          "expectsNavigation": true,
+          "caption": "Open your copy of the filing.",
+          "headline": "Open your copy",
+          "keyWord": "copy"
+        },
+        { "action": "await", "until": "#filingContent iframe.filed-document", "label": "Loading your copy" },
+        { "action": "hold", "ms": 1500 },
+        {
+          "action": "scroll",
+          "to": "bottom",
+          "caption": "Your copy shows the filed accounts, the submission number and the status.",
+          "headline": "The filed accounts",
+          "keyWord": "filed"
+        },
+        { "action": "hold", "ms": 4000 },
         { "action": "still", "name": "file-micro-entity-accounts-result" },
-        { "action": "hold", "ms": 1500 }
+        {
+          "action": "hold",
+          "ms": 2500,
+          "caption": "Your copy stays on your receipts page.",
+          "headline": "Kept on your receipts",
+          "keyWord": "receipts"
+        }
       ]
     }
   ]

@@ -15,8 +15,8 @@
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
-      <h1>DIY Accounting Submit</h1>
-      <p class="subtitle">Companies House codes</p>
+      <h1>Companies House codes</h1>
+      <p class="subtitle">Type the codes for your filing here, not in the chat</p>
     </header>
 
     <main id="mainContent">
@@ -31,7 +31,16 @@
         <form id="codesForm" autocomplete="off">
           <div class="form-group" id="companyAuthCodeGroup">
             <label for="companyAuthCode">Company authentication code</label>
-            <input type="password" id="companyAuthCode" name="companyAuthCode" minlength="6" maxlength="8" required autocomplete="off" />
+            <input
+              type="password"
+              id="companyAuthCode"
+              class="input--code"
+              name="companyAuthCode"
+              minlength="6"
+              maxlength="8"
+              required
+              autocomplete="off"
+            />
           </div>
           <div id="clientCodeFields"></div>
           <div id="personalCodeFields"></div>

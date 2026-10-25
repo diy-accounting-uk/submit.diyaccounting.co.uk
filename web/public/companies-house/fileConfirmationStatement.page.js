@@ -127,11 +127,8 @@ function renderPublicPscs(pscs) {
 
 async function handleCompanySubmit(event) {
   event.preventDefault();
+  if (!window.formErrors.requireFields(["companyNumber"])) return;
   const companyNumber = window.normaliseCompanyNumber(document.getElementById("companyNumber").value);
-  if (!companyNumber) {
-    showStatus("Please enter a company number.", "error");
-    return;
-  }
   await lookUpCompany(companyNumber);
 }
 
@@ -318,11 +315,13 @@ function renderShareholdings(shareholdings) {
 
 async function handleAuthSubmit(event) {
   event.preventDefault();
-  const enteredCode = document.getElementById("companyAuthCode").value.trim();
+  const codeInput = document.getElementById("companyAuthCode");
+  const enteredCode = codeInput.value.trim();
   if (enteredCode.length < 6 || enteredCode.length > 8) {
-    showStatus("Enter the 6 to 8 character company authentication code.", "error");
+    window.formErrors.showFormErrors([{ input: codeInput, message: "Enter the 6 to 8 character company authentication code" }]);
     return;
   }
+  window.formErrors.clearFormErrors();
   const madeUpDate = company.confirmationStatementNextMadeUpTo;
   if (!madeUpDate) {
     showStatus("Companies House has not published a next confirmation statement date for this company.", "error");
@@ -516,11 +515,14 @@ function validateReviewForm(payload) {
 
 async function handleReviewFormSubmit(event) {
   event.preventDefault();
-  const moneyProblem = window.moneyInputProblem();
-  if (moneyProblem) {
-    showStatus(moneyProblem, "error");
-    return;
-  }
+  const form = event.currentTarget;
+  if (!window.formErrors.requireFormFields(form)) return;
+  if (window.formErrors.reportMoneyProblems(form)) return;
+  const confirmed = window.formErrors.requireChecked({
+    lawfulPurposeStatement: "Confirm the lawful purpose statement",
+    stateConfirmation: "Confirm the statement of confirmation",
+  });
+  if (!confirmed) return;
   const payload = buildStatementPayload();
   if (!validateReviewForm(payload)) {
     return;
@@ -570,6 +572,7 @@ function renderRejections(rejections) {
     return;
   }
   container.style.display = "block";
+  container.className = "outcome outcome--error";
   container.replaceChildren(...rejections.map((entry) => element("p", {}, `${entry.rejectCode}: ${entry.description}`)));
 }
 
@@ -768,6 +771,7 @@ async function handleSubmitFiling() {
 
     const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
     showSubmissionProgress("Submission ", outcome.submissionNumber, " was ", outcome.statusCode, ".");
+    document.getElementById("filingResult").className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
     renderRejections(outcome.rejections);
     if (outcome.statusCode === "ACCEPT") {
       renderPscFollowUp();
