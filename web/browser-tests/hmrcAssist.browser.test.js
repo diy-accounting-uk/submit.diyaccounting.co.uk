@@ -132,6 +132,7 @@ async function openForm(page, { obligations = [obligation("O")], report, acknowl
 
   await page.addInitScript(() => {
     sessionStorage.setItem("hmrcAccessToken", "test-access-token");
+    localStorage.setItem("cognitoIdToken", "test-id-token");
   });
   await page.goto(`${baseUrl}/hmrc/vat/submitVat.html`, { waitUntil: "domcontentloaded" });
   await page.locator("#vatNumber").fill(VRN);

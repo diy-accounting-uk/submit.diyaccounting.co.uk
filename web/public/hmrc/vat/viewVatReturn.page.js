@@ -237,16 +237,7 @@ async function handleFormSubmission(event) {
   const testScenario = formData.get("testScenario");
   const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
-  // Basic validation
-  if (!vrn || !periodStart || !periodEnd) {
-    showStatus("Please enter your VAT registration number and VAT period start and end dates.", "error");
-    return;
-  }
-
-  if (!/^\d{9}$/.test(vrn)) {
-    showStatus("VAT number must be exactly 9 digits.", "error");
-    return;
-  }
+  if (!window.formErrors.requireVatNumberAnd("vrn", ["periodStart", "periodEnd"])) return;
 
   // Check if we have an access token with sufficient scope
   const accessToken = sessionStorage.getItem("hmrcAccessToken");

@@ -14,6 +14,8 @@
 
   const REQUIRED_MESSAGES = {
     nino: "Enter your National Insurance number",
+    vrn: "Enter your VAT registration number",
+    vatNumber: "Enter your VAT registration number",
     businessId: "Enter the business ID",
     taxYear: "Enter the tax year",
     periodId: "Enter the period ID",
@@ -143,6 +145,20 @@
     return errors.length === 0;
   }
 
+  // Checks a VAT registration number field (blank, then 9 numbers) and any other required fields in page order.
+  function requireVatNumberAnd(vrnId, otherIds = []) {
+    const errors = [vrnId, ...otherIds]
+      .map((id) => document.getElementById(id))
+      .filter((input) => input && String(input.value ?? "").trim() === "")
+      .map((input) => ({ input, message: requiredMessage(input) }));
+    const vrn = document.getElementById(vrnId);
+    if (vrn && vrn.value.trim() !== "" && !/^\d{9}$/.test(vrn.value.trim())) {
+      errors.unshift({ input: vrn, message: "The VAT registration number must be 9 numbers" });
+    }
+    showFormErrors(errors);
+    return errors.length === 0;
+  }
+
   // Shows an error for each required text, number, date or select field that is visible, enabled and blank.
   function requireFormFields(form) {
     const ids = Array.from(form.querySelectorAll("input[required], select[required], textarea[required]"))
@@ -188,5 +204,13 @@
     if (input?.id && document.getElementById(errorIdOf(input))) clearFieldError(input);
   });
 
-  window.formErrors = { showFormErrors, clearFormErrors, requireFields, requireFormFields, requireChecked, reportMoneyProblems };
+  window.formErrors = {
+    showFormErrors,
+    clearFormErrors,
+    requireFields,
+    requireVatNumberAnd,
+    requireFormFields,
+    requireChecked,
+    reportMoneyProblems,
+  };
 })();

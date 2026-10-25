@@ -369,7 +369,7 @@ Before is DS1's stored set (`target/site-screenshots/`, 432 PNGs). After is `nod
 | Footer variants | 4, right of centre | 1, left-aligned |
 | Pages with console errors | 9 | 9, the same messages |
 
-- **Light pin**: 5 pages still paint raw colours in an inline `<style>`, a `style` attribute or their page script. They carry `<html data-theme="light">`, so dark mode does not reach them until DS4, DS5 or DS6 moves those colours onto tokens and drops the attribute: `hmrc/itsa/dashboard`, `hmrc/receipt/receipts`, `operator/dashboard`, `passes/generate-digital` and `passes/generate-physical`.
+- **Light pin**: 4 pages still paint raw colours in an inline `<style>`, a `style` attribute or their page script. They carry `<html data-theme="light">`, so dark mode does not reach them until DS4, DS5 or DS6 moves those colours onto tokens and drops the attribute: `hmrc/itsa/dashboard`, `operator/dashboard`, `passes/generate-digital` and `passes/generate-physical`.
 - **For the page rows**: the error summary and inline errors use `web/public/lib/form-errors.js`; a page adds `novalidate` to its form and calls it. The signed-out panel is `.signed-out-panel` (an `h2`, a paragraph and a `.btn` Log in link). Each page row moves its `h1` to the page name (1.11); the header band already shows the brand.
 - **Contrast** (WCAG relative luminance): light ink 14.4, muted 7.5, rule 3.06, brand 6.8, white on brand 6.8, ok 5.6, error 5.8, warn 6.8, info 7.1 on their tints; dark ink 13.7, muted 7.8, rule 3.6, brand 7.8, ink on brand 8.6, ok 8.1, error 7.1, warn 9.0, info 6.7.
 
@@ -377,6 +377,17 @@ Before is DS1's stored set (`target/site-screenshots/`, 432 PNGs). After is `nod
 
 - **Pages**: the 26 under `web/public/hmrc/`: 6 under `vat/`, `receipt/receipts.html` and 19 under `itsa/`. Section 3, HMRC list.
 - **Work**: the signed-out panel; the error summary and inline errors; drop example placeholders; ledger cells for money fields; group the self-employment period form; pick-from-list for Business ID, Period ID, Submission ID and Calculation ID where an earlier step returned them; one name for "Period ID" and "Submission ID"; the `h1` rule; the inline `<style>` blocks on `itsa/dashboard`, `itsa/taxCalculation`, `itsa/finalDeclaration`, `vat/viewVatReturn` and `receipt/receipts` onto tokens.
+
+#### DS4 result
+
+Stage 1: the six VAT pages and `receipt/receipts`.
+
+- **Shared**: `requireVatNumberAnd` in `lib/form-errors.js` (blank, then 9 numbers, plus other required ids); `.period-date-inputs`, `.next-steps`, `.box-definitions`, `.table-scroll`, `.receipt-panel` and the HMRC feedback block in `submit.css`, all on tokens.
+- `submitVat`: `h1` "Submit VAT return", duplicate `h2` dropped, signed-out panel, `novalidate` with one summary for the VAT number, period dates, the boxes and the declaration, nine boxes in one ledger (hint in the row header), no placeholders, `.choice` for the declaration and developer options, receipt styles moved off inline.
+- `viewVatReturn`: signed-out panel, summary errors, no placeholder, inline `<style>` moved to `submit.css`, period dates fill their halves.
+- `vatObligations`, `vatLiabilities`, `vatPayments`, `vatPenalties`: signed-out panel, `novalidate` with the summary, `.choice` for the fraud-header option, sentence-case toggle labels.
+- `receipts`: `h1` "Your receipts", signed-out panel in place of the red line, inline `<style>` and `data-theme="light"` dropped, `Submission ID` named beside `Period ID`.
+- **Remaining**: `viewVatReturn` has no pick-from-list for the period (the obligations call is on `submitVat` only); the 19 `itsa/` pages are stage 2.
 
 ### DS5: root, account and error pages
 

@@ -1150,23 +1150,66 @@ textarea.input--error {
   font-family: var(--font-figures);
 }
 
-.vat-boxes {
-  border: 1px solid var(--c-rule-subtle);
-  border-radius: var(--radius-control);
-  padding: var(--space-4) var(--space-5);
-  margin: 0 0 var(--space-4);
+/* A period is a start and an end date side by side, each filling its half. */
+.period-date-inputs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
 }
 
-.vat-boxes legend {
-  float: left;
+.period-date-inputs > div {
+  flex: 1 1 12rem;
+}
+
+.period-date-inputs input[type="date"] {
   width: 100%;
-  padding: 0;
-  margin-bottom: var(--space-4);
+}
+
+/* The definitions of the nine VAT boxes, folded under a summary on a viewed return. */
+.box-definitions {
+  margin: var(--space-5) 0 var(--space-4);
+}
+
+.box-definitions summary {
+  min-height: var(--control-height);
+  cursor: pointer;
   font-weight: var(--weight-strong);
 }
 
-.vat-boxes legend + * {
-  clear: both;
+.box-definitions dl {
+  margin: var(--space-2) 0 0;
+}
+
+.box-definition-item {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--c-rule-subtle);
+}
+
+.box-definition-item dt {
+  font-weight: var(--weight-strong);
+}
+
+.box-definition-item dd {
+  margin: var(--space-1) 0 0;
+}
+
+.box-definition {
+  margin: 0;
+  max-width: var(--measure);
+  line-height: var(--leading-text);
+}
+
+/* Links that lead on from a result sit on one row, each a full touch target. */
+.next-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-5);
+}
+
+.next-steps a {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--control-height);
 }
 
 .calculated-field input[readonly] {
@@ -1724,6 +1767,71 @@ caption {
 
 .receipt-display h3 {
   margin-bottom: var(--space-4);
+}
+
+/* A wide table scrolls inside its own box and keeps the page at the width of the screen. */
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table-scroll > table {
+  width: 100%;
+}
+
+/* One receipt opened under the list, with the HMRC feedback that came with it. */
+.receipt-panel {
+  background: var(--c-paper);
+  padding: var(--space-5);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  margin-top: var(--space-6);
+}
+
+.assist-messages-section {
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  background-color: var(--c-canvas);
+  border-left: 4px solid var(--c-ink);
+}
+
+.assist-messages-section h4 {
+  margin-top: 0;
+  margin-bottom: var(--space-4);
+}
+
+.assist-messages-list {
+  list-style-position: outside;
+  padding-left: var(--space-5);
+}
+
+.assist-message {
+  margin-bottom: var(--space-5);
+  line-height: var(--leading-text);
+}
+
+.assist-message strong {
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.assist-message-body {
+  margin: var(--space-2) 0;
+}
+
+.assist-message-links {
+  margin-top: var(--space-2);
+}
+
+.assist-message-link {
+  display: inline-block;
+  margin-right: var(--space-4);
+  color: var(--c-ink);
+  text-decoration: underline;
+}
+
+.assist-message-path {
+  margin-top: var(--space-2);
+  color: var(--c-ink-muted);
 }
 
 .export-controls {
