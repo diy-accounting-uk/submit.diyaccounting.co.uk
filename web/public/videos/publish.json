@@ -125,21 +125,21 @@
       "group": "vat",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": 37458375348,
-      "sourceArtifact": "video-submit-return-prod",
-      "videoFile": "target/videos/video-submit-return-prod/submit-return.mp4",
-      "captionFile": "target/videos/video-submit-return-prod/submit-return.vtt",
-      "title": "DIY Accounting Submit: submit a VAT return to HMRC",
-      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, checking which VAT period is open, then filling in the nine boxes and submitting the return to HMRC. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
+      "sourceRun": null,
+      "sourceArtifact": null,
+      "videoFile": "target/videos/submit-return-sim/submit-return.mp4",
+      "captionFile": "target/videos/submit-return-sim/submit-return.vtt",
+      "title": "DIY Accounting Submit: submit a VAT return (simulated example)",
+      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, checking which VAT period is open, then filling in the nine boxes and submitting the return to HMRC. It is recorded against a local simulator of HMRC's API, so the figures and periods are examples and no live filing is made. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:06 Sign in\n00:27 Day pass\n00:50 Ask HMRC\n01:23 Authorise with HMRC\n01:40 The periods on file\n02:01 Fill in the return\n03:31 Authorise again\n04:06 Submitted\n04:38 Your record",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "VAT submission"],
       "categoryId": "27",
-      "videoId": "XUt2gdYxR1g",
+      "videoId": "PipZMHyqmd4",
       "walkthrough": [
         {
           "scene": "obligations-form",
           "headline": "Ask HMRC",
           "caption": "Type the VAT registration number. Then the stretch of time to look at.",
-          "startSeconds": 26,
+          "startSeconds": 50,
           "thumb": "videos/submit-return/obligations-form-thumb.webp",
           "full": "videos/submit-return/obligations-form.webp"
         },
@@ -147,7 +147,7 @@
           "scene": "results",
           "headline": "The periods on file",
           "caption": "HMRC answers with every period it holds. An open period is still waiting for a return.",
-          "startSeconds": 65,
+          "startSeconds": 100,
           "thumb": "videos/submit-return/results-thumb.webp",
           "full": "videos/submit-return/results.webp"
         },
@@ -156,7 +156,7 @@
           "step": 0,
           "headline": "Start the return",
           "caption": "Start a return for that open period.",
-          "startSeconds": 82,
+          "startSeconds": 121,
           "thumb": "videos/submit-return/submit-form-0-thumb.webp",
           "full": "videos/submit-return/submit-form-0.webp"
         },
@@ -165,7 +165,7 @@
           "step": 2,
           "headline": "Box 1, VAT on sales",
           "caption": "Box 1 is the VAT due on your sales.",
-          "startSeconds": 89,
+          "startSeconds": 130,
           "thumb": "videos/submit-return/submit-form-2-thumb.webp",
           "full": "videos/submit-return/submit-form-2.webp"
         },
@@ -174,7 +174,7 @@
           "step": 3,
           "headline": "Box 2, usually zero",
           "caption": "Box 2 is VAT on EU acquisitions, usually zero now.",
-          "startSeconds": 95,
+          "startSeconds": 139,
           "thumb": "videos/submit-return/submit-form-3-thumb.webp",
           "full": "videos/submit-return/submit-form-3.webp"
         },
@@ -183,7 +183,7 @@
           "step": 4,
           "headline": "Box 3 adds it up",
           "caption": "Box 3 adds boxes 1 and 2 for you.",
-          "startSeconds": 103,
+          "startSeconds": 148,
           "thumb": "videos/submit-return/submit-form-4-thumb.webp",
           "full": "videos/submit-return/submit-form-4.webp"
         },
@@ -192,7 +192,7 @@
           "step": 5,
           "headline": "Box 4, VAT reclaimed",
           "caption": "Box 4 is VAT you can reclaim on purchases.",
-          "startSeconds": 109,
+          "startSeconds": 155,
           "thumb": "videos/submit-return/submit-form-5-thumb.webp",
           "full": "videos/submit-return/submit-form-5.webp"
         },
@@ -201,7 +201,7 @@
           "step": 6,
           "headline": "Box 5, the net total",
           "caption": "Box 5 works out what you owe overall.",
-          "startSeconds": 116,
+          "startSeconds": 163,
           "thumb": "videos/submit-return/submit-form-6-thumb.webp",
           "full": "videos/submit-return/submit-form-6.webp"
         },
@@ -210,7 +210,7 @@
           "step": 7,
           "headline": "Box 6, total sales",
           "caption": "Box 6 is your total sales, without VAT.",
-          "startSeconds": 122,
+          "startSeconds": 171,
           "thumb": "videos/submit-return/submit-form-7-thumb.webp",
           "full": "videos/submit-return/submit-form-7.webp"
         },
@@ -219,7 +219,7 @@
           "step": 8,
           "headline": "Box 7, total purchases",
           "caption": "Box 7 is your total purchases, without VAT.",
-          "startSeconds": 128,
+          "startSeconds": 179,
           "thumb": "videos/submit-return/submit-form-8-thumb.webp",
           "full": "videos/submit-return/submit-form-8.webp"
         },
@@ -228,7 +228,7 @@
           "step": 9,
           "headline": "Boxes 8 and 9, EU trade",
           "caption": "Boxes 8 and 9 cover EU trade, usually zero now.",
-          "startSeconds": 135,
+          "startSeconds": 187,
           "thumb": "videos/submit-return/submit-form-9-thumb.webp",
           "full": "videos/submit-return/submit-form-9.webp"
         },
@@ -237,7 +237,7 @@
           "step": 11,
           "headline": "Confirm the declaration",
           "caption": "Tick the declaration to confirm the return is accurate.",
-          "startSeconds": 143,
+          "startSeconds": 198,
           "thumb": "videos/submit-return/submit-form-11-thumb.webp",
           "full": "videos/submit-return/submit-form-11.webp"
         },
@@ -245,7 +245,7 @@
           "scene": "authorise-submit",
           "headline": "Authorise again",
           "caption": "Submitting needs a wider grant, so HMRC asks once more. Sign in to HMRC and say yes again.",
-          "startSeconds": 151,
+          "startSeconds": 211,
           "thumb": "videos/submit-return/authorise-submit-thumb.webp",
           "full": "videos/submit-return/authorise-submit.webp"
         },
@@ -253,9 +253,63 @@
           "scene": "receipt",
           "headline": "Submitted",
           "caption": "HMRC confirms the return is filed. The receipt is your record that it went through.",
-          "startSeconds": 178,
+          "startSeconds": 246,
           "thumb": "videos/submit-return/receipt-thumb.webp",
           "full": "videos/submit-return/receipt.webp"
+        },
+        {
+          "scene": "record",
+          "step": 1,
+          "headline": "Read back what you filed",
+          "caption": "Back to the activities, to read the return you filed.",
+          "startSeconds": 278,
+          "thumb": "videos/submit-return/record-1-thumb.webp",
+          "full": "videos/submit-return/record-1.webp"
+        },
+        {
+          "scene": "record",
+          "step": 3,
+          "headline": "Open View VAT Return",
+          "caption": "Open the return you have just sent.",
+          "startSeconds": 289,
+          "thumb": "videos/submit-return/record-3-thumb.webp",
+          "full": "videos/submit-return/record-3.webp"
+        },
+        {
+          "scene": "record",
+          "step": 5,
+          "headline": "Choose the period",
+          "caption": "Then the period you filed.",
+          "startSeconds": 299,
+          "thumb": "videos/submit-return/record-5-thumb.webp",
+          "full": "videos/submit-return/record-5.webp"
+        },
+        {
+          "scene": "record",
+          "step": 8,
+          "headline": "Ask HMRC for the record",
+          "caption": "Ask HMRC for the return on file.",
+          "startSeconds": 309,
+          "thumb": "videos/submit-return/record-8-thumb.webp",
+          "full": "videos/submit-return/record-8.webp"
+        },
+        {
+          "scene": "record",
+          "step": 9,
+          "headline": "HMRC sends the record",
+          "caption": "HMRC sends back the return as it holds it.",
+          "startSeconds": 317,
+          "thumb": "videos/submit-return/record-9-thumb.webp",
+          "full": "videos/submit-return/record-9.webp"
+        },
+        {
+          "scene": "record",
+          "step": 12,
+          "headline": "Your record, as submitted",
+          "caption": "This is your record: the totals and the declaration, as submitted.",
+          "startSeconds": 328,
+          "thumb": "videos/submit-return/record-12-thumb.webp",
+          "full": "videos/submit-return/record-12.webp"
         }
       ]
     },
