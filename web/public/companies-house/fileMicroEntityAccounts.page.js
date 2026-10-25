@@ -65,11 +65,8 @@ function refreshYearTotals() {
 
 async function handleCompanySubmit(event) {
   event.preventDefault();
+  if (!window.formErrors.requireFields(["companyNumber"])) return;
   const companyNumber = window.normaliseCompanyNumber(document.getElementById("companyNumber").value);
-  if (!companyNumber) {
-    showStatus("Please enter a company number.", "error");
-    return;
-  }
 
   showLoading();
   hideStatus();
@@ -134,30 +131,25 @@ function buildAccountsPayload() {
   };
 }
 
+const STATEMENT_MESSAGES = {
+  statementSection477Exemption: "Confirm the company is entitled to exemption from audit under section 477",
+  statementMembersNotRequiredAudit: "Confirm the members have not required the company to obtain an audit",
+  statementDirectorsResponsibilities: "Confirm the directors acknowledge their responsibilities",
+  statementMicroEntityProvisions: "Confirm the accounts follow the micro-entity provisions",
+};
+
 async function handleAccountsFormSubmit(event) {
   event.preventDefault();
-  const moneyProblem = window.moneyInputProblem();
-  if (moneyProblem) {
-    showStatus(moneyProblem, "error");
-    return;
-  }
+  const form = event.currentTarget;
+  if (!window.formErrors.requireFormFields(form)) return;
+  if (window.formErrors.reportMoneyProblems(form)) return;
   const currentYear = readYear("current");
   const priorYear = readYear("prior");
   if (netAssetsOf(currentYear) !== currentYear.capitalAndReserves || netAssetsOf(priorYear) !== priorYear.capitalAndReserves) {
     showStatus("Capital and reserves must equal net assets for both years before previewing.", "error");
     return;
   }
-
-  const accepted = [
-    "statementSection477Exemption",
-    "statementMembersNotRequiredAudit",
-    "statementDirectorsResponsibilities",
-    "statementMicroEntityProvisions",
-  ].every((id) => document.getElementById(id).checked);
-  if (!accepted) {
-    showStatus("All four statements must be accepted before previewing.", "error");
-    return;
-  }
+  if (!window.formErrors.requireChecked(STATEMENT_MESSAGES)) return;
 
   showLoading();
   hideStatus();
@@ -182,6 +174,7 @@ function renderRejections(rejections) {
     return;
   }
   container.style.display = "block";
+  container.className = "outcome outcome--error";
   container.replaceChildren(
     ...rejections.map((entry) => {
       const paragraph = document.createElement("p");
@@ -193,7 +186,13 @@ function renderRejections(rejections) {
 
 function showFilingResult(headline, detail) {
   const container = document.getElementById("filingResult");
+  container.className = /rejected/.test(headline)
+    ? "outcome outcome--error"
+    : /accepted the accounts/.test(headline)
+      ? "outcome outcome--ok"
+      : "outcome";
   const headlineParagraph = document.createElement("p");
+  headlineParagraph.className = "outcome__title";
   const strong = document.createElement("strong");
   strong.textContent = headline;
   headlineParagraph.append(strong);
@@ -227,11 +226,13 @@ async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
 }
 
 async function handleSubmitFiling() {
-  const companyAuthCode = document.getElementById("companyAuthCode").value.trim();
+  const companyAuthCodeInput = document.getElementById("companyAuthCode");
+  const companyAuthCode = companyAuthCodeInput.value.trim();
   if (companyAuthCode.length < 6 || companyAuthCode.length > 8) {
-    showStatus("Enter the 6 to 8 character company authentication code.", "error");
+    window.formErrors.showFormErrors([{ input: companyAuthCodeInput, message: "Enter the 6 to 8 character company authentication code" }]);
     return;
   }
+  window.formErrors.clearFormErrors();
 
   showLoading();
   hideStatus();

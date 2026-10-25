@@ -19,12 +19,6 @@
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="../lib/analytics.js"></script>
-    <style>
-      #registeredEmailAddress {
-        width: 100%;
-        box-sizing: border-box;
-      }
-    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
@@ -43,21 +37,28 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Company entry and eligibility view -->
-      <div id="companyView" class="form-container">
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to file with Companies House"
+        data-sign-in-text="Log in to look up your company and file with Companies House. The filing is made from your account."
+      >
         <h2>Which company?</h2>
-        <form id="companyForm">
+        <form id="companyForm" novalidate>
           <div class="form-group">
             <label for="companyNumber">Company number</label>
             <p id="companyNumber-hint" class="hint">
-              The 8-character company number, for example 00000001. Not sure of the number?
-              <a href="companySearch.html">Search Companies House</a> for it first.
+              8 characters, for example 00000001. Do not know it? <a href="companySearch.html">Search Companies House</a>.
             </p>
             <input
               type="text"
               id="companyNumber"
               name="companyNumber"
+              class="input--code"
               required
               value=""
+              autocomplete="off"
               aria-describedby="companyNumber-hint"
               spellcheck="false"
             />
@@ -69,17 +70,18 @@
       <!-- New email form view -->
       <div id="formView" class="form-container" style="display: none">
         <h2>New registered email address</h2>
-        <form id="emailAddressForm">
+        <form id="emailAddressForm" novalidate>
           <div class="form-group">
             <label for="registeredEmailAddress">New registered email address</label>
             <input type="email" id="registeredEmailAddress" name="registeredEmailAddress" required value="" autocomplete="email" />
           </div>
           <div class="form-group">
-            <input type="checkbox" id="acceptEmailStatement" name="acceptEmailStatement" />
-            <label for="acceptEmailStatement" style="display: inline; font-weight: normal">
-              I confirm this is an appropriate email address under section 88A(2) of the Companies Act 2006 - one the company is likely to
-              notice mail sent to.
-            </label>
+            <div class="choice">
+              <input type="checkbox" id="acceptEmailStatement" name="acceptEmailStatement" /><label for="acceptEmailStatement"
+                >I confirm this is an appropriate email address under section 88A(2) of the Companies Act 2006 - one the company is likely
+                to notice mail sent to.</label
+              >
+            </div>
           </div>
           <button type="submit" id="continueBtn" class="btn">Continue</button>
         </form>
@@ -119,7 +121,9 @@
     <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
     <script src="../widgets/auth-status.js"></script>
+    <script src="../lib/form-errors.js"></script>
     <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
     <script src="changeRegisteredEmail.page.js"></script>
   </body>
 </html>

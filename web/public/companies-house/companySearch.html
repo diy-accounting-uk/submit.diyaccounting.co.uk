@@ -37,14 +37,18 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Search view -->
-      <div id="searchView" class="form-container">
+      <div
+        id="searchView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to search Companies House"
+        data-sign-in-text="Log in to search the Companies House register by company name or number."
+      >
         <h2>Search for a company</h2>
-        <form id="companySearchForm">
+        <form id="companySearchForm" novalidate>
           <div class="form-group">
             <label for="companyQuery">Company name or number</label>
-            <p id="companyQuery-hint" class="hint">
-              Company name or the 8-character company number, for example Example Company or 00000001.
-            </p>
+            <p id="companyQuery-hint" class="hint">A company name, or the 8-character company number, for example 00000001.</p>
             <input
               type="text"
               id="companyQuery"
@@ -84,7 +88,9 @@
     <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
     <script src="../widgets/auth-status.js"></script>
+    <script src="../lib/form-errors.js"></script>
     <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
     <script src="../widgets/pass-redeemer.js"></script>
     <script src="companySearch.page.js"></script>
   </body>

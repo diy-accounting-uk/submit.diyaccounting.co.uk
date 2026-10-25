@@ -38,21 +38,28 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- View 1: which company -->
-      <div id="companyView" class="form-container">
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to file with Companies House"
+        data-sign-in-text="Log in to look up your company and file with Companies House. The filing is made from your account."
+      >
         <h2>Which company?</h2>
-        <form id="companyForm">
+        <form id="companyForm" novalidate>
           <div class="form-group">
             <label for="companyNumber">Company number</label>
             <p id="companyNumber-hint" class="hint">
-              The 8-character company number, for example 00000001. Not sure of the number?
-              <a href="companySearch.html">Search Companies House</a> for it first.
+              8 characters, for example 00000001. Do not know it? <a href="companySearch.html">Search Companies House</a>.
             </p>
             <input
               type="text"
               id="companyNumber"
               name="companyNumber"
+              class="input--code"
               required
               value=""
+              autocomplete="off"
               aria-describedby="companyNumber-hint"
               spellcheck="false"
             />
@@ -94,7 +101,7 @@
           <tbody id="publicPscsBody"></tbody>
         </table>
 
-        <form id="authForm">
+        <form id="authForm" novalidate>
           <div class="form-group">
             <label for="companyAuthCode">Company authentication code</label>
             <p id="companyAuthCode-hint" class="hint">
@@ -103,6 +110,8 @@
             <input
               type="text"
               id="companyAuthCode"
+              class="input--code"
+              autocomplete="off"
               name="companyAuthCode"
               required
               minlength="6"
@@ -118,109 +127,124 @@
       <!-- View 3: review and change -->
       <div id="reviewView" class="form-container" style="display: none">
         <h2>Review and change</h2>
-        <form id="reviewForm">
-          <h3>Review date</h3>
-          <div class="form-group">
-            <label for="reviewDate">Confirmation statement date</label>
-            <input type="date" id="reviewDate" name="reviewDate" required />
-          </div>
-
-          <h3>SIC codes</h3>
-          <div class="form-group">
-            <label for="sicCodes">SIC codes</label>
-            <p id="sicCodes-hint" class="hint">Enter up to four codes separated by commas.</p>
-            <input type="text" id="sicCodes" name="sicCodes" spellcheck="false" aria-describedby="sicCodes-hint" />
-          </div>
-
-          <h3>Statement of capital</h3>
-          <p class="hint">Sent only when a value below differs from the register.</p>
-          <div class="form-group">
-            <label for="totalAmountUnpaid">Total amount unpaid</label>
-            <p id="totalAmountUnpaid-money-hint" class="hint">For example, 600 or 1,200.50</p>
-            <div class="input-prefix">
-              <span class="prefix" data-share-currency-prefix style="display: none"></span>
-              <input
-                type="text"
-                id="totalAmountUnpaid"
-                name="totalAmountUnpaid"
-                aria-describedby="totalAmountUnpaid-money-hint"
-                inputmode="decimal"
-                data-money="pounds-and-pence"
-                data-money-min="0"
-              />
+        <form id="reviewForm" novalidate>
+          <section class="form-section">
+            <h3>Review date</h3>
+            <div class="form-group">
+              <label for="reviewDate">Confirmation statement date</label>
+              <input type="date" id="reviewDate" name="reviewDate" required />
             </div>
-          </div>
-          <div class="form-group">
-            <label for="totalNumberOfIssuedShares">Total number of issued shares</label>
-            <input type="number" id="totalNumberOfIssuedShares" name="totalNumberOfIssuedShares" step="1" min="0" />
-          </div>
-          <div class="form-group">
-            <label for="shareCurrency">Share currency</label>
-            <input type="text" id="shareCurrency" name="shareCurrency" spellcheck="false" />
-          </div>
-          <div class="form-group">
-            <label for="totalAggregateNominalValue">Total aggregate nominal value</label>
-            <p id="totalAggregateNominalValue-money-hint" class="hint">For example, 600 or 1,200.50</p>
-            <div class="input-prefix">
-              <span class="prefix" data-share-currency-prefix style="display: none"></span>
-              <input
-                type="text"
-                id="totalAggregateNominalValue"
-                name="totalAggregateNominalValue"
-                aria-describedby="totalAggregateNominalValue-money-hint"
-                inputmode="decimal"
-                data-money="pounds-and-pence"
-                data-money-min="0"
-              />
+          </section>
+          <section class="form-section">
+            <h3>SIC codes</h3>
+            <div class="form-group">
+              <label for="sicCodes">SIC codes</label>
+              <p id="sicCodes-hint" class="hint">Enter up to four codes separated by commas.</p>
+              <input type="text" id="sicCodes" name="sicCodes" spellcheck="false" aria-describedby="sicCodes-hint" />
             </div>
-          </div>
-          <div id="shareClassesContainer"></div>
-          <button type="button" id="addShareClassBtn" class="btn-small">Add share class</button>
-
-          <h3>Shareholdings</h3>
-          <div id="shareholdingsContainer"></div>
-          <button type="button" id="addShareholdingBtn" class="btn-small">Add shareholding</button>
-
-          <h3>Registered email address</h3>
-          <div class="form-group">
-            <label for="registeredEmailAddress">Registered email address</label>
-            <input type="email" id="registeredEmailAddress" name="registeredEmailAddress" spellcheck="false" />
-          </div>
-
-          <h3>Trading on a regulated market</h3>
-          <p>This company does not trade on a regulated market, so DTR5 does not apply. Both are filed as false.</p>
-
-          <h3>Lawful purpose statement</h3>
-          <div class="form-group">
-            <input type="checkbox" id="lawfulPurposeStatement" name="lawfulPurposeStatement" required />
-            <label for="lawfulPurposeStatement" style="display: inline; font-weight: normal">
-              The company confirms that the intended future activities of the company are lawful.
-            </label>
-          </div>
-
-          <h3>Statement of confirmation</h3>
-          <div class="form-group">
-            <input type="checkbox" id="stateConfirmation" name="stateConfirmation" required />
-            <label for="stateConfirmation" style="display: inline; font-weight: normal">
-              The company confirms that the information it is required to deliver to the registrar has been delivered, and that all the
-              information in this statement is correct as at the confirmation date.
-            </label>
-          </div>
-
-          <h3>Director identity verification</h3>
-          <p class="hint">
-            Every current director must have verified their identity with Companies House, and this statement needs their full name as
-            verified (including any other forenames) and their 11-character personal code. A blank row stops this statement being submitted.
-            <a href="https://www.gov.uk/guidance/verify-your-identity-for-companies-house">How to verify identity</a>.
-          </p>
-          <p class="hint">
-            If someone else's code is needed to complete this filing, the company's directors can share their codes with whoever files -
-            Submit sends a code only with this filing and keeps no copy of it.
-          </p>
-          <div id="directorRowsContainer"></div>
-
-          <h3>Filing fee</h3>
-          <p id="feeMessage" class="hint"></p>
+          </section>
+          <section class="form-section">
+            <h3>Statement of capital</h3>
+            <p class="hint">Sent only when a value below differs from the register.</p>
+            <div class="form-group">
+              <label for="totalAmountUnpaid">Total amount unpaid</label>
+              <p id="totalAmountUnpaid-money-hint" class="hint">For example, 600 or 1,200.50</p>
+              <div class="input-prefix">
+                <span class="prefix" data-share-currency-prefix style="display: none"></span>
+                <input
+                  type="text"
+                  id="totalAmountUnpaid"
+                  name="totalAmountUnpaid"
+                  aria-describedby="totalAmountUnpaid-money-hint"
+                  inputmode="decimal"
+                  data-money="pounds-and-pence"
+                  data-money-min="0"
+                />
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="totalNumberOfIssuedShares">Total number of issued shares</label>
+              <input type="number" id="totalNumberOfIssuedShares" name="totalNumberOfIssuedShares" step="1" min="0" />
+            </div>
+            <div class="form-group">
+              <label for="shareCurrency">Share currency</label>
+              <input type="text" id="shareCurrency" name="shareCurrency" spellcheck="false" />
+            </div>
+            <div class="form-group">
+              <label for="totalAggregateNominalValue">Total aggregate nominal value</label>
+              <p id="totalAggregateNominalValue-money-hint" class="hint">For example, 600 or 1,200.50</p>
+              <div class="input-prefix">
+                <span class="prefix" data-share-currency-prefix style="display: none"></span>
+                <input
+                  type="text"
+                  id="totalAggregateNominalValue"
+                  name="totalAggregateNominalValue"
+                  aria-describedby="totalAggregateNominalValue-money-hint"
+                  inputmode="decimal"
+                  data-money="pounds-and-pence"
+                  data-money-min="0"
+                />
+              </div>
+            </div>
+            <div id="shareClassesContainer"></div>
+            <button type="button" id="addShareClassBtn" class="btn-small">Add share class</button>
+          </section>
+          <section class="form-section">
+            <h3>Shareholdings</h3>
+            <div id="shareholdingsContainer"></div>
+            <button type="button" id="addShareholdingBtn" class="btn-small">Add shareholding</button>
+          </section>
+          <section class="form-section">
+            <h3>Registered email address</h3>
+            <div class="form-group">
+              <label for="registeredEmailAddress">Registered email address</label>
+              <input type="email" id="registeredEmailAddress" name="registeredEmailAddress" spellcheck="false" />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Trading on a regulated market</h3>
+            <p>This company does not trade on a regulated market, so DTR5 does not apply. Both are filed as false.</p>
+          </section>
+          <section class="form-section">
+            <h3>Lawful purpose statement</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="lawfulPurposeStatement" name="lawfulPurposeStatement" required /><label
+                  for="lawfulPurposeStatement"
+                  >The company confirms that the intended future activities of the company are lawful.</label
+                >
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Statement of confirmation</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="checkbox" id="stateConfirmation" name="stateConfirmation" required /><label for="stateConfirmation"
+                  >The company confirms that the information it is required to deliver to the registrar has been delivered, and that all the
+                  information in this statement is correct as at the confirmation date.</label
+                >
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Director identity verification</h3>
+            <p class="hint">
+              Every current director must have verified their identity with Companies House, and this statement needs their full name as
+              verified (including any other forenames) and their 11-character personal code. A blank row stops this statement being
+              submitted.
+              <a href="https://www.gov.uk/guidance/verify-your-identity-for-companies-house">How to verify identity</a>.
+            </p>
+            <p class="hint">
+              If someone else's code is needed to complete this filing, the company's directors can share their codes with whoever files -
+              Submit sends a code only with this filing and keeps no copy of it.
+            </p>
+            <div id="directorRowsContainer"></div>
+          </section>
+          <section class="form-section">
+            <h3>Filing fee</h3>
+            <p id="feeMessage" class="hint"></p>
+          </section>
 
           <button type="submit" id="previewBtn" class="btn">Preview confirmation statement</button>
         </form>
@@ -266,7 +290,9 @@
     <script src="../lib/money-input.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
     <script src="../widgets/auth-status.js"></script>
+    <script src="../lib/form-errors.js"></script>
     <script src="../widgets/status-messages.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
     <script src="fileConfirmationStatement.page.js"></script>
   </body>
 </html>

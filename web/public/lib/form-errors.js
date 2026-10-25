@@ -20,12 +20,22 @@
     submissionId: "Enter the submission ID",
     calculationId: "Enter the calculation ID",
     calculationType: "Select the calculation type",
+    periodStart: "Enter the period start date",
+    periodEnd: "Enter the period end date",
+    averageEmployees: "Enter the average number of employees",
+    directorName: "Enter the name of the director approving the balance sheet",
+    directorDateApproved: "Enter the date the balance sheet was approved",
+    reviewDate: "Enter the confirmation statement date",
     periodStartDate: "Enter the period start date",
     periodEndDate: "Enter the period end date",
     fromDate: "Enter the period start date",
     toDate: "Enter the period end date",
     accountingPeriodStartDate: "Enter the accounting period start date",
     accountingPeriodEndDate: "Enter the accounting period end date",
+    companyNumber: "Enter the company number",
+    companyQuery: "Enter a company name or number",
+    companyAuthCode: "Enter the company authentication code",
+    registeredEmailAddress: "Enter the new registered email address",
   };
 
   function labelOf(input) {
@@ -33,7 +43,7 @@
   }
 
   function requiredMessage(input) {
-    return REQUIRED_MESSAGES[input.id] || `Enter ${labelOf(input)}`;
+    return input.dataset.requiredMessage || REQUIRED_MESSAGES[input.id] || `Enter ${labelOf(input)}`;
   }
 
   function errorIdOf(input) {
@@ -75,8 +85,10 @@
     hidden.className = "visually-hidden";
     hidden.textContent = "Error: ";
     text.append(hidden, message);
-    const anchor = input.closest(".input-prefix") || input;
-    anchor.parentNode.insertBefore(text, anchor);
+    const anchor = input.closest(".input-prefix") || input.closest(".choice") || input;
+    const ledgerRowHeader = input.closest(".ledger tbody tr")?.querySelector("th");
+    if (ledgerRowHeader) ledgerRowHeader.append(text);
+    else anchor.parentNode.insertBefore(text, anchor);
     const describedBy = (input.getAttribute("aria-describedby") || "").split(" ").filter(Boolean);
     input.setAttribute("aria-describedby", [...describedBy, text.id].join(" "));
     input.setAttribute("aria-invalid", "true");
@@ -85,7 +97,7 @@
   }
 
   function summaryHost(firstInput) {
-    return firstInput.closest("form") || firstInput.closest(".form-container") || firstInput.parentNode;
+    return firstInput.closest("form") || firstInput.closest(".send-step, .form-container, .results-container") || firstInput.parentNode;
   }
 
   // errors: [{ input, message }]. Shows the summary and inline messages and focuses the summary.
@@ -131,6 +143,23 @@
     return errors.length === 0;
   }
 
+  // Shows an error for each required text, number, date or select field that is visible, enabled and blank.
+  function requireFormFields(form) {
+    const ids = Array.from(form.querySelectorAll("input[required], select[required], textarea[required]"))
+      .filter((input) => input.id && !input.disabled && input.type !== "checkbox" && input.type !== "radio" && input.offsetParent !== null)
+      .map((input) => input.id);
+    return requireFields(ids);
+  }
+
+  // Shows an error for each unchecked box. messages maps a checkbox id to its message.
+  function requireChecked(messages) {
+    const errors = Object.entries(messages)
+      .map(([id, message]) => ({ input: document.getElementById(id), message }))
+      .filter(({ input }) => input && !input.checked);
+    showFormErrors(errors);
+    return errors.length === 0;
+  }
+
   function moneyMessage(input) {
     if (window.readMoneyInput(input) !== null) return `The amount cannot be negative. Check ${labelOf(input)}.`;
     const example =
@@ -159,5 +188,5 @@
     if (input?.id && document.getElementById(errorIdOf(input))) clearFieldError(input);
   });
 
-  window.formErrors = { showFormErrors, clearFormErrors, requireFields, reportMoneyProblems };
+  window.formErrors = { showFormErrors, clearFormErrors, requireFields, requireFormFields, requireChecked, reportMoneyProblems };
 })();

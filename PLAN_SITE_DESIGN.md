@@ -369,7 +369,7 @@ Before is DS1's stored set (`target/site-screenshots/`, 432 PNGs). After is `nod
 | Footer variants | 4, right of centre | 1, left-aligned |
 | Pages with console errors | 9 | 9, the same messages |
 
-- **Light pin**: 28 pages still paint raw colours in an inline `<style>`, a `style` attribute or their page script. They carry `<html data-theme="light">`, so dark mode does not reach them until DS4, DS5 or DS6 moves those colours onto tokens and drops the attribute: `about`, `accessibility`, `bundles`, `companies-house/fileMicroEntityAccounts`, `diy-accounting-limited`, `diy-accounting-spreadsheets`, `guide`, `help`, `hmrc/itsa/dashboard`, `hmrc/receipt/receipts`, `index`, `mcp-harness`, `mcp`, `operator/dashboard`, `passes/generate-digital`, `passes/generate-physical`, `policybee`, `practice`, `privacy`, `spreadsheets`, `terms`, `usage` and the six `videos*` pages.
+- **Light pin**: 27 pages still paint raw colours in an inline `<style>`, a `style` attribute or their page script. They carry `<html data-theme="light">`, so dark mode does not reach them until DS4, DS5 or DS6 moves those colours onto tokens and drops the attribute: `about`, `accessibility`, `bundles`, `diy-accounting-limited`, `diy-accounting-spreadsheets`, `guide`, `help`, `hmrc/itsa/dashboard`, `hmrc/receipt/receipts`, `index`, `mcp-harness`, `mcp`, `operator/dashboard`, `passes/generate-digital`, `passes/generate-physical`, `policybee`, `practice`, `privacy`, `spreadsheets`, `terms`, `usage` and the six `videos*` pages.
 - **For the page rows**: the error summary and inline errors use `web/public/lib/form-errors.js`; a page adds `novalidate` to its form and calls it. The signed-out panel is `.signed-out-panel` (an `h2`, a paragraph and a `.btn` Log in link). Each page row moves its `h1` to the page name (1.11); the header band already shows the brand.
 - **Contrast** (WCAG relative luminance): light ink 14.4, muted 7.5, rule 3.06, brand 6.8, white on brand 6.8, ok 5.6, error 5.8, warn 6.8, info 7.1 on their tints; dark ink 13.7, muted 7.8, rule 3.6, brand 7.8, ink on brand 8.6, ok 8.1, error 7.1, warn 9.0, info 6.7.
 
@@ -387,6 +387,20 @@ Before is DS1's stored set (`target/site-screenshots/`, 432 PNGs). After is `nod
 
 - **Pages**: the 8 under `web/public/companies-house/`, after CT5.
 - **Work**: one company-number field pattern on all lookup pages; the error summary; the signed-out panel; the callback page in full chrome; the inline `<style>` blocks on `fileMicroEntityAccounts` and `changeRegisteredEmail` onto tokens; check CT5's result against the tokens.
+
+#### DS6 result
+
+- **Shared**: `.input--code` (company number and authentication code fields), `widgets/signed-out-panel.js` (an element marked `data-requires-sign-in` is replaced by the panel when `cognitoIdToken` is absent), `requireFormFields` and `requireChecked` in `lib/form-errors.js`, errors for a ledger cell placed in its row header, the main nav fits at 390 px (14 px links, 12 px gap) and scrolls below that.
+- `companySearch`: signed-out panel, `novalidate` with the error summary, hint without example name.
+- `changeRegisteredEmail`: company-number pattern, signed-out panel, summary and inline errors for the address and the statement, `.choice` checkbox, outcome panel on the result, inline `<style>` dropped.
+- `changeRegisteredOffice`: as the email page, with required-field errors on the address form.
+- `fileConfirmationStatement`: company-number pattern, signed-out panel, `form-section` blocks, `.choice` checkboxes, errors on the authentication code and the review form, outcome panel.
+- `fileMicroEntityAccounts`: one balance-sheet ledger with this-year and prior-year columns (28 boxes in one table), sections, `.choice` checkboxes, a "Send to Companies House" step, summary errors, outcome panel, inline `<style>` and `data-theme="light"` dropped.
+- `fileSmallCompanyAccounts`: nine single-column ledgers in place of 60 stacked fields, sections, `.choice` radios and checkboxes, send step, summary errors, outcome panel.
+- `filingCallback`: header and footer from `page-chrome.js`, `h1` "Connecting to Companies House".
+- `filings`: still `data-theme="light"` because the customer copy it mounts paints its own colours; signed-out panel in place of the red line, `h1` "Your copy of a filing", inline `<style>` moved to `submit.css`.
+- `mcpCodes`: `h1` "Companies House codes", code field on `.input--code`.
+- **Remaining**: `fileCompanyTaxReturn` keeps `placeholder="e.g., 00000001"` and has no signed-out panel; `mcpCodes` has no page chrome, because its link carries a sealed entry and no login.
 
 ## 5. Done when
 
