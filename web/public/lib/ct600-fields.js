@@ -1172,7 +1172,17 @@ function answerText(field, values) {
   if (field.type === "checkbox") return values[field.id] === true ? "Yes" : "No";
   const typed = String(values[field.id] ?? "").trim();
   if (typed === "") return NOT_GIVEN;
-  return field.type === WHOLE || field.type === "pounds-and-pence" ? `£${typed.replace(/^£/, "")}` : typed;
+  return field.type === WHOLE || field.type === "pounds-and-pence" ? poundsAnswer(typed) : typed;
+}
+
+// An amount as the review prints it: £1,200 or £193.54, with a minus sign before the £. Text
+// that is not an amount shows as typed, so the customer sees what the checks refused.
+function poundsAnswer(typed) {
+  const amount = parsePounds(typed);
+  if (amount === null) return `£${typed.replace(/^£/, "")}`;
+  const digits = Number.isInteger(amount) ? 0 : 2;
+  const text = Math.abs(amount).toLocaleString("en-GB", { minimumFractionDigits: digits, maximumFractionDigits: digits });
+  return `${amount < 0 ? "-" : ""}£${text}`;
 }
 
 function amountRows(ids, values) {

@@ -332,7 +332,7 @@ test.describe("File Company Tax Return entry form", () => {
     await reachReview(page);
     const row = page.locator("#review-row-annualInvestmentAllowance");
     await expect(row).toContainText("Box 690: Annual investment allowance");
-    await expect(row).toContainText("£52500");
+    await expect(row).toContainText("£52,500");
     await expect(row.getByRole("link", { name: "Change Box 690: Annual investment allowance" })).toBeVisible();
     await expect(page.locator("#review-row-currentTurnover")).toContainText("Turnover, this year");
     await expect(page.locator("#review-row-declarationAccepted")).toContainText("Yes");

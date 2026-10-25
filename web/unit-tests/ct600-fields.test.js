@@ -344,7 +344,7 @@ describe("the review", () => {
   });
 
   test("shows answers as the customer reads them", () => {
-    expect(rowOf("annualInvestmentAllowance").value).toBe("£52500");
+    expect(rowOf("annualInvestmentAllowance").value).toBe("£52,500");
     expect(rowOf("period").value).toBe("2025-04-01 to 2026-03-31");
     expect(rowOf("loanOverdrawn").value).toBe("No");
     expect(rowOf("declarationAccepted").value).toBe("Yes");

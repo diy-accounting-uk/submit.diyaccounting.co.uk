@@ -12,7 +12,6 @@ import {
   BOX_SOURCE_FIELD,
   COMPUTATION_SOURCE_FIELD,
   BALANCE_SHEET_FIELDS,
-  COMPUTATIONS_GUIDE_ANCHOR,
   CT600_BOX_ROWS,
   CT600_FORM_FIELDS,
   FIXED_ASSET_CLASSES,
@@ -57,7 +56,6 @@ const COMPUTATION_LINES = [
   { field: "adjustedProfit", meaning: "Adjusted profit", style: "total" },
 ];
 
-const HIDDEN_TEXT_STYLE = "position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap";
 const RETURN_TO_REVIEW = "Return to the review";
 const PREVIEW_THE_RETURN = "Preview the return";
 const VIEW_HASH = { companyView: "company", formView: "form", previewView: "review", resultView: "result" };
@@ -126,6 +124,10 @@ function paragraph(...parts) {
   return node;
 }
 
+function visuallyHidden(text) {
+  return create("span", { class: "visually-hidden" }, text);
+}
+
 function tableRow(...cells) {
   const row = document.createElement("tr");
   for (const cell of cells) {
@@ -151,13 +153,8 @@ function formatPounds(value, deduction = false) {
 
 function amountCell(cell, text, style) {
   cell.textContent = text;
-  cell.style.textAlign = "right";
-  cell.style.whiteSpace = "nowrap";
-  if (style === "subtotal" || style === "total") cell.style.borderTop = "1px solid currentColor";
-  if (style === "total") {
-    cell.style.borderBottom = "3px double currentColor";
-    cell.style.fontWeight = "bold";
-  }
+  cell.classList.add("amount");
+  if (style) cell.classList.add(`amount--${style}`);
 }
 
 // --- The form -------------------------------------------------------------------------------
@@ -194,7 +191,12 @@ function inputFor(field) {
   const input = create("input", attributes);
   if (field.default !== undefined) input.value = field.default;
   if (!money) return input;
-  return create("div", { class: "input-prefix" }, create("span", { class: "prefix" }, "£"), input);
+  return create(
+    "div",
+    { class: "input-prefix input-prefix--amount" },
+    create("span", { "class": "prefix", "aria-hidden": "true" }, "£"),
+    input,
+  );
 }
 
 function errorHost(target) {
@@ -212,12 +214,8 @@ function textGroup(field) {
   );
 }
 
-const CONTROL_STYLE = "width: auto; flex: none; margin: 0.25rem 0 0";
-const CHOICE_LABEL_STYLE = "display: block; margin: 0; font-weight: normal";
-const CHOICE_ROW_STYLE = "display: flex; align-items: flex-start; gap: 0.6rem; margin-bottom: 0.5rem";
-
 function choiceRow(input, label) {
-  return create("div", { style: CHOICE_ROW_STYLE }, input, label);
+  return create("div", { class: "choice" }, input, label);
 }
 
 function choiceGroup(field) {
@@ -230,10 +228,9 @@ function choiceGroup(field) {
         value,
         "data-error-target": field.id,
         "aria-describedby": `${field.id}-hint`,
-        "style": CONTROL_STYLE,
         ...(checked ? { checked: "" } : {}),
       }),
-      create("label", { for: `${field.id}${value === "no" ? "No" : "Yes"}`, style: CHOICE_LABEL_STYLE }, text),
+      create("label", { for: `${field.id}${value === "no" ? "No" : "Yes"}` }, text),
     );
   const hint = field.hint ? hintOf(field) : create("p", { id: `${field.id}-hint`, class: "hint" });
   return create(
@@ -266,10 +263,7 @@ function checkboxGroup(id, label, target = id) {
     "div",
     { class: "form-group" },
     errorHost(target),
-    choiceRow(
-      create("input", { "type": "checkbox", id, "name": id, "data-error-target": target, "style": CONTROL_STYLE }),
-      create("label", { for: id, style: CHOICE_LABEL_STYLE }, label),
-    ),
+    choiceRow(create("input", { "type": "checkbox", id, "name": id, "data-error-target": target }), create("label", { for: id }, label)),
   );
 }
 
@@ -280,17 +274,79 @@ function fieldGroup(field) {
   return textGroup(field);
 }
 
-function amountGroup(id, label) {
-  return textGroup({ id, label, type: "whole-pounds", hint: "" });
+// A ledger: one row per line of the accounts, one column per year or movement. Every input
+// carries its full name in a hidden label, so a screen reader hears "Turnover, last year".
+function ledgerCell(column, cell) {
+  const input = inputFor({ id: cell.id, type: "whole-pounds" });
+  input.querySelector("input").removeAttribute("aria-describedby");
+  return create(
+    "td",
+    { "class": ["ledger__figure", column.className].filter(Boolean).join(" "), "data-column": column.title },
+    create("label", { for: cell.id, class: "visually-hidden" }, cell.label),
+    input,
+  );
 }
 
-function accountsYear(prefix) {
-  return [
-    create("h4", {}, "Profit and loss account"),
-    ...PROFIT_AND_LOSS_FIELDS.map(([field, label]) => amountGroup(profitAndLossId(prefix, field), label)),
-    create("h4", {}, "Balance sheet"),
-    ...BALANCE_SHEET_FIELDS.map(([field, label]) => amountGroup(balanceSheetId(prefix, field), label)),
-  ];
+function ledger({ caption, columns, rows, className }) {
+  const head = create(
+    "tr",
+    {},
+    create("th", { scope: "col" }, caption ? visuallyHidden("Line") : "Line"),
+    ...columns.map((column) =>
+      create("th", { scope: "col", class: ["ledger__figure", column.className].filter(Boolean).join(" ") }, column.title),
+    ),
+  );
+  const body = rows.map((row) =>
+    create(
+      "tr",
+      {},
+      create("th", { scope: "row" }, row.label, ...row.cells.map((cell) => errorHost(cell.id))),
+      ...columns.map((column, index) => ledgerCell(column, row.cells[index])),
+    ),
+  );
+  return create(
+    "table",
+    { class: ["ledger", className].filter(Boolean).join(" ") },
+    ...(caption ? [create("caption", {}, caption)] : []),
+    create("thead", {}, head),
+    create("tbody", {}, ...body),
+  );
+}
+
+const YEAR_COLUMNS = [
+  { key: "current", title: "This year", when: "this year" },
+  { key: "prior", title: "Last year", when: "last year", className: "ledger__prior" },
+];
+
+function yearLedger(fields, idOf) {
+  return ledger({
+    className: "ledger--years ledger--one-year",
+    columns: YEAR_COLUMNS,
+    rows: fields.map(([field, label]) => ({
+      label,
+      cells: YEAR_COLUMNS.map(({ key, when }) => ({ id: idOf(key, field), label: `${label}, ${when}` })),
+    })),
+  });
+}
+
+// The note's six movements as two columns, cost and depreciation, in three rows.
+const NOTE_COLUMNS = [{ title: "Cost" }, { title: "Depreciation" }];
+const NOTE_ROWS = [
+  ["At the start of the period", "costAtStart", "depreciationAtStart"],
+  ["Added in the period", "additions", "depreciationCharge"],
+  ["Taken out on disposals", "disposals", "depreciationOnDisposals"],
+];
+
+function noteLedger(className, title) {
+  const labelOf = (field) => `${title}: ${FIXED_ASSET_FIELDS.find(([candidate]) => candidate === field)[1]}`;
+  return ledger({
+    caption: title,
+    columns: NOTE_COLUMNS,
+    rows: NOTE_ROWS.map(([label, ...fields]) => ({
+      label,
+      cells: fields.map((field) => ({ id: noteId(className, field), label: labelOf(field) })),
+    })),
+  });
 }
 
 function accountsTextGroup({ id, label, type }) {
@@ -307,21 +363,25 @@ function accountsTextGroup({ id, label, type }) {
 }
 
 function accountsSection() {
-  const note = FIXED_ASSET_CLASSES.map(([className, title]) =>
-    create("div", {}, create("h4", {}, title), ...FIXED_ASSET_FIELDS.map(([field, label]) => amountGroup(noteId(className, field), label))),
-  );
   return [
     create(
       "p",
       { class: "hint" },
       "HMRC takes the full accounts with the return, so they are part of this form. Enter whole pounds, for example 600 or 1,200.",
     ),
-    create("h4", {}, "Current year"),
-    ...accountsYear("current"),
     checkboxGroup("includeComparatives", "Include last year's figures"),
-    create("div", { id: "comparativeFields", style: "display: none" }, create("h4", {}, "Prior year"), ...accountsYear("prior")),
+    create("h4", {}, "Profit and loss account"),
+    yearLedger(PROFIT_AND_LOSS_FIELDS, profitAndLossId),
+    create("h4", {}, "Balance sheet"),
+    yearLedger(BALANCE_SHEET_FIELDS, balanceSheetId),
+    create("h4", {}, "Tangible fixed assets note"),
     checkboxGroup("includeFixedAssetNote", "Include the tangible fixed assets note"),
-    create("div", { id: "fixedAssetNoteFields", style: "display: none" }, ...note),
+    create(
+      "div",
+      { id: "fixedAssetNoteFields", style: "display: none" },
+      ...FIXED_ASSET_CLASSES.map(([className, title]) => noteLedger(className, title)),
+    ),
+    create("h4", {}, "About the accounts"),
     ...ACCOUNTS_TEXT_FIELDS.map(accountsTextGroup),
   ];
 }
@@ -356,7 +416,7 @@ function sectionBody(sectionId) {
 function renderForm() {
   const sections = [];
   for (const { id, title } of SECTIONS) {
-    sections.push(create("section", { id: `section-${id}`, style: "margin-top: 2rem" }, create("h3", {}, title), ...sectionBody(id)));
+    sections.push(create("section", { id: `section-${id}`, class: "form-section" }, create("h3", {}, title), ...sectionBody(id)));
     if (id === "reliefs") sections.push(workedTaxPanel());
   }
   element("formSections").replaceChildren(...sections);
@@ -370,7 +430,8 @@ function renderForm() {
 }
 
 function toggleSections() {
-  element("comparativeFields").style.display = element("includeComparatives").checked ? "block" : "none";
+  const oneYear = !element("includeComparatives").checked;
+  for (const table of element("formSections").querySelectorAll(".ledger--years")) table.classList.toggle("ledger--one-year", oneYear);
   element("fixedAssetNoteFields").style.display = element("includeFixedAssetNote").checked ? "block" : "none";
 }
 
@@ -577,17 +638,20 @@ function focusTarget(target) {
   node?.scrollIntoView?.({ block: "center" });
 }
 
-function showSummary(problems) {
-  element(SUMMARY_ID)?.remove();
-  const list = create("ul", { class: "error-summary__list" });
-  for (const problem of problems) {
+function summaryItems(problems) {
+  return problems.map((problem) => {
     const link = create("a", { href: `#${problem.target}` }, problem.message);
     link.addEventListener("click", (event) => {
       event.preventDefault();
       focusTarget(problem.target);
     });
-    list.append(create("li", {}, link));
-  }
+    return create("li", {}, link);
+  });
+}
+
+function showSummary(problems) {
+  element(SUMMARY_ID)?.remove();
+  const list = create("ul", { class: "error-summary__list" }, ...summaryItems(problems));
   const summary = create(
     "div",
     { id: SUMMARY_ID, class: "error-summary", role: "alert", tabindex: "-1" },
@@ -598,12 +662,21 @@ function showSummary(problems) {
   summary.focus();
 }
 
+// A summary on screen follows the answers: it lists what is still wrong and goes when nothing is.
+function updateSummary() {
+  const summary = element(SUMMARY_ID);
+  if (!summary) return;
+  if (state.problems.length === 0) summary.remove();
+  else summary.querySelector(".error-summary__list").replaceChildren(...summaryItems(state.problems));
+}
+
 function refresh() {
   if (!element("formSections").firstChild) return;
   const values = readValues();
   state.problems = evaluate(values);
   renderWorkedTax(values);
   showTouchedErrors();
+  updateSummary();
   ensureTaxData(values.periodEnd);
 }
 
@@ -698,24 +771,15 @@ async function handleCompanySubmit(event) {
   }
 }
 
-function guideLink(text, anchor) {
-  const link = document.createElement("a");
-  link.href = guideUrl(anchor);
-  link.target = "_blank";
-  link.rel = "noopener";
-  link.textContent = text;
-  return link;
-}
-
 function changeLink(fieldId, label) {
   const link = create("a", { "href": `#${fieldId}`, "class": "review-change", "data-field": fieldId }, "Change");
-  link.append(create("span", { style: HIDDEN_TEXT_STYLE }, ` ${label}`));
+  link.append(visuallyHidden(` ${label}`));
   return link;
 }
 
 function companyChangeLink() {
   const link = create("a", { "href": "#company", "class": "review-change", "data-field": "company" }, "Change");
-  link.append(create("span", { style: HIDDEN_TEXT_STYLE }, " company"));
+  link.append(visuallyHidden(" company"));
   return link;
 }
 
@@ -734,7 +798,8 @@ function renderAnswers() {
       create("h4", {}, title),
       create(
         "table",
-        { class: "results-table" },
+        { class: "results-table review-table" },
+        create("colgroup", {}, ...["question", "answer", "change"].map((name) => create("col", { class: `review-table__${name}` }))),
         create("thead", {}, create("tr", {}, ...["Question", "Answer", "Change"].map((text) => create("th", { scope: "col" }, text)))),
         create("tbody", {}, ...body),
       ),
@@ -749,17 +814,15 @@ function renderReview(preview) {
     .map(Number)
     .sort((a, b) => a - b)
     .map((box) => {
-      const label = guideLink(boxRow(box).label, boxRow(box).anchor);
+      const label = boxRow(box).label;
       const source = BOX_SOURCE_FIELD[box];
-      const change = source ? changeLink(source, `box ${box}, ${boxRow(box).label}`) : companyChangeLink();
-      let row;
-      if (box === 340 || box === 390) row = tableRow(box, label, `${preview.boxes[box]}%`, change);
-      else if (box === 329) row = tableRow(box, label, "Yes", change);
-      else if (TEXT_BOXES.has(box)) row = tableRow(box, label, preview.boxes[box], change);
-      else {
-        row = tableRow(box, label, "", change);
-        amountCell(row.children[2], formatPounds(preview.boxes[box]));
-      }
+      const change = source ? changeLink(source, `box ${box}, ${label}`) : companyChangeLink();
+      const row = tableRow(box, label, "", change);
+      if (box === 340 || box === 390) amountCell(row.children[2], `${preview.boxes[box]}%`);
+      else if (box === 329) row.children[2].textContent = "Yes";
+      else if (TEXT_BOXES.has(box)) row.children[2].textContent = preview.boxes[box];
+      else amountCell(row.children[2], formatPounds(preview.boxes[box]));
+      row.children[2].classList.add("review-table__value-cell");
       row.id = `review-box-${box}`;
       return row;
     });
@@ -767,7 +830,7 @@ function renderReview(preview) {
     .querySelector("tbody")
     .replaceChildren(...boxRows);
   const lineRows = COMPUTATION_LINES.map(({ field, meaning, deduction, style }) => {
-    const row = tableRow(guideLink(meaning, COMPUTATIONS_GUIDE_ANCHOR), "", changeLink(COMPUTATION_SOURCE_FIELD[field], meaning));
+    const row = tableRow(meaning, "", changeLink(COMPUTATION_SOURCE_FIELD[field], meaning));
     amountCell(row.children[1], formatPounds(preview.computationLines[field], deduction), style);
     row.id = `review-line-${field}`;
     return row;
@@ -840,7 +903,10 @@ function renderErrors(outcome) {
     return;
   }
   container.style.display = "block";
-  container.replaceChildren(...entries.map((entry) => paragraph(`${entry.number}: ${entry.text}`)));
+  container.replaceChildren(
+    create("ul", {}, ...entries.map((entry) => create("li", {}, `Error ${entry.number}: ${entry.text}`))),
+    create("p", {}, "Check the answers these errors name, change them in the review, and send the return again."),
+  );
 }
 
 function waitSeconds(seconds) {
@@ -862,24 +928,38 @@ async function pollUntilSettled(correlationId, firstWaitSeconds, extraHeaders) {
   return result;
 }
 
+function setOutcome(kind) {
+  element("returnOutcome").className = kind ? `outcome outcome--${kind}` : "outcome";
+}
+
+function outcomeTitle(text) {
+  return create("h3", { class: "outcome__title" }, text);
+}
+
 function showOutcome(outcome) {
   element("returnErrors").style.display = "none";
   element("returnIrmark").style.display = "none";
   element("tryAgainBtn").style.display = "none";
   element("startAgainBtn").style.display = "none";
   if (outcome.statusCode === "ACCEPT") {
-    element("returnResult").replaceChildren(paragraph("HMRC ", { strong: "ACCEPTED" }, " the Company Tax Return."));
-    element("returnIrmark").replaceChildren(paragraph("IRmark: ", { strong: outcome.irmark }));
+    setOutcome("ok");
+    element("returnResult").replaceChildren(outcomeTitle("HMRC accepted the Company Tax Return"));
+    element("returnIrmark").replaceChildren(
+      create("p", {}, "IRmark: ", create("code", {}, outcome.irmark)),
+      create("p", {}, "Keep the IRmark. It is HMRC's record of exactly what you sent."),
+    );
     element("returnIrmark").style.display = "block";
     element("startAgainBtn").style.display = "inline-block";
     return;
   }
   if (outcome.statusCode === "REJECT") {
-    element("returnResult").replaceChildren(paragraph("HMRC ", { strong: "REJECTED" }, " the Company Tax Return."));
+    setOutcome("error");
+    element("returnResult").replaceChildren(outcomeTitle("HMRC rejected the Company Tax Return"));
     renderErrors(outcome);
     element("tryAgainBtn").style.display = "inline-block";
     return;
   }
+  setOutcome();
   element("returnResult").replaceChildren(
     paragraph(
       "HMRC has not settled the return yet. Return ",
@@ -909,6 +989,7 @@ async function handleSubmitReturn() {
       scenarioHeaders,
     );
     element("gatewayPassword").value = "";
+    setOutcome();
     element("returnResult").replaceChildren(
       paragraph("Return ", { strong: submission.correlationId }, " accepted by the gateway. Waiting for HMRC..."),
     );

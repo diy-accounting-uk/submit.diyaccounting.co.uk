@@ -143,7 +143,7 @@ export async function enterGatewayCredentialsAndSubmit(page, { userId, password 
 
 export async function verifyReturnAccepted(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees the return accepted with its IRmark", async () => {
-    await expect(page.locator("#returnResult")).toContainText("ACCEPTED", { timeout: 60000 });
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted", { timeout: 60000 });
     await expect(page.locator("#returnIrmark")).toContainText(/IRmark: [A-Z2-7]{32}/);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accepted.png` });
   });
@@ -151,7 +151,7 @@ export async function verifyReturnAccepted(page, screenshotPath = defaultScreens
 
 export async function verifyReturnRejectedAndRetryable(page, expectedErrorNumber, screenshotPath = defaultScreenshotPath) {
   await test.step(`The user sees the return rejected with error ${expectedErrorNumber} and can try again`, async () => {
-    await expect(page.locator("#returnResult")).toContainText("REJECTED", { timeout: 60000 });
+    await expect(page.locator("#returnResult")).toContainText("HMRC rejected", { timeout: 60000 });
     await expect(page.locator("#returnErrors")).toContainText(expectedErrorNumber);
     await expect(page.locator("#tryAgainBtn")).toBeVisible();
     await loggedClick(page, "#tryAgainBtn", "Returning to the review to try again", { screenshotPath });
