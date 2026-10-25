@@ -190,8 +190,16 @@
         },
         { "action": "point", "target": "#filingResult", "dwellMs": 500 },
         { "action": "hold", "ms": 1500 },
+        { "action": "scroll", "target": "#filingResult" },
+        { "action": "hold", "ms": 4000 },
         { "action": "still", "name": "change-registered-email-result" },
-        { "action": "hold", "ms": 1500 }
+        {
+          "action": "hold",
+          "ms": 2500,
+          "caption": "The reference and the outcome are the record of this change.",
+          "headline": "The filing record",
+          "keyWord": "record"
+        }
       ]
     }
   ]
