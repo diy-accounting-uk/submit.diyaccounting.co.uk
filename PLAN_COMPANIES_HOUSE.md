@@ -99,10 +99,10 @@ flowchart LR
 
 The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarded in `PLAN_COMPANIES_HOUSE_APPROVAL.md`; the graph keeps them so the chain reads whole.
 
-- B34.6c: sent 2026-10-23 on the 000004 thread (NEXT.md B34 waits on the answer); the harness is green under the replacement presenter and every case is pinned
+- B34.6c: sent 2026-10-23 on the 000004 thread; the XML team answered on 2026-10-23 and the retest request is `NEXT.md` OAX5 (after OAX6); the harness is green under the replacement presenter and every case is pinned
 - O34c: ready; it is the ask in B34's email
 - B34c: blocked by O34c
-- CS-A4: in flight; the pack rides on B34's email
+- CS-A4: in flight; the pack rides on the retest request (`NEXT.md` OAX5)
 - CS-11b: blocked by CS-A4
 - CS-P1: blocked by CS-11b (it adds a second payment path to the journey CS-11b launches)
 - B34f: on main (PR #469 the build, PR #488 the harness case, PR #490 the share-class contexts); proven on the test service (run 38069747950: acknowledged at submit, PENDING on every poll)
@@ -113,8 +113,8 @@ The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarde
 - CT3a: on main (PR #533; the CT2 design below)
 - CT3b: on main (PR #534 the form and the card's `ct600` kind, PR #535 the visual pass); CT1 on main (PR #530)
 - CT3c: on main (PR #535 the review and the journeys, PR #536 the reviewed-boxes check)
-- CT3d: the FRS 105 attachment with a profit and loss account on main (PR #536, TPVS accepted); the page's micro-entity entry path is `NEXT.md` CT3e
-- CT4: ready (the videos, on `NEXT.md`)
+- CT3d: on main (PR #536 the FRS 105 attachment, TPVS accepted; PR #537 the page's micro-entity entry path)
+- CT4: on main (PR #537); the two CT600 videos are re-recorded on the redesigned page by `NEXT.md` VV1b
 - DF2a: blocked by B34c and B34g2b (the DF1 design below)
 - DF2b: blocked by DF2a
 - DF2c: blocked by DF2a
