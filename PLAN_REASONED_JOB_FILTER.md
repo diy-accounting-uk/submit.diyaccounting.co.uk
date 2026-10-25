@@ -158,17 +158,48 @@ Meets the bar: deploy.yml: deploy-account, deploy-api, deploy-auth, deploy-billi
 
 Short of 50 advised skips: deploy.yml: deploy-mcp (31), deploy-publish (29). test.yml: behaviour-test-simulator-company-tax-return (39).
 
+### Rules from the evidence
+
+Source: the `reason` of every advised skip in the last 149 `test.yml` and 118 `deploy.yml`
+decision artifacts, for the classes at the bar.
+
+| Pattern | Where | Classes | Skips for it |
+| --- | --- | --- | --- |
+| Markdown only | `changes` job `code` output (existing) | `npm test`, `maven test`, `eslint` and the rest | 2 to 4 per class |
+| `.md`, `videos/` or `web/public/videos/` only | `changes` job `build` output (added) | `mvn-test`, `npm-test-cdk-ci`, `npm-test-cdk-prod`, `npm-mcp-test`, `lint-workflows` | 7 to 14 per class, including documentation-only |
+
+`npm-test-web-unit` and `npm-system-test` stay on the model: `web/unit-tests/videos-manifest.test.js`
+and `app/unit-tests/video/*` read `videos/*.json` and the video manifest.
+
+Repeated reasons with no mechanical form: "behaviour tests only" for a change under
+`behaviour-tests/` (the unit-level classes cannot be tied to a path list without reading each
+suite's imports), and `runProxyBehaviourTests=false` for `behaviour-test-proxy-submit-vat`
+(already an input of the job). No `.claude/` pattern is separable in the reasons.
+
 ### JF-2. Rules from evidence (was B82d, BACKLOG 82d)
 
-When JF-1's records show the model skipping the same job for the same kind of change, propose
-that as a mechanical `paths:` or `changes` rule in a PR (as electron/forge #4387 did), so the
-deterministic filter grows from the model's evidence and the run-time call is left to the cases a
-rule cannot express. After JF-1. Model: Sonnet. Size: ~1 file.
+Open: the 9 of 118 `deploy.yml` runs whose change was video assets only (the model skipped 40 or
+more stack and web-test jobs each). `web/public/videos/**` is published by `PublishStack`, so a
+rule needs a publish-only path; `paths:` and `skip deploy check` have no such path today.
+Model: Sonnet. Size: ~1 file.
 
 ### JF-3. Gradual rollout (was B82c, BACKLOG 82c)
 
-Enforce the filter one workflow and one job class at a time: unit-level jobs first, then
-behaviour suites, deploy stack jobs last. Each step stays only while the miss count stays at zero,
-with a switch to run everything; `main` stays on a full run. After JF-1, for the classes that met
-the bar. Model: Sonnet. Size: ~3 files.
+Enforce the filter one class group at a time, in the order below. A group's jobs carry the `if:`
 
+```
+!(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), '<job id>'))
+```
+
+Setting the repository variable `REASONED_JOB_FILTER` to `off` runs every enforced job; `main`
+always runs everything. A skipped job reports `skipped`, which the ruleset counts as passing, so
+`npm test`, `maven test` and `eslint` keep their existing reporting (`changes` plus the skip).
+The next step is one edit per group: replace the job's `skip-json` clause with the `if:` above.
+
+| Group | Classes | Condition | State |
+| --- | --- | --- | --- |
+| 1 | `npm-test-web-unit`, `npm-mcp-test`, `npm-system-test`, `mvn-test`, `lint-workflows`, `npm-test-cdk-ci`, `npm-test-cdk-prod` (test.yml) | `advised-json` | enforced |
+| 2 | `behaviour-test-proxy-submit-vat`, `behaviour-test-simulator-bundle`, `behaviour-test-simulator-file-micro-entity-accounts` (test.yml) | `advised-json` | advisory |
+| 3 | the ten `deploy-*` classes and the 31 `web-test*` classes at the bar (deploy.yml; needs `advised-json` on its `select-jobs`) | `advised-json` | advisory |
+
+Each group stays enforced while its miss count stays at zero. Model: Sonnet. Size: ~3 files.
