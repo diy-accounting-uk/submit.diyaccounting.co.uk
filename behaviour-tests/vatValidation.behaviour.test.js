@@ -37,6 +37,9 @@ const httpServerPort = getEnvVarAndLog("serverPort", "TEST_SERVER_HTTP_PORT", 30
 const runTestServer = getEnvVarAndLog("runTestServer", "TEST_SERVER_HTTP", null);
 const runMockOAuth2 = getEnvVarAndLog("runMockOAuth2", "TEST_MOCK_OAUTH2", null);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
+const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER", null);
+const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
+const testAuthPassword = getEnvVarAndLog("testAuthPassword", "TEST_AUTH_PASSWORD", null);
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
@@ -96,6 +99,14 @@ function generateValid9BoxData() {
   };
 }
 
+// The submit form sits behind the signed-out panel until the visitor is logged in.
+async function signIn(page, screenshotPath) {
+  await goToHomePageExpectNotLoggedIn(page, baseUrl, screenshotPath);
+  await clickLogIn(page, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
+  await verifyLoggedInStatus(page, screenshotPath);
+}
+
 test.describe("9-Box VAT Validation Error Tests", () => {
   test("INVALID_WHOLE_AMOUNT: Box 6-9 with decimal values rejected", async ({ page }, testInfo) => {
     const testUrl = baseUrl;
@@ -108,7 +119,7 @@ test.describe("9-Box VAT Validation Error Tests", () => {
     // Per HMRC spec, these fields cannot contain decimal values
     // The form uses step="1" HTML5 validation to enforce this
 
-    // Navigate directly to the form (no auth needed for client-side validation test)
+    await signIn(page, screenshotPath);
     await page.goto(`${testUrl}hmrc/vat/submitVat.html`);
     await page.waitForLoadState("networkidle");
 
@@ -154,6 +165,7 @@ test.describe("9-Box VAT Validation Error Tests", () => {
     // which is always non-negative due to Math.abs()
     // This test verifies the calculation behavior
 
+    await signIn(page, screenshotPath);
     await page.goto(`${testUrl}hmrc/vat/submitVat.html`);
     await page.waitForLoadState("networkidle");
 
@@ -178,6 +190,7 @@ test.describe("9-Box VAT Validation Error Tests", () => {
 
     addOnPageLogging(page);
 
+    await signIn(page, screenshotPath);
     await page.goto(`${testUrl}hmrc/vat/submitVat.html`);
     await page.waitForLoadState("networkidle");
 
