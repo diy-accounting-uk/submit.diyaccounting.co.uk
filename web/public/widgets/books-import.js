@@ -12,6 +12,10 @@
 //   kind "itsa-quarterly" fills the period summary fields for the period end on the form
 //   kind "itsa-annual"    fills allowances and adjustments through the page's own hooks:
 //                         { taxYear: () => string, fill: (figures) => { imported, unmapped } }
+//   kind "uk-property-period"  fills the rental income and expense fields for the period dates on the form
+//   kind "uk-property-annual"  fills the adjustments and the itemised allowances through the page's own
+//                         hooks: { taxYear: () => string, fill: (figures) => { imported, unmapped } }.
+//                         The elections and the landlord facts stay with the customer.
 //   kind "ct600"          fills the Company Tax Return form (period, computation figures, capital
 //                         allowances, reliefs and the accounts section, small and micro-entity, with
 //                         the regime the company's size gives) from a Company book; the
@@ -253,6 +257,67 @@
     const lacking = figuresTheFormLacks(period);
     const lackingText = lacking.length ? ` The form has no field for these figures from the book: ${namedList(lacking)}.` : "";
     return `Filled ${2 + filledExpenses} figures from ${fileName} for the period ending ${periodEnd}. Check them, then submit.${lackingText}`;
+  }
+
+  const UK_PROPERTY_PERIOD_FIELDS = {
+    "income.periodAmount": "periodAmount",
+    "income.otherIncome": "otherIncome",
+    "expenses.repairsAndMaintenance": "repairsAndMaintenance",
+    "expenses.other": "otherExpenses",
+  };
+
+  function derivedFigureEntries(derived) {
+    return Object.entries({ income: derived.income, expenses: derived.expenses }).flatMap(([group, figures]) =>
+      Object.entries(figures || {}).map(([name, value]) => [`${group}.${name}`, value]),
+    );
+  }
+
+  async function fillUkPropertyPeriod({ bundle, source, fileName }) {
+    const periodStartDate = fieldValue("fromDate");
+    const periodEndDate = fieldValue("toDate");
+    if (!periodStartDate || !periodEndDate) {
+      throw new Refusal(`Enter the period start and end dates and the figures fill from ${fileName}.`);
+    }
+    let derived;
+    try {
+      derived = await bundle.deriveUkPropertyPeriod(source.book, source.lines, { periodStartDate, periodEndDate });
+    } catch (error) {
+      throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
+    }
+    const entries = derivedFigureEntries(derived);
+    const figures = new Map(entries);
+    let filled = 0;
+    Object.entries(UK_PROPERTY_PERIOD_FIELDS).forEach(([name, id]) => {
+      const figure = figures.get(name);
+      if (typeof figure === "number") {
+        setField(id, figureText(figure));
+        filled += 1;
+      } else {
+        setField(id, "");
+      }
+    });
+    const lacking = entries
+      .filter(([name, value]) => !(name in UK_PROPERTY_PERIOD_FIELDS) && typeof value === "number")
+      .map(([name, value]) => `${name} ${poundsText(value)}`);
+    const lackingText = lacking.length ? ` The form has no field for these figures from the book: ${namedList(lacking)}.` : "";
+    const warningText = derived.warnings.map((warning) => ` ${upperFirst(withoutFinalStop(warning))}.`).join("");
+    return `Filled ${plural(filled, "figure")} from ${fileName} for the period ${periodStartDate} to ${periodEndDate}. Check them, then submit.${lackingText}${warningText}`;
+  }
+
+  async function fillUkPropertyAnnual({ bundle, source, fileName, hooks }) {
+    const taxYear = hooks.taxYear();
+    if (!taxYear) throw new Refusal(`Load the annual submission for a tax year and the figures fill from ${fileName}.`);
+    let derived;
+    try {
+      derived = await bundle.deriveUkPropertyAnnual(source.book, source.lines, { taxYear });
+    } catch (error) {
+      throw new Refusal(`${withoutFinalStop(error.message)}. Nothing imported.`);
+    }
+    const figures = { taxYear: derived.taxYear, allowances: derived.allowances, adjustments: derived.adjustments };
+    if (Object.keys(figures.allowances).length === 0 && Object.keys(figures.adjustments).length === 0) {
+      throw new Refusal(`${fileName} carries no allowances and no adjustments for ${derived.taxYear}. Nothing imported.`);
+    }
+    return applyAnnualFigures(figures, fileName, hooks);
   }
 
   // The derived-figures file is derive_itsa_annual_submission's answer: { taxYear, allowances,
@@ -743,6 +808,8 @@
     "vat": { fill: fillVat, applyHandoff: applyVatHandoff, watched: ["periodStart", "periodEnd"] },
     "itsa-quarterly": { fill: fillItsaQuarterly, applyHandoff: applyQuarterlyHandoff, watched: ["taxYear", "periodEndDate"] },
     "itsa-annual": { fill: fillItsaAnnual, applyHandoff: applyAnnualHandoff, watched: [] },
+    "uk-property-period": { fill: fillUkPropertyPeriod, watched: ["fromDate", "toDate"] },
+    "uk-property-annual": { fill: fillUkPropertyAnnual, watched: [] },
     "ct600": { fill: fillCt600, watched: [] },
     "micro-entity-accounts": { fill: fillMicroEntityAccounts, watched: [] },
     "small-company-accounts": { fill: fillSmallCompanyAccounts, watched: [] },

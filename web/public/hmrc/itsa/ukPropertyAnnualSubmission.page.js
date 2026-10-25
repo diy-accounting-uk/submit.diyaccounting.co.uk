@@ -322,3 +322,50 @@ document.addEventListener("DOMContentLoaded", function () {
   initializePage();
   handleOAuthCallback();
 });
+
+const BOOK_ADJUSTMENT_IDS = ["balancingCharge", "privateUseAdjustment", "businessPremisesRenovationAllowanceBalancingCharges"];
+
+function setBookFigure(id, value) {
+  const field = document.getElementById(id);
+  field.value = String(value);
+  field.dispatchEvent(new Event("input", { bubbles: true }));
+  field.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+// Fills the adjustments and the itemised allowances. The property income allowance election, the
+// non-resident landlord box and the rent a room box stay as the customer set them; itemised
+// allowances from the book do not fill while the customer has chosen the property income allowance.
+function fillFromBooks(figures) {
+  const unmapped = [];
+  let imported = 0;
+  Object.entries(figures.adjustments).forEach(([key, value]) => {
+    if (typeof value === "number" && BOOK_ADJUSTMENT_IDS.includes(key)) {
+      setBookFigure(key, value);
+      imported += 1;
+    } else {
+      unmapped.push(`adjustments.${key}`);
+    }
+  });
+  const choseIncomeAllowance = document.getElementById("allowanceTypePropertyIncome").checked;
+  if (choseIncomeAllowance) {
+    Object.keys(figures.allowances).forEach((key) => unmapped.push(`allowances.${key}`));
+    return { imported, unmapped };
+  }
+  Object.entries(figures.allowances).forEach(([key, value]) => {
+    if (typeof value === "number" && document.getElementById(key)) {
+      document.getElementById("allowanceTypeItemised").checked = true;
+      updateAllowanceFieldsEnabled();
+      setBookFigure(key, value);
+      imported += 1;
+    } else {
+      unmapped.push(`allowances.${key}`);
+    }
+  });
+  return { imported, unmapped };
+}
+
+window.booksImport.mount(document.getElementById("booksImport"), {
+  kind: "uk-property-annual",
+  taxYear: () => loadedTaxYear,
+  fill: fillFromBooks,
+});

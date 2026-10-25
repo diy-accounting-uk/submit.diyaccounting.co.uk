@@ -1,0 +1,59 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+[documentInfo]
+entriesType = "journal"
+language = "en"
+creationDate = 2026-04-06
+periodCoveredStart = 2025-04-06
+periodCoveredEnd = 2026-04-05
+defaultCurrency = "GBP"
+entriesComment = "A landlord's book: rent, expenses, adjustments and allowances for UK property"
+
+[entityInformation]
+organizationIdentifier = "Hollis Lettings"
+organizationDescription = "Residential lettings"
+taxAuthorityIdentifier = "HMRC"
+"diya-gl:product" = "SelfEmployed"
+"diya-gl:vatRegistered" = false
+"diya-gl:basisOfAccounting" = "cash"
+"diya-gl:nino" = "EF112233B"
+
+[accounts.sales."4000"]
+accountMainDescription = "Rent received"
+"diya-gl:ukPropertyField" = "income.periodAmount"
+
+[accounts.sales."4001"]
+accountMainDescription = "Lease premium"
+"diya-gl:ukPropertyField" = "income.premiumsOfLeaseGrant"
+
+[accounts.sales."4003"]
+accountMainDescription = "Other property income"
+"diya-gl:ukPropertyField" = "income.otherIncome"
+
+[accounts.sales."4004"]
+accountMainDescription = "Private use"
+"diya-gl:ukPropertyField" = "adjustments.privateUseAdjustment"
+
+[accounts.sales."4005"]
+accountMainDescription = "Balancing charge"
+"diya-gl:ukPropertyField" = "adjustments.balancingCharge"
+
+[accounts.purchases."5400"]
+accountMainDescription = "Repairs"
+"diya-gl:ukPropertyField" = "expenses.repairsAndMaintenance"
+
+[accounts.purchases."5002"]
+accountMainDescription = "Sundries"
+"diya-gl:ukPropertyField" = "expenses.other"
+
+[accounts.purchases."5800"]
+accountMainDescription = "Letting agent"
+"diya-gl:ukPropertyField" = "expenses.professionalFees"
+
+[accounts.purchases."5401"]
+accountMainDescription = "New appliances"
+"diya-gl:ukPropertyField" = "allowances.costOfReplacingDomesticItems"
+
+[accounts.purchases."5900"]
+accountMainDescription = "Boiler"
+"diya-gl:ukPropertyField" = "allowances.annualInvestmentAllowance"
