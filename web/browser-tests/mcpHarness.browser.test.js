@@ -54,21 +54,27 @@ test.describe("MCP chat harness", () => {
     await expect(page.locator("#toolList")).toContainText("list_vat_obligations");
   });
 
-  test("plays the question and the tool call, leaving the browser step idle when the tool hands back no link", async ({ page }) => {
+  test("plays the question, the HMRC authorisation and the tool call, leaving the browser step idle when no tool hands back a link", async ({
+    page,
+  }) => {
     const calls = await setupRoutes(page, OBLIGATIONS);
     await page.goto("http://localhost:3000/mcp-harness.html", { waitUntil: "domcontentloaded" });
 
     await page.locator("#nextTurn").click();
     await expect(page.locator('.harness-turn[data-role="user"]')).toHaveText("Which VAT returns are due for 111222333?");
-    await page.locator("#nextTurn").click();
-    await page.locator("#nextTurn").click();
+    for (let turn = 0; turn < 4; turn += 1) {
+      await page.locator("#nextTurn").click();
+      await expect(page.locator(".harness-turn")).toHaveCount(turn + 2);
+    }
 
-    const toolCard = page.locator('.harness-turn[data-role="tool"]');
+    const toolCard = page.locator('.harness-turn[data-role="tool"]').last();
     await expect(toolCard).toHaveAttribute("data-outcome", "ok");
     await expect(toolCard).toContainText('"periodKey": "#001"');
-    expect(calls).toHaveLength(1);
-    expect(calls[0].tool).toBe("list_vat_obligations");
-    expect(calls[0].arguments.vrn).toBe("111222333");
+    expect(calls).toHaveLength(2);
+    expect(calls[0].tool).toBe("request_hmrc_authorisation");
+    expect(calls[1].tool).toBe("list_vat_obligations");
+    expect(calls[1].arguments.vrn).toBe("111222333");
+    expect(calls[1].arguments.hmrcAccessToken).toBeUndefined();
     await expect(page.locator("#browserStep")).toBeHidden();
   });
 
@@ -81,6 +87,6 @@ test.describe("MCP chat harness", () => {
     await expect(page.locator("#browserStep")).toBeVisible();
     await expect(page.locator("#browserStatus")).toContainText("browser-step.html");
     await expect(page.frameLocator("#browserStep").locator("h1")).toHaveText("Sign in to continue");
-    await expect(page.locator('.harness-turn[data-role="assistant"]')).toHaveCount(2);
+    await expect(page.locator('.harness-turn[data-role="assistant"]')).toHaveCount(3);
   });
 });

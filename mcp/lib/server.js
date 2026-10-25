@@ -33,6 +33,9 @@ import {
   submitConfirmationStatement,
   pollConfirmationStatement,
   requestCompaniesHouseCodes,
+  requestHmrcAuthorisation,
+  HMRC_SERVICES,
+  HMRC_ACCOUNTS,
 } from "./submit-tools.js";
 
 const PACKAGE_JSON = resolve(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
@@ -263,19 +266,34 @@ export const TOOLS = {
     inputSchema: {},
     handler: deriveSmallCompanyAccounts,
   },
+  request_hmrc_authorisation: {
+    description:
+      "Answers HMRC's sign-in link for this session, so the VAT tools can call HMRC without a token in the chat. " +
+      "Answers {url, expiresAt, scope, hmrcAccount}: show the user the url, wait for them to say HMRC access is " +
+      "granted, then call list_vat_obligations or submit_vat_return. The link works once, for ten minutes. DIY " +
+      "Accounting Submit keeps HMRC's tokens itself and renews the access token for the rest of the session. A " +
+      "second call replaces the session's authorisation. hmrcAccount synthetic is HMRC's sandbox. Over the deployed API.",
+    inputSchema: {
+      services: z.array(z.enum(HMRC_SERVICES)).optional().describe("The HMRC services to ask access for: vat (the default) and itsa"),
+      hmrcAccount: z.enum(HMRC_ACCOUNTS).optional().describe("Which HMRC environment: live (the default) or synthetic"),
+    },
+    handler: requestHmrcAuthorisation,
+  },
   list_vat_obligations: {
     description:
       "The open and fulfilled VAT obligations HMRC holds for one VRN, or for one practice client's VRN when clientId " +
-      "is given instead of vrn, over the deployed API. Requires the caller's own HMRC access token; obtaining it is " +
-      "outside this tool's scope.",
+      "is given instead of vrn, over the deployed API. Uses the session's HMRC authorisation: call " +
+      "request_hmrc_authorisation first if this tool says none is held.",
     inputSchema: {
       vrn: z.string().optional().describe("VAT registration number, 9 digits; required unless clientId is given"),
       clientId: z.string().optional().describe("A practice client's id, to resolve vrn from the client row instead"),
-      hmrcAccessToken: z.string().describe("The user's HMRC OAuth access token"),
       from: z.string().optional().describe("From date, YYYY-MM-DD; defaults to the start of the current calendar year"),
       to: z.string().optional().describe("To date, YYYY-MM-DD; defaults to today"),
       status: z.enum(["O", "F"]).optional().describe("O (Open) or F (Fulfilled); both when omitted"),
-      hmrcAccount: z.enum(["synthetic", "live"]).optional().describe("Which HMRC environment to call"),
+      hmrcAccount: z
+        .enum(HMRC_ACCOUNTS)
+        .optional()
+        .describe("Which HMRC environment to call; defaults to the session's HMRC authorisation's own"),
       govTestScenario: z.string().optional().describe("HMRC sandbox test scenario"),
     },
     handler: listVatObligations,
@@ -284,14 +302,13 @@ export const TOOLS = {
     description:
       "Files the nine VAT boxes the user has confirmed (derive_vat_return's hmrc fields) over the deployed API, for " +
       "vatNumber or, when clientId is given instead, for that practice client's own VRN. Boxes 3 and 5 are HMRC's own " +
-      "totals and are not sent; the route derives them. Requires the caller's own HMRC access token; obtaining it is " +
-      "outside this tool's scope.",
+      "totals and are not sent; the route derives them. Uses the session's HMRC authorisation: call " +
+      "request_hmrc_authorisation first if this tool says none is held.",
     inputSchema: {
       vatNumber: z.string().optional().describe("VAT registration number, 9 digits; required unless clientId is given"),
       clientId: z.string().optional().describe("A practice client's id, to resolve vatNumber from the client row instead"),
       periodStart: z.string().describe("The obligation's period start, YYYY-MM-DD"),
       periodEnd: z.string().describe("The obligation's period end, YYYY-MM-DD"),
-      hmrcAccessToken: z.string().describe("The user's HMRC OAuth access token"),
       vatDueSales: z.number().describe("Box 1"),
       vatDueAcquisitions: z.number().describe("Box 2"),
       vatReclaimedCurrPeriod: z.number().describe("Box 4"),
@@ -299,7 +316,10 @@ export const TOOLS = {
       totalValuePurchasesExVAT: z.number().describe("Box 7"),
       totalValueGoodsSuppliedExVAT: z.number().describe("Box 8"),
       totalAcquisitionsExVAT: z.number().describe("Box 9"),
-      hmrcAccount: z.enum(["synthetic", "live"]).optional().describe("Which HMRC environment to call"),
+      hmrcAccount: z
+        .enum(HMRC_ACCOUNTS)
+        .optional()
+        .describe("Which HMRC environment to call; defaults to the session's HMRC authorisation's own"),
       govTestScenario: z.string().optional().describe("HMRC sandbox test scenario"),
       runFraudPreventionHeaderValidation: z.boolean().optional(),
       allowSyntheticObligations: z

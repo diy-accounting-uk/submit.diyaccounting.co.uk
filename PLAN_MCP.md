@@ -21,7 +21,7 @@ An HMRC grant the MCP can start, so VAT filing through the MCP needs no token fr
 
 | Piece | Where |
 |-------|-------|
-| The tool and the token lookup | `mcp/lib/hmrc-grant-tools.js` (new); `mcp/lib/server.js`; `mcp/lib/submit-tools.js` |
+| The tool and the token lookup | `mcp/lib/submit-tools.js`; `mcp/lib/server.js` |
 | The three routes | `app/functions/mcp/mcpHmrcGrant.js` (new), registered in `app/bin/server.js` |
 | The store | `app/data/dynamoDbHmrcGrantRepository.js` (new), in the `mcp-sessions` table |
 | The seal | `app/lib/codesSeal.js`, given a purpose argument so the grant uses its own derived key |
@@ -55,7 +55,7 @@ The seal key is HKDF-SHA256 of the MCP blob key with the info `hmrc-grant`, so a
 
 - Splits the state, reads the item by `grantId`, and compares the secret's hash in constant time.
 - Moves the item from `pending` to `exchanging` with a condition on `state = pending` and `ttl > now`. A second post of the same state fails that condition and answers 409.
-- Exchanges the code with the HMRC client id and secret for the grant's `hmrcAccount`, through `performTokenExchange`, so the request is audited against the owner's hashed sub as the web exchange is.
+- Exchanges the code with the HMRC client id and secret for the grant's `hmrcAccount`, through `performTokenExchange`, so the request is audited as the web exchange is. The callback carries no signed-in user, so the audit record is filed under `mcp-hmrc-grant:<grantId>`.
 - On success, seals the tokens, sets `granted`, `accessExpiresAt` and the 24-hour `ttl`. On failure, deletes the item and answers HMRC's error, so the user asks again.
 
 ## The read route and refresh
@@ -103,6 +103,6 @@ The seal key is HKDF-SHA256 of the MCP blob key with the info `hmrc-grant`, so a
 
 ## Proof
 
-- Unit: `mcp/test/hmrc-grant-tools.test.js`, `mcp/test/submit-tools.test.js`, `app/unit-tests/functions/mcpHmrcGrant.test.js`, `app/unit-tests/functions/mcpHttp.test.js`, `app/unit-tests/lib/codesSeal.test.js`.
+- Unit: `mcp/test/hmrc-grant.test.js`, `mcp/test/submit-tools.test.js`, `app/unit-tests/functions/mcpHmrcGrant.test.js`, `app/unit-tests/functions/mcpHttp.test.js`, `app/unit-tests/lib/codesSeal.test.js`.
 - Simulator lane: `behaviour-tests/mcpHmrcGrant.behaviour.test.js` starts the grant through the tool, walks the simulator's HMRC consent pages in a browser, lands on the real callback page, and lists obligations through the MCP with no token argument.
 - Infra: `./mvnw clean verify`.

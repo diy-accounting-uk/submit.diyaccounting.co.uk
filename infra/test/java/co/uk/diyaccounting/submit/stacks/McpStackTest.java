@@ -24,6 +24,9 @@ class McpStackTest {
 
     private static final String USER_POOL_ID = "eu-west-2_TestPool";
     private static final String MCP_CLIENT_ID = "mcp-test-client-id";
+    private static final String HMRC_SECRET_ARN = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/hmrc-client-secret";
+    private static final String HMRC_SANDBOX_SECRET_ARN =
+            "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/hmrc-sandbox-client-secret";
 
     private static McpStack synthMcpStack() {
         App app = new App();
@@ -46,20 +49,27 @@ class McpStackTest {
                         .baseImageTag("latest")
                         .cognitoUserPoolId(USER_POOL_ID)
                         .mcpUserPoolClientId(MCP_CLIENT_ID)
+                        .hmrcBaseUri("https://api.service.hmrc.gov.uk")
+                        .hmrcClientId("hmrc-live-client")
+                        .hmrcClientSecretArn(HMRC_SECRET_ARN)
+                        .hmrcSandboxBaseUri("https://test-api.service.hmrc.gov.uk")
+                        .hmrcSandboxClientId("hmrc-sandbox-client")
+                        .hmrcSandboxClientSecretArn(HMRC_SANDBOX_SECRET_ARN)
                         .build());
     }
 
     @Test
-    void stackWiresThreeApiLambdasAndCreatesNoSecret() {
+    void stackWiresFourApiLambdasAndCreatesNoSecret() {
         McpStack stack = synthMcpStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 3);
+        template.resourceCountIs("AWS::Lambda::Function", 4);
         template.resourceCountIs("AWS::SecretsManager::Secret", 0);
         for (String functionName : List.of(
                 stack.mcpHttpLambdaProps.ingestFunctionName(),
                 stack.mcpOauthLambdaProps.ingestFunctionName(),
-                stack.mcpCodesEntryLambdaProps.ingestFunctionName())) {
+                stack.mcpCodesEntryLambdaProps.ingestFunctionName(),
+                stack.mcpHmrcGrantLambdaProps.ingestFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
         }
@@ -190,7 +200,7 @@ class McpStackTest {
     }
 
     @Test
-    void routesAreMcpAnyTheOauthPathsAndTheCodesEntryPathsWithOnlyTheMintSignedIn() {
+    void routesAreMcpAnyTheOauthPathsTheCodesEntryPathsAndTheHmrcGrantPaths() {
         McpStack stack = synthMcpStack();
 
         var routes = stack.lambdaFunctionProps.stream()
@@ -205,11 +215,17 @@ class McpStackTest {
                         "ANY /mcp/oauth/{action}",
                         "POST /api/v1/mcp/codes-entries",
                         "GET /api/v1/mcp/codes-entries/{entryId}",
-                        "PUT /api/v1/mcp/codes-entries/{entryId}"),
+                        "PUT /api/v1/mcp/codes-entries/{entryId}",
+                        "POST /api/v1/mcp/hmrc-grants",
+                        "GET /api/v1/mcp/hmrc-grants/{grantId}",
+                        "POST /api/v1/mcp/hmrc-grants/callback"),
                 routes);
+        var signedInRoutes = List.of(
+                "POST /api/v1/mcp/codes-entries", "POST /api/v1/mcp/hmrc-grants", "GET /api/v1/mcp/hmrc-grants/{grantId}");
         for (AbstractApiLambdaProps props : stack.lambdaFunctionProps) {
-            if (props.urlPath().equals("/api/v1/mcp/codes-entries")) {
-                assertTrue(props.jwtAuthorizer(), "minting a codes entry needs the signed-in user");
+            if (signedInRoutes.contains(props.httpMethod() + " " + props.urlPath())) {
+                assertTrue(props.jwtAuthorizer(), props.urlPath() + " needs the signed-in user");
+                assertFalse(props.customAuthorizer(), props.urlPath() + " must have no custom authoriser");
                 continue;
             }
             assertFalse(props.jwtAuthorizer(), props.urlPath() + " must have no JWT authoriser");
@@ -220,7 +236,7 @@ class McpStackTest {
     }
 
     @Test
-    void everyRouteResolvesToOneOfTheThreeFunctions() {
+    void everyRouteResolvesToOneOfTheFourFunctions() {
         McpStack stack = synthMcpStack();
 
         var functionNames = stack.lambdaFunctionProps.stream()
@@ -231,8 +247,39 @@ class McpStackTest {
                 List.of(
                         stack.mcpHttpLambdaProps.ingestFunctionName(),
                         stack.mcpOauthLambdaProps.ingestFunctionName(),
-                        stack.mcpCodesEntryLambdaProps.ingestFunctionName()),
+                        stack.mcpCodesEntryLambdaProps.ingestFunctionName(),
+                        stack.mcpHmrcGrantLambdaProps.ingestFunctionName()),
                 functionNames);
+    }
+
+    @Test
+    void theHmrcGrantFunctionCarriesTheHmrcClientsAndReadsTheirSecretsTheBlobKeyAndTheSalt() {
+        McpStack stack = synthMcpStack();
+        Template template = Template.fromStack(stack);
+        SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
+
+        var variables = environmentVariables(template, stack.mcpHmrcGrantLambdaProps.ingestFunctionName());
+        assertEquals("docs-env-mcp-sessions", variables.get("MCP_SESSIONS_DYNAMODB_TABLE_NAME"));
+        assertEquals(sharedNames.publicBaseUrl, variables.get("DIY_SUBMIT_BASE_URL"));
+        assertEquals("hmrc-live-client", variables.get("HMRC_CLIENT_ID"));
+        assertEquals("hmrc-sandbox-client", variables.get("HMRC_SANDBOX_CLIENT_ID"));
+        assertEquals(HMRC_SECRET_ARN, variables.get("HMRC_CLIENT_SECRET_ARN"));
+        assertEquals(HMRC_SANDBOX_SECRET_ARN, variables.get("HMRC_SANDBOX_CLIENT_SECRET_ARN"));
+        assertTrue(variables.containsKey("MCP_OAUTH_BLOB_KEY_SECRET_ARN"));
+        assertTrue(variables.containsKey("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME"));
+        var statements = iamStatementsForFunction(template, stack.mcpHmrcGrantLambdaProps.ingestFunctionName());
+        assertTrue(
+                statements.stream()
+                        .anyMatch(statement -> actionsOf(statement).contains("dynamodb:UpdateItem")
+                                && actionsOf(statement).contains("dynamodb:DeleteItem")),
+                "expected the grant function to write the sessions table");
+        var secretResources = statements.stream()
+                .filter(statement -> actionsOf(statement).contains("secretsmanager:GetSecretValue"))
+                .map(statement -> String.valueOf(statement.get("Resource")))
+                .toList();
+        assertEquals(4, secretResources.size(), "expected the blob key, the salt and the two HMRC client secrets");
+        assertTrue(secretResources.contains(HMRC_SECRET_ARN + "-*"));
+        assertTrue(secretResources.contains(HMRC_SANDBOX_SECRET_ARN + "-*"));
     }
 
     @Test

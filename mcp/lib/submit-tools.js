@@ -21,7 +21,10 @@
 // sits behind the standard Cognito JWT authoriser, so the session bearer goes in the plain
 // Authorization header, as practice-tools.js sends it.
 //
-// Obtaining the HMRC access token remains outside this tool's scope.
+// The HMRC access token comes from the session's HMRC grant, which request_hmrc_authorisation
+// starts: the user grants access in the browser, Submit's callback stores HMRC's tokens server
+// side, and the tools that call HMRC read the access token back by the grant id for each call.
+// No tool takes the token as an argument, and none answers the grant id or a token to the chat.
 
 function baseUrl() {
   const value = process.env.DIYA_SUBMIT_BASE_URL;
@@ -111,20 +114,76 @@ export async function callSubmitApi(session, path, { method = "GET", body, heade
   return responseBody;
 }
 
+export const HMRC_SERVICES = ["vat", "itsa"];
+export const HMRC_ACCOUNTS = ["synthetic", "live"];
+
+const NO_GRANT_MESSAGE =
+  "No HMRC authorisation is held for this session. Call request_hmrc_authorisation, show the user its link, " +
+  "and call this tool again once they have granted access.";
+
+/**
+ * request_hmrc_authorisation: a new HMRC grant for this session, replacing any earlier one.
+ * @param {Object} session
+ * @param {{services?: string[], hmrcAccount?: string}} params
+ * @returns {Promise<{url: string, expiresAt: string, scope: string, hmrcAccount: string}>}
+ */
+export async function requestHmrcAuthorisation(session, params = {}) {
+  const services = params.services ?? ["vat"];
+  const hmrcAccount = params.hmrcAccount ?? "live";
+  if (!Array.isArray(services) || services.length === 0 || !services.every((service) => HMRC_SERVICES.includes(service))) {
+    throw new Error(`request_hmrc_authorisation services must list one or more of ${HMRC_SERVICES.join(", ")}`);
+  }
+  if (!HMRC_ACCOUNTS.includes(hmrcAccount)) {
+    throw new Error(`request_hmrc_authorisation hmrcAccount must be one of ${HMRC_ACCOUNTS.join(", ")}`);
+  }
+  const granted = await callSubmitApi(session, "/api/v1/mcp/hmrc-grants", { method: "POST", body: { services, hmrcAccount } });
+  session.hmrcGrant = { grantId: granted.grantId, hmrcAccount: granted.hmrcAccount };
+  return { url: granted.url, expiresAt: granted.expiresAt, scope: granted.scope, hmrcAccount: granted.hmrcAccount };
+}
+
+/**
+ * The session's HMRC access token for one tool call, and the HMRC account it belongs to.
+ * Throws a message naming request_hmrc_authorisation when the session holds no grant, when the
+ * user has not finished the HMRC page, and when the call names the other HMRC account.
+ * @param {Object} session
+ * @param {string} toolName - named in the error messages
+ * @param {string} [hmrcAccount] - the account the call asks for; the grant's own when omitted
+ * @returns {Promise<{accessToken: string, hmrcAccount: string}>}
+ */
+export async function hmrcAccessTokenFor(session, toolName, hmrcAccount) {
+  const grantId = session?.hmrcGrant?.grantId;
+  if (!grantId) throw new Error(`${toolName}: ${NO_GRANT_MESSAGE}`);
+  const grant = await callSubmitApi(session, `/api/v1/mcp/hmrc-grants/${encodeURIComponent(grantId)}`);
+  if (grant.status !== "granted") {
+    throw new Error(
+      `${toolName}: the user has not finished granting HMRC access yet. Ask them to complete the page at the ` +
+        "request_hmrc_authorisation link, then call this tool again.",
+    );
+  }
+  if (hmrcAccount && hmrcAccount !== grant.hmrcAccount) {
+    throw new Error(
+      `${toolName}: the session's HMRC authorisation is for the ${grant.hmrcAccount} account, not ${hmrcAccount}. ` +
+        `Call request_hmrc_authorisation with hmrcAccount ${hmrcAccount} first.`,
+    );
+  }
+  return { accessToken: grant.accessToken, hmrcAccount: grant.hmrcAccount };
+}
+
 /**
  * list_vat_obligations: the open and fulfilled obligations for one VRN, or for one practice
  * client's VRN when clientId is given instead (hmrcVatObligationGet.js resolves it from the
- * client row; a client that is not this practice's own answers 403 client-not-found).
+ * client row; a client that is not this practice's own answers 403 client-not-found). The HMRC
+ * access token is the session's HMRC grant's.
  * @param {Object} session
  * @param {{vrn?: string, clientId?: string, from?: string, to?: string, status?: string,
- *   hmrcAccessToken: string, hmrcAccount?: string, govTestScenario?: string}} params
+ *   hmrcAccount?: string, govTestScenario?: string}} params
  */
 export async function listVatObligations(session, params = {}) {
-  const { vrn, clientId, from, to, status, hmrcAccount, govTestScenario } = params;
+  const { vrn, clientId, from, to, status, govTestScenario } = params;
   if (!vrn && !clientId) {
     throw new Error("list_vat_obligations requires vrn, or clientId to resolve it from the client row");
   }
-  const hmrcAccessToken = requireField("list_vat_obligations", params, "hmrcAccessToken");
+  const { accessToken, hmrcAccount } = await hmrcAccessTokenFor(session, "list_vat_obligations", params.hmrcAccount);
 
   const query = new URLSearchParams();
   if (vrn) query.set("vrn", vrn);
@@ -134,8 +193,7 @@ export async function listVatObligations(session, params = {}) {
   if (status) query.set("status", status);
   if (govTestScenario) query.set("Gov-Test-Scenario", govTestScenario);
 
-  const headers = { Authorization: `Bearer ${hmrcAccessToken}` };
-  if (hmrcAccount) headers.hmrcAccount = hmrcAccount;
+  const headers = { Authorization: `Bearer ${accessToken}`, hmrcAccount };
 
   return callSubmitApi(session, `/api/v1/hmrc/vat/obligation?${query.toString()}`, { customAuthorizer: true, headers });
 }
@@ -158,10 +216,11 @@ const VAT_RETURN_BOX_FIELDS = [
  * client-not-authorised). Returns {receipt, hmrcResponse, hmrcResponseBody, periodKey, receiptId}
  * — the filed receipt sits under `receipt` (also duplicated at `hmrcResponseBody`), `periodKey` is
  * the obligation period this route resolved from periodStart/periodEnd, and `receiptId` is the
- * receipt's file name without its .json suffix (get_vat_receipt takes `${receiptId}.json`).
+ * receipt's file name without its .json suffix (get_vat_receipt takes `${receiptId}.json`). The
+ * HMRC access token is the session's HMRC grant's.
  * @param {Object} session
  * @param {{vatNumber?: string, clientId?: string, periodStart: string, periodEnd: string,
- *   hmrcAccessToken: string, vatDueSales: number, vatDueAcquisitions: number,
+ *   vatDueSales: number, vatDueAcquisitions: number,
  *   vatReclaimedCurrPeriod: number, totalValueSalesExVAT: number, totalValuePurchasesExVAT: number,
  *   totalValueGoodsSuppliedExVAT: number, totalAcquisitionsExVAT: number,
  *   hmrcAccount?: string, govTestScenario?: string, runFraudPreventionHeaderValidation?: boolean,
@@ -174,15 +233,14 @@ export async function submitVatReturn(session, params = {}) {
   }
   const periodStart = requireField("submit_vat_return", params, "periodStart");
   const periodEnd = requireField("submit_vat_return", params, "periodEnd");
-  const hmrcAccessToken = requireField("submit_vat_return", params, "hmrcAccessToken");
   const boxes = {};
   for (const field of VAT_RETURN_BOX_FIELDS) {
     boxes[field] = requireField("submit_vat_return", params, field);
   }
-  const { hmrcAccount, govTestScenario, runFraudPreventionHeaderValidation, allowSyntheticObligations } = params;
+  const { govTestScenario, runFraudPreventionHeaderValidation, allowSyntheticObligations } = params;
+  const { accessToken, hmrcAccount } = await hmrcAccessTokenFor(session, "submit_vat_return", params.hmrcAccount);
 
-  const headers = {};
-  if (hmrcAccount) headers.hmrcAccount = hmrcAccount;
+  const headers = { hmrcAccount };
   if (govTestScenario) headers["Gov-Test-Scenario"] = govTestScenario;
 
   return callSubmitApi(session, "/api/v1/hmrc/vat/return", {
@@ -194,7 +252,7 @@ export async function submitVatReturn(session, params = {}) {
       ...(clientId ? { clientId } : {}),
       periodStart,
       periodEnd,
-      accessToken: hmrcAccessToken,
+      accessToken,
       ...boxes,
       ...(runFraudPreventionHeaderValidation !== undefined ? { runFraudPreventionHeaderValidation } : {}),
       ...(allowSyntheticObligations !== undefined ? { allowSyntheticObligations } : {}),

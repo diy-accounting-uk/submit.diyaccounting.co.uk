@@ -1376,6 +1376,16 @@ public class SubmitSharedNames {
     public String mcpCodesEntryItemUrlPath;
     public boolean mcpCodesEntryLambdaJwtAuthorizer;
     public boolean mcpCodesEntryLambdaCustomAuthorizer;
+    public String mcpHmrcGrantIngestLambdaHandler;
+    public String mcpHmrcGrantIngestLambdaFunctionName;
+    public String mcpHmrcGrantIngestLambdaArn;
+    public String mcpHmrcGrantIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod mcpHmrcGrantLambdaHttpMethod;
+    public String mcpHmrcGrantLambdaUrlPath;
+    public String mcpHmrcGrantItemUrlPath;
+    public String mcpHmrcGrantCallbackUrlPath;
+    public boolean mcpHmrcGrantLambdaJwtAuthorizer;
+    public boolean mcpHmrcGrantLambdaCustomAuthorizer;
 
     public String diyaGlListGetIngestLambdaHandler;
     public String diyaGlListGetIngestLambdaFunctionName;
@@ -5233,6 +5243,26 @@ public class SubmitSharedNames {
         this.mcpCodesEntryIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, mcpCodesEntryLambdaHandlerDashed);
         this.mcpCodesEntryIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.mcpCodesEntryIngestLambdaArn, this.provisionedConcurrencyAliasName);
+
+        // HMRC grant an MCP tool starts: a signed-in tool call requests a grant (POST) and reads its
+        // token back by id (GET); the web callback page posts HMRC's code and the grant's state to the
+        // callback path, which carries no authoriser because the state is the capability
+        this.mcpHmrcGrantLambdaHttpMethod = HttpMethod.POST;
+        this.mcpHmrcGrantLambdaUrlPath = "/api/v1/mcp/hmrc-grants";
+        this.mcpHmrcGrantItemUrlPath = "/api/v1/mcp/hmrc-grants/{grantId}";
+        this.mcpHmrcGrantCallbackUrlPath = "/api/v1/mcp/hmrc-grants/callback";
+        this.mcpHmrcGrantLambdaJwtAuthorizer = true;
+        this.mcpHmrcGrantLambdaCustomAuthorizer = false;
+        var mcpHmrcGrantLambdaHandlerName = "mcpHmrcGrant.ingestHandler";
+        var mcpHmrcGrantLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(mcpHmrcGrantLambdaHandlerName);
+        this.mcpHmrcGrantIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, mcpHmrcGrantLambdaHandlerDashed);
+        this.mcpHmrcGrantIngestLambdaHandler =
+                "%s/mcp/%s".formatted(appLambdaHandlerPrefix, mcpHmrcGrantLambdaHandlerName);
+        this.mcpHmrcGrantIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, mcpHmrcGrantLambdaHandlerDashed);
+        this.mcpHmrcGrantIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.mcpHmrcGrantIngestLambdaArn, this.provisionedConcurrencyAliasName);
 
         // Alarm-to-GitHub-issue Lambda (EventBridge target, not API)
         var alarmToGithubIssueLambdaHandlerName = "alarmToGithubIssue.handler";

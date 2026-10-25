@@ -27,20 +27,22 @@ describe("harness tool calls", () => {
   });
 
   it("calls list_vat_obligations through the MCP client and parses the answer", async () => {
-    const fetchStub = vi.fn(async () => new Response(JSON.stringify({ obligations: [{ status: "O" }] }), { status: 200 }));
+    const fetchStub = vi.fn(async (url) =>
+      String(url).includes("/api/v1/mcp/hmrc-grants/")
+        ? new Response(JSON.stringify({ status: "granted", accessToken: "token", hmrcAccount: "live" }), { status: 200 })
+        : new Response(JSON.stringify({ obligations: [{ status: "O" }] }), { status: 200 }),
+    );
     vi.stubGlobal("fetch", fetchStub);
-    const answer = await callHarnessTool(sessionWithBearer(), "list_vat_obligations", {
-      vrn: "111222333",
-      status: "O",
-      hmrcAccessToken: "token",
-    });
+    const session = sessionWithBearer();
+    session.hmrcGrant = { grantId: "11111111-2222-4333-8444-555555555555", hmrcAccount: "live" };
+    const answer = await callHarnessTool(session, "list_vat_obligations", { vrn: "111222333", status: "O" });
     expect(answer).toEqual({ ok: true, result: { obligations: [{ status: "O" }] } });
-    expect(String(fetchStub.mock.calls[0][0])).toContain("/api/v1/hmrc/vat/obligation?vrn=111222333");
+    expect(String(fetchStub.mock.calls[1][0])).toContain("/api/v1/hmrc/vat/obligation?vrn=111222333");
   });
 
   it("reports a tool failure as not ok with its message", async () => {
     const answer = await callHarnessTool(sessionWithBearer(), "list_vat_obligations", { vrn: "111222333" });
     expect(answer.ok).toBe(false);
-    expect(String(answer.result)).toContain("hmrcAccessToken");
+    expect(String(answer.result)).toContain("request_hmrc_authorisation");
   });
 });

@@ -52,7 +52,7 @@ function baseUrl() {
  *   pollBudgetMs: number|null}}
  */
 export function createSession({ credentials = storedCredentials, pollBudgetMs = null } = {}) {
-  return { book: null, lines: null, product: null, sourcePath: null, cloud: null, credentials, pollBudgetMs };
+  return { book: null, lines: null, product: null, sourcePath: null, cloud: null, hmrcGrant: null, credentials, pollBudgetMs };
 }
 
 function requireLoaded(session) {

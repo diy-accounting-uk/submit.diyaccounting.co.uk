@@ -16,10 +16,12 @@ const mockCreateMcpSession = vi.fn();
 const mockGetMcpSession = vi.fn();
 const mockUpdateMcpSessionCloud = vi.fn();
 const mockDeleteMcpSession = vi.fn();
+const mockUpdateMcpSessionHmrcGrant = vi.fn();
 vi.mock("@app/data/dynamoDbMcpSessionRepository.js", () => ({
   createMcpSession: (...args) => mockCreateMcpSession(...args),
   getMcpSession: (...args) => mockGetMcpSession(...args),
   updateMcpSessionCloud: (...args) => mockUpdateMcpSessionCloud(...args),
+  updateMcpSessionHmrcGrant: (...args) => mockUpdateMcpSessionHmrcGrant(...args),
   deleteMcpSession: (...args) => mockDeleteMcpSession(...args),
 }));
 
@@ -156,6 +158,28 @@ describe("mcpHttp ingestHandler", () => {
     expect(mockRestoreCloudBook).toHaveBeenCalledOnce();
     expect(mockHandleMcpRequest.mock.calls[0][1].session.book).toEqual({ name: "book" });
     expect(mockUpdateMcpSessionCloud).toHaveBeenCalledWith("s-3", { bookId: "book-1", clientId: null, etag: "e2" });
+  });
+
+  it("hands the stored HMRC grant to the tools and leaves it alone when no tool changed it", async () => {
+    const hmrcGrant = { grantId: "11111111-2222-4333-8444-555555555555", hmrcAccount: "live" };
+    mockGetMcpSession.mockResolvedValue({ sessionId: "s-5", hashedSub: OWN_HASH(), cloud: null, hmrcGrant });
+    await ingestHandler(mcpEvent({ headers: { "mcp-session-id": "s-5" }, body: TOOLS_CALL }));
+    expect(mockHandleMcpRequest.mock.calls[0][1].session.hmrcGrant).toEqual(hmrcGrant);
+    expect(mockUpdateMcpSessionHmrcGrant).not.toHaveBeenCalled();
+  });
+
+  it("writes back the grant a tool call started", async () => {
+    mockGetMcpSession.mockResolvedValue({ sessionId: "s-6", hashedSub: OWN_HASH(), cloud: null });
+    const started = { grantId: "aaaaaaaa-2222-4333-8444-555555555555", hmrcAccount: "synthetic" };
+    mockHandleMcpRequest.mockImplementationOnce(async (_request, { session }) => {
+      session.hmrcGrant = started;
+      return new Response(JSON.stringify({ jsonrpc: "2.0", id: 2, result: {} }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      });
+    });
+    await ingestHandler(mcpEvent({ headers: { "mcp-session-id": "s-6" }, body: TOOLS_CALL }));
+    expect(mockUpdateMcpSessionHmrcGrant).toHaveBeenCalledWith("s-6", started);
   });
 
   it("deletes the caller's own session and answers 204", async () => {

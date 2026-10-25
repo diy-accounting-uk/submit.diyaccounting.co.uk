@@ -14,7 +14,21 @@
     {
       "id": "plan",
       "role": "assistant",
-      "text": "I will ask HMRC, through the Submit server, for the open obligations."
+      "text": "I will ask HMRC, through the Submit server, for the open obligations. First HMRC needs your permission."
+    },
+    {
+      "id": "authorise",
+      "role": "tool",
+      "tool": "request_hmrc_authorisation",
+      "arguments": {
+        "services": ["vat"],
+        "hmrcAccount": "synthetic"
+      }
+    },
+    {
+      "id": "grant",
+      "role": "assistant",
+      "text": "Sign in to HMRC on the page and grant access. HMRC's token stays with Submit and never passes through this chat."
     },
     {
       "id": "obligations",
@@ -22,8 +36,7 @@
       "tool": "list_vat_obligations",
       "arguments": {
         "vrn": "111222333",
-        "status": "O",
-        "hmrcAccessToken": "simulator-hmrc-access-token"
+        "status": "O"
       }
     },
     {

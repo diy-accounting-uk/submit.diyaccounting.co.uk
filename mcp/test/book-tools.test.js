@@ -136,6 +136,7 @@ describe("the server", () => {
       "render_confirmation_statement_sandbox",
       "render_micro_entity_accounts_sandbox",
       "request_companies_house_codes",
+      "request_hmrc_authorisation",
       "run_for_clients",
       "save_book",
       "sign_in",
