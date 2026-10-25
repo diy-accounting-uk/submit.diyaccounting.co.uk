@@ -167,6 +167,11 @@ export async function ingestHandler(event) {
         utr: returnRequest.utr,
         gatewayTest,
         messageClass: CT600_CLASS,
+        filed: {
+          boxes: documents.boxes,
+          computationsIxbrl: documents.computationsIxbrl,
+          accountsIxbrl: documents.accountsIxbrl,
+        },
       },
       asyncRequestsTableName,
     );

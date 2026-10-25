@@ -223,6 +223,7 @@ export async function listUserReceipts(userSub, clientId) {
           createdAt: item.createdAt,
           lastModified: item.createdAt, // Use createdAt as lastModified for compatibility
           clientId: item.clientId || null,
+          kind: item.receipt?.kind || null,
         };
       });
 

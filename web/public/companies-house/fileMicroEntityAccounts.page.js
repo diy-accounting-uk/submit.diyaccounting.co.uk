@@ -206,6 +206,14 @@ function showFilingResult(headline, detail) {
   }
 }
 
+function showFilingCopyLink(outcome) {
+  if (outcome.statusCode !== "ACCEPT" || !outcome.receiptId) return;
+  const link = document.getElementById("filingCopyLink");
+  const receiptName = encodeURIComponent(outcome.receiptId + ".json");
+  link.href = `filings.html?receipt=${receiptName}`;
+  link.style.display = "inline";
+}
+
 async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
   for (let attempt = 0; attempt < 20; attempt++) {
     const result = await window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
@@ -256,6 +264,7 @@ async function handleSubmitFiling() {
       `Status: ${outcome.statusCode}. Submission number ${outcome.submissionNumber}.`,
     );
     renderRejections(outcome.rejections);
+    showFilingCopyLink(outcome);
   } catch (error) {
     console.error("Companies House accounts status check failed:", error);
     showFilingResult(

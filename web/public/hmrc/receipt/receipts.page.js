@@ -5,6 +5,9 @@ function getIdToken() {
   return localStorage.getItem("cognitoIdToken");
 }
 
+// Accounts and Company Tax Return filings open on their own page, which draws the filed documents.
+const FILING_KINDS = new Set(["companies-house-accounts", "company-tax-return"]);
+
 async function fetchReceipts() {
   const idToken = getIdToken();
   const unauthHint = document.getElementById("unauthenticatedHint");
@@ -55,12 +58,16 @@ async function fetchReceipts() {
       const receiptCell = document.createElement("td");
       const receiptLabel = document.createElement("a");
       receiptLabel.className = "receipt-label";
-      receiptLabel.href = "#";
       receiptLabel.textContent = it.formBundleNumber || it.name || "Unnamed receipt";
-      receiptLabel.onclick = (e) => {
-        e.preventDefault();
-        viewReceipt(it.name);
-      };
+      if (FILING_KINDS.has(it.kind)) {
+        receiptLabel.href = `../../companies-house/filings.html?receipt=${encodeURIComponent(it.name)}`;
+      } else {
+        receiptLabel.href = "#";
+        receiptLabel.onclick = (e) => {
+          e.preventDefault();
+          viewReceipt(it.name);
+        };
+      }
 
       const downloadIcon = document.createElement("a");
       downloadIcon.className = "download-icon";

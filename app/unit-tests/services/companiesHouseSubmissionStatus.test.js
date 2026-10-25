@@ -183,6 +183,36 @@ describe("pollSubmission", () => {
     expect(mockEventBridgeSend).toHaveBeenCalled();
   });
 
+  test("keeps the filed accounts document with the receipt, and out of the poll answer", async () => {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof lib.GetCommand) {
+        return { Item: { requestId: cmd.input.Key.requestId, status: "pending", data: { filedDocument: "<html>accounts</html>" } } };
+      }
+      return {};
+    });
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "ACCEPT", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
+
+    const result = await pollSubmission({
+      userSub: "user-1",
+      submissionNumber: "00001A",
+      kind: "accounts",
+      acceptedEvent: "companies-house-accounts-accepted",
+      acceptedSummary: "Companies House accounts accepted",
+    });
+
+    expect(result.data.filedDocument).toBeUndefined();
+    const receiptPut = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.PutCommand);
+    expect(receiptPut.input.Item.receipt).toMatchObject({
+      kind: "companies-house-accounts",
+      submissionNumber: "00001A",
+      filedDocument: "<html>accounts</html>",
+    });
+  });
+
   test("stores failed and returns the rejections on REJECT, without publishing acceptedEvent", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [],

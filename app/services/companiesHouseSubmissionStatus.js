@@ -20,6 +20,8 @@ import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRe
 import { putReceipt } from "../data/dynamoDbReceiptRepository.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
 
+const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
+
 const logger = createLogger({ source: "app/services/companiesHouseSubmissionStatus.js" });
 
 /**
@@ -87,7 +89,10 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
 
   if (status.statusCode === "ACCEPT") {
     const receiptId = `${new Date().toISOString()}-${submissionNumber}`;
-    await putReceipt(userSub, receiptId, status, resolveActorClass());
+    // The accounts document is kept with the receipt so the customer's copy shows what was filed.
+    const filedDocument = persistedRequest.data?.filedDocument;
+    const receipt = filedDocument ? { ...status, kind: ACCOUNTS_RECEIPT_KIND, filedDocument } : status;
+    await putReceipt(userSub, receiptId, receipt, resolveActorClass());
     const data = { ...status, receiptId };
     await putAsyncRequest(userSub, submissionNumber, "completed", { ...data, kind }, asyncRequestsTableName);
     await publishActivityEvent({ event: acceptedEvent, summary: acceptedSummary, userSub });

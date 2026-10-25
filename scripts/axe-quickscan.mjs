@@ -73,6 +73,7 @@ const PAGES = [
   "/companies-house/fileMicroEntityAccounts.html",
   "/companies-house/fileSmallCompanyAccounts.html",
   "/companies-house/filingCallback.html",
+  "/companies-house/filings.html",
 ];
 
 const browser = await chromium.launch({ args: ["--disable-gpu", "--no-sandbox"] });

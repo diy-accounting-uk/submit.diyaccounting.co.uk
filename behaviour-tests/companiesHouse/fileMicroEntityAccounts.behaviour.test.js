@@ -35,6 +35,7 @@ import {
   setGovTestScenario,
   enterCompanyAuthCodeAndSubmit,
   verifyFilingAccepted,
+  openFilingCustomerCopy,
   verifyFilingRejected,
   writeFixtureBookZip,
   fillAccountsFormFromBook,
@@ -217,6 +218,7 @@ test("Click through: file micro-entity accounts end to end and see the filing ac
   await previewAccounts(page, screenshotPath);
   await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
   await verifyFilingAccepted(page, screenshotPath);
+  await openFilingCustomerCopy(page, screenshotPath);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });
