@@ -23,6 +23,7 @@ function showSearchCriteria() {
   const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
   const cancelBtn = document.getElementById("cancelRequestBtn");
   if (container && toggleBtn) {
+    document.getElementById("businessDetailsForm").style.display = "";
     container.style.display = "block";
     toggleBtn.style.display = "none";
     if (cancelBtn) cancelBtn.style.display = "none";
@@ -33,6 +34,7 @@ function showSearchCriteria() {
 function hideRequestControls() {
   document.getElementById("cancelRequestBtn").style.display = "none";
   document.getElementById("toggleSearchCriteriaBtn").style.display = "none";
+  document.getElementById("businessDetailsForm").style.display = "none";
 }
 
 function cancelRequest() {
