@@ -1,0 +1,79 @@
+{
+  "title": "File accounts for every client through one codes link",
+  "config": {
+    "serverName": "diya-submit",
+    "hostedPath": "/mcp",
+    "stdioCommand": "node mcp/bin/diya-submit-mcp.js"
+  },
+  "turns": [
+    { "id": "ask", "role": "user", "text": "File this year's micro-entity accounts for Alpha Ltd and Beta Ltd." },
+    { "id": "plan", "role": "assistant", "text": "I will add both clients, then ask you for their Companies House codes on one page." },
+    {
+      "id": "alpha",
+      "role": "tool",
+      "tool": "add_client",
+      "arguments": { "displayName": "Alpha Ltd", "companyNumber": "03176906" }
+    },
+    {
+      "id": "beta",
+      "role": "tool",
+      "tool": "add_client",
+      "arguments": { "displayName": "Beta Ltd", "companyNumber": "00001350" }
+    },
+    { "id": "clients", "role": "tool", "tool": "list_clients", "arguments": {} },
+    {
+      "id": "codes",
+      "role": "tool",
+      "tool": "request_companies_house_codes",
+      "arguments": { "kind": "accounts", "clientIds": "${clients.clients[*].clientId}" }
+    },
+    {
+      "id": "typeCodes",
+      "role": "assistant",
+      "text": "Type each company's authentication code on the page. The codes never pass through this chat."
+    },
+    {
+      "id": "filing",
+      "role": "tool",
+      "tool": "run_for_clients",
+      "arguments": {
+        "tool": "submit_micro_entity_accounts_sandbox",
+        "args": {
+          "codesEntryId": "${codes.entryId}",
+          "companyName": "Accounts client",
+          "periodStart": "2025-01-01",
+          "periodEnd": "2025-12-31",
+          "balanceSheet": {
+            "currentYear": {
+              "fixedAssets": 1000,
+              "currentAssets": 5000,
+              "creditorsWithinOneYear": 2000,
+              "creditorsAfterOneYear": 0,
+              "calledUpShareCapital": 100,
+              "profitAndLossAccount": 3900,
+              "capitalAndReserves": 4000
+            },
+            "priorYear": {
+              "fixedAssets": 900,
+              "currentAssets": 3500,
+              "creditorsWithinOneYear": 1500,
+              "creditorsAfterOneYear": 0,
+              "calledUpShareCapital": 100,
+              "profitAndLossAccount": 2800,
+              "capitalAndReserves": 2900
+            }
+          },
+          "averageEmployees": 2,
+          "director": { "name": "Maldwyn Beynon", "dateApproved": "2026-01-15" },
+          "statementsAccepted": {
+            "section477Exemption": true,
+            "membersNotRequiredAudit": true,
+            "directorsResponsibilities": true,
+            "microEntityProvisions": true
+          }
+        }
+      }
+    },
+    { "id": "answer", "role": "assistant", "text": "Each client has one row above with its own outcome." }
+  ]
+}

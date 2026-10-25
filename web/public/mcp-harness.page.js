@@ -17,6 +17,7 @@
   const restartButton = document.getElementById("restart");
 
   let script = null;
+  const answers = {};
   let nextIndex = 0;
   let busy = false;
   const harnessSession = `harness-${crypto.randomUUID()}`;
@@ -53,11 +54,40 @@
     browserStatus.textContent = `Browser step: ${url}`;
   }
 
+  // A string argument of the form "${turnId.path.to.value}" takes that value from an earlier tool
+  // answer; a "[*]" step in the path collects the field from every item of an array.
+  function resolveReference(reference) {
+    const [turnId, ...steps] = reference.split(".");
+    let value = answers[turnId];
+    for (const step of steps) {
+      const each = step.endsWith("[*]");
+      const field = each ? step.slice(0, -3) : step;
+      value = value?.[field];
+      if (each) {
+        const rest = steps.slice(steps.indexOf(step) + 1);
+        return (value ?? []).map((item) => rest.reduce((inner, name) => inner?.[name], item));
+      }
+    }
+    return value;
+  }
+
+  function resolveArguments(value) {
+    if (typeof value === "string") {
+      const match = /^\$\{([^}]+)\}$/.exec(value);
+      return match ? resolveReference(match[1]) : value;
+    }
+    if (Array.isArray(value)) return value.map(resolveArguments);
+    if (value && typeof value === "object") {
+      return Object.fromEntries(Object.entries(value).map(([key, inner]) => [key, resolveArguments(inner)]));
+    }
+    return value;
+  }
+
   async function callTool(turn) {
     const response = await fetch("/api/v1/dev/mcp-harness/call", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-harness-session": harnessSession },
-      body: JSON.stringify({ tool: turn.tool, arguments: turn.arguments || {} }),
+      body: JSON.stringify({ tool: turn.tool, arguments: resolveArguments(turn.arguments || {}) }),
     });
     if (!response.ok) throw new Error(`The harness endpoint answered HTTP ${response.status}`);
     return response.json();
@@ -74,6 +104,7 @@
     try {
       const { ok, result } = await callTool(turn);
       card.dataset.outcome = ok ? "ok" : "error";
+      if (turn.id) answers[turn.id] = result;
       output.textContent = typeof result === "string" ? result : JSON.stringify(result, null, 2);
       const link = ok ? browserStepLink(result) : null;
       if (link) showBrowserStep(link);
@@ -111,6 +142,7 @@
     frame.removeAttribute("src");
     browserStatus.textContent = "No browser step yet. A tool that hands back a link opens it here.";
     nextIndex = 0;
+    for (const key of Object.keys(answers)) delete answers[key];
     nextButton.disabled = false;
   }
 
