@@ -226,7 +226,7 @@ async function main() {
     const authorisation = await callTool(client, "request_hmrc_authorisation", { services: ["vat"], hmrcAccount: "synthetic" });
     say(`request_hmrc_authorisation: link for ${authorisation.scope} on the ${authorisation.hmrcAccount} account`);
     const redirectUri = `${baseUrl}/activities/submitVatCallback.html`;
-    const { code } = await getAuthorizationCode({
+    await getAuthorizationCode({
       authorizeUrl: authorisation.url,
       redirectUri,
       userId: testUser.userId,
