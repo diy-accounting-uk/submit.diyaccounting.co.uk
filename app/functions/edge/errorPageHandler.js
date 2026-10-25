@@ -31,7 +31,7 @@ export async function handler(event) {
   }
 
   // Generate custom error page HTML
-  const errorHtml = generateErrorHtml(status, uri);
+  const errorHtml = generateErrorHtml(status);
 
   // Replace response body with custom error page
   response.body = errorHtml;

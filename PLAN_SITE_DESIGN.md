@@ -426,7 +426,6 @@ Stage 1: the six VAT pages and `receipt/receipts`.
 - `passes/generate-digital`, `generate-physical`: `h1` is the page name; inline styles and `data-theme="light"` dropped; radios left-aligned under their legend; the live button takes the brand fill; `Copy link`, `Copy code` and the download buttons take `.btn-small .btn-secondary`; notes on the warning and info tints.
 - `activities/submitVatCallback`: `h1` "Connecting to HMRC"; "authorisation" in the page and its messages; one line and a home button.
 - `operator/dashboard`: `data-theme="light"` and the inline `<style>` dropped; tables are `.data-table`; width bounded at 90rem; a failed load shows a `.status-error` message, releases the 2,900 to 4,600 px reservation and hides the visitors panel; the experiments panel hides when its file does not load; reservations re-measured with the stylesheet loaded (the browser test now serves `submit.css`).
-- **Remaining**: the live error pages that CloudFront serves come from `app/functions/edge/errorPageHtml.js`, which still carries the old copy.
 
 ### DS6: the Companies House pages
 
