@@ -176,9 +176,9 @@
 
       const currentPage = window.location.pathname.split("/").pop();
       if (currentPage === "login.html") {
-        loginLinkElement.textContent = "Home";
-        loginLinkElement.href = "../";
+        loginLinkElement.style.display = "none";
       } else {
+        loginLinkElement.style.display = "";
         loginLinkElement.textContent = "Log in";
         loginLinkElement.href = "../auth/login.html";
       }

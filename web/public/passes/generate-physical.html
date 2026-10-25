@@ -2,10 +2,10 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
-    <title>DIY Accounting Submit - Generate Physical Pass</title>
+    <title>Generate a physical pass - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Generate a physical pass for printing on merchandise. QR code works forever with limited scans." />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/passes/generate-physical.html" />
@@ -24,63 +24,38 @@
     <script src="../lib/analytics.js"></script>
     <script src="../lib/session-beacon.js"></script>
     <script src="../lib/qrcode.min.js"></script>
-    <style>
-      .btn.btn-outline {
-        background-color: #fff;
-        color: var(--c-brand);
-        border: 1px solid var(--c-brand);
-      }
-      .btn.btn-outline:hover {
-        background-color: #eef3fb;
-      }
-      .product-type-options {
-        display: flex;
-        gap: 0.75em 1.5em;
-        flex-wrap: wrap;
-        justify-content: center;
-        margin-bottom: 1em;
-      }
-      .product-type-option {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.4em;
-        font-weight: normal;
-        cursor: pointer;
-      }
-    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
-      <h1>DIY Accounting Submit</h1>
-      <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+      <h1>Generate a physical pass</h1>
+      <p class="subtitle">Share free VAT submissions through a pass.</p>
     </header>
 
     <main id="mainContent">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
-      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+      <div id="loadingSpinner" class="spinner" hidden></div>
 
-      <div class="form-container" style="text-align: center">
-        <h2>Generate a Physical Pass</h2>
-        <p style="color: #666; font-size: 0.95em; max-width: 600px; margin: 0 auto 1.5em">
-          Create a pass for printing on merchandise &mdash; t-shirts, mugs, stickers. The QR code works forever with limited scans, making
-          it perfect for a hard copy. Merch ordering coming soon.
+      <div class="form-container pass-panel">
+        <p class="pass-intro">
+          Create a pass to print on a t-shirt, mug or sticker. The QR code has no expiry date and works for 1 scan, so it suits a printed
+          item. You download the designs and send them to your own print service.
         </p>
 
-        <div id="tokenInfo" style="margin-bottom: 1.5em; display: none">
-          <p style="font-size: 0.9em; color: #555">
+        <div id="tokenInfo" class="pass-token-info" hidden>
+          <p>
             This will use <strong id="tokenCostDisplay">3</strong> of your <strong id="tokensRemainingDisplay">0</strong> remaining tokens
           </p>
         </div>
 
-        <fieldset id="productTypeGroup" style="margin: 1em auto; max-width: 440px; border: none; padding: 0">
-          <legend style="margin-bottom: 0.4em; padding: 0; font-weight: 600; text-align: left">Product type</legend>
+        <fieldset id="productTypeGroup" class="pass-field">
+          <legend>Product type</legend>
           <div id="productTypeOptions" class="product-type-options">
             <label class="product-type-option">
               <input type="radio" name="productType" data-product-type="tshirt" checked />
-              T-Shirt
+              T-shirt
             </label>
             <label class="product-type-option">
               <input type="radio" name="productType" data-product-type="mug-right" />
@@ -97,145 +72,57 @@
           </div>
         </fieldset>
 
-        <div style="margin: 1em auto; max-width: 440px">
-          <label for="passNotes" style="display: block; margin-bottom: 0.4em; font-weight: 600; text-align: left">Notes (optional)</label>
-          <input
-            type="text"
-            id="passNotes"
-            placeholder="e.g. Conference merch batch"
-            autocomplete="off"
-            style="width: 100%; padding: 0.6em; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box"
-          />
+        <div class="pass-field">
+          <label for="passNotes">Notes (optional)</label>
+          <input type="text" id="passNotes" placeholder="e.g. Conference merch batch" autocomplete="off" />
         </div>
 
-        <div style="margin-top: 1.5em">
-          <button
-            type="button"
-            id="generatePassBtn"
-            class="btn"
-            style="min-width: 200px"
-            disabled
-            data-activity-start="generate-pass-physical"
-          >
-            Generate Pass
+        <div class="pass-actions">
+          <button type="button" id="generatePassBtn" class="btn" disabled data-activity-start="generate-pass-physical">
+            Generate pass
           </button>
         </div>
 
         <!-- Result section (hidden until pass is generated) -->
-        <div id="passResult" style="display: none; margin-top: 2em; padding-top: 2em; border-top: 1px solid #ddd">
-          <h3>Your Physical Pass</h3>
+        <div id="passResult" class="pass-result" hidden>
+          <h3>Your physical pass</h3>
 
-          <div style="margin: 1.5em 0">
-            <div
-              id="generatedPassCode"
-              style="font-size: 1.8em; font-weight: bold; letter-spacing: 0.02em; color: #2c5aa0; word-break: break-word"
-            ></div>
+          <div id="generatedPassCode" class="pass-code"></div>
+
+          <div class="pass-copy-row">
+            <span id="generatedPassUrl" class="pass-copy-text"></span>
+            <button type="button" id="copyUrlBtn" class="btn btn-small btn-secondary">Copy link</button>
           </div>
 
-          <div style="margin: 1em 0">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5em; flex-wrap: wrap">
-              <span id="generatedPassUrl" style="font-size: 0.85em; color: #555; word-break: break-all"></span>
-              <button
-                type="button"
-                id="copyUrlBtn"
-                class="btn btn-outline"
-                style="font-size: 0.8em; padding: 0.3em 0.8em; min-width: unset"
-              >
-                Copy Link
-              </button>
-            </div>
+          <div class="pass-copy-row">
+            <span id="passCodeSmall" class="pass-copy-text"></span>
+            <button type="button" id="copyCodeBtn" class="btn btn-small btn-secondary">Copy code</button>
           </div>
 
-          <div style="display: flex; align-items: center; justify-content: center; gap: 0.5em; margin: 0.5em 0">
-            <span id="passCodeSmall" style="font-size: 0.85em; color: #555"></span>
-            <button type="button" id="copyCodeBtn" class="btn btn-outline" style="font-size: 0.8em; padding: 0.3em 0.8em; min-width: unset">
-              Copy Code
-            </button>
+          <div class="pass-design">
+            <h4>Front design</h4>
+            <div id="frontPreview" class="pass-preview"></div>
           </div>
 
-          <!-- Front design preview: words stacked vertically -->
-          <div style="margin: 2em 0">
-            <h4 style="color: #333">Front Design</h4>
-            <div
-              id="frontPreview"
-              style="
-                display: inline-block;
-                background: white;
-                border: 2px solid #dee2e6;
-                border-radius: 8px;
-                padding: 2em;
-                min-width: 200px;
-              "
-            ></div>
+          <div class="pass-design">
+            <h4>Back design</h4>
+            <div id="generatedPassQrCode" class="pass-preview"></div>
           </div>
 
-          <!-- Back design preview: QR code with passphrase -->
-          <div style="margin: 2em 0">
-            <h4 style="color: #333">Back Design</h4>
-            <div
-              id="generatedPassQrCode"
-              style="
-                display: inline-block;
-                background: white;
-                border: 2px solid #dee2e6;
-                border-radius: 8px;
-                padding: 1.5em;
-                min-width: 200px;
-              "
-            ></div>
+          <div class="pass-actions">
+            <button type="button" id="downloadFrontSvg" class="btn btn-small btn-secondary">Download front (SVG)</button>
+            <button type="button" id="downloadBackSvg" class="btn btn-small btn-secondary">Download back (SVG)</button>
+            <button type="button" id="downloadBackPng" class="btn btn-small btn-secondary">Download back (PNG)</button>
           </div>
 
-          <div style="margin: 1em 0; display: flex; justify-content: center; gap: 1em; flex-wrap: wrap">
-            <button
-              type="button"
-              id="downloadFrontSvg"
-              class="btn btn-outline"
-              style="font-size: 0.85em; padding: 0.4em 1em; min-width: unset"
-            >
-              Download Front (SVG)
-            </button>
-            <button
-              type="button"
-              id="downloadBackSvg"
-              class="btn btn-outline"
-              style="font-size: 0.85em; padding: 0.4em 1em; min-width: unset"
-            >
-              Download Back (SVG)
-            </button>
-            <button
-              type="button"
-              id="downloadBackPng"
-              class="btn btn-outline"
-              style="font-size: 0.85em; padding: 0.4em 1em; min-width: unset"
-            >
-              Download Back (PNG)
-            </button>
-          </div>
+          <p><a data-fulfillment-link href="#" hidden>Order merchandise (coming soon)</a></p>
 
-          <div style="margin-top: 1em">
-            <a data-fulfillment-link href="#" style="display: none; color: #6f42c1; font-weight: 600">Order merchandise (coming soon)</a>
-          </div>
+          <p class="pass-note status-warning">This pass has no expiry date and works for 1 scan. It suits printed merchandise.</p>
+          <p class="pass-note status-info">
+            Merch ordering is coming soon. For now, download the designs and use your favourite print service.
+          </p>
 
-          <div style="margin-top: 1.5em">
-            <p style="font-size: 0.85em; color: #856404; background: #fff3cd; padding: 0.75em; border-radius: 4px; display: inline-block">
-              This pass has no expiry date but is limited to 1 scan. Perfect for printed merchandise.
-            </p>
-            <p
-              style="
-                font-size: 0.85em;
-                color: #0c5460;
-                background: #d1ecf1;
-                padding: 0.75em;
-                border-radius: 4px;
-                display: inline-block;
-                margin-top: 0.5em;
-              "
-            >
-              Merch ordering coming soon &mdash; for now, download the designs and use your favourite print service.
-            </p>
-          </div>
-
-          <div id="tokensAfter" style="margin-top: 1em; font-size: 0.9em; color: #555"></div>
+          <div id="tokensAfter" class="pass-token-info"></div>
         </div>
       </div>
     </main>

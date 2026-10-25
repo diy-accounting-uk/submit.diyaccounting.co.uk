@@ -148,7 +148,7 @@ test.describe("Navigation Browser Tests", () => {
       });
 
       // Verify login page content
-      await expect(page.locator("h2")).toContainText("Login");
+      await expect(page.locator("h1")).toContainText("Sign in");
       await expect(page.locator(".google-btn")).toBeVisible();
     });
 

@@ -67,6 +67,7 @@
   --control-height: 2.75rem;
   --content-max: 48rem;
   --gutter: var(--space-4);
+  --c-print: #ffffff; /* the paper a QR code or merchandise design is printed on */
   --shadow-card: 0 1px 2px rgb(27 42 65 / 0.06);
 
   /* The header band and the nav below it. The fallback reservation in the
@@ -78,9 +79,7 @@
   --focus-ring: 0 0 0 3px var(--c-focus), 0 0 0 5px var(--c-focus-ink);
 }
 
-/* A page that still paints raw colours in its own markup or script pins the
-   light scheme with <html data-theme="light"> until those colours move onto
-   these tokens. */
+/* A page that must keep the light scheme pins it with <html data-theme="light">. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
@@ -4461,4 +4460,319 @@ main ol.calendar {
 .rates-result dd {
   font-weight: var(--weight-strong);
   text-align: right;
+}
+
+/* Account and error pages */
+.auth-panel,
+.error-panel {
+  max-width: 36rem;
+}
+
+.auth-panel .btn {
+  width: auto;
+  min-width: 12rem;
+}
+
+.auth-panel .auth-btn {
+  width: 100%;
+}
+
+.auth-panel h2 {
+  margin-top: 0;
+}
+
+.error-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.error-actions .btn {
+  width: auto;
+  min-width: 12rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.snapshot-meta,
+.pass-token-info,
+.pass-copy-text {
+  color: var(--c-ink-muted);
+  font-size: var(--step--1);
+}
+
+/* Passes */
+.pass-intro {
+  margin-top: 0;
+  max-width: var(--measure);
+}
+
+.pass-field {
+  max-width: 28rem;
+  margin: var(--space-4) 0;
+  padding: 0;
+  border: none;
+}
+
+.pass-field label,
+.pass-field legend {
+  display: block;
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-weight: var(--weight-strong);
+}
+
+.pass-field input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.product-type-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+}
+
+.product-type-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--weight-text);
+  cursor: pointer;
+}
+
+.pass-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+}
+
+.pass-actions > .btn:not(.btn-small) {
+  width: auto;
+  min-width: 12rem;
+}
+
+.pass-result {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--c-rule-subtle);
+}
+
+.pass-code {
+  margin: var(--space-4) 0;
+  font-size: var(--step-2);
+  font-weight: var(--weight-strong);
+  letter-spacing: 0.02em;
+  color: var(--c-brand);
+  word-break: break-word;
+}
+
+.pass-copy-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+
+.pass-copy-text {
+  word-break: break-all;
+}
+
+.pass-qr {
+  max-width: 250px;
+  margin: var(--space-4) 0;
+}
+
+.pass-design h4 {
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+.pass-preview {
+  display: inline-block;
+  min-width: 200px;
+  padding: var(--space-4);
+  background: var(--c-print);
+  border: 2px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+}
+
+.pass-note {
+  display: block;
+  max-width: var(--measure);
+  padding: var(--space-3);
+  margin: var(--space-3) 0 0;
+  border-left: 4px solid var(--note-ink);
+  border-radius: var(--radius-control);
+  background: var(--note-tint);
+  color: var(--c-ink);
+  font-size: var(--step--1);
+}
+
+.pass-note.status-warning {
+  --note-ink: var(--c-warn);
+  --note-tint: var(--c-warn-tint);
+}
+
+.pass-note.status-info {
+  --note-ink: var(--c-info);
+  --note-tint: var(--c-info-tint);
+}
+
+/* Operator dashboard: wide enough for the 13-column tables, with a bound at very wide windows. */
+body.page-dashboard {
+  max-width: 90rem;
+}
+
+.objective {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
+  margin: 0 0 var(--space-5) 0;
+  /* A table wider than its card scrolls inside the card, not the page. */
+  overflow-x: auto;
+}
+
+.objective h2 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--step-1);
+}
+
+.objective-empty {
+  color: var(--c-ink-muted);
+  font-style: italic;
+}
+
+table.observations {
+  margin: 0;
+}
+
+table.observations th,
+table.observations td {
+  padding: 0.4em 0.6em;
+}
+
+table.observations th {
+  white-space: nowrap;
+}
+
+.trend-up {
+  color: var(--c-ok);
+}
+
+.trend-down {
+  color: var(--c-error);
+}
+
+.trend-flat,
+.trend-unknown {
+  color: var(--c-ink-muted);
+}
+
+#experimentsPanel ul {
+  margin: 0;
+  padding-left: var(--space-5);
+}
+
+#experimentsPanel li {
+  margin-bottom: var(--space-3);
+}
+
+/* Activity column: wide enough that a long catalogue name sits on one or two lines. */
+#activitiesTable th:first-child,
+#activitiesTable td:first-child {
+  min-width: 18em;
+}
+
+#activitiesTable thead tr:first-child th:not(:first-child) {
+  text-align: center;
+}
+
+#activitiesTable thead tr:last-child th,
+#activitiesTable tbody td:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#activitiesTable thead tr:first-child th:nth-child(3),
+#activitiesTable thead tr:last-child th:nth-child(7),
+#activitiesTable tbody td:nth-child(8) {
+  border-left: 2px solid var(--c-brand);
+}
+
+#reinvestmentTable th:nth-child(2),
+#reinvestmentTable td:nth-child(2),
+#companyProfitAndLossTable th:nth-child(2),
+#companyProfitAndLossTable td:nth-child(2),
+#companyBalanceSheetTable th:nth-child(2),
+#companyBalanceSheetTable td:nth-child(2),
+#visitorsTable th:not(:first-child),
+#visitorsTable td:not(:first-child),
+#objectivesContainer table.observations th:nth-child(2),
+#objectivesContainer table.observations td:nth-child(2),
+#objectivesContainer table.observations th:nth-child(4),
+#objectivesContainer table.observations td:nth-child(4) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.side-panels {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+/* The containers below are empty until the snapshot arrives. Each reserves the height
+   measured on a full snapshot so the fill does not push what sits below; a failed load
+   releases the reservation. */
+#objectivesContainer {
+  min-height: 2900px;
+}
+
+#objectivesContainer.objectives-failed {
+  min-height: 0;
+}
+
+#visitorsPanel {
+  min-height: 300px;
+}
+
+#experimentsPanel {
+  min-height: 200px;
+}
+
+@media (max-width: 900px) {
+  #objectivesContainer {
+    min-height: 3600px;
+  }
+
+  #visitorsPanel {
+    min-height: 400px;
+  }
+
+  #experimentsPanel {
+    min-height: 260px;
+  }
+}
+
+@media (max-width: 600px) {
+  #objectivesContainer {
+    min-height: 4600px;
+  }
+
+  #objectivesContainer.objectives-failed {
+    min-height: 0;
+  }
+
+  #visitorsPanel {
+    min-height: 440px;
+  }
+
+  #experimentsPanel {
+    min-height: 300px;
+  }
 }

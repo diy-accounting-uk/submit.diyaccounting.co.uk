@@ -53,12 +53,12 @@ async function handleOAuthCallback() {
   let succeeded = false;
 
   if (!code) {
-    console.error("No valid authorization code found in URL parameters.");
-    showStatus("No valid authorization code found. Please try again.", "error");
+    console.error("No valid authorisation code found in URL parameters.");
+    showStatus("No valid authorisation code found. Please try again.", "error");
   } else {
     try {
       showLoading();
-      showStatus("Exchanging authorization code for access token...", "info");
+      showStatus("Exchanging authorisation code for access token...", "info");
 
       // Exchange code for access token
       const accessToken = await exchangeToken(code);

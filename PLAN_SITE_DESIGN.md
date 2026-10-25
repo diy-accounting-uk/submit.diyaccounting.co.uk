@@ -369,7 +369,7 @@ Before is DS1's stored set (`target/site-screenshots/`, 432 PNGs). After is `nod
 | Footer variants | 4, right of centre | 1, left-aligned |
 | Pages with console errors | 9 | 9, the same messages |
 
-- **Light pin**: 4 pages still paint raw colours in an inline `<style>`, a `style` attribute or their page script. They carry `<html data-theme="light">`, so dark mode does not reach them until DS4, DS5 or DS6 moves those colours onto tokens and drops the attribute: `hmrc/itsa/dashboard`, `operator/dashboard`, `passes/generate-digital` and `passes/generate-physical`.
+- **Light pin**: 1 page still paints raw colours in an inline `<style>`, a `style` attribute or its page script. It carries `<html data-theme="light">`, so dark mode does not reach it until DS4 moves those colours onto tokens and drops the attribute: `hmrc/itsa/dashboard`.
 - **For the page rows**: the error summary and inline errors use `web/public/lib/form-errors.js`; a page adds `novalidate` to its form and calls it. The signed-out panel is `.signed-out-panel` (an `h2`, a paragraph and a `.btn` Log in link). Each page row moves its `h1` to the page name (1.11); the header band already shows the brand.
 - **Contrast** (WCAG relative luminance): light ink 14.4, muted 7.5, rule 3.06, brand 6.8, white on brand 6.8, ok 5.6, error 5.8, warn 6.8, info 7.1 on their tints; dark ink 13.7, muted 7.8, rule 3.6, brand 7.8, ink on brand 8.6, ok 8.1, error 7.1, warn 9.0, info 6.7.
 
@@ -414,7 +414,19 @@ Stage 1: the six VAT pages and `receipt/receipts`.
 - `videos`, `videos-*`: gradient and inline `<style>` dropped, section and contents rules in `submit.css`; the repeated per-video contents list is gone from the index.
 - `images/favicon/IMPLEMENTATION`: a visible page in the site chrome that lists the icon files and link tags.
 - `simulator`: unchanged, a redirect to `videos.html`.
-- **Remaining**: the `auth/`, `errors/`, `passes/`, `activities/` and `operator/` pages (stage 2), including the pass result page's `Copy Link` and `Copy Code` buttons.
+
+#### DS5 result (account and error pages)
+
+- **Shared**: `.auth-panel`, `.error-panel` and `.error-actions` on the shared card; `.pass-*` rules for the pass pages; the dashboard rules moved into `submit.css` on tokens; `--c-print` is the white that QR codes and merchandise designs print on.
+- `auth/login`: `h1` "Sign in"; one "Sign in with your Google account" button with the logo first; the header link is hidden on this page.
+- `auth/loginWithCognitoCallback`, `loginWithMockCallback`: `h1` "Signing you in"; one line and a home button; `hidden` replaces the inline spinner style.
+- `auth/signed-out`: site header, nav and footer from `page-chrome.js`; "Sign in" and "Go to the home page" on `.btn`.
+- `errors/403`, `404`, `404-error-distribution`, `404-error-origin`: `h1` in user words, one cause line, one next step, a home button; the raw requested URL is gone; header and footer from `page-chrome.js`, so the footer matches every other page.
+- `errors/500`, `502`, `503`, `504`: cause and next step in user words, "Try again" (reloads the page) beside "Go to the home page"; `504` tells the reader to check receipts before sending a return again.
+- `passes/generate-digital`, `generate-physical`: `h1` is the page name; inline styles and `data-theme="light"` dropped; radios left-aligned under their legend; the live button takes the brand fill; `Copy link`, `Copy code` and the download buttons take `.btn-small .btn-secondary`; notes on the warning and info tints.
+- `activities/submitVatCallback`: `h1` "Connecting to HMRC"; "authorisation" in the page and its messages; one line and a home button.
+- `operator/dashboard`: `data-theme="light"` and the inline `<style>` dropped; tables are `.data-table`; width bounded at 90rem; a failed load shows a `.status-error` message, releases the 2,900 to 4,600 px reservation and hides the visitors panel; the experiments panel hides when its file does not load; reservations re-measured with the stylesheet loaded (the browser test now serves `submit.css`).
+- **Remaining**: the live error pages that CloudFront serves come from `app/functions/edge/errorPageHtml.js`, which still carries the old copy.
 
 ### DS6: the Companies House pages
 

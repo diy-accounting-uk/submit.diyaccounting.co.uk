@@ -133,7 +133,7 @@ document.getElementById("generatePassBtn").addEventListener("click", async () =>
 
     if (!res.ok) {
       showStatus(body.message || body.error || "Failed to generate pass", "error");
-      btn.textContent = "Generate Pass";
+      btn.textContent = "Generate pass";
       btn.disabled = false;
       return;
     }
@@ -168,12 +168,12 @@ document.getElementById("generatePassBtn").addEventListener("click", async () =>
     }
 
     document.getElementById("passResult").style.display = "block";
-    btn.textContent = "Generate Another";
+    btn.textContent = "Generate another";
     btn.disabled = false;
     showStatus("Pass generated successfully!", "success");
   } catch (err) {
     showStatus(`Failed to generate pass: ${err?.message || err}`, "error");
-    btn.textContent = "Generate Pass";
+    btn.textContent = "Generate pass";
     btn.disabled = false;
   }
 });
@@ -185,7 +185,7 @@ document.getElementById("copyUrlBtn").addEventListener("click", async () => {
     await navigator.clipboard.writeText(__generatedPassUrl);
     document.getElementById("copyUrlBtn").textContent = "Copied!";
     setTimeout(() => {
-      document.getElementById("copyUrlBtn").textContent = "Copy Link";
+      document.getElementById("copyUrlBtn").textContent = "Copy link";
     }, 2000);
   } catch {
     showStatus("Failed to copy to clipboard", "error");
@@ -199,7 +199,7 @@ document.getElementById("copyCodeBtn").addEventListener("click", async () => {
     await navigator.clipboard.writeText(__generatedPassCode);
     document.getElementById("copyCodeBtn").textContent = "Copied!";
     setTimeout(() => {
-      document.getElementById("copyCodeBtn").textContent = "Copy Code";
+      document.getElementById("copyCodeBtn").textContent = "Copy code";
     }, 2000);
   } catch {
     showStatus("Failed to copy to clipboard", "error");

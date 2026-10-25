@@ -2,10 +2,10 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
-    <title>DIY Accounting Submit - Generate Digital Pass</title>
+    <title>Generate a digital pass - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Generate a shareable digital pass that gives anyone free VAT submission access for 7 days." />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/passes/generate-digital.html" />
@@ -29,89 +29,62 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
-      <h1>DIY Accounting Submit</h1>
-      <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+      <h1>Generate a digital pass</h1>
+      <p class="subtitle">Share free VAT submissions through a pass.</p>
     </header>
 
     <main id="mainContent">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
-      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+      <div id="loadingSpinner" class="spinner" hidden></div>
 
-      <div class="form-container" style="text-align: center">
-        <h2>Generate a Digital Pass</h2>
-        <p style="color: #666; font-size: 0.95em; max-width: 600px; margin: 0 auto 1.5em">
-          Create a shareable link that gives anyone free VAT submission access for 7 days. This pass allows up to 20 uses &mdash; share it
-          on social media, via email, or in messaging apps.
+      <div class="form-container pass-panel">
+        <p class="pass-intro">
+          Create a link that gives anyone free VAT submissions. It works for 7 days and up to 20 uses. Share it on social media, by email or
+          in a messaging app.
         </p>
 
-        <div id="tokenInfo" style="margin-bottom: 1.5em; display: none">
-          <p style="font-size: 0.9em; color: #555">
+        <div id="tokenInfo" class="pass-token-info" hidden>
+          <p>
             This will use <strong id="tokenCostDisplay">3</strong> of your <strong id="tokensRemainingDisplay">0</strong> remaining tokens
           </p>
         </div>
 
-        <div style="margin: 1em auto; max-width: 440px">
-          <label for="passNotes" style="display: block; margin-bottom: 0.4em; font-weight: 600; text-align: left">Notes (optional)</label>
-          <input
-            type="text"
-            id="passNotes"
-            placeholder="e.g. February campaign"
-            autocomplete="off"
-            style="width: 100%; padding: 0.6em; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box"
-          />
+        <div class="pass-field">
+          <label for="passNotes">Notes (optional)</label>
+          <input type="text" id="passNotes" placeholder="e.g. February campaign" autocomplete="off" />
         </div>
 
-        <div style="margin-top: 1.5em">
-          <button
-            type="button"
-            id="generatePassBtn"
-            class="btn"
-            style="min-width: 200px"
-            disabled
-            data-activity-start="generate-pass-digital"
-          >
-            Generate Pass
-          </button>
+        <div class="pass-actions">
+          <button type="button" id="generatePassBtn" class="btn" disabled data-activity-start="generate-pass-digital">Generate pass</button>
         </div>
 
         <!-- Result section (hidden until pass is generated) -->
-        <div id="passResult" style="display: none; margin-top: 2em; padding-top: 2em; border-top: 1px solid #ddd">
-          <h3>Your Digital Pass</h3>
+        <div id="passResult" class="pass-result" hidden>
+          <h3>Your digital pass</h3>
 
-          <div style="margin: 1.5em 0">
-            <div
-              id="generatedPassCode"
-              style="font-size: 1.8em; font-weight: bold; letter-spacing: 0.02em; color: #2c5aa0; word-break: break-word"
-            ></div>
+          <div id="generatedPassCode" class="pass-code"></div>
+
+          <div class="pass-copy-row">
+            <span id="generatedPassUrl" class="pass-copy-text"></span>
+            <button type="button" id="copyUrlBtn" class="btn btn-small btn-secondary">Copy link</button>
           </div>
 
-          <div style="margin: 1em 0">
-            <div style="display: flex; align-items: center; justify-content: center; gap: 0.5em; flex-wrap: wrap">
-              <span id="generatedPassUrl" style="font-size: 0.85em; color: #555; word-break: break-all"></span>
-              <button type="button" id="copyUrlBtn" class="btn btn-compact">Copy Link</button>
-            </div>
+          <div class="pass-copy-row">
+            <span id="passCodeSmall" class="pass-copy-text"></span>
+            <button type="button" id="copyCodeBtn" class="btn btn-small btn-secondary">Copy code</button>
           </div>
 
-          <div style="display: flex; align-items: center; justify-content: center; gap: 0.5em; margin: 0.5em 0">
-            <span id="passCodeSmall" style="font-size: 0.85em; color: #555"></span>
-            <button type="button" id="copyCodeBtn" class="btn btn-compact">Copy Code</button>
+          <div id="generatedPassQrCode" class="pass-qr"></div>
+
+          <div class="pass-actions">
+            <button type="button" id="downloadSvgBtn" class="btn btn-small btn-secondary">Download QR (SVG)</button>
+            <button type="button" id="downloadPngBtn" class="btn btn-small btn-secondary">Download QR (PNG)</button>
           </div>
 
-          <div id="generatedPassQrCode" style="margin: 1.5em auto; max-width: 250px"></div>
+          <p class="pass-note status-warning">This pass expires in 7 days and can be used up to 20 times.</p>
 
-          <div style="margin: 1em 0; display: flex; justify-content: center; gap: 1em; flex-wrap: wrap">
-            <button type="button" id="downloadSvgBtn" class="btn btn-compact" style="background-color: #495057">Download QR (SVG)</button>
-            <button type="button" id="downloadPngBtn" class="btn btn-compact" style="background-color: #495057">Download QR (PNG)</button>
-          </div>
-
-          <div style="margin-top: 1.5em">
-            <p style="font-size: 0.85em; color: #856404; background: #fff3cd; padding: 0.75em; border-radius: 4px; display: inline-block">
-              This pass expires in 7 days and can be used up to 20 times.
-            </p>
-          </div>
-
-          <div id="tokensAfter" style="margin-top: 1em; font-size: 0.9em; color: #555"></div>
+          <div id="tokensAfter" class="pass-token-info"></div>
         </div>
       </div>
     </main>
