@@ -8,7 +8,8 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveMoneyInput, servePageScripts } from "./hmrcFieldTableAssets.js";
+import { serveMoneyInput, servePageScripts, serveSiteStyles } from "./hmrcFieldTableAssets.js";
+import { pageScrollsSideways, recordScreenshotPath, serveFilingResultAssets } from "./submissionRecordAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -160,6 +161,8 @@ test.describe("File Confirmation Statement page", () => {
     });
     await servePageScripts(page);
     await serveMoneyInput(page);
+    await serveSiteStyles(page);
+    await serveFilingResultAssets(page);
 
     // Stands in for the real Stripe/simulator checkout page: records the redirect's query params
     // on the Node side (the browser context that recorded __submitCalls etc. is gone once the
@@ -433,6 +436,74 @@ test.describe("File Confirmation Statement page", () => {
       dobYear: 1980,
     });
   });
+
+  test("shows the filed statement as a record in a customer copy with the submission number, status and date", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
+    await page.click("#previewBtn");
+    await delay(200);
+    await page.click("#submitFilingBtn");
+
+    const copy = page.locator("#filingRecord .customer-copy");
+    await expect(copy).toBeVisible();
+    await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the confirmation statement for TEST COMPANY LTD");
+    await expect(copy.locator(".customer-copy-submission")).toContainText("ABC123");
+    await expect(copy.locator(".customer-copy-status")).toHaveText("Accepted by Companies House");
+
+    const statement = copy.locator(".submission-record").first();
+    await expect(statement.locator(".entity")).toHaveText("TEST COMPANY LTD");
+    await expect(statement.locator(".reference")).toHaveText("Company number 00000001");
+    await expect(statement.locator("h2")).toHaveText("Confirmation statement");
+    await expect(statement.locator(".subtitle")).toHaveText("Made up to 21 September 2026");
+    await expect(statement.locator("tr", { hasText: "Lawful purpose statement" }).locator("td.text-value")).toHaveText("Accepted");
+    await expect(statement.locator("tr", { hasText: "Nature of business" }).locator("td.text-value")).toHaveText(
+      "Confirmed as on the register",
+    );
+    await expect(statement.locator("tr", { hasText: "Directors verifying" }).locator("td.text-value")).toContainText("Jane ELIZABETH Doe");
+
+    const officers = copy.locator(".submission-record").nth(1);
+    await expect(officers.locator("tr", { hasText: "Jane Doe" }).locator("td.text-value")).toHaveText("Director. Identity verified");
+    const pscs = copy.locator(".submission-record").nth(2);
+    await expect(pscs.locator("tr", { hasText: "Jane Doe" }).locator("td.text-value")).toContainText(
+      "Ownership of shares 25 to 50 percent",
+    );
+    await expect(copy.locator(".customer-copy-links a")).toHaveText(["Look up another company", "All your receipts"]);
+
+    const text = await page.locator("#filingRecord").innerText();
+    expect(text).not.toContain("undefined");
+    expect(text).not.toContain("NaN");
+  });
+
+  for (const [width, scheme] of [
+    [1280, "light"],
+    [390, "dark"],
+  ]) {
+    test(`the filed statement reads cleanly at ${width} px in ${scheme}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme: scheme });
+      setupPage(page);
+      await setupRoutes(page);
+      await loadPage(page);
+      await lookUpCompany(page);
+      await enterAuthCode(page);
+      await acceptLawfulPurposeStatement(page);
+      await page.fill("#directorOtherForenames-0", "ELIZABETH");
+      await page.fill("#directorPersonalCode-0", "CWMPS832223");
+      await page.click("#previewBtn");
+      await delay(200);
+      await page.click("#submitFilingBtn");
+      await expect(page.locator("#filingRecord .customer-copy")).toBeVisible();
+      expect(await pageScrollsSideways(page)).toBe(false);
+      await page.screenshot({ path: recordScreenshotPath(`confirmation-statement-result-${scheme}`, width), fullPage: true });
+    });
+  }
 
   test("adds and removes a joint holder on a shareholding", async ({ page }) => {
     setupPage(page);

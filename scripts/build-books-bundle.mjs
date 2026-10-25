@@ -210,7 +210,7 @@ useSchemas(bookSchema, linesSchema);
 import { readBookSource as readBookSourceWith } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
 import { PRODUCTS } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 export const readBookSource = (bytes, name) => readBookSourceWith(bytes, name, { products: PRODUCTS });
-export { deriveVatReturn, deriveItsaQuarterlyUpdate, deriveItsaAnnualSubmission } from "@diy-accounting-uk/diya-gl";
+export { deriveVatReturn, deriveItsaQuarterlyUpdate, deriveItsaAnnualSubmission, deriveUkPropertyPeriod, deriveUkPropertyAnnual } from "@diy-accounting-uk/diya-gl";
 import { parse as parseToml } from "smol-toml";
 import { readFileSync } from "node:fs";
 import { diyaGlToScenario } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";

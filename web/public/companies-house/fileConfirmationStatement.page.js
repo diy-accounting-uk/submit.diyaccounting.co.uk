@@ -780,6 +780,36 @@ async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
   return window.pollConfirmationStatement(submissionNumber, extraHeaders);
 }
 
+function confirmedOfficers() {
+  return currentOfficers.map((officer) => ({
+    name: textOrDash(officerDisplayName(officer)),
+    role: slugOrDash(officer.officerRole),
+    verification: officer.identityVerificationDetails ? "Identity verified" : "Identity not verified",
+  }));
+}
+
+function confirmedPscs() {
+  return currentPscs.map((psc) => ({
+    name: textOrDash(psc.name),
+    control: textOrDash((psc.naturesOfControl || []).map(slugLabel).join(", ")),
+    notifiedOn: textOrDash(psc.notifiedOn),
+  }));
+}
+
+async function renderFilingRecord(payload, outcome) {
+  const { confirmationStatementCopyHtml, todayText } = await import("../lib/filing-result-record.js");
+  const html = confirmationStatementCopyHtml({
+    company,
+    payload,
+    officers: confirmedOfficers(),
+    pscs: confirmedPscs(),
+    outcome,
+    dateText: todayText(),
+  });
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  document.getElementById("filingRecord").replaceChildren(...parsed.body.childNodes);
+}
+
 async function handleSubmitFiling() {
   showLoading();
   hideStatus();
@@ -806,6 +836,7 @@ async function handleSubmitFiling() {
     showSubmissionProgress("Submission ", outcome.submissionNumber, " was ", outcome.statusCode, ".");
     document.getElementById("filingResult").className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
     renderRejections(outcome.rejections);
+    await renderFilingRecord(payload, outcome);
     if (outcome.statusCode === "ACCEPT") {
       renderPscFollowUp();
     }
@@ -884,6 +915,7 @@ function startAgain() {
   document.getElementById("shareClassesContainer").replaceChildren();
   document.getElementById("shareholdingsContainer").replaceChildren();
   document.getElementById("rejections").style.display = "none";
+  document.getElementById("filingRecord").replaceChildren();
   document.getElementById("pscFollowUp").style.display = "none";
   document.getElementById("startAgainBtn").style.display = "none";
   document.getElementById("previewFeeMessage").style.display = "none";

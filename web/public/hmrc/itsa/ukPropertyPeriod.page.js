@@ -537,6 +537,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
 console.log("JS block finished loading.");
 
+window.booksImport.mount(document.getElementById("booksImport"), { kind: "uk-property-period" });
+
 document.getElementById("addTestDataLink").addEventListener("click", (event) => {
   event.preventDefault();
   window.testDataGenerator.populateUkPropertyPeriodForm();

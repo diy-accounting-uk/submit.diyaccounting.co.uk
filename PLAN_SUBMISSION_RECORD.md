@@ -145,6 +145,5 @@ this design:
 | VR1: the VAT receipt | Render the nine boxes as a record with `recordHeading` and `recordTable`; frame it with `customerCopyHtml` |
 | IR1: the Income Tax receipts | Render each update and the final declaration as records; frame them |
 | DS2 tokens | Move the customer copy section to DS2's tokens when DS2 lands |
-| The confirmation statement and CT600 result pages | Show their filed content as records and frame them |
 
 Each task that changes a page runs the visual definition of done in `CLAUDE.md`.

@@ -26,6 +26,8 @@ const BOOKS_DIR = path.join(process.cwd(), "mcp/test/fixtures");
 const VAT_URL = "http://localhost:3000/hmrc/vat/submitVat.html";
 const QUARTERLY_URL = "http://localhost:3000/hmrc/itsa/selfEmploymentPeriod.html";
 const ANNUAL_URL = "http://localhost:3000/hmrc/itsa/annualSubmission.html";
+const UK_PROPERTY_PERIOD_URL = "http://localhost:3000/hmrc/itsa/ukPropertyPeriod.html";
+const UK_PROPERTY_ANNUAL_URL = "http://localhost:3000/hmrc/itsa/ukPropertyAnnualSubmission.html";
 
 const CONTENT_TYPES = {
   ".html": "text/html",
@@ -319,6 +321,101 @@ test.describe("books import on the ITSA annual submission page", () => {
 
     await expect(page.locator("#booksImportStatus")).toContainText("Could not import company.diya-gl.zip:");
     await expect(page.locator("#annualInvestmentAllowance")).toHaveValue("0");
+  });
+});
+
+test.describe("books import on the UK property period page", () => {
+  test("fills the rental income and expense fields for the period dates and names the figures the form has no field for", async ({
+    page,
+  }) => {
+    await openPage(page, UK_PROPERTY_PERIOD_URL);
+    await page.locator("#fromDate").fill("2025-04-06");
+    await page.locator("#toDate").fill("2025-07-05");
+
+    await chooseFile(page, "landlord.diya-gl.zip", await zippedBook("landlord-uk-property"));
+
+    await expect(page.locator("#booksImportStatus")).toHaveText(
+      "Filled 4 figures from landlord.diya-gl.zip for the period 2025-04-06 to 2025-07-05. Check them, then submit. " +
+        "The form has no field for these figures from the book: income.premiumsOfLeaseGrant £500, expenses.professionalFees £120.",
+    );
+    await expect(page.locator("#periodAmount")).toHaveValue("2000");
+    await expect(page.locator("#otherIncome")).toHaveValue("75.50");
+    await expect(page.locator("#repairsAndMaintenance")).toHaveValue("450.25");
+    await expect(page.locator("#otherExpenses")).toHaveValue("15");
+  });
+
+  test("a book chosen before the dates asks for them, then fills once they are entered", async ({ page }) => {
+    await openPage(page, UK_PROPERTY_PERIOD_URL);
+
+    await chooseFile(page, "landlord.diya-gl.zip", await zippedBook("landlord-uk-property"));
+    await expect(page.locator("#booksImportStatus")).toHaveText(
+      "Enter the period start and end dates and the figures fill from landlord.diya-gl.zip.",
+    );
+
+    await page.locator("#fromDate").fill("2025-04-06");
+    await page.locator("#toDate").fill("2025-07-05");
+    await expect(page.locator("#periodAmount")).toHaveValue("2000");
+  });
+
+  test("a company book is refused and nothing fills", async ({ page }) => {
+    await openPage(page, UK_PROPERTY_PERIOD_URL);
+    await page.locator("#fromDate").fill("2025-04-06");
+    await page.locator("#toDate").fill("2025-07-05");
+
+    await chooseFile(page, "company.diya-gl.zip", await zippedBook("brickwork-pro-ltd-vat"));
+
+    await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled.");
+    await expect(page.locator("#periodAmount")).toHaveValue("");
+  });
+});
+
+test.describe("books import on the UK property annual submission page", () => {
+  async function openEditForm(page, taxYear) {
+    await openPage(page, UK_PROPERTY_ANNUAL_URL);
+    await page.evaluate((year) => {
+      loadedTaxYear = year;
+      document.getElementById("loadCriteriaForm").style.display = "none";
+      document.getElementById("annualEditForm").style.display = "block";
+    }, taxYear);
+  }
+
+  test("fills the adjustments and itemised allowances and leaves the elections alone", async ({ page }) => {
+    await openEditForm(page, "2025-26");
+    await page.locator("#nonResidentLandlord").check();
+
+    await chooseFile(page, "landlord.diya-gl.zip", await zippedBook("landlord-uk-property"));
+
+    await expect(page.locator("#booksImportStatus")).toHaveText("Imported 4 figures from landlord.diya-gl.zip for 2025-26.");
+    await expect(page.locator("#balancingCharge")).toHaveValue("40");
+    await expect(page.locator("#privateUseAdjustment")).toHaveValue("120");
+    await expect(page.locator("#allowanceTypeItemised")).toBeChecked();
+    await expect(page.locator("#annualInvestmentAllowance")).toHaveValue("1800");
+    await expect(page.locator("#annualInvestmentAllowance")).toBeEnabled();
+    await expect(page.locator("#costOfReplacingDomesticItems")).toHaveValue("640");
+    await expect(page.locator("#nonResidentLandlord")).toBeChecked();
+    await expect(page.locator("#rentARoomJointlyLet")).not.toBeChecked();
+  });
+
+  test("allowances do not fill over a property income allowance election", async ({ page }) => {
+    await openEditForm(page, "2025-26");
+    await page.locator("#allowanceTypePropertyIncome").check();
+
+    await chooseFile(page, "landlord.diya-gl.zip", await zippedBook("landlord-uk-property"));
+
+    await expect(page.locator("#booksImportStatus")).toHaveText(
+      "Imported 2 figures from landlord.diya-gl.zip for 2025-26. Some fields were not on this form.",
+    );
+    await expect(page.locator("#allowanceTypePropertyIncome")).toBeChecked();
+    await expect(page.locator("#annualInvestmentAllowance")).toHaveValue("0");
+  });
+
+  test("a company book is refused and nothing fills", async ({ page }) => {
+    await openEditForm(page, "2025-26");
+
+    await chooseFile(page, "company.diya-gl.zip", await zippedBook("brickwork-pro-ltd-vat"));
+
+    await expect(page.locator("#booksImportStatus")).toContainText("Nothing imported.");
+    await expect(page.locator("#balancingCharge")).toHaveValue("0");
   });
 });
 
