@@ -68,6 +68,7 @@ The seal key is HKDF-SHA256 of the MCP blob key with the info `hmrc-grant`, so a
 - `list_vat_obligations` and `submit_vat_return` lose `hmrcAccessToken`. With no grant on the session they fail with: "No HMRC authorisation is held for this session. Call request_hmrc_authorisation, show the user its link, and call this tool again once they have granted access." A pending grant fails with a message that the user has not finished the HMRC page yet. An expired grant fails with the route's 404 message, which names the tool again.
 - `hmrcAccount` defaults to the grant's own. A call that names the other account fails, since a sandbox token does not work on the live API.
 - `request_hmrc_authorisation`, `list_vat_obligations` and `submit_vat_return` join `HOSTED_TOOL_NAMES`.
+- `invite_client` and `client_authorisation_status` lose `hmrcAccessToken` and read the grant the same way; `services: ["agent"]` asks for `read:sent-invitations write:sent-invitations`.
 - `run_for_clients` passes the session through, so every client's call uses the one grant.
 
 ## Local and hosted
@@ -99,7 +100,6 @@ The seal key is HKDF-SHA256 of the MCP blob key with the info `hmrc-grant`, so a
 
 - Income Tax: `services: ["itsa"]` already asks for `read:self-assessment write:self-assessment`. The ITSA filing tools read the token the same way once they join the MCP.
 - The CT600 goes through HMRC's Transaction Engine with Government Gateway credentials, not OAuth. It would take its credentials on a page in the way the Companies House codes entry does.
-- The practice tools `invite_client` and `client_authorisation_status` still take the practice's token as an argument. They move to the grant once Submit names the agent authorisation scope as a `services` value.
 
 ## Proof
 

@@ -70,6 +70,15 @@ describe("the HMRC grant tools", () => {
       expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({ services: ["vat"], hmrcAccount: "live" });
     });
 
+    it("accepts agent as a service and sends it to the route", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, { grantId: GRANT_ID, url: AUTHORISE_URL, hmrcAccount: "live" }));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await requestHmrcAuthorisation(newSession(), { services: ["vat", "agent"] });
+
+      expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({ services: ["vat", "agent"], hmrcAccount: "live" });
+    });
+
     it("refuses an unknown service and an unknown account before any request", async () => {
       const mockFetch = vi.fn();
       vi.stubGlobal("fetch", mockFetch);

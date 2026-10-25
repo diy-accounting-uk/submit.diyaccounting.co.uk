@@ -116,6 +116,12 @@ describe("mcpHmrcGrant", () => {
       expect(body.hmrcAccount).toBe("live");
     });
 
+    test("asks for the agent authorisation scopes for agent", async () => {
+      const { body } = await requestGrant({ services: ["agent"] });
+      expect(new URL(body.url).searchParams.get("scope")).toBe("read:sent-invitations write:sent-invitations");
+      expect(body.scope).toBe("read:sent-invitations write:sent-invitations");
+    });
+
     test("needs a signed-in user and refuses an unknown service or account", async () => {
       const unsigned = await call(buildLambdaEvent({ method: "POST", path: ROUTE, body: {}, authorizer: {} }));
       expect(unsigned.response.statusCode).toBe(401);

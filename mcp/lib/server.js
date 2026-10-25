@@ -274,7 +274,12 @@ export const TOOLS = {
       "Accounting Submit keeps HMRC's tokens itself and renews the access token for the rest of the session. A " +
       "second call replaces the session's authorisation. hmrcAccount synthetic is HMRC's sandbox. Over the deployed API.",
     inputSchema: {
-      services: z.array(z.enum(HMRC_SERVICES)).optional().describe("The HMRC services to ask access for: vat (the default) and itsa"),
+      services: z
+        .array(z.enum(HMRC_SERVICES))
+        .optional()
+        .describe(
+          "The HMRC services to ask access for: vat (the default), itsa, and agent (the practice tools invite_client and client_authorisation_status)",
+        ),
       hmrcAccount: z.enum(HMRC_ACCOUNTS).optional().describe("Which HMRC environment: live (the default) or synthetic"),
     },
     handler: requestHmrcAuthorisation,
@@ -476,13 +481,12 @@ export const TOOLS = {
   invite_client: {
     description:
       "Sends an HMRC Agent Authorisation invitation for one client and one service, over the deployed API. The " +
-      "client's own VRN or NINO comes from the client row, not from this call. Requires the practice's own HMRC " +
-      "access token; obtaining it is outside this tool's scope.",
+      "client's own VRN or NINO comes from the client row, not from this call. Uses the session's HMRC " +
+      "authorisation: call request_hmrc_authorisation with services agent first if this tool says none is held.",
     inputSchema: {
       clientId: z.string().describe("The client's id"),
       service: z.enum(["MTD-VAT", "MTD-IT"]).describe("The HMRC service to request authorisation for"),
       knownFact: z.string().describe("The VAT registration date (MTD-VAT) or the client's postcode (MTD-IT)"),
-      hmrcAccessToken: z.string().describe("The practice's own HMRC OAuth access token"),
       arn: z
         .string()
         .optional()
@@ -493,12 +497,11 @@ export const TOOLS = {
   client_authorisation_status: {
     description:
       "One client's current authorisation status for one HMRC service, over the deployed API: re-reads a pending " +
-      "invitation's own status, or HMRC's relationships endpoint when none is pending. Requires the practice's own " +
-      "HMRC access token; obtaining it is outside this tool's scope.",
+      "invitation's own status, or HMRC's relationships endpoint when none is pending. Uses the session's HMRC " +
+      "authorisation: call request_hmrc_authorisation with services agent first if this tool says none is held.",
     inputSchema: {
       clientId: z.string().describe("The client's id"),
       service: z.enum(["MTD-VAT", "MTD-IT"]).describe("The HMRC service to check"),
-      hmrcAccessToken: z.string().describe("The practice's own HMRC OAuth access token"),
     },
     handler: clientAuthorisationStatus,
   },
