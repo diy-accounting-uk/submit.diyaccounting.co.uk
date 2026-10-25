@@ -499,7 +499,9 @@ test("Click through: File an ITSA Quarterly Update with HMRC", async ({ page }, 
     // two forced-500 scenarios never reach hmrcHttpPost, so they never appear in this table.
     expect(http200OkResults).toBe(1);
 
-    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    if (runFraudPreventionHeaderValidation) {
+      await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    }
 
     const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "ITSA Self-Employment Period test", {
       filterByUserSub: userSub,

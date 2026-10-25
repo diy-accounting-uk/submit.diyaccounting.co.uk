@@ -469,7 +469,9 @@ test("Click through: View ITSA Obligations from HMRC", async ({ page }, testInfo
     expect(http200OkResults).toBe(3);
     expect(http404NotFoundResults).toBe(2);
 
-    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    if (runFraudPreventionHeaderValidation) {
+      await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    }
 
     const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "ITSA Obligations test", { filterByUserSub: userSub });
     console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);

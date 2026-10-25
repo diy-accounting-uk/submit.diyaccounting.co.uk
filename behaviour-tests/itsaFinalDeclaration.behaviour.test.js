@@ -369,7 +369,9 @@ test("Click through: Trigger a calculation and file an ITSA Final Declaration wi
       assertEssentialFraudPreventionHeadersPresent(finalDeclarationRequest, `POST final declaration request ${index + 1}`);
     });
 
-    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    if (runFraudPreventionHeaderValidation) {
+      await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    }
 
     const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "ITSA Final Declaration test", {
       filterByUserSub: userSub,

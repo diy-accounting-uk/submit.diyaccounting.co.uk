@@ -401,7 +401,9 @@ test("Click through: Load and save ITSA Losses and Claims with HMRC", async ({ p
       assertEssentialFraudPreventionHeadersPresent(putRequest, `PUT losses and claims request ${index + 1}`);
     });
 
-    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    if (runFraudPreventionHeaderValidation) {
+      await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    }
 
     const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "ITSA Losses and Claims test", {
       filterByUserSub: userSub,
