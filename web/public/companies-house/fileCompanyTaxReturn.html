@@ -38,22 +38,28 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Company entry view -->
-      <div id="companyView" class="form-container">
+      <div
+        id="companyView"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to file a Company Tax Return"
+        data-sign-in-text="Log in to look up your company and file its CT600 return, computations and accounts."
+      >
         <h2>Which company?</h2>
-        <form id="companyForm">
+        <form id="companyForm" novalidate>
           <div class="form-group">
             <label for="companyNumber">Company number</label>
             <p id="companyNumber-hint" class="hint">
-              The 8-character company number, for example 00000001. Not sure of the number?
-              <a href="companySearch.html">Search Companies House</a> for it first.
+              8 characters, for example 00000001. Do not know it? <a href="companySearch.html">Search Companies House</a>.
             </p>
             <input
               type="text"
               id="companyNumber"
               name="companyNumber"
+              class="input--code"
               required
               value=""
-              placeholder="e.g., 00000001"
+              autocomplete="off"
               aria-describedby="companyNumber-hint"
               spellcheck="false"
             />
@@ -191,12 +197,14 @@
     <script src="../widgets/page-chrome.js"></script>
     <script src="../lib/env-loader.js"></script>
     <script src="../lib/auth-url-builder.js"></script>
+    <script src="../lib/form-errors.js"></script>
     <script type="module" src="../submit.js"></script>
     <script src="../developer-mode.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
     <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
     <script src="../widgets/status-messages.js"></script>
     <script src="../widgets/books-import.js"></script>
     <script type="module" src="fileCompanyTaxReturn.page.js"></script>
