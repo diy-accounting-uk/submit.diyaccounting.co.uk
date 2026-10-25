@@ -8,6 +8,7 @@
 // else.
 
 import {
+  ACCOUNTS_REGIMES,
   ACCOUNTS_TEXT_FIELDS,
   BOX_SOURCE_FIELD,
   COMPUTATION_SOURCE_FIELD,
@@ -16,6 +17,9 @@ import {
   CT600_FORM_FIELDS,
   FIXED_ASSET_CLASSES,
   FIXED_ASSET_FIELDS,
+  MICRO_BALANCE_SHEET_FIELDS,
+  MICRO_PROFIT_AND_LOSS_FIELDS,
+  MICRO_STATEMENT_FIELD,
   PROFIT_AND_LOSS_FIELDS,
   SECTIONS,
   STATEMENT_FIELDS,
@@ -25,13 +29,16 @@ import {
   applyFormEntries,
   balanceSheetId,
   boxRow,
+  changeTargetFor,
   ct600RequestFromValues,
   figuresFromValues,
   financialYearOf,
   formProblems,
   guideUrl,
+  microId,
   noteId,
   profitAndLossId,
+  regimeOf,
   reviewAnswers,
   targetOfModelProblem,
 } from "../lib/ct600-fields.js";
@@ -362,6 +369,50 @@ function accountsTextGroup({ id, label, type }) {
   return textGroup({ id, label, type, hint: "" });
 }
 
+// Which accounts the return carries. The card picks the regime from the size of the company in the book.
+function regimeGroup() {
+  return create(
+    "div",
+    { class: "form-group" },
+    create("p", { id: "accountsRegime", class: "field-label", tabindex: "-1" }, "Which accounts does the company prepare?"),
+    create(
+      "p",
+      { id: "accountsRegime-hint", class: "hint" },
+      "A micro-entity meets two of these: turnover up to £1 million, a balance sheet total up to £500,000, and 10 employees or fewer. A book picks this for you.",
+    ),
+    errorHost("accountsRegime"),
+    ...ACCOUNTS_REGIMES.map(({ value, id, label }) =>
+      choiceRow(
+        create("input", {
+          "type": "radio",
+          id,
+          "name": "accountsRegime",
+          value,
+          "data-error-target": "accountsRegime",
+          "aria-describedby": "accountsRegime-hint",
+          ...(value === "small" ? { checked: "" } : {}),
+        }),
+        create("label", { for: id }, label),
+      ),
+    ),
+  );
+}
+
+function forRegime(regime, ...children) {
+  return create("div", { "data-regime": regime }, ...children);
+}
+
+function microLedger(fields, className) {
+  return ledger({
+    className,
+    columns: YEAR_COLUMNS,
+    rows: fields.map(([field, label]) => ({
+      label,
+      cells: YEAR_COLUMNS.map(({ key, when }) => ({ id: microId(key, field), label: `${label}, ${when}` })),
+    })),
+  });
+}
+
 function accountsSection() {
   return [
     create(
@@ -369,20 +420,33 @@ function accountsSection() {
       { class: "hint" },
       "HMRC takes the full accounts with the return, so they are part of this form. Enter whole pounds, for example 600 or 1,200.",
     ),
+    regimeGroup(),
     checkboxGroup("includeComparatives", "Include last year's figures"),
-    create("h4", {}, "Profit and loss account"),
-    yearLedger(PROFIT_AND_LOSS_FIELDS, profitAndLossId),
-    create("h4", {}, "Balance sheet"),
-    yearLedger(BALANCE_SHEET_FIELDS, balanceSheetId),
-    create("h4", {}, "Tangible fixed assets note"),
-    checkboxGroup("includeFixedAssetNote", "Include the tangible fixed assets note"),
-    create(
-      "div",
-      { id: "fixedAssetNoteFields", style: "display: none" },
-      ...FIXED_ASSET_CLASSES.map(([className, title]) => noteLedger(className, title)),
+    forRegime(
+      "small",
+      create("h4", {}, "Profit and loss account"),
+      yearLedger(PROFIT_AND_LOSS_FIELDS, profitAndLossId),
+      create("h4", {}, "Balance sheet"),
+      yearLedger(BALANCE_SHEET_FIELDS, balanceSheetId),
+      create("h4", {}, "Tangible fixed assets note"),
+      checkboxGroup("includeFixedAssetNote", "Include the tangible fixed assets note"),
+      create(
+        "div",
+        { id: "fixedAssetNoteFields", style: "display: none" },
+        ...FIXED_ASSET_CLASSES.map(([className, title]) => noteLedger(className, title)),
+      ),
+    ),
+    forRegime(
+      "micro",
+      create("h4", {}, "Profit and loss account"),
+      create("p", { class: "hint" }, "Profit before tax and the profit for the year are worked out from these lines."),
+      microLedger(MICRO_PROFIT_AND_LOSS_FIELDS, "ledger--years ledger--one-year"),
+      create("h4", {}, "Balance sheet"),
+      create("p", { class: "hint" }, "Micro-entity accounts always show last year's balance sheet beside this year's."),
+      microLedger(MICRO_BALANCE_SHEET_FIELDS),
     ),
     create("h4", {}, "About the accounts"),
-    ...ACCOUNTS_TEXT_FIELDS.map(accountsTextGroup),
+    ...ACCOUNTS_TEXT_FIELDS.map((field) => (field.smallOnly ? forRegime("small", accountsTextGroup(field)) : accountsTextGroup(field))),
   ];
 }
 
@@ -405,7 +469,9 @@ function sectionBody(sectionId) {
     return [
       ...fields.slice(0, 2),
       create("h4", {}, "Statements"),
-      ...STATEMENT_FIELDS.map(({ id, label }) => checkboxGroup(id, label)),
+      ...STATEMENT_FIELDS.slice(0, 3).map(({ id, label }) => checkboxGroup(id, label)),
+      forRegime("small", checkboxGroup(STATEMENT_FIELDS[3].id, STATEMENT_FIELDS[3].label)),
+      forRegime("micro", checkboxGroup(MICRO_STATEMENT_FIELD.id, MICRO_STATEMENT_FIELD.label)),
       create("h4", {}, "Declaration"),
       ...fields.slice(2),
     ];
@@ -425,8 +491,15 @@ function renderForm() {
   state.touched = new Set();
   state.edited = new Set();
   state.workingSheet = undefined;
+  applyRegime();
   setDefaults();
   refresh();
+}
+
+// The form shows the fields of the regime it holds; the other regime's answers stay in place.
+function applyRegime() {
+  const regime = regimeOf(readValues());
+  for (const node of element("formSections").querySelectorAll("[data-regime]")) node.hidden = node.dataset.regime !== regime;
 }
 
 function toggleSections() {
@@ -467,8 +540,13 @@ function setDefaults() {
   const interest = Number(element("currentInterestReceivable").value.replaceAll(",", "").replace("£", ""));
   follow("nonTradingLoanRelationshipCredits", Number.isFinite(interest) && interest > 0 ? String(interest) : "0");
   follow("tradeName", element("principalActivity").value.trim());
+  const values = readValues();
+  if (regimeOf(values) === "micro") {
+    follow("depreciation", element(microId("current", "depreciation")).value.trim() || "0");
+    return;
+  }
   if (element("includeFixedAssetNote").checked) {
-    const charge = accountsFromValues(readValues()).smallCompany.fixedAssetNote;
+    const charge = accountsFromValues(values).smallCompany.fixedAssetNote;
     const total = Object.values(charge ?? {}).reduce((sum, figures) => sum + figures.depreciationCharge, 0);
     follow("depreciation", String(total));
   }
@@ -704,6 +782,7 @@ function handleFormLeave(event) {
 
 function handleFormChange(event) {
   if (event.target.id === "includeComparatives" || event.target.id === "includeFixedAssetNote") toggleSections();
+  if (event.target.name === "accountsRegime") applyRegime();
   if (markTouched(event.target)) {
     setDefaults();
     refresh();
@@ -783,8 +862,7 @@ function companyChangeLink() {
   return link;
 }
 
-function renderAnswers() {
-  const values = readValues();
+function renderAnswers(values) {
   const tables = reviewAnswers(values).map(({ id, title, rows }) => {
     const body = rows.map((row) => {
       const tr = tableRow(row.label, row.value, changeLink(row.id, row.label));
@@ -809,14 +887,15 @@ function renderAnswers() {
 }
 
 function renderReview(preview) {
-  renderAnswers();
+  const values = readValues();
+  renderAnswers(values);
   const boxRows = Object.keys(preview.boxes)
     .map(Number)
     .sort((a, b) => a - b)
     .map((box) => {
       const label = boxRow(box).label;
       const source = BOX_SOURCE_FIELD[box];
-      const change = source ? changeLink(source, `box ${box}, ${label}`) : companyChangeLink();
+      const change = source ? changeLink(changeTargetFor(source, values), `box ${box}, ${label}`) : companyChangeLink();
       const row = tableRow(box, label, "", change);
       if (box === 340 || box === 390) amountCell(row.children[2], `${preview.boxes[box]}%`);
       else if (box === 329) row.children[2].textContent = "Yes";
@@ -830,7 +909,7 @@ function renderReview(preview) {
     .querySelector("tbody")
     .replaceChildren(...boxRows);
   const lineRows = COMPUTATION_LINES.map(({ field, meaning, deduction, style }) => {
-    const row = tableRow(meaning, "", changeLink(COMPUTATION_SOURCE_FIELD[field], meaning));
+    const row = tableRow(meaning, "", changeLink(changeTargetFor(COMPUTATION_SOURCE_FIELD[field], values), meaning));
     amountCell(row.children[1], formatPounds(preview.computationLines[field], deduction), style);
     row.id = `review-line-${field}`;
     return row;

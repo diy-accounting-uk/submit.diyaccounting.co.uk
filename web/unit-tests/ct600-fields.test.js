@@ -13,7 +13,15 @@ import { deriveCt600FromFigures, validateCt600Figures, ct600FiguresFromResults }
 import { ltdTaxDataForPeriodEnd } from "@app/services/ct600Xml.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "@app/services/hmrcCtReturnRequest.js";
 import { deriveSmallCompanyAccounts } from "@app/services/smallCompanyAccounts.js";
+import { deriveMicroEntityAccounts, microProfitAndLossYear } from "@app/services/microEntityAccounts.js";
+import { MICRO_PROFIT_AND_LOSS_LINES } from "@app/services/microEntityAccountsIxbrl.js";
+import { buildMicroCtReturnBodyFromBook } from "@app/test-helpers/ctReturnFixture.js";
 import {
+  MICRO_PROFIT_AND_LOSS_FIELDS,
+  MICRO_STATEMENT_FIELD,
+  changeTargetFor,
+  microProfitAndLossFromSmall,
+  qualifiesAsMicroEntity,
   BOX_SOURCE_FIELD,
   COMPUTATION_SOURCE_FIELD,
   CT600_BOX_ROWS,
@@ -47,6 +55,9 @@ function derive(figures) {
 
 let bookEntries;
 let bookFigures;
+let smallAccounts;
+let microAccounts;
+let microBookEntries;
 
 beforeAll(async () => {
   const { book, lines } = loadDiyaGlData(BOOK_DIRECTORY);
@@ -55,6 +66,9 @@ beforeAll(async () => {
   bookFigures = ct600FiguresFromResults(results, accounts);
   const tradeName = book.entityInformation?.organizationDescription || accounts.companyName;
   bookEntries = formEntriesFromBook(bookFigures, { ...accounts, tradeName });
+  smallAccounts = accounts;
+  microAccounts = await deriveMicroEntityAccounts({ book, lines });
+  microBookEntries = formEntriesFromBook(bookFigures, { ...accounts, tradeName }, microAccounts);
 });
 
 describe("the box rows", () => {
@@ -372,5 +386,106 @@ describe("the review", () => {
   test("every box the page can show has a Change target, but the company's name and number", () => {
     const withoutTarget = CT600_BOX_ROWS.map((row) => row.box).filter((box) => !(box in BOX_SOURCE_FIELD));
     expect(withoutTarget).toEqual([1, 2]);
+  });
+});
+
+describe("a micro-entity's accounts", () => {
+  function microValues() {
+    const values = Object.fromEntries(microBookEntries);
+    values.accountsRegime = values.regimeMicro === true ? "micro" : "small";
+    Object.assign(values, {
+      utr: "8596148860",
+      companyType: "no",
+      loanOverdrawn: "no",
+      declarantStatus: "Director",
+      declarationAccepted: true,
+      statementSection477Exemption: true,
+      statementMembersNotRequiredAudit: true,
+      statementDirectorsResponsibilities: true,
+      [MICRO_STATEMENT_FIELD.id]: true,
+    });
+    return values;
+  }
+
+  function validated(body, options) {
+    const errors = [];
+    const request = extractAndValidateCtReturnParameters({ body: JSON.stringify(body) }, errors, options);
+    return { errors, request };
+  }
+
+  const PREVIEW = { requireGatewayCredentials: false, requireReviewedBoxes: false };
+
+  test("two of the three size limits make a micro-entity", () => {
+    expect(qualifiesAsMicroEntity({ turnover: 341283, balanceSheetTotal: 415165, employees: 3 })).toBe(true);
+    expect(qualifiesAsMicroEntity({ turnover: 2_000_000, balanceSheetTotal: 400_000, employees: 12 })).toBe(false);
+    expect(qualifiesAsMicroEntity({ turnover: 2_000_000, balanceSheetTotal: 400_000, employees: 10 })).toBe(true);
+  });
+
+  test("the precision-code-ltd book is a micro-entity by size and fills the micro lines for both years", () => {
+    const filled = new Map(microBookEntries);
+    expect(filled.get("regimeMicro")).toBe(true);
+    for (const id of ["microCurrentTurnover", "microCurrentOtherCharges", "microCurrentFixedAssets", "microPriorCurrentAssets"]) {
+      expect(String(filled.get(id) ?? ""), id).not.toBe("");
+    }
+  });
+
+  test("the micro profit and loss lines are the server's, worked the same way from the small company's", () => {
+    const typed = MICRO_PROFIT_AND_LOSS_FIELDS.map(([field]) => field);
+    expect(MICRO_PROFIT_AND_LOSS_LINES.filter((line) => !typed.includes(line))).toEqual(["profitBeforeTax", "profit"]);
+    const year = smallAccounts.profitAndLoss.currentYear;
+    expect(microProfitAndLossFromSmall(year, bookFigures.depreciation)).toEqual(microProfitAndLossYear(year, bookFigures.depreciation));
+  });
+
+  test("the filled micro form passes every check", () => {
+    expect(formProblems(microValues())).toEqual([]);
+  });
+
+  test("the request the form builds is the fixture's micro request and works the same boxes", async () => {
+    const values = microValues();
+    const body = ct600RequestFromValues(values, COMPANY, bookFigures.workingSheet);
+    const fixture = await buildMicroCtReturnBodyFromBook();
+    expect(body).not.toHaveProperty("smallCompany");
+    expect(body.balanceSheet).toEqual(fixture.balanceSheet);
+    expect(body.profitAndLoss).toEqual(fixture.profitAndLoss);
+    expect(body.statementsAccepted).toEqual(fixture.statementsAccepted);
+
+    const fromForm = validated(body, PREVIEW);
+    expect(fromForm.errors).toEqual([]);
+    expect(fromForm.request.accounts.regime).toBe("micro-entity");
+    const fromFixture = validated(fixture, PREVIEW);
+    expect(fromFixture.errors).toEqual([]);
+    expect(buildCtReturnDocuments(fromForm.request).boxes).toEqual(buildCtReturnDocuments(fromFixture.request).boxes);
+
+    const reviewedBoxes = buildCtReturnDocuments(fromForm.request).boxes;
+    const submit = validated({ ...body, reviewedBoxes, gatewayUserId: "user", gatewayPassword: "pass" });
+    expect(submit.errors).toEqual([]);
+  });
+
+  test("names a micro balance sheet that does not balance, and asks for the micro statement", () => {
+    const problems = formProblems({ ...microValues(), microPriorCurrentAssets: "1", [MICRO_STATEMENT_FIELD.id]: false });
+    expect(problems.map((problem) => problem.target)).toEqual(
+      expect.arrayContaining(["microPriorProfitAndLossAccount", MICRO_STATEMENT_FIELD.id]),
+    );
+  });
+
+  test("asks for none of the small company's notes", () => {
+    const problems = formProblems({ ...microValues(), principalActivity: "", accountingPolicies: "", directors: "" });
+    expect(problems).toEqual([]);
+  });
+
+  test("the review shows the micro lines and statement, and the turnover's Change links open the micro turnover", () => {
+    const values = microValues();
+    const rows = reviewAnswers(values).flatMap((section) => section.rows);
+    const ids = rows.map((row) => row.id);
+    expect(rows.find((row) => row.id === "accountsRegime").value).toBe("Micro-entity accounts (FRS 105)");
+    expect(ids).toEqual(expect.arrayContaining(["microCurrentRawMaterials", "microPriorFixedAssets", MICRO_STATEMENT_FIELD.id]));
+    expect(ids).not.toContain("principalActivity");
+    expect(ids).not.toContain("microPriorTurnover");
+    const typedPrior = reviewAnswers({ ...values, microPriorTurnover: "1000" }).flatMap((section) => section.rows.map((row) => row.id));
+    expect(typedPrior).toContain("microPriorTurnover");
+    expect(ids).not.toContain("statementSmallCompaniesRegime");
+    const idSet = new Set(ids);
+    for (const [box, id] of Object.entries(BOX_SOURCE_FIELD)) expect(idSet.has(changeTargetFor(id, values)), `box ${box}`).toBe(true);
+    for (const [line, id] of Object.entries(COMPUTATION_SOURCE_FIELD)) expect(idSet.has(changeTargetFor(id, values)), line).toBe(true);
   });
 });

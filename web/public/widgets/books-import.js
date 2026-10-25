@@ -13,7 +13,8 @@
 //   kind "itsa-annual"    fills allowances and adjustments through the page's own hooks:
 //                         { taxYear: () => string, fill: (figures) => { imported, unmapped } }
 //   kind "ct600"          fills the Company Tax Return form (period, computation figures, capital
-//                         allowances, reliefs and the accounts section) from a Company book; the
+//                         allowances, reliefs and the accounts section, small and micro-entity, with
+//                         the regime the company's size gives) from a Company book; the
 //                         page's hook { onFilled: (workingSheet) => void } receives the book's own
 //                         trading profit and Corporation Tax for the page's check. It also accepts
 //                         the figures JSON the diya-submit MCP tool derive_company_tax_return writes.
@@ -285,14 +286,16 @@
   async function fillCt600({ bundle, source, fileName, hooks }) {
     let figures;
     let accounts;
+    let microAccounts;
     try {
       figures = await bundle.ct600FiguresFromBook(source.book, source.lines);
       accounts = await bundle.smallCompanyAccountsFromBook(source.book, source.lines);
+      microAccounts = await bundle.microEntityAccountsFromBook(source.book, source.lines);
     } catch (error) {
       throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
     }
     const { formEntriesFromBook, applyFormEntries } = await import("../lib/ct600-fields.js");
-    const filled = applyFormEntries(formEntriesFromBook(figures, accounts));
+    const filled = applyFormEntries(formEntriesFromBook(figures, accounts, microAccounts));
     hooks.onFilled(figures.workingSheet);
     return `Filled ${plural(filled, "field")} from ${fileName} for the period ${figures.periodStart} to ${figures.periodEnd}. Check them, add the UTR, the statements and the declaration, then preview.`;
   }

@@ -579,6 +579,63 @@ export const STATEMENT_FIELDS = [
   },
 ];
 
+// The fourth statement of a micro-entity's accounts, in place of the small companies regime statement.
+export const MICRO_STATEMENT_FIELD = {
+  id: "statementMicroEntityProvisions",
+  label:
+    "These accounts have been prepared in accordance with the provisions applicable to companies subject to the small companies regime and in accordance with the provisions available to micro-entities.",
+};
+
+// The two sets of accounts the return can carry: FRS 102 section 1A small company accounts, or
+// FRS 105 micro-entity accounts with the profit and loss account HMRC takes with the return.
+export const ACCOUNTS_REGIMES = [
+  { value: "small", id: "regimeSmall", label: "Small company accounts (FRS 102 section 1A)" },
+  { value: "micro", id: "regimeMicro", label: "Micro-entity accounts (FRS 105)" },
+];
+
+export function regimeOf(values) {
+  return values.accountsRegime === "micro" ? "micro" : "small";
+}
+
+/** The four statements the accounts carry for the regime the form holds. */
+export function statementFieldsFor(values) {
+  return regimeOf(values) === "micro" ? [...STATEMENT_FIELDS.slice(0, 3), MICRO_STATEMENT_FIELD] : STATEMENT_FIELDS;
+}
+
+// A company is a micro-entity when it meets two of the three limits (Companies Act 2006 s384A, the
+// limits for financial years starting on or after 6 April 2025).
+const MICRO_LIMITS = { turnover: 1_000_000, balanceSheetTotal: 500_000, employees: 10 };
+
+export function qualifiesAsMicroEntity({ turnover, balanceSheetTotal, employees }) {
+  const met = [turnover <= MICRO_LIMITS.turnover, balanceSheetTotal <= MICRO_LIMITS.balanceSheetTotal, employees <= MICRO_LIMITS.employees];
+  return met.filter(Boolean).length >= 2;
+}
+
+// The micro-entity accounts. Ids are `microCurrent<Field>` and `microPrior<Field>`. Profit before tax,
+// profit and capital and reserves are worked from these lines.
+export const MICRO_PROFIT_AND_LOSS_FIELDS = [
+  ["turnover", "Turnover"],
+  ["otherIncome", "Other income"],
+  ["rawMaterials", "Raw materials and consumables"],
+  ["staffCosts", "Staff costs"],
+  ["depreciation", "Depreciation and other amounts written off assets"],
+  ["otherCharges", "Other charges"],
+  ["tax", "Tax"],
+];
+
+export const MICRO_BALANCE_SHEET_FIELDS = [
+  ["fixedAssets", "Fixed assets"],
+  ["currentAssets", "Current assets"],
+  ["creditorsWithinOneYear", "Creditors: amounts falling due within one year"],
+  ["creditorsAfterOneYear", "Creditors: amounts falling due after more than one year"],
+  ["calledUpShareCapital", "Called up share capital"],
+  ["profitAndLossAccount", "Profit and loss account reserve"],
+];
+
+export function microId(year, field) {
+  return `micro${upperFirst(year)}${upperFirst(field)}`;
+}
+
 // The accounts section. Ids are `current<Field>`, `prior<Field>` and `note<Class><Field>`.
 export const PROFIT_AND_LOSS_FIELDS = [
   ["turnover", "Turnover"],
@@ -619,13 +676,23 @@ export const FIXED_ASSET_FIELDS = [
 ];
 
 export const ACCOUNTS_TEXT_FIELDS = [
-  { id: "principalActivity", label: "Principal activity", type: "text" },
-  { id: "accountingPolicies", label: "Accounting policies", type: "textarea" },
-  { id: "directors", label: "Directors who held office during the period (one name per line)", type: "textarea" },
+  { id: "principalActivity", label: "Principal activity", type: "text", smallOnly: true },
+  { id: "accountingPolicies", label: "Accounting policies", type: "textarea", smallOnly: true },
+  { id: "directors", label: "Directors who held office during the period (one name per line)", type: "textarea", smallOnly: true },
   { id: "averageEmployees", label: "Average number of employees during the period", type: "count" },
   { id: "directorName", label: "Director approving the accounts", type: "text" },
   { id: "directorDateApproved", label: "Date approved", type: "date" },
 ];
+
+// The ids of the micro-entity accounts' amounts, in the order the form shows them.
+export function microAmountIds() {
+  const ids = [];
+  for (const year of ["current", "prior"]) {
+    for (const [field] of MICRO_PROFIT_AND_LOSS_FIELDS) ids.push(microId(year, field));
+    for (const [field] of MICRO_BALANCE_SHEET_FIELDS) ids.push(microId(year, field));
+  }
+  return ids;
+}
 
 export function upperFirst(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
@@ -715,6 +782,61 @@ function balanceSheetOf(values, year) {
   return figures;
 }
 
+function microProfitAndLossOf(values, year) {
+  const lines = {};
+  for (const [field] of MICRO_PROFIT_AND_LOSS_FIELDS) lines[field] = amountOf(values, microId(year, field), true);
+  const profitBeforeTax =
+    lines.turnover + lines.otherIncome - lines.rawMaterials - lines.staffCosts - lines.depreciation - lines.otherCharges;
+  return {
+    turnover: lines.turnover,
+    otherIncome: lines.otherIncome,
+    rawMaterials: lines.rawMaterials,
+    staffCosts: lines.staffCosts,
+    depreciation: lines.depreciation,
+    otherCharges: lines.otherCharges,
+    profitBeforeTax,
+    tax: lines.tax,
+    profit: profitBeforeTax - lines.tax,
+  };
+}
+
+// Last year's micro profit and loss account goes with the return only when the customer typed it:
+// a book carries last year's balance sheet but not last year's profit and loss.
+function hasMicroPriorProfitAndLoss(values) {
+  return MICRO_PROFIT_AND_LOSS_FIELDS.some(([field]) => !isBlank(values[microId("prior", field)]));
+}
+
+function microBalanceSheetOf(values, year) {
+  const sheet = {};
+  for (const [field] of MICRO_BALANCE_SHEET_FIELDS) sheet[field] = amountOf(values, microId(year, field), true);
+  sheet.capitalAndReserves = sheet.calledUpShareCapital + sheet.profitAndLossAccount;
+  return sheet;
+}
+
+export function microNetAssetsOf(sheet) {
+  return sheet.fixedAssets + sheet.currentAssets - sheet.creditorsWithinOneYear - sheet.creditorsAfterOneYear;
+}
+
+/**
+ * A micro-entity's profit and loss account from a small company's: interest receivable is other
+ * income, and the costs less the depreciation are other charges.
+ * @param {object} year - the small company profit and loss lines
+ * @param {number} [depreciation] - the depreciation written off in the year
+ */
+export function microProfitAndLossFromSmall(year, depreciation = 0) {
+  return {
+    turnover: year.turnover,
+    otherIncome: year.interestReceivable,
+    rawMaterials: 0,
+    staffCosts: 0,
+    depreciation,
+    otherCharges: year.costOfSales + year.administrativeExpenses - depreciation,
+    profitBeforeTax: year.profitBeforeTax,
+    tax: year.tax,
+    profit: year.profit,
+  };
+}
+
 export function netAssetsOf(sheet) {
   return (
     sheet.fixedAssets +
@@ -756,6 +878,19 @@ export function depreciationChargeOf(note) {
  */
 export function accountsFromValues(values) {
   const includePrior = values.includeComparatives === true;
+  if (regimeOf(values) === "micro") {
+    return {
+      periodStart: values.periodStart,
+      periodEnd: values.periodEnd,
+      averageEmployees: Number(values.averageEmployees),
+      director: { name: String(values.directorName ?? "").trim(), dateApproved: values.directorDateApproved },
+      balanceSheet: { currentYear: microBalanceSheetOf(values, "current"), priorYear: microBalanceSheetOf(values, "prior") },
+      profitAndLoss: {
+        currentYear: microProfitAndLossOf(values, "current"),
+        ...(includePrior && hasMicroPriorProfitAndLoss(values) ? { priorYear: microProfitAndLossOf(values, "prior") } : {}),
+      },
+    };
+  }
   const note = values.includeFixedAssetNote === true ? fixedAssetNoteOf(values) : undefined;
   return {
     periodStart: values.periodStart,
@@ -791,6 +926,7 @@ export function accountsFromValues(values) {
  */
 export function figuresFromValues(values, company, workingSheet) {
   const accounts = accountsFromValues(values);
+  const profitAndLoss = accounts.smallCompany?.profitAndLoss ?? accounts.profitAndLoss;
   const figures = {
     companyName: company.companyName,
     companyNumber: company.companyNumber,
@@ -799,9 +935,9 @@ export function figuresFromValues(values, company, workingSheet) {
     associatedCompanies: isBlank(values.associatedCompanies) ? 0 : Number(String(values.associatedCompanies).trim()),
     periodStart: values.periodStart,
     periodEnd: values.periodEnd,
-    profitAndLoss: accounts.smallCompany.profitAndLoss.priorYear
-      ? { current: accounts.smallCompany.profitAndLoss.currentYear, prior: accounts.smallCompany.profitAndLoss.priorYear }
-      : { current: accounts.smallCompany.profitAndLoss.currentYear },
+    profitAndLoss: profitAndLoss.priorYear
+      ? { current: profitAndLoss.currentYear, prior: profitAndLoss.priorYear }
+      : { current: profitAndLoss.currentYear },
     declarantName: String(values.declarantName ?? "").trim(),
     declarantStatus: String(values.declarantStatus ?? "").trim(),
   };
@@ -849,7 +985,9 @@ export function ct600RequestFromValues(values, company, workingSheet) {
       section477Exemption: values.statementSection477Exemption,
       membersNotRequiredAudit: values.statementMembersNotRequiredAudit,
       directorsResponsibilities: values.statementDirectorsResponsibilities,
-      smallCompaniesRegime: values.statementSmallCompaniesRegime,
+      ...(regimeOf(values) === "micro"
+        ? { microEntityProvisions: values.statementMicroEntityProvisions }
+        : { smallCompaniesRegime: values.statementSmallCompaniesRegime }),
     },
     tradeName: String(values.tradeName ?? "").trim(),
     figures: requestFigures(figures),
@@ -865,9 +1003,12 @@ export function ct600RequestFromValues(values, company, workingSheet) {
 const AMOUNT_PROBLEM = "Enter an amount in pounds, like £600 or £1,200";
 
 function amountProblems(values, problem) {
-  for (const id of accountAmountIds()) {
+  const micro = regimeOf(values) === "micro";
+  for (const id of micro ? microAmountIds() : accountAmountIds()) {
     if (isBlank(values[id])) continue;
-    if (id.startsWith("prior") && values.includeComparatives !== true) continue;
+    if ((id.startsWith("prior") || id.startsWith("microPrior")) && values.includeComparatives !== true && !isMicroBalanceSheetId(id)) {
+      continue;
+    }
     if (id.startsWith("note") && values.includeFixedAssetNote !== true) continue;
     if (parsePounds(values[id], true) === null) problem(id, AMOUNT_PROBLEM);
   }
@@ -875,6 +1016,31 @@ function amountProblems(values, problem) {
     if ((type !== WHOLE && type !== "pounds-and-pence") || isBlank(values[id])) continue;
     if (parsePounds(values[id], type === WHOLE) === null) {
       problem(id, `${label}: ${type === WHOLE ? AMOUNT_PROBLEM : "Enter an amount in pounds and pence, like £600 or £193.54"}`);
+    }
+  }
+}
+
+const MICRO_BALANCE_SHEET_IDS = new Set(
+  ["current", "prior"].flatMap((year) => MICRO_BALANCE_SHEET_FIELDS.map(([field]) => microId(year, field))),
+);
+
+function isMicroBalanceSheetId(id) {
+  return MICRO_BALANCE_SHEET_IDS.has(id);
+}
+
+// A micro-entity's accounts always show last year's balance sheet beside this year's.
+function microBalanceSheetProblems(values, problem) {
+  for (const [year, when] of [
+    ["current", "this"],
+    ["prior", "last"],
+  ]) {
+    const sheet = microBalanceSheetOf(values, year);
+    if (!Object.values(sheet).every(Number.isFinite)) continue;
+    if (microNetAssetsOf(sheet) !== sheet.capitalAndReserves) {
+      problem(
+        microId(year, "profitAndLossAccount"),
+        `The balance sheet for ${when} year does not balance: net assets ${microNetAssetsOf(sheet)}, share capital plus the profit and loss reserve ${sheet.capitalAndReserves}`,
+      );
     }
   }
 }
@@ -906,6 +1072,8 @@ function fixedAssetNoteProblems(values, problem) {
   }
 }
 
+const SMALL_ONLY_TEXT = new Set(ACCOUNTS_TEXT_FIELDS.filter((field) => field.smallOnly).map((field) => field.id));
+
 const REQUIRED_TEXT = [
   ["principalActivity", "the principal activity"],
   ["accountingPolicies", "the accounting policies"],
@@ -914,7 +1082,9 @@ const REQUIRED_TEXT = [
 ];
 
 function answerProblems(values, problem) {
-  if (isBlank(values.currentTurnover)) problem("currentTurnover", "Enter the turnover from the profit and loss account");
+  const micro = regimeOf(values) === "micro";
+  const turnoverId = micro ? microId("current", "turnover") : "currentTurnover";
+  if (isBlank(values[turnoverId])) problem(turnoverId, "Enter the turnover from the profit and loss account");
   if (String(values.tradeName ?? "").trim().length < 2) problem("tradeName", "Enter the trade name (at least 2 characters)");
   if (values.loanOverdrawn === "yes") {
     problem(
@@ -924,6 +1094,7 @@ function answerProblems(values, problem) {
     );
   }
   for (const [required, label] of REQUIRED_TEXT) {
+    if (micro && SMALL_ONLY_TEXT.has(required)) continue;
     if (isBlank(values[required])) problem(required, `Enter ${label}`);
   }
   if (!/^\d+$/.test(String(values.averageEmployees ?? "").trim())) {
@@ -932,7 +1103,7 @@ function answerProblems(values, problem) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(values.directorDateApproved ?? ""))) {
     problem("directorDateApproved", "Enter the date the accounts were approved");
   }
-  const unaccepted = STATEMENT_FIELDS.find(({ id }) => values[id] !== true);
+  const unaccepted = statementFieldsFor(values).find(({ id }) => values[id] !== true);
   if (unaccepted) problem(unaccepted.id, "Accept all four statements before reviewing");
   if (values.declarationAccepted !== true) problem("declarationAccepted", "Accept the declaration before reviewing");
 }
@@ -947,8 +1118,12 @@ export function formProblems(values) {
   const problems = [];
   const problem = (target, message, refusal = false) => problems.push({ target, message, refusal });
   amountProblems(values, problem);
-  balanceSheetProblems(values, problem);
-  fixedAssetNoteProblems(values, problem);
+  if (regimeOf(values) === "micro") {
+    microBalanceSheetProblems(values, problem);
+  } else {
+    balanceSheetProblems(values, problem);
+    fixedAssetNoteProblems(values, problem);
+  }
   answerProblems(values, problem);
   return problems;
 }
@@ -1025,10 +1200,13 @@ export function accountsFormEntries(accounts) {
  * Every form value a book supplies, as [element id, value] pairs: the figures the model reads
  * from the book, the accounts, the trade name and the signer. The company's UTR and the
  * statements and declaration stay the customer's to give.
+ * The book's micro-entity accounts fill the micro fields too, and the size of the company picks the
+ * regime the form opens on.
  * @param {object} figures - ct600FiguresFromBook output
  * @param {object} accounts - smallCompanyAccountsFromBook output
+ * @param {object} [microAccounts] - microEntityAccountsFromBook output
  */
-export function formEntriesFromBook(figures, accounts) {
+export function formEntriesFromBook(figures, accounts, microAccounts) {
   const entries = [
     ["periodStart", figures.periodStart],
     ["periodEnd", figures.periodEnd],
@@ -1057,6 +1235,28 @@ export function formEntriesFromBook(figures, accounts) {
     }),
   );
   if (accounts.directorName) entries.push(["declarantName", accounts.directorName]);
+  if (microAccounts) entries.push(...microEntries(figures, accounts, microAccounts));
+  return entries;
+}
+
+function microEntries(figures, accounts, microAccounts) {
+  const entries = [];
+  const pl = microProfitAndLossFromSmall(accounts.profitAndLoss.currentYear, figures.depreciation ?? 0);
+  for (const [field] of MICRO_PROFIT_AND_LOSS_FIELDS) entries.push([microId("current", field), text(pl[field])]);
+  for (const [year, key] of [
+    ["current", "currentYear"],
+    ["prior", "priorYear"],
+  ]) {
+    const sheet = microAccounts.balanceSheet?.[key];
+    if (sheet) for (const [field] of MICRO_BALANCE_SHEET_FIELDS) entries.push([microId(year, field), text(sheet[field])]);
+  }
+  const current = microAccounts.balanceSheet?.currentYear ?? {};
+  const micro = qualifiesAsMicroEntity({
+    turnover: accounts.profitAndLoss.currentYear.turnover,
+    balanceSheetTotal: (current.fixedAssets ?? 0) + (current.currentAssets ?? 0),
+    employees: microAccounts.averageNumberOfEmployees ?? accounts.averageNumberOfEmployees ?? 0,
+  });
+  entries.push([micro ? "regimeMicro" : "regimeSmall", true]);
   return entries;
 }
 
@@ -1109,6 +1309,12 @@ export function formEntriesFromFigures(figures) {
 
 // The first field a review row's Change link opens. A worked box points at its first source field.
 const TURNOVER_FIELD = profitAndLossId("current", "turnover");
+const MICRO_TURNOVER_FIELD = microId("current", "turnover");
+
+/** The field a Change link opens for the regime the form holds: a micro-entity's turnover is its own field. */
+export function changeTargetFor(fieldId, values) {
+  return fieldId === TURNOVER_FIELD && regimeOf(values) === "micro" ? MICRO_TURNOVER_FIELD : fieldId;
+}
 
 export const BOX_SOURCE_FIELD = {
   3: "utr",
@@ -1189,7 +1395,49 @@ function amountRows(ids, values) {
   return ids.map(({ id, label }) => ({ id, label, value: answerText({ id, type: WHOLE }, values) }));
 }
 
+function microAccountsRows(values) {
+  const rows = [];
+  const years = values.includeComparatives === true && hasMicroPriorProfitAndLoss(values) ? ["current", "prior"] : ["current"];
+  for (const year of years) {
+    const when = year === "current" ? "this year" : "last year";
+    rows.push(
+      ...amountRows(
+        MICRO_PROFIT_AND_LOSS_FIELDS.map(([field, label]) => ({ id: microId(year, field), label: `${label}, ${when}` })),
+        values,
+      ),
+    );
+  }
+  for (const year of ["current", "prior"]) {
+    const when = year === "current" ? "this year" : "last year";
+    rows.push(
+      ...amountRows(
+        MICRO_BALANCE_SHEET_FIELDS.map(([field, label]) => ({ id: microId(year, field), label: `${label}, ${when}` })),
+        values,
+      ),
+    );
+  }
+  return rows;
+}
+
+function regimeRow(values) {
+  const regime = ACCOUNTS_REGIMES.find((candidate) => candidate.value === regimeOf(values));
+  return { id: "accountsRegime", label: "The accounts", value: regime.label };
+}
+
+function accountsTextRows(values) {
+  const micro = regimeOf(values) === "micro";
+  return ACCOUNTS_TEXT_FIELDS.filter((field) => !(micro && field.smallOnly)).map((field) => {
+    const typed = String(values[field.id] ?? "").trim();
+    return {
+      id: field.id,
+      label: field.label.replace(/ \(one name per line\)$/, ""),
+      value: typed === "" ? NOT_GIVEN : typed.replaceAll("\n", ", "),
+    };
+  });
+}
+
 function accountsRows(values) {
+  if (regimeOf(values) === "micro") return [regimeRow(values), ...microAccountsRows(values), ...accountsTextRows(values)];
   const years =
     values.includeComparatives === true
       ? [
@@ -1220,15 +1468,7 @@ function accountsRows(values) {
       );
     }
   }
-  for (const field of ACCOUNTS_TEXT_FIELDS) {
-    const typed = String(values[field.id] ?? "").trim();
-    rows.push({
-      id: field.id,
-      label: field.label.replace(/ \(one name per line\)$/, ""),
-      value: typed === "" ? NOT_GIVEN : typed.replaceAll("\n", ", "),
-    });
-  }
-  return rows;
+  return [regimeRow(values), ...rows, ...accountsTextRows(values)];
 }
 
 /**
@@ -1247,7 +1487,7 @@ export function reviewAnswers(values) {
     if (id === "accounts") rows.push(...accountsRows(values));
     if (id === "declaration") {
       rows.push(
-        ...STATEMENT_FIELDS.map((statement) => ({
+        ...statementFieldsFor(values).map((statement) => ({
           id: statement.id,
           label: statement.label,
           value: answerText({ id: statement.id, type: "checkbox" }, values),

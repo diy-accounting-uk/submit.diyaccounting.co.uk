@@ -31,6 +31,7 @@ import {
   previewCompanyTaxReturn,
   setCtGovTestScenario,
   enterGatewayCredentialsAndSubmit,
+  verifyMicroEntityReview,
   verifyReturnAccepted,
   verifyReturnRejectedAndRetryable,
 } from "./steps/behaviour-hmrc-company-tax-return-steps.js";
@@ -135,6 +136,18 @@ test("Click through: file the Company Tax Return from a book, change an answer f
 }, testInfo) => {
   await reachPreview(page, testInfo);
   await changeAnAnswerFromTheReview(page, { fieldId: "declarantStatus", value: "Finance Director" }, screenshotPath);
+  await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
+  await verifyReturnAccepted(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file a micro-entity's Company Tax Return from a book and see HMRC accept it", async ({ page }, testInfo) => {
+  const bookExport = await buildCtReturnExportFromBook();
+  await reachCompanyForm(page, testInfo);
+  await fillInCompanyTaxReturnForm(page, { utr: FIXTURE_UTR, declarantName: bookExport.director.name, regime: "micro" }, screenshotPath);
+  await previewCompanyTaxReturn(page, screenshotPath);
+  await verifyMicroEntityReview(page, screenshotPath);
   await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
   await verifyReturnAccepted(page, screenshotPath);
 
