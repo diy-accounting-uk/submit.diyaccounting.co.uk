@@ -728,8 +728,9 @@ can send.
 
 ### Phase 5. The outside surfaces
 
-- Wire `video-capture.yml` to a release, and to a deploy of `main` that touched a page a scene
-  script covers. Write a scene script when a feature is built, not afterwards.
+- A deploy of `main` that touched a page a scene script covers dispatches that script's capture
+  (`video-capture-on-deploy.yml`). Left: the same on a release. Write a scene script when a feature
+  is built, not afterwards.
 - Select and publish screenshots from the capture run's stills.
 - YouTube publishing stays as it is. The operator presses public.
 - Comment replies start on YouTube, because the credential already exists and the volume is small
