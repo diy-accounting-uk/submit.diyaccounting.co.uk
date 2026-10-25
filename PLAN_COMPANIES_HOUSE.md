@@ -1069,7 +1069,7 @@ the server.
 | IX2a the reader, the mapping and the summary book | spreadsheets, a `claude/*` branch and PR under its `CLAUDE.md`, then a diya-gl release | `app/lib/ixbrl-reader.js`, `app/lib/ixbrl-accounts.js`, `app/lib/ixbrl-summary-book.js` (new), `app/lib/diya-gl-interchange.js`, `diya-gl/package.json` (`@xmldom/xmldom`), `app/lib/calculators/ltd.js` only if the register rate needs it, `app/test/ixbrl-reader.test.js`, `app/test/ixbrl-accounts.test.js`, `app/test/ixbrl-summary-book.test.js`, `app/test/fixtures/ixbrl/` (~10) | every row of the reader and mapping tables; each refusal; the totals the summary book reproduces | the released package reads every fixture; `readBookSource` on the DIYA file gives its two years' totals |
 | IX2b the card and the accounts pages | submit | `package.json` (the diya-gl release), `web/public/lib/books-bundle.js` (rebuilt), `web/public/widgets/books-import.js`, `app/unit-tests/services/ixbrlRoundTrip.test.js` (new), `web/browser-tests/booksImport.browser.test.js`, `behaviour-tests/steps/behaviour-companies-house-accounts-steps.js` (~6) | the round trip for each builder; a dropped `.xhtml` fills the micro and small forms; the VAT kind refuses it | a behaviour step drops the DIYA fixture and a Data Product fixture and checks the filled form |
 | IX2c the CT600 page | submit | `books-import.js` (`ct600` from `source.accounts`), `fileCompanyTaxReturn.page.js`, `web/browser-tests/fileCompanyTaxReturn.browser.test.js`, `behaviour-tests/companyTaxReturn.behaviour.test.js` (~4) | the accounts section fills from the file; the computation's depreciation defaults to the tagged charge | the `simulator - companyTaxReturnBehaviour` job with an iXBRL case |
-| IX2d the horizons | spreadsheets | multi-file document sets, the old UK GAAP taxonomy, Format 2 small-company P&Ls (with a Format 2 small-company builder in submit) | — | — |
+| IX2d the horizons | spreadsheets and submit | multi-file document sets, the old UK GAAP taxonomy, Format 2 small-company P&Ls: the design and build rows IX2d-4 to IX2d-9 are in "IX2d: the import horizons, designed" below | — | — |
 
 IX2a is Sonnet with the fixtures as its acceptance. IX2b and IX2c are Sonnet. IX2b waits on IX2a's
 release and on BK1 (the accounts kinds). IX2c waits on IX2b and CT3b.
@@ -1087,6 +1087,281 @@ release and on BK1 (the accounts kinds). IX2c waits on IX2b and CT3b.
 | Map every FRC concept | thousands of concepts; the table covers what our builders emit and what small-company files carry, and the rest is listed as unmapped |
 | One book holding both years | a diya-gl book covers one period; two books keep each year's totals in diya-gl's own shape |
 | Post the file's tax charge into the book | diya-gl works the tax; the file's charge is kept for the accounts and the difference is shown |
+
+### IX2d: the import horizons, designed
+
+The design the IX2d-4 to IX2d-9 build rows build to. It extends the IX1 design above in three
+parts: multi-file document sets, the old UK GAAP taxonomy, and Format 2 small-company profit and
+loss accounts. The reader, the mapping and the summary book stay in diya-gl
+(`../spreadsheets.diyaccounting.co.uk/app/lib/`); the builder and the card stay in submit.
+
+#### 1. Multi-file document sets
+
+**How a set is packaged.**
+
+| Kind | Source | What it holds |
+|---|---|---|
+| Inline XBRL Document Set | Inline XBRL 1.1, section 3.1 ("a group of one or more Inline XBRL Documents") and section 3.2 (the `target` attribute names further target documents), https://www.xbrl.org/specification/inlinexbrl-part1/rec-2013-11-18/inlinexbrl-part1-rec-2013-11-18.html | several `.xhtml` files that make one set of facts; a context or unit `id` is unique across the whole set (section 14.1.2); each target document has at least one `ix:references` (section 12.1.2) |
+| General accounts at Companies House | TIS for accounts, October 2026, the iXBRL section: "The iXBRL instance of the accounts should be a self-contained 'file'" | one file; this is what the reader reads today |
+| Companies House package (Welsh, CIC, audit exempt subsidiary, dormant exempt subsidiary, group, LP) | TIS for accounts, October 2026, "Zip Upload Service" and Appendix A: "a Base64-encoded zip package to allow for the inclusion of multiple 'files'" | one zip; one directory per part (`reports/english/` and `reports/welsh/` under `META-INF/reports.json`; `accounts/` and `CIC34/`; `consolidated-accounts/`, `subsidiary-accounts/` and `agreement/`); one iXBRL document in each directory |
+| Welsh package rule | TIS for accounts, October 2026, "Welsh Package Filings": "they are compared to check that they refer to the same entity and period, and that their numeric and date content matches. If they don't then the package will be rejected" | the rule the reader copies for every set |
+
+**What the reader does.**
+
+| Item | Rule |
+|---|---|
+| Input | `readIxbrlSet(documents)` in `app/lib/ixbrl-reader.js` takes `[{ name, bytes }]`; `readIxbrl(bytes)` becomes `readIxbrlSet([{ name: "", bytes }])` |
+| A zip | `zipKind` in `app/lib/diya-gl-interchange.js` returns `"ixbrl-zip"` when every non-directory entry outside `META-INF/` sniffs as `ixbrl` or `xbrl`; JSZip, which diya-gl carries, opens it |
+| Several files | `readBookSources(files, deps)` in `diya-gl-interchange.js` takes `[{ name, bytes }]` and calls `readIxbrlSet` when every file sniffs as `ixbrl` or `xbrl`; a mix of an iXBRL file and a workbook refuses: "Drop the accounts files on their own." |
+| The entry document of a package | the company's own accounts: `reports/english/` in a Welsh package, `accounts/` in a CIC package, `subsidiary-accounts/` in an audit exempt or dormant exempt subsidiary package; the other directories are read only for the agreement check below |
+| The entry document of a document set | the file that holds `ix:references` with the `link:schemaRef`; the suite check reads its schema reference |
+| Merge | contexts and units from every file's `ix:resources` into one map; `ix:continuation` and `ix:exclude` ids across all files; facts from all files; then the duplicate rule of the IX1 reader table across the whole set |
+| Targets | facts with no `target` attribute are read; a fact with a `target` attribute is left out and its target name goes on the status line; a set with no default-target facts refuses and names the targets |
+| Refusals | two files define the same context or unit `id` with different content; two files state the same concept, context and unit with different values; the entity identifiers differ; the schema references name different suites; a package directory holds more than one instance (TIS Appendix A: "There are multiple instances within a given folder"); a Welsh package whose English and Welsh numeric or date facts differ |
+| A part of a set dropped alone | the refusal at the end of the context read ("This file is one part of a document set") changes to name what to do: "Drop all the files of the set together, or the zip." |
+
+The account mappings do not change. A merged set gives the same facts as one file, so
+`ixbrl-accounts.js` and `ixbrl-summary-book.js` read it as they read a single file.
+
+**The card.** `web/public/widgets/books-import.js` sets `multiple` on the file input for the
+accounts kinds and the `ct600` kind, and the drop handler passes every file in
+`dataTransfer.files`. One file keeps today's path through `readBookSource`. Two or more files go
+to `readBookSources`. `scripts/build-books-bundle.mjs` exports `readBookSources` beside
+`readBookSource`.
+
+**Tests.**
+
+| Fixture | Where | What it proves |
+|---|---|---|
+| `ixds-two-file/` (`builder-small.xhtml` split in two: the header, contexts, units and balance sheet in the first file; the profit and loss facts in the second file, which defines no context) | `app/test/fixtures/ixbrl/` (spreadsheets) | the merged read equals the read of `builder-small.xhtml`, fact for fact |
+| `ixds-two-file-disagree/` (the same split; the second file also states `TurnoverRevenue` for the current context with another value) | the same | the set refuses and names the concept |
+| `ch-welsh-package.zip` (`META-INF/reports.json`, `reports/english/` and `reports/welsh/`, each a copy of `builder-small.xhtml`; the Welsh copy carries `ReportPrincipalLanguage` on the `Welsh` member) | the same | the package reads as the English document |
+| `ch-welsh-package-disagree.zip` (the Welsh copy's turnover changed) | the same | the package refuses |
+| `ch-two-instances.zip` (two instances in `reports/english/`) | the same | the package refuses |
+| A browser test that drops the two files of `ixds-two-file/` together | `web/browser-tests/booksImport.browser.test.js` (submit) | the small company form fills |
+
+#### 2. The old UK GAAP taxonomy
+
+The 2009-09-01 UK GAAP suite (`uk-gaap` core `http://www.xbrl.org/uk/gaap/core/2009-09-01`,
+`uk-bus` `http://www.xbrl.org/uk/cd/business/2009-09-01`, `uk-direp`
+`http://www.xbrl.org/uk/reports/direp/2009-09-01`) is the suite of the pre-FRS 102 filings on
+the register. Its schemas are at
+http://www.xbrl.org/uk/gaap/core/2009-09-01/uk-gaap-2009-09-01.xsd,
+http://www.xbrl.org/uk/cd/business/2009-09-01/uk-bus-2009-09-01.xsd and
+http://www.xbrl.org/uk/reports/direp/2009-09-01/uk-direp-2009-09-01.xsd (each fetched
+2026-10-25; every name in the table below is an element of one of them).
+
+**Where the names change: at read time.** A new module, `app/lib/ixbrl-uk-gaap.js`, exports
+`UK_GAAP_TO_FRS_102`, one row per UK GAAP name, with the FRS 102 local name and the dimension and
+member to add. `readIxbrlSet` applies it after the suite check finds `UK-GAAP` on the 2009-09-01
+date. Each translated fact keeps `sourceConcept` (the UK GAAP name), and the summary book writes
+`IXBRL-<sourceConcept>` as its `documentReference`. `ixbrl-accounts.js`, its checks and
+`ixbrl-summary-book.js` then read FRS 102 names only. A UK GAAP name that the table does not hold
+keeps its own name and goes to the unmapped list. A second mapping table in `ixbrl-accounts.js` is
+the rejected option: every check and every regime rule would then need two names.
+
+**The translation table.**
+
+| UK GAAP name (dimension and member) | FRS 102 name (dimension and member) |
+|---|---|
+| `FixedAssets` | `FixedAssets` |
+| `TangibleFixedAssets` | `PropertyPlantEquipment` |
+| `TangibleFixedAssetClassesDimension`, members `LandBuildings`, `PlantMachinery`, `FixturesFittings`, `ComputerEquipment`, `MotorVehicles` | `PropertyPlantEquipmentClassesDimension`, members `LandBuildings`, `PlantMachinery`, `FurnitureFittings`, `ComputerEquipment`, `MotorVehicles` |
+| `TangibleFixedAssetsCostOrValuation` | `PropertyPlantEquipmentGrossCost` |
+| `TangibleFixedAssetsAdditions` | `AdditionsOtherThanThroughBusinessCombinationsPropertyPlantEquipment` |
+| `TangibleFixedAssetsDisposals` | `DisposalsPropertyPlantEquipment` |
+| `TangibleFixedAssetsDepreciation` | `AccumulatedDepreciationImpairmentPropertyPlantEquipment` |
+| `TangibleFixedAssetsDepreciationChargedInPeriod` | `IncreaseFromDepreciationChargeForYearPropertyPlantEquipment` |
+| `TangibleFixedAssetsDepreciationDecreaseIncreaseOnDisposals` | `DisposalsDecreaseInDepreciationImpairmentPropertyPlantEquipment` |
+| `StocksInventory` | `TotalInventories` |
+| `Debtors`, `DebtorsDueWithinOneYear` | `Debtors` (the second on `MaturitiesOrExpirationPeriodsDimension` `WithinOneYear`) |
+| `PrepaymentsAccruedIncomeNotExpressedWithinCurrentAssetSubtotal` | the same name |
+| `CashBankInHand` | `CashBankOnHand` |
+| `CurrentAssets`, `NetCurrentAssetsLiabilities`, `TotalAssetsLessCurrentLiabilities` | the same names |
+| `CreditorsDueWithinOneYear` | `Creditors` on `MaturitiesOrExpirationPeriodsDimension` `WithinOneYear` |
+| `CreditorsDueAfterOneYear` | `Creditors` on `MaturitiesOrExpirationPeriodsDimension` `AfterOneYear` |
+| `TradeCreditors`, `TradeCreditorsWithinOneYear` | `TradeCreditorsTradePayables` on `WithinOneYear` |
+| `CorporationTax`, `CorporationTaxDueWithinOneYear` | `CorporationTaxPayable` |
+| `OtherCreditors`, `OtherCreditorsDueWithinOneYear` | `OtherCreditors` on `WithinOneYear` |
+| `TaxationSocialSecurityDueWithinOneYear` | `TaxationSocialSecurityPayable` on `WithinOneYear` |
+| `AccrualsDeferredIncomeWithinOneYear` | `AccruedLiabilitiesNotExpressedWithinCreditorsSubtotal` on `WithinOneYear` |
+| `ProvisionsForLiabilitiesCharges` | `ProvisionsForLiabilitiesBalanceSheetSubtotal` |
+| `NetAssetsLiabilitiesIncludingPensionAssetLiability` | `NetAssetsLiabilities` |
+| `CalledUpShareCapital` | `Equity` on `EquityClassesDimension` `ShareCapital` |
+| `ProfitLossAccountReserve` | `Equity` on `EquityClassesDimension` `RetainedEarningsAccumulatedLosses` |
+| `RevaluationReserve` | `Equity` on `EquityClassesDimension` `RevaluationReserve` |
+| `ShareholderFunds` | `Equity` |
+| `TurnoverGrossOperatingRevenue` | `TurnoverRevenue` |
+| `CostSales`, `GrossProfitLoss`, `AdministrativeExpenses`, `OperatingProfitLoss`, `ProfitLossOnOrdinaryActivitiesBeforeTax`, `ProfitLossOnOrdinaryActivitiesAfterTax` | the same names |
+| `OtherInterestReceivableSimilarIncome` | `OtherInterestReceivableSimilarIncomeFinanceIncome` |
+| `InterestPayableSimilarCharges` | `InterestPayableSimilarChargesFinanceCosts` |
+| `TaxOnProfitOrLossOnOrdinaryActivities` | `TaxTaxCreditOnProfitOrLossOnOrdinaryActivities` |
+| `ProfitLossForPeriod` | `ProfitLoss` |
+| `OtherOperatingIncome` | `OtherOperatingIncomeFormat1` when the file states `CostSales` or `GrossProfitLoss`, else `OtherOperatingIncomeFormat2` |
+| `RawMaterialsConsumables` | `RawMaterialsConsumablesUsed` |
+| `OtherExternalCharges`, `OwnWorkCapitalised`, `WagesSalaries`, `SocialSecurityCosts` | the same names |
+| `IncreaseDecreaseInStocksFinishedGoodsWorkInProgress` | `IncreaseDecreaseInStocksInventoriesFinishedGoodsWorkInProgress` |
+| `StaffCosts` | `StaffCostsEmployeeBenefitsExpense` |
+| `DepreciationOtherAmountsWrittenOffTangibleIntangibleFixedAssets` | `DepreciationAmortisationImpairmentExpense` |
+| `OtherOperatingChargesFormat2` | `OtherOperatingExpensesFormat2` |
+| `AverageNumberEmployeesDuringPeriod` | the same name |
+| `uk-bus:UKCompaniesHouseRegisteredNumber`, `EntityCurrentLegalOrRegisteredName`, `BalanceSheetDate`, `StartDateForPeriodCoveredByReport`, `EndDateForPeriodCoveredByReport`, `DescriptionPrincipalActivities`, `NameEntityOfficer` on `EntityOfficersDimension` | the same names |
+| `uk-bus:EntityDormant` | `EntityDormantTruefalse` |
+| `uk-gaap:NameDirectorSigningAccounts` | `DirectorSigningFinancialStatements` |
+| `uk-direp:DateApprovalAccounts` | `DateAuthorisationFinancialStatementsForIssue` |
+| `uk-direp:NumberSharesAllotted` | `NumberSharesIssuedFullyPaid` |
+| `uk-direp:NominalValueSharesIssued` | `NominalValueAllottedShareCapital` |
+
+**The mapping additions.** `MAPPING_TABLE` in `ixbrl-accounts.js` gains two rows, which FRS 102
+files use too: `TaxationSocialSecurityPayable` (`WithinOneYear`) adds to `otherCreditors` and
+posts to `2100`; `InterestPayableSimilarChargesFinanceCosts` gives `interestPayable` and posts to
+`5803` (the ltd book's loan interest account). `checkProfitAndLoss` takes profit before tax as
+operating profit plus interest receivable less interest payable.
+
+**Regime and suite.** The 2009 suite carries no micro-entity concepts, so a UK GAAP file reads as
+the small regime; the micro page refuses it with the existing regime message. Abbreviated
+accounts carry no profit and loss account, so they read as filleted by the existing rule. A UK
+GAAP file on a date other than 2009-09-01 refuses: "This file uses the UK GAAP taxonomy of <date>;
+the form reads the 2009-09-01 suite."
+
+**Tests.**
+
+| Fixture or case | What it proves |
+|---|---|
+| `uk-gaap-small-2014.xhtml`: DIY Accounting Limited's accounts for a year ending 2014 or 2015, from its filing history at `https://find-and-update.company-information.service.gov.uk/company/06846849/filing-history` with `format=xhtml`; when that filing is not iXBRL, a small company file of the same years from the Accounts Data Product historic monthly archive (`https://download.companieshouse.gov.uk/historicmonthlyaccountsdata.html`, January 2010 onward), with its download date in `SOURCES.md` | the mapping, the checks and the summary book's totals for both years, expected values typed from the document as rendered |
+| A unit test over `UK_GAAP_TO_FRS_102` | every row: the UK GAAP fact in, the FRS 102 local name, dimension and member out, `sourceConcept` kept |
+| A UK GAAP fact absent from the table | it is in `unmapped` under its UK GAAP name |
+| A doctored copy with the 2009 namespaces changed to another date | the refusal names the date |
+| `OtherOperatingIncome` in a file with and without `CostSales` | Format 1 and Format 2 names |
+
+#### 3. Format 2 small-company profit and loss accounts
+
+**What Format 2 is.** The Small Companies and Groups (Accounts and Directors' Report) Regulations
+2008 (SI 2008/409), Schedule 1, Part 1, Section B, give two profit and loss formats
+(https://www.legislation.gov.uk/uksi/2008/409/schedule/1). Format 1 analyses costs by function:
+turnover, cost of sales, gross profit, distribution costs, administrative expenses. Format 2
+analyses costs by nature:
+
+| Item | Format 2 line | FRS 102 concept |
+|---|---|---|
+| 1 | Turnover | `TurnoverRevenue` |
+| 2 | Change in stocks of finished goods and in work in progress | `IncreaseDecreaseInStocksInventoriesFinishedGoodsWorkInProgress` |
+| 3 | Own work capitalised | `OwnWorkCapitalised` |
+| 4 | Other operating income | `OtherOperatingIncomeFormat2` |
+| 5(a) | Raw materials and consumables | `RawMaterialsConsumablesUsed` |
+| 5(b) | Other external charges | `OtherExternalCharges` |
+| 6 | Staff costs: (a) wages and salaries, (b) social security costs, (c) other pension costs | `StaffCostsEmployeeBenefitsExpense`; `WagesSalaries`, `SocialSecurityCosts`, `PensionOtherPost-employmentBenefitCostsOtherPensionCosts` |
+| 7(a) | Depreciation and other amounts written off tangible and intangible fixed assets | `DepreciationAmortisationImpairmentExpense` |
+| 8 | Other operating expenses | `OtherOperatingExpensesFormat2` |
+| 12 | Other interest receivable and similar income | `OtherInterestReceivableSimilarIncomeFinanceIncome` |
+| 14 | Interest payable and similar expenses | `InterestPayableSimilarChargesFinanceCosts` |
+| 15 | Tax on profit or loss | `TaxTaxCreditOnProfitOrLossOnOrdinaryActivities` |
+| 22 | Profit or loss for the financial year | `ProfitLoss` |
+
+Paragraph 2(1) of the same Schedule says the directors use the same format in later years. The
+builder therefore renders both years in the format the customer chooses. Every concept above is in
+`fixtures/frc-taxonomy/frs-102-2026-concepts.json`.
+
+**How the mapper tells the formats apart.** `ixbrl-accounts.js` sets `profitAndLoss.format`:
+
+| Facts present for the current year | `format` |
+|---|---|
+| any of `CostSales`, `GrossProfitLoss`, `DistributionCosts`, `AdministrativeExpenses`, `OtherOperatingIncomeFormat1`, `OtherOperatingExpensesFormat1` | `1`; a Format 2 concept in the same file is a note figure (the staff costs note, the depreciation note) and goes to the unmapped list |
+| none of those, and any of the Format 2 concepts in the table above (items 2 to 8) | `2` |
+| none of either, with a profit and loss account | `1`, as today (turnover and profit only) |
+
+The micro regime keeps its own rule: a micro file's lines read as the micro lines, as today. The
+note "This file's profit and loss account is Format 2, which the small company form does not take"
+goes, and the card fills the Format 2 form instead.
+
+**How the mapper routes Format 2 lines.**
+
+| Concept | Figure | diya-gl account in the summary book |
+|---|---|---|
+| `TurnoverRevenue` | `turnover` | `4000` |
+| `IncreaseDecreaseInStocksInventoriesFinishedGoodsWorkInProgress` | `changeInStocks` | not posted: the summary book's `stockMovement` (closing less opening `TotalInventories`) already moves `1100` and `5000`; a difference of more than £1 between the two goes to `differences` |
+| `OwnWorkCapitalised` | `ownWorkCapitalised` | `4003` |
+| `OtherOperatingIncomeFormat2` | `otherOperatingIncome` | `4003` |
+| `RawMaterialsConsumablesUsed` | `rawMaterialsConsumables` | `5000` |
+| `OtherExternalCharges` | `otherExternalCharges` | `5001` (the ltd book's sub-contractors, purchase column P, inside cost of sales) |
+| `StaffCostsEmployeeBenefitsExpense`, else the sum of `WagesSalaries`, `SocialSecurityCosts` and the pension costs | `staffCosts` (with `wagesSalaries`, `socialSecurityCosts`, `pensionCosts` when tagged) | `5101` |
+| `DepreciationAmortisationImpairmentExpense` | `depreciation` | the register's `depreciationRate`, as for the micro line |
+| `OtherOperatingExpensesFormat2` | `otherOperatingExpenses` | `5501`, less any engine charge beyond the tagged one, as for the micro line |
+| `OperatingProfitLoss` | `operatingProfit` | a check: turnover plus items 2 to 4 less items 5 to 8 |
+| `OtherInterestReceivableSimilarIncomeFinanceIncome`, `InterestPayableSimilarChargesFinanceCosts`, `TaxTaxCreditOnProfitOrLossOnOrdinaryActivities`, `ProfitLossOnOrdinaryActivitiesBeforeTax`, `ProfitLoss` | as in the IX1 table and the UK GAAP additions | as there |
+
+`profitAndLossLines` in `ixbrl-summary-book.js` adds `5001` and the `4003` own work capitalised
+line, and `bookShell` adds `5001` to the purchases accounts. `microProfitBeforeTax` becomes
+`natureProfitBeforeTax` and takes the two new lines; the micro mapping calls it unchanged.
+
+**The submit builder.** `buildSmallCompanyAccounts` in
+`app/services/smallCompanyAccountsIxbrl.js` takes `profitAndLossFormat: 1 | 2` (default `1`). With
+`2` it renders `SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES` in the shape of
+`microProfitAndLossPage` in `microEntityAccountsIxbrl.js`: `turnover`, `changeInStocks`,
+`ownWorkCapitalised`, `otherOperatingIncome`, `rawMaterialsConsumables`, `otherExternalCharges`,
+`staffCosts`, `depreciation`, `otherOperatingExpenses`, `operatingProfit`, `interestReceivable`,
+`interestPayable`, `profitBeforeTax`, `tax`, `profit`, with the Schedule 1 wording as labels.
+`format2ProfitAndLossProblems` holds the identities: operating profit equals turnover plus items 2
+to 4 less items 5 to 8; profit before tax equals operating profit plus interest receivable less
+interest payable; profit equals profit before tax less tax.
+
+| File | Change |
+|---|---|
+| `app/services/accountsIxbrlCommon.js` | `CONCEPTS` gains `increaseDecreaseInStocks` (`core:IncreaseDecreaseInStocksInventoriesFinishedGoodsWorkInProgress`), `ownWorkCapitalised` (`core:OwnWorkCapitalised`), `otherExternalCharges` (`core:OtherExternalCharges`), `interestPayable` (`core:InterestPayableSimilarChargesFinanceCosts`); the other Format 2 keys exist |
+| `app/services/smallCompanyAccountsIxbrl.js` | the Format 2 lines, labels, rows and problems; the profit and loss page chooses its lines by format |
+| `app/services/smallCompanyAccountsRequest.js` | `smallCompany.profitAndLossFormat` (`1` or `2`); `readProfitAndLossYear` reads the line set and the problems of that format |
+| `app/services/smallCompanyAccountsFromResults.js` | `smallCompanyFormat2ProfitAndLossFromResults(results)`, below |
+| `web/public/companies-house/fileSmallCompanyAccounts.html` and `.page.js` | a "Profit and loss format" radio pair (Format 1, by function; Format 2, by nature) that shows one set of inputs; the input fields of Format 2 are `turnover`, `changeInStocks`, `ownWorkCapitalised`, `otherOperatingIncome`, `rawMaterialsConsumables`, `otherExternalCharges`, `staffCosts`, `depreciation`, `otherOperatingExpenses`, `interestReceivable`, `interestPayable`, `tax`; the page derives the totals |
+| `web/public/widgets/books-import.js` | the book fill and the iXBRL fill choose the radio and the line set from the format |
+| `app/test-helpers/accountsDocumentCases.js` | a Format 2 small company case beside the Format 1 cases |
+
+**The figures from the book.** The ltd engine's `results["MnthP&L"]` holds the lines by nature
+(`app/lib/calculators/ltd.js`, `buildMonthlyProfitAndLoss`), and `results["PubP&L"]` holds the
+totals:
+
+| Format 2 line | From the book |
+|---|---|
+| `turnover` | `PubP&L` `F9` |
+| `changeInStocks`, `ownWorkCapitalised`, `otherOperatingIncome` | `0`: the book's stock movement is inside `B11`, and grants are inside `F9` |
+| `rawMaterialsConsumables` | `MnthP&L` `B11` (purchases after the stock adjustment) |
+| `otherExternalCharges` | `MnthP&L` `B12` + `B13` |
+| `staffCosts` | `MnthP&L` `B18` + `B19` + `B20` (employee pay, directors' pay, employer's National Insurance) |
+| `depreciation` | `MnthP&L` `B38` + `B40` (goodwill amortisation, the depreciation charge) |
+| `otherOperatingExpenses` | the remainder: `MnthP&L` `B41` less `staffCosts` less `depreciation` |
+| `operatingProfit` | `PubP&L` `F46` |
+| `interestReceivable` | `PubP&L` `F49` less `F46`, as the Format 1 function does |
+| `interestPayable` | `0`: the book holds loan interest inside administrative expenses |
+| `profitBeforeTax`, `tax`, `profit` | `F49`, `F50`, `F49` less `F50` |
+
+Each line is rounded to whole pounds and `otherOperatingExpenses` takes the rounding, so the
+identities hold to the pound. The book holds no prior-year profit and loss account, as for Format
+1; the prior year is the customer's to type.
+
+**Tests.** `smallCompanyAccountsIxbrl.test.js`: the Format 2 document carries each concept on
+each context and fails no identity; a broken identity refuses. `smallCompanyAccountsRequest`: a
+Format 2 body validates and a Format 1 body is unchanged. `smallCompanyAccountsFromResults`: a book
+with wages, directors' pay, employer's National Insurance, depreciation and sub-contractors gives
+the Format 2 lines, and Format 1 and Format 2 give the same profit before tax. The IX2b round trip
+(`app/unit-tests/services/ixbrlRoundTrip.test.js`) gains the Format 2 document: read back, it gives
+the figures it was built from. In spreadsheets, `adp-small-format2.xhtml` (a full Format 2 small
+company file from the Accounts Data Product, with its download date in `SOURCES.md`) maps with
+`format` `2` and its summary book reproduces profit before tax. The Format 2 document is a new
+rendered document, so the visual definition of done in `CLAUDE.md` applies.
+
+#### The build rows
+
+| Label | What it builds | Repository | ~Files | Model | Blocked on |
+|---|---|---|---|---|---|
+| IX2d-4 | `readIxbrlSet`, the `ixbrl-zip` kind and `readBookSources`, the set refusals and the five set fixtures; a diya-gl release | spreadsheets | ~6 | Sonnet | — |
+| IX2d-5 | The card takes several files and a zip of iXBRL documents; the bundle exports `readBookSources`; the two-file browser test | submit | ~4 | Sonnet | IX2d-4 |
+| IX2d-6 | `ixbrl-uk-gaap.js` and the read-time translation, the two mapping rows, the UK GAAP fixture and tests; a diya-gl release | spreadsheets | ~6 | Sonnet | IX2d-4 (both change `ixbrl-reader.js`) |
+| IX2d-7 | `profitAndLoss.format`, the Format 2 routing in the mapping and the summary book, `adp-small-format2.xhtml`; a diya-gl release | spreadsheets | ~5 | Sonnet | IX2d-6 (both change `ixbrl-accounts.js`) |
+| IX2d-8 | The Format 2 small company builder, the request, the figures from the book, the page's format choice and the book fill | submit | ~9 | Sonnet | — |
+| IX2d-9 | The card fills the Format 2 form from an iXBRL file; the Format 2 round trip | submit | ~3 | Sonnet | IX2d-7, IX2d-8 |
+
+IX2d-4, IX2d-6 and IX2d-7 each go through a `claude/*` branch and PR in
+`../spreadsheets.diyaccounting.co.uk/` under its `CLAUDE.md`, one at a time, because that
+repository's pre-push hook runs the scoped suite.
 
 ## Fill from your books: the audit
 
@@ -1134,7 +1409,7 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 | IX2a | The iXBRL reader, the mapping and the summary book in diya-gl, with the fixtures and a release (spreadsheets repository; the IX1 design) | ~10 | Sonnet | — | On main (spreadsheets PR #167; diya-gl 1.2.56) |
 | IX2b | The card reads iXBRL on the accounts pages; the builders' round trip (the IX1 design) | ~6 | Sonnet | — | Ready |
 | IX2c | The CT600 page fills its accounts section from an iXBRL file (the IX1 design) | ~4 | Sonnet | IX2b | Blocked |
-| IX2d | Multi-file document sets, the old UK GAAP taxonomy, Format 2 small-company P&Ls (the IX1 design) | — | Sonnet | — | Ready |
+| IX2d | Multi-file document sets, the old UK GAAP taxonomy, Format 2 small-company P&Ls ("IX2d: the import horizons, designed") | — | Sonnet | — | Designed; build rows IX2d-4 to IX2d-9 in that section |
 
 
 ## Task detail
