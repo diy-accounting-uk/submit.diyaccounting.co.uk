@@ -1,0 +1,98 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
+// web/unit-tests/ct600-ixbrl-fill.test.js
+// The Company Tax Return form's values from an iXBRL accounts document the diya-gl reader mapped.
+
+import { readFileSync } from "node:fs";
+import { describe, test, expect } from "vitest";
+import { mapIxbrlAccounts } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-accounts.js";
+import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
+import { formEntriesFromIxbrl } from "../public/lib/ct600-fields.js";
+
+const cases = JSON.parse(readFileSync("scripts/fixtures/companies-house-test-service-cases.json", "utf8")).filter(
+  (testCase) => testCase.type === "accounts",
+);
+const caseNamed = (name) => cases.find((testCase) => testCase.name === name);
+
+function mappedCase(name, expect = {}) {
+  const { name: caseName, type, govTestScenario, expectedOutcome, ...requestBody } = caseNamed(name);
+  const errors = [];
+  const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify(requestBody) }, errors);
+  if (errors.length > 0) throw new Error(errors.join("; "));
+  return mapIxbrlAccounts(buildAccountsIxbrl(accounts), { regime: "any", ...expect });
+}
+
+const valueOf = (entries, id) => Object.fromEntries(entries)[id];
+
+describe("the form values from a small company's iXBRL accounts", () => {
+  const entries = formEntriesFromIxbrl(mappedCase("small-company-accounts-full"));
+
+  test("opens the small company regime on the document's period", () => {
+    expect(valueOf(entries, "regimeSmall")).toBe(true);
+    expect(valueOf(entries, "regimeMicro")).toBeUndefined();
+    expect(valueOf(entries, "periodStart")).toBe("2025-01-01");
+    expect(valueOf(entries, "periodEnd")).toBe("2025-12-31");
+  });
+
+  test("carries the profit and loss account and the balance sheets for both years", () => {
+    expect(valueOf(entries, "currentTurnover")).toBe("20000");
+    expect(valueOf(entries, "currentCostOfSales")).toBe("5000");
+    expect(valueOf(entries, "currentTax")).toBe("600");
+    expect(valueOf(entries, "currentCashAtBank")).toBe("2000");
+    expect(valueOf(entries, "includeComparatives")).toBe(true);
+    expect(valueOf(entries, "priorTurnover")).toBe("18000");
+    expect(valueOf(entries, "priorCreditorsAfterOneYear")).toBe("600");
+  });
+
+  test("starts the depreciation added back as the fixed asset note's charge for the year", () => {
+    expect(valueOf(entries, "includeFixedAssetNote")).toBe(true);
+    expect(valueOf(entries, "notePlantMachineryDepreciationCharge")).toBe("150");
+    expect(valueOf(entries, "noteComputerEquipmentDepreciationCharge")).toBe("230");
+    expect(valueOf(entries, "depreciation")).toBe("380");
+  });
+
+  test("carries the text answers, the employees and the director", () => {
+    expect(valueOf(entries, "principalActivity")).toBe("Stadium operation and events");
+    expect(valueOf(entries, "tradeName")).toBe("Stadium operation and events");
+    expect(valueOf(entries, "directors")).toBe("Maldwyn Beynon");
+    expect(valueOf(entries, "averageEmployees")).toBe("4");
+    expect(valueOf(entries, "directorName")).toBe("Maldwyn Beynon");
+    expect(valueOf(entries, "declarantName")).toBe("Maldwyn Beynon");
+  });
+});
+
+describe("the form values from a micro-entity's iXBRL accounts", () => {
+  const entries = formEntriesFromIxbrl(mappedCase("micro-entity-accounts"));
+
+  test("opens the micro-entity regime and fills its balance sheets", () => {
+    expect(valueOf(entries, "regimeMicro")).toBe(true);
+    expect(valueOf(entries, "regimeSmall")).toBeUndefined();
+    expect(valueOf(entries, "microCurrentFixedAssets")).toBe("1000");
+    expect(valueOf(entries, "microCurrentCurrentAssets")).toBe("5000");
+    expect(valueOf(entries, "microPriorFixedAssets")).toBe("900");
+  });
+
+  test("names the micro-entity's trade after the company", () => {
+    expect(valueOf(entries, "tradeName")).toBe("MILLENNIUM STADIUM PLC");
+  });
+
+  test("leaves the small company fields and the depreciation alone", () => {
+    const ids = entries.map(([id]) => id);
+    expect(ids).not.toContain("depreciation");
+    expect(ids).not.toContain("currentTurnover");
+    expect(ids).not.toContain("includeFixedAssetNote");
+  });
+});
+
+describe("a document that does not match the form", () => {
+  test("another company number is refused", () => {
+    expect(() => mappedCase("small-company-accounts-full", { companyNumber: "99999999" })).toThrow(/99999999/);
+  });
+
+  test("another period is refused", () => {
+    expect(() => mappedCase("small-company-accounts-full", { periodStart: "2024-04-01", periodEnd: "2025-03-31" })).toThrow(
+      /end on 2025-12-31/,
+    );
+  });
+});

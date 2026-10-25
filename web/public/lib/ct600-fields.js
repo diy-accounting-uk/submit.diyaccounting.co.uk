@@ -1260,6 +1260,59 @@ function microEntries(figures, accounts, microAccounts) {
   return entries;
 }
 
+const FIXED_ASSET_CLASS_NAMES = FIXED_ASSET_CLASSES.map(([className]) => className);
+
+function figureEntries(idOf, year, fields, figures) {
+  return fields.filter(([field]) => Number.isFinite(figures?.[field])).map(([field]) => [idOf(year, field), text(figures[field])]);
+}
+
+/**
+ * The accounts section's values from an iXBRL accounts document the diya-gl reader mapped, as
+ * [element id, value] pairs. The regime the document is for is the regime the form opens on, and the
+ * depreciation added back starts as the fixed asset note's charge for the year.
+ * @param {object} mapped - mapIxbrlAccounts output
+ */
+export function formEntriesFromIxbrl(mapped) {
+  const micro = mapped.regime === "micro";
+  const { currentYear, priorYear } = mapped.balanceSheet;
+  const entries = [
+    ["periodStart", mapped.period.start],
+    ["periodEnd", mapped.period.end],
+    [micro ? "regimeMicro" : "regimeSmall", true],
+  ];
+  if (micro) {
+    entries.push(...figureEntries(microId, "current", MICRO_BALANCE_SHEET_FIELDS, currentYear));
+    entries.push(...figureEntries(microId, "prior", MICRO_BALANCE_SHEET_FIELDS, priorYear));
+  } else {
+    entries.push(...figureEntries(profitAndLossId, "current", PROFIT_AND_LOSS_FIELDS, mapped.profitAndLoss?.currentYear));
+    entries.push(...figureEntries(balanceSheetId, "current", BALANCE_SHEET_FIELDS, currentYear));
+    const hasPrior = Object.keys(priorYear).length > 0;
+    entries.push(["includeComparatives", hasPrior]);
+    if (hasPrior) {
+      entries.push(...figureEntries(balanceSheetId, "prior", BALANCE_SHEET_FIELDS, priorYear));
+      entries.push(...figureEntries(profitAndLossId, "prior", PROFIT_AND_LOSS_FIELDS, mapped.profitAndLoss?.priorYear));
+    }
+    const note = mapped.fixedAssetNote ?? {};
+    const noteClasses = FIXED_ASSET_CLASS_NAMES.filter((className) => note[className]);
+    entries.push(["includeFixedAssetNote", noteClasses.length > 0]);
+    for (const className of noteClasses) {
+      for (const [field] of FIXED_ASSET_FIELDS) entries.push([noteId(className, field), text(note[className][field] ?? 0)]);
+    }
+    if (noteClasses.length > 0) {
+      entries.push(["depreciation", text(noteClasses.reduce((total, className) => total + (note[className].depreciationCharge ?? 0), 0))]);
+    }
+    if (mapped.principalActivity) entries.push(["principalActivity", mapped.principalActivity]);
+    if (mapped.directors.length > 0) entries.push(["directors", mapped.directors.join("\n")]);
+  }
+  const tradeName = micro ? mapped.company?.name : mapped.principalActivity || mapped.company?.name;
+  if (tradeName) entries.push(["tradeName", tradeName]);
+  if (typeof mapped.averageEmployees === "number") entries.push(["averageEmployees", text(mapped.averageEmployees)]);
+  const directorName = mapped.signer || mapped.directors[0];
+  if (directorName) entries.push(["directorName", directorName], ["declarantName", directorName]);
+  if (mapped.approvalDate) entries.push(["directorDateApproved", mapped.approvalDate]);
+  return entries;
+}
+
 /**
  * Set the form's elements from [element id, value] pairs: text for a box, true or false for a
  * checkbox. Each element hears an input and a change event, so the page checks what it holds.

@@ -59,6 +59,43 @@ export async function fillInCompanyTaxReturnForm(page, { utr, declarantName, reg
   });
 }
 
+const MICRO_PROFIT_AND_LOSS_ANSWERS = {
+  microCurrentTurnover: "20000",
+  microCurrentOtherIncome: "0",
+  microCurrentRawMaterials: "5000",
+  microCurrentStaffCosts: "0",
+  microCurrentDepreciation: "0",
+  microCurrentOtherCharges: "12000",
+  microCurrentTax: "600",
+};
+
+// A micro-entity's iXBRL accounts tag no profit and loss account, so the customer types the micro profit and loss lines
+// the document leaves blank beside the balance sheets it fills.
+export async function fillInCompanyTaxReturnFormFromIxbrl(
+  page,
+  { ixbrlFile, expectedStatus, utr, declarantName },
+  screenshotPath = defaultScreenshotPath,
+) {
+  await test.step("The user enters the UTR, drops the company's iXBRL accounts, types the profit and loss the document leaves blank, and enters the statements and the declaration", async () => {
+    await loggedFill(page, "#utr", utr, "UTR");
+    await expect(page.locator("#booksImportFile")).toBeAttached();
+    await page.locator("#booksImportFile").setInputFiles(ixbrlFile);
+    await expect(page.locator("#booksImportStatus")).toContainText(expectedStatus, { timeout: 60000 });
+    await expect(page.locator("#regimeMicro")).toBeChecked();
+    await expect(page.locator("#microCurrentFixedAssets")).toHaveValue("1000");
+    await expect(page.locator("#declarantName")).toHaveValue(declarantName);
+    for (const [id, value] of Object.entries(MICRO_PROFIT_AND_LOSS_ANSWERS)) {
+      await loggedFill(page, `#${id}`, value, id);
+    }
+    await page.check("#statementSection477Exemption");
+    await page.check("#statementMembersNotRequiredAudit");
+    await page.check("#statementDirectorsResponsibilities");
+    await page.check("#statementMicroEntityProvisions");
+    await page.check("#declarationAccepted");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-return-form-filled-ixbrl.png` });
+  });
+}
+
 const TYPED_ANSWERS = {
   utr: "8596148860",
   periodStart: "2025-04-01",

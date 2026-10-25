@@ -24,9 +24,12 @@
 //   kind "small-company-accounts"  fills the period, the current year's profit and loss account and
 //                         balance sheet, the fixed asset note, the employees and the directors from a
 //                         Company book; the book holds no prior year profit and loss, so the prior year stays blank
-// The two accounts kinds also read an iXBRL accounts document (.xhtml, .html or .xml) in the browser:
-// the figures it tags fill the same form fields, and the status line names the taxonomy it read and
-// the facts the form has no field for. A document for another company, or for the other regime, fills nothing.
+// The two accounts kinds and the ct600 kind also read an iXBRL accounts document (.xhtml, .html or .xml)
+// in the browser: the figures it tags fill the same form fields, and the status line names the taxonomy
+// it read and the facts the form has no field for. A document for another company, or for the other
+// regime on an accounts page, fills nothing. The ct600 kind takes either regime from the document, fills
+// the accounts section and sets the depreciation added back to the fixed asset note's charge, and also
+// refuses a document whose period differs from the period the form already holds.
 //
 // The annual card also accepts the derived-figures JSON the diya-submit MCP tool
 // derive_itsa_annual_submission writes.
@@ -290,6 +293,7 @@
   }
 
   async function fillCt600({ bundle, source, fileName, hooks }) {
+    if (source.ixbrl) return fillCt600FromIxbrl({ bundle, source, fileName, hooks });
     let figures;
     let accounts;
     let microAccounts;
@@ -372,10 +376,10 @@
 
   // Reads an iXBRL accounts document for the regime the page takes. A document for another company or
   // another regime, or one the reader cannot read, fills nothing.
-  function mapIxbrlForPage(bundle, bytes, regime) {
+  function mapIxbrlForPage(bundle, bytes, regime, expectedPeriod = {}) {
     const formNumber = (document.getElementById("formCompanyNumber")?.textContent || "").trim();
     try {
-      return bundle.mapIxbrlAccounts(bytes, { regime, ...(formNumber ? { companyNumber: formNumber } : {}) });
+      return bundle.mapIxbrlAccounts(bytes, { regime, ...(formNumber ? { companyNumber: formNumber } : {}), ...expectedPeriod });
     } catch (error) {
       throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
     }
@@ -393,6 +397,30 @@
     return (
       `Filled ${plural(filled, "field")} from ${fileName} (${taxonomyText(mapped.suite)}) for the period ${mapped.period.start} to ${mapped.period.end}.` +
       `${ixbrlLeftOutText(mapped, formTakesProfitAndLoss)} ${advice}`
+    );
+  }
+
+  function takesIxbrl(kind) {
+    return kind === "micro-entity-accounts" || kind === "small-company-accounts" || kind === "ct600";
+  }
+
+  // The CT600 form takes either regime from the document, and holds a period only once the customer or an earlier file has set it.
+  async function fillCt600FromIxbrl({ bundle, source, fileName, hooks }) {
+    const expectedPeriod = {};
+    const heldStart = (document.getElementById("periodStart")?.value || "").trim();
+    const heldEnd = (document.getElementById("periodEnd")?.value || "").trim();
+    if (heldStart) expectedPeriod.periodStart = heldStart;
+    if (heldEnd) expectedPeriod.periodEnd = heldEnd;
+    const mapped = mapIxbrlForPage(bundle, source.ixbrl, "any", expectedPeriod);
+    const { formEntriesFromIxbrl, applyFormEntries } = await import("../lib/ct600-fields.js");
+    const filled = applyFormEntries(formEntriesFromIxbrl(mapped));
+    hooks.onFilled(undefined);
+    return ixbrlStatus(
+      filled,
+      fileName,
+      mapped,
+      "Check the figures, add the UTR, the statements and the declaration, then preview.",
+      mapped.regime === "small",
     );
   }
 
@@ -737,9 +765,7 @@
       { id: "booksImportHint", class: "hint" },
       "Drop your DIYA-GL book, spreadsheets workbook or package zip here, or choose a file. It is read in this browser and never uploaded; " +
         "only the figures you file are sent." +
-        (kind === "micro-entity-accounts" || kind === "small-company-accounts"
-          ? " An iXBRL accounts document (.xhtml) fills the same form."
-          : ""),
+        (takesIxbrl(kind) ? " An iXBRL accounts document (.xhtml) fills the same form." : ""),
     );
     const dropZone = element("div", { "id": "booksImportDrop", "class": "books-import-drop", "aria-describedby": "booksImportHint" });
     const chooseButton = element("button", { type: "button", id: "booksImportChoose", class: "secondary-button" }, "Choose a file");
@@ -749,7 +775,7 @@
       type: "file",
       id: "booksImportFile",
       name: "booksImportFile",
-      accept: kind === "micro-entity-accounts" || kind === "small-company-accounts" ? ACCEPTED_ACCOUNTS_FILES : ACCEPTED_FILES,
+      accept: takesIxbrl(kind) ? ACCEPTED_ACCOUNTS_FILES : ACCEPTED_FILES,
       class: "books-import-file",
       tabindex: "-1",
       hidden: "",
@@ -808,7 +834,7 @@
         if (parsed) return { ct600Figures: parsed };
       }
       const bundle = await loadBundle();
-      if ((kind === "micro-entity-accounts" || kind === "small-company-accounts") && IXBRL_FILE_NAME.test(file.name)) {
+      if (takesIxbrl(kind) && IXBRL_FILE_NAME.test(file.name)) {
         return { source: { ixbrl: bytes } };
       }
       return { source: await bundle.readBookSource(bytes, file.name) };
