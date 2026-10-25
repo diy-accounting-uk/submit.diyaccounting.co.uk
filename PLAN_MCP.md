@@ -80,7 +80,7 @@ The seal key is HKDF-SHA256 of the MCP blob key with the info `hmrc-grant`, so a
 | Threat | Answer |
 |--------|--------|
 | A leaked `Mcp-Session-Id` | The hosted endpoint already refuses a session whose owner is not the bearer's. The read route checks the owner again. The session item holds only the grant id, never a token. |
-| A leaked grant id | The read route needs the owner's bearer as well. The grant id never reaches the chat or a URL. |
+| A leaked grant id | The grant id is part of the state in the link, so the user's browser history holds it. The read route also needs the owner's bearer, and the tool answers no grant id of its own. |
 | A replayed state | The `pending` to `exchanging` condition admits one callback per state. HMRC also accepts each code only once. |
 | A state used on the wrong grant | The secret's hash must match the item the grant id names. |
 | Someone else's HMRC account bound to the user's session | The attacker would need the user's state before the user uses it. The state lives only in the user's browser, for ten minutes, once. |

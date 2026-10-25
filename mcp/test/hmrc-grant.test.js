@@ -53,7 +53,6 @@ describe("the HMRC grant tools", () => {
         scope: "read:vat write:vat",
         hmrcAccount: "synthetic",
       });
-      expect(JSON.stringify(answer)).not.toContain(GRANT_ID);
       expect(session.hmrcGrant).toEqual({ grantId: GRANT_ID, hmrcAccount: "synthetic" });
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/mcp/hmrc-grants");

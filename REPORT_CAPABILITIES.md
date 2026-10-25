@@ -401,6 +401,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation: use when a practice's client list must be read or grown, or an HMRC Agent Authorisation invitation sent or checked.
     - [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client: use when one submission or book tool must run once per client in a practice's list.
     - [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat) Take Companies House codes on a page instead of in the chat: use when a Companies House filing through the MCP needs the company authentication code or a director's personal code, or the codes link, its entry or its seal needs tracing.
+    - [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp) Start an HMRC grant from the MCP: use when a VAT (or later Income Tax) tool call through the MCP needs an HMRC access token, or the grant, its callback branch, its seal or its refresh needs tracing.
   - [Finance data import](#finance-data-import-mcp)
     - [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines: use when a NatWest current-account CSV export must become validated diya-gl bank lines for a book.
     - [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set: use when a finished trading year's Company package workbooks must seed a new book.toml for the following year.
@@ -4293,7 +4294,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:area MCP -->
 - [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito · [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront) Serve the submission MCP over HTTP behind CloudFront · [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness) Demonstrate the submission MCP in a scripted chat harness
 - [Book and derivation tools](#book-and-derivation-tools-mcp): [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP · [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing · [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools · [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures
-- [Filing and practice tools](#filing-and-practice-tools-mcp): [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API · [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation · [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client · [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat) Take Companies House codes on a page instead of in the chat
+- [Filing and practice tools](#filing-and-practice-tools-mcp): [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API · [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation · [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client · [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat) Take Companies House codes on a page instead of in the chat · [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp) Start an HMRC grant from the MCP
 - [Finance data import](#finance-data-import-mcp): [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines · [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set · [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index · [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines · [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines) Parse PayPal statements into diya-gl lines · [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book
 - [Documentation and disclaimer](#documentation-and-disclaimer-mcp): [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference · [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site
 <!-- /generated:area MCP -->
@@ -4310,12 +4311,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### MCP-01 Expose the submission MCP server and tools
 
 - **Use when:** a session needs the submission MCP's tool set, over stdio or one call across every practice client.
-- **Does:** createServer in mcp/lib/server.js builds an McpServer and registers every tool in its TOOLS table. mcp/bin/diya-submit-mcp.js connects that server to stdio, or runs one tool for every practice client with --all-clients.
+- **Does:** createServer in mcp/lib/server.js builds an McpServer and registers every tool in its TOOLS table. mcp/bin/diya-submit-mcp.js connects that server to stdio, or runs one tool for every practice client with --all-clients. The session (createSession in mcp/lib/book-tools.js) holds the loaded book, the cloud book pointer and the HMRC grant id that request_hmrc_authorisation sets (MCP-21).
 - **Run:** `node mcp/bin/diya-submit-mcp.js`; `node mcp/bin/diya-submit-mcp.js --all-clients <tool> [--arg key=value ...]`; `npm --prefix mcp start`
 - **Entry:** `mcp/lib/server.js:createServer`; `mcp/bin/diya-submit-mcp.js`
 - **Files:** mcp/lib/server.js, mcp/bin/diya-submit-mcp.js, mcp/vitest.config.js
 - **Keywords:** mcp server, mcp tools, stdio, model context protocol, diya-submit-mcp, all-clients, tool registry
-- **Related:** MCP-02, MCP-09
+- **Related:** MCP-02, MCP-09, MCP-21
 
 #### MCP-02 Authenticate MCP sessions via Cognito
 
@@ -4329,7 +4330,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### MCP-18 Serve the submission MCP over HTTP behind CloudFront
 - **Use when:** a chat client must reach the submission MCP at `/mcp` with OAuth, or the routes, stack, edge behaviours or rate rules behind that endpoint need tracing.
-- **Does:** mcpHttp.js answers `/mcp` through handleMcpRequest in mcp/lib/http.js, with sessions in the mcp-sessions DynamoDB table. mcpOauth.js serves the OAuth metadata documents under `/.well-known/oauth-*` and the authorization facade under `/mcp/oauth/*` in front of Cognito. McpStack.java creates both Lambdas; deploy.yml's deploy-mcp job deploys it before deploy-api. EdgeStack.java sends `/mcp`, `/mcp/*` and `/.well-known/oauth-*` to the API Gateway origin with caching off and every viewer header forwarded, and counts those paths in a WAF rate rule keyed on the Authorization header instead of the per-IP rule.
+- **Does:** mcpHttp.js answers `/mcp` through handleMcpRequest in mcp/lib/http.js, with sessions in the mcp-sessions DynamoDB table; a session item also keeps the id of the session's HMRC grant (MCP-21). mcpOauth.js serves the OAuth metadata documents under `/.well-known/oauth-*` and the authorization facade under `/mcp/oauth/*` in front of Cognito. McpStack.java creates both Lambdas, the codes entry Lambda (MCP-20) and the HMRC grant Lambda (MCP-21); deploy.yml's deploy-mcp job deploys it before deploy-api. EdgeStack.java sends `/mcp`, `/mcp/*` and `/.well-known/oauth-*` to the API Gateway origin with caching off and every viewer header forwarded, and counts those paths in a WAF rate rule keyed on the Authorization header instead of the per-IP rule.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/mcp/mcpHttp.js`; `app/functions/mcp/mcpOauth.js`; `infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java`
 - **Files:** app/functions/mcp/mcpHttp.js, app/functions/mcp/mcpOauth.js, mcp/lib/http.js, app/data/dynamoDbMcpSessionRepository.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java, .github/workflows/deploy.yml
@@ -4402,17 +4403,18 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation
 - [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client
 - [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat) Take Companies House codes on a page instead of in the chat
+- [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp) Start an HMRC grant from the MCP
 <!-- /generated:group filing-and-practice-tools-mcp -->
 
 #### MCP-07 File VAT returns and accounts via API
 
 - **Use when:** confirmed VAT or accounts figures must be filed, fetched or polled against the deployed API.
-- **Does:** callSubmitApi in mcp/lib/submit-tools.js is the shared HTTP layer behind list_vat_obligations, submit_vat_return, get_vat_receipt, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts and poll_accounts_submission. It carries the session bearer token, the HMRC and custom-authoriser headers, and polls a 202 response to a terminal status.
+- **Does:** callSubmitApi in mcp/lib/submit-tools.js is the shared HTTP layer behind list_vat_obligations, submit_vat_return, get_vat_receipt, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts and poll_accounts_submission. It carries the session bearer token, the HMRC and custom-authoriser headers, and polls a 202 response to a terminal status. list_vat_obligations and submit_vat_return take no HMRC token argument: hmrcAccessTokenFor reads it from the session's HMRC grant (MCP-21) for each call, and fails with a message naming request_hmrc_authorisation when the session holds none.
 - **Run:** no command; see Does and Entry
-- **Entry:** `mcp/lib/submit-tools.js:callSubmitApi`; `mcp/lib/submit-tools.js:submitVatReturn`; `mcp/lib/submit-tools.js:submitMicroEntityAccounts`
+- **Entry:** `mcp/lib/submit-tools.js:callSubmitApi`; `mcp/lib/submit-tools.js:hmrcAccessTokenFor`; `mcp/lib/submit-tools.js:submitVatReturn`; `mcp/lib/submit-tools.js:submitMicroEntityAccounts`
 - **Files:** mcp/lib/submit-tools.js, mcp/test/submit-tools.test.js
-- **Keywords:** submit_vat_return, list_vat_obligations, get_vat_receipt, companies house accounts, callSubmitApi, 202 poll, hmrc access token
-- **Related:** MCP-05, MCP-04, MCP-08
+- **Keywords:** submit_vat_return, list_vat_obligations, get_vat_receipt, companies house accounts, callSubmitApi, 202 poll, hmrc access token, hmrc grant
+- **Related:** MCP-05, MCP-04, MCP-08, MCP-21
 
 #### MCP-08 Manage practice clients and HMRC agent authorisation
 
@@ -4443,6 +4445,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/mcp/mcpCodesEntry.js, app/services/companiesHouseCodesEntry.js, app/data/dynamoDbCodesEntryRepository.js, app/lib/codesSeal.js, app/lib/mcpBlobKey.js, mcp/lib/server.js, mcp/lib/batch-tools.js, web/public/companies-house/mcpCodes.html, web/public/companies-house/mcpCodes.page.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStack.java
 - **Keywords:** companies house codes, company authentication code, personal code, codes entry, codesEntryId, request_companies_house_codes, mcpCodes, codes link
 - **Related:** MCP-07, MCP-18
+
+#### MCP-21 Start an HMRC grant from the MCP
+
+- **Use when:** a VAT (or later Income Tax) tool call through the MCP needs an HMRC access token, or the grant, its callback branch, its seal or its refresh needs tracing.
+- **Does:** request_hmrc_authorisation posts to `/api/v1/mcp/hmrc-grants` and answers HMRC's authorisation link, whose state is `mcp.<grantId>.<secret>`; the grant id stays on the MCP session. HMRC returns the user to activities/submitVatCallback.html, which sees the `mcp.` state and posts the code and state to `/api/v1/mcp/hmrc-grants/callback` (no sign-in in that browser). mcpHmrcGrant.js checks the state's hash, lets one callback claim the grant, exchanges the code, and seals the access and refresh tokens with AES-256-GCM under a key derived from the MCP blob key (`hmrc-grant` purpose in codesSeal.js). The grant item lives in the mcp-sessions table under `hmrc-grant:<grantId>`: ten minutes pending, 24 hours granted. `GET /api/v1/mcp/hmrc-grants/{grantId}` answers the access token to the owner only and uses HMRC's refresh_token grant when it is within five minutes of expiry. The hosted endpoint copies the grant id to and from the session item. No route or tool answers a token to the chat.
+- **Run:** `npm run test:mcpHmrcGrantBehaviour-simulator` walks the whole grant on the simulator lane; `npm --prefix mcp run test:system` starts a grant and files a return against the simulator.
+- **Entry:** `app/functions/mcp/mcpHmrcGrant.js`; `app/data/dynamoDbHmrcGrantRepository.js`; `mcp/lib/submit-tools.js:requestHmrcAuthorisation`; `mcp/lib/submit-tools.js:hmrcAccessTokenFor`
+- **Files:** app/functions/mcp/mcpHmrcGrant.js, app/data/dynamoDbHmrcGrantRepository.js, app/data/dynamoDbMcpSessionRepository.js, app/lib/codesSeal.js, app/functions/hmrc/hmrcTokenPost.js, app/functions/mcp/mcpHttp.js, web/public/activities/submitVatCallback.page.js, mcp/lib/submit-tools.js, mcp/lib/server.js, mcp/lib/hosted-tools.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, behaviour-tests/mcpHmrcGrant.behaviour.test.js, app/unit-tests/functions/mcpHmrcGrant.test.js, mcp/test/hmrc-grant.test.js, PLAN_MCP.md
+- **Keywords:** hmrc grant, request_hmrc_authorisation, mcp hmrc token, hmrc oauth mcp, hmrc-grants, mcp state, hmrc refresh token, submitVatCallback
+- **Related:** MCP-07, MCP-18, MCP-20
 
 ### Finance data import (MCP)
 
@@ -6769,16 +6781,19 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hmrc developer hub: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
 - hmrc endpoints: [OPS-112](#ops-112-provision-the-api-gateway-stack)
 - hmrc failures by class: [DATA-29](#data-29-sql-views-submission-and-compliance)
+- hmrc grant: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api), [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - hmrc http client: [HMRC-29](#hmrc-29-call-the-hmrc-api)
 - hmrc itsa stack: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks)
 - hmrc itsa status api: [HMRC-11](#hmrc-11-retrieve-itsa-status)
 - hmrc marketing rules: [SITE-20](#site-20-document-business-governance-and-positioning)
 - hmrc mtd journey: [OPS-97](#ops-97-compile-the-compliance-audit-report)
 - hmrc oauth: [DEV-03](#dev-03-simulate-hmrc-oauth)
+- hmrc oauth mcp: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - hmrc production approval: [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout)
 - hmrc rates: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - hmrc receipt: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
 - hmrc receipts: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
+- hmrc refresh token: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - hmrc sandbox: [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user)
 - hmrc sandbox test user: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - hmrc sandbox user: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
@@ -6789,6 +6804,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hmrc vat: [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools)
 - hmrc vat api: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return), [HMRC-04](#hmrc-04-retrieve-vat-liabilities), [HMRC-05](#hmrc-05-retrieve-vat-payments), [HMRC-06](#hmrc-06-retrieve-vat-penalties)
 - hmrc-api-requests: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
+- hmrc-grants: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - hmrc-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - hmrc-service: [HMRC-29](#hmrc-29-call-the-hmrc-api)
 - hmrc.toml: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
@@ -7020,6 +7036,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mcp demo: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp disclaimer: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - mcp harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
+- mcp hmrc token: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - mcp http: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - mcp inspector: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
 - mcp rate limit: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
@@ -7027,6 +7044,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mcp recording: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp server: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - mcp session: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
+- mcp state: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - mcp tools: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - mcp-harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
 - mcp.html: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
@@ -7451,6 +7469,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - request cache: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - request-holding-cert.yml: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
 - request_companies_house_codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
+- request_hmrc_authorisation: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - requestidprefix: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - required env vars: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - required status check: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
@@ -7742,6 +7761,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - submitsharednames: [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions)
 - submitstackprops: [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account)
 - submitvat worker: [HMRC-01](#hmrc-01-submit-a-vat-return)
+- submitvatcallback: [MCP-21](#mcp-21-start-an-hmrc-grant-from-the-mcp)
 - subscription: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
 - subscription bundle: [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue)
 - subscription cancellations: [DATA-28](#data-28-sql-views-revenue-and-subscription)

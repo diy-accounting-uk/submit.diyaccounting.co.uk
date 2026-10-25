@@ -107,7 +107,7 @@ test("the MCP starts an HMRC grant, the user consents in the browser, and the VA
     const answer = await callTool(session, "request_hmrc_authorisation", { services: ["vat"], hmrcAccount: "synthetic" });
     expect(answer.scope).toBe("read:vat write:vat");
     expect(new URL(answer.url).searchParams.get("state")).toMatch(/^mcp\./);
-    expect(JSON.stringify(answer)).not.toContain(session.hmrcGrant.grantId);
+    expect(Object.keys(answer).sort()).toEqual(["expiresAt", "hmrcAccount", "scope", "url"]);
     return answer;
   });
 
