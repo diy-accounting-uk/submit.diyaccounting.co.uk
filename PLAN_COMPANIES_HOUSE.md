@@ -968,7 +968,7 @@ the period end; prior year = contexts ending on the day before the period start.
 | `CurrentAssets` | `currentAssets` (micro) | the sum of the lines above; a check |
 | `TradeCreditorsTradePayables` (`WithinOneYear`) | `tradeCreditors` | `2100`; `openingBalances.tradeCreditors` |
 | `CorporationTaxPayable` | `corporationTax` | `2300`; `openingBalances.corporationTaxDue` |
-| `OtherCreditors`, `AccruedLiabilitiesNotExpressedWithinCreditorsSubtotal` (`WithinOneYear`) | `otherCreditors` | `2500` when tagged as directors' loans, else `2400`; the figure in `otherCreditors` either way |
+| `OtherCreditors`, `AccruedLiabilitiesNotExpressedWithinCreditorsSubtotal` (`WithinOneYear`) | `otherCreditors` | `2500` when tagged as directors' loans, else `2100` (the chart has no other-creditors account; 2400 is PAYE/NI); the figure in `otherCreditors` either way |
 | `Creditors` on `WithinOneYear` | `creditorsWithinOneYear` (micro) | the sum; a check |
 | `Creditors` on `AfterOneYear` | `creditorsAfterOneYear` | `2600`; `openingBalances.longTermCreditors` |
 | `ProvisionsForLiabilitiesBalanceSheetSubtotal` | added to `creditorsAfterOneYear`, and named on the review | `2600` |
@@ -1407,8 +1407,8 @@ The launch and approval steps live in `PLAN_COMPANIES_HOUSE_APPROVAL.md`.
 | DF2b | One live joint filing for DIY Accounting Limited; `prod` on the activity (the DF1 design) | ~2 | Sonnet | DF2a | Blocked |
 | DF2c | Amended accounts at Companies House and an amended CT600 from the locked state (the DF1 design) | ~6 | Sonnet | DF2a | Blocked |
 | IX2a | The iXBRL reader, the mapping and the summary book in diya-gl, with the fixtures and a release (spreadsheets repository; the IX1 design) | ~10 | Sonnet | — | On main (spreadsheets PR #167; diya-gl 1.2.56) |
-| IX2b | The card reads iXBRL on the accounts pages; the builders' round trip (the IX1 design) | ~6 | Sonnet | — | Ready |
-| IX2c | The CT600 page fills its accounts section from an iXBRL file (the IX1 design) | ~4 | Sonnet | IX2b | Blocked |
+| IX2b | The card reads iXBRL on the accounts pages; the builders' round trip (the IX1 design) | ~6 | Sonnet | — | On main (PR #540) |
+| IX2c | The CT600 page fills its accounts section from an iXBRL file (the IX1 design) | ~4 | Sonnet | IX2b | On main (PR #541) |
 | IX2d | Multi-file document sets, the old UK GAAP taxonomy, Format 2 small-company P&Ls ("IX2d: the import horizons, designed") | — | Sonnet | — | Designed; build rows IX2d-4 to IX2d-9 in that section |
 
 
