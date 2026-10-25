@@ -156,11 +156,42 @@ function readDecisionArtifact(repo, runId, artifactName, scratchDir) {
   }
 }
 
+const JOBS_READ_RETRIES = 3;
+const JOBS_READ_RETRY_DELAY_MS = 5000;
+
+function sleepSync(ms) {
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
+}
+
+// Returns one page of the run's jobs, or null when the jobs API still fails after the retries.
+function readJobsPage(repo, runId, page) {
+  const args = ["api", `repos/${repo}/actions/runs/${runId}/jobs?per_page=100&page=${page}`];
+  let failures = 0;
+  for (;;) {
+    try {
+      return ghJson(args);
+    } catch (error) {
+      if (failures === JOBS_READ_RETRIES) {
+        const firstLine =
+          String(error.stderr || error.message)
+            .split("\n")
+            .find((line) => line.trim()) || "";
+        process.stderr.write(`skipped run ${runId}: ${firstLine}\n`);
+        return null;
+      }
+      failures += 1;
+      sleepSync(JOBS_READ_RETRY_DELAY_MS);
+    }
+  }
+}
+
+// Returns the run's jobs, or null when a page of the jobs API cannot be read.
 function fetchRunJobs(repo, runId) {
   const jobs = [];
   let page = 1;
   for (;;) {
-    const response = ghJson(["api", `repos/${repo}/actions/runs/${runId}/jobs?per_page=100&page=${page}`]);
+    const response = readJobsPage(repo, runId, page);
+    if (response === null) return null;
     jobs.push(...response.jobs);
     if (response.jobs.length < 100) break;
     page += 1;
@@ -174,6 +205,7 @@ export async function gatherRows({ repo, catalogue, limit, jobIds, workflowYamlT
   const sources = runSourcesForCatalogue(catalogue);
 
   const rows = [];
+  let skippedRuns = 0;
   for (const source of sources) {
     const names = correlationNames(displayNames, source.jobNamePrefix);
     const runs = ghJson([
@@ -194,6 +226,10 @@ export async function gatherRows({ repo, catalogue, limit, jobIds, workflowYamlT
       const decision = readDecisionArtifact(repo, run.databaseId, artifactName, scratchDir);
       if (!decision || !Array.isArray(decision.advisedSkip) || decision.advisedSkip.length === 0) continue;
       const jobs = fetchRunJobs(repo, run.databaseId);
+      if (jobs === null) {
+        skippedRuns += 1;
+        continue;
+      }
       const byName = new Map(jobs.map((job) => [job.name, job]));
       for (const jobId of decision.advisedSkip) {
         const job = byName.get(names[jobId]);
@@ -206,7 +242,7 @@ export async function gatherRows({ repo, catalogue, limit, jobIds, workflowYamlT
       }
     }
   }
-  return rows;
+  return { rows, skippedRuns };
 }
 
 function parseArgs(argv) {
@@ -227,7 +263,7 @@ async function main() {
   const { JOB_ID_CATALOGUES } = await import("./select-jobs.mjs");
   const jobIds = [...JOB_ID_CATALOGUES[opts.workflow]];
   const scratchDir = fs.mkdtempSync(path.join(os.tmpdir(), "select-jobs-trial-"));
-  const rows = await gatherRows({
+  const { rows, skippedRuns } = await gatherRows({
     repo,
     catalogue: opts.workflow,
     limit: Number(opts.limit),
@@ -237,6 +273,7 @@ async function main() {
   });
   fs.rmSync(scratchDir, { recursive: true, force: true });
   process.stdout.write(renderMarkdownTable(tallyAdvisedSkips(rows)) + "\n");
+  process.stdout.write(`\nSkipped runs (jobs unreadable after retries): ${skippedRuns}\n`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
