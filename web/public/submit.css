@@ -2849,12 +2849,12 @@ input.hmrc-assist-highlight {
   }
 
   .review-table--boxes td:first-child {
-    flex: none;
-    min-width: 2.5rem;
+    flex: 0 0 3rem;
   }
 
   .review-table--boxes td:nth-child(2) {
-    flex: 1 1 calc(100% - 4rem);
+    flex: 1 1 calc(100% - 3rem - var(--space-3));
+    min-width: 0;
     font-weight: var(--weight-strong);
   }
 
@@ -2914,6 +2914,11 @@ input.hmrc-assist-highlight {
 .outcome > :last-child,
 .outcome > :last-child > :last-child {
   margin-bottom: 0;
+}
+
+.outcome + .outcome,
+.outcome ~ p:has(> #filingCopyLink) {
+  margin-top: var(--space-4);
 }
 
 .outcome--ok {

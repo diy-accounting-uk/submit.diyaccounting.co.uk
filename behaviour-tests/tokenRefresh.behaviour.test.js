@@ -20,6 +20,7 @@ import {
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
+  takeScreenshot,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
 import { clickLogIn, loginWithCognitoOrMockAuth, verifyLoggedInStatus } from "./steps/behaviour-login-steps.js";
@@ -160,7 +161,7 @@ test("GET /api/v1/bundle refreshes tokens when tokenResetAt has elapsed", async 
   // Step 3: GET /api/v1/bundle must now trigger the server-side resetTokens UpdateItem.
   // Before the IAM fix this returned 500 (dynamodb:UpdateItem AccessDenied on prod-env-bundles).
   const after = await fetchBundleApi(page);
-  await page.screenshot({ path: `${screenshotPath}/after-expire-fetch.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/after-expire-fetch.png`, readerView: true });
   expect(after.status, `GET /api/v1/bundle must return 200 after forced tokenResetAt expiry; body=${JSON.stringify(after.body)}`).toBe(200);
 
   const refreshed = (after.body.bundles || []).find((b) => b.bundleId === TEST_BUNDLE && b.allocated);

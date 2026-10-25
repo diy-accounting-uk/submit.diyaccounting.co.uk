@@ -114,7 +114,7 @@ export async function callSubmitApi(session, path, { method = "GET", body, heade
   return responseBody;
 }
 
-export const HMRC_SERVICES = ["vat", "itsa"];
+export const HMRC_SERVICES = ["vat", "itsa", "agent"];
 export const HMRC_ACCOUNTS = ["synthetic", "live"];
 
 const NO_GRANT_MESSAGE =

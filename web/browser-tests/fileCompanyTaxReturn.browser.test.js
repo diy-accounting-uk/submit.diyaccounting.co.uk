@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import JSZip from "jszip";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 import {
   ACCOUNTS_TEXT_FIELDS,
   CT600_FORM_FIELDS,
@@ -502,6 +503,65 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#review-row-accountsRegime")).toContainText("Micro-entity accounts (FRS 105)");
     await expect(page.locator("#review-row-microCurrentRawMaterials")).toContainText("Raw materials and consumables, this year");
     await expect(page.locator("#review-row-statementMicroEntityProvisions")).toContainText("Yes");
+  });
+
+  function ixbrlAccountsFile(caseName, overrides = {}) {
+    const cases = JSON.parse(
+      fs.readFileSync(path.join(process.cwd(), "scripts/fixtures/companies-house-test-service-cases.json"), "utf-8"),
+    );
+    const { name, type, govTestScenario, expectedOutcome, ...requestBody } = cases.find((testCase) => testCase.name === caseName);
+    const errors = [];
+    const accounts = extractAndValidateAccountsParameters(
+      { body: JSON.stringify({ ...requestBody, companyNumber: "12345678", companyName: "Precision Code Ltd", ...overrides }) },
+      errors,
+    );
+    expect(errors).toEqual([]);
+    return { name: `${caseName}.xhtml`, mimeType: "application/xhtml+xml", buffer: Buffer.from(buildAccountsIxbrl(accounts)) };
+  }
+
+  test("a dropped small company iXBRL document fills the accounts section and the depreciation added back", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("small-company-accounts-full"));
+    await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60_000 });
+    await expect(page.locator("#regimeSmall")).toBeChecked();
+    await expect(page.locator("#periodStart")).toHaveValue("2025-01-01");
+    await expect(page.locator("#periodEnd")).toHaveValue("2025-12-31");
+    await expect(page.locator("#currentTurnover")).toHaveValue("20000");
+    await expect(page.locator("#currentCashAtBank")).toHaveValue("2000");
+    await expect(page.locator("#priorTurnover")).toHaveValue("18000");
+    await expect(page.locator("#includeFixedAssetNote")).toBeChecked();
+    await expect(page.locator("#depreciation")).toHaveValue("380");
+    await expect(page.locator("#principalActivity")).toHaveValue("Stadium operation and events");
+    await expect(page.locator("#directorName")).toHaveValue("Maldwyn Beynon");
+  });
+
+  test("a dropped micro-entity iXBRL document opens the micro accounts with its balance sheets", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("micro-entity-accounts"));
+    await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60_000 });
+    await expect(page.locator("#regimeMicro")).toBeChecked();
+    await expect(page.locator("#microCurrentFixedAssets")).toHaveValue("1000");
+    await expect(page.locator("#microPriorFixedAssets")).toHaveValue("900");
+  });
+
+  test("an iXBRL document for another company fills nothing", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("small-company-accounts-full", { companyNumber: "99999999" }));
+    await expect(page.locator("#booksImportStatus")).toContainText("99999999", { timeout: 60_000 });
+    await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled");
+    await expect(page.locator("#currentTurnover")).toHaveValue("");
+    await expect(page.locator("#periodStart")).toHaveValue("");
+  });
+
+  test("an iXBRL document for another period than the form holds fills nothing", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#periodStart").fill("2024-01-01");
+    await page.locator("#periodEnd").fill("2024-12-31");
+    await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("small-company-accounts-full"));
+    await expect(page.locator("#booksImportStatus")).toContainText("end on 2025-12-31", { timeout: 60_000 });
+    await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled");
+    await expect(page.locator("#currentTurnover")).toHaveValue("");
+    await expect(page.locator("#periodEnd")).toHaveValue("2024-12-31");
   });
 
   test("switching the regime keeps each regime's figures", async ({ page }) => {

@@ -22,10 +22,15 @@ import {
   logOutAndExpectToBeLoggedOut,
 } from "./steps/behaviour-login-steps.js";
 import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
-import { enterCompanyNumberAndLookUp, verifyCompanyLookedUp } from "./steps/behaviour-companies-house-accounts-steps.js";
+import {
+  enterCompanyNumberAndLookUp,
+  verifyCompanyLookedUp,
+  writeBuiltIxbrlFile,
+} from "./steps/behaviour-companies-house-accounts-steps.js";
 import {
   goToFileCompanyTaxReturn,
   fillInCompanyTaxReturnForm,
+  fillInCompanyTaxReturnFormFromIxbrl,
   typeInCompanyTaxReturnForm,
   changeAnAnswerFromTheReview,
   previewCompanyTaxReturn,
@@ -146,6 +151,29 @@ test("Click through: file a micro-entity's Company Tax Return from a book and se
   const bookExport = await buildCtReturnExportFromBook();
   await reachCompanyForm(page, testInfo);
   await fillInCompanyTaxReturnForm(page, { utr: FIXTURE_UTR, declarantName: bookExport.director.name, regime: "micro" }, screenshotPath);
+  await previewCompanyTaxReturn(page, screenshotPath);
+  await verifyMicroEntityReview(page, screenshotPath);
+  await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
+  await verifyReturnAccepted(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file a micro-entity's Company Tax Return from an iXBRL accounts document and see HMRC accept it", async ({
+  page,
+}, testInfo) => {
+  const ixbrlFile = writeBuiltIxbrlFile("micro-entity-accounts", { companyNumber, companyName }, testInfo.outputPath("ixbrl"));
+  await reachCompanyForm(page, testInfo);
+  await fillInCompanyTaxReturnFormFromIxbrl(
+    page,
+    {
+      ixbrlFile,
+      expectedStatus: "(FRS 102 2026 taxonomy) for the period 2025-01-01 to 2025-12-31.",
+      utr: FIXTURE_UTR,
+      declarantName: "Maldwyn Beynon",
+    },
+    screenshotPath,
+  );
   await previewCompanyTaxReturn(page, screenshotPath);
   await verifyMicroEntityReview(page, screenshotPath);
   await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);

@@ -26,6 +26,7 @@ import {
   runStripeListen,
   saveHmrcTestUserToFiles,
   timestamp,
+  takeScreenshot,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn, goToHomePage, goToHomePageUsingMainNav } from "./steps/behaviour-steps.js";
 import {
@@ -259,7 +260,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log(`User sub: ${userSub}`);
     expect(userSub).toBeTruthy();
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-day-guest-granted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-day-guest-granted.png`, readerView: true });
   });
 
   // ============================================================
@@ -292,7 +293,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log(`Tokens remaining after exhaustion: ${tokensAfterExhaust}`);
     expect(tokensAfterExhaust).toBe(0);
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-tokens-exhausted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-tokens-exhausted.png`, readerView: true });
   });
 
   // ============================================================
@@ -310,7 +311,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
 
     await goToHomePageUsingMainNav(page, screenshotPath);
     await page.waitForTimeout(2000);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-home-exhausted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-home-exhausted.png`, readerView: true });
 
     // The Submit VAT button should be disabled with "Insufficient tokens"
     // day-guest bundle maps to "Submit VAT (HMRC)" activity, not the synthetic variant
@@ -323,7 +324,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log(`Submit VAT button text: "${buttonText.trim()}"`);
     expect(buttonText).toContain("Insufficient tokens");
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-activities-disabled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-activities-disabled.png`, readerView: true });
   });
 
   // ============================================================
@@ -346,7 +347,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
 
     // Navigate to bundles page (either via upsell link or main nav)
     await goToBundlesPage(page, screenshotPath);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-bundles-page-after-exhaustion.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-bundles-page-after-exhaustion.png`, readerView: true });
 
     // Verify day-guest shows 0 tokens
     const dayGuestTokens = await getTokensRemaining(page, "day-guest");
@@ -391,7 +392,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log(`Resident-vat tokens remaining: ${tokens}`);
     expect(tokens).toBe(100);
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-resident-vat-granted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-resident-vat-granted.png`, readerView: true });
   });
 
   // ============================================================
@@ -495,7 +496,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     expect(result.manageButtonVisible).toBe(true);
     expect(result.portalUrl).toBeTruthy();
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06b-manage-subscription.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06b-manage-subscription.png`, readerView: true });
   });
 
   // ============================================================
@@ -564,7 +565,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     expect(receiptVisible).toBeTruthy();
     console.log("VAT return submitted successfully");
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-vat-submitted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-vat-submitted.png`, readerView: true });
   });
 
   // ============================================================
@@ -582,7 +583,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log(`Resident-vat tokens remaining after submission: ${tokensAfterSubmission}`);
     expect(tokensAfterSubmission).toBe(99);
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-tokens-after-submission.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-tokens-after-submission.png`, readerView: true });
   });
 
   // ============================================================
@@ -624,7 +625,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       screenshotPath,
     );
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-usage-page-full.png`, fullPage: true });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-usage-page-full.png`, fullPage: true, readerView: true });
     console.log("[payment-test]: Usage page verification complete.");
   });
 
@@ -669,7 +670,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       }
     }
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-portal-complete.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-portal-complete.png`, readerView: true });
   });
 
   // ============================================================
@@ -709,7 +710,7 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       expect(deletionResult.subscriptionStatus).toBe("canceled");
     }
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10b-deletion-webhook-complete.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10b-deletion-webhook-complete.png`, readerView: true });
   });
 
   // ============================================================

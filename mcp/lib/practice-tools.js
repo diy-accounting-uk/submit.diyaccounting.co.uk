@@ -16,7 +16,7 @@
 // e.g. https://submit.diyaccounting.co.uk/). The session bearer is the MCP's own sign-in
 // (its credentials' accessToken()).
 
-import { callSubmitApi, requireField } from "./submit-tools.js";
+import { callSubmitApi, requireField, hmrcAccessTokenFor } from "./submit-tools.js";
 
 function baseUrl() {
   const value = process.env.DIYA_SUBMIT_BASE_URL;
@@ -81,22 +81,22 @@ export async function addClient(session, params = {}) {
  * invite_client: sends an HMRC Agent Authorisation invitation for one client and one service,
  * over POST /api/v1/practice/clients/{clientId}/authorisation/invitations. The client's own VRN
  * or NINO (whichever the service needs) comes from the client row, not from this call; the
- * practice's HMRC access token travels in the body, alongside the known fact HMRC's invitation
+ * session's HMRC grant supplies the access token, which travels in the body, alongside the known fact HMRC's invitation
  * check asks for. arn, when given, is stored as the practice's agent reference number for reuse;
  * when omitted, the route reads back whatever the practice stored on an earlier call.
  * @param {Object} session
- * @param {{clientId: string, service: string, knownFact: string, hmrcAccessToken: string, arn?: string}} params
+ * @param {{clientId: string, service: string, knownFact: string, arn?: string}} params
  * @returns {Promise<{client: Object, invitationId: string, status: string}>}
  */
 export async function inviteClient(session, params = {}) {
   const clientId = requireField("invite_client", params, "clientId");
   const service = requireField("invite_client", params, "service");
   const knownFact = requireField("invite_client", params, "knownFact");
-  const hmrcAccessToken = requireField("invite_client", params, "hmrcAccessToken");
   const { arn } = params;
+  const { accessToken } = await hmrcAccessTokenFor(session, "invite_client");
   return callSubmitApi(session, `/api/v1/practice/clients/${encodeURIComponent(clientId)}/authorisation/invitations`, {
     method: "POST",
-    body: { service, knownFact, accessToken: hmrcAccessToken, ...(arn ? { arn } : {}) },
+    body: { service, knownFact, accessToken, ...(arn ? { arn } : {}) },
   });
 }
 
@@ -108,16 +108,16 @@ export async function inviteClient(session, params = {}) {
  * the practice's own session bearer goes on X-Authorization instead, freeing Authorization for the
  * HMRC token.
  * @param {Object} session
- * @param {{clientId: string, service: string, hmrcAccessToken: string}} params
+ * @param {{clientId: string, service: string}} params
  * @returns {Promise<{client: Object, status: string, invitationId: string|null}>}
  */
 export async function clientAuthorisationStatus(session, params = {}) {
   const clientId = requireField("client_authorisation_status", params, "clientId");
   const service = requireField("client_authorisation_status", params, "service");
-  const hmrcAccessToken = requireField("client_authorisation_status", params, "hmrcAccessToken");
+  const { accessToken } = await hmrcAccessTokenFor(session, "client_authorisation_status");
   const query = new URLSearchParams({ service });
   return callSubmitApi(session, `/api/v1/practice/clients/${encodeURIComponent(clientId)}/authorisation?${query.toString()}`, {
     customAuthorizer: true,
-    headers: { Authorization: `Bearer ${hmrcAccessToken}` },
+    headers: { Authorization: `Bearer ${accessToken}` },
   });
 }

@@ -513,10 +513,16 @@ function validateReviewForm(payload) {
   return true;
 }
 
+function longDate(isoDate) {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  if (Number.isNaN(date.getTime())) return isoDate;
+  return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
 function renderPreviewSummary(payload) {
   const rows = [
     ["Company", `${payload.companyName} (${payload.companyNumber})`],
-    ["Confirmation statement date", payload.reviewDate],
+    ["Confirmation statement date", longDate(payload.reviewDate)],
     ["Lawful purpose statement", "Accepted"],
     ["Statement of confirmation", "Accepted"],
     [

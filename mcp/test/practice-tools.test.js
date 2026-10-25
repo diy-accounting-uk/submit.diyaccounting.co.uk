@@ -22,6 +22,18 @@ const session = createSession({
   credentials: { accessToken: (...args) => mockAccessToken(...args), idToken: (...args) => mockIdToken(...args) },
 });
 
+const GRANT_ID = "7c9e6679-7425-40de-944b-e07fc1f90ae7";
+
+function sessionWithGrant() {
+  const granted = createSession({
+    credentials: { accessToken: (...args) => mockAccessToken(...args), idToken: (...args) => mockIdToken(...args) },
+  });
+  granted.hmrcGrant = { grantId: GRANT_ID, hmrcAccount: "live" };
+  return granted;
+}
+
+const GRANT_RESPONSE = { status: "granted", accessToken: "hmrc-access-token", hmrcAccount: "live" };
+
 const BOOK_ID = "11111111-2222-4333-8444-555555555555";
 const CLIENT_ID = "01ARZ3NDEKTSV4RRFFQ69G5FAV";
 
@@ -196,18 +208,26 @@ describe("practice-tools client tools", () => {
       clientId: CLIENT_ID,
       service: "MTD-VAT",
       knownFact: "2015-03-01",
-      hmrcAccessToken: "hmrc-access-token",
     };
+    let session;
+
+    beforeEach(() => {
+      session = sessionWithGrant();
+    });
 
     it("posts the invitation with the HMRC access token in the body, and returns the client, invitationId and status", async () => {
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, INVITE_CLIENT_RESPONSE));
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(200, GRANT_RESPONSE))
+        .mockResolvedValueOnce(jsonResponse(201, INVITE_CLIENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
       const result = await inviteClient(session, PARAMS);
 
       expect(result).toEqual(INVITE_CLIENT_RESPONSE);
       expect(result.status).toBe("pending");
-      const [url, init] = mockFetch.mock.calls[0];
+      expect(mockFetch.mock.calls[0][0]).toBe(`https://submit.diyaccounting.co.uk/api/v1/mcp/hmrc-grants/${GRANT_ID}`);
+      const [url, init] = mockFetch.mock.calls[1];
       expect(url).toBe(`https://submit.diyaccounting.co.uk/api/v1/practice/clients/${CLIENT_ID}/authorisation/invitations`);
       expect(init.method).toBe("POST");
       expect(init.headers.Authorization).toBe("Bearer practice-access-token");
@@ -219,24 +239,62 @@ describe("practice-tools client tools", () => {
     });
 
     it("carries arn through when given", async () => {
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, INVITE_CLIENT_RESPONSE));
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(200, GRANT_RESPONSE))
+        .mockResolvedValueOnce(jsonResponse(201, INVITE_CLIENT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
       await inviteClient(session, { ...PARAMS, arn: "XARN1234567" });
 
-      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      const body = JSON.parse(mockFetch.mock.calls[1][1].body);
       expect(body.arn).toBe("XARN1234567");
     });
 
-    it("requires clientId, service, knownFact and hmrcAccessToken", async () => {
+    it("requires clientId, service and knownFact", async () => {
       await expect(inviteClient(session, { ...PARAMS, clientId: undefined })).rejects.toThrow("clientId");
       await expect(inviteClient(session, { ...PARAMS, service: undefined })).rejects.toThrow("service");
       await expect(inviteClient(session, { ...PARAMS, knownFact: undefined })).rejects.toThrow("knownFact");
-      await expect(inviteClient(session, { ...PARAMS, hmrcAccessToken: undefined })).rejects.toThrow("hmrcAccessToken");
+    });
+
+    it("names request_hmrc_authorisation when the session holds no grant, and sends nothing", async () => {
+      const mockFetch = vi.fn();
+      vi.stubGlobal("fetch", mockFetch);
+
+      await expect(inviteClient(createSession({ credentials: session.credentials }), PARAMS)).rejects.toThrow(
+        /^invite_client: No HMRC authorisation is held for this session\. Call request_hmrc_authorisation/,
+      );
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("tells the caller the user has not finished the HMRC page when the grant is pending", async () => {
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(jsonResponse(200, { status: "pending" })));
+
+      await expect(inviteClient(session, PARAMS)).rejects.toThrow("has not finished granting HMRC access");
+    });
+
+    it("carries the route's expired-grant message", async () => {
+      vi.stubGlobal(
+        "fetch",
+        vi
+          .fn()
+          .mockResolvedValueOnce(
+            jsonResponse(404, { message: "This HMRC authorisation has expired. Call request_hmrc_authorisation again." }),
+          ),
+      );
+
+      await expect(inviteClient(session, PARAMS)).rejects.toThrow("Call request_hmrc_authorisation again");
+    });
+
+    it("takes no hmrcAccessToken argument", () => {
+      expect(TOOLS.invite_client.inputSchema.hmrcAccessToken).toBeUndefined();
     });
 
     it("throws a 404 client-not-found style message for a client that is not the caller's", async () => {
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(404, { message: "Client not found" }));
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(200, GRANT_RESPONSE))
+        .mockResolvedValueOnce(jsonResponse(404, { message: "Client not found" }));
       vi.stubGlobal("fetch", mockFetch);
 
       await expect(inviteClient(session, PARAMS)).rejects.toThrow("Client not found");
@@ -248,31 +306,55 @@ describe("practice-tools client tools", () => {
   });
 
   describe("client_authorisation_status", () => {
-    const PARAMS = { clientId: CLIENT_ID, service: "MTD-VAT", hmrcAccessToken: "hmrc-access-token" };
+    const PARAMS = { clientId: CLIENT_ID, service: "MTD-VAT" };
+    let session;
+
+    beforeEach(() => {
+      session = sessionWithGrant();
+    });
 
     it("gets the status with the session bearer on X-Authorization and the HMRC token on Authorization, and returns the client, status and invitationId", async () => {
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, CLIENT_AUTHORISATION_STATUS_RESPONSE));
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(200, GRANT_RESPONSE))
+        .mockResolvedValueOnce(jsonResponse(200, CLIENT_AUTHORISATION_STATUS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
       const result = await clientAuthorisationStatus(session, PARAMS);
 
       expect(result).toEqual(CLIENT_AUTHORISATION_STATUS_RESPONSE);
       expect(result.status).toBe("authorised");
-      const [url, init] = mockFetch.mock.calls[0];
+      const [url, init] = mockFetch.mock.calls[1];
       expect(url).toBe(`https://submit.diyaccounting.co.uk/api/v1/practice/clients/${CLIENT_ID}/authorisation?service=MTD-VAT`);
       expect(init.headers["X-Authorization"]).toBe("Bearer practice-access-token");
       expect(init.headers.Authorization).toBe("Bearer hmrc-access-token");
       expect(init.headers["X-Id-Token"]).toBe("practice-id-token");
     });
 
-    it("requires clientId, service and hmrcAccessToken", async () => {
+    it("requires clientId and service", async () => {
       await expect(clientAuthorisationStatus(session, { ...PARAMS, clientId: undefined })).rejects.toThrow("clientId");
       await expect(clientAuthorisationStatus(session, { ...PARAMS, service: undefined })).rejects.toThrow("service");
-      await expect(clientAuthorisationStatus(session, { ...PARAMS, hmrcAccessToken: undefined })).rejects.toThrow("hmrcAccessToken");
+    });
+
+    it("names request_hmrc_authorisation when the session holds no grant, and sends nothing", async () => {
+      const mockFetch = vi.fn();
+      vi.stubGlobal("fetch", mockFetch);
+
+      await expect(clientAuthorisationStatus(createSession({ credentials: session.credentials }), PARAMS)).rejects.toThrow(
+        /^client_authorisation_status: No HMRC authorisation is held for this session\. Call request_hmrc_authorisation/,
+      );
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("takes no hmrcAccessToken argument", () => {
+      expect(TOOLS.client_authorisation_status.inputSchema.hmrcAccessToken).toBeUndefined();
     });
 
     it("throws a 404 client-not-found style message for a client that is not the caller's", async () => {
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(404, { message: "Client not found" }));
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce(jsonResponse(200, GRANT_RESPONSE))
+        .mockResolvedValueOnce(jsonResponse(404, { message: "Client not found" }));
       vi.stubGlobal("fetch", mockFetch);
 
       await expect(clientAuthorisationStatus(session, PARAMS)).rejects.toThrow("Client not found");

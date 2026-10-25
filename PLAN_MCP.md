@@ -68,6 +68,7 @@ The seal key is HKDF-SHA256 of the MCP blob key with the info `hmrc-grant`, so a
 - `list_vat_obligations` and `submit_vat_return` lose `hmrcAccessToken`. With no grant on the session they fail with: "No HMRC authorisation is held for this session. Call request_hmrc_authorisation, show the user its link, and call this tool again once they have granted access." A pending grant fails with a message that the user has not finished the HMRC page yet. An expired grant fails with the route's 404 message, which names the tool again.
 - `hmrcAccount` defaults to the grant's own. A call that names the other account fails, since a sandbox token does not work on the live API.
 - `request_hmrc_authorisation`, `list_vat_obligations` and `submit_vat_return` join `HOSTED_TOOL_NAMES`.
+- `invite_client` and `client_authorisation_status` lose `hmrcAccessToken` and read the grant the same way; `services: ["agent"]` asks for `read:sent-invitations write:sent-invitations`.
 - `run_for_clients` passes the session through, so every client's call uses the one grant.
 
 ## Local and hosted
@@ -99,10 +100,10 @@ The seal key is HKDF-SHA256 of the MCP blob key with the info `hmrc-grant`, so a
 
 - Income Tax: `services: ["itsa"]` already asks for `read:self-assessment write:self-assessment`. The ITSA filing tools read the token the same way once they join the MCP.
 - The CT600 goes through HMRC's Transaction Engine with Government Gateway credentials, not OAuth. It would take its credentials on a page in the way the Companies House codes entry does.
-- The practice tools `invite_client` and `client_authorisation_status` still take the practice's token as an argument. They move to the grant once Submit names the agent authorisation scope as a `services` value.
 
 ## Proof
 
 - Unit: `mcp/test/hmrc-grant.test.js`, `mcp/test/submit-tools.test.js`, `app/unit-tests/functions/mcpHmrcGrant.test.js`, `app/unit-tests/functions/mcpHttp.test.js`, `app/unit-tests/lib/codesSeal.test.js`.
 - Simulator lane: `behaviour-tests/mcpHmrcGrant.behaviour.test.js` starts the grant through the tool, walks the simulator's HMRC consent pages in a browser, lands on the real callback page, and lists obligations through the MCP with no token argument.
 - Infra: `./mvnw clean verify`.
+- Proxy lane against HMRC's sandbox, 2026-10-25, `npm run mcp:vat-sandbox-proof`: sign_in by PKCE; open_book BrickWork Pro Ltd (171 lines); derive_vat_return 2025-07-01 to 2025-09-30, netVatDue 216; request_hmrc_authorisation and consent through the callback page; list_vat_obligations 1 listed (periodKey 18A1); submit_vat_return periodKey 17A2, receiptId `2026-10-25T09:36:21.968Z-537588192506`; get_vat_receipt processingDate `2026-10-25T09:36:22.009Z`, formBundleNumber `537588192506`; sign_out revoked the refresh token; `Result: filed`.

@@ -18,6 +18,7 @@ import {
   runLocalHttpServer,
   runLocalOAuth2Server,
   saveHmrcTestUserToFiles,
+  takeScreenshot,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn, goToHomePage, goToHomePageUsingMainNav } from "./steps/behaviour-steps.js";
 import {
@@ -261,7 +262,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     expect(receiptVisible).toBeTruthy();
     console.log("VAT return submitted successfully");
 
-    await page.screenshot({ path: `${screenshotPath}/04-vat-submitted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/04-vat-submitted.png`, readerView: true });
   });
 
   // ============================================================
@@ -284,7 +285,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     const uiText = await bundleInfo.textContent().catch(() => "");
     console.log(`UI currentBundles text: ${uiText}`);
 
-    await page.screenshot({ path: `${screenshotPath}/05-tokens-after-submission.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/05-tokens-after-submission.png`, readerView: true });
   });
 
   // ============================================================
@@ -351,7 +352,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
       }
     }
 
-    await page.screenshot({ path: `${screenshotPath}/07-token-exhaustion-home.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/07-token-exhaustion-home.png`, readerView: true });
 
     await expect(submitButton).toBeDisabled({ timeout: 10_000 });
     // Verify the button itself states the reason for being disabled
@@ -365,7 +366,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     await expect(annotation).toBeVisible({ timeout: 5_000 });
     console.log("Insufficient tokens annotation displayed correctly");
 
-    await page.screenshot({ path: `${screenshotPath}/07-token-exhaustion-disabled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/07-token-exhaustion-disabled.png`, readerView: true });
   });
 
   // ============================================================
@@ -393,7 +394,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
     const uiText = await bundleInfo.textContent().catch(() => "");
     console.log(`UI currentBundles text: ${uiText}`);
 
-    await page.screenshot({ path: `${screenshotPath}/08-zero-tokens.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/08-zero-tokens.png`, readerView: true });
   });
 
   // ============================================================
@@ -451,7 +452,7 @@ test("Token consumption and exhaustion", async ({ page }, testInfo) => {
       screenshotPath,
     );
 
-    await page.screenshot({ path: `${screenshotPath}/09-usage-page-day-guest.png`, fullPage: true });
+    await takeScreenshot(page, { path: `${screenshotPath}/09-usage-page-day-guest.png`, fullPage: true, readerView: true });
     console.log("[token-enforcement-test]: Usage page verification complete for day-guest.");
   });
 
@@ -589,7 +590,7 @@ test("Token consumption for resident-vat (100 tokens)", async ({ page }, testInf
     expect(receiptVisible).toBeTruthy();
     console.log("VAT return submitted successfully with resident-vat");
 
-    await page.screenshot({ path: `${screenshotPath}/pro-04-vat-submitted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/pro-04-vat-submitted.png`, readerView: true });
   });
 
   // ============================================================
@@ -607,7 +608,7 @@ test("Token consumption for resident-vat (100 tokens)", async ({ page }, testInf
     console.log(`Resident-vat tokens remaining after submission: ${tokensAfterSubmission}`);
     expect(tokensAfterSubmission).toBe(99);
 
-    await page.screenshot({ path: `${screenshotPath}/pro-05-tokens-after-submission.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/pro-05-tokens-after-submission.png`, readerView: true });
   });
 
   // ============================================================
@@ -647,7 +648,7 @@ test("Token consumption for resident-vat (100 tokens)", async ({ page }, testInf
       screenshotPath,
     );
 
-    await page.screenshot({ path: `${screenshotPath}/vat-06-usage-page-resident-vat.png`, fullPage: true });
+    await takeScreenshot(page, { path: `${screenshotPath}/vat-06-usage-page-resident-vat.png`, fullPage: true, readerView: true });
     console.log("[token-enforcement-test]: Usage page verification complete for resident-vat.");
   });
 
