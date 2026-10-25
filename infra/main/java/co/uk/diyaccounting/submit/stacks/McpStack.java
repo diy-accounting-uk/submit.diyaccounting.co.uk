@@ -26,11 +26,14 @@ import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
+import software.amazon.awscdk.services.iam.Effect;
+import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.secretsmanager.ISecret;
 import software.amazon.awscdk.services.secretsmanager.Secret;
 import software.amazon.awscdk.services.ssm.StringParameter;
+import software.amazon.awssdk.utils.StringUtils;
 import software.constructs.Construct;
 
 /**
@@ -45,6 +48,7 @@ public class McpStack extends Stack {
     private static final int MCP_OAUTH_MEMORY_MB = 256;
     private static final int MCP_OAUTH_TIMEOUT_SECONDS = 8;
     private static final int MCP_CODES_ENTRY_RESERVED_CONCURRENCY = 5;
+    private static final int MCP_HMRC_GRANT_RESERVED_CONCURRENCY = 5;
 
     public AbstractApiLambdaProps mcpHttpLambdaProps;
     public Function mcpHttpLambda;
@@ -57,6 +61,10 @@ public class McpStack extends Stack {
     public AbstractApiLambdaProps mcpCodesEntryLambdaProps;
     public Function mcpCodesEntryLambda;
     public ILogGroup mcpCodesEntryLambdaLogGroup;
+
+    public AbstractApiLambdaProps mcpHmrcGrantLambdaProps;
+    public Function mcpHmrcGrantLambda;
+    public ILogGroup mcpHmrcGrantLambdaLogGroup;
 
     public ISecret oauthBlobKeySecret;
 
@@ -94,6 +102,18 @@ public class McpStack extends Stack {
         String cognitoUserPoolId();
 
         String mcpUserPoolClientId();
+
+        String hmrcBaseUri();
+
+        String hmrcClientId();
+
+        String hmrcClientSecretArn();
+
+        String hmrcSandboxBaseUri();
+
+        String hmrcSandboxClientId();
+
+        String hmrcSandboxClientSecretArn();
 
         static ImmutableMcpStackProps.Builder builder() {
             return ImmutableMcpStackProps.builder();
@@ -274,16 +294,96 @@ public class McpStack extends Stack {
                 "Created MCP codes entry Lambda %s",
                 this.mcpCodesEntryLambda.getNode().getId());
 
+        // ============================================================================
+        // HMRC grant Lambda: a signed-in POST requests a grant and answers HMRC's authorisation
+        // link; the web callback page posts HMRC's code with the grant's state to the callback
+        // path (no authoriser); a signed-in GET reads the access token back, owner only. The
+        // tokens are sealed under a key derived from the blob key before they reach the table.
+        // ============================================================================
+        ITable hmrcApiRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcApiRequestsTable-%s".formatted(props.deploymentName()),
+                sharedNames.hmrcApiRequestsTableName);
+        var mcpHmrcGrantEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("DIY_SUBMIT_BASE_URL", sharedNames.publicBaseUrl)
+                .with("MCP_SESSIONS_DYNAMODB_TABLE_NAME", mcpSessionsTable.getTableName())
+                .with("MCP_OAUTH_BLOB_KEY_SECRET_ARN", this.oauthBlobKeySecret.getSecretArn())
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_CLIENT_ID", props.hmrcClientId())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("HMRC_SANDBOX_CLIENT_ID", props.hmrcSandboxClientId());
+        if (StringUtils.isNotBlank(props.hmrcClientSecretArn())) {
+            mcpHmrcGrantEnv.with("HMRC_CLIENT_SECRET_ARN", props.hmrcClientSecretArn());
+        }
+        if (StringUtils.isNotBlank(props.hmrcSandboxClientSecretArn())) {
+            mcpHmrcGrantEnv.with("HMRC_SANDBOX_CLIENT_SECRET_ARN", props.hmrcSandboxClientSecretArn());
+        }
+        var mcpHmrcGrantApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(sharedNames.mcpHmrcGrantIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                        .ingestFunctionName(sharedNames.mcpHmrcGrantIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(sharedNames.mcpHmrcGrantIngestLambdaHandler)
+                        .ingestLambdaArn(sharedNames.mcpHmrcGrantIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                sharedNames.mcpHmrcGrantIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .ingestReservedConcurrentExecutions(Optional.of(MCP_HMRC_GRANT_RESERVED_CONCURRENCY))
+                        .provisionedConcurrencyAliasName(sharedNames.provisionedConcurrencyAliasName)
+                        .httpMethod(sharedNames.mcpHmrcGrantLambdaHttpMethod)
+                        .urlPath(sharedNames.mcpHmrcGrantLambdaUrlPath)
+                        .jwtAuthorizer(sharedNames.mcpHmrcGrantLambdaJwtAuthorizer)
+                        .customAuthorizer(sharedNames.mcpHmrcGrantLambdaCustomAuthorizer)
+                        .environment(mcpHmrcGrantEnv)
+                        .build());
+        this.mcpHmrcGrantLambdaProps = mcpHmrcGrantApiLambda.apiProps;
+        this.mcpHmrcGrantLambda = mcpHmrcGrantApiLambda.ingestLambda;
+        this.mcpHmrcGrantLambdaLogGroup = mcpHmrcGrantApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.mcpHmrcGrantLambdaProps);
+        this.lambdaFunctionProps.add(
+                onPublishedPath(this.mcpHmrcGrantLambdaProps, HttpMethod.GET, sharedNames.mcpHmrcGrantItemUrlPath));
+        this.lambdaFunctionProps.add(ApiLambdaProps.builder()
+                .from(this.mcpHmrcGrantLambdaProps)
+                .httpMethod(HttpMethod.POST)
+                .urlPath(sharedNames.mcpHmrcGrantCallbackUrlPath)
+                .jwtAuthorizer(false)
+                .customAuthorizer(false)
+                .build());
+        mcpSessionsTable.grantReadWriteData(this.mcpHmrcGrantLambda);
+        hmrcApiRequestsTable.grant(this.mcpHmrcGrantLambda, "dynamodb:PutItem");
+        this.oauthBlobKeySecret.grantRead(this.mcpHmrcGrantLambda);
+        SubHashSaltHelper.grantSaltAccess(this.mcpHmrcGrantLambda, region, account, props.envName());
+        for (var hmrcSecretArn : List.of(props.hmrcClientSecretArn(), props.hmrcSandboxClientSecretArn())) {
+            if (StringUtils.isBlank(hmrcSecretArn)) {
+                continue;
+            }
+            this.mcpHmrcGrantLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(hmrcSecretArn.endsWith("-*") ? hmrcSecretArn : hmrcSecretArn + "-*"))
+                    .build());
+        }
+        infof(
+                "Created MCP HMRC grant Lambda %s",
+                this.mcpHmrcGrantLambda.getNode().getId());
+
         Lambda.appStackHealthAlarm(
                 this,
                 props.envName(),
                 props.resourceNamePrefix(),
                 "mcp",
-                List.of(mcpHttpApiLambda, mcpOauthApiLambda, mcpCodesEntryApiLambda));
+                List.of(mcpHttpApiLambda, mcpOauthApiLambda, mcpCodesEntryApiLambda, mcpHmrcGrantApiLambda));
 
         cfnOutput(this, "McpHttpLambdaArn", this.mcpHttpLambda.getFunctionArn());
         cfnOutput(this, "McpOauthLambdaArn", this.mcpOauthLambda.getFunctionArn());
         cfnOutput(this, "McpCodesEntryLambdaArn", this.mcpCodesEntryLambda.getFunctionArn());
+        cfnOutput(this, "McpHmrcGrantLambdaArn", this.mcpHmrcGrantLambda.getFunctionArn());
         cfnOutput(this, "McpOauthBlobKeySecretArn", this.oauthBlobKeySecret.getSecretArn());
 
         infof(

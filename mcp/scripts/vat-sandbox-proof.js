@@ -10,7 +10,7 @@
 // The script starts dynalite, a mock OAuth2 server carrying the MCP client (mock-oauth2-config.json,
 // issuer "oauth2", the Cognito-shaped /oauth2/authorize and /oauth2/token paths auth.js uses) and the
 // proxy's Express server, then drives the MCP server as a client would: sign_in, open_book,
-// derive_vat_return, list_vat_obligations, submit_vat_return, get_vat_receipt, sign_out. The HMRC
+// derive_vat_return, request_hmrc_authorisation, list_vat_obligations, submit_vat_return, get_vat_receipt, sign_out. The HMRC
 // sandbox test user is created through the sandbox API and consents through a headless browser.
 // Every process it started is stopped on exit. MCP_PROOF_TRANSCRIPT names a file that receives the
 // script's own lines (no token, secret or password is among them).
@@ -21,7 +21,7 @@ import { tmpdir } from "node:os";
 import { delimiter, join, resolve } from "node:path";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
-import { buildAuthorizeUrl, getAuthorizationCode } from "../../scripts/lib/hmrcAuthorizationCode.js";
+import { getAuthorizationCode } from "../../scripts/lib/hmrcAuthorizationCode.js";
 import { createHmrcTestUser } from "../../scripts/create-hmrc-test-user.js";
 
 const REPOSITORY_ROOT = resolve(import.meta.dirname, "../..");
@@ -223,38 +223,32 @@ async function main() {
     const testUser = await createHmrcTestUser(clientId, secret, { serviceNames: ["mtd-vat"] });
     say(`HMRC sandbox test user created: VRN ${testUser.vrn} (organisation ${testUser.organisationDetails?.name ?? "n/a"})`);
 
+    const authorisation = await callTool(client, "request_hmrc_authorisation", { services: ["vat"], hmrcAccount: "synthetic" });
+    say(`request_hmrc_authorisation: link for ${authorisation.scope} on the ${authorisation.hmrcAccount} account`);
     const redirectUri = `${baseUrl}/activities/submitVatCallback.html`;
     const { code } = await getAuthorizationCode({
-      authorizeUrl: buildAuthorizeUrl({
-        sandboxBase: process.env.HMRC_SANDBOX_BASE_URI,
-        clientId,
-        redirectUri,
-        scope: "write:vat read:vat",
-        state: "mcp-vat-sandbox-proof",
-      }),
+      authorizeUrl: authorisation.url,
       redirectUri,
       userId: testUser.userId,
       password: testUser.password,
       outDir: workDirectory,
       label: "mcp-vat-sandbox-proof",
     });
-    say("HMRC sandbox consent: authorisation code obtained for write:vat read:vat");
+    say("HMRC sandbox consent: authorisation code returned to the callback page");
 
-    const exchange = await fetch(`${baseUrl}/api/v1/hmrc/token`, {
+    const callback = await fetch(`${baseUrl}/api/v1/mcp/hmrc-grants/callback`, {
       method: "POST",
-      headers: { "Authorization": `Bearer ${sessionBearer}`, "Content-Type": "application/json", "hmrcAccount": "synthetic" },
-      body: JSON.stringify({ code }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, state: new URL(authorisation.url).searchParams.get("state") }),
     });
-    const exchanged = await exchange.json();
-    if (!exchange.ok) throw new Error(`The HMRC token exchange answered HTTP ${exchange.status}: ${exchanged.message ?? exchanged.error}`);
-    const hmrcAccessToken = exchanged.hmrcAccessToken;
-    if (!hmrcAccessToken) throw new Error("The HMRC token exchange answered no hmrcAccessToken");
-    say("HMRC token exchange: access token held in memory");
+    const callbackAnswer = await callback.json();
+    if (!callback.ok)
+      throw new Error(`The HMRC grant callback answered HTTP ${callback.status}: ${callbackAnswer.message ?? callbackAnswer.error}`);
+    say("HMRC grant: tokens held by Submit against the MCP session");
 
     const listed = await callTool(client, "list_vat_obligations", {
       vrn: testUser.vrn,
       status: "O",
-      hmrcAccessToken,
       hmrcAccount: "synthetic",
     });
     const obligations = listed.obligations ?? listed.hmrcResponse?.obligations ?? listed.hmrcResponseBody?.obligations;
@@ -268,7 +262,6 @@ async function main() {
       vatNumber: testUser.vrn,
       periodStart: open.start,
       periodEnd: open.end,
-      hmrcAccessToken,
       hmrcAccount: "synthetic",
       allowSyntheticObligations: true,
       vatDueSales: derived.hmrc.vatDueSales,

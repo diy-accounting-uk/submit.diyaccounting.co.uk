@@ -27,9 +27,11 @@ import {
 import { createSession } from "../lib/book-tools.js";
 import { TOOLS } from "../lib/server.js";
 
+const GRANT_ID = "11111111-2222-4333-8444-555555555555";
 const session = createSession({
   credentials: { accessToken: async () => "session-access-token", idToken: async () => "session-id-token" },
 });
+session.hmrcGrant = { grantId: GRANT_ID, hmrcAccount: "live" };
 
 const VRN = "983238295";
 const HMRC_ACCESS_TOKEN = "hmrc-access-token";
@@ -61,6 +63,15 @@ function makeHeaders(headerObj = {}) {
 
 function jsonResponse(status, body, headers) {
   return { ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body), headers: makeHeaders(headers) };
+}
+
+// Answers the session's HMRC grant read itself, granted for hmrcAccount, and hands every other
+// request to apiFetch, so apiFetch's calls hold only the API routes under test.
+function withGrant(apiFetch, hmrcAccount = "live") {
+  return (url, init) =>
+    String(url).includes(`/api/v1/mcp/hmrc-grants/${GRANT_ID}`)
+      ? Promise.resolve(jsonResponse(200, { status: "granted", accessToken: HMRC_ACCESS_TOKEN, hmrcAccount }))
+      : apiFetch(url, init);
 }
 
 function acceptedResponse() {
@@ -117,9 +128,9 @@ describe("submit-tools", () => {
   describe("list_vat_obligations", () => {
     it("gets obligations with the session bearer on X-Authorization and the HMRC token on Authorization", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
-      vi.stubGlobal("fetch", mockFetch);
+      vi.stubGlobal("fetch", withGrant(mockFetch));
 
-      const result = await listVatObligations(session, { vrn: VRN, status: "O", hmrcAccessToken: HMRC_ACCESS_TOKEN });
+      const result = await listVatObligations(session, { vrn: VRN, status: "O" });
 
       expect(result).toEqual(LIST_VAT_OBLIGATIONS_RESPONSE);
       const [url, init] = mockFetch.mock.calls[0];
@@ -132,13 +143,12 @@ describe("submit-tools", () => {
 
     it("carries from, to, hmrcAccount and govTestScenario through", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { obligations: [] }));
-      vi.stubGlobal("fetch", mockFetch);
+      vi.stubGlobal("fetch", withGrant(mockFetch, "synthetic"));
 
       await listVatObligations(session, {
         vrn: VRN,
         from: "2025-01-01",
         to: "2025-12-31",
-        hmrcAccessToken: HMRC_ACCESS_TOKEN,
         hmrcAccount: "synthetic",
         govTestScenario: "QUARTERLY_ONE_MET",
       });
@@ -151,18 +161,46 @@ describe("submit-tools", () => {
     });
 
     it("requires vrn, or clientId", async () => {
-      await expect(listVatObligations(session, { hmrcAccessToken: HMRC_ACCESS_TOKEN })).rejects.toThrow("vrn");
+      await expect(listVatObligations(session, {})).rejects.toThrow("vrn");
     });
 
-    it("requires hmrcAccessToken", async () => {
-      await expect(listVatObligations(session, { vrn: VRN })).rejects.toThrow("hmrcAccessToken");
+    it("names request_hmrc_authorisation when the session holds no HMRC grant", async () => {
+      const ungranted = createSession({ credentials: session.credentials });
+      await expect(listVatObligations(ungranted, { vrn: VRN })).rejects.toThrow("request_hmrc_authorisation");
+    });
+
+    it("says the user has not finished when the grant is still pending", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { status: "pending", hmrcAccount: "live" }));
+      vi.stubGlobal("fetch", mockFetch);
+      await expect(listVatObligations(session, { vrn: VRN })).rejects.toThrow("not finished granting HMRC access");
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("refuses a call for the other HMRC account than the grant's", async () => {
+      vi.stubGlobal("fetch", withGrant(vi.fn()));
+      await expect(listVatObligations(session, { vrn: VRN, hmrcAccount: "synthetic" })).rejects.toThrow(
+        "request_hmrc_authorisation with hmrcAccount synthetic",
+      );
+    });
+
+    it("reads the grant with the session bearer and sends the grant's account on the obligations call", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
+      const grantRead = vi.fn().mockImplementation(withGrant(mockFetch));
+      vi.stubGlobal("fetch", grantRead);
+
+      await listVatObligations(session, { vrn: VRN });
+
+      const [grantUrl, grantInit] = grantRead.mock.calls[0];
+      expect(grantUrl).toBe(`https://submit.diyaccounting.co.uk/api/v1/mcp/hmrc-grants/${GRANT_ID}`);
+      expect(grantInit.headers.Authorization).toBe("Bearer session-access-token");
+      expect(mockFetch.mock.calls[0][1].headers.hmrcAccount).toBe("live");
     });
 
     it("resolves the VRN from a practice client's row instead of vrn, when clientId is given", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
-      vi.stubGlobal("fetch", mockFetch);
+      vi.stubGlobal("fetch", withGrant(mockFetch));
 
-      const result = await listVatObligations(session, { clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV", hmrcAccessToken: HMRC_ACCESS_TOKEN });
+      const result = await listVatObligations(session, { clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" });
 
       expect(result).toEqual(LIST_VAT_OBLIGATIONS_RESPONSE);
       const [url] = mockFetch.mock.calls[0];
@@ -171,10 +209,8 @@ describe("submit-tools", () => {
 
     it("throws the API's own message on a non-ok response", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(400, { message: "Invalid VAT registration number format" }));
-      vi.stubGlobal("fetch", mockFetch);
-      await expect(listVatObligations(session, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN })).rejects.toThrow(
-        "Invalid VAT registration number format",
-      );
+      vi.stubGlobal("fetch", withGrant(mockFetch));
+      await expect(listVatObligations(session, { vrn: VRN })).rejects.toThrow("Invalid VAT registration number format");
     });
 
     it("polls a 202 to completion, carrying x-request-id and dropping x-initial-request", async () => {
@@ -183,9 +219,9 @@ describe("submit-tools", () => {
         .fn()
         .mockResolvedValueOnce(acceptedResponse())
         .mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
-      vi.stubGlobal("fetch", mockFetch);
+      vi.stubGlobal("fetch", withGrant(mockFetch));
 
-      const promise = listVatObligations(session, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN });
+      const promise = listVatObligations(session, { vrn: VRN });
       await vi.runAllTimersAsync();
       const result = await promise;
 
@@ -198,12 +234,13 @@ describe("submit-tools", () => {
 
     it("omits X-Id-Token when the session credentials answer no id token", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
-      vi.stubGlobal("fetch", mockFetch);
+      vi.stubGlobal("fetch", withGrant(mockFetch));
       const hostedSession = createSession({
         credentials: { accessToken: async () => "request-bearer", idToken: async () => null },
       });
+      hostedSession.hmrcGrant = session.hmrcGrant;
 
-      await listVatObligations(hostedSession, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN });
+      await listVatObligations(hostedSession, { vrn: VRN });
 
       const [, init] = mockFetch.mock.calls[0];
       expect(init.headers["X-Authorization"]).toBe("Bearer request-bearer");
@@ -213,10 +250,11 @@ describe("submit-tools", () => {
     it("stops polling inside the session's pollBudgetMs, naming the poll URL", async () => {
       vi.useFakeTimers();
       const mockFetch = vi.fn().mockResolvedValue(acceptedResponse());
-      vi.stubGlobal("fetch", mockFetch);
+      vi.stubGlobal("fetch", withGrant(mockFetch));
       const budgeted = createSession({ credentials: session.credentials, pollBudgetMs: 20_000 });
+      budgeted.hmrcGrant = session.hmrcGrant;
 
-      const promise = listVatObligations(budgeted, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN });
+      const promise = listVatObligations(budgeted, { vrn: VRN });
       const assertion = expect(promise).rejects.toThrow(`Timed out after 20000 ms waiting for ${ASYNC_ACCEPTED.headers.Location}`);
       await vi.runAllTimersAsync();
       await assertion;
@@ -227,9 +265,9 @@ describe("submit-tools", () => {
     it("throws with the poll URL after the poll never leaves 202", async () => {
       vi.useFakeTimers();
       const mockFetch = vi.fn().mockResolvedValue(acceptedResponse());
-      vi.stubGlobal("fetch", mockFetch);
+      vi.stubGlobal("fetch", withGrant(mockFetch));
 
-      const promise = listVatObligations(session, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN });
+      const promise = listVatObligations(session, { vrn: VRN });
       const assertion = expect(promise).rejects.toThrow(ASYNC_ACCEPTED.headers.Location);
       await vi.runAllTimersAsync();
       await assertion;
@@ -249,13 +287,12 @@ describe("submit-tools", () => {
 
     it("posts the seven filed boxes with the HMRC token in the body, not a header, and returns the receipt nested under receipt/periodKey/receiptId", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, SUBMIT_VAT_RETURN_RESPONSE));
-      vi.stubGlobal("fetch", mockFetch);
+      vi.stubGlobal("fetch", withGrant(mockFetch));
 
       const result = await submitVatReturn(session, {
         vatNumber: VRN,
         periodStart: "2025-01-01",
         periodEnd: "2025-03-31",
-        hmrcAccessToken: HMRC_ACCESS_TOKEN,
         ...NINE_BOX_FIELDS,
       });
 
@@ -283,16 +320,16 @@ describe("submit-tools", () => {
           vatNumber: VRN,
           periodStart: "2025-01-01",
           periodEnd: "2025-03-31",
-          hmrcAccessToken: HMRC_ACCESS_TOKEN,
           ...rest,
         }),
       ).rejects.toThrow("vatDueSales");
     });
 
-    it("requires hmrcAccessToken", async () => {
+    it("names request_hmrc_authorisation when the session holds no HMRC grant", async () => {
+      const ungranted = createSession({ credentials: session.credentials });
       await expect(
-        submitVatReturn(session, { vatNumber: VRN, periodStart: "2025-01-01", periodEnd: "2025-03-31", ...NINE_BOX_FIELDS }),
-      ).rejects.toThrow("hmrcAccessToken");
+        submitVatReturn(ungranted, { vatNumber: VRN, periodStart: "2025-01-01", periodEnd: "2025-03-31", ...NINE_BOX_FIELDS }),
+      ).rejects.toThrow("request_hmrc_authorisation");
     });
 
     it("requires vatNumber, or clientId", async () => {
@@ -300,7 +337,6 @@ describe("submit-tools", () => {
         submitVatReturn(session, {
           periodStart: "2025-01-01",
           periodEnd: "2025-03-31",
-          hmrcAccessToken: HMRC_ACCESS_TOKEN,
           ...NINE_BOX_FIELDS,
         }),
       ).rejects.toThrow("vatNumber");
@@ -308,13 +344,12 @@ describe("submit-tools", () => {
 
     it("sends clientId instead of vatNumber when given, resolved by the route from the client row", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, SUBMIT_VAT_RETURN_RESPONSE));
-      vi.stubGlobal("fetch", mockFetch);
+      vi.stubGlobal("fetch", withGrant(mockFetch));
 
       await submitVatReturn(session, {
         clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
         periodStart: "2025-01-01",
         periodEnd: "2025-03-31",
-        hmrcAccessToken: HMRC_ACCESS_TOKEN,
         ...NINE_BOX_FIELDS,
       });
 
@@ -329,13 +364,12 @@ describe("submit-tools", () => {
         .fn()
         .mockResolvedValueOnce(acceptedResponse())
         .mockResolvedValueOnce(jsonResponse(200, SUBMIT_VAT_RETURN_RESPONSE));
-      vi.stubGlobal("fetch", mockFetch);
+      vi.stubGlobal("fetch", withGrant(mockFetch));
 
       const promise = submitVatReturn(session, {
         vatNumber: VRN,
         periodStart: "2025-01-01",
         periodEnd: "2025-03-31",
-        hmrcAccessToken: HMRC_ACCESS_TOKEN,
         ...NINE_BOX_FIELDS,
       });
       await vi.runAllTimersAsync();
@@ -348,13 +382,12 @@ describe("submit-tools", () => {
     it("throws with the poll URL after the poll never leaves 202", async () => {
       vi.useFakeTimers();
       const mockFetch = vi.fn().mockResolvedValue(acceptedResponse());
-      vi.stubGlobal("fetch", mockFetch);
+      vi.stubGlobal("fetch", withGrant(mockFetch));
 
       const promise = submitVatReturn(session, {
         vatNumber: VRN,
         periodStart: "2025-01-01",
         periodEnd: "2025-03-31",
-        hmrcAccessToken: HMRC_ACCESS_TOKEN,
         ...NINE_BOX_FIELDS,
       });
       const assertion = expect(promise).rejects.toThrow(ASYNC_ACCEPTED.headers.Location);

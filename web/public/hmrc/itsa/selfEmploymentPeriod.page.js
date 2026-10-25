@@ -64,7 +64,12 @@ function hideSearchCriteria() {
   }
 }
 
+function hideRequestForm() {
+  document.getElementById("selfEmploymentPeriodForm").style.display = "none";
+}
+
 function showSearchCriteria() {
+  document.getElementById("selfEmploymentPeriodForm").style.display = "";
   const container = document.getElementById("searchCriteriaContainer");
   const toggleBtn = document.getElementById("toggleSearchCriteriaBtn");
   const cancelBtn = document.getElementById("cancelRequestBtn");
@@ -348,6 +353,7 @@ async function continuePeriodSubmission() {
 
     displayResult(result);
     document.getElementById("selfEmploymentPeriodResults").style.display = "block";
+    hideRequestForm();
     hideStatus();
     window.dispatchEvent(new CustomEvent("bundle-changed"));
 
@@ -465,6 +471,7 @@ async function handleFormSubmission(event) {
 
       displayResult(result);
       document.getElementById("selfEmploymentPeriodResults").style.display = "block";
+      hideRequestForm();
       hideStatus();
       window.dispatchEvent(new CustomEvent("bundle-changed"));
     } catch (error) {

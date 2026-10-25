@@ -33,8 +33,8 @@ claude mcp add --transport http diya-submit https://submit.diyaccounting.co.uk/m
 The client finds the sign-in through `/.well-known/oauth-protected-resource/mcp`, registers itself, and
 the user signs in with their Submit account. The ci form of the URL is
 `https://ci-submit.diyaccounting.co.uk/mcp`. The hosted tool set is `HOSTED_TOOL_NAMES` in
-`lib/hosted-tools.js`: `open_book` reads the DIYA cloud only, and the sign-in, filesystem and HMRC
-tools are not registered.
+`lib/hosted-tools.js`: `open_book` reads the DIYA cloud only. The sign-in pair, the filesystem tools,
+the practice tools that still take an HMRC token, and `run_for_clients` are not registered.
 
 ## Tools
 
@@ -44,8 +44,9 @@ tools are not registered.
 | `save_book` | Writes the session's book to a path as `diya-gl-dir`, `diya-gl-zip`, `json`, `xlsx` or `zip`. The last two compose the product's workbook from the site's templates. |
 | `derive_itsa_quarterly_update` | One period of HMRC's Self Employment Business API from a self-employed book: the period's own figures in a tax year filed as dated period summaries, the running total from 6 April in a year filed as cumulative period summaries (2025-26 on). `periodEndDate` picks the period; `quarterlyPeriodType` is `standard` or `calendar`. A field the book cannot source is omitted, never sent as zero. |
 | `derive_itsa_annual_submission` | The year's allowances and adjustments for the annual submission, restricted to the fields HMRC accepts for that tax year (`sa103-mtd-mapping.json`'s `api.years`). With `path`, also written as the JSON file the site's annual submission page imports. |
-| `list_vat_obligations` | VAT obligations for `vrn` (or `clientId`), filtered by `from`, `to`, `status`. Needs `hmrcAccessToken`; optional `hmrcAccount`, `govTestScenario`. |
-| `submit_vat_return` | Files the seven confirmed boxes (`vatDueSales`, `vatDueAcquisitions`, `vatReclaimedCurrPeriod`, `totalValueSalesExVAT`, `totalValuePurchasesExVAT`, `totalValueGoodsSuppliedExVAT`, `totalAcquisitionsExVAT`) for `periodStart` to `periodEnd`, for `vatNumber` or `clientId`. Needs `hmrcAccessToken`. Answers `receipt`, `periodKey`, `receiptId`. |
+| `request_hmrc_authorisation` | HMRC's sign-in link for this session. `services` is `vat` (the default) and `itsa`; `hmrcAccount` is `live` (the default) or `synthetic`. Answers `url`, `expiresAt`, `scope`, `hmrcAccount`. The user grants access on HMRC's pages; Submit keeps HMRC's tokens and renews the access token for the rest of the session. No token reaches the chat. |
+| `list_vat_obligations` | VAT obligations for `vrn` (or `clientId`), filtered by `from`, `to`, `status`. Uses the session's HMRC authorisation; optional `hmrcAccount` (the authorisation's own by default), `govTestScenario`. |
+| `submit_vat_return` | Files the seven confirmed boxes (`vatDueSales`, `vatDueAcquisitions`, `vatReclaimedCurrPeriod`, `totalValueSalesExVAT`, `totalValuePurchasesExVAT`, `totalValueGoodsSuppliedExVAT`, `totalAcquisitionsExVAT`) for `periodStart` to `periodEnd`, for `vatNumber` or `clientId`. Uses the session's HMRC authorisation. Answers `receipt`, `periodKey`, `receiptId`. |
 | `get_vat_receipt` | A stored receipt by `name` (`<receiptId>.json`); optional `clientId`. |
 | `render_micro_entity_accounts_sandbox` | The rendered micro-entity iXBRL for confirmed figures, without reaching the Companies House gateway. Inputs: `companyNumber`, `companyName`, `periodStart`, `periodEnd`, `balanceSheet`, `averageEmployees`, `director`, `statementsAccepted`. |
 | `request_companies_house_codes` | A link where the user types the Companies House codes instead of the chat. `kind` is `accounts`, `confirmation-statement` (with `directors` in filing order) or `confirmation-statement-data`; answers `entryId`, `url`, `expiresAt`. The entry lasts ten minutes and one filing call uses it up. With `clientIds` (no `companyNumber`) the page asks for one code per practice client and each client's filing call, including through `run_for_clients`, takes only its own. |
@@ -64,7 +65,7 @@ npm --prefix mcp test
 npm --prefix mcp run test:system
 ```
 
-`test:system` starts `npm run start:simulator` from the repository root, grants a bundle, then runs `list_vat_obligations`, `submit_vat_return` and `get_vat_receipt` against it, using whichever open obligation the simulator answers.
+`test:system` starts `npm run start:simulator` from the repository root, grants a bundle, starts an HMRC grant with `request_hmrc_authorisation` and completes it as the callback page would, then runs `list_vat_obligations`, `submit_vat_return` and `get_vat_receipt` against it, using whichever open obligation the simulator answers. `npm run test:mcpHmrcGrantBehaviour-simulator` (from the repository root) walks the same grant through HMRC's consent pages in a browser. The design is in `PLAN_MCP.md`.
 
 The tests open the BrickWork Pro Ltd and Precision Code Ltd example books under `test/fixtures/`
 (copies of the spreadsheets repository's `examples/`) and round-trip each through the three

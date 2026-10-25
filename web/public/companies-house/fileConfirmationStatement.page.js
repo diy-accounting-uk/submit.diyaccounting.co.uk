@@ -513,6 +513,32 @@ function validateReviewForm(payload) {
   return true;
 }
 
+function renderPreviewSummary(payload) {
+  const rows = [
+    ["Company", `${payload.companyName} (${payload.companyNumber})`],
+    ["Confirmation statement date", payload.reviewDate],
+    ["Lawful purpose statement", "Accepted"],
+    ["Statement of confirmation", "Accepted"],
+    [
+      "Directors verifying their identity",
+      payload.directors.map((d) => [d.forename, d.otherForenames, d.surname].filter(Boolean).join(" ")).join(", "),
+    ],
+  ];
+  if (payload.sicCodes) rows.push(["Nature of business (SIC codes)", payload.sicCodes.join(", ")]);
+  if (payload.registeredEmailAddress) rows.push(["Registered email address", payload.registeredEmailAddress]);
+  if (payload.statementOfCapital) rows.push(["Statement of capital", "Changed from the register"]);
+  if (payload.shareholdings) rows.push(["Shareholders", "Changed from the register"]);
+  const summary = document.getElementById("previewSummary");
+  summary.replaceChildren();
+  for (const [label, value] of rows) {
+    const term = document.createElement("dt");
+    term.textContent = label;
+    const detail = document.createElement("dd");
+    detail.textContent = value;
+    summary.append(term, detail);
+  }
+}
+
 async function handleReviewFormSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
@@ -533,6 +559,7 @@ async function handleReviewFormSubmit(event) {
   try {
     const preview = await window.renderConfirmationStatement(payload);
     document.getElementById("previewXml").textContent = preview.confirmationStatementXml;
+    renderPreviewSummary(payload);
 
     // filingData.paymentPeriodPaid only reflects Companies House's own PaymentPeriodsRequest
     // answer at the time the register data was read - the 402 handled in handleSubmitFiling

@@ -398,9 +398,10 @@ Before is DS1's stored set (`target/site-screenshots/`, 432 PNGs). After is `nod
 - `fileMicroEntityAccounts`: one balance-sheet ledger with this-year and prior-year columns (28 boxes in one table), sections, `.choice` checkboxes, a "Send to Companies House" step, summary errors, outcome panel, inline `<style>` and `data-theme="light"` dropped.
 - `fileSmallCompanyAccounts`: nine single-column ledgers in place of 60 stacked fields, sections, `.choice` radios and checkboxes, send step, summary errors, outcome panel.
 - `filingCallback`: header and footer from `page-chrome.js`, `h1` "Connecting to Companies House".
-- `filings`: still `data-theme="light"` because the customer copy it mounts paints its own colours; signed-out panel in place of the red line, `h1` "Your copy of a filing", inline `<style>` moved to `submit.css`.
+- `filings`: signed-out panel in place of the red line, `h1` "Your copy of a filing", inline `<style>` moved to `submit.css`.
 - `mcpCodes`: `h1` "Companies House codes", code field on `.input--code`.
-- **Remaining**: `fileCompanyTaxReturn` keeps `placeholder="e.g., 00000001"` and has no signed-out panel; `mcpCodes` has no page chrome, because its link carries a sealed entry and no login.
+- **DS7**: `fileCompanyTaxReturn` takes the company-number pattern (`.input--code`, no placeholder, one hint, summary error on an empty submit through `requireFields`) and the signed-out panel. `filings` drops `data-theme="light"`: the customer copy's frame already reads the tokens, and the filed documents stay black on white paper, in dark mode too.
+- **Remaining**: `mcpCodes` has no page chrome, because its link carries a sealed entry and no login.
 
 ## 5. Done when
 

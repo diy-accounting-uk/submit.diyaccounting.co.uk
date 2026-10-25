@@ -17,6 +17,7 @@ import { apiEndpoint as mcpHttpApiEndpoint } from "../functions/mcp/mcpHttp.js";
 import { apiEndpoint as mcpOauthApiEndpoint } from "../functions/mcp/mcpOauth.js";
 import { apiEndpoint as mcpHarnessApiEndpoint } from "../functions/mcp/mcpHarness.js";
 import { apiEndpoint as mcpCodesEntryApiEndpoint } from "../functions/mcp/mcpCodesEntry.js";
+import { apiEndpoint as mcpHmrcGrantApiEndpoint } from "../functions/mcp/mcpHmrcGrant.js";
 import { apiEndpoint as bundleGetApiEndpoint } from "../functions/account/bundleGet.js";
 import { apiEndpoint as bundlePostApiEndpoint } from "../functions/account/bundlePost.js";
 import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bundleDelete.js";
@@ -274,6 +275,7 @@ mcpHttpApiEndpoint(app);
 mcpOauthApiEndpoint(app);
 mcpHarnessApiEndpoint(app);
 mcpCodesEntryApiEndpoint(app);
+mcpHmrcGrantApiEndpoint(app);
 
 app.use(express.static(path.join(__dirname, "../../web/public"), { dotfiles: "allow" }));
 

@@ -88,11 +88,11 @@ export async function fillInItsaBusinessDetails(page, businessDetailsQuery = {},
         await page.locator("#runFraudPreventionHeaderValidation").check();
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-business-details-filled-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-business-details-filled-in.png`, readerView: true });
     }
 
     await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-business-details-fill-in-pagedown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-business-details-fill-in-pagedown.png`, readerView: true });
     await expect(page.locator("#retrieveBtn")).toBeVisible();
   });
 }
@@ -142,6 +142,7 @@ export async function verifyItsaBusinessDetailsResults(page, businessDetailsQuer
           await expect(page.locator("#businessDetailsResults")).toBeVisible();
           break;
       }
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-business-details-results-scenario.png`, readerView: true });
       return;
     }
     await waitForSuccessOrError(page, {
@@ -150,7 +151,7 @@ export async function verifyItsaBusinessDetailsResults(page, businessDetailsQuer
       timeout: 450_000,
       screenshotPath,
     });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-business-details-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-business-details-results.png`, readerView: true });
     const resultsContainer = page.locator("#businessDetailsResults");
     await expect(resultsContainer).toBeVisible();
 
@@ -240,11 +241,11 @@ export async function fillInItsaObligations(page, obligationsQuery = {}, screens
         await page.locator("#runFraudPreventionHeaderValidation").check();
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-obligations-filled-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-obligations-filled-in.png`, readerView: true });
     }
 
     await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-obligations-fill-in-pagedown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-obligations-fill-in-pagedown.png`, readerView: true });
     await expect(page.locator("#retrieveBtn")).toBeVisible();
   });
 }
@@ -295,6 +296,7 @@ export async function verifyItsaObligationsResults(page, obligationsQuery, scree
           await expect(page.locator("#obligationsResults")).toBeVisible();
           break;
       }
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-obligations-results-scenario.png`, readerView: true });
       return;
     }
     await waitForSuccessOrError(page, {
@@ -303,7 +305,7 @@ export async function verifyItsaObligationsResults(page, obligationsQuery, scree
       timeout: 450_000,
       screenshotPath,
     });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations-results.png`, readerView: true });
     const resultsContainer = page.locator("#obligationsResults");
     await expect(resultsContainer).toBeVisible();
 
@@ -394,11 +396,14 @@ export async function fillInItsaSelfEmploymentPeriod(page, periodQuery = {}, scr
         await page.locator("#runFraudPreventionHeaderValidation").check();
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-self-employment-period-filled-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-self-employment-period-filled-in.png`, readerView: true });
     }
 
     await loggedFocus(page, "#submitBtn", "Submit button", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-self-employment-period-fill-in-pagedown.png` });
+    await takeScreenshot(page, {
+      path: `${screenshotPath}/${timestamp()}-07-self-employment-period-fill-in-pagedown.png`,
+      readerView: true,
+    });
     await expect(page.locator("#submitBtn")).toBeVisible();
   });
 }
@@ -453,6 +458,10 @@ export async function verifyItsaSelfEmploymentPeriodResults(page, periodQuery, s
           await expect(page.locator("#selfEmploymentPeriodResults")).toBeVisible();
           break;
       }
+      await takeScreenshot(page, {
+        path: `${screenshotPath}/${timestamp()}-03-self-employment-period-results-scenario.png`,
+        readerView: true,
+      });
       return;
     }
     await waitForSuccessOrError(page, {
@@ -461,7 +470,7 @@ export async function verifyItsaSelfEmploymentPeriodResults(page, periodQuery, s
       timeout: 450_000,
       screenshotPath,
     });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-self-employment-period-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-self-employment-period-results.png`, readerView: true });
     const resultsContainer = page.locator("#selfEmploymentPeriodResults");
     await expect(resultsContainer).toBeVisible();
 
@@ -543,11 +552,11 @@ export async function fillInItsaUkPropertyPeriod(page, periodQuery = {}, screens
         await page.locator("#runFraudPreventionHeaderValidation").check();
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-uk-property-period-filled-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-uk-property-period-filled-in.png`, readerView: true });
     }
 
     await loggedFocus(page, "#submitBtn", "Submit button", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-uk-property-period-fill-in-pagedown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-uk-property-period-fill-in-pagedown.png`, readerView: true });
     await expect(page.locator("#submitBtn")).toBeVisible();
   });
 }
@@ -602,6 +611,7 @@ export async function verifyItsaUkPropertyPeriodResults(page, periodQuery, scree
           await expect(page.locator("#ukPropertyPeriodResults")).toBeVisible();
           break;
       }
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-uk-property-period-results-scenario.png`, readerView: true });
       return;
     }
     await waitForSuccessOrError(page, {
@@ -610,7 +620,7 @@ export async function verifyItsaUkPropertyPeriodResults(page, periodQuery, scree
       timeout: 450_000,
       screenshotPath,
     });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-uk-property-period-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-uk-property-period-results.png`, readerView: true });
     const resultsContainer = page.locator("#ukPropertyPeriodResults");
     await expect(resultsContainer).toBeVisible();
 
@@ -683,6 +693,7 @@ export async function verifyItsaAnnualLoadResults(page, screenshotPath = default
       screenshotPath,
     });
     await expect(page.locator("#annualEditForm")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-annual-loaded.png`, readerView: true });
   });
 }
 
@@ -700,7 +711,7 @@ export async function fillInItsaAnnualEdits(page, annualEdits = {}, screenshotPa
         });
       }
     }
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-annual-edits-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-annual-edits-filled.png`, readerView: true });
   });
 }
 
@@ -724,6 +735,7 @@ export async function verifyItsaAnnualSaveResults(page, screenshotPath = default
       screenshotPath,
     });
     await expect(page.locator("#annualSubmissionResults")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-annual-saved.png`, readerView: true });
   });
 }
 
@@ -791,6 +803,7 @@ export async function verifyItsaUkPropertyAnnualLoadResults(page, screenshotPath
       screenshotPath,
     });
     await expect(page.locator("#annualEditForm")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-uk-property-annual-loaded.png`, readerView: true });
   });
 }
 
@@ -815,7 +828,7 @@ export async function fillInItsaUkPropertyAnnualEdits(page, annualEdits = {}, sc
         screenshotPath,
       });
     }
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-uk-property-annual-edits-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-uk-property-annual-edits-filled.png`, readerView: true });
   });
 }
 
@@ -839,6 +852,7 @@ export async function verifyItsaUkPropertyAnnualSaveResults(page, screenshotPath
       screenshotPath,
     });
     await expect(page.locator("#annualSubmissionResults")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-uk-property-annual-saved.png`, readerView: true });
   });
 }
 
@@ -914,6 +928,7 @@ export async function verifyItsaCalculationResults(page, calculationQuery, scree
     });
     await expect(page.locator("#calculationResults")).toBeVisible();
     await expect(page.locator("#calculationDisclaimer")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-tax-calculation-result.png`, readerView: true });
   });
 }
 
@@ -947,6 +962,7 @@ export async function verifyItsaFinalDeclarationRetrieveResults(page, screenshot
     });
     await expect(page.locator("#declarationContainer")).toBeVisible();
     await expect(page.locator("#declarationSection")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-final-declaration-retrieved.png`, readerView: true });
   });
 }
 
@@ -954,7 +970,7 @@ export async function tickAndSubmitItsaFinalDeclaration(page, screenshotPath = d
   await test.step("The user ticks the declaration and submits the Final Declaration", async () => {
     await page.locator("#declarationTick").check();
     await expect(page.locator("#submitDeclarationBtn")).toBeEnabled();
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-final-declaration-ticked.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-final-declaration-ticked.png`, readerView: true });
     await Promise.all([
       page.waitForURL(/.*/, { timeout: 15000 }),
       loggedClick(page, "#submitDeclarationBtn", "Submitting the Final Declaration", { screenshotPath }),
@@ -973,6 +989,7 @@ export async function verifyItsaFinalDeclarationResults(page, screenshotPath = d
       screenshotPath,
     });
     await expect(page.locator("#finalDeclarationResults")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-final-declaration-filed.png`, readerView: true });
   });
 }
 
@@ -1045,6 +1062,7 @@ export async function verifyItsaLossesLoadResults(page, screenshotPath = default
       screenshotPath,
     });
     await expect(page.locator("#lossesEditForm")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-losses-loaded.png`, readerView: true });
   });
 }
 
@@ -1056,7 +1074,7 @@ export async function fillInItsaLossesEdits(page, lossesEdits = {}, screenshotPa
         screenshotPath,
       });
     }
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-losses-edits-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-losses-edits-filled.png`, readerView: true });
   });
 }
 
@@ -1080,5 +1098,6 @@ export async function verifyItsaLossesSaveResults(page, screenshotPath = default
       screenshotPath,
     });
     await expect(page.locator("#lossesResults")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-losses-saved.png`, readerView: true });
   });
 }

@@ -24,6 +24,10 @@
 //   kind "small-company-accounts"  fills the period, the current year's profit and loss account and
 //                         balance sheet, the fixed asset note, the employees and the directors from a
 //                         Company book; the book holds no prior year profit and loss, so the prior year stays blank
+// The two accounts kinds also read an iXBRL accounts document (.xhtml, .html or .xml) in the browser:
+// the figures it tags fill the same form fields, and the status line names the taxonomy it read and
+// the facts the form has no field for. A document for another company, or for the other regime, fills nothing.
+//
 // The annual card also accepts the derived-figures JSON the diya-submit MCP tool
 // derive_itsa_annual_submission writes.
 //
@@ -50,6 +54,8 @@
   "use strict";
 
   const ACCEPTED_FILES = ".zip,.xlsx,.xls,.json,application/zip,application/json";
+  const ACCEPTED_ACCOUNTS_FILES = `${ACCEPTED_FILES},.xhtml,.html,.htm,.xml,application/xhtml+xml,text/html,text/xml,application/xml`;
+  const IXBRL_FILE_NAME = /\.(xhtml|html|htm|xml)$/i;
   const PERIOD_PROBE_END = "1900-01-01";
   const MAX_UNMAPPED_SHOWN = 12;
 
@@ -358,7 +364,78 @@
     return turnover === 0 && costs === 0 && profit === 0 && currentYear.profitAndLossAccount === priorYear.profitAndLossAccount;
   }
 
+  function taxonomyText(suite) {
+    const family = String(suite.family || "").replace("-", " ");
+    const year = suite.date ? suite.date.slice(0, 4) : "";
+    return [family, year && `${year} taxonomy`].filter(Boolean).join(" ");
+  }
+
+  // Reads an iXBRL accounts document for the regime the page takes. A document for another company or
+  // another regime, or one the reader cannot read, fills nothing.
+  function mapIxbrlForPage(bundle, bytes, regime) {
+    const formNumber = (document.getElementById("formCompanyNumber")?.textContent || "").trim();
+    try {
+      return bundle.mapIxbrlAccounts(bytes, { regime, ...(formNumber ? { companyNumber: formNumber } : {}) });
+    } catch (error) {
+      throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
+    }
+  }
+
+  function ixbrlLeftOutText(mapped, formTakesProfitAndLoss) {
+    const names = [...new Set(mapped.unmapped.map((fact) => fact.concept))];
+    if (mapped.profitAndLoss && !formTakesProfitAndLoss) names.unshift("the profit and loss account");
+    const notes = mapped.notes.map((note) => ` ${withoutFinalStop(note)}.`).join("");
+    const leftOut = names.length > 0 ? ` The document also holds ${namedList(names)}, which this form has no field for.` : "";
+    return notes + leftOut;
+  }
+
+  function ixbrlStatus(filled, fileName, mapped, advice, formTakesProfitAndLoss) {
+    return (
+      `Filled ${plural(filled, "field")} from ${fileName} (${taxonomyText(mapped.suite)}) for the period ${mapped.period.start} to ${mapped.period.end}.` +
+      `${ixbrlLeftOutText(mapped, formTakesProfitAndLoss)} ${advice}`
+    );
+  }
+
+  const TRADING_STATUS_OPTION = { EntityHasNeverTraded: "neverTraded", EntityNoLongerTradingButTradedInPast: "noLongerTrading" };
+  const SHARE_CLASS_OPTION = {
+    OrdinaryShareClass1: "ordinaryShares",
+    PreferenceShareClass1: "preferenceShares",
+    DeferredShareClass1: "deferredShares",
+    OtherShareClass1: "otherShares",
+  };
+
+  function fillMicroEntityAccountsFromIxbrl({ bundle, source, fileName }) {
+    const mapped = mapIxbrlForPage(bundle, source.ixbrl, "micro");
+    let filled = 0;
+    setField("periodStart", mapped.period.start);
+    setField("periodEnd", mapped.period.end);
+    filled += 2;
+    filled += setFigures("current", mapped.balanceSheet.currentYear, MICRO_BALANCE_SHEET_LINES);
+    filled += setFigures("prior", mapped.balanceSheet.priorYear, MICRO_BALANCE_SHEET_LINES);
+    if (typeof mapped.averageEmployees === "number") {
+      setField("averageEmployees", String(mapped.averageEmployees));
+      filled += 1;
+    }
+    const directorName = mapped.signer || mapped.directors[0];
+    if (directorName) {
+      setField("directorName", directorName);
+      filled += 1;
+    }
+    setChecked("dormant", mapped.dormant);
+    let advice = "Check them, add the date approved and the statements, then preview.";
+    if (mapped.dormant) {
+      const status = TRADING_STATUS_OPTION[mapped.tradingStatus];
+      const shareClass = SHARE_CLASS_OPTION[mapped.shareNote?.shareClass];
+      if (status) setField("dormantTradingStatus", status);
+      if (shareClass) setField("shareClass", shareClass);
+      if (typeof mapped.shareNote?.nominalValue === "number") setField("nominalValue", figureText(mapped.shareNote.nominalValue));
+      advice = `The document is for a dormant company, so the dormant box is ticked: confirm the trading history, share class and nominal value. ${advice}`;
+    }
+    return ixbrlStatus(filled, fileName, mapped, advice, false);
+  }
+
   async function fillMicroEntityAccounts({ bundle, source, fileName }) {
+    if (source.ixbrl) return fillMicroEntityAccountsFromIxbrl({ bundle, source, fileName });
     let accounts;
     try {
       accounts = await bundle.microEntityAccountsFromBook(source.book, source.lines);
@@ -408,7 +485,57 @@
     "depreciationOnDisposals",
   ];
 
+  function fillSmallCompanyAccountsFromIxbrl({ bundle, source, fileName }) {
+    const mapped = mapIxbrlForPage(bundle, source.ixbrl, "small");
+    const { currentYear, priorYear } = mapped.balanceSheet;
+    let filled = 0;
+    setField("periodStart", mapped.period.start);
+    setField("periodEnd", mapped.period.end);
+    filled += 2;
+    setChecked(mapped.filleted ? "copyFilleted" : "copyFull", true);
+    if (mapped.profitAndLoss) filled += setFigures("current", mapped.profitAndLoss.currentYear, SMALL_PROFIT_AND_LOSS_LINES);
+    filled += setFigures("current", currentYear, SMALL_BALANCE_SHEET_LINES);
+    const hasPrior = Object.keys(priorYear).length > 0;
+    if (hasPrior) {
+      setChecked("includeComparatives", true);
+      filled += setFigures("prior", priorYear, SMALL_BALANCE_SHEET_LINES);
+      if (mapped.profitAndLoss && !mapped.filleted)
+        filled += setFigures("prior", mapped.profitAndLoss.priorYear, SMALL_PROFIT_AND_LOSS_LINES);
+    }
+    const noteClasses = Object.entries(mapped.fixedAssetNote || {});
+    if (noteClasses.length > 0) {
+      setChecked("includeFixedAssetNote", true);
+      noteClasses.forEach(([className, figures]) => {
+        filled += setFigures("note" + upperFirst(className), figures, FIXED_ASSET_NOTE_LINES);
+      });
+    }
+    if (typeof mapped.averageEmployees === "number") {
+      setField("averageEmployees", String(mapped.averageEmployees));
+      filled += 1;
+    }
+    if (mapped.principalActivity) {
+      setField("principalActivity", mapped.principalActivity);
+      filled += 1;
+    }
+    if (mapped.directors.length > 0) {
+      setField("directors", mapped.directors.join("\n"));
+      filled += 1;
+    }
+    if (mapped.signer) {
+      setField("directorName", mapped.signer);
+      filled += 1;
+    }
+    return ixbrlStatus(
+      filled,
+      fileName,
+      mapped,
+      "Check the figures, add the accounting policies, the date approved and the statements, then preview.",
+      true,
+    );
+  }
+
   async function fillSmallCompanyAccounts({ bundle, source, fileName }) {
+    if (source.ixbrl) return fillSmallCompanyAccountsFromIxbrl({ bundle, source, fileName });
     let accounts;
     try {
       accounts = await bundle.smallCompanyAccountsFromBook(source.book, source.lines);
@@ -609,7 +736,10 @@
       "p",
       { id: "booksImportHint", class: "hint" },
       "Drop your DIYA-GL book, spreadsheets workbook or package zip here, or choose a file. It is read in this browser and never uploaded; " +
-        "only the figures you file are sent.",
+        "only the figures you file are sent." +
+        (kind === "micro-entity-accounts" || kind === "small-company-accounts"
+          ? " An iXBRL accounts document (.xhtml) fills the same form."
+          : ""),
     );
     const dropZone = element("div", { "id": "booksImportDrop", "class": "books-import-drop", "aria-describedby": "booksImportHint" });
     const chooseButton = element("button", { type: "button", id: "booksImportChoose", class: "secondary-button" }, "Choose a file");
@@ -619,7 +749,7 @@
       type: "file",
       id: "booksImportFile",
       name: "booksImportFile",
-      accept: ACCEPTED_FILES,
+      accept: kind === "micro-entity-accounts" || kind === "small-company-accounts" ? ACCEPTED_ACCOUNTS_FILES : ACCEPTED_FILES,
       class: "books-import-file",
       tabindex: "-1",
       hidden: "",
@@ -678,6 +808,9 @@
         if (parsed) return { ct600Figures: parsed };
       }
       const bundle = await loadBundle();
+      if ((kind === "micro-entity-accounts" || kind === "small-company-accounts") && IXBRL_FILE_NAME.test(file.name)) {
+        return { source: { ixbrl: bytes } };
+      }
       return { source: await bundle.readBookSource(bytes, file.name) };
     }
 

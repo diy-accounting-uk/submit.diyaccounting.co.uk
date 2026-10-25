@@ -45,16 +45,16 @@ export async function verifyCompanySearchResults(page, expectedName, expectedNum
     await expect(resultsContainer).toBeVisible({ timeout: 15000 });
     await expect(resultsContainer).toContainText(expectedName, { timeout: 15000 });
     await expect(resultsContainer).toContainText(expectedNumber, { timeout: 15000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-search-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-search-results.png`, readerView: true });
   });
 }
 
 export async function openCompanyProfile(page, companyName, screenshotPath = defaultScreenshotPath) {
   await test.step(`The user opens the profile for ${companyName}`, async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-open-company-profile.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-open-company-profile.png`, readerView: true });
     await loggedClick(page, `#searchResults button:has-text('${companyName}')`, `Opening ${companyName} profile`, { screenshotPath });
     await expect(page.locator("#profileView")).toBeVisible({ timeout: 15000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-open-company-profile.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-open-company-profile.png`, readerView: true });
   });
 }
 
@@ -63,6 +63,6 @@ export async function verifyCompanyProfile(page, expectedName, expectedStatus, s
     const profile = page.locator("#companyProfile");
     await expect(profile).toContainText(expectedName, { timeout: 15000 });
     await expect(profile).toContainText(expectedStatus, { timeout: 15000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-profile.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-profile.png`, readerView: true });
   });
 }

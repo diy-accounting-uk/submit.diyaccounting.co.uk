@@ -2,15 +2,18 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // Runs the Submit-facing tools against the simulator lane (npm run start:simulator): the
-// local Express server over dynalite and the HTTP simulator that stands in for HMRC. The tools
-// take whatever open obligation the simulator answers; no period key is written here.
+// local Express server over dynalite and the HTTP simulator that stands in for HMRC. The HMRC
+// grant is started through request_hmrc_authorisation and completed as the callback page would,
+// so no tool takes an HMRC token. The tools take whatever open obligation the simulator answers;
+// no period key is written here.
 
 import { spawn } from "node:child_process";
 import { mkdtempSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { listVatObligations, submitVatReturn, getVatReceipt } from "../../lib/submit-tools.js";
+import { listVatObligations, submitVatReturn, getVatReceipt, requestHmrcAuthorisation } from "../../lib/submit-tools.js";
+import { createSession } from "../../lib/book-tools.js";
 
 const REPOSITORY_ROOT = resolve(import.meta.dirname, "../../..");
 const SIMULATOR_VRN = "111222333";
@@ -27,6 +30,7 @@ describe("Submit-facing tools against the simulator lane", () => {
   let simulator;
   let configDir;
   let baseUrl;
+  let session;
   const previousEnvironment = {};
 
   beforeAll(async () => {
@@ -55,6 +59,7 @@ describe("Submit-facing tools against the simulator lane", () => {
     });
 
     const token = unsignedJwt(USER_SUB);
+    session = createSession({ credentials: { accessToken: async () => token, idToken: async () => token }, pollBudgetMs: 30_000 });
     configDir = mkdtempSync(join(tmpdir(), "diya-submit-system-"));
     const expiresAt = Date.now() + 3_600_000;
     writeFileSync(
@@ -98,19 +103,31 @@ describe("Submit-facing tools against the simulator lane", () => {
     }
   });
 
-  it("lists open obligations, files a return for one and fetches its receipt", async () => {
-    const hmrcAccessToken = "simulator-hmrc-access-token";
-    const listed = await listVatObligations(null, { vrn: SIMULATOR_VRN, status: "O", hmrcAccessToken });
+  it("starts an HMRC grant, lists open obligations, files a return for one and fetches its receipt", async () => {
+    const authorisation = await requestHmrcAuthorisation(session, { hmrcAccount: "synthetic" });
+    const authoriseUrl = new URL(authorisation.url);
+    authoriseUrl.searchParams.set("autoGrant", "true");
+    const consent = await fetch(authoriseUrl, { redirect: "manual" });
+    expect(consent.status).toBe(302);
+    const returned = new URL(consent.headers.get("location"));
+    expect(returned.pathname).toBe("/activities/submitVatCallback.html");
+    const callback = await fetch(`${baseUrl}/api/v1/mcp/hmrc-grants/callback`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code: returned.searchParams.get("code"), state: returned.searchParams.get("state") }),
+    });
+    expect(await callback.json()).toEqual({ state: "granted" });
+
+    const listed = await listVatObligations(session, { vrn: SIMULATOR_VRN, status: "O" });
     const obligations = listed.obligations ?? listed.hmrcResponse?.obligations;
     expect(Array.isArray(obligations)).toBe(true);
     const open = obligations.find((obligation) => obligation.status === "O") ?? obligations[0];
     expect(open).toBeTruthy();
 
-    const submitted = await submitVatReturn(null, {
+    const submitted = await submitVatReturn(session, {
       vatNumber: SIMULATOR_VRN,
       periodStart: open.start,
       periodEnd: open.end,
-      hmrcAccessToken,
       allowSyntheticObligations: true,
       vatDueSales: 100,
       vatDueAcquisitions: 0,
@@ -123,7 +140,7 @@ describe("Submit-facing tools against the simulator lane", () => {
     expect(submitted.receipt).toBeTruthy();
     expect(submitted.receiptId).toBeTruthy();
 
-    const receipt = await getVatReceipt(null, { name: `${submitted.receiptId}.json` });
+    const receipt = await getVatReceipt(session, { name: `${submitted.receiptId}.json` });
     expect(receipt).toBeTruthy();
   });
 });

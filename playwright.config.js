@@ -300,6 +300,14 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "mcpHmrcGrantBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/mcpHmrcGrant.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
       name: "diyaGlSubscriptionBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/diyaGlSubscription.behaviour.test.js"],

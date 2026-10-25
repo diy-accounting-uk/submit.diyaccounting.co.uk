@@ -16,6 +16,8 @@ export function showStatus(message, type = "info") {
     return;
   }
 
+  clearSupersededMessages(statusMessagesContainer, message, type);
+
   const msgDiv = document.createElement("div");
   msgDiv.className = `status-message status-${type}`;
 
@@ -43,6 +45,21 @@ export function showStatus(message, type = "info") {
     setTimeout(() => {
       removeStatusMessage(msgDiv);
     }, 30000);
+  }
+}
+
+/**
+ * Remove the messages a new message makes obsolete: a progress message once the request has
+ * ended, and a shorter error that the new, fuller error repeats.
+ */
+function clearSupersededMessages(container, message, type) {
+  if (type === "info") return;
+  for (const existing of Array.from(container.querySelectorAll(".status-message"))) {
+    const existingText = existing.querySelector(".status-message-content")?.textContent || "";
+    const isProgress = existing.classList.contains("status-info");
+    const isRepeatedError =
+      type === "error" && existing.classList.contains("status-error") && message.startsWith(existingText.replace(/\.$/, ""));
+    if (isProgress || isRepeatedError) removeStatusMessage(existing);
   }
 }
 

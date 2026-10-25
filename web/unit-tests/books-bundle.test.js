@@ -17,6 +17,7 @@ describe("books-bundle.js", () => {
       "deriveItsaQuarterlyUpdate",
       "deriveVatReturn",
       "ltdTaxData",
+      "mapIxbrlAccounts",
       "microEntityAccountsFromBook",
       "readBookSource",
       "smallCompanyAccountsFromBook",

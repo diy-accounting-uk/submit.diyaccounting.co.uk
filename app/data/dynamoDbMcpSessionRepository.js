@@ -4,8 +4,9 @@
 // app/data/dynamoDbMcpSessionRepository.js
 //
 // Repository for the {env}-env-mcp-sessions table: one item per Mcp-Session-Id, keyed by
-// sessionId, holding the owner's hashedSub and the pointer to the cloud book the session has
-// open. Every write refreshes a 24-hour ttl.
+// sessionId, holding the owner's hashedSub, the pointer to the cloud book the session has open and
+// the id of the session's HMRC grant (the grant itself is its own item; see
+// dynamoDbHmrcGrantRepository.js). Every write refreshes a 24-hour ttl.
 
 import { randomUUID } from "node:crypto";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
@@ -67,6 +68,27 @@ export async function updateMcpSessionCloud(sessionId, cloud) {
         ConditionExpression: "attribute_exists(sessionId)",
         ExpressionAttributeNames: { "#ttl": "ttl" },
         ExpressionAttributeValues: { ":cloud": cloud, ":ttl": newTtl() },
+      }),
+  );
+}
+
+/**
+ * Stores the id and account of the session's HMRC grant and refreshes the ttl.
+ *
+ * @param {string} sessionId
+ * @param {{grantId: string, hmrcAccount: string}|null} hmrcGrant
+ * @returns {Promise<void>}
+ */
+export async function updateMcpSessionHmrcGrant(sessionId, hmrcGrant) {
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.UpdateCommand({
+        TableName: tableName(),
+        Key: { sessionId },
+        UpdateExpression: "SET hmrcGrant = :hmrcGrant, #ttl = :ttl",
+        ConditionExpression: "attribute_exists(sessionId)",
+        ExpressionAttributeNames: { "#ttl": "ttl" },
+        ExpressionAttributeValues: { ":hmrcGrant": hmrcGrant, ":ttl": newTtl() },
       }),
   );
 }

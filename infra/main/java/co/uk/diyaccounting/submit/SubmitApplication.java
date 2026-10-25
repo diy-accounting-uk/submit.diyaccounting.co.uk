@@ -572,6 +572,12 @@ public class SubmitApplication {
                             .baseImageTag(baseImageTag)
                             .cognitoUserPoolId(cognitoUserPoolId)
                             .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
+                            .hmrcBaseUri(appProps.hmrcBaseUri)
+                            .hmrcClientId(appProps.hmrcClientId)
+                            .hmrcClientSecretArn(hmrcClientSecretArn)
+                            .hmrcSandboxBaseUri(appProps.hmrcSandboxBaseUri)
+                            .hmrcSandboxClientId(appProps.hmrcSandboxClientId)
+                            .hmrcSandboxClientSecretArn(hmrcSandboxClientSecretArn)
                             .build());
         } else {
             this.mcpStack = null;

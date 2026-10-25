@@ -154,6 +154,19 @@ export async function prepareTokenExchangeRequest(code, hmrcAccount) {
   return { url, body };
 }
 
+// Prepares the URL and body for HMRC's refresh_token grant, with the same client credentials as the code exchange.
+export async function prepareTokenRefreshRequest(refreshToken, hmrcAccount) {
+  const secretArn = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN : process.env.HMRC_CLIENT_SECRET_ARN;
+  const overrideSecret = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_SECRET : process.env.HMRC_CLIENT_SECRET;
+  const clientSecret = await retrieveHmrcClientSecret(hmrcAccount === "synthetic" ? "synthetic" : "live", overrideSecret, secretArn);
+  const hmrcBaseUri = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
+  const hmrcClientId = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_ID : process.env.HMRC_CLIENT_ID;
+  return {
+    url: `${hmrcBaseUri}/oauth/token`,
+    body: { grant_type: "refresh_token", client_id: hmrcClientId, client_secret: clientSecret, refresh_token: refreshToken },
+  };
+}
+
 async function retrieveHmrcClientSecret(account, overrideSecret, secretArn) {
   logger.info({ message: "Retrieving HMRC client secret", account });
   if (overrideSecret) {

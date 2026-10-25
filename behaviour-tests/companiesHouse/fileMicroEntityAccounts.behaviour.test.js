@@ -38,6 +38,7 @@ import {
   openFilingCustomerCopy,
   verifyFilingRejected,
   writeFixtureBookZip,
+  writeBuiltIxbrlFile,
   fillAccountsFormFromBook,
   completeMicroEntityAnswersTheBookLeaves,
   completeSmallCompanyAnswersTheBookLeaves,
@@ -351,6 +352,45 @@ test("Click through: file micro-entity accounts from a book and see the filing a
     screenshotPath,
   );
   await completeMicroEntityAnswersTheBookLeaves(page, "2026-04-15", screenshotPath);
+  await previewAccounts(page, screenshotPath);
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyFilingAccepted(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file micro-entity accounts from an iXBRL accounts document and see the filing accepted", async ({
+  page,
+}, testInfo) => {
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+  const ixbrlFile = writeBuiltIxbrlFile("micro-entity-accounts", { companyNumber, companyName }, testInfo.outputPath("ixbrl"));
+
+  await signInWithResidentBundle(page, baseUrl);
+  await goToFileMicroEntityAccounts(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await fillAccountsFormFromBook(
+    page,
+    ixbrlFile,
+    "(FRS 102 2026 taxonomy) for the period 2025-01-01 to 2025-12-31.",
+    {
+      periodStart: "2025-01-01",
+      periodEnd: "2025-12-31",
+      currentFixedAssets: "1000",
+      currentCurrentAssets: "5000",
+      currentCreditorsWithinOneYear: "2000",
+      currentCalledUpShareCapital: "100",
+      currentProfitAndLossAccount: "3900",
+      currentCapitalAndReserves: "4000",
+      priorFixedAssets: "900",
+      priorCapitalAndReserves: "2900",
+      averageEmployees: "2",
+      directorName: "Maldwyn Beynon",
+    },
+    screenshotPath,
+  );
+  await completeMicroEntityAnswersTheBookLeaves(page, "2026-01-15", screenshotPath);
   await previewAccounts(page, screenshotPath);
   await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
   await verifyFilingAccepted(page, screenshotPath);

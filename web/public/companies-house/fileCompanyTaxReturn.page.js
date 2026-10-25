@@ -826,11 +826,8 @@ function mountBooksCard() {
 
 async function handleCompanySubmit(event) {
   event.preventDefault();
+  if (!window.formErrors.requireFields(["companyNumber"])) return;
   const companyNumber = window.normaliseCompanyNumber(element("companyNumber").value);
-  if (!companyNumber) {
-    window.showStatus("Please enter a company number.", "error");
-    return;
-  }
 
   window.showLoading();
   window.hideStatus();

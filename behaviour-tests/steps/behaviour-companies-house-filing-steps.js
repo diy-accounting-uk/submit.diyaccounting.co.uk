@@ -140,7 +140,7 @@ export async function verifyCurrentAddressShown(page, screenshotPath = defaultSc
   await test.step("The user sees the current registered office address and the new address form", async () => {
     await expect(page.locator("#formView")).toBeVisible({ timeout: 15000 });
     await expect(page.locator("#currentAddressList")).not.toBeEmpty({ timeout: 15000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-current-address-shown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-current-address-shown.png`, readerView: true });
   });
 }
 
@@ -159,7 +159,7 @@ export async function fillInNewAddress(page, address, screenshotPath = defaultSc
     if (address.country) {
       await page.selectOption("#country", address.country);
     }
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-fill-in-new-address.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-fill-in-new-address.png`, readerView: true });
   });
 }
 
@@ -168,14 +168,14 @@ export async function acceptOfficeAddressStatement(page, screenshotPath = defaul
     await loggedClick(page, "#acceptOfficeStatement", "Accept the section 86(2) appropriate address statement", { screenshotPath });
     await loggedClick(page, "#continueBtn", "Continue", { screenshotPath });
     await expect(page.locator("#reviewView")).toBeVisible({ timeout: 15000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accept-office-statement.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accept-office-statement.png`, readerView: true });
   });
 }
 
 export async function fillInNewRegisteredEmail(page, email, screenshotPath = defaultScreenshotPath) {
   await test.step(`The user fills in the new registered email address ${email}`, async () => {
     await loggedFill(page, "#registeredEmailAddress", email, "New registered email address", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-fill-in-new-email.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-fill-in-new-email.png`, readerView: true });
   });
 }
 
@@ -184,14 +184,14 @@ export async function acceptEmailAddressStatement(page, screenshotPath = default
     await loggedClick(page, "#acceptEmailStatement", "Accept the section 88A(2) appropriate email address statement", { screenshotPath });
     await loggedClick(page, "#continueBtn", "Continue", { screenshotPath });
     await expect(page.locator("#reviewView")).toBeVisible({ timeout: 15000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accept-email-statement.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accept-email-statement.png`, readerView: true });
   });
 }
 
 export async function verifyEligibilityAccepted(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees the company is eligible and is offered the new email address form", async () => {
     await expect(page.locator("#formView")).toBeVisible({ timeout: 15000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-eligibility-accepted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-eligibility-accepted.png`, readerView: true });
   });
 }
 
@@ -199,7 +199,7 @@ export async function verifyEligibilityRejected(page, expectedMessageFragment, s
   await test.step(`The user sees the eligibility stop naming "${expectedMessageFragment}"`, async () => {
     await expect(page.locator("#statusMessagesContainer")).toContainText(expectedMessageFragment, { timeout: 15000 });
     await expect(page.locator("#companyView")).toBeVisible({ timeout: 15000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-eligibility-rejected.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-eligibility-rejected.png`, readerView: true });
   });
 }
 
@@ -278,7 +278,7 @@ async function authoriseOnRealSandbox(page, credentials, screenshotPath) {
     await signInWithGovUkOneLogin(page, credentials, screenshotPath);
     await skipPasskeyOfferIfShown(page, screenshotPath);
     await enterCompanyAuthCodeIfAsked(page, credentials.companyAuthCode, screenshotPath);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-authorise-application.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-authorise-application.png`, readerView: true });
     await loggedClick(page, "#is_auth_confirmed", "Allow access", { screenshotPath });
   } catch (error) {
     console.error(`Companies House sign-in stopped on ${await describeCurrentPage(page)}: ${error.message.split("\n")[0]}`);
@@ -296,7 +296,7 @@ async function authoriseOnSimulator(page, { userId, password, companyAuthCode },
 export async function authoriseWithCompaniesHouse(page, credentials, screenshotPath = defaultScreenshotPath) {
   await test.step("The user signs in to Companies House and grants permission", async () => {
     await page.waitForLoadState("networkidle");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-authorise-with-companies-house.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-authorise-with-companies-house.png`, readerView: true });
     await page.locator(`${oneLoginLinkSelector}, #userId`).first().waitFor({ state: "visible", timeout: 15000 });
     const startUrl = page.url();
     if (await page.locator("#userId").count()) {
@@ -309,17 +309,17 @@ export async function authoriseWithCompaniesHouse(page, credentials, screenshotP
       waitUntil: "commit",
     });
     await page.waitForLoadState("networkidle");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-authorise-with-companies-house.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-authorise-with-companies-house.png`, readerView: true });
   });
 }
 
 export async function submitFiling(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user reviews and files the change with Companies House", async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submit-filing.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submit-filing.png`, readerView: true });
     await loggedClick(page, "#submitFilingBtn", "File with Companies House", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-submit-filing.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-submit-filing.png`, readerView: true });
   });
 }
 
@@ -327,7 +327,7 @@ export async function verifyFilingAccepted(page, screenshotPath = defaultScreens
   await test.step("The user sees the filing accepted", async () => {
     await expect(page.locator("#resultView")).toBeVisible({ timeout: 20000 });
     await expect(page.locator("#filingResult")).toContainText("accepted", { timeout: 20000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-filing-accepted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-filing-accepted.png`, readerView: true });
   });
 }
 
@@ -335,6 +335,6 @@ export async function verifyValidationErrorShown(page, expectedFragment, screens
   await test.step(`The user sees a validation error naming "${expectedFragment}"`, async () => {
     await expect(page.locator("#validationErrors")).toBeVisible({ timeout: 20000 });
     await expect(page.locator("#validationErrors")).toContainText(expectedFragment, { timeout: 20000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-validation-error-shown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-validation-error-shown.png`, readerView: true });
   });
 }

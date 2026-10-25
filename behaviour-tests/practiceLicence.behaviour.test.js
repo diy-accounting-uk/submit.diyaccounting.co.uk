@@ -43,6 +43,8 @@ import {
   initHmrcAuth,
   submitHmrcAuth,
 } from "./steps/behaviour-hmrc-steps.js";
+import { grantMcpHmrcAccessInBrowser } from "./steps/behaviour-mcp-hmrc-grant-steps.js";
+import { callHarnessTool } from "../mcp/lib/harness.js";
 import { addClient, clientAuthorisationStatus, inviteClient } from "../mcp/lib/practice-tools.js";
 import { runForClients } from "../mcp/lib/batch-tools.js";
 import { callSubmitApi } from "../mcp/lib/submit-tools.js";
@@ -242,13 +244,20 @@ test("A practice adds two clients and submits a VAT return for each through run_
   expect(statusB.status).toBe("authorised");
 
   /* ******************************************************************* */
+  /*  START THE SESSION'S HMRC GRANT: submit_vat_return reads its token   */
+  /*  from the grant, so the user consents on HMRC's pages first.        */
+  /* ******************************************************************* */
+  const authorisation = await callHarnessTool(session, "request_hmrc_authorisation", { services: ["vat"], hmrcAccount: "synthetic" });
+  expect(authorisation.ok, `request_hmrc_authorisation: ${JSON.stringify(authorisation.result)}`).toBe(true);
+  await grantMcpHmrcAccessInBrowser(page, authorisation.result.url, currentTestUsername, currentTestPassword, screenshotPath);
+
+  /* ******************************************************************* */
   /*  RUN_FOR_CLIENTS: one submit_vat_return call per client in the list  */
   /* ******************************************************************* */
   const result = await runForClients(session, {
     tool: "submit_vat_return",
     args: {
       ...OPEN_OBLIGATION_PERIOD,
-      hmrcAccessToken,
       hmrcAccount: "synthetic",
       allowSyntheticObligations: true,
       vatDueSales: 1000,

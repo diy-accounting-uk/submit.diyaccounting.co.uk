@@ -5,7 +5,8 @@
 // that change shape there: open_book reads the DIYA cloud only, and
 // derive_itsa_annual_submission answers without writing a file. The tools left
 // out are the sign-in pair (the connector owns sign-in), the filesystem tools,
-// the tools that reach HMRC, and the fan-out over every client.
+// the practice tools that still take an HMRC token as an argument, and the
+// fan-out over every client.
 
 import { z } from "zod";
 
@@ -19,6 +20,9 @@ export const HOSTED_TOOL_NAMES = [
   "derive_small_company_accounts",
   "derive_itsa_quarterly_update",
   "derive_itsa_annual_submission",
+  "request_hmrc_authorisation",
+  "list_vat_obligations",
+  "submit_vat_return",
   "get_vat_receipt",
   "render_micro_entity_accounts_sandbox",
   "request_companies_house_codes",

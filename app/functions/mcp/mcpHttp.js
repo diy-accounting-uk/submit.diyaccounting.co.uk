@@ -11,7 +11,13 @@ import { createLogger } from "../../lib/logger.js";
 import { getHeader } from "../../lib/httpResponseHelper.js";
 import { buildLambdaEventFromHttpRequest } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
-import { createMcpSession, deleteMcpSession, getMcpSession, updateMcpSessionCloud } from "../../data/dynamoDbMcpSessionRepository.js";
+import {
+  createMcpSession,
+  deleteMcpSession,
+  getMcpSession,
+  updateMcpSessionCloud,
+  updateMcpSessionHmrcGrant,
+} from "../../data/dynamoDbMcpSessionRepository.js";
 import { handleMcpRequest } from "../../../mcp/lib/http.js";
 import { createSession, restoreCloudBook } from "../../../mcp/lib/book-tools.js";
 
@@ -183,6 +189,8 @@ export async function ingestHandler(event) {
     pollBudgetMs: HOSTED_POLL_BUDGET_MS,
   });
 
+  if (stored) session.hmrcGrant = stored.hmrcGrant ?? null;
+
   let extraHeaders = {};
   if (startsSession) {
     const created = await createMcpSession(hashedSub);
@@ -202,6 +210,9 @@ export async function ingestHandler(event) {
   if (stored && session.cloud && !samePointer(session.cloud, stored.cloud)) {
     rememberBook(pointerKey(hashedSub, session.cloud), session);
     await updateMcpSessionCloud(stored.sessionId, session.cloud);
+  }
+  if (stored && (session.hmrcGrant?.grantId ?? null) !== (stored.hmrcGrant?.grantId ?? null)) {
+    await updateMcpSessionHmrcGrant(stored.sessionId, session.hmrcGrant);
   }
   return result;
 }

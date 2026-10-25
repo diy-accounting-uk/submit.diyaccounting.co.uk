@@ -3,7 +3,52 @@
 
 // OAuth callback handling
 
+// A state that starts "mcp." belongs to a grant an MCP tool started: the code goes to the MCP
+// grant route, which stores HMRC's tokens server side. This page keeps no token and needs no
+// sign-in for that branch.
+const MCP_STATE_PREFIX = "mcp.";
+
+function mcpGrantState() {
+  const state = new URLSearchParams(window.location.search).get("state");
+  return state && state.startsWith(MCP_STATE_PREFIX) ? state : null;
+}
+
+async function handleMcpGrantCallback(state) {
+  const urlParams = new URLSearchParams(window.location.search);
+  const code = urlParams.get("code");
+  const error = urlParams.get("error");
+  window.history.replaceState({}, document.title, window.location.pathname);
+  if (error || !code) {
+    showStatus(`HMRC did not grant access (${error || "no authorisation code"}). Ask the chat for a new HMRC link.`, "error");
+    return;
+  }
+  try {
+    showLoading();
+    const response = await fetch("/api/v1/mcp/hmrc-grants/callback", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ code, state }),
+    });
+    const body = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const reason = body.message || `HMRC access could not be saved (HTTP ${response.status})`;
+      showStatus(`${reason}. Ask the chat for a new HMRC link.`, "error");
+      return;
+    }
+    showStatus("HMRC access granted. Go back to your chat to carry on.", "success");
+  } catch (fetchError) {
+    showStatus(`HMRC access could not be saved: ${fetchError.message}. Ask the chat for a new HMRC link.`, "error");
+  } finally {
+    hideLoading();
+  }
+}
+
 async function handleOAuthCallback() {
+  const mcpState = mcpGrantState();
+  if (mcpState) {
+    await handleMcpGrantCallback(mcpState);
+    return;
+  }
   const code = getValidatedAuthorisationCode();
   let succeeded = false;
 

@@ -13,8 +13,6 @@ const NOT_HOSTED = [
   "sign_out",
   "save_book",
   "write_finance_package",
-  "list_vat_obligations",
-  "submit_vat_return",
   "invite_client",
   "client_authorisation_status",
   "run_for_clients",
