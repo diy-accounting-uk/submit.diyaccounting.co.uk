@@ -120,7 +120,7 @@ The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1, O34g) are boarde
 - DF2c: blocked by DF2a
 - IX2a: on main (spreadsheets PR #167; diya-gl 1.2.56 on the registry; the IX1 design below)
 - IX2b: on main (PR #540; the card reads iXBRL on the three accounts pages)
-- IX2c: ready (`NEXT.md` IX2c)
+- IX2c: on main (PR #541; the CT600 page fills its accounts section from an iXBRL file)
 - IX2d: ready (`NEXT.md` IX2d; spreadsheets repository)
 
 ## Operator dates
