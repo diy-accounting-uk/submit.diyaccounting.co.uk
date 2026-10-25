@@ -153,6 +153,7 @@ async function callback(event, request, responseHeaders) {
     return http409ConflictResponse({ request, headers: responseHeaders, message: "This HMRC link was already used", error: {} });
   }
 
+  await initializeSalt();
   const exchangeRequest = await prepareTokenExchangeRequest(code, grant.hmrcAccount);
   const exchanged = await exchangeOrFail(request, responseHeaders, exchangeRequest, parsed.grantId);
   if (exchanged.failure) {

@@ -98,9 +98,9 @@ export async function completeHmrcGrant(grantId, { sealed, accessExpiresAt, scop
       new module.UpdateCommand({
         TableName: tableName(),
         Key: keyFor(grantId),
-        UpdateExpression: "SET sealed = :sealed, accessExpiresAt = :accessExpiresAt, scope = :scope, #state = :granted, #ttl = :ttl",
+        UpdateExpression: "SET sealed = :sealed, accessExpiresAt = :accessExpiresAt, #scope = :scope, #state = :granted, #ttl = :ttl",
         ConditionExpression: "attribute_exists(sessionId) AND #state = :exchanging",
-        ExpressionAttributeNames: { "#state": "state", "#ttl": "ttl" },
+        ExpressionAttributeNames: { "#state": "state", "#ttl": "ttl", "#scope": "scope" },
         ExpressionAttributeValues: {
           ":sealed": sealed,
           ":accessExpiresAt": accessExpiresAt,
