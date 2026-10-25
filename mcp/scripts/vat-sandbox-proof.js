@@ -234,17 +234,9 @@ async function main() {
       outDir: workDirectory,
       label: "mcp-vat-sandbox-proof",
     });
-    say("HMRC sandbox consent: authorisation code returned to the callback page");
+    say("HMRC sandbox consent: authorisation code returned to the callback page, which posts it to the grant callback");
 
-    const callback = await fetch(`${baseUrl}/api/v1/mcp/hmrc-grants/callback`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ code, state: new URL(authorisation.url).searchParams.get("state") }),
-    });
-    const callbackAnswer = await callback.json();
-    if (!callback.ok)
-      throw new Error(`The HMRC grant callback answered HTTP ${callback.status}: ${callbackAnswer.message ?? callbackAnswer.error}`);
-    say("HMRC grant: tokens held by Submit against the MCP session");
+    say("HMRC grant: the callback page posted the code and Submit holds the tokens against the MCP session");
 
     const listed = await callTool(client, "list_vat_obligations", {
       vrn: testUser.vrn,
