@@ -31,7 +31,8 @@ import {
   renderProductionSoftwareFacts,
   renderTextFact,
   renderMonetaryFact,
-  buildOfficerContext,
+  renderSigningDirectorFact,
+  renderCompanyDescriptionFacts,
 } from "./accountsIxbrlCommon.js";
 import { recordFigure, recordTable } from "../lib/submissionRecord.js";
 
@@ -128,6 +129,9 @@ const DORMANT_STATEMENT_KEYS = STATEMENT_KEYS.map((key) =>
   key === "statementAuditExemptionSection477" ? "statementAuditExemptionSection480" : key,
 );
 
+// A micro-entity need not describe its principal activity; Companies House's own examples carry this text.
+const NO_PRINCIPAL_ACTIVITY_DESCRIPTION = "No description of principal activity";
+
 export const DORMANT_TRADING_STATUSES = ["neverTraded", "noLongerTrading"];
 export const SHARE_CLASSES = ["ordinaryShares", "preferenceShares", "deferredShares", "otherShares"];
 
@@ -196,10 +200,20 @@ export function buildMicroEntityAccounts(input) {
     if (problems.length > 0) throw new Error(problems.join("; "));
   }
 
-  // DirectorSigningFinancialStatements is a fixed (zero-length) fact: it marks that a director
-  // signed. The director's own name is the prose of the approval line.
-  hiddenFacts.push(renderFixedFact("directorSigningFinancialStatements", refs.current));
+  // DirectorSigningFinancialStatements is a fixed (zero-length) fact on the signing director's
+  // officer context; the same context carries the director's NameEntityOfficer on the approval line.
+  const { fact: signingDirectorFact, officerContextRef } = renderSigningDirectorFact({
+    additionalContexts,
+    entityIdentifierXml,
+    periodXml,
+    refs,
+    position: 1,
+  });
+  hiddenFacts.push(signingDirectorFact);
   hiddenFacts.push(...renderProductionSoftwareFacts(refs.current));
+  hiddenFacts.push(
+    ...renderCompanyDescriptionFacts({ companyNumber: input.companyNumber, refs, entityIdentifierXml, periodXml, additionalContexts }),
+  );
   hiddenFacts.push(
     `<ix:nonNumeric name="${qname(CONCEPTS.reportIncludesDetailedProfitLossStatement)}" contextRef="${refs.current}">${profitAndLoss ? "true" : "false"}</ix:nonNumeric>`,
   );
@@ -208,7 +222,9 @@ export function buildMicroEntityAccounts(input) {
       `<ix:nonNumeric name="${qname(CONCEPTS.exemptionNotPublishingOwnProfitLossAccount)}" contextRef="${refs.current}">true</ix:nonNumeric>`,
     );
   }
-  if (input.dormant) hiddenFacts.push(renderTextFact("descriptionPrincipalActivities", refs.current, "Dormant company"));
+  hiddenFacts.push(
+    renderTextFact("descriptionPrincipalActivities", refs.current, input.dormant ? "Dormant company" : NO_PRINCIPAL_ACTIVITY_DESCRIPTION),
+  );
   hiddenFacts.push(
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">${input.dormant ? "true" : "false"}</ix:nonNumeric>`,
   );
@@ -231,6 +247,7 @@ export function buildMicroEntityAccounts(input) {
     ["accountsStatusAuditedOrUnaudited", DIMENSIONS.accountsStatus, MEMBERS.auditExemptNoAccountantsReport, "accounts-status"],
     ["accountsType", DIMENSIONS.accountsType, profitAndLoss ? MEMBERS.fullAccounts : MEMBERS.filletedAccounts, "accounts-type"],
     ["accountingStandardsApplied", DIMENSIONS.accountingStandards, MEMBERS.microEntities, "accounting-standards"],
+    ["applicableLegislation", DIMENSIONS.applicableLegislation, MEMBERS.smallCompaniesRegimeForAccounts, "applicable-legislation"],
   ]) {
     const contextRef = buildDimensionedContext({
       additionalContexts,
@@ -308,8 +325,6 @@ export function buildMicroEntityAccounts(input) {
   const heading = (title, subtitleHtml) =>
     pageHeading({ companyName: input.companyName, companyNumber: input.companyNumber, title, subtitleHtml });
   const statementKeys = input.dormant ? DORMANT_STATEMENT_KEYS : STATEMENT_KEYS;
-
-  const officerContextRef = buildOfficerContext({ additionalContexts, entityIdentifierXml, periodXml, refs, position: 1 });
 
   const bodyHtml = `${coverPage({
     refs,

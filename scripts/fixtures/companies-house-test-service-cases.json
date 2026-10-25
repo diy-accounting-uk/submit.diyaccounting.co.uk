@@ -361,7 +361,7 @@
     "smallCompany": {
       "filleted": false,
       "principalActivity": "Stadium operation and events",
-      "accountingPolicies": "Historical cost convention.",
+      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for events and services provided in the year, excluding VAT.",
       "directors": ["Maldwyn Beynon"],
       "balanceSheet": {
         "currentYear": {
@@ -376,6 +376,19 @@
           "calledUpShareCapital": 100,
           "profitAndLossAccount": 3900,
           "capitalAndReserves": 4000
+        },
+        "priorYear": {
+          "fixedAssets": 800,
+          "stocks": 300,
+          "debtors": 1500,
+          "cashAtBank": 1000,
+          "tradeCreditors": 900,
+          "corporationTax": 400,
+          "otherCreditors": 100,
+          "creditorsAfterOneYear": 600,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 1500,
+          "capitalAndReserves": 1600
         }
       },
       "profitAndLoss": {
@@ -389,6 +402,35 @@
           "profitBeforeTax": 3000,
           "tax": 600,
           "profit": 2400
+        },
+        "priorYear": {
+          "turnover": 18000,
+          "costOfSales": 4500,
+          "grossProfit": 13500,
+          "administrativeExpenses": 10800,
+          "operatingProfit": 2700,
+          "interestReceivable": 0,
+          "profitBeforeTax": 2700,
+          "tax": 540,
+          "profit": 2160
+        }
+      },
+      "fixedAssetNote": {
+        "plantMachinery": {
+          "costAtStart": 1500,
+          "additions": 400,
+          "disposals": 100,
+          "depreciationAtStart": 1000,
+          "depreciationCharge": 150,
+          "depreciationOnDisposals": 80
+        },
+        "computerEquipment": {
+          "costAtStart": 800,
+          "additions": 200,
+          "disposals": 0,
+          "depreciationAtStart": 500,
+          "depreciationCharge": 230,
+          "depreciationOnDisposals": 0
         }
       }
     },
@@ -420,7 +462,7 @@
     "smallCompany": {
       "filleted": true,
       "principalActivity": "Stadium operation and events",
-      "accountingPolicies": "Historical cost convention.",
+      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for events and services provided in the year, excluding VAT.",
       "directors": ["Maldwyn Beynon"],
       "balanceSheet": {
         "currentYear": {
@@ -435,6 +477,19 @@
           "calledUpShareCapital": 100,
           "profitAndLossAccount": 3900,
           "capitalAndReserves": 4000
+        },
+        "priorYear": {
+          "fixedAssets": 800,
+          "stocks": 300,
+          "debtors": 1500,
+          "cashAtBank": 1000,
+          "tradeCreditors": 900,
+          "corporationTax": 400,
+          "otherCreditors": 100,
+          "creditorsAfterOneYear": 600,
+          "calledUpShareCapital": 100,
+          "profitAndLossAccount": 1500,
+          "capitalAndReserves": 1600
         }
       },
       "profitAndLoss": {
@@ -448,6 +503,35 @@
           "profitBeforeTax": 3000,
           "tax": 600,
           "profit": 2400
+        },
+        "priorYear": {
+          "turnover": 18000,
+          "costOfSales": 4500,
+          "grossProfit": 13500,
+          "administrativeExpenses": 10800,
+          "operatingProfit": 2700,
+          "interestReceivable": 0,
+          "profitBeforeTax": 2700,
+          "tax": 540,
+          "profit": 2160
+        }
+      },
+      "fixedAssetNote": {
+        "plantMachinery": {
+          "costAtStart": 1500,
+          "additions": 400,
+          "disposals": 100,
+          "depreciationAtStart": 1000,
+          "depreciationCharge": 150,
+          "depreciationOnDisposals": 80
+        },
+        "computerEquipment": {
+          "costAtStart": 800,
+          "additions": 200,
+          "disposals": 0,
+          "depreciationAtStart": 500,
+          "depreciationCharge": 230,
+          "depreciationOnDisposals": 0
         }
       }
     },
