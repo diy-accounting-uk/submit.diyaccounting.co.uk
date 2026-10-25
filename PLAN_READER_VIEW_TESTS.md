@@ -44,6 +44,11 @@ Only visible text nodes count (computed display, visibility, opacity, box size).
 | changeRegisteredEmail, changeRegisteredOffice | current address, filled form, statements, eligibility accepted and rejected, filing accepted, validation error | on |
 | companiesHouse/fileConfirmationStatement | company looked up, register read, review form, blocked personal codes, preview, fee paid, submitted, accepted, rejected | on |
 | companiesHouse/fileMicroEntityAccounts | company looked up, filled form, preview, submitted, accepted, rejected, customer copy | on |
+| auth, bundles, tokenRefresh | home, bundles page, bundle added and removed, receipts page | on |
+| compliance, help | home, privacy, terms, about, accessibility, help, FAQ, user guide, contact modal | on |
+| passRedemption, generatePassActivity | pass created, code entered, validation, bundle granted, reuse and invalid rejected, generated and verified passes, physical pass pages | on |
+| payment, tokenEnforcement | day guest granted, tokens exhausted, activities disabled, bundles after exhaustion, resident granted, subscription management, usage pages | on |
+| diyaGlSubscription | the diya-gl page after checkout | on |
 
 Next: the accounts preview steps, then each step of each journey.
 
@@ -71,3 +76,5 @@ Next: the accounts preview steps, then each step of each journey.
 | companiesHouse/fileMicroEntityAccounts | filing rejected | the rejection line sits flush under the "Companies House rejected the accounts" box with no gap | no spacing between the result box and `#rejections` | open | |
 | companiesHouse/fileMicroEntityAccounts | filing accepted | "See your copy of this filing" link sits tight under the result box | no spacing under the result box | open | |
 | changeRegisteredEmail, changeRegisteredOffice, companiesHouse, companyTaxReturn, fileMicroEntityAccounts | result, review and error steps | nothing: the check passes on every step turned on | none | steps turned on | RV2 |
+| auth, bundles, compliance, generatePassActivity, help, passRedemption, payment, practiceLicence, tokenEnforcement, tokenRefresh | home, bundles, usage, pass and legal pages | nothing: the check passes on every step turned on | none | steps turned on | RV5 |
+| diyaGlStorage, mcpHosted | sign-in pages | nothing: the pages are the sign-in and home steps already on; the rest of each suite calls the API | none | the shared sign-in steps | RV5 |

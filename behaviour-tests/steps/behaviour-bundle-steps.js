@@ -33,7 +33,7 @@ export async function goToBundlesPage(page, screenshotPath = defaultScreenshotPa
     ]);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-goto-bundles-page-nav.png` });
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-goto-bundles-page.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-goto-bundles-page.png`, readerView: true });
   });
 }
 
@@ -129,6 +129,7 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     console.log(`[clear-bundles]: Remaining 'Added ✓' buttons after clear: ${remainingAdded}`);
     await takeScreenshot(page, {
       path: `${screenshotPath}/${timestamp()}-07-removed-all-bundles.png`,
+      readerView: true,
     });
   });
 }
@@ -260,12 +261,12 @@ export async function removeBundle(page, bundleName = "Test", screenshotPath = d
       await page.waitForLoadState("networkidle");
     }
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-remove-bundle-done.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-remove-bundle-done.png`, readerView: true });
 
     // Verify the bundle is removed: "Added ✓ <bundle>" should no longer be visible
     await expect(page.getByRole("button", { name: `Added ✓ ${bundleName}` })).not.toBeVisible({ timeout: 16000 });
     console.log(`${bundleName} bundle removed successfully`);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-remove-bundle-confirmed.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-remove-bundle-confirmed.png`, readerView: true });
   });
 }
 
@@ -326,7 +327,7 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
       throw new Error(`Failed to create pass for ${bundleId}: ${JSON.stringify(createResult)}`);
     }
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-02-created.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-02-created.png`, readerView: true });
 
     // Step 2: Redeem the pass (authenticated)
     const redeemResult = await page.evaluate(async (code) => {
@@ -348,7 +349,7 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
     }, createResult.code);
 
     console.log(`Pass redemption result: ${JSON.stringify(redeemResult)}`);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-03-redeemed.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-03-redeemed.png`, readerView: true });
 
     // Clear bundle cache so fetchUserBundles hits the API fresh after reload
     await page.evaluate(async () => {
@@ -362,7 +363,7 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
     // Reload page to reflect bundle changes
     await page.reload();
     await page.waitForLoadState("networkidle");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-04-reloaded.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-04-reloaded.png`, readerView: true });
 
     return redeemResult;
   });
@@ -685,7 +686,7 @@ export async function ensureBundleViaCheckout(
     });
 
     await page.waitForLoadState("networkidle");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-07-bundle-granted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-07-bundle-granted.png`, readerView: true });
 
     return { checkoutCompleted: true, checkoutUrl, isStripeCheckout, isSimulatorCheckout };
   });
@@ -713,7 +714,7 @@ export async function verifySubscriptionManagement(page, bundleName, screenshotP
   console.log(`"Manage Subscription" button visible for ${bundleName}`);
 
   if (screenshotPath) {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-manage-subscription-visible.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-manage-subscription-visible.png`, readerView: true });
   }
 
   // Verify clicking it calls the billing portal API and gets a portal URL
@@ -769,7 +770,7 @@ export async function goToUsagePage(page, screenshotPath = defaultScreenshotPath
     await page.goto(`${currentOrigin}/usage.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(2000);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-usage-page-loaded.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-usage-page-loaded.png`, readerView: true });
     console.log("Usage page loaded.");
   });
 }
@@ -862,7 +863,7 @@ export async function verifyTokenSources(page, expectedBundles, screenshotPath =
       }
     }
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-usage-token-sources-verified.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-usage-token-sources-verified.png`, readerView: true });
     console.log("Token Sources table verification complete.");
   });
 }
@@ -925,7 +926,7 @@ export async function verifyTokenConsumption(page, expectedActivities, screensho
       }
     }
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-usage-token-consumption-verified.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-usage-token-consumption-verified.png`, readerView: true });
     console.log("Token Consumption table verification complete.");
   });
 }
@@ -934,7 +935,7 @@ export async function verifyAlreadyGranted(page, bundleId, screenshotPath = defa
   return await test.step(`Verify ${bundleId} returns already_granted on re-request`, async () => {
     const result = await requestBundleViaApi(page, bundleId);
     console.log(`[already-granted]: ${bundleId} - status: ${result.status}, statusCode: ${result.statusCode}`);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-already-granted-${bundleId}.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-already-granted-${bundleId}.png`, readerView: true });
     return result;
   });
 }
@@ -1005,7 +1006,7 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
       console.log(`[polling to ensure request completed]: ${bundleName} bundle already present.`);
     }
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-request-bundle.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-request-bundle.png`, readerView: true });
     await expect(page.getByRole("button", { name: `Added ✓ ${bundleName}` })).toBeVisible({ timeout: 32000 });
   });
 }
@@ -1178,7 +1179,7 @@ export async function cancelSubscriptionViaPortal(page, returnUrl, screenshotPat
     }
 
     console.log("Back on bundles.html after Stripe portal cancellation");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-portal-06-returned.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-portal-06-returned.png`, readerView: true });
     return { canceled: cancellationConfirmed };
   });
 }

@@ -24,6 +24,8 @@ import {
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
+  takeScreenshot,
+  timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { fillAndSubmitStripeTestCard } from "./steps/behaviour-bundle-steps.js";
 import {
@@ -171,6 +173,7 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
 
   expect(page.url()).not.toContain("bundles.html");
   expect(page.url().startsWith(diyaGlPageUrl)).toBe(true);
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-diya-gl-page-after-checkout.png`, readerView: true });
 
   /* ******************************************************************* */
   /*  PUT AND READ A BOOK WITH THE SAME TOKEN — RETRIES WHILE THE STRIPE  */

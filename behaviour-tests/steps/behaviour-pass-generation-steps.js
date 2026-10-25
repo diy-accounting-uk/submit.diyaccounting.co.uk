@@ -16,7 +16,7 @@ export async function goToGenerateDigitalPassPage(page, testUrl, screenshotPath)
     const url = new URL("/passes/generate-digital.html", base);
     console.log(`[generate-pass]: Navigating to ${url}`);
     await page.goto(url.toString(), { waitUntil: "domcontentloaded" });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-generate-digital-01-page-loaded.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-generate-digital-01-page-loaded.png`, readerView: true });
   });
 }
 
@@ -29,7 +29,7 @@ export async function goToGeneratePhysicalPassPage(page, testUrl, screenshotPath
     const url = new URL("/passes/generate-physical.html", base);
     console.log(`[generate-pass]: Navigating to ${url}`);
     await page.goto(url.toString(), { waitUntil: "domcontentloaded" });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-generate-physical-01-page-loaded.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-generate-physical-01-page-loaded.png`, readerView: true });
   });
 }
 
@@ -49,7 +49,7 @@ export async function generatePass(page, screenshotPath) {
 
     const passCode = await passCodeEl.textContent();
     console.log(`[generate-pass]: Generated pass code: ${passCode}`);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-generate-pass-02-result.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-generate-pass-02-result.png`, readerView: true });
 
     return passCode?.trim() || "";
   });
@@ -76,7 +76,7 @@ export async function verifyPassGenerated(page, screenshotPath) {
     const qrVisible = await qrCodeSvg.isVisible({ timeout: 5000 }).catch(() => false);
     console.log(`[generate-pass]: QR code SVG visible: ${qrVisible}`);
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-generate-pass-03-verified.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-generate-pass-03-verified.png`, readerView: true });
   });
 }
 
@@ -95,7 +95,7 @@ export async function verifyMyGeneratedPasses(page, expectedPassCode, screenshot
     const passEntry = page.locator(`[data-pass-code="${expectedPassCode}"]`);
     const visible = await passEntry.isVisible({ timeout: 10000 }).catch(() => false);
     console.log(`[generate-pass]: Pass ${expectedPassCode} visible in My Generated Passes: ${visible}`);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-my-passes-02-verified.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-my-passes-02-verified.png`, readerView: true });
   });
 }
 
@@ -147,7 +147,7 @@ export async function verifyPhysicalDesignDownloads(page, screenshotPath) {
     console.log(`[generate-pass]: Front SVG download visible: ${frontVisible}`);
     console.log(`[generate-pass]: Back SVG download visible: ${backVisible}`);
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-physical-downloads.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-physical-downloads.png`, readerView: true });
   });
 }
 
@@ -163,6 +163,6 @@ export async function verifyFulfillmentLink(page, screenshotPath) {
       const href = await fulfillmentLink.getAttribute("href");
       console.log(`[generate-pass]: Fulfillment link href: ${href}`);
     }
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-physical-fulfillment.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-physical-fulfillment.png`, readerView: true });
   });
 }

@@ -19,7 +19,7 @@ export async function goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPat
 
     // Home page has a welcome message and clickable login link
     console.log("Checking home page...");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-home-page.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-home-page.png`, readerView: true });
     await expect(page.getByText("Log in")).toBeVisible({ timeout: 15000 });
   });
 }
@@ -50,7 +50,7 @@ export async function goToHomePageUsingMainNav(page, screenshotPath = defaultScr
       page.waitForURL(/index\.html$|\/$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
       loggedClick(page, "nav.main-nav a:has-text('Activities')", "Clicking Activities in main navigation", { screenshotPath }),
     ]);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-goto-home.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-goto-home.png`, readerView: true });
   });
 }
 
@@ -63,7 +63,7 @@ export async function goToAboutPage(page, screenshotPath = defaultScreenshotPath
       page.waitForURL(/about\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
       loggedClick(page, "a.info-link", "Clicking info icon to go to About", { screenshotPath }),
     ]);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-about-page.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-about-page.png`, readerView: true });
   });
 }
 
@@ -76,7 +76,7 @@ export async function goToHelpPageFromAbout(page, screenshotPath = defaultScreen
       page.waitForURL(/help\/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
       loggedClick(page, "a.about-nav-link:has-text('Help')", "Clicking Help link on About page", { screenshotPath }),
     ]);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-help-page.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-help-page.png`, readerView: true });
   });
 }
 
@@ -89,7 +89,7 @@ export async function goToUserGuideFromAbout(page, screenshotPath = defaultScree
       page.waitForURL(/guide\/index\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
       loggedClick(page, "a.about-nav-link:has-text('User Guide')", "Clicking User Guide link on About page", { screenshotPath }),
     ]);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-guide-page.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-guide-page.png`, readerView: true });
   });
 }
 
@@ -130,7 +130,7 @@ export async function consentToDataCollection(page, screenshotPath = defaultScre
       console.log("CloudWatch RUM analytics consent dialog is visible, accepting...");
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-consent-dialog.png` });
       await loggedClick(page, consentSelector, "Accept CloudWatch RUM consent", { screenshotPath });
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-consent-accepted.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-consent-accepted.png`, readerView: true });
     } else {
       console.log("CloudWatch RUM analytics consent dialog not shown, continuing...");
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-no-consent-dialog.png` });

@@ -15,6 +15,7 @@ import {
   runLocalHttpServer,
   runLocalOAuth2Server,
   timestamp,
+  takeScreenshot,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
 import {
@@ -157,7 +158,7 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   await page.waitForTimeout(2_000);
 
   // --- Step 1: Verify clean state ---
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-01-clean-state.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-01-clean-state.png`, readerView: true });
   // Day pass bundle — verify it appears in the catalogue
   const requestDayGuestBtn = page.locator('button[data-bundle-id="day-guest"]');
   const requestDayGuestVisible = await requestDayGuestBtn
@@ -196,7 +197,7 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   expect(createResult.code).toBeTruthy();
   // Verify testPass was auto-derived from the pass type definition (test=true in submit.passes.toml)
   expect(createResult.body?.testPass).toBe(true);
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-02-pass-created.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-02-pass-created.png`, readerView: true });
 
   const passCode = createResult.code;
   console.log(`[pass-test]: Created pass with code: ${passCode}`);
@@ -218,7 +219,7 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   const passInput = page.locator("#passInput");
   await expect(passInput).toBeVisible({ timeout: 5000 });
   await passInput.fill(passCode);
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-03-code-entered.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-03-code-entered.png`, readerView: true });
 
   const redeemBtn = page.locator("#redeemPassBtn");
   await expect(redeemBtn).toBeVisible({ timeout: 5000 });
@@ -228,7 +229,7 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   // --- Step 5: Wait for validation/auto-redeem and verify Test bundle is granted ---
   const passStatus = page.locator("#passStatus");
   await expect(passStatus).toBeVisible({ timeout: 15000 });
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04-validation-status.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-04-validation-status.png`, readerView: true });
 
   const statusText = await passStatus.textContent();
   console.log(`[pass-test]: Pass status message: ${statusText}`);
@@ -238,19 +239,19 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   const enabledDayGuestBtn = page.locator('button.service-btn:has-text("Request Day pass"):not([disabled])');
   await expect(enabledDayGuestBtn).toBeVisible({ timeout: 10000 });
   console.log("[pass-test]: Day pass bundle button is now enabled after pass validation");
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-04b-bundle-enabled.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-04b-bundle-enabled.png`, readerView: true });
 
   await enabledDayGuestBtn.click();
   console.log("[pass-test]: Clicked enabled Day pass bundle button to redeem pass");
 
   await page.waitForTimeout(3000);
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-05-after-redemption.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-05-after-redemption.png`, readerView: true });
 
   // --- Step 6: Verify the Day pass bundle is now granted ---
   const removeDayGuestBtn = page.locator('button[data-remove-bundle-id="day-guest"]');
   await expect(removeDayGuestBtn).toBeVisible({ timeout: 15000 });
   console.log("[pass-test]: Day pass bundle shows in Current Bundles with Remove button");
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06-bundle-granted.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-06-bundle-granted.png`, readerView: true });
 
   // --- Step 7: Verify via API that the bundle is allocated ---
   const apiResponse = await verifyBundleApiResponse(page, screenshotPath);
@@ -291,7 +292,7 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
     .catch(() => false);
   console.log(`[pass-test]: Dev datetime float visible: ${devDatetimeVisible}`);
   expect(devDatetimeVisible).toBe(true);
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-06c-developer-mode-enabled.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-06c-developer-mode-enabled.png`, readerView: true });
 
   // Navigate back to bundles page for the remaining pass tests
   await page.goto(`${currentOrigin}/bundles.html`, { waitUntil: "domcontentloaded", timeout: 30000 });
@@ -307,7 +308,7 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   console.log(`[pass-test]: Re-use status message: ${reusedStatusText}`);
   // Pass should be exhausted after single use
   expect(reusedStatusText).toMatch(/exhausted|already|used/i);
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-07-reuse-rejected.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-07-reuse-rejected.png`, readerView: true });
 
   // --- Step 9: Try an invalid pass code ---
   await passInput.fill("invalid-fake-pass-code");
@@ -317,7 +318,7 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   const invalidStatusText = await passStatus.textContent();
   console.log(`[pass-test]: Invalid pass status message: ${invalidStatusText}`);
   expect(invalidStatusText).toMatch(/not found|invalid/i);
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-08-invalid-rejected.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-08-invalid-rejected.png`, readerView: true });
 
   /* ****************** */
   /*  Extract user sub  */
@@ -468,7 +469,7 @@ test("Click through: Resident-pro subscribes directly, no pass required (on-subs
   await page.waitForTimeout(2_000);
 
   // --- Step 1: resident-pro shows a Subscribe button directly, no pass needed ---
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pro-sub-01-clean-state.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pro-sub-01-clean-state.png`, readerView: true });
   const passRequiredBtn = page.locator('button[data-disabled-reason="on-pass"][data-bundle-id="resident-pro"]');
   const passRequiredVisible = await passRequiredBtn
     .first()
@@ -490,7 +491,7 @@ test("Click through: Resident-pro subscribes directly, no pass required (on-subs
   const monthlyLinkText = await monthlyLink.first().textContent();
   console.log(`[pro-sub-test]: Monthly subscribe link text: ${monthlyLinkText}`);
   expect(monthlyLinkText).toContain("19.99");
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pro-sub-02-subscribe-buttons.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pro-sub-02-subscribe-buttons.png`, readerView: true });
 
   // Verify NO "Request Resident Pro" button (subscription flow, not direct grant)
   const requestBtn = page.locator('button.service-btn:has-text("Request Resident Pro")');

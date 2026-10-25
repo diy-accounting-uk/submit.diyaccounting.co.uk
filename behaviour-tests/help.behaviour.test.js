@@ -15,6 +15,7 @@ import {
   loggedClick,
   loggedFill,
   loggedGoto,
+  takeScreenshot,
   timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { ensureDirSync } from "fs-extra";
@@ -118,7 +119,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     const homeUrl = `${baseUrl}/index.html`;
     console.log(` Navigating to home page: ${homeUrl}`);
     await page.goto(homeUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-home-page.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-home-page.png`, readerView: true });
 
     // Verify home page loaded
     const homeTitle = await page.title();
@@ -145,7 +146,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
       infoIcon.click(),
     ]);
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-02-about-page.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-about-page.png`, readerView: true });
 
     // Verify About page loaded
     const aboutTitle = await page.title();
@@ -175,7 +176,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     await expect(aboutHeading).toBeVisible();
     console.log(" About page heading is visible");
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-about-nav-links.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-about-nav-links.png`, readerView: true });
 
     // ============================================================
     // STEP 4: Navigate to Help Page from About
@@ -190,7 +191,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
       helpLink.click(),
     ]);
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-help-page.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-help-page.png`, readerView: true });
 
     // Verify Help page loaded
     const helpTitle = await page.title();
@@ -218,7 +219,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     expect(faqCount).toBeGreaterThan(0);
     console.log(" FAQs loaded successfully");
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-05-faqs-loaded.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-faqs-loaded.png`, readerView: true });
 
     // Test FAQ accordion expand/collapse
     const firstFaqQuestion = page.locator(".faq-question").first();
@@ -227,7 +228,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
 
     await firstFaqQuestion.click();
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-06-faq-expanded.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-faq-expanded.png`, readerView: true });
 
     // Verify the answer is now visible
     const firstFaqAnswer = page.locator(".faq-answer").first();
@@ -243,7 +244,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     console.log(" Clicking first FAQ to collapse...");
     await firstFaqQuestion.click();
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-07-faq-collapsed.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-faq-collapsed.png`, readerView: true });
 
     // ============================================================
     // STEP 6: Test FAQ search functionality
@@ -259,7 +260,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     console.log(" Searching for 'VAT'...");
     await searchInput.fill("VAT");
     await page.waitForTimeout(300); // Wait for debounce
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-08-search-vat.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-search-vat.png`, readerView: true });
 
     // Check that results are filtered
     const searchHint = page.locator("#search-hint");
@@ -289,7 +290,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
       helpInfoIcon.click(),
     ]);
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-09-back-to-about.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-back-to-about.png`, readerView: true });
 
     // Verify we're back on About page
     const aboutTitleAgain = await page.title();
@@ -312,7 +313,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
       guideLinkAgain.click(),
     ]);
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-10-user-guide-page.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-user-guide-page.png`, readerView: true });
 
     // Verify User Guide page loaded
     const guideTitle = await page.title();
@@ -354,12 +355,12 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     await expect(obligationsSection).toBeVisible({ timeout: 5000 });
     console.log(" Obligations journey is visible");
 
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-11-guide-sections.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-11-guide-sections.png`, readerView: true });
 
     // Scroll to submit section
     await submitSection.scrollIntoViewIfNeeded();
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-12-submit-section.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-12-submit-section.png`, readerView: true });
     console.log(" Submit section is visible after scroll");
 
     // ============================================================
@@ -379,7 +380,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
       guideInfoIcon.click(),
     ]);
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-13-guide-to-about.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-13-guide-to-about.png`, readerView: true });
 
     // Now navigate to Help from About
     const helpLinkFromAbout = page.locator("a.about-nav-link:has-text('Help')");
@@ -391,7 +392,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
       helpLinkFromAbout.click(),
     ]);
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-14-help-from-about.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-14-help-from-about.png`, readerView: true });
 
     // Verify we're on Help page
     const helpTitleAgain = await page.title();
@@ -421,7 +422,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     await expect(openSupportBtn).toBeVisible();
     await openSupportBtn.click();
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-15-modal-opened.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-15-modal-opened.png`, readerView: true });
 
     // Verify modal is now visible
     await expect(supportModal).toBeVisible({ timeout: 5000 });
@@ -446,13 +447,13 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     await subjectInput.fill("Test support request");
     await descriptionTextarea.fill("This is a test description for the support form behavior test.");
     await categorySelect.selectOption("other");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-16-form-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-16-form-filled.png`, readerView: true });
 
     // Test cancel button
     console.log(" Clicking cancel to close modal...");
     await cancelBtn.click();
     await page.waitForTimeout(300);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-17-modal-closed.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-17-modal-closed.png`, readerView: true });
 
     // Verify modal is hidden again
     await expect(supportModal).toBeHidden({ timeout: 5000 });
@@ -474,7 +475,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
       activitiesLink.click(),
     ]);
     await page.waitForTimeout(500);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-18-back-home.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-18-back-home.png`, readerView: true });
 
     // Verify we're back on home page
     const finalTitle = await page.title();

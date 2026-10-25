@@ -23,6 +23,7 @@ import {
   runLocalHttpServer,
   runLocalOAuth2Server,
   timestamp,
+  takeScreenshot,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
 import {
@@ -169,7 +170,7 @@ test("Click through: Generate digital pass and verify in My Generated Passes", a
   // --- Step 1: Check initial token balance ---
   const initialTokens = await getTokenBalance(page);
   console.log(`[generate-pass-test]: Initial token balance: ${initialTokens} (expected: 100 for resident-vat)`);
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-digital-01-initial-tokens.png` });
+  await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-digital-01-initial-tokens.png`, readerView: true });
 
   /* ************************ */
   /*  GENERATE DIGITAL PASS   */

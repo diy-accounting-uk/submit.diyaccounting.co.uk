@@ -82,7 +82,7 @@ export async function logOutAndExpectToBeLoggedOut(page, screenshotPath = defaul
       page.waitForURL(/index\.html$|\/$/, { waitUntil: "domcontentloaded", timeout: 5000 }).catch(() => {}),
       loggedClick(page, "a:has-text('Logout')", "Logout", { screenshotPath }),
     ]);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-home.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-home.png`, readerView: true });
     //await expect(page.getByText("Not logged in")).toBeVisible({ timeout: 5000 });
     const notLoggedInVisible = await page.getByText("Not logged in").isVisible();
     if (!notLoggedInVisible) {
@@ -200,7 +200,7 @@ export async function submitMockAuth(page, screenshotPath = defaultScreenshotPat
     await loggedClick(page, 'input[type="submit"][value="Sign-in"]', "Submitting sign-in form", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-mock-signed-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-mock-signed-in.png`, readerView: true });
   });
 }
 
