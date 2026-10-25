@@ -94,6 +94,8 @@ env:
 
 jobs:
 
+  # The `build` output is false when the push touched only Markdown, `videos/` or
+  # `web/public/videos/`, which the Maven, CDK, MCP and workflow-lint jobs do not read.
   # Decides whether the push touched anything but Markdown, so the heavy jobs below can skip on
   # a docs-only push while still posting a status check for it. A job GitHub skips via its own
   # `if:` reports 'skipped', and main's ruleset counts a skipped required check as passing — the
@@ -106,6 +108,7 @@ jobs:
     runs-on: ubuntu-24.04
     outputs:
       code: ${{ steps.check.outputs.code }}
+      build: ${{ steps.check.outputs.build }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -118,6 +121,7 @@ jobs:
           case "${{ github.event_name }}" in
             workflow_dispatch|workflow_call|schedule)
               echo "code=true" >> "$GITHUB_OUTPUT"
+              echo "build=true" >> "$GITHUB_OUTPUT"
               exit 0
               ;;
           esac
@@ -145,6 +149,13 @@ jobs:
             echo "code=false" >> "$GITHUB_OUTPUT"
           fi
 
+          non_media=$(printf '%s\n' "$changed" | grep -v -E '\.md$|^videos/|^web/public/videos/' || true)
+          if [ -z "$changed" ] || [ -n "$non_media" ]; then
+            echo "build=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "build=false" >> "$GITHUB_OUTPUT"
+          fi
+
   playwright-version:
     runs-on: ubuntu-latest
     outputs:
@@ -155,7 +166,7 @@ jobs:
         run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" >> "$GITHUB_OUTPUT"
 
   lint-workflows:
-    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'lint-workflows') }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'lint-workflows') }}
     name: 'validate workflow syntax'
     runs-on: ubuntu-24.04
     needs:
@@ -735,7 +746,7 @@ jobs:
           retention-days: 14
 
   npm-mcp-test:
-    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-mcp-test') }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-mcp-test') }}
     name: 'npm mcp test'
     runs-on: ubuntu-latest
     needs:
@@ -856,7 +867,7 @@ jobs:
       - run: npm run test:browser
 
   mvn-test:
-    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'mvn-test') }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'mvn-test') }}
     name: 'maven test'
     runs-on: ubuntu-latest
     needs:
@@ -881,7 +892,7 @@ jobs:
           ./mvnw clean test
 
   npm-test-cdk-ci:
-    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-test-cdk-ci') }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-test-cdk-ci') }}
     name: 'npm test cdk-ci'
     needs:
       - select-jobs
@@ -970,7 +981,7 @@ jobs:
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
 
   npm-test-cdk-prod:
-    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-test-cdk-prod') }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-test-cdk-prod') }}
     name: 'npm test cdk prod'
     needs:
       - select-jobs

@@ -158,12 +158,30 @@ Meets the bar: deploy.yml: deploy-account, deploy-api, deploy-auth, deploy-billi
 
 Short of 50 advised skips: deploy.yml: deploy-mcp (31), deploy-publish (29). test.yml: behaviour-test-simulator-company-tax-return (39).
 
+### Rules from the evidence
+
+Source: the `reason` of every advised skip in the last 149 `test.yml` and 118 `deploy.yml`
+decision artifacts, for the classes at the bar.
+
+| Pattern | Where | Classes | Skips for it |
+| --- | --- | --- | --- |
+| Markdown only | `changes` job `code` output (existing) | `npm test`, `maven test`, `eslint` and the rest | 2 to 4 per class |
+| `.md`, `videos/` or `web/public/videos/` only | `changes` job `build` output (added) | `mvn-test`, `npm-test-cdk-ci`, `npm-test-cdk-prod`, `npm-mcp-test`, `lint-workflows` | 7 to 14 per class, including documentation-only |
+
+`npm-test-web-unit` and `npm-system-test` stay on the model: `web/unit-tests/videos-manifest.test.js`
+and `app/unit-tests/video/*` read `videos/*.json` and the video manifest.
+
+Repeated reasons with no mechanical form: "behaviour tests only" for a change under
+`behaviour-tests/` (the unit-level classes cannot be tied to a path list without reading each
+suite's imports), and `runProxyBehaviourTests=false` for `behaviour-test-proxy-submit-vat`
+(already an input of the job). No `.claude/` pattern is separable in the reasons.
+
 ### JF-2. Rules from evidence (was B82d, BACKLOG 82d)
 
-When JF-1's records show the model skipping the same job for the same kind of change, propose
-that as a mechanical `paths:` or `changes` rule in a PR (as electron/forge #4387 did), so the
-deterministic filter grows from the model's evidence and the run-time call is left to the cases a
-rule cannot express. After JF-1. Model: Sonnet. Size: ~1 file.
+Open: the 9 of 118 `deploy.yml` runs whose change was video assets only (the model skipped 40 or
+more stack and web-test jobs each). `web/public/videos/**` is published by `PublishStack`, so a
+rule needs a publish-only path; `paths:` and `skip deploy check` have no such path today.
+Model: Sonnet. Size: ~1 file.
 
 ### JF-3. Gradual rollout (was B82c, BACKLOG 82c)
 
