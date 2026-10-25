@@ -35,7 +35,7 @@ export async function enterCompanyNumberAndLookUp(page, companyNumber, screensho
     await loggedClick(page, "#companyLookupBtn", "Looking up the company", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await expect(page.locator("#formView")).toBeVisible({ timeout: 15000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-looked-up.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-looked-up.png`, readerView: true });
   });
 }
 
@@ -43,7 +43,7 @@ export async function verifyCompanyLookedUp(page, expectedName, expectedNumber, 
   await test.step(`The user sees ${expectedName} (${expectedNumber}) as the company being filed for`, async () => {
     await expect(page.locator("#formCompanyName")).toContainText(expectedName);
     await expect(page.locator("#formCompanyNumber")).toContainText(expectedNumber);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-confirmed.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-confirmed.png`, readerView: true });
   });
 }
 
@@ -70,7 +70,7 @@ export async function fillInAccountsForm(page, accounts, screenshotPath = defaul
     await page.check("#statementMembersNotRequiredAudit");
     await page.check("#statementDirectorsResponsibilities");
     await page.check("#statementMicroEntityProvisions");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accounts-form-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accounts-form-filled.png`, readerView: true });
   });
 }
 
@@ -86,7 +86,7 @@ export async function previewAccounts(page, screenshotPath = defaultScreenshotPa
     const renderedText = await rendered.locator("body").innerText();
     expect(renderedText).toContain("Shareholders' funds");
     expect(renderedText).not.toMatch(/xbrli|iso4217|\b(core|bus|direp):|\d{4}-\d{2}-\d{2}/);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-preview.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-preview.png`, readerView: true });
   });
 }
 
@@ -105,14 +105,14 @@ export async function enterCompanyAuthCodeAndSubmit(page, companyAuthCode, scree
     await loggedFill(page, "#companyAuthCode", companyAuthCode, "Company authentication code", { screenshotPath });
     await loggedClick(page, "#submitFilingBtn", "Submitting the accounts filing", { screenshotPath });
     await expect(page.locator("#resultView")).toBeVisible({ timeout: 15000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submitted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submitted.png`, readerView: true });
   });
 }
 
 export async function verifyFilingAccepted(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees the filing accepted", async () => {
     await expect(page.locator("#filingResult")).toContainText("ACCEPT", { timeout: 30000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accepted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accepted.png`, readerView: true });
   });
 }
 
@@ -132,7 +132,7 @@ export async function verifyFilingRejected(page, expectedRejectCode, screenshotP
   await test.step(`The user sees the filing rejected with reject code ${expectedRejectCode}`, async () => {
     await expect(page.locator("#filingResult")).toContainText("REJECT", { timeout: 30000 });
     await expect(page.locator("#rejections")).toContainText(expectedRejectCode);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-rejected.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-rejected.png`, readerView: true });
   });
 }
 
@@ -199,7 +199,7 @@ export async function fillInSmallCompanyAccountsForm(page, accounts, { filleted 
     await page.check("#statementMembersNotRequiredAudit");
     await page.check("#statementDirectorsResponsibilities");
     await page.check("#statementSmallCompaniesRegime");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accounts-form-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accounts-form-filled.png`, readerView: true });
   });
 }
 
@@ -215,7 +215,7 @@ export async function verifyPreviewContains(
     const renderedText = await page.frameLocator("#previewRendered").locator("body").innerText();
     for (const text of rendered) expect(renderedText).toContain(text);
     for (const text of notRendered) expect(renderedText).not.toContain(text);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-preview-checked.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-preview-checked.png`, readerView: true });
   });
 }
 
@@ -272,7 +272,7 @@ export async function fillAccountsFormFromBook(page, bookZipFile, expectedStatus
     for (const [id, value] of Object.entries(expectedFields)) {
       await expect(page.locator(`#${id}`)).toHaveValue(value);
     }
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accounts-form-filled-from-book.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accounts-form-filled-from-book.png`, readerView: true });
   });
 }
 
@@ -287,7 +287,7 @@ export async function completeMicroEntityAnswersTheBookLeaves(page, dateApproved
     await page.check("#statementMembersNotRequiredAudit");
     await page.check("#statementDirectorsResponsibilities");
     await page.check("#statementMicroEntityProvisions");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accounts-form-completed.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accounts-form-completed.png`, readerView: true });
   });
 }
 
@@ -304,6 +304,6 @@ export async function completeSmallCompanyAnswersTheBookLeaves(page, answers, sc
     await page.check("#statementMembersNotRequiredAudit");
     await page.check("#statementDirectorsResponsibilities");
     await page.check("#statementSmallCompaniesRegime");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accounts-form-completed.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accounts-form-completed.png`, readerView: true });
   });
 }
