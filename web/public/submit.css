@@ -2916,6 +2916,11 @@ input.hmrc-assist-highlight {
   margin-bottom: 0;
 }
 
+.outcome + .outcome,
+.outcome ~ p:has(> #filingCopyLink) {
+  margin-top: var(--space-4);
+}
+
 .outcome--ok {
   border-left-color: var(--c-ok);
   background: var(--c-ok-tint);
