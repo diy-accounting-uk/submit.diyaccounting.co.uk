@@ -150,7 +150,7 @@ export async function enterGatewayCredentialsAndSubmit(page, { userId, password 
     await loggedFill(page, "#gatewayPassword", password, "Government Gateway password", { screenshotPath });
     await loggedClick(page, "#submitReturnBtn", "Submitting the Company Tax Return", { screenshotPath });
     await expect(page.locator("#resultView")).toBeVisible({ timeout: 30000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-submitted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-submitted.png`, readerView: true });
   });
 }
 
@@ -158,7 +158,7 @@ export async function verifyReturnAccepted(page, screenshotPath = defaultScreens
   await test.step("The user sees the return accepted with its IRmark", async () => {
     await expect(page.locator("#returnResult")).toContainText("HMRC accepted", { timeout: 60000 });
     await expect(page.locator("#returnIrmark")).toContainText(/IRmark: [A-Z2-7]{32}/);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accepted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accepted.png`, readerView: true });
   });
 }
 
@@ -169,6 +169,6 @@ export async function verifyReturnRejectedAndRetryable(page, expectedErrorNumber
     await expect(page.locator("#tryAgainBtn")).toBeVisible();
     await loggedClick(page, "#tryAgainBtn", "Returning to the review to try again", { screenshotPath });
     await expect(page.locator("#submitReturnBtn")).toBeVisible();
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-rejected.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-rejected.png`, readerView: true });
   });
 }
