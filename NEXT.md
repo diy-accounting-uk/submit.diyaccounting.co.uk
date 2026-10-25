@@ -15,8 +15,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-ae433f4** (PR #542, deploy 40229402140, 2026-10-25: 11 app stacks created 20:14 UTC, `/submit/prod/last-known-good-deployment` set, prod-a347d89 destroyed by the same run; deploy green at 21:12 UTC, so prod has one set). The SSO session is live as of 21:15 UTC on 2026-10-25 (renewed after the 17:30 UTC expiry; it lasts 8 to 12 hours). The site's `script-src` carries no `'unsafe-inline'`.
-**ci**: ci-set1 (`/submit/ci/last-known-good-deployment`; created 2026-10-24 00:40 UTC by PR #530's deploy and updated by every branch deploy since, last by PR #543's deploy 40231817877 at about 21:00 UTC; it outlived the 2026-10-24 sweeps, why is unverified). No ci slot is held.
+**Prod runs deployment prod-5177fff** (PR #543, deploy 40235367600, 2026-10-25: 11 app stacks created 21:30 UTC, `/submit/prod/last-known-good-deployment` set, prod-ae433f4 destroyed by the same run; deploy green at 22:14 UTC, so prod has one set). The SSO session is live as of 22:20 UTC on 2026-10-25 (renewed after the 17:30 UTC expiry; it lasts 8 to 12 hours). The site's `script-src` carries no `'unsafe-inline'`.
+**ci**: ci-set1 (`/submit/ci/last-known-good-deployment`; created 2026-10-24 00:40 UTC by PR #530's deploy and updated by every branch deploy since, last by PR #544's deploy 40239588212, which holds its slot since 22:19 UTC; it outlived the 2026-10-24 sweeps, why is unverified).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
