@@ -64,7 +64,7 @@
           "action": "point",
           "target": {
             "role": "heading",
-            "name": "DIY Accounting Submit"
+            "name": "Activities"
           },
           "dwellMs": 300
         },

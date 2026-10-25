@@ -57,7 +57,7 @@
           "headline": "File VAT returns here",
           "keyWord": "File"
         },
-        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
+        { "action": "point", "target": { "role": "heading", "name": "Activities" }, "dwellMs": 300 },
         {
           "action": "scroll",
           "target": "#dynamicActivities",
