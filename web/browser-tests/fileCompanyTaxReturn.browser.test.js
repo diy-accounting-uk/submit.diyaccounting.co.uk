@@ -5,6 +5,7 @@
 
 import { test, expect } from "@playwright/test";
 import { serveSiteStyles } from "./hmrcFieldTableAssets.js";
+import { pageScrollsSideways, recordScreenshotPath } from "./submissionRecordAssets.js";
 import fs from "fs";
 import path from "path";
 import JSZip from "jszip";
@@ -35,7 +36,14 @@ const CONTENT_TYPES = {
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
 };
-const PREVIEW_BOXES = { 3: "8596148860", 440: 12345.67 };
+const PREVIEW_BOXES = { 3: "8596148860", 30: "2025-04-01", 35: "2026-03-31", 440: 12345.67, 475: 12345.67 };
+const ACCEPTED_RETURN = {
+  statusCode: "ACCEPT",
+  correlationId: "ABCDEF0123456789",
+  irmark: "RB3VJQ7ATMNZ7DXZRD3GVKMWDFPAYR5S",
+  irmarkReceipt: "RB3VJQ7ATMNZ7DXZRD3GVKMWDFPAYR5S",
+  receiptId: "2026-10-24T11:30:00.000Z-ABCDEF0123456789",
+};
 
 test.describe("File Company Tax Return page", () => {
   let pageHtml;
@@ -146,6 +154,10 @@ test.describe("File Company Tax Return entry form", () => {
       if (url.pathname === "/api/v1/hmrc/ct/return" && route.request().method() === "POST") {
         submission.requests.push(JSON.parse(route.request().postData()));
         await route.fulfill({ status: submission.status, contentType: "application/json", body: JSON.stringify(submission.body) });
+        return;
+      }
+      if (url.pathname.startsWith("/api/v1/hmrc/ct/return/") && route.request().method() === "GET" && submission.pollBody) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(submission.pollBody) });
         return;
       }
       if (url.pathname.startsWith("/api/")) {
@@ -280,6 +292,60 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#statusMessagesContainer")).toContainText(message);
     expect(new URL(page.url()).hash).toBe("#review");
   });
+
+  for (const [width, scheme] of [
+    [1280, "light"],
+    [390, "dark"],
+  ]) {
+    test(`an accepted return shows the CT600 as filed in a customer copy at ${width} px in ${scheme}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.emulateMedia({ colorScheme: scheme });
+      const submission = {
+        requests: [],
+        status: 200,
+        body: { correlationId: "ABCDEF0123456789", pollIntervalSeconds: 1 },
+        pollBody: ACCEPTED_RETURN,
+      };
+      await openForm(page, [], submission);
+      await dropBook(page);
+      await completeTheAnswersTheBookLeaves(page);
+      await page.locator("#previewBtn").click();
+      await expect(page.locator("#previewView")).toBeVisible();
+      await page.locator("#gatewayUserId").fill("gateway-user");
+      await page.locator("#gatewayPassword").fill("gateway-password");
+      await page.locator("#submitReturnBtn").click();
+
+      const copy = page.locator("#returnRecord .customer-copy");
+      await expect(copy).toBeVisible({ timeout: 15_000 });
+      await expect(copy.locator(".customer-copy-title")).toHaveText("Your copy of the Company Tax Return");
+      await expect(copy.locator(".customer-copy-status")).toHaveText("Accepted by HMRC");
+      await expect(copy.locator(".customer-copy-submission")).toContainText("RB3VJQ7ATMNZ7DXZRD3GVKMWDFPAYR5S");
+
+      const record = copy.locator(".submission-record").first();
+      await expect(record.locator(".entity")).toHaveText("Precision Code Ltd");
+      await expect(record.locator(".reference").first()).toHaveText("Unique Taxpayer Reference 8596148860");
+      await expect(record.locator("h2")).toHaveText("Company Tax Return (CT600)");
+      await expect(record.locator(".subtitle")).toHaveText("Return period 1 April 2025 to 31 March 2026");
+      await expect(record.locator("tr", { hasText: "Profit or loss per the accounts" })).toBeVisible();
+      await expect(record.locator("tr", { hasText: "Box 440: Corporation Tax chargeable" }).locator("td.figure")).toHaveText("12,345.67");
+      await expect(record.locator("tr", { hasText: "Box 475: Net Corporation Tax liability" })).toHaveClass("total");
+
+      const receipt = copy.locator(".submission-record").nth(1);
+      await expect(receipt.locator("tr", { hasText: "IRmark receipt" }).locator("td.text-value")).toHaveText(
+        "RB3VJQ7ATMNZ7DXZRD3GVKMWDFPAYR5S",
+      );
+      await expect(copy.locator(".customer-copy-links a").first()).toHaveAttribute(
+        "href",
+        "filings.html?receipt=2026-10-24T11%3A30%3A00.000Z-ABCDEF0123456789.json",
+      );
+
+      const text = await page.locator("#returnRecord").innerText();
+      expect(text).not.toContain("undefined");
+      expect(text).not.toContain("NaN");
+      expect(await pageScrollsSideways(page)).toBe(false);
+      await page.screenshot({ path: recordScreenshotPath(`ct600-result-${scheme}`, width), fullPage: true });
+    });
+  }
 
   test("each live check shows under its field when the customer leaves it, and again in the summary", async ({ page }) => {
     await openForm(page);

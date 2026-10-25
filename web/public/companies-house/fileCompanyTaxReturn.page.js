@@ -1012,7 +1012,27 @@ function outcomeTitle(text) {
   return create("h3", { class: "outcome__title" }, text);
 }
 
-function showOutcome(outcome) {
+async function renderReturnRecord(outcome) {
+  const { ctResultCopyHtml, todayText } = await import("../lib/filing-result-record.js");
+  const html = ctResultCopyHtml({
+    company,
+    utr: previewRequest.utr,
+    boxes: reviewedPreview.boxes,
+    computation: COMPUTATION_LINES.map(({ field, meaning, deduction, style }) => ({
+      label: meaning,
+      value: reviewedPreview.computationLines[field],
+      deduction,
+      style,
+    })),
+    outcome,
+    dateText: todayText(),
+  });
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  element("returnRecord").replaceChildren(...parsed.body.childNodes);
+}
+
+async function showOutcome(outcome) {
+  element("returnRecord").replaceChildren();
   element("returnErrors").style.display = "none";
   element("returnIrmark").style.display = "none";
   element("tryAgainBtn").style.display = "none";
@@ -1026,6 +1046,7 @@ function showOutcome(outcome) {
     );
     element("returnIrmark").style.display = "block";
     element("startAgainBtn").style.display = "inline-block";
+    await renderReturnRecord(outcome);
     return;
   }
   if (outcome.statusCode === "REJECT") {
@@ -1074,7 +1095,7 @@ async function handleSubmitReturn() {
     element("tryAgainBtn").style.display = "none";
     showView("resultView");
     const outcome = await pollUntilSettled(submission.correlationId, submission.pollIntervalSeconds, scenarioHeaders);
-    showOutcome(outcome);
+    await showOutcome(outcome);
   } catch (error) {
     console.error("Company Tax Return submission failed:", error);
     if (error.status === 409) showView("previewView");
@@ -1097,6 +1118,7 @@ function startAgain() {
   changing = null;
   element("previewBtn").textContent = PREVIEW_THE_RETURN;
   element("returnResult").replaceChildren();
+  element("returnRecord").replaceChildren();
   element("companyForm").reset();
   element("gatewayUserId").value = "";
   element("gatewayPassword").value = "";

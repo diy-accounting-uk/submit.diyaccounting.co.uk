@@ -13,7 +13,7 @@ import { CT600_BOX_ROWS, TEXT_BOXES } from "./ct600-fields.js";
 export const ACCOUNTS_KIND = "companies-house-accounts";
 export const CT_RETURN_KIND = "company-tax-return";
 
-const ABSENT = "—";
+export const ABSENT = "—";
 const RECEIPT_TIMESTAMP = /^(\d{4}-\d{2}-\d{2}T[\d:.]+Z)-/;
 
 /** The filing kinds this module draws a customer copy for. */
@@ -33,11 +33,11 @@ export function filingDateText(receiptName) {
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
-function page(html) {
+export function page(html) {
   return `<div class="page">\n${html}\n</div>`;
 }
 
-function textLine(label, value) {
+export function textLine(label, value) {
   const text = value === undefined || value === null || String(value).trim() === "" ? ABSENT : String(value).trim();
   return `<tr><td class="label">${escapeRecordText(label)}</td><td class="label text-value">${escapeRecordText(text)}</td></tr>`;
 }
@@ -147,7 +147,7 @@ function ct600Record(receipt, dateText) {
   return page(`${heading}<table class="statement">\n<tbody>\n${rows}\n</tbody>\n</table>`);
 }
 
-function ctReceiptRecord(receipt, dateText) {
+export function ctReceiptRecord(receipt, dateText) {
   const heading = recordHeading({
     nameHtml: "HMRC receipt for a Company Tax Return",
     referenceHtml: receipt.correlationId ? [`Correlation ID ${escapeRecordText(receipt.correlationId)}`] : [],

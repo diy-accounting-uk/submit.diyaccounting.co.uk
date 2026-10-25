@@ -24,6 +24,14 @@ export async function serveSubmissionRecordAssets(page) {
   await serveFile(page, "**/lib/hmrc-display-format.js", "lib/hmrc-display-format.js", "application/javascript");
 }
 
+// The helpers and stylesheet of the record a filing page shows after the authority answers.
+export async function serveFilingResultAssets(page) {
+  await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
+  for (const library of ["submission-record.js", "filing-record.js", "filing-result-record.js", "ct600-fields.js"]) {
+    await serveFile(page, `**/lib/${library}`, `lib/${library}`, "application/javascript");
+  }
+}
+
 export function recordScreenshotPath(name, width) {
   return path.join(process.cwd(), "target/browser-test-results/submission-records", `${name}-${width}.png`);
 }

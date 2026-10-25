@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../submit.css" />
+    <link rel="stylesheet" href="../submission-record.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -185,6 +186,7 @@
           <div id="returnIrmark" style="display: none"></div>
           <div id="returnErrors" style="display: none"></div>
         </div>
+        <div id="returnRecord"></div>
         <div class="button-group">
           <button type="button" id="tryAgainBtn" class="secondary-button" style="display: none">Check the return and try again</button>
           <button type="button" id="startAgainBtn" class="secondary-button" style="display: none">Start a new return</button>

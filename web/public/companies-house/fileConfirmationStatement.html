@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../submit.css" />
+    <link rel="stylesheet" href="../submission-record.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -272,6 +273,7 @@
         <h2>Filing result</h2>
         <div id="filingResult"></div>
         <div id="rejections" style="display: none"></div>
+        <div id="filingRecord"></div>
         <div id="pscFollowUp" style="display: none"></div>
         <div class="button-group">
           <button type="button" id="startAgainBtn" class="secondary-button" style="display: none">Start a new filing</button>
