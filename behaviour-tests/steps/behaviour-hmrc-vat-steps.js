@@ -870,10 +870,10 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
     // - Action button should reflect status (now at column index 4)
     for (const r of rows) {
       if (r.statusCode === "F") {
-        await expect(rowLocator.nth(rows.indexOf(r)).locator("td").nth(4).getByRole("button")).toHaveText(/View return/);
+        await expect(rowLocator.nth(rows.indexOf(r)).locator("td").nth(4).getByRole("button").first()).toHaveText(/View return/);
         expect(r.actionText).toContain("View return");
       } else if (r.statusCode === "O") {
-        await expect(rowLocator.nth(rows.indexOf(r)).locator("td").nth(4).getByRole("button")).toHaveText(/Submit return/);
+        await expect(rowLocator.nth(rows.indexOf(r)).locator("td").nth(4).getByRole("button").first()).toHaveText(/Submit return/);
         expect(r.actionText).toContain("Submit return");
       }
     }
