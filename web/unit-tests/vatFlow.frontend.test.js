@@ -18,6 +18,7 @@ const htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/hmrc/va
 const submitVatPageSource = fs.readFileSync(path.join(process.cwd(), "web/public/hmrc/vat/submitVat.page.js"), "utf-8");
 const hmrcDisplayFormatSource = fs.readFileSync(path.join(process.cwd(), "web/public/lib/hmrc-display-format.js"), "utf-8");
 const carriedIdentifiersSource = fs.readFileSync(path.join(process.cwd(), "web/public/lib/carried-identifiers.js"), "utf-8");
+const formErrorsSource = fs.readFileSync(path.join(process.cwd(), "web/public/lib/form-errors.js"), "utf-8");
 
 describe("VAT Flow Frontend JavaScript", () => {
   const originalEnv = process.env;
@@ -173,6 +174,8 @@ describe("VAT Flow Frontend JavaScript", () => {
     // eslint-disable-next-line no-new-func
     new Function(hmrcDisplayFormatSource)();
     globalThis.HmrcDisplayFormat = window.HmrcDisplayFormat;
+    // eslint-disable-next-line no-new-func
+    new Function("window", "document", formErrorsSource)(window, window.document);
 
     // Execute the page script to define page-specific functions; the books import widget is not under test here
     window.booksImport = { mount() {} };
@@ -399,6 +402,11 @@ describe("VAT Flow Frontend JavaScript", () => {
   });
 
   describe("Form Validation", () => {
+    // The error summary form-errors.js renders above the form, as the customer reads it
+    function formErrorSummaryText() {
+      return document.getElementById("form-error-summary")?.textContent || "";
+    }
+
     // Helper function to fill 9-box form with default values
     function fill9BoxForm(overrides = {}) {
       const defaults = {
@@ -446,7 +454,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       await window.handleFormSubmission(event);
 
-      expect(window.showStatus).toHaveBeenCalledWith("Please enter your VAT registration number.", "error");
+      expect(formErrorSummaryText()).toContain("Enter your VAT registration number");
     });
 
     test("form validation should reject invalid VAT number format", async () => {
@@ -469,7 +477,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       await window.handleFormSubmission(event);
 
-      expect(window.showStatus).toHaveBeenCalledWith("VAT number must be exactly 9 digits.", "error");
+      expect(formErrorSummaryText()).toContain("The VAT registration number must be 9 numbers");
     });
 
     test("form validation should reject unchecked declaration", async () => {
@@ -492,7 +500,7 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       await window.handleFormSubmission(event);
 
-      expect(window.showStatus).toHaveBeenCalledWith("You must confirm the declaration before submitting.", "error");
+      expect(formErrorSummaryText()).toContain("Tick the box to confirm the declaration");
     });
 
     test("form validation should reject missing period dates", async () => {
@@ -515,7 +523,9 @@ describe("VAT Flow Frontend JavaScript", () => {
 
       await window.handleFormSubmission(event);
 
-      expect(window.showStatus).toHaveBeenCalledWith("Please enter your VAT period start and end dates.", "error");
+      const summary = formErrorSummaryText();
+      expect(summary).toContain("Enter the period start date");
+      expect(summary).toContain("Enter the period end date");
     });
   });
 
