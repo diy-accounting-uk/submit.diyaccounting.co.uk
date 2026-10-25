@@ -369,7 +369,9 @@ public class McpStack extends Stack {
                     .resources(List.of(hmrcSecretArn.endsWith("-*") ? hmrcSecretArn : hmrcSecretArn + "-*"))
                     .build());
         }
-        infof("Created MCP HMRC grant Lambda %s", this.mcpHmrcGrantLambda.getNode().getId());
+        infof(
+                "Created MCP HMRC grant Lambda %s",
+                this.mcpHmrcGrantLambda.getNode().getId());
 
         Lambda.appStackHealthAlarm(
                 this,

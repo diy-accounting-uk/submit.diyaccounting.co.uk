@@ -24,7 +24,8 @@ class McpStackTest {
 
     private static final String USER_POOL_ID = "eu-west-2_TestPool";
     private static final String MCP_CLIENT_ID = "mcp-test-client-id";
-    private static final String HMRC_SECRET_ARN = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/hmrc-client-secret";
+    private static final String HMRC_SECRET_ARN =
+            "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/hmrc-client-secret";
     private static final String HMRC_SANDBOX_SECRET_ARN =
             "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/hmrc-sandbox-client-secret";
 
@@ -221,7 +222,9 @@ class McpStackTest {
                         "POST /api/v1/mcp/hmrc-grants/callback"),
                 routes);
         var signedInRoutes = List.of(
-                "POST /api/v1/mcp/codes-entries", "POST /api/v1/mcp/hmrc-grants", "GET /api/v1/mcp/hmrc-grants/{grantId}");
+                "POST /api/v1/mcp/codes-entries",
+                "POST /api/v1/mcp/hmrc-grants",
+                "GET /api/v1/mcp/hmrc-grants/{grantId}");
         for (AbstractApiLambdaProps props : stack.lambdaFunctionProps) {
             if (signedInRoutes.contains(props.httpMethod() + " " + props.urlPath())) {
                 assertTrue(props.jwtAuthorizer(), props.urlPath() + " needs the signed-in user");
