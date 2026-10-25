@@ -251,6 +251,7 @@ const MIME_TYPES = {
   ".json": "application/json",
   ".txt": "text/plain",
   ".pdf": "application/pdf",
+  ".zip": "application/zip",
   ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   ".xls": "application/vnd.ms-excel",
 };

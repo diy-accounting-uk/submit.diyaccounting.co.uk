@@ -102,7 +102,8 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     irmarkReceipt: parsed.irmarkReceipt,
     successMessage: parsed.successMessage,
   };
-  await putReceipt(userSub, receiptId, accepted, resolveActorClass());
+  // The filed figures and documents stay with the receipt so the customer's copy shows what was filed.
+  await putReceipt(userSub, receiptId, pending.filed ? { ...accepted, filed: pending.filed } : accepted, resolveActorClass());
   const data = { ...accepted, receiptId };
   await putAsyncRequest(userSub, correlationId, "completed", data, asyncRequestsTableName);
   await deleteFromTransactionEngine({ pollUrl, correlationId, gatewayTest, messageClass, extraHeaders });

@@ -291,9 +291,16 @@ export async function ingestHandler(event) {
         // sandbox's own open obligations, and that key belongs to no obligation HMRC lists.
         // Ask for those keys too, after the fulfilled obligations, or a return filed that way
         // can never be read back. syntheticPeriodKeys is the same derivation the submission
-        // path uses, so the two cannot drift apart.
+        // path uses, so the two cannot drift apart. A return filed without the synthetic option
+        // sits under the open obligation's own key, so that key is the last one tried.
         if (allowSyntheticObligations) {
-          const candidates = [resolvedPeriodKey, ...syntheticFallbackPeriodKeys, ...syntheticPeriodKeys(obligationsArray, periodStart)]
+          const openObligationKey = matchedObligation?.status === "O" ? matchedObligation.periodKey : null;
+          const candidates = [
+            resolvedPeriodKey,
+            ...syntheticFallbackPeriodKeys,
+            ...syntheticPeriodKeys(obligationsArray, periodStart),
+            openObligationKey,
+          ]
             .filter(Boolean)
             .map((key) => key.toUpperCase());
           const ordered = [...new Set(candidates)];

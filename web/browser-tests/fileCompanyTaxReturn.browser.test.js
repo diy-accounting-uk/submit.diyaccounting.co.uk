@@ -170,22 +170,25 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#formView")).toBeVisible();
   }
 
-  async function dropBook(page) {
+  // The precision-code-ltd book is a micro-entity by size, so the card opens the form on the
+  // micro-entity accounts; most tests file the small company accounts the same book also gives.
+  async function dropBook(page, { regime = "small" } = {}) {
     await page.locator("#booksImportFile").setInputFiles({
       name: "precision-code.diya-gl.zip",
       mimeType: "application/zip",
       buffer: await zippedPrecisionCodeBook(),
     });
     await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60_000 });
+    await page.locator(regime === "micro" ? "#regimeMicro" : "#regimeSmall").check();
   }
 
-  async function completeTheAnswersTheBookLeaves(page) {
+  async function completeTheAnswersTheBookLeaves(page, { regime = "small" } = {}) {
     await page.locator("#utr").fill("8596148860");
     for (const id of [
       "statementSection477Exemption",
       "statementMembersNotRequiredAudit",
       "statementDirectorsResponsibilities",
-      "statementSmallCompaniesRegime",
+      regime === "micro" ? "statementMicroEntityProvisions" : "statementSmallCompaniesRegime",
       "declarationAccepted",
     ]) {
       await page.locator(`#${id}`).check();
@@ -332,7 +335,7 @@ test.describe("File Company Tax Return entry form", () => {
     await reachReview(page);
     const row = page.locator("#review-row-annualInvestmentAllowance");
     await expect(row).toContainText("Box 690: Annual investment allowance");
-    await expect(row).toContainText("£52500");
+    await expect(row).toContainText("£52,500");
     await expect(row.getByRole("link", { name: "Change Box 690: Annual investment allowance" })).toBeVisible();
     await expect(page.locator("#review-row-currentTurnover")).toContainText("Turnover, this year");
     await expect(page.locator("#review-row-declarationAccepted")).toContainText("Yes");
@@ -462,5 +465,53 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#currentTurnover")).toHaveValue("500");
     await expect(page.locator("#directorName")).toHaveValue("Carol Smith");
     await expect(page.locator("#periodStart")).toHaveValue("2025-04-01");
+  });
+
+  test("a micro-entity's book opens the micro accounts, and the preview sends the micro request", async ({ page }) => {
+    const previewRequests = [];
+    await openForm(page, previewRequests);
+    await page.locator("#booksImportFile").setInputFiles({
+      name: "precision-code.diya-gl.zip",
+      mimeType: "application/zip",
+      buffer: await zippedPrecisionCodeBook(),
+    });
+    await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60_000 });
+    await expect(page.locator("#regimeMicro")).toBeChecked();
+    await expect(page.locator("#microCurrentTurnover")).toBeVisible();
+    await expect(page.locator("#microCurrentTurnover")).toHaveValue("341283");
+    await expect(page.locator("#microPriorFixedAssets")).toBeVisible();
+    await expect(page.locator("#currentTurnover")).toBeHidden();
+    await expect(page.locator("#principalActivity")).toBeHidden();
+    await expect(page.locator("#statementSmallCompaniesRegime")).toBeHidden();
+    await completeTheAnswersTheBookLeaves(page, { regime: "micro" });
+    await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
+
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    expect(previewRequests).toHaveLength(1);
+    const sent = previewRequests[0];
+    expect(sent.smallCompany).toBeUndefined();
+    expect(sent.statementsAccepted).toEqual({
+      section477Exemption: true,
+      membersNotRequiredAudit: true,
+      directorsResponsibilities: true,
+      microEntityProvisions: true,
+    });
+    expect(sent.balanceSheet.priorYear.fixedAssets).toBe(182902);
+    expect(sent.profitAndLoss.currentYear).toMatchObject({ turnover: 341283, otherIncome: 340, tax: 29062 });
+    await expect(page.locator("#review-row-accountsRegime")).toContainText("Micro-entity accounts (FRS 105)");
+    await expect(page.locator("#review-row-microCurrentRawMaterials")).toContainText("Raw materials and consumables, this year");
+    await expect(page.locator("#review-row-statementMicroEntityProvisions")).toContainText("Yes");
+  });
+
+  test("switching the regime keeps each regime's figures", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#regimeMicro").check();
+    await page.locator("#microCurrentTurnover").fill("1000");
+    await page.locator("#regimeSmall").check();
+    await expect(page.locator("#currentTurnover")).toBeVisible();
+    await expect(page.locator("#microCurrentTurnover")).toBeHidden();
+    await page.locator("#regimeMicro").check();
+    await expect(page.locator("#microCurrentTurnover")).toHaveValue("1000");
   });
 });

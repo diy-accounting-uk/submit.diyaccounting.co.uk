@@ -358,7 +358,7 @@ export async function ingestHandler(event) {
     submissionNumber = await allocateSubmissionNumber();
     const { presenterId, presenterCode } = await resolvePresenterCredentials();
 
-    await putAsyncRequest(userSub, submissionNumber, "pending", null, asyncRequestsTableName);
+    await putAsyncRequest(userSub, submissionNumber, "pending", { filedDocument: ixbrl }, asyncRequestsTableName);
 
     const submissionXml = buildAccountsSubmission({
       presenterId,

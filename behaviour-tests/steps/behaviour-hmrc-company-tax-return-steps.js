@@ -35,8 +35,10 @@ async function zippedFixtureBook() {
   return zip.generateAsync({ type: "nodebuffer" });
 }
 
-export async function fillInCompanyTaxReturnForm(page, { utr, declarantName }, screenshotPath = defaultScreenshotPath) {
-  await test.step("The user enters the UTR, drops the company's book, and enters the declarant, the statements and the declaration", async () => {
+// The fixture book is a micro-entity by size, so the card opens the form on the micro-entity
+// accounts; regime "small" files the small company accounts the same book also gives.
+export async function fillInCompanyTaxReturnForm(page, { utr, declarantName, regime = "small" }, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user enters the UTR, drops the company's book, keeps the ${regime} accounts, and enters the declarant, the statements and the declaration`, async () => {
     await loggedFill(page, "#utr", utr, "UTR");
     await expect(page.locator("#booksImportFile")).toBeAttached();
     await page.locator("#booksImportFile").setInputFiles({
@@ -45,13 +47,15 @@ export async function fillInCompanyTaxReturnForm(page, { utr, declarantName }, s
       buffer: await zippedFixtureBook(),
     });
     await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60000 });
+    await expect(page.locator("#regimeMicro")).toBeChecked();
+    await page.check(regime === "micro" ? "#regimeMicro" : "#regimeSmall");
     await loggedFill(page, "#declarantName", declarantName, "Declarant name");
     await page.check("#statementSection477Exemption");
     await page.check("#statementMembersNotRequiredAudit");
     await page.check("#statementDirectorsResponsibilities");
-    await page.check("#statementSmallCompaniesRegime");
+    await page.check(regime === "micro" ? "#statementMicroEntityProvisions" : "#statementSmallCompaniesRegime");
     await page.check("#declarationAccepted");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-return-form-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-return-form-filled-${regime}.png` });
   });
 }
 
@@ -110,6 +114,15 @@ export async function changeAnAnswerFromTheReview(page, { fieldId, value }, scre
   });
 }
 
+export async function verifyMicroEntityReview(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the micro-entity accounts and statement in the review", async () => {
+    await expect(page.locator("#review-row-accountsRegime")).toContainText("Micro-entity accounts (FRS 105)");
+    await expect(page.locator("#review-row-microCurrentOtherCharges")).toBeVisible();
+    await expect(page.locator("#review-row-statementMicroEntityProvisions")).toContainText("Yes");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-review-micro.png`, readerView: true });
+  });
+}
+
 export async function previewCompanyTaxReturn(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user previews the return and sees the CT600 and computations tables", async () => {
     await loggedClick(page, "#previewBtn", "Previewing the return", { screenshotPath });
@@ -143,7 +156,7 @@ export async function enterGatewayCredentialsAndSubmit(page, { userId, password 
 
 export async function verifyReturnAccepted(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees the return accepted with its IRmark", async () => {
-    await expect(page.locator("#returnResult")).toContainText("ACCEPTED", { timeout: 60000 });
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted", { timeout: 60000 });
     await expect(page.locator("#returnIrmark")).toContainText(/IRmark: [A-Z2-7]{32}/);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accepted.png` });
   });
@@ -151,7 +164,7 @@ export async function verifyReturnAccepted(page, screenshotPath = defaultScreens
 
 export async function verifyReturnRejectedAndRetryable(page, expectedErrorNumber, screenshotPath = defaultScreenshotPath) {
   await test.step(`The user sees the return rejected with error ${expectedErrorNumber} and can try again`, async () => {
-    await expect(page.locator("#returnResult")).toContainText("REJECTED", { timeout: 60000 });
+    await expect(page.locator("#returnResult")).toContainText("HMRC rejected", { timeout: 60000 });
     await expect(page.locator("#returnErrors")).toContainText(expectedErrorNumber);
     await expect(page.locator("#tryAgainBtn")).toBeVisible();
     await loggedClick(page, "#tryAgainBtn", "Returning to the review to try again", { screenshotPath });

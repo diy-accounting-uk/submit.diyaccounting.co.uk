@@ -12,7 +12,14 @@ import {
   DORMANT_STATEMENT_KEYS,
   sharesIssuedFor,
 } from "@app/services/microEntityAccountsIxbrl.js";
-import { buildContexts, formatMonetary, renderStatement, loadFrcTaxonomyConcepts, CONCEPTS } from "@app/services/accountsIxbrlCommon.js";
+import {
+  buildContexts,
+  formatMonetary,
+  renderStatement,
+  loadFrcTaxonomyConcepts,
+  countryMemberForCompanyNumber,
+  CONCEPTS,
+} from "@app/services/accountsIxbrlCommon.js";
 import { parseXmlDocument } from "@app/lib/xmlDom.js";
 
 const SAMPLE_INPUT = {
@@ -63,6 +70,11 @@ function dimensionNames(xhtml) {
     names.push({ dimension: match[1], member: match[2] });
   }
   return names;
+}
+
+// The countries module is outside the business, core and direp lists in the checked-in concept file.
+function inFrcBusinessOrCoreTaxonomy({ dimension, member }) {
+  return !dimension.startsWith("countries:") && !member.startsWith("countries:");
 }
 
 const DORMANT_INPUT = {
@@ -151,7 +163,7 @@ describe("services/microEntityAccountsIxbrl", () => {
       for (const name of emitted) {
         expect(concepts, `expected ${name} to exist in the FRC taxonomy concept list`).toContain(name);
       }
-      for (const { dimension, member } of dimensionNames(xhtml)) {
+      for (const { dimension, member } of dimensionNames(xhtml).filter(inFrcBusinessOrCoreTaxonomy)) {
         expect(concepts, `expected dimension ${dimension} to exist`).toContain(dimension);
         expect(concepts, `expected dimension member ${member} to exist`).toContain(member);
       }
@@ -251,9 +263,52 @@ describe("services/microEntityAccountsIxbrl", () => {
       );
     });
 
-    test("describes a dormant company's principal activity and leaves a trading company's out", () => {
+    test("describes a dormant company as dormant and a trading company with the micro-entity default", () => {
       expect(hiddenText(dormantXhtml, "bus:DescriptionPrincipalActivities")).toBe("Dormant company");
-      expect(hiddenText(xhtml, "bus:DescriptionPrincipalActivities")).toBeUndefined();
+      expect(hiddenText(xhtml, "bus:DescriptionPrincipalActivities")).toBe("No description of principal activity");
+    });
+
+    test("puts DirectorSigningFinancialStatements on the signing director's officer context, with the name on the same context", () => {
+      for (const document of [xhtml, dormantXhtml]) {
+        const parsed = parseXmlDocument(document);
+        const signing = Array.from(parsed.getElementsByTagName("ix:nonNumeric")).find(
+          (el) => el.getAttribute("name") === "core:DirectorSigningFinancialStatements",
+        );
+        const context = parsed.getElementById(signing.getAttribute("contextRef"));
+        expect(context.getElementsByTagName("xbrldi:explicitMember")[0].getAttribute("dimension")).toBe("bus:EntityOfficersDimension");
+        expect(context.getElementsByTagName("xbrldi:explicitMember")[0].textContent).toBe("bus:Director1");
+        expect(document).toContain(`name="bus:NameEntityOfficer" contextRef="${signing.getAttribute("contextRef")}"`);
+      }
+    });
+
+    test("describes the company: legal form, country of formation, scope, no amendment, entry-point match, small companies regime", () => {
+      for (const document of [xhtml, dormantXhtml]) {
+        expect(dimensionNames(document)).toContainEqual({
+          dimension: "bus:LegalFormEntityDimension",
+          member: "bus:PrivateLimitedCompanyLtd",
+        });
+        expect(dimensionNames(document)).toContainEqual({
+          dimension: "countries:CountriesRegionsDimension",
+          member: "countries:EnglandWales",
+        });
+        expect(dimensionNames(document)).toContainEqual({
+          dimension: "bus:ApplicableLegislationDimension",
+          member: "bus:SmallCompaniesRegimeForAccounts",
+        });
+        expect(factNames(document)).toContain("bus:LegalFormEntity");
+        expect(factNames(document)).toContain("bus:CountryFormationOrIncorporation");
+        expect(factNames(document)).toContain("bus:ScopeAccounts");
+        expect(hiddenText(document, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("false");
+        expect(hiddenText(document, "bus:AccountingStandardsAppliedMatchesTaxonomyEntry-pointTruefalse")).toBe("true");
+      }
+    });
+
+    test("states that the accounts were delivered under the small companies regime (section 444(5))", () => {
+      for (const document of [xhtml, dormantXhtml]) {
+        expect(document).toContain(
+          "prepared in accordance with the provisions applicable to companies subject to the micro-entities regime and delivered in accordance with the provisions applicable to companies subject to the small companies regime.",
+        );
+      }
     });
   });
 
@@ -355,7 +410,12 @@ describe("services/microEntityAccountsIxbrl", () => {
 
     test("every concept it uses is in the FRS 102 taxonomy", () => {
       const known = new Set(loadFrcTaxonomyConcepts());
-      for (const name of [...factNames(dormantXhtml), ...dimensionNames(dormantXhtml).flatMap((d) => [d.dimension, d.member])]) {
+      for (const name of [
+        ...factNames(dormantXhtml),
+        ...dimensionNames(dormantXhtml)
+          .filter(inFrcBusinessOrCoreTaxonomy)
+          .flatMap((d) => [d.dimension, d.member]),
+      ]) {
         expect(known.has(name), `${name} is in the taxonomy`).toBe(true);
       }
     });
@@ -366,6 +426,16 @@ describe("services/microEntityAccountsIxbrl", () => {
       expect(names).not.toContain(`direp:${CONCEPTS.statementAuditExemptionSection480.name}`);
       expect(names).not.toContain("core:NumberSharesIssuedFullyPaid");
       expect(dimensionNames(xhtml).map((d) => d.dimension)).not.toContain("bus:EntityTradingStatusDimension");
+    });
+  });
+
+  describe("countryMemberForCompanyNumber", () => {
+    test("reads the country of formation from the company number prefix", () => {
+      expect(countryMemberForCompanyNumber("03176906").name).toBe("EnglandWales");
+      expect(countryMemberForCompanyNumber("SC123456").name).toBe("Scotland");
+      expect(countryMemberForCompanyNumber("NI012345").name).toBe("NorthernIreland");
+      expect(countryMemberForCompanyNumber("R0000123").name).toBe("NorthernIreland");
+      expect(countryMemberForCompanyNumber("OC301234").name).toBe("EnglandWales");
     });
   });
 

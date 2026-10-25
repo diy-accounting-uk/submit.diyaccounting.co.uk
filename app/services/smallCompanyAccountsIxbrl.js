@@ -36,8 +36,13 @@ import {
   renderAccountsDocument,
   renderProductionSoftwareFacts,
   buildOfficerContext,
+  renderSigningDirectorFact,
+  renderCompanyDescriptionFacts,
 } from "./accountsIxbrlCommon.js";
 import { recordFigure, recordTable } from "../lib/submissionRecord.js";
+
+const SMALL_COMPANY_FRAMEWORK_COMPLIANCE =
+  "These financial statements have been prepared in accordance with Section 1A Small Entities of FRS 102 The Financial Reporting Standard applicable to the UK and Republic of Ireland.";
 
 export const SMALL_COMPANY_BALANCE_SHEET_LINES = [
   "fixedAssets",
@@ -374,9 +379,20 @@ export function buildSmallCompanyAccounts(input) {
     );
   }
 
+  // The signing director's position among the directors; a filleted set has no directors' report, so
+  // the approval line names the signing director as an officer.
+  const signingDirectorPosition = Math.max(1, input.directors.indexOf(input.directorName) + 1);
+  const { fact: signingDirectorFact, officerContextRef } = renderSigningDirectorFact({
+    additionalContexts,
+    entityIdentifierXml,
+    periodXml,
+    refs,
+    position: signingDirectorPosition,
+  });
   hiddenFacts.push(
     ...renderProductionSoftwareFacts(refs.current),
-    renderFixedFact("directorSigningFinancialStatements", refs.current),
+    ...renderCompanyDescriptionFacts({ companyNumber: input.companyNumber, refs, entityIdentifierXml, periodXml, additionalContexts }),
+    signingDirectorFact,
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
     renderFixedFact("entityTradingStatus", refs.current),
   );
@@ -393,7 +409,7 @@ export function buildSmallCompanyAccounts(input) {
   for (const [conceptKey, dimension, member, id] of [
     ["accountsStatusAuditedOrUnaudited", DIMENSIONS.accountsStatus, MEMBERS.auditExemptNoAccountantsReport, "accounts-status"],
     ["accountsType", DIMENSIONS.accountsType, input.filleted ? MEMBERS.filletedAccounts : MEMBERS.fullAccounts, "accounts-type"],
-    ["accountingStandardsApplied", DIMENSIONS.accountingStandards, MEMBERS.frs102, "accounting-standards"],
+    ["accountingStandardsApplied", DIMENSIONS.accountingStandards, MEMBERS.smallEntities, "accounting-standards"],
     ["applicableLegislation", DIMENSIONS.applicableLegislation, MEMBERS.smallCompaniesRegimeForAccounts, "applicable-legislation"],
   ]) {
     const contextRef = buildDimensionedContext({
@@ -431,7 +447,8 @@ export function buildSmallCompanyAccounts(input) {
   const notes = [
     {
       title: "Accounting policies",
-      html: `<p>${renderTextFact("generalDescriptionBasisMeasurement", refs.current, input.accountingPolicies)}</p>`,
+      html: `<p>${renderTextFact("statementComplianceWithReportingFramework", refs.current, SMALL_COMPANY_FRAMEWORK_COMPLIANCE)}</p>
+<p>${renderTextFact("generalDescriptionBasisMeasurement", refs.current, input.accountingPolicies)}</p>`,
     },
     {
       title: "Employees",
@@ -456,18 +473,6 @@ export function buildSmallCompanyAccounts(input) {
   const period = escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd));
   const heading = (title, subtitleHtml) =>
     pageHeading({ companyName: input.companyName, companyNumber: input.companyNumber, title, subtitleHtml });
-
-  // The directors' report of a full set tags the directors' names; a filleted set has no report, so
-  // the signing director is named as an officer on the approval line.
-  const officerContextRef = input.filleted
-    ? buildOfficerContext({
-        additionalContexts,
-        entityIdentifierXml,
-        periodXml,
-        refs,
-        position: Math.max(1, input.directors.indexOf(input.directorName) + 1),
-      })
-    : undefined;
 
   const pages = [
     coverPage({
@@ -510,7 +515,13 @@ ${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.curr
     }),
   })}
 ${statementKeys.map((key) => `<p>${renderStatement(key, refs.current)}</p>`).join("\n")}
-${approvalHtml({ refs, dateOfApproval: input.dateOfApproval, directorName: input.directorName, officerContextRef })}
+${approvalHtml({
+  refs,
+  dateOfApproval: input.dateOfApproval,
+  directorName: input.directorName,
+  // The directors' report of a full set tags the directors' names, so only a filleted set tags the name here.
+  officerContextRef: input.filleted ? officerContextRef : undefined,
+})}
 </div>`);
   pages.push(`<div class="page">
 ${heading("Notes to the financial statements", `for the ${period}`)}${notes

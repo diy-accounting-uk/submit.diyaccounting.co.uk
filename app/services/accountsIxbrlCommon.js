@@ -26,6 +26,8 @@ export const NAMESPACES = {
   core: "http://xbrl.frc.org.uk/fr/2026-01-01/core",
   // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
   direp: "http://xbrl.frc.org.uk/reports/2026-01-01/direp",
+  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
+  countries: "http://xbrl.frc.org.uk/cd/2026-01-01/countries",
 };
 
 // Resolved from the FRS 102 entry point by scripts/generate-frc-taxonomy-concepts.js (see
@@ -58,6 +60,11 @@ export const CONCEPTS = {
   accountsType: { prefix: "bus", name: "AccountsType" },
   accountingStandardsApplied: { prefix: "bus", name: "AccountingStandardsApplied" },
   applicableLegislation: { prefix: "bus", name: "ApplicableLegislation" },
+  legalFormEntity: { prefix: "bus", name: "LegalFormEntity" },
+  countryFormationOrIncorporation: { prefix: "bus", name: "CountryFormationOrIncorporation" },
+  scopeAccounts: { prefix: "bus", name: "ScopeAccounts" },
+  reportAmendedRevisedVersion: { prefix: "bus", name: "ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse" },
+  accountingStandardsAppliedMatchesEntryPoint: { prefix: "bus", name: "AccountingStandardsAppliedMatchesTaxonomyEntry-pointTruefalse" },
 
   statementAuditExemptionSection477: {
     prefix: "direp",
@@ -147,6 +154,8 @@ export const DIMENSIONS = {
   entityOfficers: { prefix: "bus", name: "EntityOfficersDimension" },
   accountingStandards: { prefix: "bus", name: "AccountingStandardsDimension" },
   applicableLegislation: { prefix: "bus", name: "ApplicableLegislationDimension" },
+  legalFormEntity: { prefix: "bus", name: "LegalFormEntityDimension" },
+  countriesRegions: { prefix: "countries", name: "CountriesRegionsDimension" },
   accountsStatus: { prefix: "bus", name: "AccountsStatusDimension" },
   accountsType: { prefix: "bus", name: "AccountsTypeDimension" },
   equityClasses: { prefix: "core", name: "EquityClassesDimension" },
@@ -156,7 +165,11 @@ export const DIMENSIONS = {
 
 export const MEMBERS = {
   microEntities: { prefix: "bus", name: "Micro-entities" },
-  frs102: { prefix: "bus", name: "FRS102" },
+  smallEntities: { prefix: "bus", name: "SmallEntities" },
+  privateLimitedCompanyLtd: { prefix: "bus", name: "PrivateLimitedCompanyLtd" },
+  englandWales: { prefix: "countries", name: "EnglandWales" },
+  scotland: { prefix: "countries", name: "Scotland" },
+  northernIreland: { prefix: "countries", name: "NorthernIreland" },
   smallCompaniesRegimeForAccounts: { prefix: "bus", name: "SmallCompaniesRegimeForAccounts" },
   auditExemptNoAccountantsReport: { prefix: "bus", name: "AuditExempt-NoAccountantsReport" },
   fullAccounts: { prefix: "bus", name: "FullAccounts" },
@@ -188,9 +201,9 @@ export const STATEMENT_TEXT = {
   statementDirectorsResponsibilities:
     "The directors acknowledge their responsibilities for complying with the requirements of the Companies Act 2006 with respect to accounting records and the preparation of accounts.",
   statementMicroEntityProvisions:
-    "These accounts have been prepared in accordance with the provisions applicable to companies subject to the micro-entities regime.",
+    "These accounts have been prepared in accordance with the provisions applicable to companies subject to the micro-entities regime and delivered in accordance with the provisions applicable to companies subject to the small companies regime.",
   statementSmallCompaniesRegimeAccounts:
-    "These accounts have been prepared in accordance with the provisions applicable to companies subject to the small companies regime.",
+    "These accounts have been prepared and delivered in accordance with the provisions applicable to companies subject to the small companies regime.",
   statementSmallCompaniesRegimeDirectorsReport:
     "This report has been prepared in accordance with the provisions applicable to companies entitled to the small companies regime.",
   statementProfitAndLossNotDelivered:
@@ -386,6 +399,7 @@ export function dimensionMemberXml(dimension, member) {
 // full period + entity + dimensional segment, not by period alone). Builds one such context on
 // top of an existing base context's period, and appends it to additionalContexts.
 export function buildDimensionedContext({ additionalContexts, entityIdentifierXml, periodXml, dimensionXml, id }) {
+  if (additionalContexts.some((context) => context.startsWith(`<xbrli:context id="${id}">`))) return id;
   additionalContexts.push(
     `<xbrli:context id="${id}"><xbrli:entity>${entityIdentifierXml}<xbrli:segment>${dimensionXml}</xbrli:segment></xbrli:entity>${periodXml}</xbrli:context>`,
   );
@@ -451,6 +465,56 @@ export function buildOfficerContext({ additionalContexts, entityIdentifierXml, p
     dimensionXml: dimensionMemberXml(DIMENSIONS.entityOfficers, { prefix: "bus", name: `Director${position}` }),
     id: `${refs.current}-director-${position}`,
   });
+}
+
+/**
+ * The signing director's fact: DirectorSigningFinancialStatements on the director's officer
+ * context, the member the same director's NameEntityOfficer fact sits on.
+ * @returns {{fact: string, officerContextRef: string}}
+ */
+export function renderSigningDirectorFact({ additionalContexts, entityIdentifierXml, periodXml, refs, position }) {
+  const officerContextRef = buildOfficerContext({ additionalContexts, entityIdentifierXml, periodXml, refs, position });
+  return { fact: renderFixedFact("directorSigningFinancialStatements", officerContextRef), officerContextRef };
+}
+
+/**
+ * The country a company is formed in, from its Companies House number: SC is Scotland, NI and R
+ * are Northern Ireland, every other prefix is England and Wales.
+ * @param {string} companyNumber
+ * @returns {{prefix: string, name: string}} a countries member
+ */
+export function countryMemberForCompanyNumber(companyNumber) {
+  const number = String(companyNumber).trim().toUpperCase();
+  if (number.startsWith("SC")) return MEMBERS.scotland;
+  if (number.startsWith("NI") || /^R\d/.test(number)) return MEMBERS.northernIreland;
+  return MEMBERS.englandWales;
+}
+
+/**
+ * The hidden facts that describe the filing company and its accounts: legal form, country of
+ * formation, the scope of the accounts, that the report is not an amended version, and that the
+ * accounting standards applied match the entry point.
+ * @returns {string[]}
+ */
+export function renderCompanyDescriptionFacts({ companyNumber, refs, entityIdentifierXml, periodXml, additionalContexts }) {
+  const dimensioned = (dimension, member, id) =>
+    buildDimensionedContext({
+      additionalContexts,
+      entityIdentifierXml,
+      periodXml: periodXml[refs.current],
+      dimensionXml: dimensionMemberXml(dimension, member),
+      id: `${refs.current}-${id}`,
+    });
+  return [
+    renderFixedFact("legalFormEntity", dimensioned(DIMENSIONS.legalFormEntity, MEMBERS.privateLimitedCompanyLtd, "legal-form")),
+    renderFixedFact(
+      "countryFormationOrIncorporation",
+      dimensioned(DIMENSIONS.countriesRegions, countryMemberForCompanyNumber(companyNumber), "country"),
+    ),
+    renderFixedFact("scopeAccounts", refs.current),
+    renderTextFact("reportAmendedRevisedVersion", refs.current, "false"),
+    renderTextFact("accountingStandardsAppliedMatchesEntryPoint", refs.current, "true"),
+  ];
 }
 
 function netLabel(base, values) {

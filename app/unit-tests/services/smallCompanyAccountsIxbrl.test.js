@@ -121,6 +121,11 @@ function dimensionNames(xhtml) {
   }));
 }
 
+// The countries module is outside the business, core and direp lists in the checked-in concept file.
+function inFrcBusinessOrCoreTaxonomy({ dimension, member }) {
+  return !dimension.startsWith("countries:") && !member.startsWith("countries:");
+}
+
 function nonFractionValue(xhtml, name, contextRef) {
   const pattern = new RegExp(`<ix:nonFraction name="${name}" contextRef="${contextRef}"[^>]*>([0-9,]+)</ix:nonFraction>`);
   const match = pattern.exec(xhtml);
@@ -169,16 +174,43 @@ describe("services/smallCompanyAccountsIxbrl", () => {
 
     test("every concept, dimension and member it uses is in the FRS 102 taxonomy", () => {
       const known = new Set(loadFrcTaxonomyConcepts());
-      for (const name of [...factNames(xhtml), ...dimensionNames(xhtml).flatMap((d) => [d.dimension, d.member])]) {
+      for (const name of [
+        ...factNames(xhtml),
+        ...dimensionNames(xhtml)
+          .filter(inFrcBusinessOrCoreTaxonomy)
+          .flatMap((d) => [d.dimension, d.member]),
+      ]) {
         expect(known.has(name), `${name} is in the taxonomy`).toBe(true);
       }
     });
 
-    test("reports FRS 102 as the accounting standard, the small companies regime as the legislation and full accounts", () => {
+    test("reports Section 1A Small Entities as the accounting standard, the small companies regime as the legislation and full accounts", () => {
       const dimensions = dimensionNames(xhtml);
-      expect(dimensions).toContainEqual({ dimension: "bus:AccountingStandardsDimension", member: "bus:FRS102" });
+      expect(dimensions).toContainEqual({ dimension: "bus:AccountingStandardsDimension", member: "bus:SmallEntities" });
       expect(dimensions).toContainEqual({ dimension: "bus:ApplicableLegislationDimension", member: "bus:SmallCompaniesRegimeForAccounts" });
       expect(dimensions).toContainEqual({ dimension: "bus:AccountsTypeDimension", member: "bus:FullAccounts" });
+    });
+
+    test("describes the company and puts the signing director's fact on that director's officer context", () => {
+      const dimensions = dimensionNames(xhtml);
+      expect(dimensions).toContainEqual({ dimension: "bus:LegalFormEntityDimension", member: "bus:PrivateLimitedCompanyLtd" });
+      expect(dimensions).toContainEqual({ dimension: "countries:CountriesRegionsDimension", member: "countries:EnglandWales" });
+      for (const name of ["bus:LegalFormEntity", "bus:CountryFormationOrIncorporation", "bus:ScopeAccounts"]) {
+        expect(factNames(xhtml), name).toContain(name);
+      }
+      expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("false");
+      expect(hiddenText(xhtml, "bus:AccountingStandardsAppliedMatchesTaxonomyEntry-pointTruefalse")).toBe("true");
+      const signing = new RegExp(`name="core:DirectorSigningFinancialStatements" contextRef="([^"]+)"`).exec(xhtml)[1];
+      expect(signing).toBe("y2026-director-1");
+      expect(xhtml).toContain(`name="bus:NameEntityOfficer" contextRef="${signing}">Jo Smith<`);
+      expect(xhtml.match(/<xbrli:context id="y2026-director-1"/g)).toHaveLength(1);
+    });
+
+    test("states that the accounts were prepared and delivered under the small companies regime, and the framework compliance", () => {
+      expect(xhtml).toContain(
+        "These accounts have been prepared and delivered in accordance with the provisions applicable to companies subject to the small companies regime.",
+      );
+      expect(xhtml).toContain("prepared in accordance with Section 1A Small Entities of FRS 102");
     });
 
     test("carries the audit exemption, members, responsibilities and small companies regime statements", () => {
@@ -337,6 +369,10 @@ describe("services/smallCompanyAccountsIxbrl", () => {
       expect(xhtml).toMatch(/name="bus:NameEntityOfficer" contextRef="y2026-director-1">Jo Smith</);
     });
 
+    test("puts the signing director's fact on that director's officer context", () => {
+      expect(xhtml).toMatch(/name="core:DirectorSigningFinancialStatements" contextRef="y2026-director-1"/);
+    });
+
     test("says in the hidden section that no profit and loss account is delivered", () => {
       expect(hiddenText(xhtml, "bus:ReportIncludesDetailedProfitLossStatementTruefalse")).toBe("false");
       expect(hiddenText(xhtml, "direp:EntityHasTakenExemptionUnderCompaniesActInNotPublishingItsOwnProfitLossAccountTruefalse")).toBe(
@@ -372,7 +408,12 @@ describe("services/smallCompanyAccountsIxbrl", () => {
     test("is well-formed and every concept it uses is in the taxonomy", () => {
       expect(() => parseXmlDocument(xhtml)).not.toThrow();
       const known = new Set(loadFrcTaxonomyConcepts());
-      for (const name of [...factNames(xhtml), ...dimensionNames(xhtml).flatMap((d) => [d.dimension, d.member])]) {
+      for (const name of [
+        ...factNames(xhtml),
+        ...dimensionNames(xhtml)
+          .filter(inFrcBusinessOrCoreTaxonomy)
+          .flatMap((d) => [d.dimension, d.member]),
+      ]) {
         expect(known.has(name), `${name} is in the taxonomy`).toBe(true);
       }
     });

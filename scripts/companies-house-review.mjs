@@ -112,9 +112,62 @@ const STATEMENTS = {
   smallCompaniesRegime: {
     label: "Prepared in accordance with the small companies regime",
     concept: "StatementThatAccountsHaveBeenPreparedInAccordanceWithProvisionsSmallCompaniesRegime",
-    phrases: [["prepared in accordance with"], ["provisions"], ["small companies"]],
+    phrases: [["prepared"], ["in accordance with"], ["provisions"], ["small companies"]],
   },
 };
+
+// Facts an example carries that ours leaves out on purpose, by reason. The reasons are the judgements
+// in the triage record's section "Example facts not carried, and why"; a missing fact named here is
+// reported as judged, and any other missing fact is a fail.
+const NOT_CARRIED_REASONS = {
+  "amended filing": [
+    "DateApprovalRevisionReport",
+    "StatementRespectsInWhichPreviouslyFiledReportDidNotComplyWithCompaniesAct2006",
+    "StatementSignificantAmendmentsToPreviouslyFiledReport",
+    "StatementThatRevisedReportReplacesPreviouslyFiledReportForPeriod",
+    "StatementThatThisReportHasBeenPreparedAsDatePreviouslyFiledReport",
+    "StatementThatThisReportNowStatutoryAccountsForPeriod",
+  ],
+  "profit and loss lines by nature or investment income the filer has no figure for": [
+    "DepreciationAmortisationExpense",
+    "DividendIncome",
+    "GainLossOnInvestmentsFairValueThroughProfitOrLoss",
+    "InterestPayableSimilarChargesFinanceCosts",
+    "OtherOperatingExpensesByNature",
+    "OtherOperatingIncome",
+    "RawMaterialsConsumablesUsed",
+    "StaffCostsEmployeeBenefitsExpense",
+  ],
+  "our profit and loss layout tags ProfitLossOnOrdinaryActivitiesBeforeTax, the Format 1 concept": ["ProfitLossBeforeTax"],
+  "balance sheet detail the filer has no figure for": [
+    "Investments",
+    "NominalValueAllottedShareCapital",
+    "OtherInventories",
+    "OtherDebtors",
+    "Prepayments",
+    "TradeDebtorsTradeReceivables",
+    "TaxationSocialSecurityPayable",
+    "AmountsOwedToRelatedParties",
+  ],
+  "the example company's own accounting policy or going concern statement": [
+    "CashCashEquivalentsPolicy",
+    "DescriptionDepreciationMethodForPropertyPlantEquipment",
+    "DescriptionMeasurementBasisForPropertyPlantEquipment",
+    "InventoriesPolicy",
+    "PropertyPlantEquipmentPolicy",
+    "RevenueRecognitionPolicy",
+    "ShareCapitalPolicy",
+    "TradePayablesPolicy",
+    "TradeReceivablesPolicy",
+    "FinancialStatementsArePreparedOnGoing-concernBasisTruefalse",
+    "EntityHasClaimedExemptionFromReportingDisclosureRelatedPartyTransactionsForWholly-ownedEntitiesTruefalse",
+  ],
+  "registered office address, which the filing does not hold": ["AddressLine1", "PostalCodeZip", "PrincipalLocation-CityOrTown"],
+  "directors' report date, and a filleted set has no directors' report": ["DateSigningDirectorsReport"],
+};
+const NOT_CARRIED = new Map(
+  Object.entries(NOT_CARRIED_REASONS).flatMap(([reason, concepts]) => concepts.map((concept) => [concept, reason])),
+);
 
 // Section 444(5): the balance sheet of a small company that does not deliver its profit and loss
 // account or directors' report says the accounts were delivered under the small companies regime.
@@ -367,13 +420,18 @@ function judge(kind, ours, example, validator, structureProblems) {
   if (!example) add("Every fact the example carries is in ours", "unknown", "no example found for this type", "fact-comparison.md");
   else {
     const ourConcepts = new Set(ours.facts.map((fact) => fact.concept));
-    const missing = [...new Set(example.facts.map((fact) => fact.concept))].filter((concept) => !ourConcepts.has(concept));
+    const absent = [...new Set(example.facts.map((fact) => fact.concept))].filter((concept) => !ourConcepts.has(concept));
+    const missing = absent.filter((concept) => !NOT_CARRIED.has(concept));
+    const judged = absent.filter((concept) => NOT_CARRIED.has(concept));
+    const listed = (concepts) => `${concepts.slice(0, 8).join(", ")}${concepts.length > 8 ? ", ..." : ""}`;
     add(
       "Every fact the example carries is in ours",
-      missing.length === 0 ? "pass" : "fail",
-      missing.length === 0
-        ? "all present"
-        : `${missing.length} missing: ${missing.slice(0, 8).join(", ")}${missing.length > 8 ? ", ..." : ""}`,
+      missing.length > 0 ? "fail" : judged.length > 0 ? "judged" : "pass",
+      missing.length > 0
+        ? `${missing.length} missing: ${listed(missing)}`
+        : judged.length > 0
+          ? `${judged.length} not carried by judgement: ${listed(judged)}`
+          : "all present",
       "fact-comparison.md",
     );
   }
@@ -464,7 +522,8 @@ function factComparison(ours, example, exampleSource) {
       .find((fact) => fact.concept === concept)
       .text.replaceAll("|", "/")
       .slice(0, 60);
-    lines.push(`| ${concept} | ${value} | ${ourConcepts.has(concept) ? "present" : "**missing**"} |`);
+    const state = ourConcepts.has(concept) ? "present" : NOT_CARRIED.has(concept) ? `judged: ${NOT_CARRIED.get(concept)}` : "**missing**";
+    lines.push(`| ${concept} | ${value} | ${state} |`);
   }
   const extra = [...ourConcepts].filter((concept) => !exampleConcepts.includes(concept)).sort();
   lines.push("", "## In ours, not in the example", "", ...extra.map((concept) => `- ${concept}`), "");
@@ -484,7 +543,7 @@ function findingsMarkdown(date, reviews) {
   const lines = [
     `# Companies House review, ${date}`,
     "",
-    "Each table judges one filed case as the XML Gateway team would. `pending` rows wait for the reviewer's look at the screenshots.",
+    "Each table judges one filed case as the XML Gateway team would. `judged` rows are recorded judgements in the triage record. `pending` rows wait for the reviewer's look at the screenshots.",
     "",
   ];
   for (const review of reviews) {

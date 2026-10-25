@@ -115,6 +115,18 @@ export async function verifyFilingAccepted(page, screenshotPath = defaultScreens
   });
 }
 
+export async function openFilingCustomerCopy(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user opens the customer copy of the filing and sees the accounts as filed with the receipt", async () => {
+    await loggedClick(page, "#filingCopyLink", "Opening the customer copy of the filing", { screenshotPath });
+    const copy = page.locator(".customer-copy");
+    await expect(copy).toBeVisible({ timeout: 30000 });
+    await expect(copy.locator(".customer-copy-status")).toHaveText("Accepted by Companies House");
+    await expect(page.frameLocator("iframe.filed-document").locator("body")).toContainText("Balance sheet", { timeout: 30000 });
+    await expect(copy.locator(".customer-copy-links a")).toHaveCount(3);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-customer-copy.png`, fullPage: true, readerView: true });
+  });
+}
+
 export async function verifyFilingRejected(page, expectedRejectCode, screenshotPath = defaultScreenshotPath) {
   await test.step(`The user sees the filing rejected with reject code ${expectedRejectCode}`, async () => {
     await expect(page.locator("#filingResult")).toContainText("REJECT", { timeout: 30000 });

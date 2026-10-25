@@ -513,6 +513,42 @@ describe("hmrcVatReturnGet ingestHandler", () => {
     expect(mockFetch.mock.calls[0][0]).toContain(`/returns/${filedPeriodKey}`);
   });
 
+  test("allowSyntheticObligations: finds a return filed under the open obligation's own key", async () => {
+    // A submission made without the synthetic option files under the open obligation's key. The
+    // retrieve page always asks with the option on, so that key has to be among the ones tried.
+    const openPeriod = { periodKey: "18A2", start: "2017-04-01", end: "2017-06-30", status: "O" };
+    mockGetVatObligations.mockResolvedValue({
+      obligations: { obligations: [openPeriod] },
+      hmrcResponse: { ok: true, status: 200 },
+    });
+
+    const derivedKeys = syntheticPeriodKeys([openPeriod], openPeriod.start);
+    expect(derivedKeys).not.toContain(openPeriod.periodKey);
+    derivedKeys.forEach(() => mockHmrcError(mockFetch, 404, {}));
+    const vatReturn = { periodKey: openPeriod.periodKey, totalVatDue: 1000 };
+    mockHmrcSuccess(mockFetch, vatReturn);
+
+    const event = buildHmrcEvent({
+      queryStringParameters: {
+        vrn: "111222333",
+        periodStart: openPeriod.start,
+        periodEnd: openPeriod.end,
+        allowSyntheticObligations: "true",
+      },
+      headers: {
+        "authorization": "Bearer test-token",
+        "hmrcAccount": "synthetic",
+        "x-wait-time-ms": "30000",
+        "x-initial-request": "true",
+      },
+    });
+    const response = await hmrcVatReturnGetHandler(event);
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body)).toEqual(vatReturn);
+    expect(mockFetch).toHaveBeenCalledTimes(derivedKeys.length + 1);
+    expect(mockFetch.mock.calls[derivedKeys.length][0]).toContain("/returns/18A2");
+  });
+
   test("a live account reports a miss rather than guessing at a period key", async () => {
     mockGetVatObligations.mockResolvedValue({
       obligations: { obligations: [{ periodKey: "18A2", start: "2017-04-01", end: "2017-06-30", status: "O" }] },

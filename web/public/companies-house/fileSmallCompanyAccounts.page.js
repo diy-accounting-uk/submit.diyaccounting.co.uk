@@ -286,6 +286,14 @@ function renderRejections(rejections) {
   container.replaceChildren(...rejections.map((entry) => paragraph(`${entry.rejectCode}: ${entry.description}`)));
 }
 
+function showFilingCopyLink(outcome) {
+  if (outcome.statusCode !== "ACCEPT" || !outcome.receiptId) return;
+  const link = document.getElementById("filingCopyLink");
+  const receiptName = encodeURIComponent(outcome.receiptId + ".json");
+  link.href = `filings.html?receipt=${receiptName}`;
+  link.style.display = "inline";
+}
+
 async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
   for (let attempt = 0; attempt < 20; attempt++) {
     const result = await window.pollMicroEntityAccounts(submissionNumber, extraHeaders);
@@ -333,6 +341,7 @@ async function handleSubmitFiling() {
       .getElementById("filingResult")
       .replaceChildren(paragraph("Submission ", { strong: outcome.submissionNumber }, " was ", { strong: outcome.statusCode }, "."));
     renderRejections(outcome.rejections);
+    showFilingCopyLink(outcome);
     if (outcome.statusCode === "ACCEPT") {
       sessionStorage.setItem("filedSmallCompanyAccounts", JSON.stringify(filedAccounts));
       document.getElementById("taxReturnPrompt").style.display = "block";

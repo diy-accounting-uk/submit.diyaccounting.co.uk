@@ -544,7 +544,7 @@ name = "View previously submitted receipts"
 display = "on-entitlement"
 bundles = ["default"]
 metered = false
-paths = ["hmrc/receipt/receipts.html", "^/api/v1/hmrc/receipt.*"]
+paths = ["hmrc/receipt/receipts.html", "companies-house/filings.html", "^/api/v1/hmrc/receipt.*"]
 
 [[activities]]
 id = "generate-pass-digital"
