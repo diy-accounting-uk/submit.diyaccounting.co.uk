@@ -236,11 +236,11 @@
         },
         {
           "action": "scroll",
-          "target": "#currentTurnover"
+          "target": "#microCurrentTurnover"
         },
         {
           "action": "point",
-          "target": "#currentTurnover",
+          "target": "#microCurrentTurnover",
           "dwellMs": 500,
           "caption": "Turnover comes straight from the book.",
           "headline": "Turnover from the book",
@@ -303,7 +303,7 @@
         },
         {
           "action": "click",
-          "target": "#statementSmallCompaniesRegime"
+          "target": "#statementMicroEntityProvisions"
         },
         {
           "action": "click",
@@ -435,12 +435,66 @@
           "ms": 2500
         },
         {
+          "action": "hold",
+          "ms": 1500
+        },
+        {
+          "action": "goto",
+          "url": "/hmrc/receipt/receipts.html",
+          "waitFor": "#receiptsTable .receipt-label",
+          "caption": "Your receipts page lists the filing.",
+          "headline": "Find your filing",
+          "keyWord": "filing"
+        },
+        {
+          "action": "click",
+          "target": ".receipt-label",
+          "expectsNavigation": true,
+          "caption": "Open your copy of the filing.",
+          "headline": "Open your copy",
+          "keyWord": "copy"
+        },
+        {
+          "action": "await",
+          "until": "#filingContent iframe.filed-document",
+          "label": "Loading your copy"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        },
+        {
+          "action": "scroll",
+          "to": "top",
+          "caption": "Your copy shows the return as filed, with its figures and declaration.",
+          "headline": "The return as filed",
+          "keyWord": "filed"
+        },
+        {
+          "action": "hold",
+          "ms": 4000
+        },
+        {
+          "action": "scroll",
+          "to": "bottom",
+          "caption": "It ends with HMRC's receipt, the status and the date filed.",
+          "headline": "HMRC's receipt",
+          "keyWord": "receipt"
+        },
+        {
+          "action": "hold",
+          "ms": 4000
+        },
+        {
           "action": "still",
           "name": "file-company-tax-return-book-result"
         },
         {
           "action": "hold",
-          "ms": 1500
+          "ms": 2500,
+          "caption": "Your copy stays on your receipts page.",
+          "headline": "Kept on your receipts",
+          "keyWord": "receipts"
         }
       ]
     }

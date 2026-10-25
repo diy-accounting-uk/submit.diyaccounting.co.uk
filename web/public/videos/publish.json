@@ -125,21 +125,21 @@
       "group": "vat",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": null,
-      "sourceArtifact": null,
-      "videoFile": "target/videos/submit-return-sim/submit-return.mp4",
-      "captionFile": "target/videos/submit-return-sim/submit-return.vtt",
-      "title": "DIY Accounting Submit: submit a VAT return (simulated example)",
-      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, checking which VAT period is open, then filling in the nine boxes and submitting the return to HMRC. It is recorded against a local simulator of HMRC's API, so the figures and periods are examples and no live filing is made. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:06 Sign in\n00:27 Day pass\n00:50 Ask HMRC\n01:23 Authorise with HMRC\n01:40 The periods on file\n02:01 Fill in the return\n03:31 Authorise again\n04:06 Submitted\n04:38 Your record",
+      "sourceRun": 40160571324,
+      "sourceArtifact": "video-submit-return-prod",
+      "videoFile": "target/videos/video-submit-return-prod/submit-return.mp4",
+      "captionFile": "target/videos/video-submit-return-prod/submit-return.vtt",
+      "title": "DIY Accounting Submit: submit a VAT return",
+      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, checking which VAT period is open, then filling in the nine boxes and submitting the return to HMRC. It is a real recording of the live product, sending to HMRC's sandbox, so the figures and periods are examples. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:03 Sign in\n00:20 Day pass\n00:37 Ask HMRC\n00:59 Authorise with HMRC\n01:23 The periods on file\n01:41 Fill in the return\n02:51 Authorise again\n03:23 Submitted\n03:43 Your record",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "VAT submission"],
       "categoryId": "27",
-      "videoId": "PipZMHyqmd4",
+      "videoId": "v0tfJ5nlsGk",
       "walkthrough": [
         {
           "scene": "obligations-form",
           "headline": "Ask HMRC",
           "caption": "Type the VAT registration number. Then the stretch of time to look at.",
-          "startSeconds": 50,
+          "startSeconds": 37,
           "thumb": "videos/submit-return/obligations-form-thumb.webp",
           "full": "videos/submit-return/obligations-form.webp"
         },
@@ -147,7 +147,7 @@
           "scene": "results",
           "headline": "The periods on file",
           "caption": "HMRC answers with every period it holds. An open period is still waiting for a return.",
-          "startSeconds": 100,
+          "startSeconds": 83,
           "thumb": "videos/submit-return/results-thumb.webp",
           "full": "videos/submit-return/results.webp"
         },
@@ -156,7 +156,7 @@
           "step": 0,
           "headline": "Start the return",
           "caption": "Start a return for that open period.",
-          "startSeconds": 121,
+          "startSeconds": 101,
           "thumb": "videos/submit-return/submit-form-0-thumb.webp",
           "full": "videos/submit-return/submit-form-0.webp"
         },
@@ -165,7 +165,7 @@
           "step": 2,
           "headline": "Box 1, VAT on sales",
           "caption": "Box 1 is the VAT due on your sales.",
-          "startSeconds": 130,
+          "startSeconds": 108,
           "thumb": "videos/submit-return/submit-form-2-thumb.webp",
           "full": "videos/submit-return/submit-form-2.webp"
         },
@@ -174,7 +174,7 @@
           "step": 3,
           "headline": "Box 2, usually zero",
           "caption": "Box 2 is VAT on EU acquisitions, usually zero now.",
-          "startSeconds": 139,
+          "startSeconds": 115,
           "thumb": "videos/submit-return/submit-form-3-thumb.webp",
           "full": "videos/submit-return/submit-form-3.webp"
         },
@@ -183,7 +183,7 @@
           "step": 4,
           "headline": "Box 3 adds it up",
           "caption": "Box 3 adds boxes 1 and 2 for you.",
-          "startSeconds": 148,
+          "startSeconds": 122,
           "thumb": "videos/submit-return/submit-form-4-thumb.webp",
           "full": "videos/submit-return/submit-form-4.webp"
         },
@@ -192,7 +192,7 @@
           "step": 5,
           "headline": "Box 4, VAT reclaimed",
           "caption": "Box 4 is VAT you can reclaim on purchases.",
-          "startSeconds": 155,
+          "startSeconds": 129,
           "thumb": "videos/submit-return/submit-form-5-thumb.webp",
           "full": "videos/submit-return/submit-form-5.webp"
         },
@@ -201,7 +201,7 @@
           "step": 6,
           "headline": "Box 5, the net total",
           "caption": "Box 5 works out what you owe overall.",
-          "startSeconds": 163,
+          "startSeconds": 135,
           "thumb": "videos/submit-return/submit-form-6-thumb.webp",
           "full": "videos/submit-return/submit-form-6.webp"
         },
@@ -210,7 +210,7 @@
           "step": 7,
           "headline": "Box 6, total sales",
           "caption": "Box 6 is your total sales, without VAT.",
-          "startSeconds": 171,
+          "startSeconds": 142,
           "thumb": "videos/submit-return/submit-form-7-thumb.webp",
           "full": "videos/submit-return/submit-form-7.webp"
         },
@@ -219,7 +219,7 @@
           "step": 8,
           "headline": "Box 7, total purchases",
           "caption": "Box 7 is your total purchases, without VAT.",
-          "startSeconds": 179,
+          "startSeconds": 148,
           "thumb": "videos/submit-return/submit-form-8-thumb.webp",
           "full": "videos/submit-return/submit-form-8.webp"
         },
@@ -228,7 +228,7 @@
           "step": 9,
           "headline": "Boxes 8 and 9, EU trade",
           "caption": "Boxes 8 and 9 cover EU trade, usually zero now.",
-          "startSeconds": 187,
+          "startSeconds": 155,
           "thumb": "videos/submit-return/submit-form-9-thumb.webp",
           "full": "videos/submit-return/submit-form-9.webp"
         },
@@ -237,7 +237,7 @@
           "step": 11,
           "headline": "Confirm the declaration",
           "caption": "Tick the declaration to confirm the return is accurate.",
-          "startSeconds": 198,
+          "startSeconds": 163,
           "thumb": "videos/submit-return/submit-form-11-thumb.webp",
           "full": "videos/submit-return/submit-form-11.webp"
         },
@@ -245,7 +245,7 @@
           "scene": "authorise-submit",
           "headline": "Authorise again",
           "caption": "Submitting needs a wider grant, so HMRC asks once more. Sign in to HMRC and say yes again.",
-          "startSeconds": 211,
+          "startSeconds": 171,
           "thumb": "videos/submit-return/authorise-submit-thumb.webp",
           "full": "videos/submit-return/authorise-submit.webp"
         },
@@ -253,7 +253,7 @@
           "scene": "receipt",
           "headline": "Submitted",
           "caption": "HMRC confirms the return is filed. The receipt is your record that it went through.",
-          "startSeconds": 246,
+          "startSeconds": 203,
           "thumb": "videos/submit-return/receipt-thumb.webp",
           "full": "videos/submit-return/receipt.webp"
         },
@@ -262,7 +262,7 @@
           "step": 1,
           "headline": "Read back what you filed",
           "caption": "Back to the activities, to read the return you filed.",
-          "startSeconds": 278,
+          "startSeconds": 223,
           "thumb": "videos/submit-return/record-1-thumb.webp",
           "full": "videos/submit-return/record-1.webp"
         },
@@ -271,7 +271,7 @@
           "step": 3,
           "headline": "Open View VAT Return",
           "caption": "Open the return you have just sent.",
-          "startSeconds": 289,
+          "startSeconds": 231,
           "thumb": "videos/submit-return/record-3-thumb.webp",
           "full": "videos/submit-return/record-3.webp"
         },
@@ -280,7 +280,7 @@
           "step": 5,
           "headline": "Choose the period",
           "caption": "Then the period you filed.",
-          "startSeconds": 299,
+          "startSeconds": 238,
           "thumb": "videos/submit-return/record-5-thumb.webp",
           "full": "videos/submit-return/record-5.webp"
         },
@@ -289,7 +289,7 @@
           "step": 8,
           "headline": "Ask HMRC for the record",
           "caption": "Ask HMRC for the return on file.",
-          "startSeconds": 309,
+          "startSeconds": 246,
           "thumb": "videos/submit-return/record-8-thumb.webp",
           "full": "videos/submit-return/record-8.webp"
         },
@@ -298,7 +298,7 @@
           "step": 9,
           "headline": "HMRC sends the record",
           "caption": "HMRC sends back the return as it holds it.",
-          "startSeconds": 317,
+          "startSeconds": 252,
           "thumb": "videos/submit-return/record-9-thumb.webp",
           "full": "videos/submit-return/record-9.webp"
         },
@@ -307,7 +307,7 @@
           "step": 12,
           "headline": "Your record, as submitted",
           "caption": "This is your record: the totals and the declaration, as submitted.",
-          "startSeconds": 328,
+          "startSeconds": 264,
           "thumb": "videos/submit-return/record-12-thumb.webp",
           "full": "videos/submit-return/record-12.webp"
         }
@@ -2517,17 +2517,17 @@
       "videoFile": "target/videos/file-company-tax-return-book-sim/file-company-tax-return-book.mp4",
       "captionFile": "target/videos/file-company-tax-return-book-sim/file-company-tax-return-book.vtt",
       "title": "DIY Accounting Submit: Company Tax Return from a book (sandbox)",
-      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video files a Company Tax Return from a diya-gl book: sign in, take out Resident, look up a company, drop the book on the form, check the figures it fills, preview the CT600 and file it. This is a sandbox preview, recorded against a local simulator of HMRC's test service, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:04 Sign in\n00:16 Resident\n00:33 Which company?\n01:11 Fill from a book\n01:52 Complete the answers\n02:36 Review the return\n03:09 File it\n03:43 The outcome",
+      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video files a Company Tax Return from a diya-gl book: sign in, take out Resident, look up a company, drop the book on the form, check the figures it fills, preview the CT600 and file it. This is a sandbox preview, recorded against a local simulator of HMRC's test service, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:02 Sign in\n00:07 Resident\n00:18 Which company?\n00:45 Fill from a book\n01:14 Complete the answers\n01:43 Review the return\n02:10 File it\n02:36 The outcome",
       "tags": ["DIY Accounting", "Company Tax Return", "CT600", "HMRC", "sandbox"],
       "categoryId": "27",
-      "videoId": "KKoqZCzKHtk",
+      "videoId": "KXT7-dvxSMQ",
       "walkthrough": [
         {
           "scene": "company-lookup",
           "step": 0,
           "headline": "Find the company",
           "caption": "Open File Company Tax Return to find the company.",
-          "startSeconds": 33,
+          "startSeconds": 18,
           "thumb": "videos/file-company-tax-return-book/company-lookup-0-thumb.webp",
           "full": "videos/file-company-tax-return-book/company-lookup-0.webp"
         },
@@ -2536,7 +2536,7 @@
           "step": 2,
           "headline": "Enter the company number",
           "caption": "Type the company number.",
-          "startSeconds": 43,
+          "startSeconds": 25,
           "thumb": "videos/file-company-tax-return-book/company-lookup-2-thumb.webp",
           "full": "videos/file-company-tax-return-book/company-lookup-2.webp"
         },
@@ -2545,7 +2545,7 @@
           "step": 3,
           "headline": "Look up the company",
           "caption": "Look up the company with Companies House.",
-          "startSeconds": 50,
+          "startSeconds": 31,
           "thumb": "videos/file-company-tax-return-book/company-lookup-3-thumb.webp",
           "full": "videos/file-company-tax-return-book/company-lookup-3.webp"
         },
@@ -2554,7 +2554,7 @@
           "step": 5,
           "headline": "Confirm the company name",
           "caption": "Companies House confirms the company name.",
-          "startSeconds": 60,
+          "startSeconds": 37,
           "thumb": "videos/file-company-tax-return-book/company-lookup-5-thumb.webp",
           "full": "videos/file-company-tax-return-book/company-lookup-5.webp"
         },
@@ -2563,7 +2563,7 @@
           "step": 0,
           "headline": "Drop your book",
           "caption": "Drop the company's diya-gl book on the form.",
-          "startSeconds": 71,
+          "startSeconds": 45,
           "thumb": "videos/file-company-tax-return-book/import-book-0-thumb.webp",
           "full": "videos/file-company-tax-return-book/import-book-0.webp"
         },
@@ -2572,7 +2572,7 @@
           "step": 1,
           "headline": "The form fills itself",
           "caption": "The accounts and the tax figures fill from the book.",
-          "startSeconds": 81,
+          "startSeconds": 50,
           "thumb": "videos/file-company-tax-return-book/import-book-1-thumb.webp",
           "full": "videos/file-company-tax-return-book/import-book-1.webp"
         },
@@ -2581,7 +2581,7 @@
           "step": 3,
           "headline": "Turnover from the book",
           "caption": "Turnover comes straight from the book.",
-          "startSeconds": 88,
+          "startSeconds": 57,
           "thumb": "videos/file-company-tax-return-book/import-book-3-thumb.webp",
           "full": "videos/file-company-tax-return-book/import-book-3.webp"
         },
@@ -2590,7 +2590,7 @@
           "step": 5,
           "headline": "The tax is worked out",
           "caption": "The tax is worked out beside your answers.",
-          "startSeconds": 97,
+          "startSeconds": 65,
           "thumb": "videos/file-company-tax-return-book/import-book-5-thumb.webp",
           "full": "videos/file-company-tax-return-book/import-book-5.webp"
         },
@@ -2598,7 +2598,7 @@
           "scene": "finish-form",
           "headline": "Complete the answers",
           "caption": "Accept the four statutory statements. Tick the declaration to confirm the return is accurate.",
-          "startSeconds": 112,
+          "startSeconds": 74,
           "thumb": "videos/file-company-tax-return-book/finish-form-thumb.webp",
           "full": "videos/file-company-tax-return-book/finish-form.webp"
         },
@@ -2606,7 +2606,7 @@
           "scene": "preview",
           "headline": "Review the return",
           "caption": "These are the CT600 boxes as HMRC will receive them. The tax computation sits beside the return.",
-          "startSeconds": 156,
+          "startSeconds": 103,
           "thumb": "videos/file-company-tax-return-book/preview-thumb.webp",
           "full": "videos/file-company-tax-return-book/preview.webp"
         },
@@ -2614,17 +2614,72 @@
           "scene": "submit",
           "headline": "File it",
           "caption": "Type the Government Gateway password. Submit the return to HMRC's test service.",
-          "startSeconds": 189,
+          "startSeconds": 130,
           "thumb": "videos/file-company-tax-return-book/submit-thumb.webp",
           "full": "videos/file-company-tax-return-book/submit.webp"
         },
         {
           "scene": "result",
-          "headline": "The outcome",
-          "caption": "HMRC's test service accepts the return. The IRmark proves the return arrived unchanged.",
-          "startSeconds": 223,
-          "thumb": "videos/file-company-tax-return-book/result-thumb.webp",
-          "full": "videos/file-company-tax-return-book/result.webp"
+          "step": 0,
+          "headline": "HMRC accepts the return",
+          "caption": "HMRC's test service accepts the return.",
+          "startSeconds": 156,
+          "thumb": "videos/file-company-tax-return-book/result-0-thumb.webp",
+          "full": "videos/file-company-tax-return-book/result-0.webp"
+        },
+        {
+          "scene": "result",
+          "step": 1,
+          "headline": "The IRmark",
+          "caption": "The IRmark proves the return arrived unchanged.",
+          "startSeconds": 161,
+          "thumb": "videos/file-company-tax-return-book/result-1-thumb.webp",
+          "full": "videos/file-company-tax-return-book/result-1.webp"
+        },
+        {
+          "scene": "result",
+          "step": 4,
+          "headline": "Find your filing",
+          "caption": "Your receipts page lists the filing.",
+          "startSeconds": 172,
+          "thumb": "videos/file-company-tax-return-book/result-4-thumb.webp",
+          "full": "videos/file-company-tax-return-book/result-4.webp"
+        },
+        {
+          "scene": "result",
+          "step": 5,
+          "headline": "Open your copy",
+          "caption": "Open your copy of the filing.",
+          "startSeconds": 179,
+          "thumb": "videos/file-company-tax-return-book/result-5-thumb.webp",
+          "full": "videos/file-company-tax-return-book/result-5.webp"
+        },
+        {
+          "scene": "result",
+          "step": 8,
+          "headline": "The return as filed",
+          "caption": "Your copy shows the return as filed, with its figures and declaration.",
+          "startSeconds": 187,
+          "thumb": "videos/file-company-tax-return-book/result-8-thumb.webp",
+          "full": "videos/file-company-tax-return-book/result-8.webp"
+        },
+        {
+          "scene": "result",
+          "step": 10,
+          "headline": "HMRC's receipt",
+          "caption": "It ends with HMRC's receipt, the status and the date filed.",
+          "startSeconds": 202,
+          "thumb": "videos/file-company-tax-return-book/result-10-thumb.webp",
+          "full": "videos/file-company-tax-return-book/result-10.webp"
+        },
+        {
+          "scene": "result",
+          "step": 13,
+          "headline": "Kept on your receipts",
+          "caption": "Your copy stays on your receipts page.",
+          "startSeconds": 219,
+          "thumb": "videos/file-company-tax-return-book/result-13-thumb.webp",
+          "full": "videos/file-company-tax-return-book/result-13.webp"
         }
       ]
     },
