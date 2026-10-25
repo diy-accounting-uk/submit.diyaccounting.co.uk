@@ -2140,19 +2140,11 @@ body > footer {
   flex-direction: column;
   gap: var(--space-4);
   margin: var(--space-5) 0;
+  min-height: min(40vh, 22rem);
 }
 
 .form-container > .bundles-section[hidden] + .bundles-list {
   margin-top: 0;
-}
-
-.bundles-list:empty::before {
-  content: "";
-  display: block;
-  height: 9rem;
-  background: var(--c-paper);
-  border: 1px solid var(--c-rule-subtle);
-  border-radius: var(--radius-card);
 }
 
 .service-item {
