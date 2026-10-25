@@ -15,38 +15,6 @@
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../submit.css" />
     <link rel="stylesheet" href="../submission-record.css" />
-    <style>
-      .filing-actions {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.75em 1.5em;
-        margin: 1em 0;
-      }
-      .filing-notice {
-        margin: 1em 0;
-        color: var(--c-ink-muted, #505a5f);
-      }
-      .submission-record iframe.filed-document {
-        display: block;
-        width: 100%;
-        height: 40em;
-        border: 0;
-        background: #fff;
-      }
-      @media print {
-        .skip-link,
-        body > header,
-        body > footer,
-        .filing-actions,
-        .filing-notice,
-        #unauthenticatedHint {
-          display: none !important;
-        }
-        .submission-record iframe.filed-document {
-          height: auto;
-        }
-      }
-    </style>
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -58,18 +26,22 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
-      <h1>DIY Accounting Submit</h1>
-      <p class="subtitle">Your copy of a filing</p>
+      <h1>Your copy of a filing</h1>
+      <p class="subtitle">The accounts or Company Tax Return as you filed them</p>
     </header>
 
     <main id="mainContent">
-      <div id="unauthenticatedHint" style="display: none; margin-bottom: 1em; color: #b30000">Please log in to see your filing.</div>
       <p id="filingNotice" class="filing-notice" style="display: none"></p>
       <div class="filing-actions" id="filingActions" style="display: none">
         <button type="button" class="btn-small" id="printFilingBtn">Print or save as PDF</button>
         <a href="../hmrc/receipt/receipts.html">All your receipts</a>
       </div>
-      <div id="filingContent"></div>
+      <div
+        id="filingContent"
+        data-requires-sign-in
+        data-sign-in-title="Log in to see your filing"
+        data-sign-in-text="Your copy of a filing is kept with your account. Log in to open it."
+      ></div>
     </main>
 
     <footer></footer>
@@ -81,6 +53,7 @@
     <script src="../lib/request-cache.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
     <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/signed-out-panel.js"></script>
     <script type="module" src="../widgets/view-source-link.js"></script>
     <script src="filings.page.js"></script>
   </body>
