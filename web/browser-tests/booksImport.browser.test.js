@@ -17,6 +17,7 @@ import { PRODUCTS } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 import { savePackageZip } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import { deriveItsaQuarterlyUpdate, deriveVatReturn } from "@diy-accounting-uk/diya-gl";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -838,5 +839,102 @@ test.describe("books import on the small company accounts page", () => {
     await expect(page.locator("#directorName")).toHaveValue("Carol Smith");
     await expect(page.locator("#includeComparatives")).not.toBeChecked();
     await expect(page.locator("#principalActivity")).toHaveValue("");
+  });
+});
+
+const ACCOUNTS_CASES = JSON.parse(
+  fs.readFileSync(path.join(process.cwd(), "scripts/fixtures/companies-house-test-service-cases.json"), "utf8"),
+).filter((testCase) => testCase.type === "accounts");
+
+function builtAccountsDocument(caseName, overrides = {}) {
+  const { name, type, govTestScenario, expectedOutcome, ...requestBody } = ACCOUNTS_CASES.find((testCase) => testCase.name === caseName);
+  const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify({ ...requestBody, ...overrides }) }, []);
+  return Buffer.from(buildAccountsIxbrl(accounts), "utf8");
+}
+
+test.describe("books import of an iXBRL accounts document", () => {
+  test("a micro-entity document fills the micro-entity form", async ({ page }) => {
+    await openAccountsPage(page, MICRO_URL, "03176906");
+    await chooseFile(page, "accounts.xhtml", builtAccountsDocument("micro-entity-accounts"), "application/xhtml+xml");
+
+    await expect(page.locator("#booksImportStatus")).toContainText(
+      "from accounts.xhtml (FRS 102 2026 taxonomy) for the period 2025-01-01 to 2025-12-31.",
+      { timeout: 60_000 },
+    );
+    await expect(page.locator("#periodStart")).toHaveValue("2025-01-01");
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("1000");
+    await expect(page.locator("#currentCurrentAssets")).toHaveValue("5000");
+    await expect(page.locator("#currentCreditorsWithinOneYear")).toHaveValue("2000");
+    await expect(page.locator("#currentProfitAndLossAccount")).toHaveValue("3900");
+    await expect(page.locator("#currentCapitalAndReserves")).toHaveValue("4000");
+    await expect(page.locator("#priorFixedAssets")).toHaveValue("900");
+    await expect(page.locator("#priorCapitalAndReserves")).toHaveValue("2900");
+    await expect(page.locator("#averageEmployees")).toHaveValue("2");
+    await expect(page.locator("#directorName")).toHaveValue("Maldwyn Beynon");
+    await expect(page.locator("#dormant")).not.toBeChecked();
+    await expect(page.locator("#directorDateApproved")).toHaveValue("");
+  });
+
+  test("a dormant document ticks the dormant box and fills its trading history and shares", async ({ page }) => {
+    await openAccountsPage(page, MICRO_URL, "03176906");
+    await chooseFile(page, "dormant.xhtml", builtAccountsDocument("micro-entity-accounts-dormant"), "application/xhtml+xml");
+
+    await expect(page.locator("#booksImportStatus")).toContainText("so the dormant box is ticked", { timeout: 60_000 });
+    await expect(page.locator("#dormant")).toBeChecked();
+    await expect(page.locator("#dormantTradingStatus")).toHaveValue("neverTraded");
+    await expect(page.locator("#shareClass")).toHaveValue("ordinaryShares");
+    await expect(page.locator("#nominalValue")).toHaveValue("1");
+    await expect(page.locator("#currentCalledUpShareCapital")).toHaveValue("100");
+  });
+
+  test("a small company document fills the profit and loss account, the balance sheets, the note and the directors", async ({ page }) => {
+    await openAccountsPage(page, SMALL_URL, "03176906");
+    await chooseFile(page, "accounts.xhtml", builtAccountsDocument("small-company-accounts-full"), "application/xhtml+xml");
+
+    await expect(page.locator("#booksImportStatus")).toContainText("from accounts.xhtml (FRS 102 2026 taxonomy)", { timeout: 60_000 });
+    await expect(page.locator("#copyFull")).toBeChecked();
+    await expect(page.locator("#currentTurnover")).toHaveValue("20000");
+    await expect(page.locator("#currentCostOfSales")).toHaveValue("5000");
+    await expect(page.locator("#currentTax")).toHaveValue("600");
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("1000");
+    await expect(page.locator("#currentOtherCreditors")).toHaveValue("300");
+    await expect(page.locator("#includeComparatives")).toBeChecked();
+    await expect(page.locator("#priorTurnover")).toHaveValue("18000");
+    await expect(page.locator("#priorCreditorsAfterOneYear")).toHaveValue("600");
+    await expect(page.locator("#includeFixedAssetNote")).toBeChecked();
+    await expect(page.locator("#notePlantMachineryAdditions")).toHaveValue("400");
+    await expect(page.locator("#noteComputerEquipmentDepreciationCharge")).toHaveValue("230");
+    await expect(page.locator("#averageEmployees")).toHaveValue("4");
+    await expect(page.locator("#principalActivity")).toHaveValue("Stadium operation and events");
+    await expect(page.locator("#directors")).toHaveValue("Maldwyn Beynon");
+    await expect(page.locator("#directorName")).toHaveValue("Maldwyn Beynon");
+  });
+
+  test("a filleted small company document selects the filleted copy and leaves the profit and loss account empty", async ({ page }) => {
+    await openAccountsPage(page, SMALL_URL, "03176906");
+    await chooseFile(page, "filleted.xhtml", builtAccountsDocument("small-company-accounts-filleted"), "application/xhtml+xml");
+
+    await expect(page.locator("#booksImportStatus")).toContainText("from filleted.xhtml", { timeout: 60_000 });
+    await expect(page.locator("#copyFilleted")).toBeChecked();
+    await expect(page.locator("#currentTurnover")).toHaveValue("");
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("1000");
+    await expect(page.locator("#priorFixedAssets")).toHaveValue("800");
+  });
+
+  test("a document for another company fills nothing", async ({ page }) => {
+    await openAccountsPage(page, MICRO_URL, "99999999");
+    await chooseFile(page, "accounts.xhtml", builtAccountsDocument("micro-entity-accounts"), "application/xhtml+xml");
+
+    await expect(page.locator("#booksImportStatus")).toContainText("03176906", { timeout: 60_000 });
+    await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled.");
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("");
+  });
+
+  test("a small company document on the micro-entity page fills nothing", async ({ page }) => {
+    await openAccountsPage(page, MICRO_URL, "03176906");
+    await chooseFile(page, "accounts.xhtml", builtAccountsDocument("small-company-accounts-full"), "application/xhtml+xml");
+
+    await expect(page.locator("#booksImportStatus")).toContainText("this page takes a micro-entity's accounts", { timeout: 60_000 });
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("");
   });
 });

@@ -10,6 +10,7 @@ import fs from "node:fs";
 import path from "node:path";
 import JSZip from "jszip";
 import { expect, test } from "@playwright/test";
+import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 import { loggedClick, loggedFill, timestamp, takeScreenshot } from "../helpers/behaviour-helpers.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-companies-house-accounts-steps";
@@ -236,6 +237,27 @@ export async function writeFixtureBookZip(fixtureName, companyNumber, outputDire
   const zipFile = path.join(outputDirectory, `${fixtureName}.diya-gl.zip`);
   fs.writeFileSync(zipFile, await zip.generateAsync({ type: "nodebuffer" }));
   return zipFile;
+}
+
+/**
+ * Build an iXBRL accounts document from one of the Companies House test service accounts cases, for the
+ * company the sandbox looks up in place of the case's own, and return the file's path.
+ */
+export function writeBuiltIxbrlFile(caseName, company, outputDirectory) {
+  const casesFile = path.join(process.cwd(), "scripts", "fixtures", "companies-house-test-service-cases.json");
+  const { name, type, govTestScenario, expectedOutcome, ...requestBody } = JSON.parse(fs.readFileSync(casesFile, "utf8")).find(
+    (testCase) => testCase.name === caseName,
+  );
+  const errors = [];
+  const accounts = extractAndValidateAccountsParameters(
+    { body: JSON.stringify({ ...requestBody, companyNumber: company.companyNumber, companyName: company.companyName }) },
+    errors,
+  );
+  if (errors.length > 0) throw new Error(`The ${caseName} case is not a valid accounts request: ${errors.join("; ")}`);
+  fs.mkdirSync(outputDirectory, { recursive: true });
+  const file = path.join(outputDirectory, `${caseName}.xhtml`);
+  fs.writeFileSync(file, buildAccountsIxbrl(accounts));
+  return file;
 }
 
 /**
