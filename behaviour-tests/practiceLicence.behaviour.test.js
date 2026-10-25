@@ -6,9 +6,9 @@
 // A practice (a resident-pro subscriber) adds two clients and files a VAT return for each
 // through the submission MCP's own run_for_clients, over mcp/lib/batch-tools.js and
 // mcp/lib/practice-tools.js exactly as the MCP server would call them. Signing in to Submit and
-// minting an HMRC access token still go through the browser (postVatReturn.behaviour.test.js's
-// own path); the practice and filing calls that follow run as plain Node fetches through the MCP
-// library, not page.evaluate calls, so this proves the MCP's own contract rather than the UI's.
+// the consent half of the MCP's HMRC grant still go through the browser; the practice and filing
+// calls that follow run as plain Node fetches through the MCP library, not page.evaluate calls,
+// so this proves the MCP's own contract rather than the UI's.
 //
 // The two clients share the sandbox's pre-authorised VRN (app/http-simulator/routes/
 // agent-authorisation.js's PRE_AUTHORISED_CLIENT_IDS) so GET .../authorisation resolves each
@@ -34,15 +34,6 @@ import {
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn, goToHomePageUsingMainNav } from "./steps/behaviour-steps.js";
 import { clickLogIn, loginWithCognitoOrMockAuth, verifyLoggedInStatus } from "./steps/behaviour-login-steps.js";
 import { ensureBundleViaCheckout, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
-import { initSubmitVat, fillInVat, submitFormVat, completeVat } from "./steps/behaviour-hmrc-vat-steps.js";
-import {
-  acceptCookiesHmrc,
-  fillInHmrcAuth,
-  goToHmrcAuth,
-  grantPermissionHmrcAuth,
-  initHmrcAuth,
-  submitHmrcAuth,
-} from "./steps/behaviour-hmrc-steps.js";
 import { grantMcpHmrcAccessInBrowser } from "./steps/behaviour-mcp-hmrc-grant-steps.js";
 import { callHarnessTool } from "../mcp/lib/harness.js";
 import { addClient, clientAuthorisationStatus, inviteClient } from "../mcp/lib/practice-tools.js";
@@ -66,7 +57,6 @@ const testAuthPassword = getEnvVarAndLog("testAuthPassword", "TEST_AUTH_PASSWORD
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
 const hmrcTestUsername = getEnvVarAndLog("hmrcTestUsername", "TEST_HMRC_USERNAME", null);
 const hmrcTestPassword = getEnvVarAndLog("hmrcTestPassword", "TEST_HMRC_PASSWORD", null);
-const hmrcTestVatNumber = getEnvVarAndLog("hmrcTestVatNumber", "TEST_HMRC_VAT_NUMBER", null);
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
@@ -75,8 +65,6 @@ const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMOD
 // sandbox needs a test agent's own ARN here instead.
 const practiceArn = getEnvVarAndLog("practiceArn", "TEST_HMRC_AGENT_ARN", "XARN0000067");
 
-const hmrcVatDueAmount = "1000.00";
-
 // The client identifier the simulator's agent-authorisation stand-in always answers "already
 // authorised" for (app/http-simulator/routes/agent-authorisation.js's PRE_AUTHORISED_CLIENT_IDS),
 // so both clients' GET .../authorisation calls resolve without a client-side acceptance step.
@@ -84,7 +72,7 @@ const PRE_AUTHORISED_VRN = "999999999";
 
 // The simulator's default obligations (app/http-simulator/scenarios/obligations.js) always carry
 // one open period at these dates; the earlier Jan-Mar period is already fulfilled, so filing
-// against it 409s. Used both for the token-minting submission and the two clients' own returns.
+// against it 409s.
 const OPEN_OBLIGATION_PERIOD = { periodStart: "2017-04-01", periodEnd: "2017-06-30" };
 
 let mockOAuth2Process;
@@ -123,12 +111,11 @@ test("A practice adds two clients and submits a VAT return for each through run_
   addOnPageLogging(page);
 
   /* ************************************************* */
-  /*  HMRC TEST USER — only needed to mint an access    */
-  /*  token; the two practice clients use a fixed VRN   */
+  /*  HMRC TEST USER — only needed to grant the MCP's   */
+  /*  HMRC access; the practice clients use a fixed VRN */
   /* ************************************************* */
   let currentTestUsername = hmrcTestUsername;
   let currentTestPassword = hmrcTestPassword;
-  let tokenMintingVatNumber = hmrcTestVatNumber;
   if (!hmrcTestUsername) {
     const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
     const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
@@ -138,7 +125,6 @@ test("A practice adds two clients and submits a VAT return for each through run_
     const testUser = await createHmrcTestUser(hmrcClientId, hmrcClientSecret, { serviceNames: ["mtd-vat"] });
     currentTestUsername = testUser.userId;
     currentTestPassword = testUser.password;
-    tokenMintingVatNumber = testUser.vrn;
   }
 
   /* ****************************************************************** */
@@ -158,24 +144,6 @@ test("A practice adds two clients and submits a VAT return for each through run_
   await ensureBundleViaCheckout(page, "resident-pro", screenshotPath, { skipPass: true });
   await goToHomePageUsingMainNav(page, screenshotPath);
 
-  /* ******************************************************************* */
-  /*  MINT AN HMRC ACCESS TOKEN — one page-driven VAT submission cycle,  */
-  /*  the same shape postVatReturn.behaviour.test.js uses for its first  */
-  /*  submission, run here purely to populate sessionStorage's token.    */
-  /* ******************************************************************* */
-  await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, tokenMintingVatNumber, OPEN_OBLIGATION_PERIOD, hmrcVatDueAmount, null, false, screenshotPath, false);
-  await submitFormVat(page, screenshotPath);
-  await acceptCookiesHmrc(page, screenshotPath);
-  await goToHmrcAuth(page, screenshotPath);
-  await initHmrcAuth(page, screenshotPath);
-  await fillInHmrcAuth(page, currentTestUsername, currentTestPassword, screenshotPath);
-  await submitHmrcAuth(page, screenshotPath);
-  await grantPermissionHmrcAuth(page, screenshotPath);
-  await completeVat(page, baseUrl, null, screenshotPath);
-
-  const hmrcAccessToken = await page.evaluate(() => sessionStorage.getItem("hmrcAccessToken"));
-  expect(hmrcAccessToken, "no HMRC access token was minted by the page-driven submission").toBeTruthy();
   const practiceSessionToken = await page.evaluate(() => localStorage.getItem("cognitoAccessToken"));
   expect(practiceSessionToken, "no Cognito access token was found after sign-in").toBeTruthy();
   const practiceIdToken = await page.evaluate(() => localStorage.getItem("cognitoIdToken"));
@@ -214,6 +182,19 @@ test("A practice adds two clients and submits a VAT return for each through run_
   );
   const session = createSession();
 
+  /* ******************************************************************* */
+  /*  START THE SESSION'S HMRC GRANT: invite_client, client_authorisation */
+  /*  _status and submit_vat_return all read their token from the grant,  */
+  /*  so the user consents on HMRC's pages first, for the agent and VAT   */
+  /*  services together.                                                  */
+  /* ******************************************************************* */
+  const authorisation = await callHarnessTool(session, "request_hmrc_authorisation", {
+    services: ["vat", "agent"],
+    hmrcAccount: "synthetic",
+  });
+  expect(authorisation.ok, `request_hmrc_authorisation: ${JSON.stringify(authorisation.result)}`).toBe(true);
+  await grantMcpHmrcAccessInBrowser(page, authorisation.result.url, currentTestUsername, currentTestPassword, screenshotPath);
+
   // A throwaway client, invited once so the invite endpoint records the practice's ARN. Its own
   // invitation is left pending (the simulator never accepts one), so it is archived immediately
   // and never appears in the practice's client list run_for_clients loops over.
@@ -222,7 +203,6 @@ test("A practice adds two clients and submits a VAT return for each through run_
     clientId: bootstrapClient.client.clientId,
     service: "MTD-VAT",
     knownFact: "2015-01-01",
-    hmrcAccessToken,
     arn: practiceArn,
   });
   await callSubmitApi(session, `/api/v1/practice/clients/${encodeURIComponent(bootstrapClient.client.clientId)}`, { method: "DELETE" });
@@ -230,26 +210,10 @@ test("A practice adds two clients and submits a VAT return for each through run_
   const clientA = await addClient(session, { displayName: "Practice Client A", vrn: PRE_AUTHORISED_VRN });
   const clientB = await addClient(session, { displayName: "Practice Client B", vrn: PRE_AUTHORISED_VRN });
 
-  const statusA = await clientAuthorisationStatus(session, {
-    clientId: clientA.client.clientId,
-    service: "MTD-VAT",
-    hmrcAccessToken,
-  });
-  const statusB = await clientAuthorisationStatus(session, {
-    clientId: clientB.client.clientId,
-    service: "MTD-VAT",
-    hmrcAccessToken,
-  });
+  const statusA = await clientAuthorisationStatus(session, { clientId: clientA.client.clientId, service: "MTD-VAT" });
+  const statusB = await clientAuthorisationStatus(session, { clientId: clientB.client.clientId, service: "MTD-VAT" });
   expect(statusA.status).toBe("authorised");
   expect(statusB.status).toBe("authorised");
-
-  /* ******************************************************************* */
-  /*  START THE SESSION'S HMRC GRANT: submit_vat_return reads its token   */
-  /*  from the grant, so the user consents on HMRC's pages first.        */
-  /* ******************************************************************* */
-  const authorisation = await callHarnessTool(session, "request_hmrc_authorisation", { services: ["vat"], hmrcAccount: "synthetic" });
-  expect(authorisation.ok, `request_hmrc_authorisation: ${JSON.stringify(authorisation.result)}`).toBe(true);
-  await grantMcpHmrcAccessInBrowser(page, authorisation.result.url, currentTestUsername, currentTestPassword, screenshotPath);
 
   /* ******************************************************************* */
   /*  RUN_FOR_CLIENTS: one submit_vat_return call per client in the list  */
