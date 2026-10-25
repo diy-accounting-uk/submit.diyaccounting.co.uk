@@ -185,8 +185,21 @@ Model: Sonnet. Size: ~1 file.
 
 ### JF-3. Gradual rollout (was B82c, BACKLOG 82c)
 
-Enforce the filter one workflow and one job class at a time: unit-level jobs first, then
-behaviour suites, deploy stack jobs last. Each step stays only while the miss count stays at zero,
-with a switch to run everything; `main` stays on a full run. After JF-1, for the classes that met
-the bar. Model: Sonnet. Size: ~3 files.
+Enforce the filter one class group at a time, in the order below. A group's jobs carry the `if:`
 
+```
+!(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), '<job id>'))
+```
+
+Setting the repository variable `REASONED_JOB_FILTER` to `off` runs every enforced job; `main`
+always runs everything. A skipped job reports `skipped`, which the ruleset counts as passing, so
+`npm test`, `maven test` and `eslint` keep their existing reporting (`changes` plus the skip).
+The next step is one edit per group: replace the job's `skip-json` clause with the `if:` above.
+
+| Group | Classes | Condition | State |
+| --- | --- | --- | --- |
+| 1 | `npm-test-web-unit`, `npm-mcp-test`, `npm-system-test`, `mvn-test`, `lint-workflows`, `npm-test-cdk-ci`, `npm-test-cdk-prod` (test.yml) | `advised-json` | enforced |
+| 2 | `behaviour-test-proxy-submit-vat`, `behaviour-test-simulator-bundle`, `behaviour-test-simulator-file-micro-entity-accounts` (test.yml) | `advised-json` | advisory |
+| 3 | the ten `deploy-*` classes and the 31 `web-test*` classes at the bar (deploy.yml; needs `advised-json` on its `select-jobs`) | `advised-json` | advisory |
+
+Each group stays enforced while its miss count stays at zero. Model: Sonnet. Size: ~3 files.

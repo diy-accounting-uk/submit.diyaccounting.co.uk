@@ -166,7 +166,7 @@ jobs:
         run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" >> "$GITHUB_OUTPUT"
 
   lint-workflows:
-    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'lint-workflows') }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'lint-workflows')) }}
     name: 'validate workflow syntax'
     runs-on: ubuntu-24.04
     needs:
@@ -424,12 +424,16 @@ jobs:
       # per issue or per dispatch, so the budget bounds Bedrock spend on a runaway push loop
       # rather than reflecting a single call's cost.
       SELECT_JOBS_BUDGET_PER_DAY: '200'
+      # advised-json is the model's advised list in either mode. A job in an enforced group of
+      # the rollout reads it, guarded by the REASONED_JOB_FILTER repository variable ('off' runs
+      # every job) and by the ref (main runs every job).
       # 'advisory' records what the model would have skipped in the decision artifact but always
       # reports skip-json=[], so every job below still runs. 'enforcing' lets skip-json turn a
       # job off. See select-jobs.mjs's module comment for what each mode does.
       SELECT_JOBS_MODE: 'advisory'
     outputs:
       skip-json: ${{ steps.decide.outputs.skip-json }}
+      advised-json: ${{ steps.decide.outputs.advised-json }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -617,6 +621,8 @@ jobs:
             --mode "${SELECT_JOBS_MODE}" \
             --out "${OUT_DIR}/decision.json")
           echo "skip-json=${SKIP_JSON}" | tee -a "$GITHUB_OUTPUT"
+          ADVISED_JSON=$(jq -c '.advisedSkip // []' "${OUT_DIR}/decision.json" 2>/dev/null || echo '[]')
+          echo "advised-json=${ADVISED_JSON}" | tee -a "$GITHUB_OUTPUT"
 
       # deploy.yml calls this workflow with `uses:` (job "test"), and `github.run_id` inside a
       # called workflow is the CALLER's run id - so a deploy.yml run carries both this job's
@@ -746,7 +752,7 @@ jobs:
           retention-days: 14
 
   npm-mcp-test:
-    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-mcp-test') }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'npm-mcp-test')) }}
     name: 'npm mcp test'
     runs-on: ubuntu-latest
     needs:
@@ -784,7 +790,7 @@ jobs:
         working-directory: mcp
 
   npm-system-test:
-    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-system-test') }}
+    if: ${{ needs.changes.outputs.code == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'npm-system-test')) }}
     name: 'npm system test'
     runs-on: ubuntu-latest
     needs:
@@ -810,7 +816,7 @@ jobs:
       - run: npm run test:system
 
   npm-test-web-unit:
-    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-test-web-unit') }}
+    if: ${{ needs.changes.outputs.code == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'npm-test-web-unit')) }}
     name: 'npm unit test with coverage'
     runs-on: ubuntu-latest
     needs:
@@ -867,7 +873,7 @@ jobs:
       - run: npm run test:browser
 
   mvn-test:
-    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'mvn-test') }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'mvn-test')) }}
     name: 'maven test'
     runs-on: ubuntu-latest
     needs:
@@ -892,7 +898,7 @@ jobs:
           ./mvnw clean test
 
   npm-test-cdk-ci:
-    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-test-cdk-ci') }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'npm-test-cdk-ci')) }}
     name: 'npm test cdk-ci'
     needs:
       - select-jobs
@@ -981,7 +987,7 @@ jobs:
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
 
   npm-test-cdk-prod:
-    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-test-cdk-prod') }}
+    if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'npm-test-cdk-prod')) }}
     name: 'npm test cdk prod'
     needs:
       - select-jobs
