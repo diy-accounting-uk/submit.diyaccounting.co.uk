@@ -37,6 +37,7 @@ export async function goToHmrcAuth(page, screenshotPath = defaultScreenshotPath)
   await test.step("The user continues and is offered to sign in to the HMRC online service", async () => {
     //  Submit the permission form and expect the sign in option to be visible
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submit-permission-wait.png` });
+    await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(100);
 
     // If the screen has the text "invalid_request" anywhere, then fail the step immediately
