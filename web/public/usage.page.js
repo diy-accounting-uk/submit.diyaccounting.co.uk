@@ -83,11 +83,13 @@ function renderTokenSources(bundles) {
     let expiryInfo = "";
     if (b.tokenResetAt) {
       const resetDate = new Date(b.tokenResetAt);
-      if (!isNaN(resetDate.getTime())) expiryInfo = "Refreshes " + resetDate.toLocaleDateString();
+      if (!isNaN(resetDate.getTime()))
+        expiryInfo = "Refreshes " + resetDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     }
     if (!expiryInfo && b.expiry) {
       const expiryDate = new Date(b.expiry);
-      if (!isNaN(expiryDate.getTime())) expiryInfo = "Expires " + expiryDate.toLocaleDateString();
+      if (!isNaN(expiryDate.getTime()))
+        expiryInfo = "Expires " + expiryDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     }
     return tableRow([b.bundleId || "Unknown", b.tokensGranted || 0, remaining, expiryInfo || "-"]);
   });
@@ -117,7 +119,15 @@ function renderTokenConsumption(bundles) {
   }
 
   const rows = allEvents.map(function (evt) {
-    const dateStr = evt.timestamp ? new Date(evt.timestamp).toLocaleString() : "-";
+    const dateStr = evt.timestamp
+      ? new Date(evt.timestamp).toLocaleString("en-GB", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "-";
     return tableRow([evt.activity || "Unknown", dateStr, evt.tokensUsed || 1]);
   });
   body.replaceChildren(...rows);

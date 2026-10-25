@@ -1934,7 +1934,7 @@ body > footer {
 
 /* holds the place of content that arrives after first paint, so what follows does not jump */
 .reserve-viewport-height {
-  min-height: 80vh;
+  min-height: min(80vh, 40rem);
 }
 
 /* ============================================
@@ -1946,7 +1946,7 @@ body > footer {
   flex-direction: column;
   gap: var(--space-4);
   margin: var(--space-5) 0;
-  min-height: 80vh;
+  min-height: min(80vh, 40rem);
 }
 
 .service-item {

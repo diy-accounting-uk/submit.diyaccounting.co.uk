@@ -19,6 +19,7 @@ import {
   timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { ensureDirSync } from "fs-extra";
+import { consentToDataCollection } from "./steps/behaviour-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -119,6 +120,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     const homeUrl = `${baseUrl}/index.html`;
     console.log(` Navigating to home page: ${homeUrl}`);
     await page.goto(homeUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await consentToDataCollection(page, screenshotPath);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-home-page.png`, readerView: true });
 
     // Verify home page loaded
@@ -444,8 +446,10 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
 
     // Fill form fields
     console.log(" Filling form fields...");
-    await subjectInput.fill("Test support request");
-    await descriptionTextarea.fill("This is a test description for the support form behavior test.");
+    await subjectInput.fill("Cannot see my VAT obligations");
+    await descriptionTextarea.fill(
+      "My quarterly VAT obligations list is empty after I connected to HMRC. The page shows no error message.",
+    );
     await categorySelect.selectOption("other");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-16-form-filled.png`, readerView: true });
 

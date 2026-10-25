@@ -275,7 +275,7 @@
         border: 1px solid rgba(0, 255, 0, 0.4);
         border-left: none;
         border-radius: 0 4px 4px 0;
-        padding: 4px 12px;
+        padding: 4px 8px;
         font-family: "Courier New", Consolas, Monaco, monospace;
         color: #00ff00 !important;
         text-shadow: 0 0 3px rgba(0, 255, 0, 0.5);
@@ -308,9 +308,9 @@
       body.developer-mode #dev-requestid { top: 170px; }
       body.developer-mode .entitlement-status { top: 200px; }
       body.developer-mode #latestTestsLink { top: 230px; }
-      body.developer-mode #apiDocsLink { top: 260px; }
-      body.developer-mode #viewSourceLink { top: 290px; }
-      body.developer-mode #localstorageContainer { top: 320px; }
+      body.developer-mode #apiDocsLink { top: 270px; }
+      body.developer-mode #viewSourceLink { top: 310px; }
+      body.developer-mode #localstorageContainer { top: 350px; }
 
       /* Entitlement status styling */
       body.developer-mode .entitlement-status {
@@ -320,7 +320,7 @@
         border: 1px solid rgba(0, 255, 0, 0.4);
         border-left: none;
         border-radius: 0 4px 4px 0;
-        padding: 4px 12px;
+        padding: 4px 8px;
         font-family: "Courier New", Consolas, Monaco, monospace;
         color: #00ff00 !important;
         text-shadow: 0 0 3px rgba(0, 255, 0, 0.5);
@@ -338,7 +338,7 @@
         border: 1px solid rgba(0, 255, 0, 0.4);
         border-left: none;
         border-radius: 0 4px 4px 0;
-        padding: 4px 12px;
+        padding: 4px 8px;
         font-family: "Courier New", Consolas, Monaco, monospace;
         color: #00ff00 !important;
         text-shadow: 0 0 3px rgba(0, 255, 0, 0.5);

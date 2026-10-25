@@ -17,6 +17,7 @@ import {
   takeScreenshot,
 } from "./helpers/behaviour-helpers.js";
 import { ensureDirSync } from "fs-extra";
+import { consentToDataCollection } from "./steps/behaviour-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -137,6 +138,7 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     const homeUrl = baseUrl; // baseUrl already normalized without trailing slash
     console.log(`🏠 Navigating to home page: ${homeUrl}`);
     await page.goto(homeUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await consentToDataCollection(page, screenshotPath);
     await takeScreenshot(page, { path: `${screenshotPath}/01-home-page.png`, readerView: true });
 
     // Check page loaded

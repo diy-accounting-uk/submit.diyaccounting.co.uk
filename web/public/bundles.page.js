@@ -635,14 +635,14 @@ function renderCurrentBundles() {
     if (tokenResetAt) {
       const resetDate = new Date(tokenResetAt);
       if (!isNaN(resetDate.getTime())) {
-        fragments.push(`refreshes ${resetDate.toLocaleDateString()}`);
+        fragments.push(`refreshes ${resetDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`);
       }
     }
     const expiryStr = fullData?.expiry;
     if (expiryStr) {
       const expiryDate = new Date(expiryStr);
       if (!isNaN(expiryDate.getTime())) {
-        fragments.push(`expires ${expiryDate.toLocaleDateString()}`);
+        fragments.push(`expires ${expiryDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`);
       }
     }
 
@@ -1054,7 +1054,9 @@ async function fetchMyGeneratedPasses(append) {
 
     data.passes.forEach((pass) => {
       const typeLabel = pass.passTypeId === "digital-pass" ? "Digital" : "Physical";
-      const expiryLabel = pass.validUntil ? new Date(pass.validUntil).toLocaleDateString() : "No expiry";
+      const expiryLabel = pass.validUntil
+        ? new Date(pass.validUntil).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+        : "No expiry";
       const usageLabel = `${pass.useCount || 0} of ${pass.maxUses} uses`;
       const passUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(pass.code)}`;
       const qrPage = pass.passTypeId === "digital-pass" ? "generate-digital.html" : "generate-physical.html";
