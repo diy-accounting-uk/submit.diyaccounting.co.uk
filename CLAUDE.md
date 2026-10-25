@@ -83,6 +83,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/company-book/SKILL.md` — build, verify and hand over DIY Accounting Limited's own diya-gl book from its bank, Stripe, PayPal and supplier sources, and tell Cowork how to read it with the spreadsheets MCP; invoke as `/company-book`
 - `.claude/skills/donor-usage/SKILL.md` — match Stripe and PayPal donors to prod submit accounts and their submissions, into a private file at the workspace root; invoke as `/donor-usage`
 - `.claude/skills/visual-review/SKILL.md` — judge screenshots as a reader sees them (realistic data, not a bug, clean edges, space used, readable, current, safe) after a major visual change, then refresh and review the guide and site screenshots and the videos; the look pass in the visual definition of done
+- `.claude/skills/explore/SKILL.md` — walk the deployed ci site as a person would, one role at a time (visitor, customer, practice, operator) with the Playwright MCP browser; verify the findings against the oracle; write one review with screenshots in the private repository; invoke as `/explore`
 - `.claude/skills/companies-house-review/SKILL.md` — review our accounts filings as the Companies House XML team does: rebuild each filed case, render it beside the example of its type, run the test validator, and write `findings.md` and `walkthrough.md` under `target/companies-house-review/<date>/`; invoke as `/companies-house-review`
 
 ## Permission Handling
