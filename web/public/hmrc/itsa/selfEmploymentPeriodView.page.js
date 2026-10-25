@@ -5,6 +5,7 @@ window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"))
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
 window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
+window.CarriedIdentifiers.bind("periodId", document.getElementById("periodId"));
 
 // A cumulative tax year (2025-26 onwards) retrieves the single running total addressed
 // by taxYear alone, so there is no periodId to enter or require.

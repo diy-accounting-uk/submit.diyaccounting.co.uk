@@ -4,21 +4,13 @@
 // Error page shared functionality
 
 (function () {
-  // Display actual URL from browser
-  const requestedUrlElement = document.getElementById("requestedUrl");
-  if (requestedUrlElement) {
-    // Get the original URL from referrer or current location
-    // CloudFront custom error responses preserve the original URL in the browser
-    requestedUrlElement.textContent = window.location.href;
-  }
+  function showSignedInState() {
+    const idToken = localStorage.getItem("cognitoIdToken");
+    const userInfo = localStorage.getItem("userInfo");
+    const loginStatus = document.querySelector(".login-status");
+    const loginLink = document.querySelector(".login-link");
 
-  // Check auth status from localStorage
-  const idToken = localStorage.getItem("cognitoIdToken");
-  const userInfo = localStorage.getItem("userInfo");
-  const loginStatus = document.getElementById("loginStatus");
-  const loginLink = document.getElementById("loginLink");
-
-  if (idToken && userInfo && loginStatus && loginLink) {
+    if (!(idToken && userInfo && loginStatus && loginLink)) return;
     try {
       const user = JSON.parse(userInfo);
       loginStatus.textContent = user.email || "Logged in";
@@ -36,5 +28,13 @@
       console.error("Failed to parse user info:", error);
       // Parse error, keep default state
     }
+  }
+
+  // page-chrome.js builds the header on DOMContentLoaded and is loaded first, so this runs after it.
+  document.addEventListener("DOMContentLoaded", showSignedInState);
+
+  const retryButton = document.getElementById("retryBtn");
+  if (retryButton) {
+    retryButton.addEventListener("click", () => window.location.reload());
   }
 })();

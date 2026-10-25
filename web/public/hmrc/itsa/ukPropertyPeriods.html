@@ -41,7 +41,13 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Search Form -->
-      <div id="periodsForm" class="form-container">
+      <div
+        id="periodsForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to see your UK property period summaries"
+        data-sign-in-text="Log in to list the quarterly updates filed for a UK property business."
+      >
         <div class="form-toggle-buttons">
           <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show search criteria</button>
           <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
@@ -51,7 +57,10 @@
           <form id="itsaUkPropertyPeriodsForm" novalidate>
             <div class="form-group">
               <label for="nino">National Insurance number</label>
-              <p id="nino-hint" class="hint">This is two letters, six numbers and a final letter, for example QQ 12 34 56 C.</p>
+              <p id="nino-hint" class="hint">
+                This is two letters, six numbers and a final letter, for example QQ 12 34 56 C. You can find it on your National Insurance
+                card, payslip or P60.
+              </p>
               <input
                 type="text"
                 id="nino"
@@ -67,7 +76,10 @@
 
             <div class="form-group">
               <label for="businessId">Business ID</label>
-              <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
+              <p id="businessId-hint" class="hint">
+                Filled in when you pick a business on the Income Tax dashboard. Otherwise copy it from Business details, for example
+                XAIS12345678910.
+              </p>
               <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
             </div>
 
@@ -91,10 +103,10 @@
                 <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
                 <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
               </select>
-              <div style="margin-top: 10px">
-                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
-                <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
-                  >Validate Fraud Prevention Headers</label
+              <div class="choice">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                  for="runFraudPreventionHeaderValidation"
+                  >Validate fraud prevention headers</label
                 >
               </div>
             </div>
@@ -108,6 +120,10 @@
       <div id="periodsResults" class="results-container" style="display: none">
         <h3>Period summaries</h3>
         <div id="periodsTable"></div>
+        <p id="periodNextSteps" class="next-steps" hidden>
+          <a href="ukPropertyPeriodView.html">View the chosen period</a>
+          <a href="ukPropertyPeriodAmend.html">Amend the chosen period</a>
+        </p>
         <div class="button-group">
           <button type="button" id="newSearchBtn" class="secondary-button">New search</button>
         </div>
@@ -133,6 +149,7 @@
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="ukPropertyPeriods.page.js"></script>
   </body>

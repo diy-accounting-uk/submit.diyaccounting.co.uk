@@ -549,8 +549,10 @@ This script:
 
 **3. Run behaviour tests:**
 ```bash
-# Use the credentials printed by the enable script
-TEST_AUTH_USERNAME='synthetic-local@test.diyaccounting.co.uk' TEST_AUTH_PASSWORD='TestXxx!Aa1' npm run test:submitVatBehaviour-ci
+# Use the credentials printed by the enable script. HMRC_ACCOUNT=synthetic is what the pipeline's
+# probe jobs set: the HMRC suites tick the fraud-prevention validation box and assert its call only
+# under it, so a run without it skips that check.
+HMRC_ACCOUNT=synthetic TEST_AUTH_USERNAME='synthetic-local@test.diyaccounting.co.uk' TEST_AUTH_PASSWORD='TestXxx!Aa1' npm run test:submitVatBehaviour-ci
 
 # Or for prod
 TEST_AUTH_USERNAME='...' TEST_AUTH_PASSWORD='...' npm run test:submitVatBehaviour-prod

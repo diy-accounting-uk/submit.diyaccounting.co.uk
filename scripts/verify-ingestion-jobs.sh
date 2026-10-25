@@ -35,19 +35,25 @@ echo "Lake bucket:    ${LAKE}"
 echo "Athena:         ${WORKGROUP} / ${DATABASE}"
 echo ""
 
-# The last 7 UTC calendar days, oldest first. Computed in node rather than `date -d`/`date -v`
-# so this runs the same on macOS and on a GitHub Actions Linux runner. Built with a plain
-# while-read loop rather than `readarray`, and looked up below with a linear scan rather than
-# an associative array, because macOS ships bash 3.2 and this script's shebang is /bin/bash.
-DATES=()
-while IFS= read -r line; do
-  DATES+=("${line}")
-done < <(node -e '
-for (let i = 6; i >= 0; i--) {
+# Sets DATES to the seven UTC calendar days that end the given number of days before today,
+# oldest first. Offset 1 ends at yesterday, the last day the nightly state machine covers.
+# Computed in node rather than `date -d`/`date -v` so this runs the same on macOS and on a
+# GitHub Actions Linux runner. Built with a plain while-read loop rather than `readarray`, and
+# looked up below with a linear scan rather than an associative array, because macOS ships
+# bash 3.2 and this script's shebang is /bin/bash.
+dates_ending_before_today() {
+  local end_offset="$1" line
+  DATES=()
+  while IFS= read -r line; do
+    DATES+=("${line}")
+  done < <(node -e '
+const end = Number(process.argv[1]);
+for (let i = 6 + end; i >= end; i--) {
   const d = new Date(Date.now() - i * 86400000);
   console.log(d.toISOString().slice(0, 10));
 }
-')
+' "${end_offset}")
+}
 
 # Runs one query to a terminal state and prints its result rows as TSV (no header). Exits
 # non-zero, with the state change reason, on anything other than SUCCEEDED.
@@ -123,11 +129,13 @@ OVERALL_STATUS=0
 #                        "curated/stripe/stripe_charges/dt=" (style dt) or
 #                        "raw/cloudfront/" (style day_prefix, day appended as year=Y/month=M/day=D/)
 #   $5 required          "required" if the phase-1 verification criterion needs this non-zero
+#   $6 end_offset        days before today that the seven-day window ends on (1 = yesterday)
 check_source() {
-  local label="$1" table="$2" style="$3" s3_prefix_prefix="$4" required="$5"
+  local label="$1" table="$2" style="$3" s3_prefix_prefix="$4" required="$5" end_offset="$6"
   local query counts_tsv
   local COUNT_DAYS=() COUNT_VALS=()
 
+  dates_ending_before_today "${end_offset}"
   echo "--- ${label} (${table}) ---"
 
   if [ "${style}" = "dt" ]; then
@@ -208,16 +216,17 @@ check_source() {
   echo ""
 }
 
-check_source "Activity events"        "activity_events_all"  "dt"  "curated/activity-events/dt="     "required"
-check_source "Table changes: receipts"      "dynamo_receipts"      "dt"  "curated/tables/receipts/dt="     "optional"
-check_source "Table changes: bundles"       "dynamo_bundles"       "dt"  "curated/tables/bundles/dt="      "optional"
-check_source "Table changes: subscriptions" "dynamo_subscriptions" "dt"  "curated/tables/subscriptions/dt=" "optional"
-check_source "Table changes: passes"        "dynamo_passes"        "dt"  "curated/tables/passes/dt="       "optional"
-check_source "Stripe charges"         "stripe_charges"       "dt"  "curated/stripe/stripe_charges/dt="        "optional"
-check_source "Stripe subscriptions"   "stripe_subscriptions" "dt"  "curated/stripe/stripe_subscriptions/dt="  "required"
-check_source "PayPal receipts"        "paypal_donations"     "dt"  "curated/paypal/paypal_donations/dt="     "optional"
-check_source "GA4 traffic"            "ga4_traffic"           "dt"  "curated/ga4/report=traffic/dt="           "required"
-check_source "CloudFront requests"    "cloudfront_requests"  "day_prefix" "raw/cloudfront/"                                    "required"
+# GA4 reports lag a day, so the GA4 window ends the day before yesterday.
+check_source "Activity events"        "activity_events_all"  "dt"  "curated/activity-events/dt="     "required" 1
+check_source "Table changes: receipts"      "dynamo_receipts"      "dt"  "curated/tables/receipts/dt="     "optional" 1
+check_source "Table changes: bundles"       "dynamo_bundles"       "dt"  "curated/tables/bundles/dt="      "optional" 1
+check_source "Table changes: subscriptions" "dynamo_subscriptions" "dt"  "curated/tables/subscriptions/dt=" "optional" 1
+check_source "Table changes: passes"        "dynamo_passes"        "dt"  "curated/tables/passes/dt="       "optional" 1
+check_source "Stripe charges"         "stripe_charges"       "dt"  "curated/stripe/stripe_charges/dt="        "optional" 1
+check_source "Stripe subscriptions"   "stripe_subscriptions" "dt"  "curated/stripe/stripe_subscriptions/dt="  "required" 1
+check_source "PayPal receipts"        "paypal_donations"     "dt"  "curated/paypal/paypal_donations/dt="     "optional" 1
+check_source "GA4 traffic"            "ga4_traffic"           "dt"  "curated/ga4/report=traffic/dt="           "required" 2
+check_source "CloudFront requests"    "cloudfront_requests"  "day_prefix" "raw/cloudfront/"                                    "required" 1
 
 if [ "${OVERALL_STATUS}" -eq 0 ]; then
   echo "PASS: every source has at least one partition in the last seven days, and every required source shows a non-zero day."

@@ -57,8 +57,9 @@ describe("errorPageHandler", () => {
 
       expect(result.status).toBe("404"); // Status preserved
       expect(result.body).toContain("<!DOCTYPE html>");
-      expect(result.body).toContain("404 Not Found");
-      expect(result.body).toContain("/missing-page.html");
+      expect(result.body).toContain("Page not found");
+      expect(result.body).toContain("The address may be wrong");
+      expect(result.body).not.toContain("/missing-page.html");
       expect(result.headers["content-type"][0].value).toBe("text/html; charset=UTF-8");
     });
 
@@ -68,8 +69,9 @@ describe("errorPageHandler", () => {
       const result = await handler(event);
 
       expect(result.status).toBe("500"); // Status preserved
-      expect(result.body).toContain("Server Error");
-      expect(result.body).toContain("An unexpected error occurred");
+      expect(result.body).toContain("Something went wrong");
+      expect(result.body).toContain("The problem is on our side");
+      expect(result.body).toContain('id="retryBtn"');
     });
 
     test("403 forbidden returns custom error page", async () => {
@@ -82,8 +84,9 @@ describe("errorPageHandler", () => {
       const result = await handler(event);
 
       expect(result.status).toBe("403");
-      expect(result.body).toContain("Forbidden");
-      expect(result.body).toContain("You do not have permission");
+      expect(result.body).toContain("You cannot open this page");
+      expect(result.body).toContain("Sign in with an account that has access");
+      expect(result.body).not.toContain('id="retryBtn"');
     });
 
     test("502 bad gateway returns custom error page", async () => {
@@ -96,7 +99,7 @@ describe("errorPageHandler", () => {
       const result = await handler(event);
 
       expect(result.status).toBe("502");
-      expect(result.body).toContain("Bad Gateway");
+      expect(result.body).toContain("The service is not answering");
     });
 
     test("503 service unavailable returns custom error page", async () => {
@@ -109,7 +112,7 @@ describe("errorPageHandler", () => {
       const result = await handler(event);
 
       expect(result.status).toBe("503");
-      expect(result.body).toContain("Service Unavailable");
+      expect(result.body).toContain("The service is busy");
     });
 
     test("504 gateway timeout returns custom error page", async () => {
@@ -122,7 +125,8 @@ describe("errorPageHandler", () => {
       const result = await handler(event);
 
       expect(result.status).toBe("504");
-      expect(result.body).toContain("Gateway Timeout");
+      expect(result.body).toContain("The request took too long");
+      expect(result.body).toContain("check your receipts");
     });
 
     test("unknown 4xx error returns generic error page", async () => {
@@ -135,8 +139,7 @@ describe("errorPageHandler", () => {
       const result = await handler(event);
 
       expect(result.status).toBe("418");
-      expect(result.body).toContain("Error");
-      expect(result.body).toContain("An error occurred");
+      expect(result.body).toContain("We could not complete your request");
     });
   });
 
@@ -194,48 +197,46 @@ describe("errorPageHandler", () => {
   });
 
   describe("error page content", () => {
-    test("includes navigation icons", async () => {
+    test("links the brand and the home page", async () => {
       const event = build404Event();
       const result = await handler(event);
 
-      expect(result.body).toContain("home-link");
-      expect(result.body).toContain("info-link");
-      expect(result.body).toContain("/index.html");
-      expect(result.body).toContain("/about.html");
+      expect(result.body).toContain('<a href="/">DIY Accounting Submit</a>');
+      expect(result.body).toContain('id="returnHomeBtn"');
+      expect(result.body).toContain("Go to the home page");
     });
 
-    test("includes auth status section", async () => {
+    test("has no raw URL line or old home button", async () => {
       const event = build404Event();
       const result = await handler(event);
 
-      expect(result.body).toContain("auth-section");
-      expect(result.body).toContain("loginStatus");
-      expect(result.body).toContain("cognitoIdToken");
+      expect(result.body).not.toContain("Requested URL");
+      expect(result.body).not.toContain("Return to Home");
     });
 
-    test("includes return home button", async () => {
+    test("uses light and dark colour values", async () => {
       const event = build404Event();
       const result = await handler(event);
 
-      expect(result.body).toContain("Return to Home");
-      expect(result.body).toContain("window.location.href='/'");
+      expect(result.body).toContain("--c-ink: #1b2a41");
+      expect(result.body).toContain("prefers-color-scheme: dark");
     });
 
     test("includes footer with links", async () => {
       const event = build404Event();
       const result = await handler(event);
 
-      expect(result.body).toContain("/about.html");
       expect(result.body).toContain("/privacy.html");
       expect(result.body).toContain("/terms.html");
       expect(result.body).toContain("DIY Accounting Limited");
     });
 
-    test("includes requested URI in page", async () => {
-      const event = build404Event("/some/deep/path/page.html");
+    test("does not reflect the requested URI", async () => {
+      const event = build404Event("/<script>alert(1)</script>");
       const result = await handler(event);
 
-      expect(result.body).toContain("/some/deep/path/page.html");
+      expect(result.body).not.toContain("<script>alert(1)");
+      expect(result.body).not.toContain("alert(1)");
     });
 
     test("removes content-length header", async () => {

@@ -21,24 +21,6 @@
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="../../lib/analytics.js"></script>
-    <style>
-      .customer-copy-submission div,
-      .customer-copy-title,
-      .customer-copy-brand {
-        text-align: left;
-      }
-      .field-key {
-        margin: 0 0 1.5em 0;
-      }
-      .field-key dt {
-        font-weight: 600;
-        margin-top: 0.75em;
-      }
-      .field-key dd {
-        margin: 0.2em 0 0 0;
-        max-width: 65ch;
-      }
-    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
@@ -60,7 +42,13 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Trigger form -->
-      <div id="triggerForm" class="form-container">
+      <div
+        id="triggerForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to see your tax calculation"
+        data-sign-in-text="Log in to see what the tax year owes, based on what you have sent so far."
+      >
         <h2>Calculate</h2>
         <form id="itsaCalculationTriggerForm" novalidate>
           <div class="form-group">
@@ -112,10 +100,10 @@
               <option value="NO_INCOME_SUBMISSIONS_EXIST">No income submissions exist</option>
               <option value="RECENT_SUBMISSIONS_EXIST">Recent submissions exist</option>
             </select>
-            <div style="margin-top: 10px">
-              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
-              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
-                >Validate Fraud Prevention Headers</label
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                for="runFraudPreventionHeaderValidation"
+                >Validate fraud prevention headers</label
               >
             </div>
           </div>
@@ -136,13 +124,7 @@
           <div id="fieldKey"></div>
           <div id="hmrcAssistCheck"></div>
           <div id="continueToFinalDeclaration" class="button-group" style="display: none">
-            <a
-              href="finalDeclaration.html"
-              id="continueToFinalDeclarationLink"
-              class="btn"
-              style="display: inline-block; width: auto; text-decoration: none"
-              >Continue to Final Declaration</a
-            >
+            <a href="finalDeclaration.html" id="continueToFinalDeclarationLink" class="btn">Continue to final declaration</a>
           </div>
         </div>
 
@@ -170,6 +152,7 @@
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/hmrc-assist-messages.js"></script>
     <script src="../../lib/money-format.js"></script>

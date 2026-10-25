@@ -6,6 +6,7 @@ import { calculationCopyHtml, declarationCopyHtml, mountCopy, formatLongDate, bu
 window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
+window.CarriedIdentifiers.bind("calculationId", document.getElementById("calculationId"));
 
 let retrievedCalculation = null;
 let retrievedNino = "";
@@ -134,12 +135,12 @@ function displayCalculation(calculation) {
   const notReady = document.getElementById("notReadyForDeclaration");
   const declarationSection = document.getElementById("declarationSection");
   if (effectiveCalculationType !== "intent-to-finalise") {
-    notReady.textContent = `This calculation is a ${effectiveCalculationType || "different"} calculation, not an intent to finalise. Trigger an intent to finalise calculation before declaring.`;
+    notReady.textContent = `This calculation is a ${effectiveCalculationType || "different"} calculation, not an intent to finalise. Request a final calculation before declaring.`;
     notReady.style.display = "block";
     declarationSection.style.display = "none";
   } else if (!isAmount(calc.taxCalculation?.totalIncomeTaxAndNicsDue)) {
     notReady.textContent =
-      "HMRC's calculation gives no total for Income Tax and National Insurance, so there is nothing to declare yet. Trigger a fresh calculation.";
+      "HMRC's calculation gives no total for Income Tax and National Insurance, so there is nothing to declare yet. Request a fresh calculation.";
     notReady.style.display = "block";
     declarationSection.style.display = "none";
   } else {

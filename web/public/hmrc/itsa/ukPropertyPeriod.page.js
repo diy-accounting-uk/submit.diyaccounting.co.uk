@@ -46,8 +46,8 @@ function updateSubmissionModelUI() {
     label.textContent = isCumulative ? `${baseText} (year to date)` : baseText;
   });
   periodAmountHint.textContent = isCumulative
-    ? "The total rent and other income for the tax year so far, up to the period end date above. Enter 0 if none yet."
-    : "The rent and other income received for this period. Enter 0 if none.";
+    ? "The total rent and other income for the tax year so far, up to the period end date above. For example, £600 or £193.54."
+    : "The rent and other income received for this period. For example, £600 or £193.54.";
 
   loadCurrentTotalGroup.style.display = isCumulative ? "block" : "none";
 }

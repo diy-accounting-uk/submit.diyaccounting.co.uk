@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <title>Help & FAQs - DIY Accounting Submit</title>
@@ -19,17 +19,6 @@
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="submit.css" />
     <script src="./lib/analytics.js"></script>
-    <style>
-      /* Purple gradient backdrop contained within the portrait frame */
-      #mainContent {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: var(--radius-card);
-        padding: 1em;
-      }
-      .support-section {
-        border-radius: 8px;
-      }
-    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
@@ -63,20 +52,14 @@
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
       <div class="help-page">
-        <p style="text-align: center; margin: 0 0 1em">
+        <p class="help-intro">
           New here? Request a free Day Guest bundle on the <a href="bundles.html">Bundles</a> page — no pass needed, and you get 3 free VAT
           submissions to try it out.
         </p>
 
         <!-- Search box -->
         <div class="faq-search-container">
-          <input
-            type="text"
-            id="faq-search"
-            placeholder="Search FAQs... e.g. 'wrong figures' or 'can't connect'"
-            autocomplete="off"
-            aria-label="Search FAQs"
-          />
+          <input type="text" id="faq-search" placeholder="Search the questions" autocomplete="off" aria-label="Search FAQs" />
           <span class="search-hint" id="search-hint">Showing top FAQs</span>
         </div>
 

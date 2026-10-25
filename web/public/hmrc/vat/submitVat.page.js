@@ -33,10 +33,17 @@ const VAT_WHOLE_MAX = 9999999999999;
 // While true, validation answers without touching the field error messages
 let validationQuiet = false;
 
+// While an array, the box checks add their problems to it instead of writing them beside the fields
+let errorSink = null;
+
 // Show field-level error message
 function showFieldError(fieldId, message) {
   const field = document.getElementById(fieldId);
   if (!field || validationQuiet) return;
+  if (errorSink) {
+    errorSink.push({ input: field, message });
+    return;
+  }
 
   // Remove existing error
   clearFieldError(fieldId);
@@ -250,32 +257,34 @@ async function handleFormSubmission(event) {
   // Collect 9-box data
   const vatBoxData = collect9BoxData();
 
-  // Basic validation
+  const errors = [];
   if (!vatNumber) {
-    showStatus("Please enter your VAT registration number.", "error");
-    return;
+    errors.push({ input: document.getElementById("vatNumber"), message: "Enter your VAT registration number" });
+  } else if (!/^\d{9}$/.test(vatNumber)) {
+    errors.push({ input: document.getElementById("vatNumber"), message: "The VAT registration number must be 9 numbers" });
   }
-  if (!periodStart || !periodEnd) {
-    showStatus("Please enter your VAT period start and end dates.", "error");
-    return;
+  if (!periodStart) errors.push({ input: document.getElementById("periodStart"), message: "Enter the period start date" });
+  if (!periodEnd) errors.push({ input: document.getElementById("periodEnd"), message: "Enter the period end date" });
+
+  errorSink = errors;
+  try {
+    validateAll9BoxFields();
+  } finally {
+    errorSink = null;
   }
 
-  if (!/^\d{9}$/.test(vatNumber)) {
-    showStatus("VAT number must be exactly 9 digits.", "error");
-    return;
+  const boxInputIds = ["vatDueSales", "vatDueAcquisitions", "vatReclaimedCurrPeriod"];
+  if (errors.some((error) => boxInputIds.includes(error.input.id))) {
+    // Box 5 is calculated from boxes 1 to 4, so it has nothing to fix until they are right.
+    const netIndex = errors.findIndex((error) => error.input.id === "netVatDue");
+    if (netIndex >= 0) errors.splice(netIndex, 1);
   }
 
-  // Validate all 9-box fields with field-level error messages
-  if (!validateAll9BoxFields()) {
-    showStatus("Please correct the errors in the VAT box fields highlighted above.", "error");
-    return;
-  }
-
-  // Validate declaration checkbox
   if (!declaration) {
-    showStatus("You must confirm the declaration before submitting.", "error");
-    return;
+    errors.push({ input: document.getElementById("declaration"), message: "Tick the box to confirm the declaration" });
   }
+  window.formErrors.showFormErrors(errors);
+  if (errors.length > 0) return;
 
   // Store submission data for the submission handler
   submissionData = {
@@ -701,7 +710,7 @@ async function initializePage() {
     }
     // Show synthetic obligations option only in synthetic mode when developer mode is on
     if (syntheticObligationsOption && currentHmrcAccount === "synthetic" && developerModeEnabled) {
-      syntheticObligationsOption.style.display = "block";
+      syntheticObligationsOption.style.display = "flex";
     } else if (syntheticObligationsOption) {
       syntheticObligationsOption.style.display = "none";
     }

@@ -2,7 +2,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <title>DIY Accounting Submit - Token Usage</title>
@@ -26,110 +26,87 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
-      <h1>DIY Accounting Submit</h1>
-      <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+      <h1>Token usage</h1>
+      <p class="subtitle">Where your tokens come from and where they go</p>
     </header>
 
     <main id="mainContent">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
-      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+      <div id="loadingSpinner" class="spinner" hidden></div>
 
-      <div class="form-container" style="text-align: center">
-        <h2>Token Usage</h2>
-
-        <div style="margin-bottom: 1em">
-          <button type="button" id="refreshUsageBtn" class="btn" style="min-width: 140px">Refresh</button>
-        </div>
-
-        <div id="itsaYearCostSummary" style="display: none; margin-top: 1em; text-align: left" class="hint"></div>
-
-        <div style="margin-top: 2em; text-align: left">
-          <h3>Token Sources</h3>
-          <table id="tokenSourcesTable" style="width: 100%; border-collapse: collapse; margin-top: 0.5em">
+      <div class="form-container">
+        <h2>Token sources</h2>
+        <div class="table-scroll">
+          <table id="tokenSourcesTable" class="data-table">
             <thead>
-              <tr style="border-bottom: 2px solid #dee2e6; text-align: left">
-                <th style="padding: 0.5em">Bundle Name</th>
-                <th style="padding: 0.5em">Tokens Granted</th>
-                <th style="padding: 0.5em">Tokens Remaining</th>
-                <th style="padding: 0.5em">Expiry / Refresh</th>
+              <tr>
+                <th>Bundle name</th>
+                <th>Tokens granted</th>
+                <th>Tokens remaining</th>
+                <th>Expiry / refresh</th>
               </tr>
             </thead>
             <tbody id="tokenSourcesBody">
               <tr>
-                <td colspan="4" style="padding: 1em; color: #666; text-align: center">Loading...</td>
+                <td colspan="4" class="no-data">Loading...</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div style="margin-top: 2em; text-align: left">
-          <h3>Token Consumption</h3>
-          <table id="tokenConsumptionTable" style="width: 100%; border-collapse: collapse; margin-top: 0.5em">
+        <h2>Token consumption</h2>
+        <div class="table-scroll">
+          <table id="tokenConsumptionTable" class="data-table">
             <thead>
-              <tr style="border-bottom: 2px solid #dee2e6; text-align: left">
-                <th style="padding: 0.5em">Activity</th>
-                <th style="padding: 0.5em">Date / Time</th>
-                <th style="padding: 0.5em">Tokens Used</th>
+              <tr>
+                <th>Activity</th>
+                <th>Date / time</th>
+                <th>Tokens used</th>
               </tr>
             </thead>
             <tbody id="tokenConsumptionBody">
               <tr>
-                <td colspan="3" style="padding: 1em; color: #666; text-align: center">Loading...</td>
+                <td colspan="3" class="no-data">Loading...</td>
               </tr>
             </tbody>
           </table>
         </div>
 
-        <div id="subscriptionManagement" style="margin-top: 2em; text-align: left; display: none">
-          <h3>Subscription</h3>
-          <p style="color: #666; margin-bottom: 0.5em">Manage your subscription billing, payment method, and cancellation.</p>
-          <button
-            type="button"
-            id="manageSubscriptionBtn"
-            class="btn"
-            style="background-color: #17a2b8; border-color: #17a2b8; min-width: 200px"
-          >
-            Manage Subscription
-          </button>
+        <p id="itsaYearCostSummary" class="hint" hidden></p>
+
+        <div>
+          <button type="button" id="refreshUsageBtn" class="btn btn-secondary btn-small">Refresh</button>
         </div>
 
-        <div id="browserStorageSection" class="developer-only-section" style="margin-top: 2em; text-align: left">
-          <h3>Browser Storage</h3>
-          <p style="color: #666; margin-bottom: 0.5em">
+        <div id="subscriptionManagement" hidden>
+          <h2>Subscription</h2>
+          <p class="hint">Manage your subscription billing, payment method, and cancellation.</p>
+          <button type="button" id="manageSubscriptionBtn" class="btn btn-secondary btn-small">Manage subscription</button>
+        </div>
+
+        <div id="browserStorageSection" class="developer-only-section">
+          <h2>Browser storage</h2>
+          <p class="hint">
             Data stored on this device by this site. Only recognised application keys are shown; library-internal and sensitive values are
             redacted.
           </p>
-          <table id="browserStorageTable" style="width: 100%; border-collapse: collapse; margin-top: 0.5em">
-            <thead>
-              <tr style="border-bottom: 2px solid #dee2e6; text-align: left">
-                <th style="padding: 0.5em">Key</th>
-                <th style="padding: 0.5em">Value</th>
-              </tr>
-            </thead>
-            <tbody id="browserStorageBody">
-              <tr>
-                <td colspan="2" style="padding: 1em; color: #666; text-align: center">Loading...</td>
-              </tr>
-            </tbody>
-          </table>
-          <div style="margin-top: 1em">
-            <button
-              type="button"
-              id="clearStorageBtn"
-              style="
-                background: #fff;
-                border: 1px solid #dc3545;
-                color: #dc3545;
-                font-size: 0.9em;
-                padding: 6px 16px;
-                border-radius: 4px;
-                cursor: pointer;
-              "
-            >
-              Clear storage
-            </button>
+          <div class="table-scroll">
+            <table id="browserStorageTable" class="data-table">
+              <thead>
+                <tr>
+                  <th>Key</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody id="browserStorageBody">
+                <tr>
+                  <td colspan="2" class="no-data">Loading...</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
+          <button type="button" id="clearStorageBtn" class="btn btn-small cancel-button">Clear storage</button>
         </div>
       </div>
     </main>

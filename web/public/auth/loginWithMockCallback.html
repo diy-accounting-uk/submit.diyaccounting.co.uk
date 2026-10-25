@@ -5,7 +5,7 @@
 <html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
-    <title>DIY Accounting Submit - Login with mock callback</title>
+    <title>Signing you in - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../submit.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
@@ -37,19 +37,18 @@
           <a href="../auth/login.html" class="login-link">Log in</a>
         </div>
       </div>
-      <h1>DIY Accounting Submit - Login with mock callback</h1>
-      <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+      <h1>Signing you in</h1>
+      <p class="subtitle">This takes a few seconds.</p>
     </header>
 
     <main id="mainContent">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
-      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+      <div id="loadingSpinner" class="spinner" hidden></div>
 
-      <div class="form-container" style="text-align: center">
-        <h2 id="welcomeHeading">Welcome</h2>
-        <p>Return home.</p>
-        <button type="button" class="btn" id="homeBtn">Home</button>
+      <div class="form-container auth-panel">
+        <p>This page sends you on when you are signed in. If nothing happens, go to the home page.</p>
+        <button type="button" class="btn" id="homeBtn">Go to the home page</button>
       </div>
     </main>
 

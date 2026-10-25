@@ -2,71 +2,103 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // app/functions/edge/errorPageHtml.js
-// Error page HTML generation - separated for unit testing
+// Error page HTML generation - separated for unit testing.
+// The copy matches the static pages under web/public/errors/.
 
 const ERROR_MESSAGES = {
-  403: { title: "Forbidden", message: "You do not have permission to access this resource." },
-  404: { title: "Not Found", message: "The page you requested could not be found." },
-  500: { title: "Server Error", message: "An unexpected error occurred. Please try again later." },
-  502: { title: "Bad Gateway", message: "The server received an invalid response." },
-  503: { title: "Service Unavailable", message: "The service is temporarily unavailable." },
-  504: { title: "Gateway Timeout", message: "The server took too long to respond." },
+  403: {
+    title: "You cannot open this page",
+    subtitle: "Your account does not have access to this page.",
+    next: "Sign in with an account that has access, or go to the home page.",
+    retry: false,
+  },
+  404: {
+    title: "Page not found",
+    subtitle: "The address may be wrong, or the page may have moved.",
+    next: "Check the address, or go to the home page and find it from the menu.",
+    retry: false,
+  },
+  500: {
+    title: "Something went wrong",
+    subtitle: "The problem is on our side, not yours.",
+    next: "Try again in a minute. If it keeps happening, tell us on the Help page.",
+    retry: true,
+  },
+  502: {
+    title: "The service is not answering",
+    subtitle: "One of our systems did not give a good answer.",
+    next: "Try again in a minute. Nothing you entered has been sent to HMRC.",
+    retry: true,
+  },
+  503: {
+    title: "The service is busy",
+    subtitle: "We are busy or being updated.",
+    next: "Wait a minute, then try again. Your sign-in is kept.",
+    retry: true,
+  },
+  504: {
+    title: "The request took too long",
+    subtitle: "The service did not answer in time.",
+    next: "Try again. A VAT return you sent may still have been received, so check your receipts before you send it again.",
+    retry: true,
+  },
+};
+
+const GENERIC_ERROR = {
+  title: "Something went wrong",
+  subtitle: "We could not complete your request.",
+  next: "Go to the home page and try again.",
+  retry: false,
 };
 
 /**
- * Generate error page HTML with consistent layout
+ * Generate a self-contained error page. The page reflects nothing from the request.
  * @param {number} statusCode - HTTP status code
- * @param {string} requestedUri - The URI that was requested
  * @returns {string} - Complete HTML page
  */
-export function generateErrorHtml(statusCode, requestedUri = "") {
-  const errorInfo = ERROR_MESSAGES[statusCode] || {
-    title: "Error",
-    message: "An error occurred while processing your request.",
-  };
+export function generateErrorHtml(statusCode) {
+  const errorInfo = ERROR_MESSAGES[statusCode] || GENERIC_ERROR;
+  const retryButton = errorInfo.retry ? `\n        <button type="button" class="btn" id="retryBtn">Try again</button>` : "";
+  const homeClass = errorInfo.retry ? "btn btn-secondary" : "btn";
 
   return `<!DOCTYPE html>
-<html lang="en">
+<html lang="en-GB">
 <head>
   <meta charset="UTF-8">
-  <title>DIY Accounting Submit - ${statusCode} ${errorInfo.title}</title>
+  <title>${errorInfo.title} - DIY Accounting Submit</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root { color-scheme: light dark; --c-canvas: #f6f7f9; --c-paper: #ffffff; --c-ink: #1b2a41; --c-ink-muted: #4a5568; --c-rule: #8a94a6; --c-brand: #2c5aa0; --c-on-brand: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      :root { --c-canvas: #10161f; --c-paper: #17202b; --c-ink: #e6ebf2; --c-ink-muted: #a9b4c4; --c-rule: #6b778a; --c-brand: #8fb4ec; --c-on-brand: #10161f; }
+    }
+    body { margin: 0; background: var(--c-canvas); color: var(--c-ink); font-family: system-ui, sans-serif; line-height: 1.5; }
+    header, main, footer { max-width: 40rem; margin: 0 auto; padding: 0 1rem; }
+    .brand { margin: 0; padding: 0.75rem 0; border-bottom: 3px double var(--c-ink); font-weight: 700; }
+    a { color: var(--c-brand); }
+    .brand a { color: var(--c-ink); text-decoration: none; }
+    .subtitle { color: var(--c-ink-muted); }
+    .error-panel { background: var(--c-paper); border: 1px solid var(--c-rule); border-radius: 0.5rem; padding: 1rem 1.25rem; }
+    .error-actions { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-top: 1rem; }
+    .btn { min-width: 12rem; padding: 0.6rem 1rem; border: 2px solid var(--c-brand); border-radius: 0.375rem; background: var(--c-brand); color: var(--c-on-brand); font: inherit; font-weight: 700; text-align: center; text-decoration: none; cursor: pointer; }
+    .btn-secondary { background: transparent; color: var(--c-brand); }
+    footer { padding-top: 1.5rem; padding-bottom: 1.5rem; color: var(--c-ink-muted); font-size: 0.875rem; }
+    footer nav a { margin-right: 1rem; }
+  </style>
   <link rel="stylesheet" href="/submit.css">
 </head>
 <body>
   <header>
-    <div class="header-nav">
-      <div class="header-left">
-        <a href="/index.html" title="Home" class="home-link">
-          <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/>
-          </svg>
-        </a>
-        <a href="/about.html" title="About & Help" class="info-link">
-          <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/>
-          </svg>
-        </a>
-      </div>
-      <div class="auth-section">
-        <span class="entitlement-status">Activity: unrestricted</span>
-        <span class="login-status" id="loginStatus">Not logged in</span>
-        <a href="/auth/login.html" class="login-link" id="loginLink">Log in</a>
-      </div>
-    </div>
-    <h1>DIY Accounting Submit</h1>
-    <p class="subtitle">${statusCode} ${errorInfo.title}</p>
+    <p class="brand"><a href="/">DIY Accounting Submit</a></p>
+    <h1>${errorInfo.title}</h1>
+    <p class="subtitle">${errorInfo.subtitle}</p>
   </header>
 
   <main id="mainContent">
-    <div class="form-container" style="text-align: center; padding: 2em;">
-      <div class="error-content">
-        <h2>${errorInfo.title}</h2>
-        <p>${errorInfo.message}</p>
-        <p class="requested-url">Requested URL: <code id="requestedUrl">${requestedUri}</code></p>
-      </div>
-      <div class="navigation-container" style="margin-top: 2em;">
-        <button type="button" class="btn" onclick="window.location.href='/'">Return to Home</button>
+    <div class="form-container error-panel">
+      <p>${errorInfo.next}</p>
+      <div class="error-actions">${retryButton}
+        <a href="/" class="${homeClass}" id="returnHomeBtn">Go to the home page</a>
       </div>
     </div>
   </main>
@@ -77,46 +109,13 @@ export function generateErrorHtml(statusCode, requestedUri = "") {
       <a href="/terms.html">Terms</a>
       <a href="/accessibility.html">Accessibility</a>
       <a href="/help.html">Help</a>
-      <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a>
     </nav>
-    <p class="footer-legal">
-      &copy; 2006-2026 DIY Accounting Limited. Free to use under the
-      <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE" target="_blank" rel="noopener">PolyForm Internal Use License</a>.
-    </p>
+    <p class="footer-legal">&copy; 2006-2026 DIY Accounting Limited.</p>
   </footer>
 
   <script>
-    // Display actual URL from browser if not already set by server
-    if (!document.getElementById('requestedUrl').textContent) {
-      document.getElementById('requestedUrl').textContent = window.location.href;
-    }
-
-    // Check auth status from localStorage
-    (function() {
-      const idToken = localStorage.getItem('cognitoIdToken');
-      const userInfo = localStorage.getItem('userInfo');
-      const loginStatus = document.getElementById('loginStatus');
-      const loginLink = document.getElementById('loginLink');
-
-      if (idToken && userInfo) {
-        try {
-          const user = JSON.parse(userInfo);
-          loginStatus.textContent = user.email || 'Logged in';
-          loginLink.textContent = 'Log out';
-          loginLink.href = '#';
-          loginLink.onclick = function(e) {
-            e.preventDefault();
-            localStorage.removeItem('cognitoIdToken');
-            localStorage.removeItem('cognitoAccessToken');
-            localStorage.removeItem('cognitoRefreshToken');
-            localStorage.removeItem('userInfo');
-            window.location.reload();
-          };
-        } catch (e) {
-          // Parse error, keep default state
-        }
-      }
-    })();
+    var retry = document.getElementById('retryBtn');
+    if (retry) retry.addEventListener('click', function () { window.location.reload(); });
   </script>
 </body>
 </html>`;

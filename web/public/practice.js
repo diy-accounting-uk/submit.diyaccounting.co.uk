@@ -84,19 +84,16 @@
 
   async function fetchClients() {
     const idToken = getIdToken();
-    const unauthHint = document.getElementById("unauthenticatedHint");
     const errorState = document.getElementById("clientsErrorState");
     const table = document.getElementById("clientsTable");
     const empty = document.getElementById("clientsEmptyState");
 
     if (!idToken) {
-      unauthHint.style.display = "block";
       errorState.style.display = "none";
       table.style.display = "none";
       empty.style.display = "none";
       return;
     }
-    unauthHint.style.display = "none";
 
     let response;
     try {
@@ -137,7 +134,7 @@
     const clientId = client.clientId;
 
     if (!identifier) {
-      return `<div class="auth-cell"><span style="color:#888">No ${escapeHtml(def.fieldLabel)} on file</span></div>`;
+      return `<div class="auth-cell"><span class="hint">No ${escapeHtml(def.fieldLabel)} on file</span></div>`;
     }
 
     const auth = client.authorisations?.[def.service];
@@ -151,7 +148,7 @@
         `<button type="button" class="btn-small check-status-btn" data-client-id="${clientId}" data-service="${def.service}" ${hasAccessToken ? "" : "disabled"}>Check status</button>`,
       );
       buttons.push(
-        `<button type="button" class="btn-small cancel-invite-btn" data-client-id="${clientId}" data-service="${def.service}" style="background-color:#dc3545" ${hasAccessToken ? "" : "disabled"}>Cancel invitation</button>`,
+        `<button type="button" class="btn-small btn-danger cancel-invite-btn" data-client-id="${clientId}" data-service="${def.service}" ${hasAccessToken ? "" : "disabled"}>Cancel invitation</button>`,
       );
     } else if (status === "authorised") {
       buttons.push(
@@ -163,20 +160,18 @@
       );
     }
 
-    const hint = hasAccessToken
-      ? ""
-      : `<p style="font-size:0.8em; color:#856404; margin:0.25em 0 0">Connect to HMRC to invite or check this client.</p>`;
+    const hint = hasAccessToken ? "" : `<p class="auth-hint">Connect to HMRC to invite or check this client.</p>`;
 
     return `
       <div class="auth-cell" data-client-id="${clientId}" data-service="${def.service}">
         <div class="auth-status">${escapeHtml(statusLabel)}</div>
-        <div class="auth-actions" style="margin-top:0.25em; display:flex; gap:0.4em; flex-wrap:wrap">${buttons.join("")}</div>
+        <div class="auth-actions">${buttons.join("")}</div>
         ${hint}
-        <div class="invite-panel" style="display:none; margin-top:0.5em">
-          <input type="text" class="invite-known-fact" placeholder="Known fact (VAT registration date or postcode)" autocomplete="off" />
-          <div style="margin-top:0.4em; display:flex; gap:0.4em">
+        <div class="invite-panel" hidden>
+          <input type="text" class="invite-known-fact" aria-label="Known fact (VAT registration date or postcode)" autocomplete="off" />
+          <div class="auth-actions">
             <button type="button" class="btn-small invite-send-btn" data-client-id="${clientId}" data-service="${def.service}">Send invite</button>
-            <button type="button" class="btn-small invite-cancel-panel-btn" style="background-color:#6c757d">Cancel</button>
+            <button type="button" class="btn-small btn-secondary invite-cancel-panel-btn">Cancel</button>
           </div>
         </div>
       </div>`;
@@ -190,7 +185,7 @@
         <td>${escapeHtml(identifiersLine(client))}</td>
         <td>${authCellHtml(client, SERVICES[0])}</td>
         <td>${authCellHtml(client, SERVICES[1])}</td>
-        <td><button type="button" class="btn-small archive-client-btn" data-client-id="${client.clientId}" style="background-color:#dc3545">Archive</button></td>
+        <td><button type="button" class="btn-small btn-danger archive-client-btn" data-client-id="${client.clientId}">Archive</button></td>
       </tr>`;
   }
 

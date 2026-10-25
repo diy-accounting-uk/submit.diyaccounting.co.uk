@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <title>DIY Accounting Limited - DIY Accounting Submit</title>
@@ -19,160 +19,6 @@
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="submit.css" />
     <script src="./lib/analytics.js"></script>
-    <style>
-      .company-page {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 1rem;
-      }
-
-      .company-section {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-      }
-
-      .company-section h2 {
-        color: var(--c-brand);
-        margin-top: 0;
-        margin-bottom: 0.75rem;
-      }
-
-      .company-section p {
-        color: var(--c-ink);
-        line-height: 1.6;
-        margin-bottom: 1rem;
-      }
-
-      .company-section p:last-child {
-        margin-bottom: 0;
-      }
-
-      .section-media {
-        display: flex;
-        gap: 1.5rem;
-        align-items: flex-start;
-        margin-bottom: 1rem;
-      }
-
-      .section-media img {
-        border-radius: 6px;
-        flex-shrink: 0;
-      }
-
-      .section-media .team-photo {
-        max-width: 220px;
-        height: auto;
-      }
-
-      .section-media .logo-img {
-        max-width: 140px;
-        height: auto;
-      }
-
-      .section-media .founder-photo {
-        max-width: 200px;
-        height: auto;
-      }
-
-      .section-media .original-logo {
-        max-width: 160px;
-        height: auto;
-        image-rendering: auto;
-      }
-
-      .section-media-text {
-        flex: 1;
-      }
-
-      .section-media-text p:first-child {
-        margin-top: 0;
-      }
-
-      .directors-list {
-        list-style: none;
-        padding: 0;
-        margin: 0.75rem 0;
-      }
-
-      .directors-list li {
-        padding: 0.25rem 0;
-        color: var(--c-ink);
-        line-height: 1.5;
-      }
-
-      .directors-list li strong {
-        color: var(--c-brand);
-      }
-
-      details {
-        margin-top: 0.75rem;
-      }
-
-      details summary {
-        cursor: pointer;
-        color: var(--c-brand);
-        font-weight: 600;
-        padding: 0.5rem 0;
-        user-select: none;
-      }
-
-      details summary:hover {
-        text-decoration: underline;
-      }
-
-      details[open] summary {
-        margin-bottom: 0.5rem;
-      }
-
-      .contact-section {
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 1.5rem;
-      }
-
-      .contact-section h2 {
-        color: var(--c-brand);
-        margin-top: 0;
-        margin-bottom: 0.75rem;
-      }
-
-      .contact-details {
-        color: var(--c-ink);
-        line-height: 1.8;
-      }
-
-      .contact-details p {
-        margin: 0 0 0.75rem 0;
-      }
-
-      .contact-details .address {
-        font-style: normal;
-      }
-
-      .contact-details .company-reg {
-        color: var(--c-ink-muted);
-        font-size: 0.9rem;
-        margin-top: 1rem;
-      }
-
-      @media (max-width: 600px) {
-        .company-page {
-          padding: 0.5rem;
-        }
-
-        .section-media {
-          flex-direction: column;
-          align-items: center;
-        }
-
-        .section-media img {
-          max-width: 80% !important;
-        }
-      }
-    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
@@ -206,9 +52,9 @@
             businesses with the tools they need without unnecessary complexity.
           </p>
           <ul class="directors-list">
-            <li><strong>Antony Cartwright</strong> &mdash; Director</li>
-            <li><strong>Jane Grundy</strong> &mdash; Director</li>
-            <li><strong>Samantha Cartwright</strong> &mdash; Director</li>
+            <li><strong>Antony Cartwright</strong>, director</li>
+            <li><strong>Jane Grundy</strong>, director</li>
+            <li><strong>Samantha Cartwright</strong>, director</li>
           </ul>
           <details>
             <summary>Read more about DIY Accounting</summary>
@@ -234,7 +80,6 @@
           <h2>History</h2>
           <div class="section-media">
             <img src="images/company/diyaccounting-founder.jpg" alt="Terry Cartwright, founder of DIY Accounting" class="founder-photo" />
-            <img src="images/company/diyaccounting-frontpage-logo.gif" alt="Original DIY Accounting website logo" class="original-logo" />
           </div>
           <p>
             DIY Accounting was founded by Terry Cartwright, a Chartered Management Accountant (ACMA) and Chartered Company Secretary (ACIS),
@@ -270,7 +115,7 @@
         </div>
 
         <!-- Contact Details -->
-        <div class="contact-section">
+        <div class="company-section contact-section">
           <h2>Contact</h2>
           <div class="contact-details">
             <address class="address">
@@ -287,7 +132,7 @@
               Phone: +44 845 075 6015 (International)<br />
               <small>Messages are transcribed for part-time staff</small>
             </p>
-            <p class="company-reg">Registered in England and Wales &mdash; Company Number: 06846849</p>
+            <p class="company-reg">Registered in England and Wales. Company number: 06846849</p>
           </div>
         </div>
       </div>

@@ -1,10 +1,10 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
-    <title>ITSA dashboard - DIY Accounting Submit</title>
+    <title>Income Tax dashboard - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -19,59 +19,6 @@
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="../../lib/analytics.js"></script>
-    <style>
-      .dashboard-steps {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-5);
-        margin: var(--space-5) 0;
-      }
-      .dashboard-step {
-        background: white;
-        border-radius: var(--radius-card);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        padding: var(--space-5);
-      }
-      .dashboard-step h2 {
-        margin: 0 0 0.25em 0;
-        font-size: var(--step-1);
-      }
-      .dashboard-step p {
-        margin: 0 0 0.75em 0;
-        color: #555;
-      }
-      .dashboard-step .applicability {
-        font-style: italic;
-      }
-      .dashboard-divider {
-        display: flex;
-        align-items: center;
-        gap: var(--space-4);
-        margin: var(--space-4) 0;
-        color: #666;
-      }
-      .dashboard-divider::before,
-      .dashboard-divider::after {
-        content: "";
-        flex: 1;
-        border-top: 1px solid #ccc;
-      }
-      .business-picker-list {
-        display: flex;
-        flex-direction: column;
-        gap: var(--space-2);
-        margin: var(--space-2) 0;
-      }
-      .business-picker-option {
-        display: flex;
-        align-items: baseline;
-        gap: 0.5em;
-      }
-      .business-picker-option label {
-        font-weight: normal;
-        display: inline;
-      }
-    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
@@ -101,7 +48,13 @@
       </div>
 
       <!-- Business picker -->
-      <div id="businessPickerContainer" class="form-container">
+      <div
+        id="businessPickerContainer"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to find your businesses"
+        data-sign-in-text="Log in to look up the self-employment and property businesses HMRC holds against your National Insurance number, then work through the steps below."
+      >
         <h2>Pick a business</h2>
         <p class="hint">
           The steps below link to the file family the picked business uses - self-employment or property - because HMRC's endpoints, field
@@ -144,59 +97,37 @@
         </div>
       </div>
 
-      <div class="form-container">
+      <div class="form-container" data-requires-sign-in>
         <div class="dashboard-steps">
           <div class="dashboard-step">
             <h2>1. Business details</h2>
             <p>Look up the self-employment and property businesses HMRC holds against your National Insurance number.</p>
-            <a href="businessDetails.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
-              >Go to Business Details</a
-            >
+            <a href="businessDetails.html" class="secondary-button">Go to business details</a>
           </div>
           <div class="dashboard-step">
             <h2>2. Obligations</h2>
             <p>Check which quarterly updates are open, due, or already sent, grouped by business.</p>
-            <a href="obligations.html" class="btn" style="display: inline-block; width: auto; text-decoration: none">Go to obligations</a>
+            <a href="obligations.html" class="secondary-button">Go to obligations</a>
           </div>
           <div class="dashboard-step">
             <h2>3. File a quarterly update</h2>
             <p>Send a period summary of income and expenses to HMRC for the picked business.</p>
-            <a href="selfEmploymentPeriod.html" id="step3Link" class="btn" style="display: inline-block; width: auto; text-decoration: none"
-              >Go to File a Quarterly Update</a
-            >
+            <a href="selfEmploymentPeriod.html" id="step3Link" class="secondary-button">Go to file a quarterly update</a>
           </div>
           <div class="dashboard-step">
             <h2>4. Period summaries</h2>
             <p>List the quarterly updates already filed for the picked business.</p>
-            <a
-              href="selfEmploymentPeriods.html"
-              id="step4Link"
-              class="btn"
-              style="display: inline-block; width: auto; text-decoration: none"
-              >Go to Period Summaries</a
-            >
+            <a href="selfEmploymentPeriods.html" id="step4Link" class="secondary-button">Go to period summaries</a>
           </div>
           <div class="dashboard-step">
             <h2>5. View a period summary</h2>
             <p>Retrieve one filed quarterly update by tax year and period ID.</p>
-            <a
-              href="selfEmploymentPeriodView.html"
-              id="step5Link"
-              class="btn"
-              style="display: inline-block; width: auto; text-decoration: none"
-              >Go to View a Period Summary</a
-            >
+            <a href="selfEmploymentPeriodView.html" id="step5Link" class="secondary-button">Go to view a period summary</a>
           </div>
           <div class="dashboard-step">
             <h2>6. Amend a period summary</h2>
             <p>Correct the income and expenses on a quarterly update already filed with HMRC.</p>
-            <a
-              href="selfEmploymentPeriodAmend.html"
-              id="step6Link"
-              class="btn"
-              style="display: inline-block; width: auto; text-decoration: none"
-              >Go to Amend a Period Summary</a
-            >
+            <a href="selfEmploymentPeriodAmend.html" id="step6Link" class="secondary-button">Go to amend a period summary</a>
           </div>
 
           <div class="dashboard-divider">Year end</div>
@@ -204,16 +135,12 @@
           <div class="dashboard-step">
             <h2>7. Annual submission</h2>
             <p>Load the year's annual submission for the picked business, enter adjustments and allowances, and save them to HMRC.</p>
-            <a href="annualSubmission.html" id="step7Link" class="btn" style="display: inline-block; width: auto; text-decoration: none"
-              >Go to Annual Submission</a
-            >
+            <a href="annualSubmission.html" id="step7Link" class="secondary-button">Go to annual submission</a>
           </div>
           <div class="dashboard-step">
             <h2>8. Year-end adjustments</h2>
-            <p>Trigger the year-end summary, read the net profit HMRC computed, and change a figure if it is wrong.</p>
-            <a href="adjustments.html" id="step8Link" class="btn" style="display: inline-block; width: auto; text-decoration: none"
-              >Go to Adjustments</a
-            >
+            <p>Request the year-end summary, read the net profit HMRC computed, and change a figure if it is wrong.</p>
+            <a href="adjustments.html" id="step8Link" class="secondary-button">Go to year-end adjustments</a>
           </div>
           <div class="dashboard-step">
             <h2>9. Losses and claims</h2>
@@ -221,9 +148,7 @@
               Applies if the picked business made a loss this year, or carries one from an earlier year. Every business's loss carries
               forward the same way; a sole trade can also carry sideways or back.
             </p>
-            <a href="lossesAndClaims.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
-              >Go to Losses and Claims</a
-            >
+            <a href="lossesAndClaims.html" class="secondary-button">Go to losses and claims</a>
           </div>
           <div class="dashboard-step">
             <h2>10. Tax liability adjustments</h2>
@@ -231,23 +156,17 @@
               Applies only if a carry-back claim was made in Losses and Claims. This is the second half of that claim - it tells HMRC what
               the carry-back saves.
             </p>
-            <a href="taxLiabilityAdjustments.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
-              >Go to Tax Liability Adjustments</a
-            >
+            <a href="taxLiabilityAdjustments.html" class="secondary-button">Go to tax liability adjustments</a>
           </div>
           <div class="dashboard-step">
             <h2>11. Tax calculation</h2>
-            <p>Trigger a calculation and see what the tax year owes, with one row per business.</p>
-            <a href="taxCalculation.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
-              >Go to Tax Calculation</a
-            >
+            <p>Request a calculation and see what the tax year owes, with one row per business.</p>
+            <a href="taxCalculation.html" class="secondary-button">Go to tax calculation</a>
           </div>
           <div class="dashboard-step">
             <h2>12. Final declaration</h2>
             <p>Read the calculation again, confirm it is complete and correct for every business, and file the return.</p>
-            <a href="finalDeclaration.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
-              >Go to Final Declaration</a
-            >
+            <a href="finalDeclaration.html" class="secondary-button">Go to final declaration</a>
           </div>
         </div>
       </div>
@@ -269,6 +188,7 @@
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
     <script src="dashboard.page.js"></script>
   </body>
 </html>

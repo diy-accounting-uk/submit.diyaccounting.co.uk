@@ -41,7 +41,13 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Load criteria -->
-      <div id="loadCriteriaForm" class="form-container">
+      <div
+        id="loadCriteriaForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to send your annual submission"
+        data-sign-in-text="Log in to load the annual submission for a self-employment business, change the adjustments and allowances, and save them to HMRC."
+      >
         <h2>Load an annual submission</h2>
         <form id="itsaAnnualLoadForm" novalidate>
           <div class="form-group">
@@ -65,7 +71,10 @@
 
           <div class="form-group">
             <label for="businessId">Business ID</label>
-            <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
+            <p id="businessId-hint" class="hint">
+              Filled in when you pick a business on the Income Tax dashboard. Otherwise copy it from Business details, for example
+              XAIS12345678910.
+            </p>
             <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
           </div>
 
@@ -84,10 +93,10 @@
               <option value="TRADING_ALLOWANCE">Trading income allowance</option>
               <option value="NOT_FOUND">Not Found</option>
             </select>
-            <div style="margin-top: 10px">
-              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
-              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
-                >Validate Fraud Prevention Headers</label
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                for="runFraudPreventionHeaderValidation"
+                >Validate fraud prevention headers</label
               >
             </div>
           </div>
@@ -105,7 +114,7 @@
         <div class="form-group">
           <label for="includedNonTaxableProfits">Included non-taxable profits</label>
           <p id="includedNonTaxableProfits-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -121,7 +130,7 @@
         <div class="form-group">
           <label for="basisAdjustment">Basis period adjustment</label>
           <p id="basisAdjustment-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -137,7 +146,7 @@
         <div class="form-group">
           <label for="accountingAdjustment">Accounting adjustment</label>
           <p id="accountingAdjustment-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -153,7 +162,7 @@
         <div class="form-group">
           <label for="outstandingBusinessIncome">Outstanding business income</label>
           <p id="outstandingBusinessIncome-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -169,7 +178,7 @@
         <div class="form-group">
           <label for="balancingChargeBpra">Balancing charge (business premises renovation allowance)</label>
           <p id="balancingChargeBpra-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -185,7 +194,7 @@
         <div class="form-group">
           <label for="balancingChargeOther">Balancing charge (other)</label>
           <p id="balancingChargeOther-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -201,7 +210,7 @@
         <div class="form-group">
           <label for="goodsAndServicesOwnUse">Goods and services for own use</label>
           <p id="goodsAndServicesOwnUse-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -217,7 +226,7 @@
         <div class="form-group">
           <label for="transitionProfitAmount">Transition profit amount</label>
           <p id="transitionProfitAmount-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -233,7 +242,7 @@
         <div class="form-group">
           <label for="transitionProfitAccelerationAmount">Transition profit acceleration amount</label>
           <p id="transitionProfitAccelerationAmount-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -250,21 +259,28 @@
         <h2>Allowances</h2>
         <p class="hint">Claim the trading income allowance on its own, or the itemised allowances below. HMRC does not accept both.</p>
         <div class="form-group">
-          <input type="radio" id="allowanceTypeNone" name="allowanceType" value="" checked />
-          <label for="allowanceTypeNone" style="display: inline; font-weight: normal">Neither</label>
-          <br />
-          <input type="radio" id="allowanceTypeTrading" name="allowanceType" value="trading" />
-          <label for="allowanceTypeTrading" style="display: inline; font-weight: normal">Trading income allowance</label>
-          <br />
-          <input type="radio" id="allowanceTypeItemised" name="allowanceType" value="itemised" />
-          <label for="allowanceTypeItemised" style="display: inline; font-weight: normal">Itemised allowances</label>
+          <div class="choice">
+            <input type="radio" id="allowanceTypeNone" name="allowanceType" value="" checked /><label for="allowanceTypeNone"
+              >Neither</label
+            >
+          </div>
+          <div class="choice">
+            <input type="radio" id="allowanceTypeTrading" name="allowanceType" value="trading" /><label for="allowanceTypeTrading"
+              >Trading income allowance</label
+            >
+          </div>
+          <div class="choice">
+            <input type="radio" id="allowanceTypeItemised" name="allowanceType" value="itemised" /><label for="allowanceTypeItemised"
+              >Itemised allowances</label
+            >
+          </div>
         </div>
 
         <div id="tradingAllowanceFields">
           <div class="form-group">
             <label for="tradingIncomeAllowance">Trading income allowance</label>
             <p id="tradingIncomeAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -284,7 +300,7 @@
           <div class="form-group">
             <label for="annualInvestmentAllowance">Annual investment allowance</label>
             <p id="annualInvestmentAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -301,7 +317,7 @@
           <div class="form-group">
             <label for="capitalAllowanceMainPool">Capital allowance, main pool</label>
             <p id="capitalAllowanceMainPool-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -318,7 +334,7 @@
           <div class="form-group">
             <label for="capitalAllowanceSpecialRatePool">Capital allowance, special rate pool</label>
             <p id="capitalAllowanceSpecialRatePool-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -335,7 +351,7 @@
           <div class="form-group">
             <label for="businessPremisesRenovationAllowance">Business premises renovation allowance</label>
             <p id="businessPremisesRenovationAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -352,7 +368,7 @@
           <div class="form-group">
             <label for="enhancedCapitalAllowance">Enhanced capital allowance</label>
             <p id="enhancedCapitalAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -369,7 +385,7 @@
           <div class="form-group">
             <label for="allowanceOnSales">Allowance on sales</label>
             <p id="allowanceOnSales-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -386,7 +402,7 @@
           <div class="form-group">
             <label for="capitalAllowanceSingleAssetPool">Capital allowance, single asset pool</label>
             <p id="capitalAllowanceSingleAssetPool-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -403,7 +419,7 @@
           <div class="form-group">
             <label for="zeroEmissionsCarAllowance">Zero emissions car allowance</label>
             <p id="zeroEmissionsCarAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -461,6 +477,7 @@
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/books-import.js"></script>
     <script src="../../widgets/submission-cost.js"></script>

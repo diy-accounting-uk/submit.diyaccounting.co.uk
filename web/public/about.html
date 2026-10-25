@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <title>About - DIY Accounting Submit</title>
@@ -20,212 +20,13 @@
     <link rel="stylesheet" href="./submit.css" />
     <script src="./lib/analytics.js"></script>
     <script src="./lib/session-beacon.js"></script>
-    <style>
-      /* Purple gradient backdrop contained within the portrait frame */
-      #mainContent {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        border-radius: var(--radius-card);
-        padding: 1em;
-      }
-      header .subtitle {
-        display: none;
-      }
-
-      /* Hero section */
-      .hero-section {
-        text-align: center;
-        padding: 2em 0;
-        color: white;
-      }
-      .hero-section h2 {
-        font-size: 2em;
-        font-weight: 700;
-        margin: 0 0 0.5em 0;
-        color: white;
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        line-height: 1.2;
-      }
-      .hero-section p {
-        font-size: 1.1em;
-        font-weight: 300;
-        margin: 0 auto;
-        opacity: 0.95;
-        line-height: 1.6;
-      }
-
-      /* Feature cards */
-      .feature-grid {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 1.5em;
-        margin: 1.5em 0;
-      }
-      .feature-card {
-        background: white;
-        border-radius: 16px;
-        overflow: hidden;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        transition:
-          transform 0.3s ease,
-          box-shadow 0.3s ease;
-      }
-      .feature-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
-      }
-      .feature-card img {
-        width: 100%;
-        height: auto;
-        display: block;
-        border-bottom: 1px solid #eee;
-        cursor: pointer;
-        transition: opacity 0.2s ease;
-      }
-      .feature-card img:hover {
-        opacity: 0.9;
-      }
-      .feature-card-content {
-        padding: 1.5em;
-      }
-      .feature-card-content h3 {
-        margin: 0 0 0.5em 0;
-        color: #2c5aa0;
-        font-size: 1.2em;
-      }
-      .feature-card-content p {
-        margin: 0;
-        color: #666;
-        line-height: 1.6;
-      }
-
-      /* Lightbox modal styles */
-      .lightbox-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.9);
-        z-index: 9999;
-        cursor: pointer;
-        justify-content: center;
-        align-items: center;
-      }
-      .lightbox-overlay.active {
-        display: flex;
-      }
-      .lightbox-overlay img {
-        max-width: 95%;
-        max-height: 95%;
-        object-fit: contain;
-        border-radius: 4px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-      }
-      .lightbox-close {
-        position: absolute;
-        top: 20px;
-        right: 30px;
-        color: white;
-        font-size: 40px;
-        font-weight: bold;
-        cursor: pointer;
-        z-index: 10000;
-        line-height: 1;
-      }
-      .lightbox-close:hover {
-        color: #ccc;
-      }
-      .lightbox-hint {
-        position: absolute;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 14px;
-      }
-
-      /* Benefits section */
-      .benefits-section {
-        background: white;
-        padding: 2em 1.5em;
-        margin-top: 1.5em;
-        border-radius: 16px;
-      }
-      .benefits-section h2 {
-        text-align: center;
-        color: #2c5aa0;
-        margin: 0 0 1em 0;
-      }
-      .benefits-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 1.5em;
-      }
-      .benefit-item {
-        text-align: center;
-        padding: 0.5em;
-      }
-      .benefit-icon {
-        font-size: 2.5em;
-        margin-bottom: 0.5em;
-      }
-      .benefit-item h3 {
-        margin: 0 0 0.5em 0;
-        color: #333;
-      }
-      .benefit-item p {
-        margin: 0;
-        color: #666;
-        line-height: 1.5;
-      }
-
-      /* CTA section */
-      .cta-section {
-        background: white;
-        padding: 2em 1.5em;
-        text-align: center;
-        border-radius: 16px;
-        margin-top: 1.5em;
-      }
-      .cta-section h2 {
-        font-size: 1.8em;
-        margin: 0 0 0.5em 0;
-        color: #2c5aa0;
-      }
-      .cta-section p {
-        font-size: 1.1em;
-        color: #666;
-        margin: 0 0 1.5em 0;
-      }
-      .button-group {
-        display: flex;
-        gap: 1em;
-        justify-content: center;
-        flex-wrap: wrap;
-      }
-      .button-group .btn {
-        font-size: 1.1em;
-        padding: 1em 2em;
-        border-radius: 50px;
-        font-weight: 600;
-        transition: all 0.3s ease;
-      }
-      .button-group .btn:hover {
-        transform: scale(1.05);
-        box-shadow: 0 10px 30px rgba(44, 90, 160, 0.3);
-      }
-      .btn-secondary {
-        background: #6c757d;
-        border-color: #6c757d;
-      }
-    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
-      <h1>About DIY Accounting Submit</h1>
+      <h1>About</h1>
+      <p class="subtitle">Making Tax Digital software for UK businesses</p>
     </header>
 
     <main id="mainContent">
@@ -249,10 +50,9 @@
           </li>
         </ul>
       </div>
-      <!-- Hero Section -->
-      <section class="hero-section">
-        <h2>Submit Your VAT Returns<br />Direct to HMRC</h2>
-        <p>Making Tax Digital compliant software for UK VAT-registered businesses</p>
+      <section class="about-intro">
+        <h2>Submit your VAT returns direct to HMRC</h2>
+        <p>Making Tax Digital compliant software for UK VAT-registered businesses.</p>
         <nav class="about-nav-links" aria-label="Help navigation">
           <a href="help.html" class="about-nav-link">Help & FAQs</a>
           <a href="guide.html" class="about-nav-link">User Guide</a>
@@ -263,99 +63,75 @@
         </nav>
       </section>
 
-      <!-- Feature Cards -->
-      <div class="feature-grid">
-        <div class="feature-card">
-          <img src="images/guide/vat-return-form-filled.png" alt="VAT return submission form showing all 9 boxes" />
-          <div class="feature-card-content">
-            <h3>Simple VAT Return Form</h3>
+      <section class="about-features" aria-labelledby="aboutFeatures">
+        <h2 id="aboutFeatures">What it does</h2>
+        <div class="about-feature-grid">
+          <div class="about-feature">
+            <h3>A VAT return form with nine boxes</h3>
             <p>
               Enter your figures in the familiar 9-box format. Boxes 3 and 5 calculate automatically. Clear labels and hints help you enter
               the right values.
             </p>
           </div>
-        </div>
-        <div class="feature-card">
-          <img src="images/guide/submission-success-receipt.png" alt="Successful submission receipt from HMRC" />
-          <div class="feature-card-content">
-            <h3>Instant HMRC Confirmation</h3>
+          <div class="about-feature">
+            <h3>Confirmation from HMRC</h3>
             <p>
-              Get immediate confirmation when HMRC accepts your return. Your receipt includes the Form Bundle Number as official proof of
-              submission.
+              Get confirmation when HMRC accepts your return. Your receipt includes the Form Bundle Number as official proof of submission.
             </p>
           </div>
-        </div>
-        <div class="feature-card">
-          <img src="images/guide/obligations-with-results.png" alt="VAT obligations showing periods and due dates" />
-          <div class="feature-card-content">
-            <h3>Track Your Obligations</h3>
+          <div class="about-feature">
+            <h3>Your obligations</h3>
             <p>
-              See exactly which VAT periods need returns and their due dates. Never miss a deadline with a clear view of open and fulfilled
-              obligations.
+              See which VAT periods need returns and their due dates, with open and fulfilled obligations marked in words as well as colour.
             </p>
           </div>
-        </div>
-        <div class="feature-card">
-          <img src="images/guide/view-return-details.png" alt="View previously submitted VAT return details" />
-          <div class="feature-card-content">
-            <h3>View Submitted Returns</h3>
-            <p>Retrieve any previously submitted return directly from HMRC. Verify your figures were recorded correctly at any time.</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Benefits Section -->
-      <section class="benefits-section">
-        <h2>Why Choose DIY Accounting Submit?</h2>
-        <div class="benefits-grid">
-          <div class="benefit-item">
-            <div class="benefit-icon" aria-hidden="true">&#163;</div>
-            <h3>Free Guest Tier</h3>
-            <p>
-              Request a day pass for free access with 3 tokens, valid for 24 hours. Each VAT submission uses 1 token. No pass needed — visit
-              the <a href="bundles.html">Bundles</a> page and click Request. Up to 100 guests can hold this bundle at once; if it's full,
-              try again the next day.
-            </p>
-            <p style="font-size: 0.9em; color: #767676; margin-top: 0.5em">Invited guests get a pass code for longer access instead.</p>
-          </div>
-          <div class="benefit-item">
-            <div class="benefit-icon" aria-hidden="true">&#10003;</div>
-            <h3>HMRC Recognised</h3>
-            <p>Fully compliant with Making Tax Digital for VAT. Authorised to submit directly to HMRC.</p>
-          </div>
-          <div class="benefit-item">
-            <div class="benefit-icon" aria-hidden="true">&#9881;</div>
-            <h3>Bridging Software</h3>
-            <p>Keep using your spreadsheet or accounting software. Just enter your final figures here to submit.</p>
-          </div>
-          <div class="benefit-item">
-            <div class="benefit-icon" aria-hidden="true">&#9855;</div>
-            <h3>Accessible Design</h3>
-            <p>Built to WCAG 2.2 Level AA standards. Works with screen readers and keyboard navigation.</p>
+          <div class="about-feature">
+            <h3>Returns you submitted</h3>
+            <p>Retrieve any previously submitted return directly from HMRC. Check that your figures were recorded correctly at any time.</p>
           </div>
         </div>
       </section>
 
-      <!-- Call to Action Section -->
-      <section class="cta-section">
-        <h2>Ready to Submit Your VAT Return?</h2>
-        <p>Log in with your Google account to get started. You'll need your Government Gateway credentials when authorising with HMRC.</p>
-        <div class="button-group">
-          <button type="button" class="btn" id="getStartedBtn">Get Started</button>
-          <button type="button" class="btn btn-secondary" id="readGuideBtn">Read the Guide</button>
+      <section class="about-benefits" aria-labelledby="aboutBenefits">
+        <h2 id="aboutBenefits">Why choose DIY Accounting Submit?</h2>
+        <dl class="about-benefit-list">
+          <div class="about-benefit">
+            <dt>Free guest tier</dt>
+            <dd>
+              Request a day pass for free access with 3 tokens, valid for 24 hours. Each VAT submission uses 1 token. No pass needed: visit
+              the <a href="bundles.html">Bundles</a> page and click Request. Up to 100 guests can hold this bundle at once; if it is full,
+              try again the next day. Invited guests get a pass code for longer access instead.
+            </dd>
+          </div>
+          <div class="about-benefit">
+            <dt>HMRC recognised</dt>
+            <dd>Compliant with Making Tax Digital for VAT. Authorised to submit directly to HMRC.</dd>
+          </div>
+          <div class="about-benefit">
+            <dt>Bridging software</dt>
+            <dd>Keep using your spreadsheet or accounting software. Enter your final figures here to submit.</dd>
+          </div>
+          <div class="about-benefit">
+            <dt>Accessible design</dt>
+            <dd>Built to WCAG 2.2 Level AA. Works with screen readers and keyboard navigation.</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="about-start" aria-labelledby="aboutStart">
+        <h2 id="aboutStart">Ready to submit your VAT return?</h2>
+        <p>
+          Log in with your Google account to get started. You will need your Government Gateway credentials when you authorise with HMRC.
+        </p>
+        <div class="about-actions">
+          <button type="button" class="btn" id="getStartedBtn">Get started</button>
+          <button type="button" class="btn btn-secondary" id="readGuideBtn">Read the guide</button>
           <a class="btn btn-secondary" href="videos.html">Watch the walkthroughs</a>
         </div>
       </section>
     </main>
 
     <footer></footer>
-
-    <!-- Lightbox modal for expandable images -->
-    <div class="lightbox-overlay" id="lightbox">
-      <span class="lightbox-close" aria-label="Close">&times;</span>
-      <img src="" alt="" id="lightbox-image" />
-      <span class="lightbox-hint">Click anywhere to close</span>
-    </div>
 
     <script src="widgets/page-chrome.js"></script>
     <script src="lib/env-loader.js"></script>

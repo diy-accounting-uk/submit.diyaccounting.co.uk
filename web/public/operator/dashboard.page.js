@@ -121,7 +121,7 @@ function renderObjective(objective) {
   }
 
   const table = document.createElement("table");
-  table.className = "observations";
+  table.className = "observations data-table";
   const thead = document.createElement("thead");
   thead.innerHTML = "<tr><th>Observation</th><th>Last 30 days</th><th>Trend</th><th>Last 90 days</th><th>Link</th></tr>";
   table.appendChild(thead);
@@ -438,8 +438,12 @@ async function fetchToml(path) {
 function showError(message) {
   const container = document.getElementById("objectivesContainer");
   container.innerHTML = "";
+  container.classList.add("objectives-failed");
+  document.getElementById("visitorsPanel").hidden = true;
   const notice = document.createElement("p");
   notice.id = "snapshotError";
+  notice.className = "status-message status-error";
+  notice.setAttribute("role", "alert");
   notice.textContent = message;
   container.appendChild(notice);
 }
@@ -458,7 +462,7 @@ async function initPage() {
     } else if (error.status === 404) {
       showError("No snapshot has been published yet.");
     } else {
-      showError("Failed to load the operator snapshot.");
+      showError("The operator snapshot did not load. Reload the page to try again.");
     }
   }
 
@@ -466,8 +470,9 @@ async function initPage() {
     const parsed = await fetchToml("/experiments.toml");
     renderExperiments(parsed.experiments);
   } catch (error) {
-    // The experiments panel is a secondary feature; a missing or unreadable file leaves
-    // it empty rather than blocking the objectives above.
+    // The experiments panel is a secondary feature; a missing or unreadable file hides
+    // it rather than blocking the objectives above.
+    document.getElementById("experimentsPanel").hidden = true;
   }
 }
 

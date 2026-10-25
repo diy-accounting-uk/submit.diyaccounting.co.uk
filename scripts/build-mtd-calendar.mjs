@@ -313,86 +313,6 @@ function entryHtml(fact, sources, heading, extraHtml = "") {
   );
 }
 
-const STYLES = `
-      .calendar {
-        list-style: none;
-        padding: 0;
-        margin: 0;
-      }
-      .calendar-entry {
-        border-left: 4px solid var(--c-brand);
-        padding: var(--space-1) var(--space-4);
-        margin-bottom: var(--space-5);
-        text-align: left;
-      }
-      .calendar-entry h3 {
-        margin: 0 0 var(--space-1);
-      }
-      .calendar-date {
-        display: block;
-        font-size: var(--step--1);
-        color: var(--c-ink-muted);
-      }
-      .source-quote {
-        margin: var(--space-2) 0 0;
-        padding: var(--space-2) var(--space-4);
-        background: var(--c-canvas);
-        border: 1px solid var(--c-rule-subtle);
-        border-radius: var(--radius-control);
-        font-size: var(--step--1);
-        color: var(--c-ink-muted);
-      }
-      .source-quote p {
-        margin: 0 0 var(--space-1);
-      }
-      .source-quote footer {
-        overflow-wrap: anywhere;
-      }
-      .retrieved {
-        color: var(--c-ink-muted);
-        white-space: nowrap;
-      }
-      .table-scroll {
-        overflow-x: auto;
-      }
-      .deadline-table {
-        border-collapse: collapse;
-        width: 100%;
-        margin: var(--space-2) 0;
-      }
-      .deadline-table th,
-      .deadline-table td {
-        border: 1px solid var(--c-rule-subtle);
-        padding: var(--space-1);
-        text-align: left;
-      }
-      @media (max-width: 600px) {
-        .stacked-table,
-        .stacked-table tbody,
-        .stacked-table tr,
-        .stacked-table th,
-        .stacked-table td {
-          display: block;
-        }
-        .stacked-table thead {
-          position: absolute;
-          left: -9999px;
-        }
-        .stacked-table tr {
-          border: 1px solid var(--c-rule-subtle);
-          border-radius: var(--radius-control);
-          margin-bottom: var(--space-2);
-        }
-        .stacked-table th,
-        .stacked-table td {
-          border: 0;
-        }
-        .stacked-table td[data-label]::before {
-          content: attr(data-label) ": ";
-          font-weight: bold;
-        }
-      }`;
-
 export function renderCalendarHtml(sources) {
   const dated = [...DATED_FACTS]
     .sort((a, b) => a.date.localeCompare(b.date))
@@ -430,8 +350,6 @@ export function renderCalendarHtml(sources) {
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="submit.css" />
-    <style>${STYLES}
-    </style>
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="\${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="\${AWS_REGION}" />
@@ -444,7 +362,7 @@ export function renderCalendarHtml(sources) {
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
-      <h1>DIY Accounting Submit</h1>
+      <h1>MTD calendar</h1>
       <p class="subtitle">MTD calendar: when Making Tax Digital applies to you</p>
     </header>
 

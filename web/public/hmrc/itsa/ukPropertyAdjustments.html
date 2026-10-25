@@ -26,7 +26,7 @@
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
       <h1>UK property year-end adjustments</h1>
-      <p class="subtitle">Trigger the year-end summary, review the figures HMRC calculated, and adjust them if needed</p>
+      <p class="subtitle">Request the year-end summary, review the figures HMRC calculated, and adjust them if needed</p>
     </header>
 
     <main id="mainContent">
@@ -41,8 +41,14 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Trigger form -->
-      <div id="triggerForm" class="form-container">
-        <h2>Trigger the year-end summary</h2>
+      <div
+        id="triggerForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to see your property year-end adjustments"
+        data-sign-in-text="Log in to trigger the year-end summary for a UK property business, read the figures HMRC calculated and adjust them."
+      >
+        <h2>Request the year-end summary</h2>
         <div id="obligationsWarning" class="status-message status-error" style="display: none" role="alert"></div>
         <form id="itsaBsasTriggerForm" novalidate>
           <div class="form-group">
@@ -66,7 +72,10 @@
 
           <div class="form-group">
             <label for="businessId">Business ID</label>
-            <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
+            <p id="businessId-hint" class="hint">
+              Filled in when you pick a business on the Income Tax dashboard. Otherwise copy it from Business details, for example
+              XAIS12345678910.
+            </p>
             <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
           </div>
 
@@ -89,22 +98,22 @@
           <!-- Developer Test Scenario Section -->
           <div id="developerSection" class="form-group" style="display: none">
             <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
-            <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios for triggering a summary</p>
+            <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios for requesting a summary</p>
             <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
-              <option value="">Default (trigger succeeds)</option>
+              <option value="">Default (request succeeds)</option>
               <option value="OBLIGATIONS_NOT_MET">Obligations not met</option>
               <option value="ACCOUNTING_PERIOD_NOT_ENDED">Accounting period not ended</option>
               <option value="NOT_FOUND">Not Found</option>
             </select>
-            <div style="margin-top: 10px">
-              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
-              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
-                >Validate Fraud Prevention Headers</label
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                for="runFraudPreventionHeaderValidation"
+                >Validate fraud prevention headers</label
               >
             </div>
           </div>
 
-          <button type="submit" id="triggerBtn" class="btn">Trigger year-end summary</button>
+          <button type="submit" id="triggerBtn" class="btn">Request year-end summary</button>
         </form>
       </div>
 
@@ -121,7 +130,7 @@
         <div class="form-group">
           <label for="adjustTotalRentsReceived">Total rents received</label>
           <p id="adjustTotalRentsReceived-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -137,7 +146,7 @@
         <div class="form-group">
           <label for="adjustRepairsAndMaintenance">Repairs and maintenance</label>
           <p id="adjustRepairsAndMaintenance-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -182,6 +191,7 @@
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../lib/money-format.js"></script>
     <script src="../../lib/money-input.js"></script>

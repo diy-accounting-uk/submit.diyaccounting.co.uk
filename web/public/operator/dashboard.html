@@ -2,7 +2,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <title>Operator Dashboard - DIY Accounting Submit</title>
@@ -21,142 +21,8 @@
     <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="../lib/analytics.js"></script>
-    <style>
-      /* This page carries its own width: the shared body { max-width: var(--content-max) }
-         rule in submit.css (800px) is right for prose pages, but the tables here (up to 13
-         columns) need the full window width to read comfortably without wrapping every header. */
-      body.page-wide {
-        max-width: none;
-      }
-      .objective {
-        background: white;
-        border-radius: var(--radius-card);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-        padding: var(--space-5);
-        margin: 0 0 var(--space-5) 0;
-        /* Narrow-screen fallback: a table wider than its card scrolls inside the card
-           rather than pushing the card, and so the page, wider than the viewport. */
-        overflow-x: auto;
-      }
-      .objective h2 {
-        margin: 0 0 0.75em 0;
-        font-size: var(--step-1);
-      }
-      .objective-empty {
-        color: #777;
-        font-style: italic;
-      }
-      table.observations {
-        width: 100%;
-        border-collapse: collapse;
-      }
-      table.observations th,
-      table.observations td {
-        text-align: left;
-        padding: 0.4em 0.6em;
-        border-bottom: 1px solid #eee;
-      }
-      table.observations th {
-        white-space: nowrap;
-      }
-      .trend-up {
-        color: #1a7f37;
-      }
-      .trend-down {
-        color: #b3261e;
-      }
-      .trend-flat,
-      .trend-unknown {
-        color: #777;
-      }
-      #experimentsPanel ul {
-        margin: 0;
-        padding-left: 1.2em;
-      }
-      #experimentsPanel li {
-        margin-bottom: 0.6em;
-      }
-      #snapshotMeta {
-        color: #666;
-        font-size: 0.9em;
-        margin: 0 0 var(--space-5) 0;
-      }
-
-      /* Activity column: wide enough that a long catalogue name (e.g. "Change Registered
-         Email Address (Companies House)") sits on one or two lines, not six. */
-      #activitiesTable th:first-child,
-      #activitiesTable td:first-child {
-        min-width: 18em;
-      }
-      /* Group headers ("Started"/"Completed") stay centred over their span; the leaf headers
-         and every count cell right-align to match the numbers they carry. */
-      #activitiesTable thead tr:first-child th:not(:first-child) {
-        text-align: center;
-      }
-      #activitiesTable thead tr:last-child th,
-      #activitiesTable tbody td:not(:first-child) {
-        text-align: right;
-        font-variant-numeric: tabular-nums;
-      }
-      /* Divider between the Started and Completed column groups. */
-      #activitiesTable thead tr:first-child th:nth-child(3),
-      #activitiesTable thead tr:last-child th:nth-child(7),
-      #activitiesTable tbody td:nth-child(8) {
-        border-left: 2px solid var(--c-brand);
-      }
-
-      #reinvestmentTable th:nth-child(2),
-      #reinvestmentTable td:nth-child(2),
-      #companyProfitAndLossTable th:nth-child(2),
-      #companyProfitAndLossTable td:nth-child(2),
-      #companyBalanceSheetTable th:nth-child(2),
-      #companyBalanceSheetTable td:nth-child(2),
-      #visitorsTable th:not(:first-child),
-      #visitorsTable td:not(:first-child),
-      #objectivesContainer table.observations th:nth-child(2),
-      #objectivesContainer table.observations td:nth-child(2),
-      #objectivesContainer table.observations th:nth-child(4),
-      #objectivesContainer table.observations td:nth-child(4) {
-        text-align: right;
-        font-variant-numeric: tabular-nums;
-      }
-
-      .side-panels {
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: var(--space-5);
-      }
-
-      /* #objectivesContainer and the two panels in .side-panels are empty until
-         initPage()'s snapshot fetch resolves, then fill with the eight objectives'
-         tables and the visitors/experiments rows in one go. Each reservation is the height
-         measured on a snapshot with every observation present, plus a margin for font
-         differences, so that fill does not push what sits below; the narrow-screen tables
-         wrap onto more lines and need more. The browser test measures the rendered
-         heights at 390, 700, 900 and 1280 px and fails when a reservation falls short. */
-      #objectivesContainer {
-        min-height: 2150px;
-      }
-      #visitorsPanel {
-        min-height: 200px;
-      }
-      #experimentsPanel {
-        min-height: 100px;
-      }
-      @media (max-width: 600px) {
-        #objectivesContainer {
-          min-height: 3150px;
-        }
-        #visitorsPanel {
-          min-height: 280px;
-        }
-        #experimentsPanel {
-          min-height: 130px;
-        }
-      }
-    </style>
   </head>
-  <body class="page-wide">
+  <body class="page-dashboard">
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
@@ -167,12 +33,12 @@
     <main id="mainContent">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
-      <p id="snapshotMeta"></p>
+      <p id="snapshotMeta" class="snapshot-meta"></p>
 
       <section id="reinvestmentPanel" class="objective" hidden>
         <h2>Reinvestment</h2>
         <p class="subtitle">The budget is the reinvestment fraction of trailing 30-day income</p>
-        <table class="observations" id="reinvestmentTable">
+        <table class="observations data-table" id="reinvestmentTable">
           <thead>
             <tr>
               <th>Figure</th>
@@ -186,7 +52,7 @@
       <section id="companyAccountsPanel" class="objective" hidden>
         <h2>Company accounts</h2>
         <p class="subtitle">The company's own resident diya-gl book, derived nightly</p>
-        <table class="observations" id="companyProfitAndLossTable">
+        <table class="observations data-table" id="companyProfitAndLossTable">
           <thead>
             <tr>
               <th>Profit and loss</th>
@@ -195,7 +61,7 @@
           </thead>
           <tbody id="companyProfitAndLossBody"></tbody>
         </table>
-        <table class="observations" id="companyBalanceSheetTable">
+        <table class="observations data-table" id="companyBalanceSheetTable">
           <thead>
             <tr>
               <th>Balance sheet</th>
@@ -210,7 +76,7 @@
         <h2>Activity started and completed</h2>
         <p class="subtitle">Each activity's primary button clicked, and how often it went on to complete</p>
         <p class="subtitle" id="activitiesDataSince" hidden></p>
-        <table class="observations" id="activitiesTable">
+        <table class="observations data-table" id="activitiesTable">
           <thead>
             <tr>
               <th rowspan="2">Activity</th>
@@ -251,7 +117,7 @@
       <div class="side-panels">
         <section id="visitorsPanel" class="objective">
           <h2>Visitors</h2>
-          <table class="observations" id="visitorsTable">
+          <table class="observations data-table" id="visitorsTable">
             <thead>
               <tr>
                 <th>Kind</th>

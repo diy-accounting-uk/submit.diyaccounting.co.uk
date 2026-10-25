@@ -105,6 +105,7 @@ test.describe("viewVatReturn - stale status banners", () => {
     // branch instead of an HMRC OAuth redirect.
     await page.addInitScript(() => {
       sessionStorage.setItem("hmrcAccessToken", "test-access-token");
+      localStorage.setItem("cognitoIdToken", "test-id-token");
     });
 
     await page.goto(`${baseUrl}/hmrc/vat/viewVatReturn.html?vrn=193054661&periodStart=2017-01-01&periodEnd=2017-03-31`, {

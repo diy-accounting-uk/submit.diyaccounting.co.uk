@@ -81,7 +81,7 @@ test.describe("ITSA Dashboard", () => {
     await setupRoutes(page);
     await loadDashboard(page);
 
-    const links = page.locator(".dashboard-step a.btn");
+    const links = page.locator(".dashboard-step a.secondary-button");
     await expect(links).toHaveCount(12);
     await expect(links.nth(0)).toHaveAttribute("href", "businessDetails.html");
     await expect(links.nth(1)).toHaveAttribute("href", "obligations.html");

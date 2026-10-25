@@ -86,6 +86,7 @@ test.describe("vatObligations - 403 from HMRC", () => {
 
     await page.addInitScript(() => {
       sessionStorage.setItem("hmrcAccessToken", "test-access-token");
+      localStorage.setItem("cognitoIdToken", "test-id-token");
     });
 
     await page.goto(`${baseUrl}/hmrc/vat/vatObligations.html`, { waitUntil: "domcontentloaded" });

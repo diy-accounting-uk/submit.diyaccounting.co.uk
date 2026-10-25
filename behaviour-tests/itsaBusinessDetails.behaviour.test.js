@@ -476,7 +476,9 @@ test("Click through: View ITSA Business Details from HMRC", async ({ page }, tes
     expect(http200OkResults).toBe(6);
     expect(http404NotFoundResults).toBe(1);
 
-    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    if (runFraudPreventionHeaderValidation) {
+      await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    }
 
     const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "ITSA Business Details test", { filterByUserSub: userSub });
     console.log(`[DynamoDB Assertions]: Found ${hashedSubs.length} unique hashedSub value(s): ${hashedSubs.join(", ")}`);

@@ -78,6 +78,25 @@
     return { periodExpenses, periodDisallowableExpenses };
   }
 
+  function moneyInput(field, hintId) {
+    const prefixed = document.createElement("div");
+    prefixed.className = "input-prefix input-prefix--amount";
+    const prefix = document.createElement("span");
+    prefix.className = "prefix";
+    prefix.setAttribute("aria-hidden", "true");
+    prefix.textContent = "£";
+    const input = document.createElement("input");
+    input.type = "text";
+    input.id = field.id;
+    input.name = field.id;
+    input.value = field.defaultValue ?? "";
+    input.setAttribute("aria-describedby", hintId);
+    input.setAttribute("inputmode", "decimal");
+    input.setAttribute("data-money", "pounds-and-pence");
+    prefixed.append(prefix, input);
+    return prefixed;
+  }
+
   function moneyGroup(field, hint) {
     const group = document.createElement("div");
     group.className = "form-group";
@@ -88,43 +107,86 @@
     hintLine.id = `${field.id}-money-hint`;
     hintLine.className = "hint";
     hintLine.textContent = hint;
-    const prefixed = document.createElement("div");
-    prefixed.className = "input-prefix";
-    const prefix = document.createElement("span");
-    prefix.className = "prefix";
-    prefix.textContent = "£";
-    const input = document.createElement("input");
-    input.type = "text";
-    input.id = field.id;
-    input.name = field.id;
-    input.value = field.defaultValue ?? "";
-    input.setAttribute("aria-describedby", hintLine.id);
-    input.setAttribute("inputmode", "decimal");
-    input.setAttribute("data-money", "pounds-and-pence");
-    prefixed.append(prefix, input);
-    group.append(label, hintLine, prefixed);
+    group.append(label, hintLine, moneyInput(field, hintLine.id));
     return group;
   }
 
-  // Fills the container with the total-expenses field, every itemised expense field and every
-  // disallowable expense field.
+  // A collapsible section holding one ledger row per field, with one hint for the whole section.
+  function fieldSection({ id, title, intro, fields, open }) {
+    const section = document.createElement("details");
+    section.className = "field-group";
+    section.id = id;
+    if (open) section.open = true;
+    const summary = document.createElement("summary");
+    summary.textContent = title;
+    const hintLine = document.createElement("p");
+    hintLine.id = `${id}-hint`;
+    hintLine.className = "hint";
+    hintLine.textContent = intro;
+    const table = document.createElement("table");
+    table.className = "ledger ledger--one-year";
+    const head = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    const nameHead = document.createElement("th");
+    nameHead.scope = "col";
+    nameHead.textContent = "Expense";
+    const amountHead = document.createElement("th");
+    amountHead.scope = "col";
+    amountHead.className = "ledger__figure";
+    amountHead.textContent = "Amount (£)";
+    headRow.append(nameHead, amountHead);
+    head.append(headRow);
+    const body = document.createElement("tbody");
+    fields.forEach((field) => {
+      const row = document.createElement("tr");
+      const header = document.createElement("th");
+      header.scope = "row";
+      const label = document.createElement("label");
+      label.setAttribute("for", field.id);
+      label.textContent = field.label;
+      header.append(label);
+      const cell = document.createElement("td");
+      cell.className = "ledger__figure";
+      cell.append(moneyInput(field, hintLine.id));
+      row.append(header, cell);
+      body.append(row);
+    });
+    table.append(head, body);
+    section.append(summary, hintLine, table);
+    return section;
+  }
+
+  // Opens each section that holds a figure, so a figure set by a load or an import is not hidden.
+  function revealFilledSections() {
+    document.querySelectorAll("details.field-group").forEach((section) => {
+      if (Array.from(section.querySelectorAll("input")).some((input) => isFilled(input.value) && input.value.trim() !== "0")) {
+        section.open = true;
+      }
+    });
+  }
+
+  // Fills the container with the total-expenses field, a section of itemised expenses and a
+  // section of disallowable expenses.
   function mountFields(container) {
-    const exampleHint = "For example, £600 or £193.54";
     const total = { id: CONSOLIDATED_FIELD, label: "Total expenses (instead of itemising)" };
     const totalGroup = moneyGroup(total, "Leave blank if you itemise the expenses below. Cannot be used with the itemised expenses.");
-    const disallowableHeading = document.createElement("h3");
-    disallowableHeading.id = "disallowableExpensesHeading";
-    disallowableHeading.textContent = "Disallowable expenses";
-    const disallowableIntro = document.createElement("p");
-    disallowableIntro.className = "hint";
-    disallowableIntro.textContent =
-      "The part of each itemised expense above that cannot be claimed for tax. Leave blank if none. Cannot be used with the total expenses.";
+    const exampleHint = "For example, £600 or £193.54. Amounts are in pounds and pence.";
     container.replaceChildren(
       totalGroup,
-      ...ITEMISED_FIELDS.map((field) => moneyGroup({ ...field, defaultValue: ALWAYS_SENT.includes(field.id) ? "0" : "" }, exampleHint)),
-      disallowableHeading,
-      disallowableIntro,
-      ...DISALLOWABLE_FIELDS.map((field) => moneyGroup(field, exampleHint)),
+      fieldSection({
+        id: "itemisedExpenses",
+        title: "Itemised expenses",
+        intro: `${exampleHint} Cost of goods and other expenses are sent even when they are 0.`,
+        fields: ITEMISED_FIELDS.map((field) => ({ ...field, defaultValue: ALWAYS_SENT.includes(field.id) ? "0" : "" })),
+        open: true,
+      }),
+      fieldSection({
+        id: "disallowableExpenses",
+        title: "Disallowable expenses",
+        intro: `${exampleHint} The part of each itemised expense that cannot be claimed for tax. Leave blank if none. Cannot be used with the total expenses.`,
+        fields: DISALLOWABLE_FIELDS,
+        open: false,
+      }),
     );
   }
 
@@ -136,5 +198,6 @@
     DISALLOWABLE_IDS,
     buildPeriodExpenses,
     mountFields,
+    revealFilledSections,
   };
 })();

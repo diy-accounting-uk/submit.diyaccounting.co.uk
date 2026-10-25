@@ -740,7 +740,9 @@ test("Click through: View VAT obligations from HMRC", async ({ page }, testInfo)
 
     // Assert Fraud prevention headers validation feedback GET request exists and validate key fields
     // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)
-    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    if (runFraudPreventionHeaderValidation) {
+      await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    }
 
     // Assert consistent hashedSub across authenticated requests
     // Pass userSub to filter to current test user's records (CI DynamoDB contains historical data)

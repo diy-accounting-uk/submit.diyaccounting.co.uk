@@ -4,7 +4,7 @@
 <html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
-    <title>DIY Accounting Submit - 502 Bad Gateway</title>
+    <title>The service is not answering - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -18,58 +18,24 @@
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
-      <div class="header-nav">
-        <div class="header-left">
-          <a href="/" title="Home" class="home-link">
-            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-            </svg>
-          </a>
-          <a href="/about.html" title="About & Help" class="info-link">
-            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
-            </svg>
-          </a>
-        </div>
-        <div class="auth-section">
-          <span class="entitlement-status">Activity: unrestricted</span>
-          <span class="login-status" id="loginStatus">Not logged in</span>
-          <a href="/auth/login.html" class="login-link" id="loginLink">Log in</a>
-        </div>
-      </div>
-      <h1>DIY Accounting Submit</h1>
-      <p class="subtitle">502 Bad Gateway</p>
+      <p class="chrome-fallback"><a href="/">DIY Accounting Submit</a></p>
+      <h1>The service is not answering</h1>
+      <p class="subtitle">One of our systems did not give a good answer.</p>
     </header>
 
     <main id="mainContent">
-      <div class="form-container" style="text-align: center; padding: 2em">
-        <div class="error-content">
-          <h2>Bad Gateway</h2>
-          <p>The server received an invalid response.</p>
-          <p class="requested-url">Requested URL: <code id="requestedUrl"></code></p>
-        </div>
-        <div class="navigation-container" style="margin-top: 2em">
-          <button type="button" class="btn" id="returnHomeBtn">Return to Home</button>
+      <div class="form-container error-panel">
+        <p>Try again in a minute. Nothing you entered has been sent to HMRC.</p>
+        <div class="error-actions">
+          <button type="button" class="btn" id="retryBtn">Try again</button>
+          <button type="button" class="btn btn-secondary" id="returnHomeBtn">Go to the home page</button>
         </div>
       </div>
     </main>
 
-    <footer>
-      <nav class="footer-links" aria-label="Site information">
-        <a href="/privacy.html">Privacy</a>
-        <a href="/terms.html">Terms</a>
-        <a href="/accessibility.html">Accessibility</a>
-        <a href="/help.html">Help</a>
-        <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a>
-      </nav>
-      <p class="footer-legal">
-        &copy; 2006-2026 DIY Accounting Limited. Free to use under the
-        <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE" target="_blank" rel="noopener"
-          >PolyForm Internal Use License</a
-        >.
-      </p>
-    </footer>
+    <footer></footer>
 
+    <script src="/widgets/page-chrome.js"></script>
     <script src="/widgets/error-page.js"></script>
     <script src="502.page.js"></script>
   </body>

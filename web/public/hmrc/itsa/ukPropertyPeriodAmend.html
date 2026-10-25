@@ -40,7 +40,13 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Amend Form -->
-      <div id="periodAmendForm" class="form-container">
+      <div
+        id="periodAmendForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to amend a UK property period summary"
+        data-sign-in-text="Log in to correct the income and expenses on a quarterly update already filed with HMRC."
+      >
         <div class="form-toggle-buttons">
           <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show form</button>
           <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
@@ -69,7 +75,10 @@
 
             <div class="form-group">
               <label for="businessId">Business ID</label>
-              <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
+              <p id="businessId-hint" class="hint">
+                Filled in when you pick a business on the Income Tax dashboard. Otherwise copy it from Business details, for example
+                XAIS12345678910.
+              </p>
               <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
             </div>
 
@@ -81,7 +90,9 @@
 
             <div id="submissionIdGroup" class="form-group">
               <label for="submissionId">Submission ID</label>
-              <p id="submissionId-hint" class="hint">From the period summaries list.</p>
+              <p id="submissionId-hint" class="hint">
+                Filled in when you choose a period on the UK property period summaries page. Otherwise copy the submission ID from there.
+              </p>
               <input type="text" id="submissionId" name="submissionId" required aria-describedby="submissionId-hint" />
             </div>
 
@@ -109,7 +120,7 @@
               <label for="periodAmount">Rental income</label>
               <p id="periodAmount-hint" class="hint">The corrected rent and other income received for this period.</p>
               <p id="periodAmount-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix">
+              <div class="input-prefix input-prefix--amount">
                 <span class="prefix">£</span>
                 <input
                   type="text"
@@ -126,7 +137,7 @@
             <div class="form-group">
               <label for="otherIncome">Other property income</label>
               <p id="otherIncome-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix">
+              <div class="input-prefix input-prefix--amount">
                 <span class="prefix">£</span>
                 <input
                   type="text"
@@ -143,7 +154,7 @@
             <div class="form-group">
               <label for="repairsAndMaintenance">Repairs and maintenance</label>
               <p id="repairsAndMaintenance-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix">
+              <div class="input-prefix input-prefix--amount">
                 <span class="prefix">£</span>
                 <input
                   type="text"
@@ -159,7 +170,7 @@
             <div class="form-group">
               <label for="otherExpenses">Other property expenses</label>
               <p id="otherExpenses-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix">
+              <div class="input-prefix input-prefix--amount">
                 <span class="prefix">£</span>
                 <input
                   type="text"
@@ -182,10 +193,10 @@
                 <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
                 <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
               </select>
-              <div style="margin-top: 10px">
-                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
-                <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
-                  >Validate Fraud Prevention Headers</label
+              <div class="choice">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                  for="runFraudPreventionHeaderValidation"
+                  >Validate fraud prevention headers</label
                 >
               </div>
             </div>
@@ -224,6 +235,7 @@
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/submission-cost.js"></script>
     <script src="ukPropertyPeriodAmend.page.js"></script>

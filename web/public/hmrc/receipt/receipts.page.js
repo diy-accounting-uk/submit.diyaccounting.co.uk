@@ -10,21 +10,12 @@ const FILING_KINDS = new Set(["companies-house-accounts", "company-tax-return"])
 
 async function fetchReceipts() {
   const idToken = getIdToken();
-  const unauthHint = document.getElementById("unauthenticatedHint");
   const exportControls = document.getElementById("exportControls");
   const table = document.getElementById("receiptsTable");
   const tbody = table.querySelector("tbody");
   const empty = document.getElementById("emptyState");
 
-  if (!idToken) {
-    unauthHint.style.display = "block";
-    exportControls.style.display = "none";
-    table.style.display = "none";
-    empty.style.display = "none";
-    return;
-  }
-
-  unauthHint.style.display = "none";
+  if (!idToken) return;
 
   const res = await window.fetchWithIdToken("/api/v1/hmrc/receipt", {});
   if (!res.ok) {
@@ -116,6 +107,7 @@ const RECEIPT_FIELD_NAMES = {
   formBundleNumber: "Form bundle number",
   chargeRefNumber: "Charge reference number",
   periodId: "Period ID",
+  submissionId: "Submission ID",
   calculationId: "Calculation ID",
   correlationId: "Correlation ID",
   taxYear: "Tax year",

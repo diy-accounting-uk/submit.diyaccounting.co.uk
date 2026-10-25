@@ -220,6 +220,7 @@
         setField(id, "");
       }
     });
+    window.selfEmploymentExpenses.revealFilledSections();
     return filled;
   }
 

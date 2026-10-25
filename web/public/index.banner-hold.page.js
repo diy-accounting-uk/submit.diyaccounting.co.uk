@@ -5,7 +5,7 @@
 (function () {
   const banner = document.getElementById("feedbackEngagementBanner");
   if (banner && localStorage.getItem("cognitoIdToken") && localStorage.getItem("feedbackEngagementRegistered") !== "true") {
-    banner.style.display = "block";
+    banner.hidden = false;
     banner.style.visibility = "hidden";
   }
 })();

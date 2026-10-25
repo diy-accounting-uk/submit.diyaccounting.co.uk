@@ -21,6 +21,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
   let htmlContent;
   let submitJsContent;
   let statusMessagesJsContent;
+  let formErrorsJsContent;
   let loadingSpinnerJsContent;
   let viewSourceLinkJsContent;
   let submitVatPageJsContent;
@@ -31,6 +32,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
     htmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/hmrc/vat/submitVat.html"), "utf-8");
     submitJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.js"), "utf-8");
     statusMessagesJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/status-messages.js"), "utf-8");
+    formErrorsJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/lib/form-errors.js"), "utf-8");
     loadingSpinnerJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/loading-spinner.js"), "utf-8");
     viewSourceLinkJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/view-source-link.js"), "utf-8");
     hmrcDisplayFormatJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/lib/hmrc-display-format.js"), "utf-8");
@@ -88,6 +90,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
     });
 
     // Inject all script dependencies into the page
+    await page.addScriptTag({ content: formErrorsJsContent });
     await page.addScriptTag({ content: statusMessagesJsContent });
     await page.addScriptTag({ content: loadingSpinnerJsContent });
     await page.addScriptTag({ content: viewSourceLinkJsContent });
@@ -134,7 +137,7 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
 
       // Check that main elements are present
       const heading = await page.locator("h1").textContent();
-      expect(heading).toBe("DIY Accounting Submit");
+      expect(heading).toBe("Submit VAT return");
 
       // Check that the form is visible
       const form = page.locator("#vatSubmissionForm");
@@ -174,16 +177,12 @@ test.describe("Client System Test - VAT Flow in Browser", () => {
       // Try to submit the form
       await page.locator("#vatSubmissionForm").dispatchEvent("submit");
 
-      // Check that error message is displayed
-      const statusMessages = page.locator("#statusMessagesContainer .status-message");
-      await expect(statusMessages.first()).toBeVisible({ timeout: 2000 });
-
-      const statusText = await statusMessages.first().locator(".status-message-content").textContent();
-      expect(statusText).toBe("Please enter your VAT registration number.");
-
-      // Check that the message has error styling
-      const className = await statusMessages.first().getAttribute("class");
-      expect(className).toContain("status-error");
+      // The summary names the field and the field carries the same message
+      const summary = page.locator("#form-error-summary");
+      await expect(summary).toBeVisible({ timeout: 2000 });
+      await expect(summary).toContainText("Enter your VAT registration number");
+      await expect(page.locator("#vatNumber-error")).toContainText("Enter your VAT registration number");
+      await expect(page.locator("#vatNumber")).toHaveAttribute("aria-invalid", "true");
 
       await page.screenshot({ path: `target/browser-test-results/browser-validation-error_${timestamp}.png` });
       await setTimeout(500);

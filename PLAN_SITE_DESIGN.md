@@ -369,7 +369,7 @@ Before is DS1's stored set (`target/site-screenshots/`, 432 PNGs). After is `nod
 | Footer variants | 4, right of centre | 1, left-aligned |
 | Pages with console errors | 9 | 9, the same messages |
 
-- **Light pin**: 27 pages still paint raw colours in an inline `<style>`, a `style` attribute or their page script. They carry `<html data-theme="light">`, so dark mode does not reach them until DS4, DS5 or DS6 moves those colours onto tokens and drops the attribute: `about`, `accessibility`, `bundles`, `diy-accounting-limited`, `diy-accounting-spreadsheets`, `guide`, `help`, `hmrc/itsa/dashboard`, `hmrc/receipt/receipts`, `index`, `mcp-harness`, `mcp`, `operator/dashboard`, `passes/generate-digital`, `passes/generate-physical`, `policybee`, `practice`, `privacy`, `spreadsheets`, `terms`, `usage` and the six `videos*` pages.
+- **Light pin**: no page carries `<html data-theme="light">`; every page paints its colours from the tokens, so dark mode reaches all of them.
 - **For the page rows**: the error summary and inline errors use `web/public/lib/form-errors.js`; a page adds `novalidate` to its form and calls it. The signed-out panel is `.signed-out-panel` (an `h2`, a paragraph and a `.btn` Log in link). Each page row moves its `h1` to the page name (1.11); the header band already shows the brand.
 - **Contrast** (WCAG relative luminance): light ink 14.4, muted 7.5, rule 3.06, brand 6.8, white on brand 6.8, ok 5.6, error 5.8, warn 6.8, info 7.1 on their tints; dark ink 13.7, muted 7.8, rule 3.6, brand 7.8, ink on brand 8.6, ok 8.1, error 7.1, warn 9.0, info 6.7.
 
@@ -378,10 +378,68 @@ Before is DS1's stored set (`target/site-screenshots/`, 432 PNGs). After is `nod
 - **Pages**: the 26 under `web/public/hmrc/`: 6 under `vat/`, `receipt/receipts.html` and 19 under `itsa/`. Section 3, HMRC list.
 - **Work**: the signed-out panel; the error summary and inline errors; drop example placeholders; ledger cells for money fields; group the self-employment period form; pick-from-list for Business ID, Period ID, Submission ID and Calculation ID where an earlier step returned them; one name for "Period ID" and "Submission ID"; the `h1` rule; the inline `<style>` blocks on `itsa/dashboard`, `itsa/taxCalculation`, `itsa/finalDeclaration`, `vat/viewVatReturn` and `receipt/receipts` onto tokens.
 
+#### DS4 result
+
+Stage 1: the six VAT pages and `receipt/receipts`.
+
+- **Shared**: `requireVatNumberAnd` in `lib/form-errors.js` (blank, then 9 numbers, plus other required ids); `.period-date-inputs`, `.next-steps`, `.box-definitions`, `.table-scroll`, `.receipt-panel` and the HMRC feedback block in `submit.css`, all on tokens.
+- `submitVat`: `h1` "Submit VAT return", duplicate `h2` dropped, signed-out panel, `novalidate` with one summary for the VAT number, period dates, the boxes and the declaration, nine boxes in one ledger (hint in the row header), no placeholders, `.choice` for the declaration and developer options, receipt styles moved off inline.
+- `viewVatReturn`: signed-out panel, summary errors, no placeholder, inline `<style>` moved to `submit.css`, period dates fill their halves.
+- `vatObligations`, `vatLiabilities`, `vatPayments`, `vatPenalties`: signed-out panel, `novalidate` with the summary, `.choice` for the fraud-header option, sentence-case toggle labels.
+- `receipts`: `h1` "Your receipts", signed-out panel in place of the red line, inline `<style>` and `data-theme="light"` dropped, `Submission ID` named beside `Period ID`.
+- **Remaining**: `viewVatReturn` has no pick-from-list for the period (the obligations call is on `submitVat` only).
+
+Stage 2: the 19 `itsa/` pages.
+
+- **Shared**: `.dashboard-steps`, `.field-group` (a folded section) and `.next-steps[hidden]` in `submit.css`; `.field-key` in `submission-record.css`; `carried-identifiers.js` carries `periodId`, `submissionId` and `calculationId`; `hmrc-field-table.js` result tables take an `action` column; `form-errors.js` opens a folded section that holds an error. One National Insurance number hint on every page.
+- Every page: signed-out panel in place of the form, `.choice` for the options, no inline style apart from script-toggled `display`, user words ("Request" for the year-end summary and the calculation).
+- `dashboard`: inline `<style>` and `data-theme="light"` dropped; twelve step links are secondary buttons in sentence case; the picked business sets the business ID for every later page.
+- `businessDetails`: signed-out panel. `obligations`: `h1` "Income Tax obligations".
+- `selfEmploymentPeriod`: 30 expense fields in two folded ledger sections (itemised open, disallowable shut, one hint each); period dates share a row; amount boxes 16rem wide.
+- `selfEmploymentPeriods`, `ukPropertyPeriods`: each row has "Use this period", which carries the ID to the view and amend pages and shows links to them.
+- `selfEmploymentPeriodView`, `selfEmploymentPeriodAmend`, `ukPropertyPeriodView`, `ukPropertyPeriodAmend`: the period or submission ID fills from the chosen period; the business ID hint says where it comes from.
+- `taxCalculation` carries an intent-to-finalise calculation ID to `finalDeclaration`.
+- `ukPropertyPeriod`: empty money fields, one hint each, dates share a row.
+- `adjustments`, `ukPropertyAdjustments`, `finalDeclaration`: "Trigger" becomes "Request". `annualSubmission`, `ukPropertyAnnualSubmission`, `lossesAndClaims`, `taxLiabilityAdjustments`: `.choice` options, signed-out panel, amount boxes narrowed.
+- **Remaining**: `Period ID` (self-employment) and `Submission ID` (property) stay two names, as `receipts` maps them; the IDs fill only after a period is chosen on the same browser session; `annualSubmission` and `ukPropertyAnnualSubmission` read the business ID from the dashboard pick only.
+
 ### DS5: root, account and error pages
 
 - **Pages**: the 25 root pages (including `images/favicon/IMPLEMENTATION.html`), `auth/` (4), `errors/` (8), `passes/` (2), `activities/` (1), `operator/` (1). Section 3, root and account lists.
 - **Work**: move the inline `<style>` blocks on these pages onto tokens and drop the gradient; fix the video thumbnails (self-hosted posters or a CSP change); replace the old screenshots on about and the spreadsheets pages; error pages with cause, next step and retry; the signed-out page in the site chrome; user words in the callback and error titles; the MCP code blocks; the operator layout.
+
+#### DS5 result (root pages)
+
+- **Shared**: tokens only in the page rules (about, guide, help, videos, legal, MCP, harness, PolicyBee, practice, home, bundles, usage, company and spreadsheets blocks moved into `submit.css`); one lightbox rule on the scrim tokens; disabled controls take a grey fill with dark text; `.table-scroll`, `.btn-danger`, `.check-list`, `.status-message` reused; the local server's `img-src` allows `https://i.ytimg.com`, as the deployed policy does.
+- `about`: gradient, hero, glyph icons and the four old screenshots (with the lightbox) removed; `h1` "About"; features, benefits (a definition list) and one start block.
+- `accessibility`, `privacy`, `terms`: inline `<style>` dropped; `h1` in sentence case; `.legal` measure of 68ch; privacy and terms carry a contents list over their sections; tables use `.data-table`.
+- `bundles`: `h1` "Bundles"; every `style` attribute and script-set colour on classes (`bundle-note`, `bundle-row`, `pass-status`); "Subscribe" and "Request" buttons keep the brand fill, disabled ones grey; "Have a pass?" in sentence case; list reserve `min(40vh, 22rem)`; pass-list buttons on the shared small secondary style.
+- `diy-accounting-limited`: WordArt logo removed; contact block in the same card as the sections; inline `<style>` onto the tokens.
+- `diy-accounting-spreadsheets`, `spreadsheets`: old Excel captures, the lightbox and the page scripts removed; product cards, reviews and download on tokens; ticks drawn in CSS.
+- `guide`: gradient intro replaced by a plain panel; journeys and steps on tokens; `h1` "User guide".
+- `help`: gradient and inline `<style>` dropped; search placeholder "Search the questions".
+- `index`: `h1` "Activities"; the login note appears once above the list; feedback banner and the two proof notes on classes; `hidden` replaces inline `display`.
+- `mcp`: code blocks wrap inside the card at 390 px; `h1` "MCP server"; links on `.btn`.
+- `mcp-harness`: inline `<style>` onto the tokens, frame on `--c-paper`.
+- `mtd-calendar`, `rates`: generators no longer emit a `<style>`; rules in `submit.css`; captions sit above the table; `h1` "MTD calendar" and "Tax rates"; the VAT table caption no longer repeats its heading.
+- `policybee`: standard header, nav and footer from `page-chrome.js`; ticks in CSS; logo and call to action on classes.
+- `practice`: signed-out panel replaces the red line; `hidden` and classes replace the inline styles in the page and `practice.js`; ARN placeholder dropped; `h1` "Practice clients".
+- `usage`: `.data-table` tables, `h1` "Token usage"; Refresh is secondary; Manage subscription is secondary.
+- `videos`, `videos-*`: gradient and inline `<style>` dropped, section and contents rules in `submit.css`; the repeated per-video contents list is gone from the index.
+- `images/favicon/IMPLEMENTATION`: a visible page in the site chrome that lists the icon files and link tags.
+- `simulator`: unchanged, a redirect to `videos.html`.
+
+#### DS5 result (account and error pages)
+
+- **Shared**: `.auth-panel`, `.error-panel` and `.error-actions` on the shared card; `.pass-*` rules for the pass pages; the dashboard rules moved into `submit.css` on tokens; `--c-print` is the white that QR codes and merchandise designs print on.
+- `auth/login`: `h1` "Sign in"; one "Sign in with your Google account" button with the logo first; the header link is hidden on this page.
+- `auth/loginWithCognitoCallback`, `loginWithMockCallback`: `h1` "Signing you in"; one line and a home button; `hidden` replaces the inline spinner style.
+- `auth/signed-out`: site header, nav and footer from `page-chrome.js`; "Sign in" and "Go to the home page" on `.btn`.
+- `errors/403`, `404`, `404-error-distribution`, `404-error-origin`: `h1` in user words, one cause line, one next step, a home button; the raw requested URL is gone; header and footer from `page-chrome.js`, so the footer matches every other page.
+- `errors/500`, `502`, `503`, `504`: cause and next step in user words, "Try again" (reloads the page) beside "Go to the home page"; `504` tells the reader to check receipts before sending a return again.
+- `passes/generate-digital`, `generate-physical`: `h1` is the page name; inline styles and `data-theme="light"` dropped; radios left-aligned under their legend; the live button takes the brand fill; `Copy link`, `Copy code` and the download buttons take `.btn-small .btn-secondary`; notes on the warning and info tints.
+- `activities/submitVatCallback`: `h1` "Connecting to HMRC"; "authorisation" in the page and its messages; one line and a home button.
+- `operator/dashboard`: `data-theme="light"` and the inline `<style>` dropped; tables are `.data-table`; width bounded at 90rem; a failed load shows a `.status-error` message, releases the 2,900 to 4,600 px reservation and hides the visitors panel; the experiments panel hides when its file does not load; reservations re-measured with the stylesheet loaded (the browser test now serves `submit.css`).
 
 ### DS6: the Companies House pages
 

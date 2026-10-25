@@ -38,14 +38,11 @@ async function fetchBundleData() {
   }
 }
 
-const ROW_BORDER = "1px solid #dee2e6";
-
-function tableRow(cellTexts, cellStyle) {
+function tableRow(cellTexts, cellClass) {
   const row = document.createElement("tr");
-  row.style.borderBottom = ROW_BORDER;
   for (const text of cellTexts) {
     const cell = document.createElement("td");
-    cell.style.cssText = cellStyle || "padding: 0.5em";
+    if (cellClass) cell.className = cellClass;
     cell.textContent = text;
     row.append(cell);
   }
@@ -56,7 +53,7 @@ function messageRow(columns, text) {
   const row = document.createElement("tr");
   const cell = document.createElement("td");
   cell.colSpan = columns;
-  cell.style.cssText = "padding: 1em; color: #666; text-align: center";
+  cell.className = "no-data";
   cell.textContent = text;
   row.append(cell);
   return row;
@@ -83,11 +80,13 @@ function renderTokenSources(bundles) {
     let expiryInfo = "";
     if (b.tokenResetAt) {
       const resetDate = new Date(b.tokenResetAt);
-      if (!isNaN(resetDate.getTime())) expiryInfo = "Refreshes " + resetDate.toLocaleDateString();
+      if (!isNaN(resetDate.getTime()))
+        expiryInfo = "Refreshes " + resetDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     }
     if (!expiryInfo && b.expiry) {
       const expiryDate = new Date(b.expiry);
-      if (!isNaN(expiryDate.getTime())) expiryInfo = "Expires " + expiryDate.toLocaleDateString();
+      if (!isNaN(expiryDate.getTime()))
+        expiryInfo = "Expires " + expiryDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     }
     return tableRow([b.bundleId || "Unknown", b.tokensGranted || 0, remaining, expiryInfo || "-"]);
   });
@@ -117,7 +116,15 @@ function renderTokenConsumption(bundles) {
   }
 
   const rows = allEvents.map(function (evt) {
-    const dateStr = evt.timestamp ? new Date(evt.timestamp).toLocaleString() : "-";
+    const dateStr = evt.timestamp
+      ? new Date(evt.timestamp).toLocaleString("en-GB", {
+          day: "numeric",
+          month: "long",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
+        })
+      : "-";
     return tableRow([evt.activity || "Unknown", dateStr, evt.tokensUsed || 1]);
   });
   body.replaceChildren(...rows);
@@ -136,7 +143,7 @@ function renderSubscriptionManagement(bundles) {
   const hasSubscription = (bundles || []).some(function (b) {
     return b.allocated && b.stripeSubscriptionId;
   });
-  section.style.display = hasSubscription ? "block" : "none";
+  section.hidden = !hasSubscription;
 }
 
 document.getElementById("manageSubscriptionBtn").addEventListener("click", async function () {
@@ -235,8 +242,8 @@ function renderBrowserStorage() {
     } catch (e) {
       v = "[unreadable]";
     }
-    const row = tableRow([k, redactValue(k, v)], "padding: 0.5em; word-break: break-word; font-size: 0.85em");
-    row.firstElementChild.style.cssText = "padding: 0.5em; font-family: monospace; font-size: 0.85em; white-space: nowrap";
+    const row = tableRow([k, redactValue(k, v)], "storage-cell");
+    row.firstElementChild.className = "storage-key";
     return row;
   });
   body.replaceChildren(...rows);
@@ -267,11 +274,11 @@ function renderItsaYearCostSummary() {
     stored = null;
   }
   if (!stored || !stored.yearTokens) {
-    summaryEl.style.display = "none";
+    summaryEl.hidden = true;
     return;
   }
   summaryEl.textContent = `Your ITSA year costs ${stored.yearTokens} tokens for the ${stored.businessCount} business${stored.businessCount === 1 ? "" : "es"} you picked on the dashboard.`;
-  summaryEl.style.display = "block";
+  summaryEl.hidden = false;
 }
 
 function initPage() {

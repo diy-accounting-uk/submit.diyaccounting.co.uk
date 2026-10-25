@@ -6,7 +6,7 @@
 <html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
-    <title>HMRC Callback - DIY Accounting Submit</title>
+    <title>Connecting to HMRC - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="stylesheet" href="../submit.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
@@ -40,17 +40,18 @@
           <a href="../auth/login.html" class="login-link">Log in</a>
         </div>
       </div>
-      <h1>DIY Accounting Submit</h1>
-      <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+      <h1>Connecting to HMRC</h1>
+      <p class="subtitle">We are finishing your HMRC authorisation.</p>
     </header>
 
     <main id="mainContent">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
-      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+      <div id="loadingSpinner" class="spinner" hidden></div>
 
-      <div class="navigation-container" style="text-align: center; margin-top: 2em">
-        <button type="button" class="btn" id="navigationBtn">Return home</button>
+      <div class="form-container auth-panel">
+        <p>This page sends you on when HMRC has confirmed your authorisation. If nothing happens, go back.</p>
+        <button type="button" class="btn" id="navigationBtn">Go to the home page</button>
       </div>
     </main>
 

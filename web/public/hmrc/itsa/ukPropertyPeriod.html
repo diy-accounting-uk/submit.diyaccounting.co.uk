@@ -40,7 +40,13 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Period Summary Form -->
-      <div id="ukPropertyPeriodForm" class="form-container">
+      <div
+        id="ukPropertyPeriodForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to file a UK property quarterly update"
+        data-sign-in-text="Log in to send HMRC the income and expenses of a UK property business for a quarter."
+      >
         <div class="form-toggle-buttons">
           <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show form</button>
           <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
@@ -50,7 +56,10 @@
           <form id="itsaUkPropertyPeriodForm" novalidate>
             <div class="form-group">
               <label for="nino">National Insurance number</label>
-              <p id="nino-hint" class="hint">This is two letters, six numbers and a final letter, for example QQ 12 34 56 C.</p>
+              <p id="nino-hint" class="hint">
+                This is two letters, six numbers and a final letter, for example QQ 12 34 56 C. You can find it on your National Insurance
+                card, payslip or P60.
+              </p>
               <input
                 type="text"
                 id="nino"
@@ -66,7 +75,10 @@
 
             <div class="form-group">
               <label for="businessId">Business ID</label>
-              <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
+              <p id="businessId-hint" class="hint">
+                Filled in when you pick a business on the Income Tax dashboard. Otherwise copy it from Business details, for example
+                XAIS12345678910.
+              </p>
               <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
             </div>
 
@@ -99,14 +111,16 @@
               <p id="periodDates-hint" class="hint">HMRC identifies this quarter by its start and end date.</p>
             </div>
 
-            <div class="form-group">
-              <label for="fromDate">Period start date</label>
-              <input type="date" id="fromDate" name="fromDate" required />
-            </div>
+            <div class="period-date-inputs">
+              <div class="form-group">
+                <label for="fromDate">Period start date</label>
+                <input type="date" id="fromDate" name="fromDate" required />
+              </div>
 
-            <div class="form-group">
-              <label for="toDate">Period end date</label>
-              <input type="date" id="toDate" name="toDate" required />
+              <div class="form-group">
+                <label for="toDate">Period end date</label>
+                <input type="date" id="toDate" name="toDate" required />
+              </div>
             </div>
 
             <p id="cumulativeMoneyNote" class="hint" style="display: none">
@@ -116,17 +130,15 @@
 
             <div class="form-group">
               <label for="periodAmount">Rental income</label>
-              <p id="periodAmount-hint" class="hint">The rent and other income received for this period. Enter 0 if none.</p>
-              <p id="periodAmount-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix">
+              <p id="periodAmount-hint" class="hint">The rent and other income received for this period. For example, £600 or £193.54.</p>
+              <div class="input-prefix input-prefix--amount">
                 <span class="prefix">£</span>
                 <input
                   type="text"
                   id="periodAmount"
                   name="periodAmount"
-                  value="0"
                   required
-                  aria-describedby="periodAmount-hint periodAmount-money-hint"
+                  aria-describedby="periodAmount-hint"
                   inputmode="decimal"
                   data-money="pounds-and-pence"
                   data-money-min="0"
@@ -137,13 +149,12 @@
             <div class="form-group">
               <label for="otherIncome">Other property income</label>
               <p id="otherIncome-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix">
+              <div class="input-prefix input-prefix--amount">
                 <span class="prefix">£</span>
                 <input
                   type="text"
                   id="otherIncome"
                   name="otherIncome"
-                  value="0"
                   aria-describedby="otherIncome-money-hint"
                   inputmode="decimal"
                   data-money="pounds-and-pence"
@@ -155,13 +166,12 @@
             <div class="form-group">
               <label for="repairsAndMaintenance">Repairs and maintenance</label>
               <p id="repairsAndMaintenance-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix">
+              <div class="input-prefix input-prefix--amount">
                 <span class="prefix">£</span>
                 <input
                   type="text"
                   id="repairsAndMaintenance"
                   name="repairsAndMaintenance"
-                  value="0"
                   aria-describedby="repairsAndMaintenance-money-hint"
                   inputmode="decimal"
                   data-money="pounds-and-pence"
@@ -172,13 +182,12 @@
             <div class="form-group">
               <label for="otherExpenses">Other property expenses</label>
               <p id="otherExpenses-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix">
+              <div class="input-prefix input-prefix--amount">
                 <span class="prefix">£</span>
                 <input
                   type="text"
                   id="otherExpenses"
                   name="otherExpenses"
-                  value="0"
                   aria-describedby="otherExpenses-money-hint"
                   inputmode="decimal"
                   data-money="pounds-and-pence"
@@ -204,10 +213,10 @@
                 <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
                 <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
               </select>
-              <div style="margin-top: 10px">
-                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
-                <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
-                  >Validate Fraud Prevention Headers</label
+              <div class="choice">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                  for="runFraudPreventionHeaderValidation"
+                  >Validate fraud prevention headers</label
                 >
               </div>
             </div>
@@ -251,6 +260,7 @@
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/submission-cost.js"></script>
     <script src="ukPropertyPeriod.page.js"></script>

@@ -299,11 +299,13 @@ test.describe("Operator Dashboard", () => {
   let dashboardHtmlContent;
   let pageChromeJsContent;
   let authStatusJsContent;
+  let submitCssContent;
 
   test.beforeAll(async () => {
     dashboardHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/operator/dashboard.html"), "utf-8");
     pageChromeJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/page-chrome.js"), "utf-8");
     authStatusJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/auth-status.js"), "utf-8");
+    submitCssContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.css"), "utf-8");
   });
 
   async function setupRoutes(page, { snapshotStatus = 200, snapshotBody = FIXTURE_SNAPSHOT } = {}) {
@@ -334,6 +336,9 @@ test.describe("Operator Dashboard", () => {
     await servePageScripts(page);
     await page.route("**/widgets/page-chrome.js*", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: pageChromeJsContent });
+    });
+    await page.route("**/submit.css*", async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/css", body: submitCssContent });
     });
     await page.route("**/widgets/auth-status.js*", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: authStatusJsContent });

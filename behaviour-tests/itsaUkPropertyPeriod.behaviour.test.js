@@ -518,7 +518,9 @@ test("Click through: File a UK Property Quarterly Update with HMRC", async ({ pa
     // appears in this table.
     expect(http201CreatedResults).toBe(1);
 
-    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    if (runFraudPreventionHeaderValidation) {
+      await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    }
 
     const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "ITSA UK Property Period test", {
       filterByUserSub: userSub,

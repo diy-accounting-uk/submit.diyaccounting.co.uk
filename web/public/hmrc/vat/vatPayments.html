@@ -37,16 +37,22 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- VAT Payments Form -->
-      <div id="paymentsForm" class="form-container">
+      <div
+        id="paymentsForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to see your VAT payments"
+        data-sign-in-text="Log in to retrieve the VAT payments HMRC has recorded for you."
+      >
         <div class="form-toggle-buttons">
           <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">
-            Show Payments Search Criteria
+            Show payments search criteria
           </button>
           <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
         </div>
         <div id="searchCriteriaContainer">
           <h2>Retrieve VAT payments</h2>
-          <form id="vatPaymentsForm">
+          <form id="vatPaymentsForm" novalidate>
             <div class="form-group">
               <label for="vrn">VAT registration number</label>
               <p id="vrn-hint" class="hint">
@@ -89,7 +95,7 @@
               </div>
               <label for="testScenario">Test scenario (Developer/Synthetic only)</label>
               <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios</p>
-              <select id="testScenario" style="width: 100%" name="testScenario" aria-describedby="testScenario-hint">
+              <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
                 <option value="">Default (No data found)</option>
                 <option value="SINGLE_PAYMENT">Single Payment</option>
                 <option value="MULTIPLE_PAYMENTS">Multiple Payments</option>
@@ -101,10 +107,10 @@
                 <option value="SUBMIT_HMRC_API_HTTP_503">HMRC API responds with 503</option>
                 <option value="SUBMIT_HMRC_API_HTTP_SLOW_10S">HMRC API responds slowly</option>
               </select>
-              <div style="margin-top: 10px">
-                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
-                <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
-                  >Validate Fraud Prevention Headers</label
+              <div class="choice">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                  for="runFraudPreventionHeaderValidation"
+                  >Validate fraud prevention headers</label
                 >
               </div>
             </div>
@@ -140,7 +146,9 @@
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="vatPayments.page.js"></script>
   </body>

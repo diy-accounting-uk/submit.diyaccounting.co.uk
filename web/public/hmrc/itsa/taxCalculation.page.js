@@ -107,6 +107,7 @@ function displayCalculation(calculation, nino, taxYear, calculationType) {
     // the sandbox's default (no Gov-Test-Scenario) retrieve response is a fixed example
     // unrelated to what was actually triggered, so its calculationType never matches.
     if (calculationType === "intent-to-finalise" && calculationId) {
+      window.CarriedIdentifiers.remember("calculationId", calculationId);
       const params = new URLSearchParams({ nino, taxYear, calculationId, calculationType });
       document.getElementById("continueToFinalDeclarationLink").href = `finalDeclaration.html?${params}`;
       continueLink.style.display = "block";

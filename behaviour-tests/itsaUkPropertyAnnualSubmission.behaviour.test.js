@@ -413,7 +413,9 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
       assertEssentialFraudPreventionHeadersPresent(putRequest, `PUT UK property annual request ${index + 1}`);
     });
 
-    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    if (runFraudPreventionHeaderValidation) {
+      await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    }
 
     const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "ITSA UK Property Annual Submission test", {
       filterByUserSub: userSub,

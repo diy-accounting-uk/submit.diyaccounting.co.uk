@@ -19,6 +19,7 @@ import {
   timestamp,
 } from "./helpers/behaviour-helpers.js";
 import { ensureDirSync } from "fs-extra";
+import { consentToDataCollection } from "./steps/behaviour-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -119,6 +120,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     const homeUrl = `${baseUrl}/index.html`;
     console.log(` Navigating to home page: ${homeUrl}`);
     await page.goto(homeUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
+    await consentToDataCollection(page, screenshotPath);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-home-page.png`, readerView: true });
 
     // Verify home page loaded
@@ -313,7 +315,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
       guideLinkAgain.click(),
     ]);
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-user-guide-page.png`, readerView: true });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-user-guide-page.png`, fullPage: true, readerView: true });
 
     // Verify User Guide page loaded
     const guideTitle = await page.title();
@@ -355,12 +357,12 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     await expect(obligationsSection).toBeVisible({ timeout: 5000 });
     console.log(" Obligations journey is visible");
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-11-guide-sections.png`, readerView: true });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-11-guide-sections.png`, fullPage: true, readerView: true });
 
     // Scroll to submit section
     await submitSection.scrollIntoViewIfNeeded();
     await page.waitForTimeout(300);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-12-submit-section.png`, readerView: true });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-12-submit-section.png`, fullPage: true, readerView: true });
     console.log(" Submit section is visible after scroll");
 
     // ============================================================
@@ -444,8 +446,10 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
 
     // Fill form fields
     console.log(" Filling form fields...");
-    await subjectInput.fill("Test support request");
-    await descriptionTextarea.fill("This is a test description for the support form behavior test.");
+    await subjectInput.fill("Cannot see my VAT obligations");
+    await descriptionTextarea.fill(
+      "My quarterly VAT obligations list is empty after I connected to HMRC. The page shows no error message.",
+    );
     await categorySelect.selectOption("other");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-16-form-filled.png`, readerView: true });
 

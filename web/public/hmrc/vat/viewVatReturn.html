@@ -45,9 +45,15 @@
         <button type="button" id="toggleFormBtn" class="secondary-button" style="display: none">Show search form</button>
         <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
       </div>
-      <div id="searchForm" class="form-container">
+      <div
+        id="searchForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to view a VAT return"
+        data-sign-in-text="Log in to view a VAT return you have submitted to HMRC."
+      >
         <h2>Retrieve VAT return</h2>
-        <form id="vatReturnForm">
+        <form id="vatReturnForm" novalidate>
           <div class="form-group">
             <label for="vrn">VAT registration number</label>
             <p id="vrn-hint" class="hint">
@@ -60,7 +66,6 @@
               name="vrn"
               required
               value=""
-              placeholder="123456789"
               maxlength="9"
               pattern="[0-9]{9}"
               aria-describedby="vrn-hint"
@@ -71,17 +76,16 @@
           <div class="form-group" role="group" aria-labelledby="vatPeriod-label">
             <p id="vatPeriod-label" class="field-label">VAT period</p>
             <p id="periodDates-hint" class="hint">Enter the start and end dates of the VAT period you want to view</p>
-            <div class="period-date-inputs" style="display: flex; gap: 1em; flex-wrap: wrap">
-              <div style="flex: 1 1 12em">
+            <div class="period-date-inputs">
+              <div>
                 <label for="periodStart">Period start</label>
                 <input type="date" id="periodStart" name="periodStart" required aria-describedby="periodDates-hint" />
               </div>
-              <div style="flex: 1 1 12em">
+              <div>
                 <label for="periodEnd">Period end</label>
                 <input type="date" id="periodEnd" name="periodEnd" required aria-describedby="periodDates-hint" />
               </div>
             </div>
-            <!-- Hidden fields for backwards compatibility -->
             <input type="hidden" id="periodKey" name="periodKey" value="" />
           </div>
 
@@ -92,20 +96,20 @@
             </div>
             <label for="testScenario">Test scenario (Developer/Synthetic only)</label>
             <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios</p>
-            <select id="testScenario" style="width: 100%" name="testScenario" aria-describedby="testScenario-hint">
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
               <option value="">Default</option>
               <!-- Values aligned with reference/hmrc-mtd-vat-api-1.0.yaml (GET /organisations/vat/{vrn}/returns/{periodKey}) -->
-              <option value="DATE_RANGE_TOO_LARGE">Date Range Too Large</option>
+              <option value="DATE_RANGE_TOO_LARGE">Date range too large</option>
               <option value="INSOLVENT_TRADER">Insolvent Trader</option>
               <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
               <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
               <option value="SUBMIT_HMRC_API_HTTP_503">HMRC API responds with 503</option>
               <option value="SUBMIT_HMRC_API_HTTP_SLOW_10S">HMRC API responds slowly</option>
             </select>
-            <div style="margin-top: 10px">
-              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
-              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
-                >Validate Fraud Prevention Headers</label
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                for="runFraudPreventionHeaderValidation"
+                >Validate fraud prevention headers</label
               >
             </div>
           </div>
@@ -141,37 +145,10 @@
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
+    <script src="../../lib/form-errors.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="viewVatReturn.page.js"></script>
-
-    <style>
-      .box-definitions {
-        margin: 1.5em 0 1em;
-      }
-      .box-definitions summary {
-        min-height: 44px;
-        cursor: pointer;
-        font-weight: 600;
-      }
-      .box-definitions dl {
-        margin: 0.5em 0 0;
-      }
-      .box-definition-item {
-        padding: 0.5em 0;
-        border-bottom: 1px solid #ddd;
-      }
-      .box-definition-item dt {
-        font-weight: 600;
-      }
-      .box-definition-item dd {
-        margin: 0.25em 0 0;
-      }
-      .box-definition {
-        margin: 0;
-        max-width: 65ch;
-        line-height: 1.5;
-      }
-    </style>
   </body>
 </html>

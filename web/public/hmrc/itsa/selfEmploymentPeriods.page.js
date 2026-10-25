@@ -307,6 +307,13 @@ async function handleFormSubmission(event) {
   }
 }
 
+// Remembers the chosen period so the view and amend pages open with its Period ID filled in.
+function usePeriod(periodId) {
+  window.CarriedIdentifiers.remember("periodId", periodId);
+  document.getElementById("periodNextSteps").hidden = false;
+  showStatus(`Period ${periodId} is chosen. View it or amend it with the links below the list.`, "info");
+}
+
 function displayPeriods(periods) {
   const tableContainer = document.getElementById("periodsTable");
   if (!periods || periods.length === 0) {
@@ -316,8 +323,13 @@ function displayPeriods(periods) {
 
   window.HmrcFieldTable.mountResultsTable(
     tableContainer,
-    [{ label: "Period ID" }, { label: "Start date" }, { label: "End date" }],
-    periods.map((period) => [period.periodId, period.periodStartDate, period.periodEndDate]),
+    [{ label: "Period ID" }, { label: "Start date" }, { label: "End date" }, { label: "Next step", kind: "action" }],
+    periods.map((period) => [
+      period.periodId,
+      period.periodStartDate,
+      period.periodEndDate,
+      { label: "Use this period", onClick: () => usePeriod(period.periodId) },
+    ]),
   );
 }
 

@@ -211,16 +211,7 @@ async function handleFormSubmission(event) {
   const testScenario = formData.get("testScenario");
   const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
-  // Basic validation
-  if (!vrn) {
-    showStatus("Please enter a VAT registration number.", "error");
-    return;
-  }
-
-  if (!/^\d{9}$/.test(vrn)) {
-    showStatus("VAT number must be exactly 9 digits.", "error");
-    return;
-  }
+  if (!window.formErrors.requireVatNumberAnd("vrn")) return;
 
   // Check if we have an access token with sufficient scope
   const accessToken = sessionStorage.getItem("hmrcAccessToken");

@@ -390,7 +390,9 @@ test("Click through: Load and save an ITSA Annual Submission with HMRC", async (
       assertEssentialFraudPreventionHeadersPresent(putRequest, `PUT self-employment annual request ${index + 1}`);
     });
 
-    await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    if (runFraudPreventionHeaderValidation) {
+      await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
+    }
 
     const hashedSubs = await assertConsistentHashedSub(hmrcApiRequestsFile, "ITSA Annual Submission test", {
       filterByUserSub: userSub,

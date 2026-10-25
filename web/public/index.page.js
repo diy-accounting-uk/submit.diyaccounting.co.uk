@@ -199,15 +199,15 @@ function canAccessActivity(activity, activeBundles) {
 //   - "on-entitlement": show only if user has an active bundle (default)
 //   - "always-with-upsell": always show; if not entitled, show as call-to-action linking to bundles page
 //   - "always": always show the button regardless of entitlement
-function messageParagraph(color, text) {
+function messageParagraph(className, text) {
   const paragraph = document.createElement("p");
-  paragraph.style.color = color;
+  paragraph.className = className;
   paragraph.textContent = text;
   return paragraph;
 }
 
 // One activity row: a button (disabled, or going to href when clicked) and an optional note beneath it.
-function activityItem({ buttonClass, label, href, disabled, note, noteColor }) {
+function activityItem({ buttonClass, label, href, disabled, note, noteClass }) {
   const item = document.createElement("div");
   item.className = "activity-item";
   const button = document.createElement("button");
@@ -224,7 +224,7 @@ function activityItem({ buttonClass, label, href, disabled, note, noteColor }) {
   item.append(button);
   if (note) {
     const noteElement = document.createElement("p");
-    noteElement.style.cssText = `font-size: 0.85em; color: ${noteColor}; margin: 0.25em 0 0 0;`;
+    noteElement.className = noteClass;
     noteElement.textContent = note;
     item.append(noteElement);
   }
@@ -239,7 +239,9 @@ async function renderDynamicActivities() {
     // Fetch catalog
     const response = await fetch("/submit.catalogue.toml");
     if (!response.ok) {
-      dynamicContainer.replaceChildren(messageParagraph("#b00020", "Unable to load activities. Please try again later."));
+      dynamicContainer.replaceChildren(
+        messageParagraph("activity-message activity-message--error", "Unable to load activities. Please try again later."),
+      );
       return;
     }
 
@@ -256,6 +258,7 @@ async function renderDynamicActivities() {
       bundleLevelNameMap[bundle.id] = bundle.levelName || bundle.name || bundle.id;
     }
 
+    let needsLogin = false;
     const activitiesByArea = new Map();
     const areaOf = (activityPath) => {
       if (activityPath.startsWith("hmrc/vat")) return "VAT";
@@ -314,7 +317,7 @@ async function renderDynamicActivities() {
               disabled: true,
               label: `Insufficient tokens \u2014 ${activity.name}`,
               note: "Insufficient tokens",
-              noteColor: "#856404",
+              noteClass: "activity-note activity-note--warn",
             }),
           );
         } else if (noTokensForMetered) {
@@ -325,7 +328,7 @@ async function renderDynamicActivities() {
               disabled: true,
               label: `No tokens \u2014 ${activity.name}`,
               note: "No tokens available",
-              noteColor: "#856404",
+              noteClass: "activity-note activity-note--warn",
             }),
           );
         } else {
@@ -351,19 +354,18 @@ async function renderDynamicActivities() {
               href: "bundles.html",
               label: activity.name,
               note: `Requires: ${requiredBundleNames}`,
-              noteColor: "#666",
+              noteClass: "activity-note",
             }),
           );
         } else {
-          // Not logged in - prompt to log in
+          // Not logged in - prompt to log in, once above the list
+          needsLogin = true;
           addActivity(
             path,
             activityItem({
               buttonClass: "btn activity-secondary",
               href: "auth/login.html",
               label: activity.name,
-              note: "Login and add bundle to access",
-              noteColor: "#666",
             }),
           );
         }
@@ -374,7 +376,7 @@ async function renderDynamicActivities() {
     // If no activities to show, display message
     if (activitiesByArea.size === 0) {
       dynamicContainer.replaceChildren(
-        messageParagraph("#666", "No activities available. Request additional bundles to access more features."),
+        messageParagraph("activity-message", "No activities available. Request additional bundles to access more features."),
       );
       return;
     }
@@ -391,11 +393,14 @@ async function renderDynamicActivities() {
         section.append(heading, ...activitiesByArea.get(area));
         return section;
       });
-    dynamicContainer.replaceChildren(...sections);
+    const loginNote = needsLogin ? [messageParagraph("activity-message", "These activities need an account and a bundle.")] : [];
+    dynamicContainer.replaceChildren(...loginNote, ...sections);
     dynamicContainer.querySelector(".activity-secondary")?.classList.remove("activity-secondary");
   } catch (error) {
     console.error("Error loading activities:", error);
-    dynamicContainer.replaceChildren(messageParagraph("#b00020", "Error loading activities. Please refresh the page."));
+    dynamicContainer.replaceChildren(
+      messageParagraph("activity-message activity-message--error", "Error loading activities. Please refresh the page."),
+    );
   }
 }
 
@@ -416,12 +421,12 @@ async function initFeedbackEngagementBanner() {
   if (window.featureFlags && typeof window.featureFlags.isFeatureEnabled === "function") {
     const enabled = await window.featureFlags.isFeatureEnabled("feedback-engagement");
     if (!enabled) {
-      banner.style.display = "none";
+      banner.hidden = true;
       return;
     }
   }
 
-  banner.style.display = "block";
+  banner.hidden = false;
   banner.style.visibility = "visible";
 
   const joinBtn = document.getElementById("feedbackEngagementBtn");
@@ -435,7 +440,7 @@ async function initFeedbackEngagementBanner() {
         const response = await window.fetchWithIdToken("/api/v1/interest", { method: "POST" });
         if (response.ok) {
           joinBtn.textContent = "Thanks! We'll be in touch soon.";
-          joinBtn.style.backgroundColor = "#0a8927";
+          joinBtn.classList.add("btn-ok");
           localStorage.setItem("feedbackEngagementRegistered", "true");
         } else {
           joinBtn.textContent = "Try again";
@@ -451,7 +456,7 @@ async function initFeedbackEngagementBanner() {
 
   if (dismissBtn) {
     dismissBtn.addEventListener("click", function () {
-      banner.style.display = "none";
+      banner.hidden = true;
     });
   }
 }

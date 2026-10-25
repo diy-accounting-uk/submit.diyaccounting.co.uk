@@ -2,7 +2,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <title>DIY Accounting Submit - Bundles</title>
@@ -26,117 +26,58 @@
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="./lib/analytics.js"></script>
     <script src="./lib/session-beacon.js"></script>
-    <style>
-      .btn.btn-outline {
-        background-color: #fff;
-        color: var(--c-brand);
-        border: 1px solid var(--c-brand);
-      }
-      .btn.btn-outline:hover {
-        background-color: #eef3fb;
-      }
-      .btn.btn-danger-outline {
-        background-color: #fff;
-        color: #b02a37;
-        border: 1px solid #b02a37;
-      }
-      .btn.btn-danger-outline:hover {
-        background-color: #fbeaec;
-      }
-      .btn.bundle-row-btn {
-        font-size: 0.8em;
-        padding: 0.15em 0.75em;
-        min-width: unset;
-        width: auto;
-        min-height: 44px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-      }
-      .bundle-row-name {
-        flex: 1 1 12em;
-        min-width: 0;
-      }
-    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
-      <h1>DIY Accounting Submit</h1>
-      <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+      <h1>Bundles</h1>
+      <p class="subtitle">What your account can use, and how to add more</p>
     </header>
 
     <main id="mainContent">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
-      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+      <div id="loadingSpinner" class="spinner" hidden></div>
 
-      <div class="form-container" style="text-align: center">
-        <h2>Bundles</h2>
-
-        <div id="currentBundlesSection" style="display: none; margin: 1.5em 0 2em; text-align: left">
-          <h3>Your Current Bundles</h3>
-          <div id="currentBundles" style="margin: 1em 0"></div>
+      <div class="form-container">
+        <div id="currentBundlesSection" class="bundles-section" hidden>
+          <h2>Your current bundles</h2>
+          <div id="currentBundles"></div>
         </div>
 
         <div class="bundles-list" id="catalogBundles"></div>
 
-        <div style="margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
-          <h3>Have a Pass?</h3>
-          <p style="color: #666; font-size: 0.9em">Enter a four-word passphrase to redeem your invitation.</p>
-          <div id="passEntryForm" style="margin: 1em auto; max-width: 440px; text-align: left">
-            <label for="passInput" style="display: block; margin-bottom: 0.4em; font-weight: 600">Passphrase</label>
+        <div class="bundles-section">
+          <h2>Have a pass?</h2>
+          <p class="hint">Enter a four-word passphrase to redeem your invitation.</p>
+          <div id="passEntryForm" class="pass-entry">
+            <label for="passInput">Passphrase</label>
             <p id="passInput-hint" class="hint">Enter four words separated by hyphens, for example word-word-word-word.</p>
-            <input
-              type="text"
-              id="passInput"
-              autocomplete="off"
-              spellcheck="false"
-              aria-describedby="passInput-hint"
-              style="width: 100%; padding: 0.6em; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box"
-            />
-            <div style="margin-top: 0.75em; text-align: center">
-              <button type="button" id="redeemPassBtn" class="btn" style="min-width: 160px" data-activity-start="bundle">
-                Redeem Pass
-              </button>
-            </div>
-            <div
-              id="passStatus"
-              role="alert"
-              aria-live="polite"
-              style="margin-top: 0.75em; display: none; padding: 0.6em; border-radius: 4px; font-size: 0.9em"
-            ></div>
+            <input type="text" id="passInput" autocomplete="off" spellcheck="false" aria-describedby="passInput-hint" />
+            <button type="button" id="redeemPassBtn" class="btn" data-activity-start="bundle">Redeem pass</button>
+            <div id="passStatus" role="alert" aria-live="polite" hidden></div>
           </div>
         </div>
 
-        <div id="feedbackEngagementSection" style="display: none; margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
-          <h3>Share Your Feedback</h3>
-          <p style="color: #666; font-size: 0.9em">
+        <div id="feedbackEngagementSection" class="bundles-section" hidden>
+          <h2>Share your feedback</h2>
+          <p class="hint">
             We're actively improving this service and would love to hear from you. If you're willing to share feedback, let us know and
             we'll be in touch.
           </p>
-          <div style="margin: 1em auto; text-align: center">
-            <button type="button" id="feedbackEngagementBtn" class="btn" style="min-width: 180px">I'm willing to share feedback</button>
-          </div>
+          <button type="button" id="feedbackEngagementBtn" class="btn btn-small">I'm willing to share feedback</button>
         </div>
 
-        <div id="myGeneratedPasses" style="display: none; margin-top: 3em; padding-top: 2em; border-top: 1px solid #ddd">
-          <h3>My Generated Passes</h3>
-          <p style="color: #666; font-size: 0.9em">Passes you have generated for others to use.</p>
-          <div id="generatedPassesList" style="margin: 1em 0"></div>
-          <div id="generatedPassesEmpty" style="display: none; color: #666; font-size: 0.9em; font-style: italic">
+        <div id="myGeneratedPasses" class="bundles-section" hidden>
+          <h2>My generated passes</h2>
+          <p class="hint">Passes you have generated for others to use.</p>
+          <div id="generatedPassesList"></div>
+          <p id="generatedPassesEmpty" class="hint" hidden>
             You haven't generated any passes yet. Generate one from the home page activities.
-          </div>
-          <div id="generatedPassesLoadMore" style="display: none; margin-top: 1em">
-            <button
-              type="button"
-              id="loadMorePassesBtn"
-              class="btn"
-              style="font-size: 0.85em; padding: 0.4em 1em; min-width: unset; background-color: #6c757d"
-            >
-              Load more
-            </button>
+          </p>
+          <div id="generatedPassesLoadMore" hidden>
+            <button type="button" id="loadMorePassesBtn" class="btn btn-small btn-secondary">Load more</button>
           </div>
         </div>
       </div>
