@@ -55,6 +55,7 @@ function listedBusinessNeedsDiversion() {
 }
 
 function applyPickedBusinessToLinks(business) {
+  if (business && business.businessId) window.CarriedIdentifiers.remember("businessId", business.businessId);
   const typeOfBusiness = business && business.typeOfBusiness;
   const isUkProperty = typeOfBusiness === "uk-property";
   const pickedNeedsDiversion = !!typeOfBusiness && typeOfBusiness !== "self-employment" && !isUkProperty;
@@ -114,7 +115,7 @@ function displayBusinessPicker(businesses) {
         `${business.tradingName || business.typeOfBusiness || ""} (${business.typeOfBusiness ?? ""}, ${business.businessId ?? ""})`,
       );
       label.htmlFor = `business-${index}`;
-      const option = el("div", "business-picker-option");
+      const option = el("div", "choice");
       option.append(radio, label);
       return option;
     }),

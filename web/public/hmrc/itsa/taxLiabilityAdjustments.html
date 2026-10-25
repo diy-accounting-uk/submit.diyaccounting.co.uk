@@ -40,7 +40,13 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Load criteria -->
-      <div id="loadCriteriaForm" class="form-container">
+      <div
+        id="loadCriteriaForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to adjust your tax liability"
+        data-sign-in-text="Log in to tell HMRC what a carry-back claim saves, so this year's liability is credited."
+      >
         <h2>Load a year's tax liability adjustments</h2>
         <p class="hint">
           This is the second half of a carry-back claim. Record the loss on the Losses and Claims page first, then come here to say what it
@@ -80,7 +86,7 @@
               <option value="">Default (loads an adjustment)</option>
               <option value="NOT_FOUND">Not Found</option>
             </select>
-            <div style="margin-top: 10px">
+            <div class="form-group">
               <label for="calculationTestScenario">Calculation test scenario (Developer/Sandbox only)</label>
               <p id="calculationTestScenario-hint" class="hint">The HMRC sandbox example used for that year's calculated liability</p>
               <select id="calculationTestScenario" name="calculationTestScenario" aria-describedby="calculationTestScenario-hint">
@@ -89,16 +95,16 @@
                 <option value="SCOT_SE_DIVIDENDS_EXAMPLE">Scottish self-employment with dividends</option>
               </select>
             </div>
-            <div style="margin-top: 10px">
-              <input type="checkbox" id="suspendTemporalValidations" name="suspendTemporalValidations" />
-              <label for="suspendTemporalValidations" style="display: inline; font-weight: normal"
+            <div class="choice">
+              <input type="checkbox" id="suspendTemporalValidations" name="suspendTemporalValidations" /><label
+                for="suspendTemporalValidations"
                 >Suspend temporal validations (sandbox tax year has not really ended)</label
               >
             </div>
-            <div style="margin-top: 10px">
-              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
-              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
-                >Validate Fraud Prevention Headers</label
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                for="runFraudPreventionHeaderValidation"
+                >Validate fraud prevention headers</label
               >
             </div>
           </div>
@@ -128,7 +134,7 @@
         <div class="form-group">
           <label for="incomeTax">Income Tax decrease</label>
           <p id="incomeTax-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -144,7 +150,7 @@
         <div class="form-group">
           <label for="class4">Class 4 National Insurance decrease</label>
           <p id="class4-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -160,7 +166,7 @@
         <div class="form-group">
           <label for="capitalGainsTax">Capital Gains Tax decrease</label>
           <p id="capitalGainsTax-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -205,6 +211,7 @@
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/submission-cost.js"></script>
     <script src="../../lib/money-format.js"></script>

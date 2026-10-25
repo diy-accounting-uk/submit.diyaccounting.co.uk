@@ -41,7 +41,13 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Load criteria -->
-      <div id="loadCriteriaForm" class="form-container">
+      <div
+        id="loadCriteriaForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to send your property annual submission"
+        data-sign-in-text="Log in to load the annual submission for a UK property business, change the adjustments and allowances, and save them to HMRC."
+      >
         <h2>Load an annual submission</h2>
         <form id="itsaAnnualLoadForm" novalidate>
           <div class="form-group">
@@ -65,7 +71,10 @@
 
           <div class="form-group">
             <label for="businessId">Business ID</label>
-            <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
+            <p id="businessId-hint" class="hint">
+              Filled in when you pick a business on the Income Tax dashboard. Otherwise copy it from Business details, for example
+              XAIS12345678910.
+            </p>
             <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
           </div>
 
@@ -86,10 +95,10 @@
               <option value="FOREIGN_PROPERTY">Foreign property (wrong business type)</option>
               <option value="NOT_FOUND">Not Found</option>
             </select>
-            <div style="margin-top: 10px">
-              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
-              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
-                >Validate Fraud Prevention Headers</label
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                for="runFraudPreventionHeaderValidation"
+                >Validate fraud prevention headers</label
               >
             </div>
           </div>
@@ -105,7 +114,7 @@
         <div class="form-group">
           <label for="balancingCharge">Balancing charge</label>
           <p id="balancingCharge-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -124,7 +133,7 @@
             Cannot be entered alongside the property income allowance below - HMRC rejects the combination.
           </p>
           <p id="privateUseAdjustment-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -140,7 +149,7 @@
         <div class="form-group">
           <label for="businessPremisesRenovationAllowanceBalancingCharges">Business premises renovation allowance balancing charges</label>
           <p id="businessPremisesRenovationAllowanceBalancingCharges-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -153,13 +162,15 @@
             />
           </div>
         </div>
-        <div class="form-group">
-          <input type="checkbox" id="nonResidentLandlord" name="nonResidentLandlord" />
-          <label for="nonResidentLandlord" style="display: inline; font-weight: normal">Non-resident landlord</label>
+        <div class="choice">
+          <input type="checkbox" id="nonResidentLandlord" name="nonResidentLandlord" /><label for="nonResidentLandlord"
+            >Non-resident landlord</label
+          >
         </div>
-        <div class="form-group">
-          <input type="checkbox" id="rentARoomJointlyLet" name="rentARoomJointlyLet" />
-          <label for="rentARoomJointlyLet" style="display: inline; font-weight: normal">Rent a room: jointly let</label>
+        <div class="choice">
+          <input type="checkbox" id="rentARoomJointlyLet" name="rentARoomJointlyLet" /><label for="rentARoomJointlyLet"
+            >Rent a room: jointly let</label
+          >
         </div>
 
         <h2>Allowances</h2>
@@ -168,21 +179,29 @@
           alongside a private use adjustment.
         </p>
         <div class="form-group">
-          <input type="radio" id="allowanceTypeNone" name="allowanceType" value="" checked />
-          <label for="allowanceTypeNone" style="display: inline; font-weight: normal">Neither</label>
-          <br />
-          <input type="radio" id="allowanceTypePropertyIncome" name="allowanceType" value="propertyIncome" />
-          <label for="allowanceTypePropertyIncome" style="display: inline; font-weight: normal">Property income allowance</label>
-          <br />
-          <input type="radio" id="allowanceTypeItemised" name="allowanceType" value="itemised" />
-          <label for="allowanceTypeItemised" style="display: inline; font-weight: normal">Itemised allowances</label>
+          <div class="choice">
+            <input type="radio" id="allowanceTypeNone" name="allowanceType" value="" checked /><label for="allowanceTypeNone"
+              >Neither</label
+            >
+          </div>
+          <div class="choice">
+            <input type="radio" id="allowanceTypePropertyIncome" name="allowanceType" value="propertyIncome" /><label
+              for="allowanceTypePropertyIncome"
+              >Property income allowance</label
+            >
+          </div>
+          <div class="choice">
+            <input type="radio" id="allowanceTypeItemised" name="allowanceType" value="itemised" /><label for="allowanceTypeItemised"
+              >Itemised allowances</label
+            >
+          </div>
         </div>
 
         <div id="propertyIncomeAllowanceFields">
           <div class="form-group">
             <label for="propertyIncomeAllowance">Property income allowance</label>
             <p id="propertyIncomeAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -202,7 +221,7 @@
           <div class="form-group">
             <label for="annualInvestmentAllowance">Annual investment allowance</label>
             <p id="annualInvestmentAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -219,7 +238,7 @@
           <div class="form-group">
             <label for="businessPremisesRenovationAllowance">Business premises renovation allowance</label>
             <p id="businessPremisesRenovationAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -236,7 +255,7 @@
           <div class="form-group">
             <label for="otherCapitalAllowance">Other capital allowance</label>
             <p id="otherCapitalAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -253,7 +272,7 @@
           <div class="form-group">
             <label for="costOfReplacingDomesticItems">Cost of replacing domestic items</label>
             <p id="costOfReplacingDomesticItems-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -270,7 +289,7 @@
           <div class="form-group">
             <label for="zeroEmissionsCarAllowance">Zero emissions car allowance</label>
             <p id="zeroEmissionsCarAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -316,6 +335,7 @@
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/submission-cost.js"></script>
     <script src="ukPropertyAnnualSubmission.page.js"></script>

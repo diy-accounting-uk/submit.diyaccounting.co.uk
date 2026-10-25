@@ -313,6 +313,13 @@ async function handleFormSubmission(event) {
   }
 }
 
+// Remembers the chosen period so the view and amend pages open with its Submission ID filled in.
+function usePeriod(submissionId) {
+  window.CarriedIdentifiers.remember("submissionId", submissionId);
+  document.getElementById("periodNextSteps").hidden = false;
+  showStatus(`Period ${submissionId} is chosen. View it or amend it with the links below the list.`, "info");
+}
+
 function displayPeriods(periods) {
   const tableContainer = document.getElementById("periodsTable");
   if (!periods || periods.length === 0) {
@@ -322,8 +329,13 @@ function displayPeriods(periods) {
 
   window.HmrcFieldTable.mountResultsTable(
     tableContainer,
-    [{ label: "Submission ID" }, { label: "Start date" }, { label: "End date" }],
-    periods.map((period) => [period.submissionId, period.fromDate, period.toDate]),
+    [{ label: "Submission ID" }, { label: "Start date" }, { label: "End date" }, { label: "Next step", kind: "action" }],
+    periods.map((period) => [
+      period.submissionId,
+      period.fromDate,
+      period.toDate,
+      { label: "Use this period", onClick: () => usePeriod(period.submissionId) },
+    ]),
   );
 }
 

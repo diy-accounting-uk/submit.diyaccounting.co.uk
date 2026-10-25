@@ -40,7 +40,13 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Period Summary Form -->
-      <div id="selfEmploymentPeriodForm" class="form-container">
+      <div
+        id="selfEmploymentPeriodForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to file a quarterly update"
+        data-sign-in-text="Log in to send HMRC the income and expenses of a self-employment business for a quarter."
+      >
         <div class="form-toggle-buttons">
           <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show form</button>
           <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
@@ -51,7 +57,10 @@
           <form id="itsaSelfEmploymentPeriodForm" novalidate>
             <div class="form-group">
               <label for="nino">National Insurance number</label>
-              <p id="nino-hint" class="hint">This is two letters, six numbers and a final letter, for example QQ 12 34 56 C.</p>
+              <p id="nino-hint" class="hint">
+                This is two letters, six numbers and a final letter, for example QQ 12 34 56 C. You can find it on your National Insurance
+                card, payslip or P60.
+              </p>
               <input
                 type="text"
                 id="nino"
@@ -67,7 +76,10 @@
 
             <div class="form-group">
               <label for="businessId">Business ID</label>
-              <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
+              <p id="businessId-hint" class="hint">
+                Filled in when you pick a business on the Income Tax dashboard. Otherwise copy it from Business details, for example
+                XAIS12345678910.
+              </p>
               <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
             </div>
 
@@ -89,14 +101,16 @@
               <p id="periodDates-hint" class="hint">HMRC identifies this quarter by its start and end date.</p>
             </div>
 
-            <div class="form-group">
-              <label for="periodStartDate">Period start date</label>
-              <input type="date" id="periodStartDate" name="periodStartDate" required />
-            </div>
+            <div class="period-date-inputs">
+              <div class="form-group">
+                <label for="periodStartDate">Period start date</label>
+                <input type="date" id="periodStartDate" name="periodStartDate" required />
+              </div>
 
-            <div class="form-group">
-              <label for="periodEndDate">Period end date</label>
-              <input type="date" id="periodEndDate" name="periodEndDate" required />
+              <div class="form-group">
+                <label for="periodEndDate">Period end date</label>
+                <input type="date" id="periodEndDate" name="periodEndDate" required />
+              </div>
             </div>
 
             <p id="cumulativeMoneyNote" class="hint" style="display: none">
@@ -110,7 +124,7 @@
                 The takings, fees, sales or money earned by the business for this period. Enter 0 if none.
               </p>
               <p id="turnover-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix">
+              <div class="input-prefix input-prefix--amount">
                 <span class="prefix">£</span>
                 <input
                   type="text"
@@ -129,7 +143,7 @@
             <div class="form-group">
               <label for="otherIncome">Other income</label>
               <p id="otherIncome-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix">
+              <div class="input-prefix input-prefix--amount">
                 <span class="prefix">£</span>
                 <input
                   type="text"
@@ -164,10 +178,10 @@
                 <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
                 <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
               </select>
-              <div style="margin-top: 10px">
-                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
-                <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
-                  >Validate Fraud Prevention Headers</label
+              <div class="choice">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                  for="runFraudPreventionHeaderValidation"
+                  >Validate fraud prevention headers</label
                 >
               </div>
             </div>
@@ -212,6 +226,7 @@
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/books-import.js"></script>
     <script src="../../widgets/submission-cost.js"></script>

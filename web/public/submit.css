@@ -1198,11 +1198,83 @@ textarea.input--error {
   line-height: var(--leading-text);
 }
 
+/* A run of related fields folded under a summary; the ledger inside carries the rows. */
+.field-group {
+  margin: var(--space-5) 0;
+  border-top: 1px solid var(--c-rule-subtle);
+}
+
+.field-group > summary {
+  display: flex;
+  align-items: center;
+  min-height: var(--control-height);
+  cursor: pointer;
+  font-size: var(--step-1);
+  font-weight: var(--weight-strong);
+}
+
+/* The Income Tax dashboard: one card per step, the link beside its description. */
+.dashboard-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  margin: var(--space-5) 0;
+}
+
+.dashboard-step {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-4) var(--space-5);
+}
+
+.dashboard-step h2 {
+  margin: 0 0 var(--space-1);
+  font-size: var(--step-1);
+}
+
+.dashboard-step p {
+  margin: 0 0 var(--space-3);
+  max-width: var(--measure);
+  color: var(--c-ink-muted);
+}
+
+.dashboard-step .applicability {
+  font-style: italic;
+}
+
+.dashboard-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin: var(--space-2) 0;
+  color: var(--c-ink-muted);
+  font-weight: var(--weight-strong);
+}
+
+.dashboard-divider::before,
+.dashboard-divider::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--c-rule-subtle);
+}
+
+.business-picker-list {
+  display: flex;
+  flex-direction: column;
+  margin: var(--space-2) 0;
+}
+
 /* Links that lead on from a result sit on one row, each a full touch target. */
 .next-steps {
   display: flex;
   flex-wrap: wrap;
   gap: 0 var(--space-5);
+}
+
+.next-steps[hidden] {
+  display: none;
 }
 
 .next-steps a {

@@ -3,7 +3,8 @@
 
 // web/public/lib/carried-identifiers.js
 // Identifiers the user has already given (VAT number, National Insurance number, business ID,
-// tax year, VAT period dates) are remembered for the browser session and filled into the same
+// tax year, VAT period dates, and the period, submission and calculation IDs a list or a result
+// showed) are remembered for the browser session and filled into the same
 // field on the next page, so nothing is typed twice. A field that already holds a value is
 // never overwritten.
 
@@ -15,6 +16,9 @@
     nino: { storageKey: "carriedNino", pattern: /^[A-Z]{2}\d{6}[A-D]$/ },
     businessId: { storageKey: "carriedBusinessId", pattern: /^[A-Za-z0-9]{1,40}$/ },
     taxYear: { storageKey: "carriedTaxYear", pattern: /^\d{4}-\d{2}$/ },
+    periodId: { storageKey: "carriedPeriodId", pattern: /^[A-Za-z0-9_.:-]{1,80}$/ },
+    submissionId: { storageKey: "carriedSubmissionId", pattern: /^[A-Za-z0-9_.:-]{1,80}$/ },
+    calculationId: { storageKey: "carriedCalculationId", pattern: /^[A-Za-z0-9-]{8,60}$/ },
     periodStart: { storageKey: "carriedPeriodStart", pattern: /^\d{4}-\d{2}-\d{2}$/ },
     periodEnd: { storageKey: "carriedPeriodEnd", pattern: /^\d{4}-\d{2}-\d{2}$/ },
   };

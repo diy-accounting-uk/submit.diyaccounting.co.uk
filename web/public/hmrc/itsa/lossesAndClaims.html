@@ -40,7 +40,13 @@
       <div id="loadingSpinner" class="spinner" style="display: none"></div>
 
       <!-- Load criteria -->
-      <div id="loadCriteriaForm" class="form-container">
+      <div
+        id="loadCriteriaForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to record losses and claims"
+        data-sign-in-text="Log in to tell HMRC how a loss carries forward, sideways or back."
+      >
         <h2>Load a business's losses and claims</h2>
         <form id="itsaLossesLoadForm" novalidate>
           <div class="form-group">
@@ -64,7 +70,10 @@
 
           <div class="form-group">
             <label for="businessId">Business ID</label>
-            <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
+            <p id="businessId-hint" class="hint">
+              Filled in when you pick a business on the Income Tax dashboard. Otherwise copy it from Business details, for example
+              XAIS12345678910.
+            </p>
             <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
           </div>
 
@@ -93,16 +102,16 @@
               <option value="TERMINAL_LOSS_CLAIM">Terminal loss claim</option>
               <option value="NOT_FOUND">Not Found</option>
             </select>
-            <div style="margin-top: 10px">
-              <input type="checkbox" id="suspendTemporalValidations" name="suspendTemporalValidations" />
-              <label for="suspendTemporalValidations" style="display: inline; font-weight: normal"
+            <div class="choice">
+              <input type="checkbox" id="suspendTemporalValidations" name="suspendTemporalValidations" /><label
+                for="suspendTemporalValidations"
                 >Suspend temporal validations (sandbox tax year has not really ended)</label
               >
             </div>
-            <div style="margin-top: 10px">
-              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
-              <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
-                >Validate Fraud Prevention Headers</label
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                for="runFraudPreventionHeaderValidation"
+                >Validate fraud prevention headers</label
               >
             </div>
           </div>
@@ -118,7 +127,7 @@
         <div class="form-group">
           <label for="broughtForwardLosses">Brought forward losses</label>
           <p id="broughtForwardLosses-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -137,7 +146,7 @@
         <div class="form-group">
           <label for="currentYearLosses">This year's loss to carry forward</label>
           <p id="currentYearLosses-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -153,7 +162,7 @@
         <div class="form-group">
           <label for="previousYearsLosses">Previous years' losses used this year</label>
           <p id="previousYearsLosses-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -172,7 +181,7 @@
         <div class="form-group">
           <label for="currentYearGeneralIncome">Loss set against this year's other income</label>
           <p id="currentYearGeneralIncome-money-hint" class="hint">For example, £600 or £193.54</p>
-          <div class="input-prefix">
+          <div class="input-prefix input-prefix--amount">
             <span class="prefix">£</span>
             <input
               type="text"
@@ -192,7 +201,7 @@
           <div class="form-group">
             <label for="previousYearGeneralIncome">Set against an earlier year's general income</label>
             <p id="previousYearGeneralIncome-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -208,7 +217,7 @@
           <div class="form-group">
             <label for="earlyYearLosses">Early years losses</label>
             <p id="earlyYearLosses-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -224,7 +233,7 @@
           <div class="form-group">
             <label for="terminalLosses">Terminal losses, on ceasing to trade</label>
             <p id="terminalLosses-money-hint" class="hint">For example, £600 or £193.54</p>
-            <div class="input-prefix">
+            <div class="input-prefix input-prefix--amount">
               <span class="prefix">£</span>
               <input
                 type="text"
@@ -282,6 +291,7 @@
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/submission-cost.js"></script>
     <script src="lossesAndClaims.page.js"></script>

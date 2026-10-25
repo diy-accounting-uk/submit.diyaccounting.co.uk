@@ -285,3 +285,20 @@
     overflow: visible;
   }
 }
+
+/* The key to the fields of a figures table, folded under a summary. */
+.field-key {
+  margin: 0 0 var(--space-5);
+}
+.field-key dt {
+  font-weight: var(--weight-strong);
+  margin-top: var(--space-3);
+}
+.field-key dd {
+  margin: var(--space-1) 0 0;
+  max-width: var(--measure);
+}
+.customer-copy-title,
+.customer-copy-brand {
+  text-align: left;
+}

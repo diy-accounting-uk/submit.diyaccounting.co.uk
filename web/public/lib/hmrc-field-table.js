@@ -411,7 +411,8 @@
   }
 
   // columns: [{ label, kind? ("money" or "text") }], rows: arrays of values in column order.
-  // Money columns are right-aligned tabular figures; absent values show a dash. Built with DOM calls only.
+  // Money columns are right-aligned tabular figures; absent values show a dash. An "action" column
+  // takes { label, onClick } and shows a button. Built with DOM calls only.
   function mountResultsTable(container, columns, rows) {
     const table = document.createElement("table");
     table.className = "results-table";
@@ -428,6 +429,15 @@
       const tr = body.insertRow();
       columns.forEach((column, index) => {
         const td = tr.insertCell();
+        if (column.kind === "action") {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = "secondary-button";
+          button.textContent = values[index].label;
+          button.addEventListener("click", values[index].onClick);
+          td.appendChild(button);
+          return;
+        }
         td.textContent = formatValue(values[index], column.kind === "money" ? "money" : "text");
         if (column.kind === "money") td.className = "money-column";
       });

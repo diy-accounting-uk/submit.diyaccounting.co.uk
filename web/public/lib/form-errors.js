@@ -87,6 +87,8 @@
     hidden.className = "visually-hidden";
     hidden.textContent = "Error: ";
     text.append(hidden, message);
+    const folded = input.closest("details");
+    if (folded) folded.open = true;
     const anchor = input.closest(".input-prefix") || input.closest(".choice") || input;
     const ledgerRowHeader = input.closest(".ledger tbody tr")?.querySelector("th");
     if (ledgerRowHeader) ledgerRowHeader.append(text);

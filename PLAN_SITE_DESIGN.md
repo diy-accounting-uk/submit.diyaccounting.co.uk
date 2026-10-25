@@ -369,7 +369,7 @@ Before is DS1's stored set (`target/site-screenshots/`, 432 PNGs). After is `nod
 | Footer variants | 4, right of centre | 1, left-aligned |
 | Pages with console errors | 9 | 9, the same messages |
 
-- **Light pin**: 1 page still paints raw colours in an inline `<style>`, a `style` attribute or its page script. It carries `<html data-theme="light">`, so dark mode does not reach it until DS4 moves those colours onto tokens and drops the attribute: `hmrc/itsa/dashboard`.
+- **Light pin**: no page carries `<html data-theme="light">`; every page paints its colours from the tokens, so dark mode reaches all of them.
 - **For the page rows**: the error summary and inline errors use `web/public/lib/form-errors.js`; a page adds `novalidate` to its form and calls it. The signed-out panel is `.signed-out-panel` (an `h2`, a paragraph and a `.btn` Log in link). Each page row moves its `h1` to the page name (1.11); the header band already shows the brand.
 - **Contrast** (WCAG relative luminance): light ink 14.4, muted 7.5, rule 3.06, brand 6.8, white on brand 6.8, ok 5.6, error 5.8, warn 6.8, info 7.1 on their tints; dark ink 13.7, muted 7.8, rule 3.6, brand 7.8, ink on brand 8.6, ok 8.1, error 7.1, warn 9.0, info 6.7.
 
@@ -387,7 +387,21 @@ Stage 1: the six VAT pages and `receipt/receipts`.
 - `viewVatReturn`: signed-out panel, summary errors, no placeholder, inline `<style>` moved to `submit.css`, period dates fill their halves.
 - `vatObligations`, `vatLiabilities`, `vatPayments`, `vatPenalties`: signed-out panel, `novalidate` with the summary, `.choice` for the fraud-header option, sentence-case toggle labels.
 - `receipts`: `h1` "Your receipts", signed-out panel in place of the red line, inline `<style>` and `data-theme="light"` dropped, `Submission ID` named beside `Period ID`.
-- **Remaining**: `viewVatReturn` has no pick-from-list for the period (the obligations call is on `submitVat` only); the 19 `itsa/` pages are stage 2.
+- **Remaining**: `viewVatReturn` has no pick-from-list for the period (the obligations call is on `submitVat` only).
+
+Stage 2: the 19 `itsa/` pages.
+
+- **Shared**: `.dashboard-steps`, `.field-group` (a folded section) and `.next-steps[hidden]` in `submit.css`; `.field-key` in `submission-record.css`; `carried-identifiers.js` carries `periodId`, `submissionId` and `calculationId`; `hmrc-field-table.js` result tables take an `action` column; `form-errors.js` opens a folded section that holds an error. One National Insurance number hint on every page.
+- Every page: signed-out panel in place of the form, `.choice` for the options, no inline style apart from script-toggled `display`, user words ("Request" for the year-end summary and the calculation).
+- `dashboard`: inline `<style>` and `data-theme="light"` dropped; twelve step links are secondary buttons in sentence case; the picked business sets the business ID for every later page.
+- `businessDetails`: signed-out panel. `obligations`: `h1` "Income Tax obligations".
+- `selfEmploymentPeriod`: 30 expense fields in two folded ledger sections (itemised open, disallowable shut, one hint each); period dates share a row; amount boxes 16rem wide.
+- `selfEmploymentPeriods`, `ukPropertyPeriods`: each row has "Use this period", which carries the ID to the view and amend pages and shows links to them.
+- `selfEmploymentPeriodView`, `selfEmploymentPeriodAmend`, `ukPropertyPeriodView`, `ukPropertyPeriodAmend`: the period or submission ID fills from the chosen period; the business ID hint says where it comes from.
+- `taxCalculation` carries an intent-to-finalise calculation ID to `finalDeclaration`.
+- `ukPropertyPeriod`: empty money fields, one hint each, dates share a row.
+- `adjustments`, `ukPropertyAdjustments`, `finalDeclaration`: "Trigger" becomes "Request". `annualSubmission`, `ukPropertyAnnualSubmission`, `lossesAndClaims`, `taxLiabilityAdjustments`: `.choice` options, signed-out panel, amount boxes narrowed.
+- **Remaining**: `Period ID` (self-employment) and `Submission ID` (property) stay two names, as `receipts` maps them; the IDs fill only after a period is chosen on the same browser session; `annualSubmission` and `ukPropertyAnnualSubmission` read the business ID from the dashboard pick only.
 
 ### DS5: root, account and error pages
 

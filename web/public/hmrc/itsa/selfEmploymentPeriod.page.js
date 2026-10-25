@@ -185,6 +185,7 @@ function applyCurrentTotal(periodSummary) {
   window.selfEmploymentExpenses.DISALLOWABLE_IDS.forEach((id) => {
     if (disallowable[id] !== undefined) document.getElementById(id).value = disallowable[id];
   });
+  window.selfEmploymentExpenses.revealFilledSections();
   showStatus("Loaded your current year-to-date total from HMRC. Edit the figures below to the new total.", "info");
 }
 

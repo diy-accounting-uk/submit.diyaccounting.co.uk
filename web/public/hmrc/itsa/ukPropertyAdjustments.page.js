@@ -101,7 +101,7 @@ async function ensureAuthorizedThen(pendingKey, pendingValue, run) {
 async function runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
   showLoading();
   hideStatus();
-  showStatus("Triggering year-end summary...", "info");
+  showStatus("Requesting the year-end summary...", "info");
   const triggerResult = await triggerSummary(triggerDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
   triggeredNino = triggerDetails.nino;
   triggeredTaxYear = document.getElementById("taxYear").value.trim();
@@ -141,14 +141,14 @@ async function handleTriggerFormSubmission(event) {
       const openObligations = await checkOpenObligations(nino, businessId, accessTokenForCheck);
       const warning = document.getElementById("obligationsWarning");
       if (openObligations.length > 0) {
-        warning.textContent = `${openObligations.length} quarterly obligation(s) for this business are still open. File every quarterly update for the year before triggering the year-end summary.`;
+        warning.textContent = `${openObligations.length} quarterly obligation(s) for this business are still open. File every quarterly update for the year before requesting the year-end summary.`;
         warning.style.display = "block";
         return;
       }
       warning.style.display = "none";
     }
   } catch (error) {
-    console.warn("Could not check obligations before triggering the year-end summary:", error.message);
+    console.warn("Could not check obligations before requesting the year-end summary:", error.message);
   }
 
   await ensureAuthorizedThen(
@@ -158,7 +158,7 @@ async function handleTriggerFormSubmission(event) {
       try {
         await runTriggerAndRetrieve(triggerDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
       } catch (error) {
-        showStatus(`Failed to trigger the year-end summary: ${error.message}`, "error");
+        showStatus(`Failed to request the year-end summary: ${error.message}`, "error");
       } finally {
         hideLoading();
       }
