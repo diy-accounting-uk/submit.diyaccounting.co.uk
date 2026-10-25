@@ -369,7 +369,7 @@ Before is DS1's stored set (`target/site-screenshots/`, 432 PNGs). After is `nod
 | Footer variants | 4, right of centre | 1, left-aligned |
 | Pages with console errors | 9 | 9, the same messages |
 
-- **Light pin**: 27 pages still paint raw colours in an inline `<style>`, a `style` attribute or their page script. They carry `<html data-theme="light">`, so dark mode does not reach them until DS4, DS5 or DS6 moves those colours onto tokens and drops the attribute: `about`, `accessibility`, `bundles`, `diy-accounting-limited`, `diy-accounting-spreadsheets`, `guide`, `help`, `hmrc/itsa/dashboard`, `hmrc/receipt/receipts`, `index`, `mcp-harness`, `mcp`, `operator/dashboard`, `passes/generate-digital`, `passes/generate-physical`, `policybee`, `practice`, `privacy`, `spreadsheets`, `terms`, `usage` and the six `videos*` pages.
+- **Light pin**: 5 pages still paint raw colours in an inline `<style>`, a `style` attribute or their page script. They carry `<html data-theme="light">`, so dark mode does not reach them until DS4, DS5 or DS6 moves those colours onto tokens and drops the attribute: `hmrc/itsa/dashboard`, `hmrc/receipt/receipts`, `operator/dashboard`, `passes/generate-digital` and `passes/generate-physical`.
 - **For the page rows**: the error summary and inline errors use `web/public/lib/form-errors.js`; a page adds `novalidate` to its form and calls it. The signed-out panel is `.signed-out-panel` (an `h2`, a paragraph and a `.btn` Log in link). Each page row moves its `h1` to the page name (1.11); the header band already shows the brand.
 - **Contrast** (WCAG relative luminance): light ink 14.4, muted 7.5, rule 3.06, brand 6.8, white on brand 6.8, ok 5.6, error 5.8, warn 6.8, info 7.1 on their tints; dark ink 13.7, muted 7.8, rule 3.6, brand 7.8, ink on brand 8.6, ok 8.1, error 7.1, warn 9.0, info 6.7.
 
@@ -382,6 +382,28 @@ Before is DS1's stored set (`target/site-screenshots/`, 432 PNGs). After is `nod
 
 - **Pages**: the 25 root pages (including `images/favicon/IMPLEMENTATION.html`), `auth/` (4), `errors/` (8), `passes/` (2), `activities/` (1), `operator/` (1). Section 3, root and account lists.
 - **Work**: move the inline `<style>` blocks on these pages onto tokens and drop the gradient; fix the video thumbnails (self-hosted posters or a CSP change); replace the old screenshots on about and the spreadsheets pages; error pages with cause, next step and retry; the signed-out page in the site chrome; user words in the callback and error titles; the MCP code blocks; the operator layout.
+
+#### DS5 result (root pages)
+
+- **Shared**: tokens only in the page rules (about, guide, help, videos, legal, MCP, harness, PolicyBee, practice, home, bundles, usage, company and spreadsheets blocks moved into `submit.css`); one lightbox rule on the scrim tokens; disabled controls take a grey fill with dark text; `.table-scroll`, `.btn-danger`, `.check-list`, `.status-message` reused; the local server's `img-src` allows `https://i.ytimg.com`, as the deployed policy does.
+- `about`: gradient, hero, glyph icons and the four old screenshots (with the lightbox) removed; `h1` "About"; features, benefits (a definition list) and one start block.
+- `accessibility`, `privacy`, `terms`: inline `<style>` dropped; `h1` in sentence case; `.legal` measure of 68ch; privacy and terms carry a contents list over their sections; tables use `.data-table`.
+- `bundles`: `h1` "Bundles"; every `style` attribute and script-set colour on classes (`bundle-note`, `bundle-row`, `pass-status`); "Subscribe" and "Request" buttons keep the brand fill, disabled ones grey; "Have a pass?" in sentence case; list reserve `min(40vh, 22rem)`; pass-list buttons on the shared small secondary style.
+- `diy-accounting-limited`: WordArt logo removed; contact block in the same card as the sections; inline `<style>` onto the tokens.
+- `diy-accounting-spreadsheets`, `spreadsheets`: old Excel captures, the lightbox and the page scripts removed; product cards, reviews and download on tokens; ticks drawn in CSS.
+- `guide`: gradient intro replaced by a plain panel; journeys and steps on tokens; `h1` "User guide".
+- `help`: gradient and inline `<style>` dropped; search placeholder "Search the questions".
+- `index`: `h1` "Activities"; the login note appears once above the list; feedback banner and the two proof notes on classes; `hidden` replaces inline `display`.
+- `mcp`: code blocks wrap inside the card at 390 px; `h1` "MCP server"; links on `.btn`.
+- `mcp-harness`: inline `<style>` onto the tokens, frame on `--c-paper`.
+- `mtd-calendar`, `rates`: generators no longer emit a `<style>`; rules in `submit.css`; captions sit above the table; `h1` "MTD calendar" and "Tax rates"; the VAT table caption no longer repeats its heading.
+- `policybee`: standard header, nav and footer from `page-chrome.js`; ticks in CSS; logo and call to action on classes.
+- `practice`: signed-out panel replaces the red line; `hidden` and classes replace the inline styles in the page and `practice.js`; ARN placeholder dropped; `h1` "Practice clients".
+- `usage`: `.data-table` tables, `h1` "Token usage"; Refresh is secondary; Manage subscription is secondary.
+- `videos`, `videos-*`: gradient and inline `<style>` dropped, section and contents rules in `submit.css`; the repeated per-video contents list is gone from the index.
+- `images/favicon/IMPLEMENTATION`: a visible page in the site chrome that lists the icon files and link tags.
+- `simulator`: unchanged, a redirect to `videos.html`.
+- **Remaining**: the `auth/`, `errors/`, `passes/`, `activities/` and `operator/` pages (stage 2), including the pass result page's `Copy Link` and `Copy Code` buttons.
 
 ### DS6: the Companies House pages
 

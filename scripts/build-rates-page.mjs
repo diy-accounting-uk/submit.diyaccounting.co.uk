@@ -180,7 +180,7 @@ export const RATE_TABLES = [
   },
   {
     id: "vat",
-    caption: "VAT",
+    caption: "VAT thresholds and rates",
     period: "tax-year",
     group: "vat",
     rows: [
@@ -420,86 +420,6 @@ function tableHtml(table, sources, listedSources) {
   );
 }
 
-const STYLES = `
-      .rates-table-scroll {
-        overflow-x: auto;
-        margin-bottom: var(--space-5);
-      }
-      .rates-table {
-        border-collapse: collapse;
-        min-width: 100%;
-      }
-      .rates-table caption {
-        text-align: left;
-        font-weight: var(--weight-strong);
-        margin-bottom: var(--space-1);
-      }
-      .rates-table th,
-      .rates-table td {
-        border: 1px solid var(--c-rule-subtle);
-        padding: var(--space-1) var(--space-2);
-        text-align: left;
-      }
-      .rate-sources {
-        padding-left: var(--space-5);
-        text-align: left;
-      }
-      .rate-sources li {
-        margin-bottom: var(--space-4);
-      }
-      .source-quote {
-        margin: var(--space-2) 0 0;
-        padding: var(--space-2) var(--space-4);
-        background: var(--c-canvas);
-        border: 1px solid var(--c-rule-subtle);
-        border-radius: var(--radius-control);
-        font-size: var(--step--1);
-        color: var(--c-ink-muted);
-      }
-      .source-quote p {
-        margin: 0 0 var(--space-1);
-      }
-      .source-quote footer {
-        overflow-wrap: anywhere;
-      }
-      .retrieved {
-        color: var(--c-ink-muted);
-        white-space: nowrap;
-      }
-      #ratesCalculator [hidden],
-      #ratesResults [hidden] {
-        display: none;
-      }
-      .rates-choice label {
-        display: inline;
-        font-weight: normal;
-        margin-right: var(--space-4);
-      }
-      .rates-hint {
-        font-size: var(--step--1);
-        color: var(--c-ink-muted);
-        margin: 0 0 var(--space-4);
-      }
-      #ratesResults dl {
-        display: block;
-        margin: 0;
-      }
-      .rates-result {
-        display: flex;
-        justify-content: space-between;
-        gap: var(--space-4);
-        border-bottom: 1px solid var(--c-rule-subtle);
-        padding: var(--space-1) 0;
-      }
-      .rates-result dt,
-      .rates-result dd {
-        margin: 0;
-      }
-      .rates-result dd {
-        font-weight: var(--weight-strong);
-        text-align: right;
-      }`;
-
 function numberField({ id, label, value, step = "any", showFor }) {
   return (
     `<div class="form-group"${showFor ? ` data-show="${showFor}"` : ""}>` +
@@ -632,8 +552,6 @@ export function renderRatesHtml(sources) {
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="submit.css" />
-    <style>${STYLES}
-    </style>
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="\${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="\${AWS_REGION}" />
@@ -646,7 +564,7 @@ export function renderRatesHtml(sources) {
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
-      <h1>DIY Accounting Submit</h1>
+      <h1>Tax rates</h1>
       <p class="subtitle">Rates and allowances: the figures behind your returns</p>
     </header>
 

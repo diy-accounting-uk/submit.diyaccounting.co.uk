@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -24,67 +24,36 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="./submit.css" />
-    <style>
-      main {
-        /* #mainContent (submit.css) makes main a flex item of body, so
-           auto margins on the cross axis size it to fit its content
-           instead of centering it — an explicit width restores that. */
-        width: 100%;
-        max-width: 900px;
-        margin: 2rem auto;
-        padding: 0 1rem;
-      }
-      h1 {
-        margin-bottom: 0.25rem;
-      }
-      .muted {
-        color: #666;
-        font-size: 0.95em;
-      }
-      section {
-        margin: 1.25rem 0;
-      }
-      li {
-        margin: 0.5rem 0;
-      }
-      code {
-        background: #f5f5f5;
-        padding: 0 0.25rem;
-      }
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin: 1rem 0;
-      }
-      th,
-      td {
-        border: 1px solid #ddd;
-        padding: 0.5rem;
-        text-align: left;
-      }
-      th {
-        background: #f5f5f5;
-      }
-      .ico-disclosure {
-        background: #f9f9f9;
-        border: 1px solid #ddd;
-        padding: 1.5rem;
-        margin: 1rem 0;
-      }
-      .ico-disclosure h3 {
-        margin-top: 0;
-      }
-    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
-      <h1 style="text-align: center">Privacy Policy</h1>
-      <p class="muted" style="text-align: center">Last updated: February 5, 2026</p>
+      <h1>Privacy policy</h1>
+      <p class="legal-meta">Last updated: February 5, 2026</p>
     </header>
 
-    <main id="mainContent">
+    <main id="mainContent" class="legal">
+      <nav class="legal-contents" aria-label="Contents">
+        <h2>Contents</h2>
+        <ol>
+          <li><a href="#what-we-collect">What we collect</a></li>
+          <li><a href="#hmrc-fraud-prevention">HMRC Fraud Prevention Headers</a></li>
+          <li><a href="#how-and-when-we-collect-it">How and when we collect it</a></li>
+          <li><a href="#what-we-use-it-for">What we use it for</a></li>
+          <li><a href="#data-retention">Data retention</a></li>
+          <li><a href="#cookies-and-browser-storage">Cookies and browser storage</a></li>
+          <li><a href="#your-choices">Your choices</a></li>
+          <li><a href="#your-data-rights-uk-gdpr">Your data rights (UK GDPR)</a></li>
+          <li><a href="#data-recipients">Data recipients</a></li>
+          <li><a href="#international-data-transfers">International data transfers</a></li>
+          <li><a href="#ico-disclosure">ICO Registration Disclosure</a></li>
+          <li><a href="#security-measures">Security measures</a></li>
+          <li><a href="#security-incidents">Security incidents</a></li>
+          <li><a href="#changes-to-this-policy">Changes to this policy</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ol>
+      </nav>
       <section>
         <p>
           DIY Accounting Submit is a lightweight web application that helps you submit UK VAT returns via HMRC's Making Tax Digital (MTD)
@@ -93,7 +62,7 @@
         </p>
       </section>
 
-      <section>
+      <section id="what-we-collect">
         <h2>What we collect</h2>
 
         <h3>Account and Authentication Data</h3>
@@ -257,7 +226,7 @@
         <h3>Data Points Collected</h3>
         <p>The following data is collected and transmitted to HMRC with each VAT return submission:</p>
 
-        <table>
+        <table class="data-table">
           <thead>
             <tr>
               <th>Data Point</th>
@@ -339,7 +308,7 @@
         </p>
       </section>
 
-      <section>
+      <section id="how-and-when-we-collect-it">
         <h2>How and when we collect it</h2>
         <ul>
           <li>
@@ -363,7 +332,7 @@
         </ul>
       </section>
 
-      <section>
+      <section id="what-we-use-it-for">
         <h2>What we use it for</h2>
         <ul>
           <li><strong>VAT submissions</strong>: To submit your VAT returns to HMRC and provide you with confirmation receipts.</li>
@@ -377,10 +346,10 @@
         </ul>
       </section>
 
-      <section>
+      <section id="data-retention">
         <h2>Data retention</h2>
         <h3>Application Data</h3>
-        <table>
+        <table class="data-table">
           <thead>
             <tr>
               <th>Data Category</th>
@@ -423,7 +392,7 @@
         </table>
 
         <h3>Monitoring and Infrastructure Data</h3>
-        <table>
+        <table class="data-table">
           <thead>
             <tr>
               <th>Data Category</th>
@@ -459,7 +428,7 @@
         </table>
       </section>
 
-      <section>
+      <section id="cookies-and-browser-storage">
         <h2>Cookies and browser storage</h2>
         <p><strong>This application does not use cookies.</strong></p>
         <p>We use browser localStorage and sessionStorage instead:</p>
@@ -511,7 +480,7 @@
         </p>
       </section>
 
-      <section>
+      <section id="your-choices">
         <h2>Your choices</h2>
         <ul>
           <li>
@@ -536,7 +505,7 @@
         </p>
       </section>
 
-      <section>
+      <section id="your-data-rights-uk-gdpr">
         <h2>Your data rights (UK GDPR)</h2>
         <p>Under UK GDPR, you have the following rights regarding your personal data:</p>
         <ul>
@@ -565,7 +534,7 @@
         </p>
       </section>
 
-      <section>
+      <section id="data-recipients">
         <h2>Data recipients</h2>
 
         <h3>HMRC (Data Controller)</h3>
@@ -637,7 +606,7 @@
         <p>See the <a href="https://telegram.org/privacy" target="_blank" rel="noopener">Telegram Privacy Policy</a> for details.</p>
       </section>
 
-      <section>
+      <section id="international-data-transfers">
         <h2>International data transfers</h2>
         <p>
           The majority of your data is processed in the <strong>EU West (London) region</strong>. However, the following transfers may
@@ -658,7 +627,7 @@
 
       <section id="ico-disclosure">
         <h2>ICO Registration Disclosure</h2>
-        <div class="ico-disclosure">
+        <div class="legal-box">
           <p>
             <em
               >This section provides a structured summary suitable for ICO (Information Commissioner's Office) registration and public
@@ -684,7 +653,7 @@
           </ul>
 
           <h3>Categories of Personal Data Processed</h3>
-          <table>
+          <table class="data-table">
             <thead>
               <tr>
                 <th>Category</th>
@@ -716,7 +685,7 @@
           </table>
 
           <h3>Purposes of Processing</h3>
-          <table>
+          <table class="data-table">
             <thead>
               <tr>
                 <th>Purpose</th>
@@ -814,7 +783,7 @@
         </div>
       </section>
 
-      <section>
+      <section id="security-measures">
         <h2>Security measures</h2>
         <p>We implement industry-standard security measures including:</p>
         <ul>
@@ -847,7 +816,7 @@
         </p>
       </section>
 
-      <section>
+      <section id="security-incidents">
         <h2>Security incidents</h2>
         <p>
           In the event of a data breach affecting your personal data, we will notify you and the Information Commissioner's Office (ICO)
@@ -857,7 +826,7 @@
         </p>
       </section>
 
-      <section>
+      <section id="changes-to-this-policy">
         <h2>Changes to this policy</h2>
         <p>
           We may update this Privacy Policy from time to time. The "Last updated" date at the top reflects the most recent changes. Material
@@ -866,7 +835,7 @@
         </p>
       </section>
 
-      <section>
+      <section id="contact">
         <h2>Contact</h2>
         <p>
           For privacy questions, data requests, or security concerns, contact:<br />

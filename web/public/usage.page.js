@@ -38,14 +38,11 @@ async function fetchBundleData() {
   }
 }
 
-const ROW_BORDER = "1px solid #dee2e6";
-
-function tableRow(cellTexts, cellStyle) {
+function tableRow(cellTexts, cellClass) {
   const row = document.createElement("tr");
-  row.style.borderBottom = ROW_BORDER;
   for (const text of cellTexts) {
     const cell = document.createElement("td");
-    cell.style.cssText = cellStyle || "padding: 0.5em";
+    if (cellClass) cell.className = cellClass;
     cell.textContent = text;
     row.append(cell);
   }
@@ -56,7 +53,7 @@ function messageRow(columns, text) {
   const row = document.createElement("tr");
   const cell = document.createElement("td");
   cell.colSpan = columns;
-  cell.style.cssText = "padding: 1em; color: #666; text-align: center";
+  cell.className = "no-data";
   cell.textContent = text;
   row.append(cell);
   return row;
@@ -146,7 +143,7 @@ function renderSubscriptionManagement(bundles) {
   const hasSubscription = (bundles || []).some(function (b) {
     return b.allocated && b.stripeSubscriptionId;
   });
-  section.style.display = hasSubscription ? "block" : "none";
+  section.hidden = !hasSubscription;
 }
 
 document.getElementById("manageSubscriptionBtn").addEventListener("click", async function () {
@@ -245,8 +242,8 @@ function renderBrowserStorage() {
     } catch (e) {
       v = "[unreadable]";
     }
-    const row = tableRow([k, redactValue(k, v)], "padding: 0.5em; word-break: break-word; font-size: 0.85em");
-    row.firstElementChild.style.cssText = "padding: 0.5em; font-family: monospace; font-size: 0.85em; white-space: nowrap";
+    const row = tableRow([k, redactValue(k, v)], "storage-cell");
+    row.firstElementChild.className = "storage-key";
     return row;
   });
   body.replaceChildren(...rows);
@@ -277,11 +274,11 @@ function renderItsaYearCostSummary() {
     stored = null;
   }
   if (!stored || !stored.yearTokens) {
-    summaryEl.style.display = "none";
+    summaryEl.hidden = true;
     return;
   }
   summaryEl.textContent = `Your ITSA year costs ${stored.yearTokens} tokens for the ${stored.businessCount} business${stored.businessCount === 1 ? "" : "es"} you picked on the dashboard.`;
-  summaryEl.style.display = "block";
+  summaryEl.hidden = false;
 }
 
 function initPage() {

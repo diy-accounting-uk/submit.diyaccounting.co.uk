@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <title>Spreadsheets - DIY Accounting Submit</title>
@@ -20,308 +20,6 @@
     <link rel="stylesheet" href="submit.css" />
     <script src="./lib/analytics.js"></script>
     <script src="./lib/session-beacon.js"></script>
-    <style>
-      .spreadsheets-page {
-        max-width: 800px;
-        margin: 0 auto;
-        padding: 1rem;
-      }
-
-      .spreadsheets-intro {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-      }
-
-      .spreadsheets-intro h2 {
-        color: var(--c-brand);
-        margin-top: 0;
-        margin-bottom: 0.75rem;
-      }
-
-      .spreadsheets-intro p {
-        color: var(--c-ink);
-        line-height: 1.6;
-        margin-bottom: 1rem;
-      }
-
-      .spreadsheets-intro p:last-child {
-        margin-bottom: 0;
-      }
-
-      .reviews-section {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        padding: 1.5rem;
-        margin-bottom: 1.5rem;
-      }
-
-      .reviews-header {
-        text-align: center;
-        margin-bottom: 1rem;
-      }
-
-      .reviews-stars {
-        color: #977000;
-        font-size: 1.4rem;
-        letter-spacing: 0.05em;
-      }
-
-      .reviews-rating {
-        display: block;
-        font-size: 0.95rem;
-        font-weight: 600;
-        color: var(--c-ink);
-        margin: 0.25em 0;
-      }
-
-      .reviews-link {
-        font-size: 0.85rem;
-        color: var(--c-brand);
-      }
-
-      .reviews-quotes {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-      }
-
-      .reviews-quotes blockquote {
-        margin: 0;
-        padding: 0;
-      }
-
-      .reviews-quotes blockquote p {
-        color: var(--c-ink-muted, #555);
-        font-size: 0.9rem;
-        line-height: 1.5;
-        margin: 0 0 0.25em 0;
-        font-style: italic;
-      }
-
-      .reviews-quotes cite {
-        font-size: 0.8rem;
-        color: #767676;
-        font-style: normal;
-      }
-
-      .product-grid-image {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        padding: 1rem;
-        margin-bottom: 1.5rem;
-        text-align: center;
-      }
-
-      .product-grid-image img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 4px;
-        cursor: pointer;
-        transition: opacity 0.2s ease;
-      }
-
-      .product-grid-image img:hover {
-        opacity: 0.9;
-      }
-
-      .product-grid-image p {
-        color: var(--c-ink-muted);
-        font-size: 0.875rem;
-        margin: 0.75rem 0 0 0;
-      }
-
-      .products {
-        display: flex;
-        flex-direction: column;
-        gap: 0.75rem;
-        margin-bottom: 1.5rem;
-      }
-
-      .product {
-        background: white;
-        border-radius: 8px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        padding: 1.25rem;
-      }
-
-      .product h3 {
-        color: var(--c-brand);
-        margin-top: 0;
-        margin-bottom: 0.5rem;
-        font-size: 1rem;
-      }
-
-      .product h3 a {
-        color: var(--c-brand);
-        text-decoration: underline;
-      }
-
-      .product h3 a:hover {
-        color: var(--c-brand-strong, #1e3f73);
-      }
-
-      .product p {
-        color: var(--c-ink-muted);
-        margin: 0 0 0.75rem 0;
-        line-height: 1.5;
-        font-size: 0.95rem;
-      }
-
-      .product p:last-child {
-        margin-bottom: 0;
-      }
-
-      .product .features-list {
-        list-style: none;
-        padding: 0;
-        margin: 0.5rem 0 0 0;
-        display: flex;
-        flex-wrap: wrap;
-        gap: 0.25rem 1rem;
-      }
-
-      .product .features-list li {
-        color: var(--c-ink-muted);
-        font-size: 0.85rem;
-        line-height: 1.4;
-      }
-
-      .product .features-list li::before {
-        content: "\2713 ";
-        color: var(--c-brand);
-        font-weight: bold;
-      }
-
-      .product-screenshot {
-        margin-top: 0.75rem;
-      }
-
-      .product-screenshot img {
-        max-width: 100%;
-        height: auto;
-        border-radius: 4px;
-        border: 1px solid #eee;
-        cursor: pointer;
-        transition: opacity 0.2s ease;
-      }
-
-      .product-screenshot img:hover {
-        opacity: 0.9;
-      }
-
-      .partner-product {
-        border-left: 4px solid var(--c-brand, #2c5aa0);
-      }
-
-      .partner-label {
-        display: inline-block;
-        font-size: 0.75rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #767676;
-        margin: 0 0 0.25em 0;
-      }
-
-      .partner-trust {
-        font-size: 0.85rem;
-        color: #767676;
-        margin: 0.75em 0 0 0;
-      }
-
-      .download-section {
-        background: #f8f9fa;
-        border-radius: 8px;
-        padding: 1.5rem;
-        text-align: center;
-      }
-
-      .download-section h2 {
-        color: var(--c-brand);
-        margin-top: 0;
-        margin-bottom: 0.5rem;
-      }
-
-      .download-section p {
-        color: var(--c-ink-muted);
-        margin-bottom: 1rem;
-      }
-
-      .download-section a {
-        display: inline-block;
-        padding: 0.75rem 1.5rem;
-        border-radius: 6px;
-        font-size: 1rem;
-        font-weight: 500;
-        text-decoration: none;
-        border: 2px solid var(--c-brand);
-        color: var(--c-brand);
-        background: white;
-        transition: all 0.2s;
-      }
-
-      .download-section a:hover {
-        background: #e8f0fe;
-      }
-
-      /* Lightbox modal styles */
-      .lightbox-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.9);
-        z-index: 9999;
-        cursor: pointer;
-        justify-content: center;
-        align-items: center;
-      }
-      .lightbox-overlay.active {
-        display: flex;
-      }
-      .lightbox-overlay img {
-        max-width: 95%;
-        max-height: 95%;
-        object-fit: contain;
-        border-radius: 4px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-      }
-      .lightbox-close {
-        position: absolute;
-        top: 20px;
-        right: 30px;
-        color: white;
-        font-size: 40px;
-        font-weight: bold;
-        cursor: pointer;
-        z-index: 10000;
-        line-height: 1;
-      }
-      .lightbox-close:hover {
-        color: #ccc;
-      }
-      .lightbox-hint {
-        position: absolute;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 14px;
-      }
-
-      @media (max-width: 600px) {
-        .spreadsheets-page {
-          padding: 0.5rem;
-        }
-      }
-    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
@@ -350,7 +48,7 @@
 
         <div class="reviews-section">
           <div class="reviews-header">
-            <span class="reviews-stars" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+            <span class="reviews-stars" role="img" aria-label="5 out of 5 stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
             <span class="reviews-rating">5.0 out of 5</span>
             <a href="https://maps.app.goo.gl/a9vQaci6xLU6v2Gr7" target="_blank" rel="noopener" class="reviews-link">
               9 reviews on Google
@@ -362,29 +60,20 @@
                 &ldquo;I highly recommend the DIY Accounting accounts packages &mdash; far better value and much simpler than expensive
                 subscription accounting packages.&rdquo;
               </p>
-              <cite>&mdash; Steve Walsh</cite>
+              <cite>Steve Walsh</cite>
             </blockquote>
             <blockquote>
               <p>&ldquo;I've used DIY accounting for over 10 years and can recommend it to any small business owner.&rdquo;</p>
-              <cite>&mdash; Andrew Williamson</cite>
+              <cite>Andrew Williamson</cite>
             </blockquote>
             <blockquote>
               <p>
                 &ldquo;Easy to use and reliable software package, good / clear reporting &mdash; any time a clear picture of business
                 figures.&rdquo;
               </p>
-              <cite>&mdash; Laura Paterson</cite>
+              <cite>Laura Paterson</cite>
             </blockquote>
           </div>
-        </div>
-
-        <div class="product-grid-image">
-          <img
-            src="images/spreadsheets/diyaccounting-spreadsheets-product-grid.png"
-            alt="Feature comparison table showing which features are included in each DIY Accounting product: Basic Sole Trader, Self Employed, Company Accounts, Taxi Driver, and Payslip"
-            class="lightbox-img"
-          />
-          <p>Feature comparison across the DIY Accounting product range</p>
         </div>
 
         <div class="products">
@@ -399,20 +88,13 @@
               The simplest accounting package for sole traders who are not VAT registered and have no employees. Includes sales and
               purchases spreadsheets with an automated profit and loss account and self-employed short tax return.
             </p>
-            <ul class="features-list">
+            <ul class="check-list features-list">
               <li>Sales spreadsheet</li>
               <li>Purchases spreadsheet</li>
               <li>Profit &amp; loss account</li>
               <li>Self-employed tax return</li>
               <li>Income tax calculation</li>
             </ul>
-            <div class="product-screenshot">
-              <img
-                src="images/spreadsheets/diyaccounting-spreadsheets-Basic Sole Tader - Profit and Loss.png"
-                alt="Basic Sole Trader profit and loss spreadsheet showing monthly breakdown of sales, expenses, and net taxable profit"
-                class="lightbox-img"
-              />
-            </div>
           </div>
 
           <!-- Self Employed -->
@@ -426,7 +108,7 @@
               Easy-to-use accounting software for anyone self employed, whether VAT registered or not, with or without employees. Produces
               both the short and full self-employed tax returns along with quarterly VAT returns.
             </p>
-            <ul class="features-list">
+            <ul class="check-list features-list">
               <li>Sales spreadsheet</li>
               <li>Sales invoices</li>
               <li>Purchases spreadsheet</li>
@@ -436,13 +118,6 @@
               <li>Self assessment tax return</li>
               <li>Payslips</li>
             </ul>
-            <div class="product-screenshot">
-              <img
-                src="images/spreadsheets/diyaccounting-spreadsheets-SEpurchasespreadsheet.jpg"
-                alt="Self Employed purchases spreadsheet showing supplier entries with payment methods, expense codes, and VAT-inclusive totals"
-                class="lightbox-img"
-              />
-            </div>
           </div>
 
           <!-- Company Accounts -->
@@ -457,7 +132,7 @@
               Uses double-entry bookkeeping and produces quarterly VAT returns, profit and loss accounts, balance sheets, year-end accounts
               for Companies House, and CT600 corporation tax calculations.
             </p>
-            <ul class="features-list">
+            <ul class="check-list features-list">
               <li>Sales spreadsheet</li>
               <li>Sales invoices</li>
               <li>Purchases spreadsheet</li>
@@ -470,13 +145,6 @@
               <li>Fixed assets &amp; capital allowances</li>
               <li>Payslips (5, 10, or 20 employees)</li>
             </ul>
-            <div class="product-screenshot">
-              <img
-                src="images/spreadsheets/diyaccounting-spreadsheets-corporationtax1.jpg"
-                alt="Corporation tax computation spreadsheet showing operating profit, capital allowances, and amount chargeable to corporation tax"
-                class="lightbox-img"
-              />
-            </div>
           </div>
 
           <!-- Taxi Driver -->
@@ -491,7 +159,7 @@
               compares mileage allowances against actual vehicle running costs and selects the most tax-efficient method for your expenses
               claim.
             </p>
-            <ul class="features-list">
+            <ul class="check-list features-list">
               <li>Income &amp; expenses tracking</li>
               <li>Mileage allowance calculation</li>
               <li>Vehicle expense comparison</li>
@@ -514,19 +182,12 @@
               National Insurance figures and the spreadsheet produces printed payslips on plain paper with a running total of wages and
               deductions throughout the year.
             </p>
-            <ul class="features-list">
+            <ul class="check-list features-list">
               <li>Weekly or monthly payslips</li>
               <li>Plain paper printing</li>
               <li>Running yearly totals</li>
               <li>Compatible with HMRC Basic PAYE Tools</li>
             </ul>
-            <div class="product-screenshot">
-              <img
-                src="images/spreadsheets/diyaccounting-spreadsheets-Payroll-Payslips.png"
-                alt="Payslip spreadsheet showing monthly payroll with gross pay, income tax, National Insurance deductions, and net pay"
-                class="lightbox-img"
-              />
-            </div>
           </div>
 
           <!-- DIYA-GL -->
@@ -538,7 +199,7 @@
               Free double-entry bookkeeping for Basic Sole Trader, Self Employed, Taxi Driver and Limited Company. Run your books in the
               browser with cloud save on sign-in.
             </p>
-            <ul class="features-list">
+            <ul class="check-list features-list">
               <li>Double-entry bookkeeping</li>
               <li>Run in the browser</li>
               <li>Cloud save on sign-in</li>
@@ -550,49 +211,31 @@
           <div class="product partner-product">
             <p class="partner-label">Partner</p>
             <h3>
-              <a href="policybee.html"> Business Insurance from PolicyBee </a>
+              <a href="policybee.html">Business insurance from PolicyBee</a>
             </h3>
             <p>
-              Looking for professional insurance? Try PolicyBee &mdash; an online broker specialising in professional indemnity, public
-              liability, employers' liability and office insurance for freelancers and small businesses. Hassle-free protection for sole
-              traders and limited companies.
+              Looking for professional insurance? Try PolicyBee, an online broker specialising in professional indemnity, public liability,
+              employers' liability and office insurance for freelancers and small businesses. Hassle-free protection for sole traders and
+              limited companies.
             </p>
-            <ul class="features-list">
+            <ul class="check-list features-list">
               <li>Professional indemnity insurance</li>
               <li>Public liability insurance</li>
               <li>Employers' liability insurance</li>
               <li>Office &amp; contents insurance</li>
             </ul>
             <p class="partner-trust">Rated 4.8/5 from 6,000+ reviews</p>
-            <p style="margin-top: 0.75em">
-              <a
-                href="policybee.html"
-                style="
-                  display: inline-block;
-                  padding: 0.5rem 1.25rem;
-                  border-radius: 6px;
-                  font-size: 0.95rem;
-                  font-weight: 500;
-                  text-decoration: none;
-                  border: 2px solid var(--c-brand);
-                  color: var(--c-brand);
-                  background: white;
-                  transition: all 0.2s;
-                "
-              >
-                Visit PolicyBee
-              </a>
-            </p>
+            <p><a class="btn btn-secondary btn-small" href="policybee.html">Visit PolicyBee</a></p>
           </div>
         </div>
 
         <div class="download-section">
           <h2>Download</h2>
           <p>All DIY Accounting spreadsheet products are available for immediate download from the spreadsheets site.</p>
-          <a href="https://spreadsheets.diyaccounting.co.uk" target="_blank" rel="noopener">
+          <a class="btn btn-secondary" href="https://spreadsheets.diyaccounting.co.uk" target="_blank" rel="noopener">
             Visit spreadsheets.diyaccounting.co.uk to download
           </a>
-          <p style="margin-top: 1rem">
+          <p class="download-more">
             <a href="https://spreadsheets.diyaccounting.co.uk/donate.html" target="_blank" rel="noopener">
               Support DIY Accounting with a donation
             </a>
@@ -603,13 +246,6 @@
 
     <footer></footer>
 
-    <!-- Lightbox modal for expandable images -->
-    <div class="lightbox-overlay" id="lightbox">
-      <span class="lightbox-close" aria-label="Close">&times;</span>
-      <img src="" alt="" id="lightbox-image" />
-      <span class="lightbox-hint">Click anywhere to close</span>
-    </div>
-
     <script src="widgets/page-chrome.js"></script>
     <script src="lib/env-loader.js"></script>
     <script type="module" src="submit.js"></script>
@@ -618,6 +254,5 @@
     <script src="widgets/auth-status.js"></script>
     <script src="widgets/status-messages.js"></script>
     <script type="module" src="widgets/view-source-link.js"></script>
-    <script src="spreadsheets.page.js"></script>
   </body>
 </html>

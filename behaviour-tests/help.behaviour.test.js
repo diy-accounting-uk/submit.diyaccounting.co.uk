@@ -315,7 +315,7 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
       guideLinkAgain.click(),
     ]);
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-user-guide-page.png`, readerView: true });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-user-guide-page.png`, fullPage: true, readerView: true });
 
     // Verify User Guide page loaded
     const guideTitle = await page.title();
@@ -357,12 +357,12 @@ test.describe("Help & Navigation - Info Icon, About, Help, User Guide", () => {
     await expect(obligationsSection).toBeVisible({ timeout: 5000 });
     console.log(" Obligations journey is visible");
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-11-guide-sections.png`, readerView: true });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-11-guide-sections.png`, fullPage: true, readerView: true });
 
     // Scroll to submit section
     await submitSection.scrollIntoViewIfNeeded();
     await page.waitForTimeout(300);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-12-submit-section.png`, readerView: true });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-12-submit-section.png`, fullPage: true, readerView: true });
     console.log(" Submit section is visible after scroll");
 
     // ============================================================

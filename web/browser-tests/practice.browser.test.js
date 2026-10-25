@@ -36,11 +36,13 @@ test.describe("Practice page", () => {
   let practiceHtmlContent;
   let pageChromeJsContent;
   let statusMessagesJsContent;
+  let signedOutPanelJsContent;
 
   test.beforeAll(async () => {
     practiceHtmlContent = fs.readFileSync(path.join(process.cwd(), "web/public/practice.html"), "utf-8");
     pageChromeJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/page-chrome.js"), "utf-8");
     statusMessagesJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/status-messages.js"), "utf-8");
+    signedOutPanelJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/signed-out-panel.js"), "utf-8");
   });
 
   async function setupRoutes(page, { clients = [], listStatus = 200, createResponse = null } = {}) {
@@ -80,6 +82,9 @@ test.describe("Practice page", () => {
     });
     await page.route("**/widgets/status-messages.js*", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: statusMessagesJsContent });
+    });
+    await page.route("**/widgets/signed-out-panel.js*", async (route) => {
+      await route.fulfill({ status: 200, contentType: "application/javascript", body: signedOutPanelJsContent });
     });
     // practice.js itself is the page under test - never stubbed.
     await page.route("**/practice.js*", async (route) => {
@@ -137,7 +142,7 @@ test.describe("Practice page", () => {
     await setupRoutes(page, { clients: [CLIENT_A] });
     await loadPage(page, { loggedIn: false });
 
-    await expect(page.locator("#unauthenticatedHint")).toBeVisible();
+    await expect(page.locator("#signedOutPanel")).toBeVisible();
     await expect(page.locator("#clientsTable")).toBeHidden();
   });
 

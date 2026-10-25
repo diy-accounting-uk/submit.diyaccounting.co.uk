@@ -80,21 +80,6 @@ function contentsGroupElements(group) {
   return [heading, list];
 }
 
-// The contents for one video's own area only, placed under a featured video on the index so a
-// reader landing on one featured video can reach the rest of its area without the full list.
-function ownAreaContentsElement(video, videos) {
-  const group = groupVideos(videos).find((g) => g.key === video.group);
-  if (!group) return null;
-  const nav = document.createElement("nav");
-  nav.className = "video-contents-nav video-own-contents";
-  nav.setAttribute("aria-label", `${group.label} videos`);
-  const groupsContainer = document.createElement("div");
-  groupsContainer.className = "video-contents-groups";
-  groupsContainer.append(...contentsGroupElements(group));
-  nav.append(groupsContainer);
-  return nav;
-}
-
 // The first two sentences of a description, split on a full stop followed by whitespace.
 function firstTwoSentences(description) {
   const sentences = String(description ?? "")
@@ -265,14 +250,6 @@ export async function renderVideoPage({ mode, group }) {
     container.replaceChildren(messageElement("No videos are published yet."));
   } else {
     container.replaceChildren(...pageVideos.map(sectionElement));
-    // The index also shows each featured video's own area, so a reader who arrives on one
-    // doesn't have to scroll back up to the full contents to find the rest of it.
-    if (mode === "index") {
-      for (const video of pageVideos) {
-        const ownContents = ownAreaContentsElement(video, videos);
-        if (ownContents) document.getElementById(video.id)?.after(ownContents);
-      }
-    }
   }
 
   const videosById = new Map(videos.map((video) => [video.id, video]));

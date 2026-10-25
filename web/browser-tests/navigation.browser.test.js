@@ -43,7 +43,7 @@ test.describe("Navigation Browser Tests", () => {
       await setContentWithChrome(page, indexHtmlContent);
 
       // Verify page title
-      await expect(page.locator("h1")).toContainText(/DIY Accounting Submit/);
+      await expect(page.locator("h1")).toContainText(/Activities/);
 
       // Verify main navigation exists with Activities link
       await expect(page.locator("nav.main-nav a:has-text('Activities')")).toBeVisible();
@@ -174,7 +174,7 @@ test.describe("Navigation Browser Tests", () => {
       });
 
       // Verify services page content
-      await expect(page.locator("h2")).toContainText("Bundles");
+      await expect(page.locator("h1")).toContainText("Bundles");
     });
   });
 });

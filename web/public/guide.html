@@ -1,7 +1,7 @@
 <!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<html lang="en-GB" data-theme="light">
+<html lang="en-GB">
   <head>
     <meta charset="UTF-8" />
     <title>User Guide - DIY Accounting Submit</title>
@@ -19,184 +19,12 @@
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="submit.css" />
     <script src="./lib/analytics.js"></script>
-    <style>
-      .guide-intro {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 2em;
-        border-radius: 8px;
-        margin-bottom: 2em;
-      }
-      .guide-intro h2 {
-        margin-top: 0;
-        color: white;
-      }
-      .guide-intro p {
-        margin-bottom: 0;
-        opacity: 0.95;
-      }
-      .guide-intro p + p {
-        margin-top: 0.75em;
-      }
-      .guide-intro a {
-        color: inherit;
-        font-weight: 600;
-        text-decoration: underline;
-      }
-      .guide-group {
-        margin: 2em 0;
-      }
-      .guide-group > h2 {
-        margin-bottom: 0.25em;
-      }
-      .guide-group-intro {
-        margin-top: 0;
-        color: #555;
-      }
-      .guide-journey {
-        background: #fff;
-        border: 1px solid #ddd;
-        border-radius: 8px;
-        margin-top: 12px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-      }
-      .guide-journey > summary {
-        cursor: pointer;
-        padding: 12px 16px;
-        font-weight: 600;
-        color: #2c5aa0;
-      }
-      .guide-journey[open] > summary {
-        border-bottom: 1px solid #e0e0e0;
-      }
-      .guide-journey-note {
-        font-weight: normal;
-        font-size: 0.85em;
-        color: #666;
-        margin-left: 8px;
-      }
-      .guide-steps-list {
-        list-style: none;
-        counter-reset: guide-step;
-        margin: 0;
-        padding: 16px;
-        display: grid;
-        grid-template-columns: 1fr;
-        gap: 16px;
-      }
-      .guide-step {
-        counter-increment: guide-step;
-        background: #f8f9fa;
-        border: 1px solid #e0e0e0;
-        border-radius: 6px;
-        padding: 8px;
-      }
-      .guide-step-title {
-        margin: 4px 0 6px;
-        font-size: 1em;
-        font-weight: 600;
-      }
-      .guide-step-title::before {
-        content: counter(guide-step);
-        display: inline-block;
-        background: #2c5aa0;
-        color: white;
-        width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        text-align: center;
-        line-height: 26px;
-        font-weight: bold;
-        margin-right: 8px;
-      }
-      .guide-thumb {
-        display: block;
-        width: 100%;
-        padding: 0;
-        border: 1px solid #eee;
-        border-radius: 4px;
-        background: none;
-        cursor: zoom-in;
-      }
-      .guide-thumb img {
-        display: block;
-        width: 100%;
-        height: auto;
-        aspect-ratio: auto 480 / 518;
-        border-radius: 4px;
-      }
-      .guide-thumb:focus-visible {
-        outline: 3px solid #2c5aa0;
-        outline-offset: 2px;
-      }
-      .lightbox-close:focus-visible {
-        outline: 3px solid #fff;
-        outline-offset: 4px;
-      }
-      .guide-caption {
-        font-size: 0.95em;
-        color: #555;
-        margin: 8px 0 0;
-        line-height: 1.5;
-      }
-      /* Lightbox modal styles */
-      .lightbox-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.9);
-        z-index: 10001;
-        cursor: pointer;
-        justify-content: center;
-        align-items: center;
-      }
-      .lightbox-overlay.active {
-        display: flex;
-      }
-      .lightbox-overlay img {
-        max-width: 95%;
-        max-height: 95%;
-        object-fit: contain;
-        border-radius: 4px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
-      }
-      .lightbox-close {
-        position: absolute;
-        top: 20px;
-        right: 30px;
-        color: white;
-        font-size: 40px;
-        font-weight: bold;
-        cursor: pointer;
-        z-index: 10000;
-        line-height: 1;
-      }
-      .lightbox-close:hover {
-        color: #ccc;
-      }
-      .lightbox-hint {
-        position: absolute;
-        bottom: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        color: rgba(255, 255, 255, 0.7);
-        font-size: 14px;
-      }
-      @media (min-width: 700px) {
-        .guide-steps-list {
-          grid-template-columns: 1fr 1fr;
-        }
-      }
-    </style>
   </head>
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
-      <h1>User Guide</h1>
+      <h1>User guide</h1>
       <p class="subtitle">Every journey, step by step</p>
     </header>
 
@@ -221,18 +49,15 @@
           </li>
         </ul>
       </div>
-      <div class="form-container">
-        <div class="guide-intro">
-          <h2>Every journey, step by step</h2>
-          <p>
-            Pick a journey and open it to see its steps. Each step is a screenshot from a real recording of the product, with a line on what
-            to do. Select a screenshot to see it full size.
-          </p>
-          <p>
-            New here? Request a free day pass on the <a href="bundles.html">Bundles</a> page — no pass needed, and you get 3 free VAT
-            submissions to try it out.
-          </p>
-        </div>
+      <div class="guide-intro">
+        <p>
+          Pick a journey and open it to see its steps. Each step is a screenshot from a real recording of the product, with a line on what
+          to do. Select a screenshot to see it full size.
+        </p>
+        <p>
+          New here? Request a free day pass on the <a href="bundles.html">Bundles</a> page. No pass is needed, and you get 3 free VAT
+          submissions to try it out.
+        </p>
       </div>
 
       <div id="guideJourneys"></div>

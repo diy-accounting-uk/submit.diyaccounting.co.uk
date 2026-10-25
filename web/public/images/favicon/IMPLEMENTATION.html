@@ -1,54 +1,53 @@
+<!doctype html>
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
-<!-- Favicon Implementation for submit.diyaccounting.co.uk -->
-<!-- Brand colour: #2b579a -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Favicon files - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, follow" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="stylesheet" href="../../submit.css" />
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
+      <h1>Favicon files</h1>
+      <p class="subtitle">The icons every page of the site links to</p>
+    </header>
 
-<!-- Add these lines to your HTML <head> section -->
+    <main id="mainContent">
+      <p>The site's icon is a white document with a folded corner, data lines and a check mark on the brand blue.</p>
+      <h2>Link tags</h2>
+      <p>Every page carries these tags in its <code>head</code>.</p>
+      <pre><code>&lt;link rel="icon" href="/favicon.ico" sizes="any" /&gt;
+&lt;link rel="icon" href="/favicon.svg" type="image/svg+xml" /&gt;
+&lt;link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" /&gt;
+&lt;link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" /&gt;
+&lt;link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" /&gt;</code></pre>
+      <h2>Files</h2>
+      <dl>
+        <dt><a href="/favicon.ico">favicon.ico</a></dt>
+        <dd>Sizes 16, 32 and 48 px, for the widest browser support.</dd>
+        <dt><a href="/favicon.svg">favicon.svg</a></dt>
+        <dd>Scalable vector for current browsers.</dd>
+        <dt><a href="/favicon-16.png">favicon-16.png</a>, <a href="/favicon-32.png">favicon-32.png</a></dt>
+        <dd>Browser tab icons.</dd>
+        <dt><a href="/apple-touch-icon.png">apple-touch-icon.png</a></dt>
+        <dd>The iOS home screen icon, 180 px.</dd>
+        <dt><a href="/android-chrome-192.png">android-chrome-192.png</a>, <a href="/android-chrome-512.png">android-chrome-512.png</a></dt>
+        <dd>The icons in <a href="/site.webmanifest">site.webmanifest</a>, for installed web apps.</dd>
+      </dl>
+    </main>
 
-<!-- Standard favicon (ICO for maximum compatibility) -->
-<link rel="icon" href="/favicon.ico" sizes="any" />
+    <footer></footer>
 
-<!-- SVG favicon (modern browsers, scales perfectly) -->
-<link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-
-<!-- PNG favicons for specific sizes -->
-<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
-<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
-
-<!-- Apple Touch Icon (iOS home screen) -->
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-
-<!--
-Files included:
-- favicon.ico          Multi-resolution (16, 32, 48px)
-- favicon.svg          Scalable vector
-- favicon-16.png       Browser tab
-- favicon-32.png       Browser tab (retina)
-- favicon-48.png       Windows taskbar
-- favicon-64.png       Windows taskbar (retina)
-- favicon-128.png      Chrome Web Store
-- favicon-180.png      Apple Touch Icon size
-- favicon-192.png      Android Chrome
-- favicon-512.png      Android Chrome splash / PWA
-- apple-touch-icon.png iOS home screen
-- android-chrome-*.png PWA manifest icons
-
-Design:
-- Background: #2b579a (DIY Accounting Submit primary blue)
-- Document with corner fold (white)
-- Tabular data lines (suggesting VAT return form)
-- Bold checkmark (successful submission)
-
-For PWA/manifest.json:
-{
-  "name": "DIY Accounting Submit",
-  "short_name": "DIY Submit",
-  "icons": [
-    { "src": "/android-chrome-192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "/android-chrome-512.png", "sizes": "512x512", "type": "image/png" }
-  ],
-  "theme_color": "#2b579a",
-  "background_color": "#ffffff",
-  "display": "standalone"
-}
--->
+    <script src="../../widgets/page-chrome.js"></script>
+  </body>
+</html>

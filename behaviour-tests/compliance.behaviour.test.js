@@ -177,7 +177,7 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     const privacyUrl = `${baseUrl}/privacy.html`;
     console.log(`📖 Navigating to privacy page: ${privacyUrl}`);
     await page.goto(privacyUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/02-privacy-page.png`, readerView: true });
+    await takeScreenshot(page, { path: `${screenshotPath}/02-privacy-page.png`, fullPage: true, readerView: true });
 
     // Verify Privacy Policy page loaded
     const privacyTitle = await page.title();
@@ -238,7 +238,7 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     const termsUrl = `${baseUrl}/terms.html`;
     console.log(`📖 Navigating to terms page: ${termsUrl}`);
     await page.goto(termsUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/03-terms-page.png`, readerView: true });
+    await takeScreenshot(page, { path: `${screenshotPath}/03-terms-page.png`, fullPage: true, readerView: true });
 
     // Verify Terms page loaded
     const termsTitle = await page.title();
@@ -334,7 +334,7 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     const accessibilityUrl = `${baseUrl}/accessibility.html`;
     console.log(`📖 Navigating to accessibility page: ${accessibilityUrl}`);
     await page.goto(accessibilityUrl, { waitUntil: "domcontentloaded", timeout: 30000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/05-accessibility-page.png`, readerView: true });
+    await takeScreenshot(page, { path: `${screenshotPath}/05-accessibility-page.png`, fullPage: true, readerView: true });
 
     const accessibilityTitle = await page.title();
     console.log(`📄 Accessibility page title: "${accessibilityTitle}"`);

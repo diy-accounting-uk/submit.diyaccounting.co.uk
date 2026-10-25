@@ -122,13 +122,13 @@ const markToRequest = (btn, message = "Request bundle") => {
   const tokenLabel = tg ? ` (${tg} token${tg !== "1" ? "s" : ""})` : "";
   btn.textContent = message + tokenLabel;
   btn.disabled = false;
-  btn.style.backgroundColor = "#2c5aa0";
+  btn.classList.remove("btn-ok");
 };
 
 const markGranted = (btn, message = "Added ✓") => {
   btn.textContent = message;
   btn.disabled = true;
-  btn.style.backgroundColor = "#0a8927";
+  btn.classList.add("btn-ok");
 };
 
 // The landing attribution analytics.js stored under this key at first sign-in (MK-3): the
@@ -215,9 +215,9 @@ function domEl(tag, attrs, ...children) {
   return node;
 }
 
-const noteEl = (color, text) => domEl("p", { style: `font-size:0.85em; color:${color}; margin:0.5em 0 0;` }, text);
+const noteEl = (kind, text) => domEl("p", { class: `bundle-note bundle-note--${kind}` }, text);
 
-const serviceItemEl = (...children) => domEl("div", { class: "service-item", style: "text-align:left" }, ...children);
+const serviceItemEl = (...children) => domEl("div", { class: "service-item" }, ...children);
 
 // --- render one catalog card
 const cardEl = (b) => {
@@ -258,12 +258,12 @@ const cardEl = (b) => {
   const manageCard = () =>
     serviceItemEl(
       bundleButton("btn btn-outline service-btn", { "data-manage-subscription": "true" }, `Manage Subscription — ${name}`),
-      noteEl("#155724", "Active subscription"),
+      noteEl("ok", "Active subscription"),
     );
   const loginToSubscribeCard = (message) =>
     serviceItemEl(
       bundleButton("btn service-btn", { "data-disabled-reason": "login", "disabled": "" }, `Log in to subscribe — ${name}`, true),
-      noteEl("#0c5460", message),
+      noteEl("info", message),
     );
   const hasActiveSubscription = () => __fullBundleData.some((fb) => fb.bundleId === b.id && fb.allocated && fb.stripeSubscriptionId);
 
@@ -276,7 +276,7 @@ const cardEl = (b) => {
         `Pass required — ${name}`,
         true,
       ),
-      noteEl("#856404", "Enter a pass invitation above to unlock this bundle"),
+      noteEl("warn", "Enter a pass invitation above to unlock this bundle"),
     );
   }
 
@@ -286,7 +286,7 @@ const cardEl = (b) => {
     if (hasActiveSubscription()) return manageCard();
     return serviceItemEl(
       bundleButton("btn service-btn", { "data-subscribe": "true" }, `Subscribe £9.99/mo — ${name}`),
-      noteEl("#383d41", "Monthly subscription via Stripe"),
+      noteEl("plain", "Monthly subscription via Stripe"),
     );
   }
 
@@ -310,19 +310,18 @@ const cardEl = (b) => {
         monthly
           ? domEl(
               "p",
-              { style: "font-size:0.85em; margin:0.5em 0 0;" },
+              { class: "bundle-note" },
               bundleButton(
-                "btn-link",
+                "link-button",
                 {
                   "data-subscribe": "true",
                   "data-interval": "monthly",
-                  "style": "background:none;border:none;padding:0;color:#2c5aa0;text-decoration:underline;cursor:pointer;",
                 },
                 `or ${formatGbp(monthly.amount / 100)}/month`,
               ),
             )
           : null,
-        noteEl("#383d41", b.description || "Subscription via Stripe"),
+        noteEl("plain", b.description || "Subscription via Stripe"),
       );
     }
 
@@ -330,7 +329,7 @@ const cardEl = (b) => {
       prices.length === 1 ? ` ${formatGbp(prices[0].amount / 100)}/${prices[0].interval === "year" ? "yr" : "mo"}` : "";
     return serviceItemEl(
       bundleButton("btn service-btn", { "data-subscribe": "true" }, `Subscribe${singlePriceLabel} — ${name}`),
-      noteEl("#383d41", b.description || "Monthly subscription via Stripe"),
+      noteEl("plain", b.description || "Monthly subscription via Stripe"),
     );
   }
 
@@ -343,7 +342,7 @@ const cardEl = (b) => {
         `Subscription required — ${name}`,
         true,
       ),
-      noteEl("#856404", "A subscription is needed for this bundle"),
+      noteEl("warn", "A subscription is needed for this bundle"),
     );
   }
 
@@ -351,7 +350,7 @@ const cardEl = (b) => {
   if (!capacityAvailable && !passCode) {
     return serviceItemEl(
       bundleButton("btn service-btn", { "data-disabled-reason": "capacity", "disabled": "" }, `Limit reached — ${name}`, true),
-      noteEl("#856404", "Global user limit reached, please try again tomorrow"),
+      noteEl("warn", "Global user limit reached, please try again tomorrow"),
     );
   }
 
@@ -361,7 +360,7 @@ const cardEl = (b) => {
     if (!getIdToken()) {
       return serviceItemEl(
         bundleButton("btn service-btn", { ...passAttrs, "data-disabled-reason": "login", "disabled": "" }, `Log in to add — ${name}`, true),
-        noteEl("#0c5460", "Log in to add this bundle"),
+        noteEl("info", "Log in to add this bundle"),
       );
     }
     return serviceItemEl(bundleButton("btn service-btn", passAttrs, `Request ${name}${tokenLabel}`, true));
@@ -646,8 +645,7 @@ function renderCurrentBundles() {
       }
     }
 
-    const infoLine =
-      fragments.length > 0 ? domEl("div", { style: "font-size: 0.85em; color: #666; margin-top: 0.25em;" }, fragments.join(" · ")) : null;
+    const infoLine = fragments.length > 0 ? domEl("div", { class: "bundle-note" }, fragments.join(" · ")) : null;
 
     // Show Manage Subscription button if bundle has an active subscription
     const manageBtn = fullData?.stripeSubscriptionId
@@ -661,13 +659,11 @@ function renderCurrentBundles() {
     return domEl(
       "div",
       {
-        class: "service-item",
-        style:
-          "text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;",
+        class: "service-item bundle-row",
       },
       domEl(
         "span",
-        { style: "display:flex; align-items:center; flex-wrap:wrap; gap:0.75em" },
+        { class: "bundle-row-line" },
         domEl("span", { class: "bundle-row-name" }, displayName),
         manageBtn,
         domEl(
@@ -763,11 +759,8 @@ function showPassStatus(message, type) {
   const el = document.getElementById("passStatus");
   if (!el) return;
   el.textContent = message;
-  el.style.display = "block";
-  el.style.backgroundColor =
-    type === "success" ? "var(--c-ok-tint, #d4edda)" : type === "error" ? "var(--c-error-tint, #f8d7da)" : "var(--c-info-tint, #d1ecf1)";
-  el.style.color = type === "success" ? "var(--c-ok, #155724)" : type === "error" ? "var(--c-error, #721c24)" : "var(--c-info, #0c5460)";
-  el.style.border = `1px solid ${type === "success" ? "var(--c-ok, #c3e6cb)" : type === "error" ? "var(--c-error, #f5c6cb)" : "var(--c-info, #bee5eb)"}`;
+  el.hidden = false;
+  el.className = `pass-status pass-status--${type === "success" ? "ok" : type === "error" ? "error" : "info"}`;
 }
 
 async function redeemPassCode(code) {
@@ -989,7 +982,7 @@ async function initFeedbackEngagementSection() {
     // If already registered, update button state
     if (alreadyRegistered) {
       joinBtn.textContent = "Thanks! We'll be in touch soon.";
-      joinBtn.style.backgroundColor = "#0a8927";
+      joinBtn.classList.add("btn-ok");
       joinBtn.disabled = true;
       return;
     }
@@ -1001,7 +994,7 @@ async function initFeedbackEngagementSection() {
         const response = await window.fetchWithIdToken("/api/v1/interest", { method: "POST" });
         if (response.ok) {
           joinBtn.textContent = "Thanks! We'll be in touch soon.";
-          joinBtn.style.backgroundColor = "#0a8927";
+          joinBtn.classList.add("btn-ok");
           try {
             localStorage.setItem("feedbackEngagementRegistered", "true");
           } catch {}
@@ -1065,27 +1058,25 @@ async function fetchMyGeneratedPasses(append) {
         "div",
         {
           "data-pass-code": pass.code,
-          "style":
-            "text-align:left; margin-bottom: 1em; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 5px; padding: 1em;",
+          "class": "service-item bundle-row",
         },
         domEl(
           "div",
-          { style: "display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5em" },
-          domEl("span", { style: "font-weight:600; color:#2c5aa0; word-break:break-word" }, pass.code),
-          domEl("span", { style: "font-size:0.8em; color:#6c757d; background:#e9ecef; padding:0.2em 0.6em; border-radius:3px" }, typeLabel),
+          { class: "bundle-row-line" },
+          domEl("span", { class: "pass-code" }, pass.code),
+          domEl("span", { class: "status-tag" }, typeLabel),
         ),
-        pass.notes ? domEl("div", { style: "font-size:0.85em; color:#555; margin-top:0.3em; font-style:italic" }, pass.notes) : null,
-        domEl("div", { style: "font-size:0.85em; color:#666; margin-top:0.4em" }, `${expiryLabel} · ${usageLabel}`),
+        pass.notes ? domEl("div", { class: "bundle-note" }, pass.notes) : null,
+        domEl("div", { class: "bundle-note" }, `${expiryLabel} · ${usageLabel}`),
         domEl(
           "div",
-          { style: "margin-top:0.5em; display:flex; gap:0.5em; flex-wrap:wrap" },
+          { class: "bundle-row-line" },
           domEl(
             "button",
             {
               "type": "button",
-              "class": "btn pass-copy-link",
+              "class": "btn btn-small btn-secondary pass-copy-link",
               "data-pass-url": passUrl,
-              "style": "font-size:0.75em; padding:0.2em 0.6em; min-width:unset; background-color:#6c757d",
             },
             "Copy Link",
           ),
@@ -1093,8 +1084,7 @@ async function fetchMyGeneratedPasses(append) {
             "a",
             {
               href: qrUrl,
-              class: "btn",
-              style: "font-size:0.75em; padding:0.2em 0.6em; min-width:unset; background-color:#495057; text-decoration:none; color:white",
+              class: "btn btn-small btn-secondary",
             },
             "View QR",
           ),
