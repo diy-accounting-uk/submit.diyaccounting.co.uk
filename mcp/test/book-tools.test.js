@@ -17,7 +17,7 @@ import { canonicalLinesJsonl } from "@diy-accounting-uk/diya-gl/dist/app/lib/diy
 import { productOf } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import { productModule } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 
-import { createSession, openBook, restoreCloudBook, saveBook, SAVE_FORMATS } from "../lib/book-tools.js";
+import { createSession, listBooks, openBook, restoreCloudBook, saveBook, SAVE_FORMATS } from "../lib/book-tools.js";
 import { createServer, TOOLS } from "../lib/server.js";
 
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures");
@@ -121,6 +121,7 @@ describe("the server", () => {
     expect(Object.keys(TOOLS).sort()).toEqual([
       "add_client",
       "client_authorisation_status",
+      "derive_company_tax_return",
       "derive_micro_entity_accounts",
       "derive_small_company_accounts",
       "derive_vat_return",
@@ -128,17 +129,19 @@ describe("the server", () => {
       "get_vat_receipt",
       "get_vat_return",
       "invite_client",
+      "list_books",
       "list_clients",
       "list_vat_liabilities",
       "list_vat_obligations",
       "list_vat_payments",
       "list_vat_penalties",
+      "list_vat_receipts",
       "move_book_to_client",
       "open_book",
-      "poll_accounts_submission_sandbox",
-      "poll_confirmation_statement_sandbox",
+      "poll_submission",
       "render_confirmation_statement_sandbox",
       "render_micro_entity_accounts_sandbox",
+      "render_small_company_accounts_sandbox",
       "request_companies_house_codes",
       "request_hmrc_authorisation",
       "run_for_clients",
@@ -147,6 +150,7 @@ describe("the server", () => {
       "sign_out",
       "submit_confirmation_statement_sandbox",
       "submit_micro_entity_accounts_sandbox",
+      "submit_small_company_accounts_sandbox",
       "submit_vat_return",
       "write_finance_package",
     ]);
@@ -185,6 +189,34 @@ describe("cloud books over the session's credentials", () => {
     expect(summary.lineCount).toBe(EXAMPLES[0].lineCount);
     expect(restored.cloud).toEqual({ bookId: "book-1", clientId: null, etag: "etag-1" });
     for (const [, init] of mockFetch.mock.calls) expect(init.headers.Authorization).toBe("Bearer request-bearer");
+  });
+
+  it("lists the cloud books with the session's bearer, narrowed to a client when given", async () => {
+    process.env.DIYA_SUBMIT_BASE_URL = "https://submit.diyaccounting.co.uk/";
+    const session = createSession({ credentials: { accessToken: async () => "request-bearer", idToken: async () => null } });
+    const mockFetch = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ entitlement: { reason: "resident" }, books: [{ bookId: "book-1" }] }),
+    }));
+    vi.stubGlobal("fetch", mockFetch);
+
+    const own = await listBooks(session, {});
+    await listBooks(session, { clientId: "client 1" });
+
+    expect(own).toEqual({ entitlement: { reason: "resident" }, books: [{ bookId: "book-1" }] });
+    expect(mockFetch.mock.calls.map(([url]) => url)).toEqual([
+      "https://submit.diyaccounting.co.uk/api/v1/books",
+      "https://submit.diyaccounting.co.uk/api/v1/books?clientId=client%201",
+    ]);
+    for (const [, init] of mockFetch.mock.calls) expect(init.headers.Authorization).toBe("Bearer request-bearer");
+  });
+
+  it("throws the route's message when the list is refused", async () => {
+    process.env.DIYA_SUBMIT_BASE_URL = "https://submit.diyaccounting.co.uk";
+    vi.stubGlobal("fetch", async () => ({ ok: false, status: 403, json: async () => ({ message: "client-not-found" }) }));
+    const session = createSession({ credentials: { accessToken: async () => "request-bearer", idToken: async () => null } });
+    await expect(listBooks(session, { clientId: "x" })).rejects.toThrow(/client-not-found/);
   });
 
   it("starts a session with the stored credentials and an unbounded poll budget by default", () => {

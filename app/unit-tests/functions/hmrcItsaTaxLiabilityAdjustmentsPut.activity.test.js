@@ -168,6 +168,23 @@ describe("hmrcItsaTaxLiabilityAdjustmentsPut token charge", () => {
     expect(fetchCallOrder).toBeLessThan(chargeCallOrder);
   });
 
+  test.each([
+    ["answers HMRC's correlation id from a 204 that carries the header", { "X-CorrelationId": "7a1c-0042" }, "7a1c-0042"],
+    ["answers a null correlation id when HMRC sends no header", {}, null],
+  ])("%s", async (_name, hmrcHeaders, expected) => {
+    mockFetch.mockResolvedValueOnce({
+      ok: true,
+      status: 204,
+      headers: new Headers(hmrcHeaders),
+      json: () => Promise.reject(new Error("no body")),
+      text: () => Promise.resolve(""),
+    });
+
+    const response = await hmrcItsaTaxLiabilityAdjustmentsPutHandler(buildInitialAdjustmentsEvent());
+    expect(response.statusCode).toBe(200);
+    expect(JSON.parse(response.body).correlationId).toBe(expected);
+  });
+
   test("an HMRC rejection never charges a token", async () => {
     mockHmrcError(mockFetch, 503, { code: "SERVICE_UNAVAILABLE", message: "Service temporarily unavailable" });
 

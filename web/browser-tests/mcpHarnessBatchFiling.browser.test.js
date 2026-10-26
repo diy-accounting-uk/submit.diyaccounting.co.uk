@@ -160,15 +160,11 @@ test("the harness files accounts for two clients through one codes link on the l
   const filing = JSON.parse(await filingCard.locator("pre").textContent());
   await page.screenshot({ path: "target/mcp-harness-screenshots/batch-result-live.png" });
 
-  // One row per client, each from the one codes entry. No route yet grants a client the
-  // Companies House accounts filing authorisation the filing checks for, so every row is refused
-  // with "Client is not authorised for Companies House filing". When that grant exists these rows
-  // turn ok and this assertion changes.
+  // One row per client, each filed with the codes of that client from the one codes entry.
   expect(filing.rows).toHaveLength(2);
   expect(filing.rows.map((row) => row.displayName).sort()).toEqual(["Alpha Ltd", "Beta Ltd"]);
   expect(labels).toEqual(["Company authentication code for Alpha Ltd", "Company authentication code for Beta Ltd"]);
   for (const row of filing.rows) {
-    expect(row.ok).toBe(false);
-    expect(row.error).toBe("Client is not authorised for Companies House filing");
+    expect(row.ok).toBe(true);
   }
 });

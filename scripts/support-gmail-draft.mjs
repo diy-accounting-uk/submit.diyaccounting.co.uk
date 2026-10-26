@@ -83,7 +83,9 @@ export async function createDraft({ threadId, to, subject, inReplyTo, body, getT
     body: JSON.stringify({ message: { threadId, raw: buildRawMessage({ to, subject, inReplyTo, body }) } }),
   });
   if (!response.ok) {
-    throw new Error(`Gmail drafts.create answered ${response.status}`);
+    const failure = await response.json().catch(() => ({}));
+    const reason = [failure.error?.status, failure.error?.message].filter(Boolean).join(": ");
+    throw new Error(`Gmail drafts.create answered ${response.status}${reason ? ` (${reason})` : ""}`);
   }
   const created = await response.json();
   return { draftId: created.id, messageId: created.message?.id ?? "", threadId: created.message?.threadId ?? threadId };

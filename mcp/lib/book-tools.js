@@ -101,6 +101,26 @@ function summarise(session, kind, bookChecks) {
 }
 
 /**
+ * list_books: the books saved in the DIYA cloud, most recently updated first, over the route the
+ * spreadsheets site's DIYA-GL pages list (GET /api/v1/books). Each row is a book's metadata, whose
+ * bookId open_book takes. clientId lists a practice client's book set instead of the practice's own.
+ * @param {Object} session
+ * @param {{clientId?: string}} params
+ * @returns {Promise<{entitlement: Object, books: Object[]}>}
+ */
+export async function listBooks(session, { clientId } = {}) {
+  const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
+  const response = await fetch(`${baseUrl()}/api/v1/books${query}`, {
+    headers: { Authorization: `Bearer ${await session.credentials.accessToken()}` },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(body?.message || `list_books failed with HTTP ${response.status}`);
+  }
+  return { entitlement: body.entitlement, books: body.books ?? [] };
+}
+
+/**
  * The session's loaded book from the DIYA cloud by book id, over the same route the spreadsheets
  * site's DIYA-GL pages read (GET /api/v1/books/{bookId}/versions/latest). Replaces the session's
  * loaded book and records the etag save_book's cloud form needs for its next if-match.

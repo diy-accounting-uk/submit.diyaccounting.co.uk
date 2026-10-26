@@ -8,15 +8,7 @@ import { HOSTED_OVERRIDES, HOSTED_TOOL_NAMES } from "../lib/hosted-tools.js";
 import { ITSA_TOOLS } from "../lib/itsa-tools.js";
 import { createServer, TOOLS } from "../lib/server.js";
 
-const NOT_HOSTED = [
-  "sign_in",
-  "sign_out",
-  "save_book",
-  "write_finance_package",
-  "invite_client",
-  "client_authorisation_status",
-  "run_for_clients",
-];
+const NOT_HOSTED = ["sign_in", "sign_out", "save_book", "write_finance_package"];
 
 describe("the hosted tool set", () => {
   it("names only registered tools, and leaves out exactly the tools that cannot run hosted", () => {
@@ -25,10 +17,20 @@ describe("the hosted tool set", () => {
     expect(all.filter((name) => !HOSTED_TOOL_NAMES.includes(name)).sort()).toEqual([...NOT_HOSTED].sort());
   });
 
-  it("overrides open_book and derive_itsa_annual_submission only", () => {
-    expect(Object.keys(HOSTED_OVERRIDES).sort()).toEqual(["derive_itsa_annual_submission", "open_book"]);
+  it("overrides open_book, run_for_clients and the two derivations that write a file locally only", () => {
+    expect(Object.keys(HOSTED_OVERRIDES).sort()).toEqual([
+      "derive_company_tax_return",
+      "derive_itsa_annual_submission",
+      "open_book",
+      "run_for_clients",
+    ]);
+    expect(Object.keys(HOSTED_OVERRIDES.derive_company_tax_return.inputSchema)).toEqual([]);
     expect(Object.keys(HOSTED_OVERRIDES.open_book.inputSchema)).toEqual(["bookId", "clientId"]);
     expect(Object.keys(HOSTED_OVERRIDES.derive_itsa_annual_submission.inputSchema)).toEqual(["taxYear"]);
+  });
+
+  it("refuses the company tax return with no book loaded", async () => {
+    await expect(HOSTED_OVERRIDES.derive_company_tax_return.handler(createSession(), {})).rejects.toThrow(/No book is loaded/);
   });
 
   it("refuses open_book without a bookId", async () => {
@@ -37,6 +39,15 @@ describe("the hosted tool set", () => {
 
   it("refuses the annual submission with no book loaded", async () => {
     await expect(HOSTED_OVERRIDES.derive_itsa_annual_submission.handler(createSession(), {})).rejects.toThrow(/No book is loaded/);
+  });
+
+  it("refuses to run the filesystem book tools for every client", async () => {
+    for (const tool of ["open_book", "save_book"]) {
+      await expect(HOSTED_OVERRIDES.run_for_clients.handler(createSession(), { tool, args: { path: "/etc" } })).rejects.toThrow(
+        /does not support tool/,
+      );
+    }
+    expect(HOSTED_OVERRIDES.run_for_clients.inputSchema.tool.options).not.toContain("open_book");
   });
 
   it("registers only the named tools on a server", () => {

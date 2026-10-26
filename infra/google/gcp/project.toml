@@ -43,6 +43,9 @@ services = [
   # IAM Credentials. Without iam.googleapis.com the pool read answers 403 "API has not been used".
   "iam.googleapis.com",
   "iamcredentials.googleapis.com",
+  # The support@ reply drafts (scripts/support-gmail-draft.mjs) call users.drafts.create through the
+  # delegated support-gmail-draft service account; without the Gmail API it answers 403.
+  "gmail.googleapis.com",
   "sts.googleapis.com",
 ]
 

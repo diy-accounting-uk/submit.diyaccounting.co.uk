@@ -12,7 +12,7 @@
 // issuer "oauth2", the Cognito-shaped /oauth2/authorize and /oauth2/token paths auth.js uses) and the
 // proxy's Express server, then drives the MCP server as a client would: sign_in, open_book,
 // derive_micro_entity_accounts, render_micro_entity_accounts_sandbox, submit_micro_entity_accounts_sandbox and
-// poll_accounts_submission_sandbox. The test service answers every accounts poll PENDING, so the proof is the
+// poll_submission. The test service answers every accounts poll PENDING, so the proof is the
 // gateway's acknowledgement at submit and PENDING on each poll. Every process it started is stopped on
 // exit. MCP_PROOF_TRANSCRIPT names a file that receives the script's own lines (no token, secret,
 // presenter credential or company authentication code is among them).
@@ -285,10 +285,8 @@ async function main() {
     let delayMs = Math.min(Math.max(Number(submitted.pollInterval) * 1000 || MIN_POLL_DELAY_MS, MIN_POLL_DELAY_MS), MAX_POLL_DELAY_MS);
     for (let poll = 1; poll <= POLL_BUDGET; poll++) {
       await sleep(delayMs);
-      const polled = await callTool(client, "poll_accounts_submission_sandbox", { submissionNumber: submitted.submissionNumber });
-      say(
-        `poll_accounts_submission_sandbox ${poll}/${POLL_BUDGET}: statusCode ${polled.statusCode}, submissionNumber ${polled.submissionNumber}`,
-      );
+      const polled = await callTool(client, "poll_submission", { kind: "accounts", submissionNumber: submitted.submissionNumber });
+      say(`poll_submission ${poll}/${POLL_BUDGET}: statusCode ${polled.statusCode}, submissionNumber ${polled.submissionNumber}`);
       if (polled.statusCode !== "PENDING")
         throw new Error(`Poll ${poll} answered ${polled.statusCode}, expected PENDING: ${JSON.stringify(polled)}`);
       if (Number(polled.pollInterval) > 0)

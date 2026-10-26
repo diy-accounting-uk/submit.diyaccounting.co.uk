@@ -562,6 +562,8 @@ public class EdgeStack extends Stack {
                 .minTtl(software.amazon.awscdk.Duration.seconds(0))
                 .defaultTtl(software.amazon.awscdk.Duration.seconds(60))
                 .maxTtl(software.amazon.awscdk.Duration.seconds(300))
+                .enableAcceptEncodingGzip(true)
+                .enableAcceptEncodingBrotli(true)
                 .build();
 
         // Behaviour options for /tests/* and /docs/* paths with short TTL

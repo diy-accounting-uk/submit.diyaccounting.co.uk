@@ -15,13 +15,20 @@
 
 import { openBook, saveBook } from "./book-tools.js";
 import { listClients } from "./practice-tools.js";
-import { listVatObligations, submitVatReturn, getVatReceipt, submitMicroEntityAccounts } from "./submit-tools.js";
+import {
+  listVatObligations,
+  submitVatReturn,
+  getVatReceipt,
+  submitMicroEntityAccounts,
+  submitSmallCompanyAccounts,
+} from "./submit-tools.js";
 
 const HANDLERS = {
   list_vat_obligations: listVatObligations,
   submit_vat_return: submitVatReturn,
   get_vat_receipt: getVatReceipt,
   submit_micro_entity_accounts_sandbox: submitMicroEntityAccounts,
+  submit_small_company_accounts_sandbox: submitSmallCompanyAccounts,
   open_book: openBook,
   save_book: saveBook,
 };

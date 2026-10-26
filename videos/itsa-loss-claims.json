@@ -292,14 +292,23 @@
           "headline": "HMRC accepts the claim",
           "keyWord": "claim"
         },
-        { "action": "scroll", "target": "#lossesResults" },
-        { "action": "hold", "ms": 600 },
         {
           "action": "point",
-          "target": "#lossesResults h3",
-          "caption": "Saved. The claim order is on record with HMRC.",
-          "headline": "Claim saved",
-          "keyWord": "saved",
+          "scrollTo": "#lossesCopy .customer-copy-header",
+          "target": "#lossesCopy .customer-copy-header",
+          "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
+          "headline": "The record as submitted",
+          "keyWord": "record",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
+        {
+          "action": "point",
+          "scrollTo": "#lossesCopy .customer-copy-section:nth-of-type(2)",
+          "target": "#lossesCopy .customer-copy-section:nth-of-type(2)",
+          "caption": "Every loss and claim you sent is on the record, with which applies first.",
+          "headline": "Keep this copy",
+          "keyWord": "keep",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 2500 },

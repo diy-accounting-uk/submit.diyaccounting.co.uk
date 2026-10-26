@@ -46,9 +46,9 @@ import { applyCodesEntry } from "../../services/companiesHouseCodesEntry.js";
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
 
 // The Agent Authorisation API only names HMRC services (MTD-VAT, MTD-IT); Companies House has no
-// equivalent delegated-authority flow yet, so this key is reserved for when one exists. Until a
-// route sets it, no client-scoped filing can pass the check below - the safe default for an
-// authorisation this service has never granted.
+// equivalent delegated-authority flow. A client that holds this key is authorised outright; any
+// other client is authorised for one filing by the company authentication code the practice
+// typed on the codes page, which reaches the route as a codesEntryId for that client.
 const AGENT_AUTHORISATION_SERVICE = "CH-ACCOUNTS";
 
 const MIN_COMPANY_AUTH_CODE_LENGTH = 6;
@@ -279,6 +279,22 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {},
   });
 }
 
+async function refuseClientNotAuthorised({ request, responseHeaders, userSub, clientId }) {
+  logger.warn({ message: "Client-scoped request refused: not authorised for Companies House filing", clientId });
+  await recordSubmissionFailure({
+    failure: "client-not-authorised",
+    summary: "Companies House accounts blocked: client not authorised",
+    userSub,
+    clientId,
+  });
+  return http403ForbiddenResponse({
+    request,
+    headers: responseHeaders,
+    message: "Client is not authorised for Companies House filing",
+    error: { code: "client-not-authorised" },
+  });
+}
+
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
   await initializeSalt();
@@ -307,23 +323,16 @@ export async function ingestHandler(event) {
     });
   }
 
-  if (clientId && !isClientAuthorisedForService(client, AGENT_AUTHORISATION_SERVICE)) {
-    logger.warn({ message: "Client-scoped request refused: not authorised for Companies House filing", clientId });
-    await recordSubmissionFailure({
-      failure: "client-not-authorised",
-      summary: "Companies House accounts blocked: client not authorised",
-      userSub,
-      clientId,
-    });
-    return http403ForbiddenResponse({
-      request,
-      headers: responseHeaders,
-      message: "Client is not authorised for Companies House filing",
-      error: { code: "client-not-authorised" },
-    });
+  const needsCodesEntryAuthorisation = Boolean(clientId) && !isClientAuthorisedForService(client, AGENT_AUTHORISATION_SERVICE);
+  if (needsCodesEntryAuthorisation && parseRequestBody(event)?.codesEntryId === undefined) {
+    return refuseClientNotAuthorised({ request, responseHeaders, userSub, clientId });
   }
 
-  const codes = await applyCodesEntry(event, { userSub, kind: "accounts" });
+  const codes = await applyCodesEntry(event, {
+    userSub,
+    kind: "accounts",
+    ...(clientId ? { clientScope: { companyNumber: client.identifiers?.companyNumber } } : {}),
+  });
   if (codes.failure) {
     return buildValidationError(request, [codes.failure], responseHeaders);
   }

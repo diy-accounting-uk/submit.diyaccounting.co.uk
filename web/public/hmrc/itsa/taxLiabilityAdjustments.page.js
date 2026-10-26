@@ -8,6 +8,28 @@ window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
 let loadedNino = "";
 let loadedTaxYear = "";
 
+const JOURNEY_LINKS = [
+  { href: "dashboard.html", text: "Back to Income Tax" },
+  { href: "obligations.html", text: "See your obligations" },
+];
+
+async function showSavedRecord(adjustmentsDetails, correlationId) {
+  const { adjustmentsCopyHtml, mountCopy } = await import("../../lib/itsa-submission-record.js");
+  mountCopy(
+    document.getElementById("adjustmentsCopy"),
+    adjustmentsCopyHtml({
+      nino: adjustmentsDetails.nino,
+      taxYear: adjustmentsDetails.taxYear,
+      savedAt: new Date().toISOString(),
+      correlationId,
+      carryBackLossesDecrease: adjustmentsDetails.carryBackLossesDecrease,
+      links: JOURNEY_LINKS,
+    }),
+  );
+  document.getElementById("adjustmentsEditForm").style.display = "none";
+  document.getElementById("adjustmentsResults").style.display = "block";
+}
+
 function initializePage() {
   const hmrcAccount = sessionStorage.getItem("hmrcAccount");
 
@@ -119,14 +141,13 @@ async function continueAfterOAuth() {
     } else if (pendingSave) {
       showLoading();
       showStatus("Saving tax liability adjustments...", "info");
-      await saveAdjustments(
+      const saved = await saveAdjustments(
         pendingSave.adjustmentsDetails,
         pendingSave.testScenario,
         pendingSave.runFraudPreventionHeaderValidation,
         accessToken,
       );
-      document.getElementById("adjustmentsEditForm").style.display = "none";
-      document.getElementById("adjustmentsResults").style.display = "block";
+      await showSavedRecord(pendingSave.adjustmentsDetails, saved?.correlationId);
       hideStatus();
       sessionStorage.removeItem("pendingAdjustmentsSaveRequest");
     } else {
@@ -237,9 +258,8 @@ async function handleSaveClick() {
         showLoading();
         hideStatus();
         showStatus("Saving tax liability adjustments...", "info");
-        await saveAdjustments(adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
-        document.getElementById("adjustmentsEditForm").style.display = "none";
-        document.getElementById("adjustmentsResults").style.display = "block";
+        const saved = await saveAdjustments(adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        await showSavedRecord(adjustmentsDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {
         showStatus(`Failed to save tax liability adjustments: ${error.message}`, "error");

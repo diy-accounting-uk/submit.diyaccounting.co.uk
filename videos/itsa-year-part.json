@@ -187,10 +187,7 @@
         },
         {
           "action": "click",
-          "target": "#findBusinessesBtn",
-          "caption": "Ask HMRC which businesses it holds against that number.",
-          "headline": "Ask HMRC for businesses",
-          "keyWord": "businesses"
+          "target": "#findBusinessesBtn"
         },
         {
           "action": "hmrcAuthorise",
@@ -549,7 +546,7 @@
           "action": "fill",
           "target": "#adjustTurnover",
           "value": "1100",
-          "caption": "Change a figure if HMRC's version is wrong.",
+          "caption": "Change a figure if HMRC's version is wrong, then submit.",
           "headline": "Correct a figure",
           "keyWord": "Correct"
         },
@@ -566,10 +563,7 @@
           "action": "await",
           "until": "#adjustmentResults",
           "label": "Waiting for HMRC",
-          "timeoutMs": 60000,
-          "caption": "HMRC accepts the adjustment.",
-          "headline": "HMRC accepts the change",
-          "keyWord": "accepts"
+          "timeoutMs": 60000
         },
         {
           "action": "scroll",
@@ -578,14 +572,6 @@
         {
           "action": "hold",
           "ms": 600
-        },
-        {
-          "action": "point",
-          "target": "#adjustmentResults h3",
-          "caption": "Submitted. HMRC has the corrected figures.",
-          "headline": "Adjustment submitted",
-          "keyWord": "submitted",
-          "dwellMs": 600
         },
         {
           "action": "hold",

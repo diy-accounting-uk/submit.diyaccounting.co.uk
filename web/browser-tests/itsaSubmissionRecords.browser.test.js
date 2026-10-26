@@ -249,3 +249,103 @@ test.describe("ITSA period views shown as records", () => {
     expect(await page.locator("#periodDetails").innerText()).not.toMatch(/undefined|NaN|null|\[object/);
   });
 });
+
+const LOSSES_SENT = {
+  nino: "AB123456C",
+  businessId: "XBIS00000000001",
+  taxYear: "2026-27",
+  typeOfBusiness: "self-employment",
+  losses: { broughtForwardLosses: 1500 },
+  claims: {
+    carrySideways: { currentYearGeneralIncome: 300 },
+    carryBack: { previousYearGeneralIncome: 150.5 },
+    preferenceOrder: { applyFirst: "carry-sideways" },
+  },
+};
+
+test.describe("ITSA losses and claims saved as a record", () => {
+  test("shows what was sent, the business, HMRC's reference and the date", async ({ page }) => {
+    await loadPage(page, "lossesAndClaims.html");
+    for (const [width, height] of [
+      [1280, 1000],
+      [390, 900],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate((details) => window.showSavedRecord(details, "7a1c-0042"), LOSSES_SENT);
+      const results = page.locator("#lossesResults");
+      await expect(results).toBeVisible();
+      const head = page.locator(".customer-copy-header");
+      await expect(head).toContainText("XBIS00000000001");
+      await expect(results).toContainText("HMRC correlation ID 7a1c-0042");
+      await expect(head).toContainText("Accepted by HMRC");
+      await expect(head).toContainText(/\d{1,2} \w+ \d{4} at \d{2}:\d{2}/);
+      const text = await results.innerText();
+      for (const fragment of ["Self-employment losses and claims", "Tax year 2026-27", "Losses brought forward", "Carry sideways first"]) {
+        expect(text).toContain(fragment);
+      }
+      expect(text).not.toMatch(/undefined|NaN|null|\[object|Invalid/);
+      await expectNoPageOverflow(page);
+      await page.screenshot({ path: recordShot("lossesAndClaims", width), fullPage: true });
+    }
+    await expect(page.locator("#losses-losses-broughtForwardLosses")).toHaveText("1,500.00");
+    await expect(page.locator("#losses-claims-carryBack-previousYearGeneralIncome")).toHaveText("150.50");
+    await expect(page.locator("#newSearchBtn")).toBeVisible();
+  });
+
+  test("a property loss names the business type and leaves the correlation line out when HMRC sent none", async ({ page }) => {
+    await loadPage(page, "lossesAndClaims.html");
+    await page.evaluate((details) => window.showSavedRecord(details, null), {
+      ...LOSSES_SENT,
+      typeOfBusiness: "foreign-property",
+      claims: { carryForward: { currentYearLosses: 800 } },
+    });
+    const text = await page.locator("#lossesResults").innerText();
+    expect(text).toContain("Foreign property losses and claims");
+    expect(text).toContain("This year's loss carried forward");
+    expect(text).not.toContain("HMRC correlation ID");
+    expect(text).not.toMatch(/undefined|NaN|null|\[object|Invalid/);
+  });
+});
+
+test.describe("ITSA tax liability adjustments saved as a record", () => {
+  test("shows the decrease sent, the year, HMRC's reference and the date", async ({ page }) => {
+    await loadPage(page, "taxLiabilityAdjustments.html");
+    for (const [width, height] of [
+      [1280, 1000],
+      [390, 900],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate((details) => window.showSavedRecord(details, "9b2d-0007"), {
+        nino: "AB123456C",
+        taxYear: "2025-26",
+        carryBackLossesDecrease: { incomeTax: 100, class4: 25.5 },
+      });
+      const results = page.locator("#adjustmentsResults");
+      await expect(results).toBeVisible();
+      const head = page.locator(".customer-copy-header");
+      await expect(results).toContainText("HMRC correlation ID 9b2d-0007");
+      await expect(head).toContainText("Accepted by HMRC");
+      const text = await results.innerText();
+      for (const fragment of [
+        "Tax liability adjustments",
+        "Tax year 2025-26",
+        "Income tax decreased",
+        "National Insurance number AB 12 34 56 C",
+      ]) {
+        expect(text).toContain(fragment);
+      }
+      expect(text).not.toMatch(/undefined|NaN|null|\[object|Invalid/);
+      await expectNoPageOverflow(page);
+      await page.screenshot({ path: recordShot("taxLiabilityAdjustments", width), fullPage: true });
+    }
+    await expect(page.locator("#adjustments-carryBackLossesDecrease-incomeTax")).toHaveText("100.00");
+    await expect(page.locator("#adjustments-carryBackLossesDecrease-class4")).toHaveText("25.50");
+    await expect(page.locator("#newSearchBtn")).toBeVisible();
+  });
+
+  test("an empty decrease says nothing was sent", async ({ page }) => {
+    await loadPage(page, "taxLiabilityAdjustments.html");
+    await page.evaluate(() => window.showSavedRecord({ nino: "AB123456C", taxYear: "2025-26", carryBackLossesDecrease: {} }, null));
+    await expect(page.locator("#adjustmentsResults")).toContainText("You sent no carry-back decrease for this year.");
+  });
+});

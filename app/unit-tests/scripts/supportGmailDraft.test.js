@@ -83,6 +83,21 @@ describe("support-gmail-draft", () => {
     ).rejects.toThrow(/403/);
   });
 
+  test("an API error names Google's reason", async () => {
+    const failing = async () => ({
+      ok: false,
+      status: 403,
+      json: async () => ({
+        error: { status: "PERMISSION_DENIED", message: "Gmail API has not been used in project 1 before or it is disabled." },
+      }),
+    });
+    await expect(
+      createDraft({ threadId: "t", to: "a@b.c", subject: "s", inReplyTo: "", body: "b", getToken: async () => "tok", fetchImpl: failing }),
+    ).rejects.toThrow(
+      "Gmail drafts.create answered 403 (PERMISSION_DENIED: Gmail API has not been used in project 1 before or it is disabled.)",
+    );
+  });
+
   test("the acceptance row carries the draft id and the issue number", () => {
     const row = acceptanceRow({ draft: { draftId: "d1", threadId: "t1" }, issueNumber: "12", createdAt: "2026-01-01T00:00:00Z" });
     expect(row).toEqual({ kind: "support-draft", draft_id: "d1", thread_id: "t1", issue_number: 12, created_at: "2026-01-01T00:00:00Z" });
