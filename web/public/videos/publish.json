@@ -2397,10 +2397,10 @@
       "videoFile": "target/videos/file-micro-entity-accounts-sim/file-micro-entity-accounts.mp4",
       "captionFile": "target/videos/file-micro-entity-accounts-sim/file-micro-entity-accounts.vtt",
       "title": "DIY Accounting Submit: file micro-entity accounts (coming soon - sandbox example)",
-      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows filing a company's FRS 105 micro-entity accounts: sign in, take out Resident, look up a company, fill in the balance sheet, preview the iXBRL, and file it with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. It ends on your copy of the filed accounts with Companies House's receipt. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:07 Resident\n00:16 Which company?\n00:42 The accounts\n01:44 Preview\n02:01 File it\n02:16 The outcome",
+      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows filing a company's FRS 105 micro-entity accounts: sign in, take out Resident, look up a company, fill in the balance sheet, preview the iXBRL, and file it with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. It ends on your copy of the filed accounts with Companies House's receipt. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Resident\n00:16 Which company?\n00:43 The accounts\n01:49 Preview\n02:07 File it\n02:22 The outcome",
       "tags": ["DIY Accounting", "Companies House", "micro-entity accounts", "sandbox"],
       "categoryId": "27",
-      "videoId": "ccklj6VWKh4",
+      "videoId": "jYr23X2M0EQ",
       "walkthrough": [
         {
           "scene": "company-lookup",
@@ -2556,10 +2556,10 @@
       "videoFile": "target/videos/file-company-tax-return-book-sim/file-company-tax-return-book.mp4",
       "captionFile": "target/videos/file-company-tax-return-book-sim/file-company-tax-return-book.vtt",
       "title": "DIY Accounting Submit: Company Tax Return from a book (sandbox)",
-      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video files a Company Tax Return from a diya-gl book: sign in, take out Resident, look up a company, drop the book on the form, check the figures it fills, preview the CT600, file it, and end on your copy of the filed return. This is a sandbox preview, recorded against a local simulator of HMRC's test service, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:02 Sign in\n00:07 Resident\n00:18 Which company?\n00:45 Fill from a book\n01:14 Complete the answers\n01:43 Review the return\n02:10 File it\n02:36 The outcome",
+      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video files a Company Tax Return from a diya-gl book: sign in, take out Resident, look up a company, drop the book on the form, check the figures it fills, preview the CT600, file it, and end on your copy of the filed return. This is a sandbox preview, recorded against a local simulator of HMRC's test service, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:02 Sign in\n00:08 Resident\n00:18 Which company?\n00:49 Fill from a book\n01:31 Complete the answers\n02:00 Review the return\n02:28 File it\n02:52 The outcome",
       "tags": ["DIY Accounting", "Company Tax Return", "CT600", "HMRC", "sandbox"],
       "categoryId": "27",
-      "videoId": "KXT7-dvxSMQ",
+      "videoId": "U9FP3rhJ7ZI",
       "walkthrough": [
         {
           "scene": "company-lookup",
@@ -2732,10 +2732,10 @@
       "videoFile": "target/videos/file-company-tax-return-typed-sim/file-company-tax-return-typed.mp4",
       "captionFile": "target/videos/file-company-tax-return-typed-sim/file-company-tax-return-typed.vtt",
       "title": "DIY Accounting Submit: type a Company Tax Return (sandbox)",
-      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video types a Company Tax Return by hand. A live check catches a wrong figure as you leave the field, and the message clears once you correct it. Then it previews the CT600, files it, and ends on your copy of the filed return with HMRC’s receipt. This is a sandbox preview, recorded against a local simulator of HMRC's test service, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:07 Resident\n00:16 Which company?\n00:42 The period\n00:56 The figures\n01:39 The details\n02:12 Review the return\n02:39 File it\n03:02 The outcome",
+      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video types a Company Tax Return by hand. A live check catches a wrong figure as you leave the field, and the message clears once you correct it. Then it previews the CT600, files it, and ends on your copy of the filed return with HMRC’s receipt. This is a sandbox preview, recorded against a local simulator of HMRC's test service, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:02 Sign in\n00:08 Resident\n00:18 Which company?\n00:46 The period\n01:03 The figures\n01:51 The details\n02:26 Review the return\n02:54 File it\n03:19 The outcome",
       "tags": ["DIY Accounting", "Company Tax Return", "CT600", "HMRC", "sandbox"],
       "categoryId": "27",
-      "videoId": "KlEXnbTpjOw",
+      "videoId": "e4HFuO2-YU8",
       "walkthrough": [
         {
           "scene": "company-lookup",
