@@ -383,9 +383,9 @@ billingPortalGetApiEndpoint(app);
 billingRecoverPostApiEndpoint(app);
 billingWebhookPostApiEndpoint(app);
 
-// fallback to index.html for SPA routing (if needed)
+// A path with no file answers with the site's 404 page and status 404, as the deployed site does.
 app.get(/.*/, (req, res) => {
-  res.sendFile(path.join(__dirname, "../../web/public/index.html"), { dotfiles: "allow" });
+  res.status(404).sendFile(path.join(__dirname, "../../web/public/errors/404.html"), { dotfiles: "allow" });
 });
 
 // Registered last so a throw or rejected promise from any route above answers as JSON.

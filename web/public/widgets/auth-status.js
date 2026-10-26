@@ -180,7 +180,7 @@
       } else {
         loginLinkElement.style.display = "";
         loginLinkElement.textContent = "Log in";
-        loginLinkElement.href = "../auth/login.html";
+        loginLinkElement.href = "/auth/login.html";
       }
       loginLinkElement.onclick = null;
     }
@@ -235,7 +235,7 @@
   // Logout function
   async function logout(e) {
     // Prevent the <a> default action — without this, updateLoginStatus() changes
-    // the href from "#" to "../auth/login.html" and the browser's default <a> click
+    // the href from "#" to "/auth/login.html" and the browser's default <a> click
     // navigation races with (and overrides) the Cognito redirect below.
     if (e && e.preventDefault) e.preventDefault();
 
