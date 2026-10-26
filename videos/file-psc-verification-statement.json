@@ -1,0 +1,515 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "file-psc-verification-statement",
+  "title": "File a PSC verification statement with Companies House",
+  "description": "A signed-in walk through verifying a person with significant control: file a company's confirmation statement in Companies House's sandbox, then file the PSC verification statement for the person who is also a director.",
+  "auth": "user",
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/companies-house/fileConfirmationStatement.html"
+  ],
+  "environments": ["ci"],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+  "pacing": {
+    "perCharMs": 90,
+    "betweenActionsMs": 700,
+    "aroundMotionMs": 600,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
+  },
+  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "finalHoldMs": 3000,
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "A sandbox preview against Companies House's test filing service.",
+          "headline": "PSC verification",
+          "keyWord": "verification"
+        },
+        {
+          "action": "caption",
+          "text": "See the full sign-in walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Sign in, faster",
+          "keyWord": "faster"
+        },
+        {
+          "action": "hold",
+          "ms": 300
+        }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link"
+        },
+        {
+          "action": "login"
+        },
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        }
+      ]
+    },
+    {
+      "id": "subscription",
+      "chapter": "Resident",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          }
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Resident",
+          "testPass": true
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Activities"
+          }
+        },
+        {
+          "action": "await",
+          "until": "button:has-text('File Confirmation Statement (Companies House, sandbox)')",
+          "label": "Waiting for the subscription to unlock the activity"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ]
+    },
+    {
+      "id": "company-lookup",
+      "chapter": "Which company?",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "File Confirmation Statement (Companies House, sandbox)"
+          },
+          "expectsNavigation": true,
+          "caption": "A PSC statement follows a confirmation statement.",
+          "headline": "Start with the statement",
+          "keyWord": "statement"
+        },
+        {
+          "action": "await",
+          "until": "#companyForm",
+          "label": "Opening the company lookup form"
+        },
+        {
+          "action": "type",
+          "target": "#companyNumber",
+          "text": "06846849",
+          "clear": true,
+          "caption": "Type the company number.",
+          "headline": "Enter the company number",
+          "keyWord": "number"
+        },
+        {
+          "action": "click",
+          "target": "#companyLookupBtn",
+          "caption": "Look up the company with Companies House.",
+          "headline": "Look up the company",
+          "keyWord": "company"
+        },
+        {
+          "action": "await",
+          "until": "#authView",
+          "label": "Looking up the company"
+        }
+      ]
+    },
+    {
+      "id": "auth",
+      "chapter": "Read the register",
+      "still": true,
+      "steps": [
+        {
+          "action": "type",
+          "target": "#companyAuthCode",
+          "text": "SIMCS01",
+          "clear": true,
+          "secret": true,
+          "caption": "Type the company's Companies House authentication code.",
+          "headline": "Enter the auth code",
+          "keyWord": "code"
+        },
+        {
+          "action": "click",
+          "target": "#authSubmitBtn",
+          "caption": "Read the company's register data.",
+          "headline": "Read the register",
+          "keyWord": "register"
+        },
+        {
+          "action": "await",
+          "until": "#reviewView",
+          "label": "Reading the register data"
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        }
+      ]
+    },
+    {
+      "id": "review",
+      "chapter": "Review the statement",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#lawfulPurposeStatement",
+          "caption": "Confirm the lawful purpose and that the information is correct.",
+          "headline": "Confirm the statements",
+          "keyWord": "Confirm"
+        },
+        {
+          "action": "click",
+          "target": "#stateConfirmation"
+        },
+        {
+          "action": "type",
+          "target": "#directorOtherForenames-0",
+          "text": "Marie",
+          "caption": "Each director gives other forenames and a personal code.",
+          "headline": "Directors verify identity",
+          "keyWord": "Directors"
+        },
+        {
+          "action": "type",
+          "target": "#directorPersonalCode-0",
+          "text": "CWMPS832223",
+          "secret": true
+        },
+        {
+          "action": "type",
+          "target": "#directorOtherForenames-1",
+          "text": "James"
+        },
+        {
+          "action": "type",
+          "target": "#directorPersonalCode-1",
+          "text": "CWMPS832224",
+          "secret": true
+        },
+        {
+          "action": "hold",
+          "ms": 700
+        },
+        {
+          "action": "click",
+          "target": "#previewBtn",
+          "caption": "Preview the statement before anything is filed.",
+          "headline": "Preview the statement",
+          "keyWord": "Preview"
+        },
+        {
+          "action": "await",
+          "until": "#previewView",
+          "label": "Building the preview"
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        }
+      ]
+    },
+    {
+      "id": "pay",
+      "chapter": "Pay the filing fee",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#submitFilingBtn",
+          "caption": "This statement carries a filing fee, so Pay and submit opens checkout first.",
+          "headline": "Pay the filing fee",
+          "keyWord": "fee"
+        },
+        {
+          "action": "await",
+          "until": "#mainContent",
+          "label": "Returning from checkout"
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        },
+        {
+          "action": "goto",
+          "url": "/companies-house/fileConfirmationStatement.html?checkout=success&session_id=sim_ac_complete",
+          "waitFor": "#authView",
+          "caption": "Back from checkout, enter the authentication code again.",
+          "headline": "Payment received",
+          "keyWord": "Payment"
+        },
+        {
+          "action": "type",
+          "target": "#companyAuthCode",
+          "text": "SIMCS01",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "click",
+          "target": "#authSubmitBtn"
+        },
+        {
+          "action": "await",
+          "until": "#reviewView",
+          "label": "Reading the register data"
+        },
+        {
+          "action": "click",
+          "target": "#lawfulPurposeStatement"
+        },
+        {
+          "action": "click",
+          "target": "#stateConfirmation"
+        },
+        {
+          "action": "type",
+          "target": "#directorOtherForenames-0",
+          "text": "Marie"
+        },
+        {
+          "action": "type",
+          "target": "#directorPersonalCode-0",
+          "text": "CWMPS832223",
+          "secret": true
+        },
+        {
+          "action": "type",
+          "target": "#directorOtherForenames-1",
+          "text": "James"
+        },
+        {
+          "action": "type",
+          "target": "#directorPersonalCode-1",
+          "text": "CWMPS832224",
+          "secret": true
+        },
+        {
+          "action": "click",
+          "target": "#previewBtn"
+        },
+        {
+          "action": "await",
+          "until": "#previewView",
+          "label": "Building the preview"
+        },
+        {
+          "action": "hold",
+          "ms": 800
+        }
+      ]
+    },
+    {
+      "id": "submit",
+      "chapter": "File the statement",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#submitFilingBtn",
+          "caption": "Submit the confirmation statement to Companies House's sandbox.",
+          "headline": "Submit the statement",
+          "keyWord": "Submit"
+        },
+        {
+          "action": "await",
+          "until": "#resultView",
+          "label": "Submitting the statement"
+        },
+        {
+          "action": "await",
+          "until": "#filingResult:has-text('ACCEPT')",
+          "label": "Waiting for Companies House",
+          "timeoutMs": 180000,
+          "caption": "Companies House accepts the statement.",
+          "headline": "The statement is accepted",
+          "keyWord": "accepts"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        }
+      ]
+    },
+    {
+      "id": "psc",
+      "chapter": "PSC verification",
+      "still": true,
+      "steps": [
+        {
+          "action": "await",
+          "until": "#pscFollowUp:has-text('PSC verification')",
+          "label": "Finding the people with significant control"
+        },
+        {
+          "action": "scroll",
+          "target": "#pscFollowUp",
+          "caption": "Two directors are also people with significant control.",
+          "headline": "Directors who are PSCs",
+          "keyWord": "PSCs"
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        },
+        {
+          "action": "type",
+          "target": "#pscPersonalCode-0",
+          "text": "CWMPS832223",
+          "secret": true,
+          "caption": "Each PSC verifies with their own personal code.",
+          "headline": "Enter the personal code",
+          "keyWord": "code"
+        },
+        {
+          "action": "click",
+          "target": "[data-psc-verify-index='0']",
+          "caption": "File the verification statement for the first person.",
+          "headline": "File their statement",
+          "keyWord": "File"
+        },
+        {
+          "action": "await",
+          "until": "#pscVerifyResult-0:has-text('ACCEPT')",
+          "label": "Waiting for Companies House",
+          "timeoutMs": 180000,
+          "caption": "Companies House accepts it.",
+          "headline": "Accepted",
+          "keyWord": "Accepted"
+        },
+        {
+          "action": "type",
+          "target": "#pscPersonalCode-1",
+          "text": "CWMPS832224",
+          "secret": true,
+          "caption": "Then the second person, with their own code.",
+          "headline": "The second person",
+          "keyWord": "second"
+        },
+        {
+          "action": "click",
+          "target": "[data-psc-verify-index='1']"
+        },
+        {
+          "action": "await",
+          "until": "#pscVerifyResult-1:has-text('ACCEPT')",
+          "label": "Waiting for Companies House",
+          "timeoutMs": 180000
+        },
+        {
+          "action": "point",
+          "target": "#pscFollowUp",
+          "caption": "Both people with significant control are verified.",
+          "headline": "Both PSCs verified",
+          "keyWord": "verified",
+          "dwellMs": 600
+        },
+        {
+          "action": "hold",
+          "ms": 2000
+        },
+        {
+          "action": "still",
+          "name": "file-psc-verification-statement-result"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        }
+      ]
+    },
+    {
+      "id": "record",
+      "chapter": "Your copy",
+      "still": true,
+      "steps": [
+        {
+          "action": "scroll",
+          "target": "#filingRecord",
+          "caption": "Your copy of the confirmation statement shows the submission number, status and date.",
+          "headline": "Your copy of the filing",
+          "keyWord": "copy"
+        },
+        {
+          "action": "hold",
+          "ms": 4000
+        },
+        {
+          "action": "scroll",
+          "to": "bottom"
+        },
+        {
+          "action": "hold",
+          "ms": 3000,
+          "caption": "The people with significant control are listed in your copy.",
+          "headline": "Kept as a record",
+          "keyWord": "record"
+        }
+      ]
+    }
+  ]
+}

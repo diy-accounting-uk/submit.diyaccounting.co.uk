@@ -4906,6 +4906,385 @@
           "full": "videos/accounting-spreadsheet-profit/profit.webp"
         }
       ]
+    },
+    {
+      "id": "file-small-company-accounts",
+      "group": "companies-house",
+      "publish": true,
+      "pipelineVersion": 10,
+      "sourceRun": null,
+      "sourceArtifact": null,
+      "videoFile": "target/videos/file-small-company-accounts/file-small-company-accounts.mp4",
+      "captionFile": "target/videos/file-small-company-accounts/file-small-company-accounts.vtt",
+      "title": "DIY Accounting Submit: file small company accounts (sandbox)",
+      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video files a small company's accounts: the profit and loss, the balance sheet with last year beside it, the notes and the directors' statements. It previews the accounts, files them, and ends on your copy of the filing with Companies House's receipt. This is a sandbox preview, recorded against a local simulator of Companies House's test service, not a live filing. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:02 Sign in\n00:10 Resident\n00:20 Which company?\n00:46 The accounts\n02:56 Preview\n03:13 File it\n03:28 The outcome",
+      "tags": ["DIY Accounting", "Companies House", "small company accounts", "accounts filing", "sandbox"],
+      "categoryId": "27",
+      "videoId": "5R24KtW4Z1U",
+      "walkthrough": [
+        {
+          "scene": "company-lookup",
+          "step": 0,
+          "headline": "Find the company",
+          "caption": "Open File Small Company Accounts to find the company.",
+          "startSeconds": 20,
+          "thumb": "videos/file-small-company-accounts/company-lookup-0-thumb.webp",
+          "full": "videos/file-small-company-accounts/company-lookup-0.webp"
+        },
+        {
+          "scene": "company-lookup",
+          "step": 2,
+          "headline": "Enter the company number",
+          "caption": "Type the company number.",
+          "startSeconds": 28,
+          "thumb": "videos/file-small-company-accounts/company-lookup-2-thumb.webp",
+          "full": "videos/file-small-company-accounts/company-lookup-2.webp"
+        },
+        {
+          "scene": "company-lookup",
+          "step": 3,
+          "headline": "Look up the company",
+          "caption": "Look up the company with Companies House.",
+          "startSeconds": 33,
+          "thumb": "videos/file-small-company-accounts/company-lookup-3-thumb.webp",
+          "full": "videos/file-small-company-accounts/company-lookup-3.webp"
+        },
+        {
+          "scene": "company-lookup",
+          "step": 5,
+          "headline": "Confirm the company name",
+          "caption": "Companies House confirms the company name.",
+          "startSeconds": 39,
+          "thumb": "videos/file-small-company-accounts/company-lookup-5-thumb.webp",
+          "full": "videos/file-small-company-accounts/company-lookup-5.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 0,
+          "headline": "Set the accounting period",
+          "caption": "Set the accounting period.",
+          "startSeconds": 46,
+          "thumb": "videos/file-small-company-accounts/accounts-form-0-thumb.webp",
+          "full": "videos/file-small-company-accounts/accounts-form-0.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 2,
+          "headline": "This year's profit and loss",
+          "caption": "Start with the profit and loss for this year.",
+          "startSeconds": 53,
+          "thumb": "videos/file-small-company-accounts/accounts-form-2-thumb.webp",
+          "full": "videos/file-small-company-accounts/accounts-form-2.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 7,
+          "headline": "Profit worked out",
+          "caption": "The form works out gross profit, operating profit and profit for the year.",
+          "startSeconds": 67,
+          "thumb": "videos/file-small-company-accounts/accounts-form-7-thumb.webp",
+          "full": "videos/file-small-company-accounts/accounts-form-7.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 8,
+          "headline": "The balance sheet",
+          "caption": "Then the balance sheet: assets, then what the company owes.",
+          "startSeconds": 75,
+          "thumb": "videos/file-small-company-accounts/accounts-form-8-thumb.webp",
+          "full": "videos/file-small-company-accounts/accounts-form-8.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 18,
+          "headline": "Net assets must balance",
+          "caption": "This checks net assets against capital and reserves.",
+          "startSeconds": 97,
+          "thumb": "videos/file-small-company-accounts/accounts-form-18-thumb.webp",
+          "full": "videos/file-small-company-accounts/accounts-form-18.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 19,
+          "headline": "Add last year",
+          "caption": "Add last year's figures for comparison.",
+          "startSeconds": 104,
+          "thumb": "videos/file-small-company-accounts/accounts-form-19-thumb.webp",
+          "full": "videos/file-small-company-accounts/accounts-form-19.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 35,
+          "headline": "Describe the company",
+          "caption": "Say what the company does and how it states its figures.",
+          "startSeconds": 136,
+          "thumb": "videos/file-small-company-accounts/accounts-form-35-thumb.webp",
+          "full": "videos/file-small-company-accounts/accounts-form-35.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 38,
+          "headline": "Name the directors",
+          "caption": "Name the directors.",
+          "startSeconds": 150,
+          "thumb": "videos/file-small-company-accounts/accounts-form-38-thumb.webp",
+          "full": "videos/file-small-company-accounts/accounts-form-38.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 39,
+          "headline": "Name the approving director",
+          "caption": "Name the director approving the accounts.",
+          "startSeconds": 156,
+          "thumb": "videos/file-small-company-accounts/accounts-form-39-thumb.webp",
+          "full": "videos/file-small-company-accounts/accounts-form-39.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 41,
+          "headline": "Accept the statements",
+          "caption": "Accept the statutory statements.",
+          "startSeconds": 164,
+          "thumb": "videos/file-small-company-accounts/accounts-form-41-thumb.webp",
+          "full": "videos/file-small-company-accounts/accounts-form-41.webp"
+        },
+        {
+          "scene": "preview",
+          "headline": "Preview",
+          "caption": "Preview the iXBRL before anything is filed. These are the accounts as they will be filed. Nothing has gone to Companies House yet.",
+          "startSeconds": 176,
+          "thumb": "videos/file-small-company-accounts/preview-thumb.webp",
+          "full": "videos/file-small-company-accounts/preview.webp"
+        },
+        {
+          "scene": "submit",
+          "headline": "File it",
+          "caption": "Type the company's Companies House authentication code. Submit the filing to Companies House's sandbox.",
+          "startSeconds": 193,
+          "thumb": "videos/file-small-company-accounts/submit-thumb.webp",
+          "full": "videos/file-small-company-accounts/submit.webp"
+        },
+        {
+          "scene": "result",
+          "step": 0,
+          "headline": "Companies House checks it",
+          "caption": "The filing goes to Companies House.",
+          "startSeconds": 208,
+          "thumb": "videos/file-small-company-accounts/result-0-thumb.webp",
+          "full": "videos/file-small-company-accounts/result-0.webp"
+        },
+        {
+          "scene": "result",
+          "step": 1,
+          "headline": "Companies House has the filing",
+          "caption": "Companies House has the filing and reports the outcome here.",
+          "startSeconds": 212,
+          "thumb": "videos/file-small-company-accounts/result-1-thumb.webp",
+          "full": "videos/file-small-company-accounts/result-1.webp"
+        },
+        {
+          "scene": "result",
+          "step": 3,
+          "headline": "Open your copy",
+          "caption": "Open your copy of the filing.",
+          "startSeconds": 221,
+          "thumb": "videos/file-small-company-accounts/result-3-thumb.webp",
+          "full": "videos/file-small-company-accounts/result-3.webp"
+        },
+        {
+          "scene": "result",
+          "step": 6,
+          "headline": "The filed accounts",
+          "caption": "Your copy shows the filed accounts, the submission number and the status.",
+          "startSeconds": 229,
+          "thumb": "videos/file-small-company-accounts/result-6-thumb.webp",
+          "full": "videos/file-small-company-accounts/result-6.webp"
+        },
+        {
+          "scene": "result",
+          "step": 9,
+          "headline": "Kept on your receipts",
+          "caption": "Your copy stays on your receipts page.",
+          "startSeconds": 241,
+          "thumb": "videos/file-small-company-accounts/result-9-thumb.webp",
+          "full": "videos/file-small-company-accounts/result-9.webp"
+        }
+      ]
+    },
+    {
+      "id": "file-psc-verification-statement",
+      "group": "companies-house",
+      "publish": true,
+      "pipelineVersion": 10,
+      "sourceRun": null,
+      "sourceArtifact": null,
+      "videoFile": "target/videos/file-psc-verification-statement/file-psc-verification-statement.mp4",
+      "captionFile": "target/videos/file-psc-verification-statement/file-psc-verification-statement.vtt",
+      "title": "DIY Accounting Submit: verify a person with significant control (sandbox)",
+      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video files a company's confirmation statement, pays its filing fee, and then files a PSC verification statement for each director who is also a person with significant control. It ends on your copy of the filing and the accepted verification statements. This is a sandbox preview, recorded against a local simulator of Companies House's test service, not a live filing. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Resident\n00:15 Which company?\n00:34 Read the register\n00:48 Review the statement\n01:20 Pay the filing fee\n01:56 File the statement\n02:11 PSC verification\n02:57 Your copy",
+      "tags": [
+        "DIY Accounting",
+        "Companies House",
+        "PSC verification statement",
+        "person with significant control",
+        "confirmation statement",
+        "sandbox"
+      ],
+      "categoryId": "27",
+      "videoId": "zyo32coCwso",
+      "walkthrough": [
+        {
+          "scene": "company-lookup",
+          "headline": "Which company?",
+          "caption": "Type the company number. Look up the company with Companies House.",
+          "startSeconds": 15,
+          "thumb": "videos/file-psc-verification-statement/company-lookup-thumb.webp",
+          "full": "videos/file-psc-verification-statement/company-lookup.webp"
+        },
+        {
+          "scene": "auth",
+          "headline": "Read the register",
+          "caption": "Type the company's Companies House authentication code. Read the company's register data.",
+          "startSeconds": 34,
+          "thumb": "videos/file-psc-verification-statement/auth-thumb.webp",
+          "full": "videos/file-psc-verification-statement/auth.webp"
+        },
+        {
+          "scene": "review",
+          "headline": "Review the statement",
+          "caption": "Each director gives other forenames and a personal code. Preview the statement before anything is filed.",
+          "startSeconds": 48,
+          "thumb": "videos/file-psc-verification-statement/review-thumb.webp",
+          "full": "videos/file-psc-verification-statement/review.webp"
+        },
+        {
+          "scene": "pay",
+          "headline": "Pay the filing fee",
+          "caption": "This statement carries a filing fee, so Pay and submit opens checkout first. Back from checkout, enter the authentication code again.",
+          "startSeconds": 80,
+          "thumb": "videos/file-psc-verification-statement/pay-thumb.webp",
+          "full": "videos/file-psc-verification-statement/pay.webp"
+        },
+        {
+          "scene": "submit",
+          "headline": "File the statement",
+          "caption": "Submit the confirmation statement to Companies House's sandbox. Companies House accepts the statement.",
+          "startSeconds": 116,
+          "thumb": "videos/file-psc-verification-statement/submit-thumb.webp",
+          "full": "videos/file-psc-verification-statement/submit.webp"
+        },
+        {
+          "scene": "psc",
+          "step": 1,
+          "headline": "Directors who are PSCs",
+          "caption": "Two directors are also people with significant control.",
+          "startSeconds": 132,
+          "thumb": "videos/file-psc-verification-statement/psc-1-thumb.webp",
+          "full": "videos/file-psc-verification-statement/psc-1.webp"
+        },
+        {
+          "scene": "psc",
+          "step": 3,
+          "headline": "Enter the personal code",
+          "caption": "Each PSC verifies with their own personal code.",
+          "startSeconds": 140,
+          "thumb": "videos/file-psc-verification-statement/psc-3-thumb.webp",
+          "full": "videos/file-psc-verification-statement/psc-3.webp"
+        },
+        {
+          "scene": "psc",
+          "step": 4,
+          "headline": "File their statement",
+          "caption": "File the verification statement for the first person.",
+          "startSeconds": 147,
+          "thumb": "videos/file-psc-verification-statement/psc-4-thumb.webp",
+          "full": "videos/file-psc-verification-statement/psc-4.webp"
+        },
+        {
+          "scene": "psc",
+          "step": 5,
+          "headline": "Accepted",
+          "caption": "Companies House accepts it.",
+          "startSeconds": 153,
+          "thumb": "videos/file-psc-verification-statement/psc-5-thumb.webp",
+          "full": "videos/file-psc-verification-statement/psc-5.webp"
+        },
+        {
+          "scene": "psc",
+          "step": 6,
+          "headline": "The second person",
+          "caption": "Then the second person, with their own code.",
+          "startSeconds": 157,
+          "thumb": "videos/file-psc-verification-statement/psc-6-thumb.webp",
+          "full": "videos/file-psc-verification-statement/psc-6.webp"
+        },
+        {
+          "scene": "psc",
+          "step": 9,
+          "headline": "Both PSCs verified",
+          "caption": "Both people with significant control are verified.",
+          "startSeconds": 166,
+          "thumb": "videos/file-psc-verification-statement/psc-9-thumb.webp",
+          "full": "videos/file-psc-verification-statement/psc-9.webp"
+        },
+        {
+          "scene": "record",
+          "headline": "Your copy",
+          "caption": "Your copy of the confirmation statement shows the submission number, status and date. The people with significant control are listed in your copy.",
+          "startSeconds": 177,
+          "thumb": "videos/file-psc-verification-statement/record-thumb.webp",
+          "full": "videos/file-psc-verification-statement/record.webp"
+        }
+      ]
+    },
+    {
+      "id": "bundles",
+      "group": "account",
+      "publish": true,
+      "pipelineVersion": 10,
+      "sourceRun": null,
+      "sourceArtifact": null,
+      "videoFile": "target/videos/bundles/bundles.mp4",
+      "captionFile": "target/videos/bundles/bundles.vtt",
+      "title": "DIY Accounting Submit: view and edit your bundles",
+      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC and filing with Companies House. This video shows the Bundles page: the bundles you can add, the box where you redeem a pass from someone else, adding a bundle, and removing one you no longer want. It is a recording of the real product, not a mockup. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Open Bundles\n00:20 Redeem a pass\n00:35 Add a bundle\n00:57 Remove a bundle",
+      "tags": ["DIY Accounting", "bundles", "subscription", "pass", "Making Tax Digital"],
+      "categoryId": "27",
+      "videoId": "3OtRkwcwXz8",
+      "walkthrough": [
+        {
+          "scene": "open",
+          "headline": "Open Bundles",
+          "caption": "Bundles decide which activities you can run. Every bundle you can add is listed here.",
+          "startSeconds": 6,
+          "thumb": "videos/bundles/open-thumb.webp",
+          "full": "videos/bundles/open.webp"
+        },
+        {
+          "scene": "pass",
+          "headline": "Redeem a pass",
+          "caption": "A pass from someone else goes in this box. Redeem pass adds the bundle it carries.",
+          "startSeconds": 20,
+          "thumb": "videos/bundles/pass-thumb.webp",
+          "full": "videos/bundles/pass.webp"
+        },
+        {
+          "scene": "add",
+          "headline": "Add a bundle",
+          "caption": "Add a bundle and it joins your current bundles. Your current bundles show what each one allows.",
+          "startSeconds": 35,
+          "thumb": "videos/bundles/add-thumb.webp",
+          "full": "videos/bundles/add.webp"
+        },
+        {
+          "scene": "remove",
+          "headline": "Remove a bundle",
+          "caption": "The page confirms the bundle is gone. It is back in the list of bundles you can add.",
+          "startSeconds": 57,
+          "thumb": "videos/bundles/remove-thumb.webp",
+          "full": "videos/bundles/remove.webp"
+        }
+      ]
     }
   ]
 }

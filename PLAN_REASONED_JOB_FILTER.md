@@ -199,7 +199,30 @@ The next step is one edit per group: replace the job's `skip-json` clause with t
 | Group | Classes | Condition | State |
 | --- | --- | --- | --- |
 | 1 | `npm-test-web-unit`, `npm-mcp-test`, `npm-system-test`, `mvn-test`, `lint-workflows`, `npm-test-cdk-ci`, `npm-test-cdk-prod` (test.yml) | `advised-json` | enforced |
-| 2 | `behaviour-test-proxy-submit-vat`, `behaviour-test-simulator-bundle`, `behaviour-test-simulator-file-micro-entity-accounts` (test.yml) | `advised-json` | advisory |
-| 3 | the ten `deploy-*` classes and the 31 `web-test*` classes at the bar (deploy.yml; needs `advised-json` on its `select-jobs`) | `advised-json` | advisory |
+| 2 | `behaviour-test-proxy-submit-vat`, `behaviour-test-simulator-bundle`, `behaviour-test-simulator-file-micro-entity-accounts` (test.yml) | `advised-json` | enforced |
+| 3 | the 30 `web-test-*` classes at the bar (deploy.yml; `select-jobs` carries `advised-json`) | `advised-json` | enforced |
+| 3, remainder | the ten `deploy-*` classes and `web-test` | `advised-json` | advisory |
 
 Each group stays enforced while its miss count stays at zero. Model: Sonnet. Size: ~3 files.
+
+#### Group 3 remainder: the stack jobs and `web-test`
+
+A skipped job skips every job that `needs` it unless the dependent's condition says otherwise.
+
+- `deploy-api` needs all of `deploy-auth`, `deploy-hmrc`, `deploy-hmrc-itsa`, `deploy-companies-house`,
+  `deploy-account`, `deploy-billing`, `deploy-diya-gl` and `deploy-mcp`. `deploy-edge`, `deploy-publish`
+  and `deploy-ops` need `deploy-api` and more, with implicit success conditions, so one skipped stack
+  job skips the chain behind it.
+- `enable-native-auth`, `generate-test-pass`, `verify-api` and every `web-test*` job carry `!cancelled()`,
+  so they still run after that skip, against a deployment whose api, edge and publish stacks were never
+  created. A branch deploy creates a new deployment name, so a skipped stack job leaves no stack at all.
+- `set-last-known-good-deployment` needs `web-test.result == 'success'` and `promote-ci-apex` needs that
+  job, so a skipped `web-test` stops the apex switch.
+
+Design to enforce them: a stack job skips only when the model advises it and the deployment already
+holds that stack (the app stacks of an existing deployment name); every dependent's condition becomes
+`!cancelled() && needs.<job>.result != 'failure'` for the stack jobs it needs; `web-test` runs, or
+`set-last-known-good-deployment` accepts `skipped`, so a deploy that proved nothing cannot promote the
+apex. The ci deploy of the branch that lands this must show: each advised stack job `skipped`, each
+dependent `success` or `skipped` and none `failure`, and `promote-ci-apex` as before. Until then these
+eleven classes stay advisory.

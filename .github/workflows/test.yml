@@ -1613,7 +1613,7 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-bundle:
-    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-bundle') }}
+    if: ${{ needs.changes.outputs.code == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'behaviour-test-simulator-bundle')) }}
     name: 'simulator - bundleBehaviour'
     runs-on: ubuntu-24.04
     container:
@@ -1879,7 +1879,7 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-file-micro-entity-accounts:
-    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-file-micro-entity-accounts') }}
+    if: ${{ needs.changes.outputs.code == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'behaviour-test-simulator-file-micro-entity-accounts')) }}
     name: 'simulator - fileMicroEntityAccountsBehaviour'
     runs-on: ubuntu-24.04
     container:
@@ -2261,7 +2261,7 @@ jobs:
   # Proxy behaviour test - requires Docker and HMRC sandbox secrets
   # Uses manual Playwright install (not container) because Docker is needed for mock-oauth2-server
   behaviour-test-proxy-submit-vat:
-    if: ${{ needs.changes.outputs.code == 'true' && !cancelled() && needs.params.outputs.runProxyBehaviourTests == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-proxy-submit-vat') }}
+    if: ${{ needs.changes.outputs.code == 'true' && !cancelled() && needs.params.outputs.runProxyBehaviourTests == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'behaviour-test-proxy-submit-vat')) }}
     name: 'proxy - submitVatBehaviour'
     needs:
       - select-jobs
