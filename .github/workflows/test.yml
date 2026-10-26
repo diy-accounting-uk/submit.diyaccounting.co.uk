@@ -29,6 +29,14 @@ on:
           - 'false'
         required: false
         default: 'false'
+      runExploratoryCrawl:
+        description: 'Run the exploratory crawl of the ci and prod sites now (it also runs on the Sunday scheduled run)'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+        required: false
+        default: 'false'
   workflow_call:
     inputs:
       environment-name:
@@ -2370,3 +2378,140 @@ jobs:
           retention-days: 7
           path: |
             target/behaviour-test-results/**/*.jsonl
+
+  # The weekly blind crawl (scripts/exploratory-crawl.mjs). It runs on the scheduled run only
+  # when today is a Sunday (the gate step reads `date -u +%u`), and on a workflow_dispatch with
+  # runExploratoryCrawl set to true. `github.workflow == 'test'` keeps deploy.yml's delegated call,
+  # which inherits the caller's event name, from starting it. It needs the `build` output so a
+  # Markdown-only push leaves it out, and it has no select-jobs entry because no push runs it.
+  exploratory-crawl:
+    if: ${{ needs.changes.outputs.build == 'true' && github.workflow == 'test' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && inputs.runExploratoryCrawl == 'true')) }}
+    name: 'exploratory crawl'
+    needs:
+      - changes
+      - params
+      - names
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    environment: ci
+    permissions:
+      contents: read
+      id-token: write
+    # The crawl signs in as the ci lane's durable `local` user, which the enable step rotates.
+    concurrency:
+      group: behaviour-test-user-ci-local
+      cancel-in-progress: false
+    steps:
+      - name: Decide whether today is a crawl day
+        id: gate
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ] && [ "$(date -u +%u)" != "7" ]; then
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            echo "The scheduled run crawls on Sundays only; today is day $(date -u +%u)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "date=$(date -u +%F)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Configure AWS role via GitHub OIDC
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Setup Node
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        run: |
+          npm ci --ignore-scripts
+          npx playwright install chromium --with-deps
+
+      - name: Crawl prod as the visitor
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        run: node scripts/exploratory-crawl.mjs --lane prod --roles visitor
+
+      - name: Enable native auth and refresh the ci test user
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        run: npm run test:enableCognitoNative -- ci
+
+      - name: Crawl ci as the visitor and the customer
+        if: ${{ steps.gate.outputs.run == 'true' }}
+        run: |
+          node scripts/mint-exploratory-state.mjs
+          node scripts/exploratory-crawl.mjs --lane ci --roles visitor,customer
+
+      - name: Disable native auth
+        if: ${{ always() && steps.gate.outputs.run == 'true' }}
+        run: npm run test:disableCognitoNative
+
+      - name: Write the counts per class to the job summary
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
+        run: cat target/exploratory-crawl/summary-*.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: Upload artifacts (crawl)
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: exploratory-crawl
+          retention-days: 30
+          path: target/exploratory-crawl/
+
+      - name: Lookup origin bucket name from EdgeStack
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
+        id: lookup-bucket
+        shell: bash
+        run: |
+          EDGE_STACK="${{ needs.names.outputs.deployment-name }}-app-EdgeStack"
+          BUCKET_NAME=$(aws cloudformation describe-stacks \
+            --stack-name "${EDGE_STACK}" --region us-east-1 \
+            --query 'Stacks[0].Outputs[?OutputKey==`OriginBucketName`].OutputValue' \
+            --output text 2>/dev/null || echo "")
+          if [ -z "$BUCKET_NAME" ] || [ "$BUCKET_NAME" = "None" ]; then
+            echo "WARNING: Could not find OriginBucketName from stack ${EDGE_STACK}, skipping publish"
+            echo "BUCKET_NAME=" >> "$GITHUB_OUTPUT"
+          else
+            echo "BUCKET_NAME=${BUCKET_NAME}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish the contact sheets
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' && steps.lookup-bucket.outputs.BUCKET_NAME != '' }}
+        env:
+          BUCKET_NAME: ${{ steps.lookup-bucket.outputs.BUCKET_NAME }}
+          CRAWL_DATE: ${{ steps.gate.outputs.date }}
+        shell: bash
+        run: |
+          TARGET_DIR="web/public/tests/exploratory/${CRAWL_DATE?}"
+          mkdir -p "${TARGET_DIR?}"
+          cp -r target/exploratory-crawl/. "${TARGET_DIR?}/"
+          echo "Uploading the crawl to S3 bucket: ${BUCKET_NAME?}"
+          aws s3 cp "${TARGET_DIR?}/" "s3://${BUCKET_NAME?}/tests/exploratory/${CRAWL_DATE?}/" --recursive

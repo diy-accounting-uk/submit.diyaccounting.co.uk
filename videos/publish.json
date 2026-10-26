@@ -2238,21 +2238,21 @@
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceArtifact": "video-change-registered-office-ci",
-      "videoFile": "target/videos/video-change-registered-office-ci/change-registered-office.mp4",
-      "captionFile": "target/videos/video-change-registered-office-ci/change-registered-office.vtt",
+      "sourceArtifact": null,
+      "videoFile": "target/videos/change-registered-office-sim/change-registered-office.mp4",
+      "captionFile": "target/videos/change-registered-office-sim/change-registered-office.vtt",
       "title": "DIY Accounting Submit: change registered office address",
-      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered office address: look up the current address, enter the new one, review it, then file with Companies House. This is a real recording, filed with the Companies House sandbox, so no live company changed. Try it at https://submit.diyaccounting.co.uk.",
+      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered office address: look up the current address, enter the new one, review it, then file with Companies House. This is a real recording, filed with the Companies House sandbox, so no live company changed. It ends on the filing result with its Companies House reference. Try it at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Which company?\n00:32 The new address\n00:59 Review\n01:19 The outcome",
       "tags": ["DIY Accounting", "Companies House", "registered office", "sandbox"],
       "categoryId": "27",
-      "sourceRun": 39701275565,
+      "sourceRun": null,
       "walkthrough": [
         {
           "scene": "company-lookup",
           "step": 0,
           "headline": "Open the activity",
           "caption": "Open Change Registered Office Address to find the company.",
-          "startSeconds": 21,
+          "startSeconds": 6,
           "thumb": "videos/change-registered-office/company-lookup-0-thumb.webp",
           "full": "videos/change-registered-office/company-lookup-0.webp"
         },
@@ -2261,7 +2261,7 @@
           "step": 2,
           "headline": "Enter the company number",
           "caption": "Type the company number.",
-          "startSeconds": 29,
+          "startSeconds": 13,
           "thumb": "videos/change-registered-office/company-lookup-2-thumb.webp",
           "full": "videos/change-registered-office/company-lookup-2.webp"
         },
@@ -2270,7 +2270,7 @@
           "step": 3,
           "headline": "Look up the address",
           "caption": "This looks up the current address at Companies House.",
-          "startSeconds": 34,
+          "startSeconds": 18,
           "thumb": "videos/change-registered-office/company-lookup-3-thumb.webp",
           "full": "videos/change-registered-office/company-lookup-3.webp"
         },
@@ -2279,7 +2279,7 @@
           "step": 5,
           "headline": "The address on file",
           "caption": "This is the address on file today.",
-          "startSeconds": 41,
+          "startSeconds": 25,
           "thumb": "videos/change-registered-office/company-lookup-5-thumb.webp",
           "full": "videos/change-registered-office/company-lookup-5.webp"
         },
@@ -2287,7 +2287,7 @@
           "scene": "new-address",
           "headline": "The new address",
           "caption": "Confirm the address is one the company can be reached at. Review before anything is filed.",
-          "startSeconds": 47,
+          "startSeconds": 32,
           "thumb": "videos/change-registered-office/new-address-thumb.webp",
           "full": "videos/change-registered-office/new-address.webp"
         },
@@ -2295,40 +2295,40 @@
           "scene": "review",
           "headline": "Review",
           "caption": "File the change with Companies House's sandbox. Sign in to Companies House and say yes once.",
-          "startSeconds": 76,
+          "startSeconds": 59,
           "thumb": "videos/change-registered-office/review-thumb.webp",
           "full": "videos/change-registered-office/review.webp"
         },
         {
           "scene": "result",
           "headline": "The outcome",
-          "caption": "Companies House settles on an outcome.",
-          "startSeconds": 165,
+          "caption": "Companies House settles on an outcome. The reference and the outcome are the record of this change.",
+          "startSeconds": 79,
           "thumb": "videos/change-registered-office/result-thumb.webp",
           "full": "videos/change-registered-office/result.webp"
         }
       ],
-      "videoId": "sN_FhTnAqF4"
+      "videoId": "OWeaPepvbyY"
     },
     {
       "id": "change-registered-email",
       "group": "companies-house",
       "publish": true,
-      "pipelineVersion": 9,
-      "videoFile": "target/videos/local-change-registered-email/change-registered-email.mp4",
-      "captionFile": "target/videos/local-change-registered-email/change-registered-email.vtt",
+      "pipelineVersion": 10,
+      "videoFile": "target/videos/change-registered-email-sim/change-registered-email.mp4",
+      "captionFile": "target/videos/change-registered-email-sim/change-registered-email.vtt",
       "title": "DIY Accounting Submit: change registered email address",
-      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered email address: check eligibility, enter the new address, review it, then file with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
+      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered email address: check eligibility, enter the new address, review it, then file with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. It ends on the filing result with its Companies House reference. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Which company?\n00:32 The new address\n00:53 Review\n01:06 The outcome",
       "tags": ["DIY Accounting", "Companies House", "registered email", "sandbox"],
       "categoryId": "27",
-      "videoId": "eIa2Qn3IqWg",
+      "videoId": "G1jCq7pi6IQ",
       "walkthrough": [
         {
           "scene": "company-lookup",
           "step": 0,
           "headline": "Open the activity",
           "caption": "Open Change Registered Email Address to find the company.",
-          "startSeconds": 13,
+          "startSeconds": 6,
           "thumb": "videos/change-registered-email/company-lookup-0-thumb.webp",
           "full": "videos/change-registered-email/company-lookup-0.webp"
         },
@@ -2337,7 +2337,7 @@
           "step": 2,
           "headline": "Enter the company number",
           "caption": "Type the company number.",
-          "startSeconds": 23,
+          "startSeconds": 13,
           "thumb": "videos/change-registered-email/company-lookup-2-thumb.webp",
           "full": "videos/change-registered-email/company-lookup-2.webp"
         },
@@ -2346,7 +2346,7 @@
           "step": 3,
           "headline": "Check eligibility first",
           "caption": "This checks eligibility at Companies House.",
-          "startSeconds": 29,
+          "startSeconds": 19,
           "thumb": "videos/change-registered-email/company-lookup-3-thumb.webp",
           "full": "videos/change-registered-email/company-lookup-3.webp"
         },
@@ -2355,7 +2355,7 @@
           "step": 4,
           "headline": "Grant Companies House access",
           "caption": "Sign in to Companies House and say yes once.",
-          "startSeconds": 37,
+          "startSeconds": 25,
           "thumb": "videos/change-registered-email/company-lookup-4-thumb.webp",
           "full": "videos/change-registered-email/company-lookup-4.webp"
         },
@@ -2363,7 +2363,7 @@
           "scene": "new-email",
           "headline": "The new address",
           "caption": "Confirm the company is likely to notice mail sent there. Review before anything is filed.",
-          "startSeconds": 50,
+          "startSeconds": 32,
           "thumb": "videos/change-registered-email/new-email-thumb.webp",
           "full": "videos/change-registered-email/new-email.webp"
         },
@@ -2371,41 +2371,43 @@
           "scene": "review",
           "headline": "Review",
           "caption": "Nothing has gone to Companies House yet. File the change with Companies House.",
-          "startSeconds": 77,
+          "startSeconds": 53,
           "thumb": "videos/change-registered-email/review-thumb.webp",
           "full": "videos/change-registered-email/review.webp"
         },
         {
           "scene": "result",
           "headline": "The outcome",
-          "caption": "Companies House settles on an outcome.",
-          "startSeconds": 93,
+          "caption": "Companies House settles on an outcome. The reference and the outcome are the record of this change.",
+          "startSeconds": 66,
           "thumb": "videos/change-registered-email/result-thumb.webp",
           "full": "videos/change-registered-email/result.webp"
         }
-      ]
+      ],
+      "sourceRun": null,
+      "sourceArtifact": null
     },
     {
       "id": "file-micro-entity-accounts",
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": 38090731635,
-      "sourceArtifact": "video-file-micro-entity-accounts-ci",
-      "videoFile": "target/videos/video-file-micro-entity-accounts-ci/file-micro-entity-accounts.mp4",
-      "captionFile": "target/videos/video-file-micro-entity-accounts-ci/file-micro-entity-accounts.vtt",
+      "sourceRun": null,
+      "sourceArtifact": null,
+      "videoFile": "target/videos/file-micro-entity-accounts-sim/file-micro-entity-accounts.mp4",
+      "captionFile": "target/videos/file-micro-entity-accounts-sim/file-micro-entity-accounts.vtt",
       "title": "DIY Accounting Submit: file micro-entity accounts (coming soon - sandbox example)",
-      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows filing a company's FRS 105 micro-entity accounts: sign in, take out Resident, look up a company, fill in the balance sheet, preview the iXBRL, and file it with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
+      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows filing a company's FRS 105 micro-entity accounts: sign in, take out Resident, look up a company, fill in the balance sheet, preview the iXBRL, and file it with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. It ends on your copy of the filed accounts with Companies House's receipt. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:07 Resident\n00:16 Which company?\n00:42 The accounts\n01:44 Preview\n02:01 File it\n02:16 The outcome",
       "tags": ["DIY Accounting", "Companies House", "micro-entity accounts", "sandbox"],
       "categoryId": "27",
-      "videoId": "yPSpvLKrTJU",
+      "videoId": "ccklj6VWKh4",
       "walkthrough": [
         {
           "scene": "company-lookup",
           "step": 0,
           "headline": "Find the company",
           "caption": "Open File Micro-entity Accounts to find the company.",
-          "startSeconds": 36,
+          "startSeconds": 16,
           "thumb": "videos/file-micro-entity-accounts/company-lookup-0-thumb.webp",
           "full": "videos/file-micro-entity-accounts/company-lookup-0.webp"
         },
@@ -2414,7 +2416,7 @@
           "step": 2,
           "headline": "Enter the company number",
           "caption": "Type the company number.",
-          "startSeconds": 44,
+          "startSeconds": 23,
           "thumb": "videos/file-micro-entity-accounts/company-lookup-2-thumb.webp",
           "full": "videos/file-micro-entity-accounts/company-lookup-2.webp"
         },
@@ -2423,7 +2425,7 @@
           "step": 3,
           "headline": "Look up the company",
           "caption": "Look up the company with Companies House.",
-          "startSeconds": 50,
+          "startSeconds": 29,
           "thumb": "videos/file-micro-entity-accounts/company-lookup-3-thumb.webp",
           "full": "videos/file-micro-entity-accounts/company-lookup-3.webp"
         },
@@ -2432,7 +2434,7 @@
           "step": 5,
           "headline": "Confirm the company name",
           "caption": "Companies House confirms the company name.",
-          "startSeconds": 56,
+          "startSeconds": 35,
           "thumb": "videos/file-micro-entity-accounts/company-lookup-5-thumb.webp",
           "full": "videos/file-micro-entity-accounts/company-lookup-5.webp"
         },
@@ -2441,7 +2443,7 @@
           "step": 0,
           "headline": "Set the accounting period",
           "caption": "Set the accounting period.",
-          "startSeconds": 63,
+          "startSeconds": 42,
           "thumb": "videos/file-micro-entity-accounts/accounts-form-0-thumb.webp",
           "full": "videos/file-micro-entity-accounts/accounts-form-0.webp"
         },
@@ -2450,7 +2452,7 @@
           "step": 2,
           "headline": "This year, then last year",
           "caption": "Enter this year's balance sheet, then last year's for comparison.",
-          "startSeconds": 70,
+          "startSeconds": 49,
           "thumb": "videos/file-micro-entity-accounts/accounts-form-2-thumb.webp",
           "full": "videos/file-micro-entity-accounts/accounts-form-2.webp"
         },
@@ -2459,7 +2461,7 @@
           "step": 8,
           "headline": "Net assets must balance",
           "caption": "This checks net assets against capital and reserves.",
-          "startSeconds": 86,
+          "startSeconds": 65,
           "thumb": "videos/file-micro-entity-accounts/accounts-form-8-thumb.webp",
           "full": "videos/file-micro-entity-accounts/accounts-form-8.webp"
         },
@@ -2468,7 +2470,7 @@
           "step": 16,
           "headline": "Name the approving director",
           "caption": "Name the director approving the accounts.",
-          "startSeconds": 105,
+          "startSeconds": 84,
           "thumb": "videos/file-micro-entity-accounts/accounts-form-16-thumb.webp",
           "full": "videos/file-micro-entity-accounts/accounts-form-16.webp"
         },
@@ -2477,7 +2479,7 @@
           "step": 18,
           "headline": "Accept the statements",
           "caption": "Accept the four statutory statements.",
-          "startSeconds": 114,
+          "startSeconds": 92,
           "thumb": "videos/file-micro-entity-accounts/accounts-form-18-thumb.webp",
           "full": "videos/file-micro-entity-accounts/accounts-form-18.webp"
         },
@@ -2485,7 +2487,7 @@
           "scene": "preview",
           "headline": "Preview",
           "caption": "Preview the iXBRL before anything is filed. These are the accounts as they will be filed. Nothing has gone to Companies House yet.",
-          "startSeconds": 126,
+          "startSeconds": 104,
           "thumb": "videos/file-micro-entity-accounts/preview-thumb.webp",
           "full": "videos/file-micro-entity-accounts/preview.webp"
         },
@@ -2493,17 +2495,54 @@
           "scene": "submit",
           "headline": "File it",
           "caption": "Type the company's Companies House authentication code. Submit the filing to Companies House's sandbox.",
-          "startSeconds": 143,
+          "startSeconds": 121,
           "thumb": "videos/file-micro-entity-accounts/submit-thumb.webp",
           "full": "videos/file-micro-entity-accounts/submit.webp"
         },
         {
           "scene": "result",
-          "headline": "The outcome",
-          "caption": "The filing goes to Companies House. Companies House has the filing and reports the outcome here.",
-          "startSeconds": 159,
-          "thumb": "videos/file-micro-entity-accounts/result-thumb.webp",
-          "full": "videos/file-micro-entity-accounts/result.webp"
+          "step": 0,
+          "headline": "Companies House checks it",
+          "caption": "The filing goes to Companies House.",
+          "startSeconds": 136,
+          "thumb": "videos/file-micro-entity-accounts/result-0-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/result-0.webp"
+        },
+        {
+          "scene": "result",
+          "step": 1,
+          "headline": "Companies House has the filing",
+          "caption": "Companies House has the filing and reports the outcome here.",
+          "startSeconds": 140,
+          "thumb": "videos/file-micro-entity-accounts/result-1-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/result-1.webp"
+        },
+        {
+          "scene": "result",
+          "step": 3,
+          "headline": "Open your copy",
+          "caption": "Open your copy of the filing.",
+          "startSeconds": 149,
+          "thumb": "videos/file-micro-entity-accounts/result-3-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/result-3.webp"
+        },
+        {
+          "scene": "result",
+          "step": 6,
+          "headline": "The filed accounts",
+          "caption": "Your copy shows the filed accounts, the submission number and the status.",
+          "startSeconds": 157,
+          "thumb": "videos/file-micro-entity-accounts/result-6-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/result-6.webp"
+        },
+        {
+          "scene": "result",
+          "step": 9,
+          "headline": "Kept on your receipts",
+          "caption": "Your copy stays on your receipts page.",
+          "startSeconds": 169,
+          "thumb": "videos/file-micro-entity-accounts/result-9-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/result-9.webp"
         }
       ]
     },
