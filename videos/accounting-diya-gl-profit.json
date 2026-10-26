@@ -5,7 +5,7 @@
   "description": "A sole trader starts a new Basic Sole Trader book in diya-gl, enters three sales and two purchases over April and May, and reads the profit from the year table and the P&L.",
   "auth": "none",
   "pages": ["videos/accounting-diya-gl-profit.json"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": { "width": 1280, "height": 720 },
   "deviceScaleFactor": 2,
   "fps": 30,
 

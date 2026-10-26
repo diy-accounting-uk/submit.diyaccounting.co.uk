@@ -109,9 +109,9 @@
           "thumb": "videos/view-obligations/results-thumb.webp",
           "full": "videos/view-obligations/results.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 378,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 788
         }
       ]
     },
@@ -138,9 +138,9 @@
           "thumb": "videos/hmrc-authorise/authorise-thumb.webp",
           "full": "videos/hmrc-authorise/authorise.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 378,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 788
         },
         {
           "scene": "results",
@@ -150,9 +150,9 @@
           "thumb": "videos/hmrc-authorise/results-thumb.webp",
           "full": "videos/hmrc-authorise/results.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 378,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 788
         }
       ]
     },
@@ -191,9 +191,9 @@
           "thumb": "videos/submit-return/results-thumb.webp",
           "full": "videos/submit-return/results.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 428,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 894
         },
         {
           "scene": "submit-form",
@@ -217,9 +217,9 @@
           "thumb": "videos/submit-return/submit-form-2-thumb.webp",
           "full": "videos/submit-return/submit-form-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 504,
+          "thumbHeight": 508,
           "fullWidth": 1000,
-          "fullHeight": 1052
+          "fullHeight": 1060
         },
         {
           "scene": "submit-form",
@@ -230,9 +230,9 @@
           "thumb": "videos/submit-return/submit-form-3-thumb.webp",
           "full": "videos/submit-return/submit-form-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 508,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 1060
         },
         {
           "scene": "submit-form",
@@ -243,9 +243,9 @@
           "thumb": "videos/submit-return/submit-form-4-thumb.webp",
           "full": "videos/submit-return/submit-form-4.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 508,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 1060
         },
         {
           "scene": "submit-form",
@@ -256,9 +256,9 @@
           "thumb": "videos/submit-return/submit-form-5-thumb.webp",
           "full": "videos/submit-return/submit-form-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 516,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 1074
         },
         {
           "scene": "submit-form",
@@ -269,9 +269,9 @@
           "thumb": "videos/submit-return/submit-form-6-thumb.webp",
           "full": "videos/submit-return/submit-form-6.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 516,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 1074
         },
         {
           "scene": "submit-form",
@@ -282,9 +282,9 @@
           "thumb": "videos/submit-return/submit-form-7-thumb.webp",
           "full": "videos/submit-return/submit-form-7.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 516,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 1074
         },
         {
           "scene": "submit-form",
@@ -295,9 +295,9 @@
           "thumb": "videos/submit-return/submit-form-8-thumb.webp",
           "full": "videos/submit-return/submit-form-8.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 516,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 1074
         },
         {
           "scene": "submit-form",
@@ -308,9 +308,9 @@
           "thumb": "videos/submit-return/submit-form-9-thumb.webp",
           "full": "videos/submit-return/submit-form-9.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 440,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 918
         },
         {
           "scene": "submit-form",
@@ -321,9 +321,9 @@
           "thumb": "videos/submit-return/submit-form-11-thumb.webp",
           "full": "videos/submit-return/submit-form-11.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 440,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 918
         },
         {
           "scene": "authorise-submit",
@@ -333,9 +333,9 @@
           "thumb": "videos/submit-return/authorise-submit-thumb.webp",
           "full": "videos/submit-return/authorise-submit.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 426,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 886
         },
         {
           "scene": "receipt",
@@ -345,9 +345,9 @@
           "thumb": "videos/submit-return/receipt-thumb.webp",
           "full": "videos/submit-return/receipt.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 426,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 886
         },
         {
           "scene": "record",
@@ -371,9 +371,9 @@
           "thumb": "videos/submit-return/record-3-thumb.webp",
           "full": "videos/submit-return/record-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 408,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 852
         },
         {
           "scene": "record",
@@ -384,9 +384,9 @@
           "thumb": "videos/submit-return/record-5-thumb.webp",
           "full": "videos/submit-return/record-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 408,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 852
         },
         {
           "scene": "record",
@@ -397,9 +397,9 @@
           "thumb": "videos/submit-return/record-8-thumb.webp",
           "full": "videos/submit-return/record-8.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 410,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 856
         },
         {
           "scene": "record",
@@ -555,9 +555,9 @@
           "thumb": "videos/view-return/view-return-2-thumb.webp",
           "full": "videos/view-return/view-return-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 388,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 810
         },
         {
           "scene": "view-return",
@@ -568,9 +568,9 @@
           "thumb": "videos/view-return/view-return-4-thumb.webp",
           "full": "videos/view-return/view-return-4.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 388,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 810
         },
         {
           "scene": "view-return",
@@ -581,9 +581,9 @@
           "thumb": "videos/view-return/view-return-5-thumb.webp",
           "full": "videos/view-return/view-return-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 388,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 810
         },
         {
           "scene": "view-return",
@@ -594,9 +594,9 @@
           "thumb": "videos/view-return/view-return-8-thumb.webp",
           "full": "videos/view-return/view-return-8.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 388,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 810
         },
         {
           "scene": "view-return",
@@ -676,9 +676,9 @@
           "thumb": "videos/view-liabilities/liabilities-form-2-thumb.webp",
           "full": "videos/view-liabilities/liabilities-form-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 432,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 900
         },
         {
           "scene": "liabilities-form",
@@ -689,9 +689,9 @@
           "thumb": "videos/view-liabilities/liabilities-form-4-thumb.webp",
           "full": "videos/view-liabilities/liabilities-form-4.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 432,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 900
         },
         {
           "scene": "liabilities-form",
@@ -702,9 +702,9 @@
           "thumb": "videos/view-liabilities/liabilities-form-5-thumb.webp",
           "full": "videos/view-liabilities/liabilities-form-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 432,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 900
         },
         {
           "scene": "liabilities-form",
@@ -727,9 +727,9 @@
           "thumb": "videos/view-liabilities/results-thumb.webp",
           "full": "videos/view-liabilities/results.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 438,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 912
         }
       ]
     },
@@ -783,9 +783,9 @@
           "thumb": "videos/view-payments/payments-form-2-thumb.webp",
           "full": "videos/view-payments/payments-form-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 432,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 900
         },
         {
           "scene": "payments-form",
@@ -796,9 +796,9 @@
           "thumb": "videos/view-payments/payments-form-4-thumb.webp",
           "full": "videos/view-payments/payments-form-4.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 432,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 900
         },
         {
           "scene": "payments-form",
@@ -809,9 +809,9 @@
           "thumb": "videos/view-payments/payments-form-5-thumb.webp",
           "full": "videos/view-payments/payments-form-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 432,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 900
         },
         {
           "scene": "payments-form",
@@ -834,9 +834,9 @@
           "thumb": "videos/view-payments/results-thumb.webp",
           "full": "videos/view-payments/results.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 440,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 918
         }
       ]
     },
@@ -1339,9 +1339,9 @@
           "thumb": "videos/itsa-business-details/business-details-form-2-thumb.webp",
           "full": "videos/itsa-business-details/business-details-form-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 414,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 864
         },
         {
           "scene": "business-details-form",
@@ -2925,9 +2925,9 @@
           "thumb": "videos/my-receipts/receipts-1-thumb.webp",
           "full": "videos/my-receipts/receipts-1.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 442,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 922
         },
         {
           "scene": "receipts",
@@ -2938,9 +2938,9 @@
           "thumb": "videos/my-receipts/receipts-3-thumb.webp",
           "full": "videos/my-receipts/receipts-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 442,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 922
         },
         {
           "scene": "receipts",
@@ -3078,9 +3078,9 @@
           "thumb": "videos/company-lookup/search-thumb.webp",
           "full": "videos/company-lookup/search.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 396,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 826
         },
         {
           "scene": "profile",
@@ -3090,9 +3090,9 @@
           "thumb": "videos/company-lookup/profile-thumb.webp",
           "full": "videos/company-lookup/profile.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 394,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 820
         }
       ]
     },
@@ -3255,19 +3255,19 @@
           "scene": "new-address",
           "headline": "The new address",
           "caption": "Confirm the address is one the company can be reached at. Review before anything is filed.",
-          "startSeconds": 31,
+          "startSeconds": 32,
           "thumb": "videos/change-registered-office/new-address-thumb.webp",
           "full": "videos/change-registered-office/new-address.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 348,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 726
         },
         {
           "scene": "review",
           "headline": "Review",
           "caption": "File the change with Companies House's sandbox. Sign in to Companies House and say yes once.",
-          "startSeconds": 59,
+          "startSeconds": 62,
           "thumb": "videos/change-registered-office/review-thumb.webp",
           "full": "videos/change-registered-office/review.webp",
           "thumbWidth": 480,
@@ -3279,7 +3279,7 @@
           "scene": "result",
           "headline": "The outcome",
           "caption": "Companies House settles on an outcome. The record shows the submission number, the status, the date and the change as submitted.",
-          "startSeconds": 79,
+          "startSeconds": 83,
           "thumb": "videos/change-registered-office/result-thumb.webp",
           "full": "videos/change-registered-office/result.webp",
           "thumbWidth": 480,
@@ -5944,7 +5944,7 @@
           "step": 0,
           "headline": "A loss, three ways",
           "caption": "A loss can carry forward, sideways, or back to an earlier year.",
-          "startSeconds": 28,
+          "startSeconds": 30,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-0-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-0.webp",
           "thumbWidth": 480,
@@ -5957,7 +5957,7 @@
           "step": 2,
           "headline": "The self-employment ID",
           "caption": "The self-employment business's own ID.",
-          "startSeconds": 37,
+          "startSeconds": 40,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-2-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-2.webp",
           "thumbWidth": 480,
@@ -5970,7 +5970,7 @@
           "step": 3,
           "headline": "Choose the tax year",
           "caption": "HMRC's sandbox needs this tax year for carry-back claims.",
-          "startSeconds": 44,
+          "startSeconds": 47,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-3-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-3.webp",
           "thumbWidth": 480,
@@ -5983,7 +5983,7 @@
           "step": 4,
           "headline": "Suspend the tax year check",
           "caption": "The sandbox's current tax year hasn't really ended, so suspend that check.",
-          "startSeconds": 51,
+          "startSeconds": 54,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-4-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-4.webp",
           "thumbWidth": 480,
@@ -5996,7 +5996,7 @@
           "step": 5,
           "headline": "Load the loss position",
           "caption": "Load this business's loss position for the year.",
-          "startSeconds": 58,
+          "startSeconds": 61,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-5-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-5.webp",
           "thumbWidth": 480,
@@ -6009,20 +6009,20 @@
           "step": 7,
           "headline": "Carry the loss sideways",
           "caption": "Carry sideways: set this year's loss against this year's other income.",
-          "startSeconds": 65,
+          "startSeconds": 68,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-7-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-7.webp",
           "thumbWidth": 480,
-          "thumbHeight": 510,
+          "thumbHeight": 494,
           "fullWidth": 1000,
-          "fullHeight": 1062
+          "fullHeight": 1030
         },
         {
           "scene": "losses-and-claims",
           "step": 8,
           "headline": "Carry the loss back",
           "caption": "Carry back: set the rest against an earlier year's general income.",
-          "startSeconds": 73,
+          "startSeconds": 76,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-8-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-8.webp",
           "thumbWidth": 480,
@@ -6035,33 +6035,33 @@
           "step": 9,
           "headline": "Which claim goes first",
           "caption": "Claiming both at once means saying which one HMRC applies first.",
-          "startSeconds": 80,
+          "startSeconds": 84,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-9-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-9.webp",
           "thumbWidth": 480,
-          "thumbHeight": 514,
+          "thumbHeight": 436,
           "fullWidth": 1000,
-          "fullHeight": 1072
+          "fullHeight": 908
         },
         {
           "scene": "losses-and-claims",
           "step": 10,
           "headline": "Sideways applies first",
           "caption": "Sideways first, then whatever is left carries back.",
-          "startSeconds": 89,
+          "startSeconds": 93,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-10-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-10.webp",
           "thumbWidth": 480,
-          "thumbHeight": 514,
+          "thumbHeight": 436,
           "fullWidth": 1000,
-          "fullHeight": 1072
+          "fullHeight": 908
         },
         {
           "scene": "losses-and-claims",
           "step": 13,
           "headline": "Save the claim",
           "caption": "Save the claim.",
-          "startSeconds": 97,
+          "startSeconds": 102,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-13-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-13.webp",
           "thumbWidth": 480,
@@ -6074,7 +6074,7 @@
           "step": 14,
           "headline": "HMRC accepts the claim",
           "caption": "HMRC accepts the claim.",
-          "startSeconds": 102,
+          "startSeconds": 107,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-14-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-14.webp",
           "thumbWidth": 480,
@@ -6087,7 +6087,7 @@
           "step": 15,
           "headline": "The record as submitted",
           "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
-          "startSeconds": 107,
+          "startSeconds": 112,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-15-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-15.webp",
           "thumbWidth": 480,
@@ -6100,7 +6100,7 @@
           "step": 17,
           "headline": "Keep this copy",
           "caption": "Every loss and claim you sent is on the record, with which applies first.",
-          "startSeconds": 120,
+          "startSeconds": 125,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-17-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-17.webp",
           "thumbWidth": 480,
@@ -6358,9 +6358,9 @@
           "thumb": "videos/vat-from-books/import-book-4-thumb.webp",
           "full": "videos/vat-from-books/import-book-4.webp",
           "thumbWidth": 480,
-          "thumbHeight": 510,
+          "thumbHeight": 508,
           "fullWidth": 1000,
-          "fullHeight": 1062
+          "fullHeight": 1060
         },
         {
           "scene": "import-book",
@@ -6371,9 +6371,9 @@
           "thumb": "videos/vat-from-books/import-book-5-thumb.webp",
           "full": "videos/vat-from-books/import-book-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 510,
+          "thumbHeight": 504,
           "fullWidth": 1000,
-          "fullHeight": 1062
+          "fullHeight": 1050
         },
         {
           "scene": "import-book",
@@ -6384,9 +6384,9 @@
           "thumb": "videos/vat-from-books/import-book-6-thumb.webp",
           "full": "videos/vat-from-books/import-book-6.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 504,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 1050
         },
         {
           "scene": "import-book",
@@ -6397,9 +6397,9 @@
           "thumb": "videos/vat-from-books/import-book-7-thumb.webp",
           "full": "videos/vat-from-books/import-book-7.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 504,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 1050
         },
         {
           "scene": "import-book",
@@ -6410,9 +6410,9 @@
           "thumb": "videos/vat-from-books/import-book-10-thumb.webp",
           "full": "videos/vat-from-books/import-book-10.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 508,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 1058
         },
         {
           "scene": "submit",
@@ -6422,9 +6422,9 @@
           "thumb": "videos/vat-from-books/submit-thumb.webp",
           "full": "videos/vat-from-books/submit.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 304,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 634
         },
         {
           "scene": "receipt",
@@ -6434,9 +6434,9 @@
           "thumb": "videos/vat-from-books/receipt-thumb.webp",
           "full": "videos/vat-from-books/receipt.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 426,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 886
         },
         {
           "scene": "record",
@@ -6460,9 +6460,9 @@
           "thumb": "videos/vat-from-books/record-3-thumb.webp",
           "full": "videos/vat-from-books/record-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 408,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 852
         },
         {
           "scene": "record",
@@ -6473,9 +6473,9 @@
           "thumb": "videos/vat-from-books/record-5-thumb.webp",
           "full": "videos/vat-from-books/record-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 408,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 852
         },
         {
           "scene": "record",
@@ -6580,9 +6580,9 @@
           "thumb": "videos/vat-hmrc-assist/fill-boxes-3-thumb.webp",
           "full": "videos/vat-hmrc-assist/fill-boxes-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 512,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 1068
         },
         {
           "scene": "fill-boxes",
@@ -6593,9 +6593,9 @@
           "thumb": "videos/vat-hmrc-assist/fill-boxes-4-thumb.webp",
           "full": "videos/vat-hmrc-assist/fill-boxes-4.webp",
           "thumbWidth": 480,
-          "thumbHeight": 500,
+          "thumbHeight": 512,
           "fullWidth": 1000,
-          "fullHeight": 1044
+          "fullHeight": 1068
         },
         {
           "scene": "fill-boxes",
@@ -6606,9 +6606,9 @@
           "thumb": "videos/vat-hmrc-assist/fill-boxes-5-thumb.webp",
           "full": "videos/vat-hmrc-assist/fill-boxes-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 500,
+          "thumbHeight": 516,
           "fullWidth": 1000,
-          "fullHeight": 1044
+          "fullHeight": 1074
         },
         {
           "scene": "fill-boxes",
@@ -6619,9 +6619,9 @@
           "thumb": "videos/vat-hmrc-assist/fill-boxes-8-thumb.webp",
           "full": "videos/vat-hmrc-assist/fill-boxes-8.webp",
           "thumbWidth": 480,
-          "thumbHeight": 500,
+          "thumbHeight": 444,
           "fullWidth": 1000,
-          "fullHeight": 1044
+          "fullHeight": 924
         },
         {
           "scene": "assist-check",
@@ -6631,9 +6631,9 @@
           "thumb": "videos/vat-hmrc-assist/assist-check-thumb.webp",
           "full": "videos/vat-hmrc-assist/assist-check.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 432,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 902
         },
         {
           "scene": "submit",
@@ -6643,9 +6643,9 @@
           "thumb": "videos/vat-hmrc-assist/submit-thumb.webp",
           "full": "videos/vat-hmrc-assist/submit.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 434,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 906
         },
         {
           "scene": "receipt",
@@ -6655,9 +6655,9 @@
           "thumb": "videos/vat-hmrc-assist/receipt-thumb.webp",
           "full": "videos/vat-hmrc-assist/receipt.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 426,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 886
         },
         {
           "scene": "record",
@@ -6681,9 +6681,9 @@
           "thumb": "videos/vat-hmrc-assist/record-3-thumb.webp",
           "full": "videos/vat-hmrc-assist/record-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 408,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 852
         },
         {
           "scene": "record",
@@ -6694,9 +6694,9 @@
           "thumb": "videos/vat-hmrc-assist/record-5-thumb.webp",
           "full": "videos/vat-hmrc-assist/record-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 408,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 852
         },
         {
           "scene": "record",
@@ -6707,9 +6707,9 @@
           "thumb": "videos/vat-hmrc-assist/record-8-thumb.webp",
           "full": "videos/vat-hmrc-assist/record-8.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 410,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 856
         },
         {
           "scene": "record",
@@ -7288,8 +7288,8 @@
       "id": "accounting-diya-gl-profit",
       "group": "accounting",
       "publish": true,
-      "sourceRun": 38016186705,
-      "sourceArtifact": "video-accounting-diya-gl-profit-",
+      "sourceRun": null,
+      "sourceArtifact": null,
       "videoFile": "target/videos/video-accounting-diya-gl-profit-/accounting-diya-gl-profit.mp4",
       "captionFile": "target/videos/video-accounting-diya-gl-profit-/accounting-diya-gl-profit.vtt",
       "title": "DIY Accounting: record sales and purchases, see your profit",
@@ -7317,7 +7317,7 @@
           "step": 1,
           "headline": "Start a new book",
           "caption": "Start a new book for your business.",
-          "startSeconds": 8,
+          "startSeconds": 10,
           "thumb": "videos/accounting-diya-gl-profit/new-book-1-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/new-book-1.webp",
           "thumbWidth": 480,
@@ -7330,7 +7330,7 @@
           "step": 2,
           "headline": "Your business name",
           "caption": "Type your business name.",
-          "startSeconds": 13,
+          "startSeconds": 17,
           "thumb": "videos/accounting-diya-gl-profit/new-book-2-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/new-book-2.webp",
           "thumbWidth": 480,
@@ -7343,7 +7343,7 @@
           "step": 3,
           "headline": "Set the year end",
           "caption": "Then the year end. 31 March 2027 covers the 2026 to 2027 tax year.",
-          "startSeconds": 20,
+          "startSeconds": 25,
           "thumb": "videos/accounting-diya-gl-profit/new-book-3-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/new-book-3.webp",
           "thumbWidth": 480,
@@ -7356,7 +7356,7 @@
           "step": 4,
           "headline": "Create the book",
           "caption": "Create it. The book starts empty, with a row for every month.",
-          "startSeconds": 31,
+          "startSeconds": 38,
           "thumb": "videos/accounting-diya-gl-profit/new-book-4-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/new-book-4.webp",
           "thumbWidth": 480,
@@ -7369,7 +7369,7 @@
           "step": 5,
           "headline": "Sales left, purchases right",
           "caption": "April is open. Sales go on the left, purchases on the right.",
-          "startSeconds": 39,
+          "startSeconds": 49,
           "thumb": "videos/accounting-diya-gl-profit/new-book-5-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/new-book-5.webp",
           "thumbWidth": 480,
@@ -7382,7 +7382,7 @@
           "step": 0,
           "headline": "Date of the sale",
           "caption": "A sale. First, the date the customer paid you.",
-          "startSeconds": 47,
+          "startSeconds": 59,
           "thumb": "videos/accounting-diya-gl-profit/april-0-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-0.webp",
           "thumbWidth": 480,
@@ -7395,7 +7395,7 @@
           "step": 1,
           "headline": "What the job was",
           "caption": "Then what the job was.",
-          "startSeconds": 54,
+          "startSeconds": 68,
           "thumb": "videos/accounting-diya-gl-profit/april-1-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-1.webp",
           "thumbWidth": 480,
@@ -7408,7 +7408,7 @@
           "step": 2,
           "headline": "Amount: £500",
           "caption": "And how much they paid: £500.",
-          "startSeconds": 62,
+          "startSeconds": 77,
           "thumb": "videos/accounting-diya-gl-profit/april-2-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-2.webp",
           "thumbWidth": 480,
@@ -7421,7 +7421,7 @@
           "step": 3,
           "headline": "Add the sale",
           "caption": "Add it. The book works out every total again.",
-          "startSeconds": 68,
+          "startSeconds": 85,
           "thumb": "videos/accounting-diya-gl-profit/april-3-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-3.webp",
           "thumbWidth": 480,
@@ -7434,7 +7434,7 @@
           "step": 4,
           "headline": "A second sale",
           "caption": "A second job in April: a garden tidy for £300.",
-          "startSeconds": 75,
+          "startSeconds": 93,
           "thumb": "videos/accounting-diya-gl-profit/april-4-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-4.webp",
           "thumbWidth": 480,
@@ -7447,7 +7447,7 @@
           "step": 8,
           "headline": "A purchase",
           "caption": "Now a purchase: plants and compost for a job.",
-          "startSeconds": 90,
+          "startSeconds": 110,
           "thumb": "videos/accounting-diya-gl-profit/april-8-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-8.webp",
           "thumbWidth": 480,
@@ -7460,7 +7460,7 @@
           "step": 9,
           "headline": "Cost of sales",
           "caption": "Materials for your jobs go under cost of sales.",
-          "startSeconds": 96,
+          "startSeconds": 118,
           "thumb": "videos/accounting-diya-gl-profit/april-9-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-9.webp",
           "thumbWidth": 480,
@@ -7473,7 +7473,7 @@
           "step": 11,
           "headline": "Amount: £200",
           "caption": "They cost £200.",
-          "startSeconds": 105,
+          "startSeconds": 128,
           "thumb": "videos/accounting-diya-gl-profit/april-11-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-11.webp",
           "thumbWidth": 480,
@@ -7486,7 +7486,7 @@
           "step": 12,
           "headline": "Add the plants purchase",
           "caption": "Add it.",
-          "startSeconds": 111,
+          "startSeconds": 135,
           "thumb": "videos/accounting-diya-gl-profit/april-12-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-12.webp",
           "thumbWidth": 480,
@@ -7499,7 +7499,7 @@
           "step": 13,
           "headline": "April's profit: £600",
           "caption": "April so far: £800 of sales, £200 of costs, £600 profit.",
-          "startSeconds": 115,
+          "startSeconds": 140,
           "thumb": "videos/accounting-diya-gl-profit/april-13-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/april-13.webp",
           "thumbWidth": 480,
@@ -7512,7 +7512,7 @@
           "step": 0,
           "headline": "Open May",
           "caption": "Open May by clicking its row.",
-          "startSeconds": 125,
+          "startSeconds": 151,
           "thumb": "videos/accounting-diya-gl-profit/may-0-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/may-0.webp",
           "thumbWidth": 480,
@@ -7525,7 +7525,7 @@
           "step": 1,
           "headline": "Show the entries",
           "caption": "Then show its entries.",
-          "startSeconds": 131,
+          "startSeconds": 158,
           "thumb": "videos/accounting-diya-gl-profit/may-1-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/may-1.webp",
           "thumbWidth": 480,
@@ -7538,7 +7538,7 @@
           "step": 2,
           "headline": "A sale in May",
           "caption": "A bigger job in May: a new border for £700.",
-          "startSeconds": 136,
+          "startSeconds": 165,
           "thumb": "videos/accounting-diya-gl-profit/may-2-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/may-2.webp",
           "thumbWidth": 480,
@@ -7551,7 +7551,7 @@
           "step": 6,
           "headline": "A purchase in May",
           "caption": "And leaflets to find new customers.",
-          "startSeconds": 151,
+          "startSeconds": 182,
           "thumb": "videos/accounting-diya-gl-profit/may-6-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/may-6.webp",
           "thumbWidth": 480,
@@ -7564,7 +7564,7 @@
           "step": 7,
           "headline": "Advertising",
           "caption": "Leaflets go under advertising.",
-          "startSeconds": 157,
+          "startSeconds": 189,
           "thumb": "videos/accounting-diya-gl-profit/may-7-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/may-7.webp",
           "thumbWidth": 480,
@@ -7577,7 +7577,7 @@
           "step": 9,
           "headline": "Amount: £100",
           "caption": "They cost £100.",
-          "startSeconds": 164,
+          "startSeconds": 199,
           "thumb": "videos/accounting-diya-gl-profit/may-9-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/may-9.webp",
           "thumbWidth": 480,
@@ -7590,7 +7590,7 @@
           "step": 10,
           "headline": "Add the leaflets purchase",
           "caption": "Add it.",
-          "startSeconds": 169,
+          "startSeconds": 205,
           "thumb": "videos/accounting-diya-gl-profit/may-10-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/may-10.webp",
           "thumbWidth": 480,
@@ -7602,7 +7602,7 @@
           "scene": "profit",
           "headline": "See the profit",
           "caption": "The P&L tab sets the same figures out as a profit and loss account. Net profit: £1,200. That's your sales less what you spent to earn them.",
-          "startSeconds": 173,
+          "startSeconds": 212,
           "thumb": "videos/accounting-diya-gl-profit/profit-thumb.webp",
           "full": "videos/accounting-diya-gl-profit/profit.webp",
           "thumbWidth": 480,
@@ -7616,8 +7616,8 @@
       "id": "accounting-spreadsheet-profit",
       "group": "accounting",
       "publish": true,
-      "sourceRun": 38016832809,
-      "sourceArtifact": "video-accounting-spreadsheet-profit-",
+      "sourceRun": null,
+      "sourceArtifact": null,
       "videoFile": "target/videos/video-accounting-spreadsheet-profit-/accounting-spreadsheet-profit.mp4",
       "captionFile": "target/videos/video-accounting-spreadsheet-profit-/accounting-spreadsheet-profit.vtt",
       "title": "DIY Accounting: sales, purchases and profit in the Excel workbook",
@@ -7635,163 +7635,163 @@
           "thumb": "videos/accounting-spreadsheet-profit/open-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/open.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 240,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 800
         },
         {
           "scene": "april",
           "step": 0,
           "headline": "April's sales",
           "caption": "Open April's sales.",
-          "startSeconds": 15,
+          "startSeconds": 17,
           "thumb": "videos/accounting-spreadsheet-profit/april-0-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-0.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 240,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 800
         },
         {
           "scene": "april",
           "step": 2,
           "headline": "Date of the sale",
           "caption": "Type the date the customer paid you.",
-          "startSeconds": 22,
+          "startSeconds": 25,
           "thumb": "videos/accounting-spreadsheet-profit/april-2-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 240,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 800
         },
         {
           "scene": "april",
           "step": 3,
           "headline": "The customer and the job",
           "caption": "Then the customer and the job.",
-          "startSeconds": 28,
+          "startSeconds": 31,
           "thumb": "videos/accounting-spreadsheet-profit/april-3-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 240,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 800
         },
         {
           "scene": "april",
           "step": 5,
           "headline": "How they paid",
           "caption": "How they paid. Leave this blank if they still owe you.",
-          "startSeconds": 37,
+          "startSeconds": 42,
           "thumb": "videos/accounting-spreadsheet-profit/april-5-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 240,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 800
         },
         {
           "scene": "april",
           "step": 7,
           "headline": "Amount: £500",
           "caption": "And the amount: £500.",
-          "startSeconds": 46,
+          "startSeconds": 51,
           "thumb": "videos/accounting-spreadsheet-profit/april-7-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-7.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 240,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 800
         },
         {
           "scene": "april",
           "step": 8,
           "headline": "A second sale",
           "caption": "A second job in April: a garden tidy for £300.",
-          "startSeconds": 52,
+          "startSeconds": 57,
           "thumb": "videos/accounting-spreadsheet-profit/april-8-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-8.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 240,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 800
         },
         {
           "scene": "april",
           "step": 15,
           "headline": "April's sales: £800",
           "caption": "The month's total updates as you type: £800.",
-          "startSeconds": 72,
+          "startSeconds": 80,
           "thumb": "videos/accounting-spreadsheet-profit/april-15-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-15.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 240,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 800
         },
         {
           "scene": "april",
           "step": 17,
           "headline": "A purchase",
           "caption": "Now April's purchases: plants and compost for a job.",
-          "startSeconds": 80,
+          "startSeconds": 89,
           "thumb": "videos/accounting-spreadsheet-profit/april-17-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-17.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 240,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 800
         },
         {
           "scene": "april",
           "step": 23,
           "headline": "Letter S: materials",
           "caption": "The expense letter sorts it. S is for stock and materials you use on jobs.",
-          "startSeconds": 98,
+          "startSeconds": 110,
           "thumb": "videos/accounting-spreadsheet-profit/april-23-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-23.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 240,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 800
         },
         {
           "scene": "april",
           "step": 25,
           "headline": "Amount: £200",
           "caption": "They cost £200.",
-          "startSeconds": 108,
+          "startSeconds": 122,
           "thumb": "videos/accounting-spreadsheet-profit/april-25-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/april-25.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 240,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 800
         },
         {
           "scene": "may",
           "headline": "May: a sale and a purchase",
           "caption": "And leaflets to find new customers. A is for advertising. They cost £100.",
-          "startSeconds": 114,
+          "startSeconds": 130,
           "thumb": "videos/accounting-spreadsheet-profit/may-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/may.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 240,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 800
         },
         {
           "scene": "profit",
           "headline": "See the profit",
           "caption": "£600 profit in April, and £600 in May. The year so far: £1,500 of sales, £300 of costs, £1,200 profit.",
-          "startSeconds": 162,
+          "startSeconds": 185,
           "thumb": "videos/accounting-spreadsheet-profit/profit-thumb.webp",
           "full": "videos/accounting-spreadsheet-profit/profit.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 240,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 800
         }
       ]
     },
@@ -8109,7 +8109,7 @@
           "scene": "company-lookup",
           "headline": "Which company?",
           "caption": "Type the company number. Look up the company with Companies House.",
-          "startSeconds": 15,
+          "startSeconds": 21,
           "thumb": "videos/file-psc-verification-statement/company-lookup-thumb.webp",
           "full": "videos/file-psc-verification-statement/company-lookup.webp",
           "thumbWidth": 480,
@@ -8121,7 +8121,7 @@
           "scene": "auth",
           "headline": "Read the register",
           "caption": "Type the company's Companies House authentication code. Read the company's register data.",
-          "startSeconds": 34,
+          "startSeconds": 46,
           "thumb": "videos/file-psc-verification-statement/auth-thumb.webp",
           "full": "videos/file-psc-verification-statement/auth.webp",
           "thumbWidth": 480,
@@ -8133,7 +8133,7 @@
           "scene": "review",
           "headline": "Review the statement",
           "caption": "Each director gives other forenames and a personal code. Preview the statement before anything is filed.",
-          "startSeconds": 48,
+          "startSeconds": 63,
           "thumb": "videos/file-psc-verification-statement/review-thumb.webp",
           "full": "videos/file-psc-verification-statement/review.webp",
           "thumbWidth": 480,
@@ -8145,7 +8145,7 @@
           "scene": "pay",
           "headline": "Pay the filing fee",
           "caption": "This statement carries a filing fee, so Pay and submit opens checkout first. Back from checkout, enter the authentication code again.",
-          "startSeconds": 80,
+          "startSeconds": 103,
           "thumb": "videos/file-psc-verification-statement/pay-thumb.webp",
           "full": "videos/file-psc-verification-statement/pay.webp",
           "thumbWidth": 480,
@@ -8157,7 +8157,7 @@
           "scene": "submit",
           "headline": "File the statement",
           "caption": "Submit the confirmation statement to Companies House's sandbox. Companies House accepts the statement.",
-          "startSeconds": 116,
+          "startSeconds": 153,
           "thumb": "videos/file-psc-verification-statement/submit-thumb.webp",
           "full": "videos/file-psc-verification-statement/submit.webp",
           "thumbWidth": 480,
@@ -8170,90 +8170,77 @@
           "step": 1,
           "headline": "Directors who are PSCs",
           "caption": "Two directors are also people with significant control.",
-          "startSeconds": 132,
+          "startSeconds": 174,
           "thumb": "videos/file-psc-verification-statement/psc-1-thumb.webp",
           "full": "videos/file-psc-verification-statement/psc-1.webp",
           "thumbWidth": 480,
-          "thumbHeight": 512,
+          "thumbHeight": 498,
           "fullWidth": 1000,
-          "fullHeight": 1068
+          "fullHeight": 1040
         },
         {
           "scene": "psc",
           "step": 3,
           "headline": "Enter the personal code",
-          "caption": "Each PSC verifies with their own personal code.",
-          "startSeconds": 140,
+          "caption": "Each PSC verifies with their own personal code, then files their statement.",
+          "startSeconds": 185,
           "thumb": "videos/file-psc-verification-statement/psc-3-thumb.webp",
           "full": "videos/file-psc-verification-statement/psc-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 512,
+          "thumbHeight": 498,
           "fullWidth": 1000,
-          "fullHeight": 1068
-        },
-        {
-          "scene": "psc",
-          "step": 4,
-          "headline": "File their statement",
-          "caption": "File the verification statement for the first person.",
-          "startSeconds": 147,
-          "thumb": "videos/file-psc-verification-statement/psc-4-thumb.webp",
-          "full": "videos/file-psc-verification-statement/psc-4.webp",
-          "thumbWidth": 480,
-          "thumbHeight": 512,
-          "fullWidth": 1000,
-          "fullHeight": 1068
+          "fullHeight": 1040
         },
         {
           "scene": "psc",
           "step": 5,
           "headline": "Accepted",
           "caption": "Companies House accepts it.",
-          "startSeconds": 153,
+          "startSeconds": 200,
           "thumb": "videos/file-psc-verification-statement/psc-5-thumb.webp",
           "full": "videos/file-psc-verification-statement/psc-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 512,
+          "thumbHeight": 498,
           "fullWidth": 1000,
-          "fullHeight": 1068
+          "fullHeight": 1040
         },
         {
           "scene": "psc",
           "step": 6,
           "headline": "The second person",
           "caption": "Then the second person, with their own code.",
-          "startSeconds": 157,
+          "startSeconds": 206,
           "thumb": "videos/file-psc-verification-statement/psc-6-thumb.webp",
           "full": "videos/file-psc-verification-statement/psc-6.webp",
           "thumbWidth": 480,
-          "thumbHeight": 512,
+          "thumbHeight": 498,
           "fullWidth": 1000,
-          "fullHeight": 1068
+          "fullHeight": 1040
         },
         {
           "scene": "psc",
           "step": 9,
           "headline": "Both PSCs verified",
           "caption": "Both people with significant control are verified.",
-          "startSeconds": 166,
+          "startSeconds": 218,
           "thumb": "videos/file-psc-verification-statement/psc-9-thumb.webp",
           "full": "videos/file-psc-verification-statement/psc-9.webp",
           "thumbWidth": 480,
-          "thumbHeight": 512,
+          "thumbHeight": 498,
           "fullWidth": 1000,
-          "fullHeight": 1068
+          "fullHeight": 1040
         },
         {
           "scene": "record",
           "headline": "Your copy",
-          "caption": "Your copy of the confirmation statement shows the submission number, status and date. The people with significant control are listed in your copy.",
-          "startSeconds": 177,
+          "caption": "Your copy of the confirmation statement shows the submission number, status and date.",
+          "startSeconds": 234,
           "thumb": "videos/file-psc-verification-statement/record-thumb.webp",
           "full": "videos/file-psc-verification-statement/record.webp",
           "thumbWidth": 480,
-          "thumbHeight": 516,
+          "thumbHeight": 518,
           "fullWidth": 1000,
-          "fullHeight": 1074
+          "fullHeight": 1080
         }
       ]
     },

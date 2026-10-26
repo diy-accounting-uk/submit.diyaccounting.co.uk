@@ -31,7 +31,7 @@
     "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
   },
 
-  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
 
   "finalHoldMs": 3000,
 

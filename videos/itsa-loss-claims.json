@@ -40,6 +40,7 @@
   },
 
   "suppress": [
+    "#syntheticIndicator",
     "#feedbackEngagementBanner",
     "#feedbackEngagementSection",
     ".dev-float-left",

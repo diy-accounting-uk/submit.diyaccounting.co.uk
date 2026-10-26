@@ -101,6 +101,8 @@ const BLANK_BAND_ROWS = 4;
 const TOP_MARGIN_PX = 10;
 const MAX_TOP_CUT_FRACTION = 0.3;
 const MIN_EMPTY_TAIL_FRACTION = 0.3;
+const MIN_EMPTY_BEFORE_FOOTER_FRACTION = 0.12;
+const MAX_FOOTER_FRACTION = 0.08;
 const BOTTOM_MARGIN_PX = 40;
 const INNER_FROM = 0.14;
 const INNER_TO = 0.86;
@@ -126,7 +128,9 @@ function rowIsInk(gray, width, y) {
  * more), if that block starts within the top MAX_TOP_CUT_FRACTION of the frame.
  * Bottom: a blank run of MIN_EMPTY_TAIL_FRACTION of the height or more ends the frame
  * BOTTOM_MARGIN_PX after the content above it, which removes an empty page below a short form
- * together with the footer under it.
+ * together with the footer under it. A shorter blank run of MIN_EMPTY_BEFORE_FOOTER_FRACTION
+ * ends the frame the same way when only a footer (at most MAX_FOOTER_FRACTION of the height of
+ * ink rows) follows it.
  *
  * @returns {{top: number, bottom: number}} row indexes; bottom is exclusive
  */
@@ -157,7 +161,10 @@ export function findCutRegion({ gray, width, height }) {
     const blank = y < height && !ink[y];
     if (blank && runStart < 0) runStart = y;
     if (!blank && runStart >= 0) {
-      if (y - runStart >= height * MIN_EMPTY_TAIL_FRACTION && runStart > top) {
+      const inkAfter = ink.slice(y).filter(Boolean).length;
+      const longRun = y - runStart >= height * MIN_EMPTY_TAIL_FRACTION;
+      const runBeforeFooter = y - runStart >= height * MIN_EMPTY_BEFORE_FOOTER_FRACTION && inkAfter <= height * MAX_FOOTER_FRACTION;
+      if ((longRun || runBeforeFooter) && runStart > top) {
         bottom = Math.min(height, runStart + BOTTOM_MARGIN_PX);
         break;
       }

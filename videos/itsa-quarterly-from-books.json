@@ -42,7 +42,7 @@
       "sidePct": 12.5
     }
   },
-  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
   "finalHoldMs": 2500,
   "scenes": [
     {
@@ -182,7 +182,7 @@
       "still": true,
       "steps": [
         {
-          "scrollTo": "#syntheticIndicator",
+          "scrollTo": "h1",
           "action": "dropFile",
           "target": "#booksImportDrop",
           "file": "videos/books/brickwork-pro-se-vat.json",
@@ -191,7 +191,7 @@
           "keyWord": "book"
         },
         {
-          "scrollTo": "#syntheticIndicator",
+          "scrollTo": "h1",
           "action": "await",
           "until": "#booksImportStatus:has-text('figures from brickwork-pro-se-vat.json')",
           "label": "Reading the book",

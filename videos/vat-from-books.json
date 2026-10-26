@@ -43,7 +43,7 @@
       "sidePct": 12.5
     }
   },
-  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
   "finalHoldMs": 2500,
   "scenes": [
     {

@@ -41,7 +41,7 @@
       "sidePct": 12.5
     }
   },
-  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
   "finalHoldMs": 3000,
   "scenes": [
     {
@@ -421,16 +421,14 @@
           "target": "#pscPersonalCode-0",
           "text": "CWMPS832223",
           "secret": true,
-          "caption": "Each PSC verifies with their own personal code.",
+          "caption": "Each PSC verifies with their own personal code, then files their statement.",
           "headline": "Enter the personal code",
           "keyWord": "code"
         },
         {
           "action": "click",
           "target": "[data-psc-verify-index='0']",
-          "caption": "File the verification statement for the first person.",
-          "headline": "File their statement",
-          "keyWord": "File"
+          "note": "No caption: the next step's frame shows the result of this click."
         },
         {
           "action": "await",
@@ -504,10 +502,7 @@
         },
         {
           "action": "hold",
-          "ms": 3000,
-          "caption": "The people with significant control are listed in your copy.",
-          "headline": "Kept as a record",
-          "keyWord": "record"
+          "ms": 3000
         }
       ]
     }
