@@ -19,6 +19,7 @@ import {
   getVatReturn,
   submitVatReturn,
   getVatReceipt,
+  listVatReceipts,
   renderMicroEntityAccounts,
   submitMicroEntityAccounts,
   pollAccountsSubmission,
@@ -477,6 +478,29 @@ describe("submit-tools", () => {
       await expect(getVatReceipt(session, { name: "2025-03-31-123456789012.json", clientId: "not-my-client" })).rejects.toThrow(
         "client-not-found",
       );
+    });
+  });
+
+  describe("list_vat_receipts", () => {
+    it("lists the stored receipts with the session bearer on the plain Authorization header", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { receipts: [{ name: "2025-03-31-123456789012.json" }] }));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await listVatReceipts(session, {});
+
+      expect(result).toEqual({ receipts: [{ name: "2025-03-31-123456789012.json" }] });
+      const [url, init] = mockFetch.mock.calls[0];
+      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/hmrc/receipt");
+      expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
+    });
+
+    it("carries clientId as a query parameter when given", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { receipts: [] }));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await listVatReceipts(session, { clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" });
+
+      expect(mockFetch.mock.calls[0][0]).toBe("https://submit.diyaccounting.co.uk/api/v1/hmrc/receipt?clientId=01ARZ3NDEKTSV4RRFFQ69G5FAV");
     });
   });
 

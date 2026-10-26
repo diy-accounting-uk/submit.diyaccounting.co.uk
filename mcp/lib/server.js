@@ -29,6 +29,7 @@ import {
   getVatReturn,
   submitVatReturn,
   getVatReceipt,
+  listVatReceipts,
   renderMicroEntityAccounts,
   submitMicroEntityAccounts,
   pollAccountsSubmission,
@@ -406,6 +407,16 @@ export const TOOLS = {
       clientId: z.string().optional().describe("A practice client's id, to check the receipt belongs to that client"),
     },
     handler: getVatReceipt,
+  },
+  list_vat_receipts: {
+    description:
+      "The receipts Submit has stored for the signed-in account, the list its receipts page shows: each row carries the " +
+      "name get_vat_receipt takes. Use it to find a receipt this chat did not just file. clientId narrows the list to one of the " +
+      "practice's clients.",
+    inputSchema: {
+      clientId: z.string().optional().describe("A practice client's id, to list that client's receipts"),
+    },
+    handler: listVatReceipts,
   },
   render_micro_entity_accounts_sandbox: {
     description:

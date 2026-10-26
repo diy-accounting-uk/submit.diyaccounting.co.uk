@@ -330,6 +330,21 @@ export async function getVatReceipt(session, params = {}) {
   return callSubmitApi(session, `/api/v1/hmrc/receipt/${encodeURIComponent(name)}${query}`);
 }
 
+/**
+ * list_vat_receipts: the stored receipts the account page lists, newest first as the route
+ * answers them, each with the name get_vat_receipt takes. clientId narrows the list to one of the
+ * practice's clients (hmrcReceiptGet.js answers 403 client-not-found for a client that is not this
+ * practice's own).
+ * @param {Object} session
+ * @param {{clientId?: string}} params
+ * @returns {Promise<{receipts: Object[]}>}
+ */
+export async function listVatReceipts(session, params = {}) {
+  const { clientId } = params;
+  const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
+  return callSubmitApi(session, `/api/v1/hmrc/receipt${query}`);
+}
+
 const ACCOUNTS_STATEMENT_FIELDS = ["section477Exemption", "membersNotRequiredAudit", "directorsResponsibilities", "microEntityProvisions"];
 
 /**
