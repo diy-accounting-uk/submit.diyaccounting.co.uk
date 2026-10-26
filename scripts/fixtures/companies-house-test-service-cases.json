@@ -12,6 +12,18 @@
     }
   },
   {
+    "name": "company-data-request-accounts-company",
+    "type": "companyDataRequest",
+    "companyNumber": "04549236",
+    "companyAuthenticationCode": "AUTH09",
+    "madeUpDate": "2026-09-21",
+    "expectedOutcome": {
+      "status": "OK",
+      "pinned": false,
+      "note": "Reads the register entry (registered office, statement of capital, officers) of the company the accounts cases file for."
+    }
+  },
+  {
     "name": "payment-periods-request",
     "type": "paymentPeriodsRequest",
     "companyNumber": "03176906",
