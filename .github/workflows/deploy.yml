@@ -232,15 +232,15 @@ jobs:
       isSkippingDeploy: ${{ steps.normalise.outputs.isSkippingDeploy }}
       github-environment: ${{ steps.normalise.outputs.github-environment }}
 
-  # Reasoned job filter, dual-run trial: the same select-jobs job test.yml carries, advisory
-  # only. No job below carries a `needs: [select-jobs]` and no job's `if:` reads its output, so
-  # whatever it decides never delays or changes this deploy's critical path; it only writes a
-  # decision artifact recording which behaviour suites and stack jobs it judges this change has
-  # nothing left to prove for, so a later comparison (scripts/ci/select-jobs-trial.mjs) can check
-  # each advised skip against what that job actually did. See select-jobs.mjs's module comment
-  # for the shared eligibility, budget, and kill-switch behaviour this job also carries; the
-  # `continue-on-error: true` and no job-level `if:` still apply even though nothing needs this
-  # job's success, so a Bedrock error here never surfaces as a red status check.
+  # Reasoned job filter: the same select-jobs job test.yml carries. It writes a decision artifact
+  # recording which behaviour suites and stack jobs it judges this change has nothing left to
+  # prove for, so scripts/ci/select-jobs-trial.mjs can check each advised skip against what that
+  # job did. Its advised-json output is read by the web-test-* jobs of the enforced group, each
+  # guarded by the REASONED_JOB_FILTER repository variable ('off' runs every job) and by the ref
+  # (main runs every job). The deploy-* stack jobs and web-test stay advisory: see the rollout in
+  # PLAN_REASONED_JOB_FILTER.md. See select-jobs.mjs's module comment for the shared eligibility,
+  # budget, and kill-switch behaviour; `continue-on-error: true` and no job-level `if:` mean a
+  # Bedrock error here never surfaces as a red status check.
   select-jobs:
     name: 'select jobs'
     needs:
@@ -261,6 +261,7 @@ jobs:
       SELECT_JOBS_MODE: 'advisory'
     outputs:
       skip-json: ${{ steps.decide.outputs.skip-json }}
+      advised-json: ${{ steps.decide.outputs.advised-json }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -440,6 +441,8 @@ jobs:
             --mode "${SELECT_JOBS_MODE}" \
             --out "${OUT_DIR}/decision.json")
           echo "skip-json=${SKIP_JSON}" | tee -a "$GITHUB_OUTPUT"
+          ADVISED_JSON=$(jq -c '.advisedSkip // []' "${OUT_DIR}/decision.json" 2>/dev/null || echo '[]')
+          echo "advised-json=${ADVISED_JSON}" | tee -a "$GITHUB_OUTPUT"
 
       # This run also calls test.yml with `uses:` (job "test"), whose own select-jobs job shares
       # this same github.run_id and uploads its own decision artifact - the name is prefixed by
@@ -2481,9 +2484,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-auth:
-    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-auth')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'authBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - names
       - params
       - set-origins
@@ -2504,9 +2508,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-token-enforcement:
-    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-token-enforcement')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'tokenEnforcementBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2527,9 +2532,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-payment:
-    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-payment')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'paymentBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2573,9 +2579,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-bundle:
-    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-bundle')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'bundleBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2600,9 +2607,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-pass-redemption:
-    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-pass-redemption')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'passRedemptionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2627,9 +2635,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-post-vat-return-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-post-vat-return-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'postVatReturnBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2654,9 +2663,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-practice-licence-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-practice-licence-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'practiceLicenceBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2681,9 +2691,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-get-vat-return-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-get-vat-return-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'getVatReturnBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2708,9 +2719,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-obligation-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-obligation-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'getVatObligationsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2736,9 +2748,10 @@ jobs:
 
   web-test-liability-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-liability-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'getVatLiabilitiesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2764,9 +2777,10 @@ jobs:
 
   web-test-vat-payment-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-vat-payment-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'getVatPaymentsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2792,9 +2806,10 @@ jobs:
 
   web-test-vat-penalty-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-vat-penalty-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'getVatPenaltiesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2820,9 +2835,10 @@ jobs:
 
   web-test-diya-gl-subscription:
     # The three subscription bundles list on ci only until the operator lifts each one.
-    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-diya-gl-subscription')) && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'diyaGlSubscriptionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2843,9 +2859,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-fraud-prevention-headers-vat-synthetic:
-    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-fraud-prevention-headers-vat-synthetic')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'postVatReturnFraudPreventionHeadersBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2870,9 +2887,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-compliance-synthetic:
-    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-compliance-synthetic')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'complianceBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2897,9 +2915,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-help-synthetic:
-    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-help-synthetic')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'helpBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2924,9 +2943,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-vatValidation-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-vatValidation-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'vatValidationBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2951,9 +2971,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-vatSchemes-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-vatSchemes-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'vatSchemesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -2979,9 +3000,10 @@ jobs:
 
   web-test-companies-house:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-companies-house')) && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'companiesHouseBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -3010,9 +3032,10 @@ jobs:
     # is turned on. Signs in to the real Companies House sandbox, so it needs
     # COMPANIES_HOUSE_SANDBOX_API_KEY, TEST_COMPANIES_HOUSE_USER_ID, TEST_COMPANIES_HOUSE_PASSWORD
     # and TEST_COMPANIES_HOUSE_TOTP_SECRET on the ci environment (see probe-test.yml).
-    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && needs.params.outputs.runCompaniesHouseSandboxFiling == 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-change-registered-office')) && needs.names.outputs.environment-name == 'ci' && needs.params.outputs.runCompaniesHouseSandboxFiling == 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'changeRegisteredOfficeBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -3041,9 +3064,10 @@ jobs:
     # is turned on. Signs in to the real Companies House sandbox, so it needs
     # COMPANIES_HOUSE_SANDBOX_API_KEY, TEST_COMPANIES_HOUSE_USER_ID, TEST_COMPANIES_HOUSE_PASSWORD
     # and TEST_COMPANIES_HOUSE_TOTP_SECRET on the ci environment (see probe-test.yml).
-    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && needs.params.outputs.runCompaniesHouseSandboxFiling == 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-change-registered-email')) && needs.names.outputs.environment-name == 'ci' && needs.params.outputs.runCompaniesHouseSandboxFiling == 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'changeRegisteredEmailBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -3069,9 +3093,10 @@ jobs:
 
   web-test-itsa-business-details-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-business-details-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaBusinessDetailsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -3097,9 +3122,10 @@ jobs:
 
   web-test-itsa-obligations-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-obligations-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaObligationsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -3125,9 +3151,10 @@ jobs:
 
   web-test-itsa-uk-property-period-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-uk-property-period-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaUkPropertyPeriodBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -3153,9 +3180,10 @@ jobs:
 
   web-test-itsa-uk-property-annual-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-uk-property-annual-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaUkPropertyAnnualSubmissionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -3181,9 +3209,10 @@ jobs:
 
   web-test-itsa-losses-and-claims-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-losses-and-claims-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaLossesAndClaimsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -3209,9 +3238,10 @@ jobs:
 
   web-test-itsa-self-employment-period-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-self-employment-period-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaSelfEmploymentPeriodBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -3237,9 +3267,10 @@ jobs:
 
   web-test-itsa-annual-submission-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-annual-submission-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaAnnualSubmissionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -3265,9 +3296,10 @@ jobs:
 
   web-test-itsa-final-declaration-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-final-declaration-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaFinalDeclarationBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
@@ -3292,9 +3324,10 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-generate-pass-activity:
-    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-generate-pass-activity')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'generatePassActivityBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
+      - select-jobs
       - params
       - names
       - set-origins
