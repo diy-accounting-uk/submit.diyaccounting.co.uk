@@ -54,8 +54,8 @@ const POSITIVE_EXAMPLES = {
 };
 
 describe("DENY_PATTERNS", () => {
-  test("has exactly twelve patterns", () => {
-    expect(DENY_PATTERNS).toHaveLength(12);
+  test("has exactly seventeen patterns", () => {
+    expect(DENY_PATTERNS).toHaveLength(17);
   });
 
   test("eori and hash64 come before vrn", () => {
@@ -334,5 +334,35 @@ describe("CLI --markdown mode", () => {
     const result = runCliMarkdown(markdown);
     expect(result.status).toBe(0);
     expect(result.stdout).toBe(`${markdown.trimEnd()}\n`);
+  });
+});
+
+describe("credential patterns", () => {
+  const b62 = (n) => "aB3dE5gH7jK9mN1pQ3sT5vW7yZ9bC1eF3hJ5".repeat(Math.ceil(n / 36)).slice(0, n);
+  test.each([
+    ["github-token", `token ghs_${b62(36)} end`],
+    ["github-token", `ghp_${b62(40)}`],
+    ["github-token", `gho_${b62(36)}`],
+    ["github-token", `ghu_${b62(36)}`],
+    ["github-token", `ghr_${b62(36)}`],
+    ["github-pat", `github_pat_11ABCDEFG0${b62(30)}_${b62(30)}`],
+    ["aws-secret-key", "aws_secret_access_key = wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"],
+    ["aws-secret-key", "AWS secret: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"],
+    ["aws-session-token", "AWS_SESSION_TOKEN=IQoJb3JpZ2luX2VjEXAMPLE+abc/def=="],
+    ["aws-session-token", "FwoGZXIvYXdzEXAMPLE123"],
+    ["long-base64", `blob ${b62(220)} end`],
+  ])("redacts %s", (label, input) => {
+    const { redacted, redactions } = redact(input);
+    expect(redactions).toContain(label);
+    expect(redacted).toContain(`[redacted:${label}]`);
+    expect(redacted).not.toMatch(/ghs_|ghp_|gho_|ghu_|ghr_|github_pat_|wJalr|IQoJb|FwoGZ|aB3dE5gH7j/);
+  });
+
+  test("leaves ordinary prose, a git SHA and a short slug alone", () => {
+    const prose =
+      "The secret to a good VAT return is checking Box 5. Commit 3f786850e387550fdab836ed7e6dc881de23001b fixed it. See aws-lambda-handler and ghost_writer_notes for details.";
+    const { redacted, redactions } = redact(prose);
+    expect(redactions).toEqual([]);
+    expect(redacted).toBe(prose);
   });
 });

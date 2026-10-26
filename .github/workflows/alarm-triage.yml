@@ -54,6 +54,7 @@ jobs:
         with:
           sparse-checkout: .github/actions/agent-run-budget
           sparse-checkout-cone-mode: false
+          persist-credentials: false
 
       - name: Stop once ${{ env.TRIAGE_BUDGET_PER_DAY }} triage runs have already posted a result today
         id: budget-guard
@@ -168,6 +169,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
 
       - name: Set up Node
         if: steps.role.outputs.configured == 'true'
@@ -726,6 +728,8 @@ jobs:
       - name: Checkout
         if: steps.key.outputs.configured == 'true'
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Set up Node
         if: steps.key.outputs.configured == 'true'

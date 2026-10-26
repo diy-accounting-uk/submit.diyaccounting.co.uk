@@ -75,6 +75,8 @@ jobs:
       # holding their action.yml is on disk - this job otherwise never checks anything out.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Stop once ${{ env.SUPPORT_TRIAGE_BUDGET_PER_DAY }} triage runs have already posted a result today
         id: budget-guard
@@ -215,6 +217,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
 
       - name: Set up Node
         if: steps.role.outputs.configured == 'true'
@@ -284,6 +287,7 @@ jobs:
         with:
           model-id: ${{ env.MODEL_ID }}
           small-fast-model-id: ${{ env.MODEL_ID }}
+          allowed-tools: 'Read,Grep,Glob'
           output-file: /tmp/support-triage.json
           prompt-file: prompts/support-triage.md
 
@@ -332,8 +336,13 @@ jobs:
             exit 1
           fi
           awk '/^## Drafted reply$/{exit} {print}' "$FINAL" > /tmp/support-comment.md
+          node scripts/support-triage-public-half.mjs web/public/faqs.toml /tmp/support-comment.md
           grep '^_Written by ' "$FINAL" >> /tmp/support-comment.md
-          awk '/^## Drafted reply$/{flag=1; next} flag' "$FINAL" | grep -v '^_Written by ' > /tmp/support-reply.md
+          {
+            echo "Drafted by an AI from a public support ticket and not yet reviewed by a person. Read and edit before sending."
+            echo
+            awk '/^## Drafted reply$/{flag=1; next} flag' "$FINAL" | grep -v '^_Written by '
+          } > /tmp/support-reply.md
           {
             echo "# This reply was drafted by an AI and not reviewed by a person."
             echo
