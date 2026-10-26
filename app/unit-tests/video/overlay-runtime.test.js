@@ -40,6 +40,10 @@ function makeNode(tagName) {
     children: [],
     parentNode: null,
     isConnected: false,
+    attributes: {},
+    setAttribute(name, value) {
+      node.attributes[name] = value;
+    },
     appendChild(child) {
       node.children.push(child);
       child.parentNode = node;

@@ -85,6 +85,7 @@
     // a compact, left-accented tag. Static once shown (opacity only, matching every other cue here) — the one animated thing about it is
     // its single key word's colour, never a repeat, per WCAG SC 2.3.1.
     headlineBox = document.createElement("div");
+    headlineBox.setAttribute("data-svc-headline", "");
     headlineBox.style.cssText =
       "position:absolute;transform:translateX(-50%);max-width:680px;padding:12px 20px;border-radius:8px;" +
       `background:rgba(12,14,18,0.82);border:1px solid rgba(255,255,255,0.25);border-left:3px solid ${ACCENT};` +

@@ -39,6 +39,7 @@ import { writeVtt, writeTranscript, writeTimeline, captionTextForStep } from "./
 import { substituteValues } from "./lib/video/values.js";
 import { buildCaptureManifest, writeCaptureManifest } from "./lib/video/pipelineVersion.js";
 import { collectSecrets, assertNoSecrets } from "./lib/video/secrets.js";
+import { writeCardFreeStill } from "./lib/video/stepStill.js";
 import { synthesizeSpeech, audioDurationMs } from "./lib/video/narration.js";
 
 const ANALYTICS_URL_FRAGMENTS = ["google-analytics", "googletagmanager", "analytics.js", "gtag/js", "client.rum"];
@@ -684,6 +685,7 @@ async function main() {
           const remaining = headlineHideAt() - elapsed();
           if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
           await overlayHeadline(page, null, null, null, script.viewport);
+          if (!fastForward) await writeCardFreeStill(page, stillsDir, scene.id, stepIndex);
         }
 
         // Only a WAIT_CAPABLE_ACTIONS step can navigate or draw the timer pill, so this is the
