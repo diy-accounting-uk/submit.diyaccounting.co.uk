@@ -2486,12 +2486,19 @@ jobs:
           retention-days: 30
           path: target/exploratory-crawl/
 
-      - name: Lookup origin bucket name from EdgeStack
+      - name: Lookup origin bucket name of the ci apex set from its EdgeStack
         if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
         id: lookup-bucket
         shell: bash
         run: |
-          EDGE_STACK="${{ needs.names.outputs.deployment-name }}-app-EdgeStack"
+          APEX_DEPLOYMENT=$(aws ssm get-parameter --name "/submit/ci/last-known-good-deployment" \
+            --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          if [ -z "$APEX_DEPLOYMENT" ] || [ "$APEX_DEPLOYMENT" = "None" ]; then
+            echo "WARNING: No /submit/ci/last-known-good-deployment, skipping publish"
+            echo "BUCKET_NAME=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          EDGE_STACK="${APEX_DEPLOYMENT}-app-EdgeStack"
           BUCKET_NAME=$(aws cloudformation describe-stacks \
             --stack-name "${EDGE_STACK}" --region us-east-1 \
             --query 'Stacks[0].Outputs[?OutputKey==`OriginBucketName`].OutputValue' \
@@ -2500,6 +2507,7 @@ jobs:
             echo "WARNING: Could not find OriginBucketName from stack ${EDGE_STACK}, skipping publish"
             echo "BUCKET_NAME=" >> "$GITHUB_OUTPUT"
           else
+            echo "Found origin bucket of ${APEX_DEPLOYMENT}: ${BUCKET_NAME}"
             echo "BUCKET_NAME=${BUCKET_NAME}" >> "$GITHUB_OUTPUT"
           fi
 
@@ -2512,6 +2520,7 @@ jobs:
         run: |
           TARGET_DIR="web/public/tests/exploratory/${CRAWL_DATE?}"
           mkdir -p "${TARGET_DIR?}"
-          cp -r target/exploratory-crawl/. "${TARGET_DIR?}/"
+          cp -r target/exploratory-crawl/ci "${TARGET_DIR?}/ci"
+          cp target/exploratory-crawl/summary-ci.md "${TARGET_DIR?}/summary-ci.md"
           echo "Uploading the crawl to S3 bucket: ${BUCKET_NAME?}"
           aws s3 cp "${TARGET_DIR?}/" "s3://${BUCKET_NAME?}/tests/exploratory/${CRAWL_DATE?}/" --recursive

@@ -202,3 +202,65 @@ export function ctResultCopyHtml({ company, utr, boxes, computation, outcome, da
     ],
   });
 }
+
+/** The record status of a Companies House transaction, from the status of each filing in it. */
+export function transactionStatus(transaction) {
+  const filings = transaction.filings || [];
+  if (filings.some((entry) => entry.status === "rejected")) return { kind: "rejected", text: "Rejected by Companies House" };
+  if (filings.length > 0 && filings.every((entry) => entry.status === "accepted"))
+    return { kind: "accepted", text: "Accepted by Companies House" };
+  return { kind: "pending", text: "With Companies House" };
+}
+
+/**
+ * The customer copy of a change to a company's registered office address or registered email address.
+ * @param {object} filed
+ * @param {string} filed.title - e.g. "Change of registered office address"
+ * @param {string} filed.companyNumber
+ * @param {{transactionId: string, filings?: {status: string}[]}} filed.transaction
+ * @param {[string, string][]} filed.details - label and value of each item as submitted
+ * @param {string} filed.dateText
+ * @returns {string}
+ */
+export function registeredChangeCopyHtml({ title, companyNumber, transaction, details, dateText }) {
+  const status = transactionStatus(transaction);
+  const changeRecord = page(
+    `${recordHeading({
+      nameHtml: `Company number ${escapeRecordText(companyNumber)}`,
+      title,
+      subtitleHtml: `Submitted ${escapeRecordText(dateText)}`,
+    })}${textTable([["Company number", companyNumber], ...details])}`,
+  );
+  const receiptRecord = page(
+    `${recordHeading({
+      nameHtml: "Companies House receipt",
+      referenceHtml: [`Submission number ${escapeRecordText(transaction.transactionId)}`],
+      title: "Receipt from Companies House",
+      subtitleHtml: `Filed ${escapeRecordText(dateText)}`,
+    })}${textTable([
+      ["Submission number", transaction.transactionId],
+      ["Company number", companyNumber],
+      ["Status", status.text],
+      ["Filed on", dateText],
+    ])}`,
+  );
+  return customerCopyHtml({
+    title: `Your copy of the ${title.charAt(0).toLowerCase()}${title.slice(1)}`,
+    reference: { label: "Submission number", value: String(transaction.transactionId ?? ABSENT) },
+    status,
+    date: dateText,
+    sections: [
+      {
+        heading: "The change as submitted",
+        explanation: "This is what you asked Companies House to record on the register.",
+        recordHtml: changeRecord,
+      },
+      {
+        heading: "Receipt from Companies House",
+        explanation: "Companies House gave this filing a submission number. Quote it if you write to Companies House about this change.",
+        recordHtml: receiptRecord,
+      },
+    ],
+    links: [{ href: "companySearch.html", text: "Look up another company" }, RECEIPTS_LINK],
+  });
+}

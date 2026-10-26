@@ -36,6 +36,13 @@ export const LANE_BASE_URLS = {
 export const DEFAULT_OUT_DIR = "target/exploratory-crawl";
 export const DEFAULT_STATE_FILE = ".cache/playwright-mcp/ci-state.json";
 export const DEFAULT_MAX_PAGES = 300;
+// The prod web ACL blocks an address that sends more than 2000 requests in 5 minutes. The crawl
+// keeps its own count under that line, across all of its browser contexts, which share one address.
+export const PACING_WINDOW_MS = 5 * 60 * 1000;
+export const PROD_REQUEST_BUDGET = 1500;
+// Requests one page may add after the pacer lets it start: the page, its assets and the form retries.
+export const PAGE_REQUEST_RESERVE = 80;
+export const BLOCKED_RUN_MINIMUM = 3;
 export const PAGE_WEIGHT_LIMIT_BYTES = 1.5 * 1024 * 1024;
 export const FINDING_CLASSES = [
   "http-error",
@@ -73,6 +80,7 @@ export function parseArguments(argv) {
     maxPages: DEFAULT_MAX_PAGES,
     stateFile: DEFAULT_STATE_FILE,
     outDir: DEFAULT_OUT_DIR,
+    requestBudget: null,
   };
   const valueFlags = {
     "--lane": "lane",
@@ -83,6 +91,7 @@ export function parseArguments(argv) {
     "--max-pages": "maxPages",
     "--state-file": "stateFile",
     "--out": "outDir",
+    "--request-budget": "requestBudget",
   };
   const listKeys = new Set(["roles", "viewports", "themes"]);
   for (let index = 0; index < argv.length; index += 1) {
@@ -100,6 +109,11 @@ export function parseArguments(argv) {
       options[key] = Number.parseInt(value, 10);
       if (!Number.isInteger(options[key]) || options[key] < 1) {
         throw new Error("--max-pages needs a positive whole number");
+      }
+    } else if (key === "requestBudget") {
+      options[key] = Number.parseInt(value, 10);
+      if (!Number.isInteger(options[key]) || options[key] < 0) {
+        throw new Error("--request-budget needs a whole number, 0 for no limit");
       }
     } else {
       options[key] = value;
@@ -121,7 +135,75 @@ export function parseArguments(argv) {
   for (const theme of options.themes) {
     if (!THEMES.includes(theme)) throw new Error(`Unknown theme ${theme}`);
   }
+  if (options.requestBudget === null) {
+    options.requestBudget = options.lane === "prod" ? PROD_REQUEST_BUDGET : 0;
+  }
   return options;
+}
+
+// Counts the requests of every browser context in a sliding window and holds a page back until its
+// reserve fits under the budget. A budget of 0 never waits.
+export function createRequestPacer({ budget, windowMs = PACING_WINDOW_MS, reserve = PAGE_REQUEST_RESERVE, now = Date.now, sleep }) {
+  const sleepFor = sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  const stamps = [];
+  const prune = () => {
+    const cutoff = now() - windowMs;
+    while (stamps.length > 0 && stamps[0] <= cutoff) stamps.shift();
+  };
+  return {
+    record() {
+      stamps.push(now());
+    },
+    count() {
+      prune();
+      return stamps.length;
+    },
+    async waitForRoom() {
+      if (!budget) return 0;
+      let waited = 0;
+      prune();
+      while (stamps.length > 0 && stamps.length + reserve > budget) {
+        const delay = Math.max(1, stamps[0] + windowMs - now() + 1);
+        await sleepFor(delay);
+        waited += delay;
+        prune();
+      }
+      return waited;
+    },
+  };
+}
+
+// A run of consecutive 403 pages is the edge refusing this client, not a missing page each time.
+// The first page of the run carries one finding that names the block; the rest carry none.
+export function collapseBlockedRuns(pages, minimumRun = BLOCKED_RUN_MINIMUM) {
+  const result = [];
+  let index = 0;
+  while (index < pages.length) {
+    let end = index;
+    while (end < pages.length && pages[end].status === 403) end += 1;
+    const length = end - index;
+    if (length >= minimumRun) {
+      const first = pages[index];
+      const last = pages[end - 1];
+      result.push({
+        ...first,
+        findings: [
+          {
+            class: "http-error",
+            detail: `blocked: status 403 on ${length} consecutive pages from ${first.label} to ${last.label}; the edge refused this client, so these pages are unchecked`,
+          },
+        ],
+      });
+      for (let rest = index + 1; rest < end; rest += 1) {
+        result.push({ ...pages[rest], findings: [] });
+      }
+      index = end;
+    } else {
+      result.push(pages[index]);
+      index += 1;
+    }
+  }
+  return result;
 }
 
 // Returns the absolute URL to crawl, or null when the link is not a page of this site.
@@ -276,19 +358,29 @@ export function renderSummary(runs) {
 }
 
 // The in-page measurement. It runs inside the browser, so it takes no outside names.
-function measurePage() {
+export function measurePage() {
   const developerSelector = ".developer, [data-developer], details, pre, code, script, style, textarea, input, select, noscript";
   const clone = document.body.cloneNode(true);
   clone.querySelectorAll(developerSelector).forEach((element) => element.remove());
   const brokenImages = Array.from(document.images)
     .filter((image) => image.complete && image.naturalWidth === 0 && image.currentSrc)
     .map((image) => image.currentSrc);
+  // Screen-reader-only text is clipped to nothing on purpose: a clip rectangle or clip path that
+  // shows no pixels, or a box of one pixel or less.
+  const isVisuallyHidden = (element, style) => {
+    const clip = (style.clip ?? "").replace(/\s+/g, "");
+    if (/^rect\(0(px)?,0(px)?,0(px)?,0(px)?\)$/.test(clip)) return true;
+    if (/^(inset\((50|100)%\)|circle\(0|polygon\(0)/.test((style.clipPath ?? "").replace(/\s+/g, ""))) return true;
+    const box = element.getBoundingClientRect();
+    return box.width <= 1 && box.height <= 1;
+  };
   const overflowingText = [];
   for (const element of document.body.querySelectorAll("*")) {
     if (overflowingText.length >= 10) break;
     if (element.children.length > 0 && !element.matches("a, button, label, td, th, li, p, h1, h2, h3, h4, span")) continue;
     const style = getComputedStyle(element);
     if (style.display === "none" || style.visibility === "hidden") continue;
+    if (isVisuallyHidden(element, style)) continue;
     if (!element.textContent.trim()) continue;
     if (
       style.overflowX === "visible" &&
@@ -314,7 +406,7 @@ function measurePage() {
   };
 }
 
-async function crawlOne({ browser, lane, role, viewport, theme, baseUrl, maxPages, storageState, outDir }) {
+async function crawlOne({ browser, lane, role, viewport, theme, baseUrl, maxPages, storageState, outDir, pacer }) {
   const runDir = path.join(outDir, lane, role, `${viewport}-${theme}`);
   fs.mkdirSync(runDir, { recursive: true });
   const context = await browser.newContext({
@@ -325,6 +417,7 @@ async function crawlOne({ browser, lane, role, viewport, theme, baseUrl, maxPage
     hasTouch: viewport === "phone",
   });
   const page = await context.newPage();
+  page.on("request", () => pacer.record());
   let consoleErrors = [];
   let failedRequests = [];
   let bytes = 0;
@@ -387,6 +480,7 @@ async function crawlOne({ browser, lane, role, viewport, theme, baseUrl, maxPage
       listVariantsTaken.set(base, taken + 1);
     }
 
+    await pacer.waitForRoom();
     if (isDownloadLink(urlString)) {
       const response = await context.request.get(urlString, { failOnStatusCode: false, timeout: 30000 }).catch(() => null);
       const body = response ? await response.body().catch(() => Buffer.alloc(0)) : Buffer.alloc(0);
@@ -438,6 +532,7 @@ async function crawlOne({ browser, lane, role, viewport, theme, baseUrl, maxPage
     }
 
     for (let formIndex = 0; formIndex < Math.min(measured.formCount, 3) && pages.length < maxPages; formIndex += 1) {
+      await pacer.waitForRoom();
       await page.goto(urlString, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => null);
       consoleErrors = [];
       failedRequests = [];
@@ -456,7 +551,8 @@ async function crawlOne({ browser, lane, role, viewport, theme, baseUrl, maxPage
     }
   }
 
-  const result = { lane, role, viewport, theme, baseUrl, pageCount: pages.length, counts: countByClass(pages), pages };
+  const collapsed = collapseBlockedRuns(pages);
+  const result = { lane, role, viewport, theme, baseUrl, pageCount: collapsed.length, counts: countByClass(collapsed), pages: collapsed };
   fs.writeFileSync(path.join(runDir, "findings.json"), JSON.stringify(result, null, 2) + "\n");
   fs.writeFileSync(path.join(runDir, "contact-sheet.html"), renderContactSheet(result));
   await context.close();
@@ -476,6 +572,7 @@ export async function main(argv = process.argv.slice(2)) {
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ headless: true });
   const runs = [];
+  const pacer = createRequestPacer({ budget: options.requestBudget });
   try {
     for (const role of options.roles) {
       const storageState = role === "visitor" ? undefined : options.stateFile;
@@ -492,6 +589,7 @@ export async function main(argv = process.argv.slice(2)) {
             maxPages: options.maxPages,
             storageState,
             outDir: options.outDir,
+            pacer,
           }),
         ),
       );

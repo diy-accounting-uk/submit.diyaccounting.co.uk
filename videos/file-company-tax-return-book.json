@@ -229,6 +229,7 @@
           "action": "await",
           "until": "#booksImportStatus:has-text('Filled')",
           "label": "Reading the book",
+          "scrollTo": { "role": "heading", "name": "Fill from your books" },
           "timeoutMs": 60000,
           "caption": "The accounts and the tax figures fill from the book.",
           "headline": "The form fills itself",
@@ -253,6 +254,7 @@
         {
           "action": "point",
           "target": "#workedTax",
+          "scrollTo": "#workedTax",
           "dwellMs": 700,
           "caption": "The tax is worked out beside your answers.",
           "headline": "The tax is worked out",
@@ -354,6 +356,7 @@
         {
           "action": "point",
           "target": "#computationsTable",
+          "scrollTo": { "role": "heading", "name": "Computations" },
           "caption": "The tax computation sits beside the return.",
           "headline": "The tax computation",
           "keyWord": "computation",

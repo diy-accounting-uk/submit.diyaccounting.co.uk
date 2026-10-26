@@ -23,6 +23,14 @@ export async function serveHmrcFieldTableAssets(page) {
   await serveFile(page, "**/lib/hmrc-field-table.css", "lib/hmrc-field-table.css", "text/css");
 }
 
+// The real filing result record and the Companies House lane banner, for a Companies House filing page whose other scripts are stubbed out.
+export async function serveFilingResultRecord(page) {
+  for (const name of ["filing-result-record", "filing-record", "submission-record", "ct600-fields", "companies-house-lane"]) {
+    await serveFile(page, `**/lib/${name}.js`, `lib/${name}.js`, "application/javascript");
+  }
+  await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
+}
+
 // The real HMRC Assist check, for a page that mounts or reads it.
 export function serveHmrcAssistWidget(page) {
   return serveFile(page, "**/widgets/hmrc-assist-messages.js", "widgets/hmrc-assist-messages.js", "application/javascript");

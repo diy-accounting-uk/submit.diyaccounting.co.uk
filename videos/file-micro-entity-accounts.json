@@ -215,21 +215,30 @@
           "action": "type",
           "target": "#directorName",
           "text": "Joanna Hale",
+          "scrollTo": { "role": "heading", "name": "Employees and director" }
+        },
+        {
+          "action": "fill",
+          "target": "#directorDateApproved",
+          "value": "{{today}}",
           "caption": "Name the director approving the accounts.",
           "headline": "Name the approving director",
           "keyWord": "director"
         },
-        { "action": "fill", "target": "#directorDateApproved", "value": "{{today}}" },
         {
           "action": "click",
           "target": "#statementSection477Exemption",
+          "scrollTo": { "role": "heading", "name": "Statements" }
+        },
+        { "action": "click", "target": "#statementMembersNotRequiredAudit" },
+        { "action": "click", "target": "#statementDirectorsResponsibilities" },
+        {
+          "action": "click",
+          "target": "#statementMicroEntityProvisions",
           "caption": "Accept the four statutory statements.",
           "headline": "Accept the statements",
           "keyWord": "statements"
         },
-        { "action": "click", "target": "#statementMembersNotRequiredAudit" },
-        { "action": "click", "target": "#statementDirectorsResponsibilities" },
-        { "action": "click", "target": "#statementMicroEntityProvisions" },
         { "action": "hold", "ms": 700 }
       ]
     },
@@ -249,6 +258,7 @@
         {
           "action": "point",
           "target": "#previewRendered",
+          "scrollTo": "#previewRendered",
           "caption": "These are the accounts as they will be filed. Nothing has gone to Companies House yet.",
           "headline": "Nothing filed yet",
           "keyWord": "yet",
@@ -318,12 +328,14 @@
         { "action": "hold", "ms": 1500 },
         {
           "action": "scroll",
-          "to": "bottom",
+          "scrollTo": { "role": "heading", "name": "Your copy of the accounts filed at Companies House" },
           "caption": "Your copy shows the filed accounts, the submission number and the status.",
           "headline": "The filed accounts",
           "keyWord": "filed"
         },
         { "action": "hold", "ms": 4000 },
+        { "action": "scroll", "to": "bottom" },
+        { "action": "hold", "ms": 2500 },
         { "action": "still", "name": "file-micro-entity-accounts-result" },
         {
           "action": "hold",

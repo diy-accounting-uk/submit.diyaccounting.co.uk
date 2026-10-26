@@ -557,7 +557,7 @@ public class OpenApiGenerator {
 <head>
     <meta charset="UTF-8">
     <title>DIY Accounting Submit API</title>
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui.css" />
+    <link rel="stylesheet" type="text/css" href="vendor/swagger-ui.css" />
     <style>
         html {
             box-sizing: border-box;
@@ -575,8 +575,8 @@ public class OpenApiGenerator {
 </head>
 <body>
     <div id="swagger-ui"></div>
-    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-bundle.js"></script>
-    <script src="https://unpkg.com/swagger-ui-dist@5.10.3/swagger-ui-standalone-preset.js"></script>
+    <script src="vendor/swagger-ui-bundle.js"></script>
+    <script src="vendor/swagger-ui-standalone-preset.js"></script>
     <script src="index.page.js"></script>
 </body>
 </html>

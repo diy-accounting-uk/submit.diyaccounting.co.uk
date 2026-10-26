@@ -3,7 +3,7 @@
 
 // app/unit-tests/scripts/exploratoryCrawl.test.js
 
-import { describe, test, expect } from "vitest";
+import { describe, test, expect, afterEach, vi } from "vitest";
 import {
   parseArguments,
   normaliseLink,
@@ -16,8 +16,12 @@ import {
   countByClass,
   renderContactSheet,
   renderSummary,
+  createRequestPacer,
+  collapseBlockedRuns,
+  measurePage,
   FINDING_CLASSES,
   DEFAULT_MAX_PAGES,
+  PROD_REQUEST_BUDGET,
 } from "../../../scripts/exploratory-crawl.mjs";
 
 const cleanRecord = {
@@ -197,5 +201,129 @@ describe("counts and rendering", () => {
     const summary = renderSummary([{ lane: "ci", role: "visitor", viewport: "phone", theme: "dark", pages }]);
     expect(summary).toContain("| ci | visitor | phone | dark | 2 |");
     expect(summary).toContain("| all |");
+  });
+});
+
+describe("request pacing", () => {
+  test("the prod lane paces by default and other lanes do not", () => {
+    expect(parseArguments(["--lane", "prod"]).requestBudget).toBe(PROD_REQUEST_BUDGET);
+    expect(parseArguments(["--lane", "ci"]).requestBudget).toBe(0);
+    expect(parseArguments(["--lane", "prod", "--request-budget", "0"]).requestBudget).toBe(0);
+    expect(() => parseArguments(["--lane", "prod", "--request-budget", "x"])).toThrow(/--request-budget/);
+  });
+
+  test("waits until the oldest request leaves the window when the reserve does not fit", async () => {
+    let clock = 0;
+    const sleeps = [];
+    const pacer = createRequestPacer({
+      budget: 10,
+      windowMs: 1000,
+      reserve: 5,
+      now: () => clock,
+      sleep: async (ms) => {
+        sleeps.push(ms);
+        clock += ms;
+      },
+    });
+    for (let count = 0; count < 6; count += 1) pacer.record();
+    clock = 400;
+    await pacer.waitForRoom();
+    expect(sleeps).toEqual([601]);
+    expect(pacer.count()).toBe(0);
+  });
+
+  test("does not wait while the reserve fits, or with no budget", async () => {
+    const sleeps = [];
+    const sleep = async (ms) => sleeps.push(ms);
+    const limited = createRequestPacer({ budget: 100, reserve: 5, sleep });
+    for (let count = 0; count < 50; count += 1) limited.record();
+    await limited.waitForRoom();
+    const unlimited = createRequestPacer({ budget: 0, sleep });
+    for (let count = 0; count < 5000; count += 1) unlimited.record();
+    await unlimited.waitForRoom();
+    expect(sleeps).toEqual([]);
+  });
+});
+
+describe("collapseBlockedRuns", () => {
+  const page = (label, status) => ({
+    url: `https://example.test${label}`,
+    label,
+    status,
+    findings: status >= 400 ? [{ class: "http-error", detail: `status ${status}` }] : [],
+  });
+
+  test("reports a run of 403s as one finding that names the block", () => {
+    const pages = [page("/a", 200), page("/b", 403), page("/c", 403), page("/d", 403), page("/e", 403)];
+    const collapsed = collapseBlockedRuns(pages);
+    expect(collapsed).toHaveLength(5);
+    expect(collapsed[1].findings).toHaveLength(1);
+    expect(collapsed[1].findings[0].detail).toMatch(/blocked: status 403 on 4 consecutive pages from \/b to \/e/);
+    expect(collapsed.slice(2).flatMap((entry) => entry.findings)).toEqual([]);
+    expect(countByClass(collapsed)["http-error"]).toBe(1);
+  });
+
+  test("leaves isolated 403s as they are", () => {
+    const pages = [page("/a", 403), page("/b", 200), page("/c", 403), page("/d", 403)];
+    expect(collapseBlockedRuns(pages)).toEqual(pages);
+  });
+});
+
+describe("measurePage text overflow", () => {
+  const overflowing = { scrollWidth: 300, clientWidth: 100, children: [], textContent: "Error:" };
+  const fakeElement = (box, matches = true) => ({
+    ...overflowing,
+    tagName: "SPAN",
+    matches: () => matches,
+    getBoundingClientRect: () => box,
+  });
+  const measureWith = (entries) => {
+    const body = {
+      querySelectorAll: () => entries.map((entry) => entry.element),
+      cloneNode: () => ({ querySelectorAll: () => [], innerText: "" }),
+    };
+    vi.stubGlobal("document", {
+      body,
+      images: [],
+      title: "",
+      documentElement: { scrollWidth: 10, clientWidth: 10 },
+      querySelectorAll: () => [],
+    });
+    vi.stubGlobal("getComputedStyle", (element) => entries.find((entry) => entry.element === element).style);
+    return measurePage().overflowingText;
+  };
+  const visibleStyle = {
+    display: "block",
+    visibility: "visible",
+    overflowX: "visible",
+    clip: "auto",
+    clipPath: "none",
+    textOverflow: "clip",
+  };
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test("reports a visible box whose text overflows", () => {
+    const element = fakeElement({ width: 100, height: 20 });
+    expect(measureWith([{ element, style: visibleStyle }])).toEqual(['span "Error:"']);
+  });
+
+  test("skips the visually hidden pattern: clip rectangle to nothing and a one pixel box", () => {
+    const element = fakeElement({ width: 1, height: 1 });
+    const style = { ...visibleStyle, clip: "rect(0px, 0px, 0px, 0px)", overflowX: "hidden" };
+    expect(measureWith([{ element, style }])).toEqual([]);
+  });
+
+  test("skips a clip path that shows nothing and a one pixel box with no clip", () => {
+    const clipped = fakeElement({ width: 100, height: 20 });
+    const tiny = fakeElement({ width: 1, height: 1 });
+    expect(
+      measureWith([
+        { element: clipped, style: { ...visibleStyle, clipPath: "inset(50%)" } },
+        { element: tiny, style: visibleStyle },
+      ]),
+    ).toEqual([]);
   });
 });

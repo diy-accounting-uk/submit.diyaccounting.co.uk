@@ -160,7 +160,7 @@
         { "action": "hold", "ms": 600 },
         {
           "action": "scroll",
-          "target": "#open-support-form",
+          "scrollTo": ".support-section",
           "caption": "If nothing fits, the support form reaches a person.",
           "headline": "Reach a real person",
           "keyWord": "person"

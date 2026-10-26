@@ -171,6 +171,19 @@ function renderFilingResult(transaction) {
   container.replaceChildren(...paragraphs);
 }
 
+async function renderFilingRecord(transaction) {
+  const { registeredChangeCopyHtml, todayText } = await import("../lib/filing-result-record.js");
+  const html = registeredChangeCopyHtml({
+    title: "Change of registered email address",
+    companyNumber: filing.companyNumber,
+    transaction,
+    details: [["New registered email address", filing.registeredEmailAddress]],
+    dateText: todayText(),
+  });
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  document.getElementById("filingRecord").replaceChildren(...parsed.body.childNodes);
+}
+
 function renderValidationErrors(errors) {
   const container = document.getElementById("validationErrors");
   container.style.display = "block";
@@ -228,6 +241,7 @@ async function runFilingSequence() {
     const transaction = await pollTransactionUntilSettled(filing.transactionId);
 
     renderFilingResult(transaction);
+    await renderFilingRecord(transaction);
     document.getElementById("startAgainBtn").style.display = "inline-block";
     clearPendingFiling();
     showView("resultView");
@@ -258,6 +272,7 @@ function startAgain() {
   document.getElementById("companyForm").reset();
   document.getElementById("emailAddressForm").reset();
   document.getElementById("validationErrors").style.display = "none";
+  document.getElementById("filingRecord").replaceChildren();
   document.getElementById("startAgainBtn").style.display = "none";
   hideStatus();
   showView("companyView");

@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../submit.css" />
+    <link rel="stylesheet" href="../submission-record.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -141,6 +142,7 @@
       <div id="resultView" class="results-container" style="display: none">
         <h2>Filing result</h2>
         <div id="filingResult"></div>
+        <div id="filingRecord"></div>
         <div id="validationErrors" class="error-message" style="display: none"></div>
         <div class="button-group">
           <button type="button" id="startAgainBtn" class="secondary-button" style="display: none">Start a new filing</button>
@@ -153,6 +155,7 @@
     <script src="../widgets/page-chrome.js"></script>
     <script src="../lib/env-loader.js"></script>
     <script src="../lib/auth-url-builder.js"></script>
+    <script src="../lib/companies-house-lane.js"></script>
     <script type="module" src="../submit.js"></script>
     <script src="../developer-mode.js"></script>
     <script src="../lib/request-cache.js"></script>

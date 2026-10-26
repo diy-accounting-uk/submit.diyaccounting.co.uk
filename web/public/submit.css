@@ -750,9 +750,27 @@ dd {
     display: none;
   }
 
-  .header-left {
-    min-width: 0;
-    flex-shrink: 1;
+  /* Two rows: the 2.75rem icons, the 2.5rem account row, the padding and the rule.
+     The fallback reserves the same height so the band's insertion does not move the title. */
+  header {
+    --phone-band-height: calc(2.75rem + 2.5rem + var(--space-1) + 3px);
+  }
+
+  .chrome-fallback {
+    height: var(--phone-band-height);
+  }
+
+  .header-nav {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: var(--phone-band-height);
+    row-gap: 0;
+    padding-bottom: var(--space-1);
+  }
+
+  .auth-section {
+    flex: 1 1 100%;
+    min-height: 2.5rem;
   }
 
   .login-status {
@@ -1375,7 +1393,9 @@ textarea.input--error {
 
 .btn {
   width: 100%;
+  max-width: 100%;
   font-size: var(--step-1);
+  overflow-wrap: anywhere;
 }
 
 .btn-secondary,

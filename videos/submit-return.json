@@ -287,6 +287,7 @@
           "keyWord": "purchases"
         },
         {
+          "scrollTo": "tr:has(#totalVatDue)",
           "action": "type",
           "target": "#totalValueGoodsSuppliedExVAT",
           "text": "0",
@@ -302,6 +303,7 @@
           "clear": true
         },
         {
+          "scrollTo": "tr:has(#totalVatDue)",
           "action": "click",
           "target": "#declaration",
           "caption": "Tick the declaration to confirm the return is accurate.",
@@ -429,6 +431,7 @@
           "ms": 2500
         },
         {
+          "scrollTo": ".customer-copy-section:nth-of-type(2)",
           "action": "point",
           "target": ".customer-copy-section:last-of-type .approval",
           "caption": "This is your record: the totals and the declaration, as submitted.",

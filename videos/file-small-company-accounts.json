@@ -491,6 +491,7 @@
           "label": "Rendering the preview"
         },
         {
+          "scrollTo": "#previewRendered",
           "action": "point",
           "target": "#previewRendered",
           "caption": "These are the accounts as they will be filed. Nothing has gone to Companies House yet.",
