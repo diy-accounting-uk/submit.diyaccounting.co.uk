@@ -235,10 +235,11 @@ jobs:
   # Reasoned job filter: the same select-jobs job test.yml carries. It writes a decision artifact
   # recording which behaviour suites and stack jobs it judges this change has nothing left to
   # prove for, so scripts/ci/select-jobs-trial.mjs can check each advised skip against what that
-  # job did. Its advised-json output is read by the web-test-* jobs of the enforced group, each
-  # guarded by the REASONED_JOB_FILTER repository variable ('off' runs every job) and by the ref
-  # (main runs every job). The deploy-* stack jobs and web-test stay advisory: see the rollout in
-  # PLAN_REASONED_JOB_FILTER.md. See select-jobs.mjs's module comment for the shared eligibility,
+  # job did. Its advised-json output is read by the web-test-* jobs, and through stack-holdings by
+  # the deploy-* stack jobs, each guarded by the REASONED_JOB_FILTER repository variable ('off'
+  # runs every job) and by the ref (main runs every job). web-test always runs, because
+  # set-last-known-good-deployment and the apex promotion rest on it. See select-jobs.mjs's
+  # module comment for the shared eligibility,
   # budget, and kill-switch behaviour; `continue-on-error: true` and no job-level `if:` mean a
   # Bedrock error here never surfaces as a red status check.
   select-jobs:
@@ -262,6 +263,7 @@ jobs:
     outputs:
       skip-json: ${{ steps.decide.outputs.skip-json }}
       advised-json: ${{ steps.decide.outputs.advised-json }}
+      compared-from: ${{ steps.diff.outputs.compared-from }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -355,6 +357,7 @@ jobs:
           set -euo pipefail
           if [ -n "${LAST_GREEN_SHA}" ] && git cat-file -e "${LAST_GREEN_SHA}^{commit}" 2>/dev/null; then
             range="${LAST_GREEN_SHA}..${{ github.sha }}"
+            echo "compared-from=${LAST_GREEN_SHA}" | tee -a "$GITHUB_OUTPUT"
           else
             git fetch origin '${{ github.event.repository.default_branch }}' --quiet
             range="origin/${{ github.event.repository.default_branch }}...HEAD"
@@ -455,6 +458,80 @@ jobs:
           path: ${{ env.OUT_DIR }}/decision.json
           if-no-files-found: warn
           retention-days: 30
+
+  # The advice above compares this commit with the head of the branch's last green run, so a
+  # stack job may skip only when this deployment still holds what that run left in its stacks.
+  # A ci slot passes from branch to branch, so existence alone is not enough: see
+  # scripts/ci/stack-holdings.mjs for the checks. Its skip-json names the stack jobs that may
+  # skip; on main, with REASONED_JOB_FILTER 'off', on prod, or on any error this job is skipped
+  # or writes nothing, and every stack job runs.
+  stack-holdings:
+    name: 'read which stacks this deployment still holds'
+    needs:
+      - params
+      - names
+      - select-jobs
+    if: >-
+      ${{ !cancelled() && vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main'
+      && needs.names.result == 'success' && needs.names.outputs.environment-name == 'ci'
+      && needs.params.outputs.isSkippingDeploy != 'true'
+      && needs.select-jobs.outputs.compared-from != '' && needs.select-jobs.outputs.advised-json != '' && needs.select-jobs.outputs.advised-json != '[]' }}
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: ${{ needs.params.outputs.github-environment }}
+    permissions:
+      contents: read
+      id-token: write
+      actions: read
+    outputs:
+      skip-json: ${{ steps.read.outputs.skip-json }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Read which advised stack jobs this deployment still holds
+        id: read
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ADVISED_JSON: ${{ needs.select-jobs.outputs.advised-json }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+          COMPARED_FROM: ${{ needs.select-jobs.outputs.compared-from }}
+        run: |
+          SKIP_JSON=$(node scripts/ci/stack-holdings.mjs \
+            --advised-json "${ADVISED_JSON}" \
+            --deployment-name "${DEPLOYMENT_NAME}" \
+            --compared-from "${COMPARED_FROM}" \
+            --repo "${{ github.repository }}" \
+            --branch "${{ github.ref_name }}") || SKIP_JSON='[]'
+          echo "skip-json=${SKIP_JSON}" | tee -a "$GITHUB_OUTPUT"
 
   # A workflow_dispatch naming an explicit deployment-name is about to deploy this same commit,
   # so any push-triggered run of deploy.yml for the same github.sha would otherwise run alongside
@@ -1534,11 +1611,15 @@ jobs:
 
   deploy-auth:
     name: 'deploy AuthStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && needs.names.result == 'success' && needs.skip-deploy-check.result == 'success' && needs.push-images.result == 'success' && needs.validate-secrets.result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-auth')) }}
     needs:
       - names
       - skip-deploy-check
       - push-images
       - validate-secrets
+      - stack-holdings
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -1560,11 +1641,15 @@ jobs:
 
   deploy-hmrc:
     name: 'deploy HmrcStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && needs.names.result == 'success' && needs.skip-deploy-check.result == 'success' && needs.push-images.result == 'success' && needs.validate-secrets.result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc')) }}
     needs:
       - names
       - skip-deploy-check
       - push-images
       - validate-secrets
+      - stack-holdings
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -1586,11 +1671,15 @@ jobs:
 
   deploy-hmrc-itsa:
     name: 'deploy HmrcItsaStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && needs.names.result == 'success' && needs.skip-deploy-check.result == 'success' && needs.push-images.result == 'success' && needs.validate-secrets.result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc-itsa')) }}
     needs:
       - names
       - skip-deploy-check
       - push-images
       - validate-secrets
+      - stack-holdings
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -1611,11 +1700,15 @@ jobs:
 
   deploy-companies-house:
     name: 'deploy CompaniesHouseStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && needs.names.result == 'success' && needs.skip-deploy-check.result == 'success' && needs.push-images.result == 'success' && needs.validate-secrets.result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-companies-house')) }}
     needs:
       - names
       - skip-deploy-check
       - push-images
       - validate-secrets
+      - stack-holdings
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -1637,11 +1730,15 @@ jobs:
 
   deploy-account:
     name: 'deploy AccountStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && needs.names.result == 'success' && needs.skip-deploy-check.result == 'success' && needs.push-images.result == 'success' && needs.validate-secrets.result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-account')) }}
     needs:
       - names
       - skip-deploy-check
       - push-images
       - validate-secrets
+      - stack-holdings
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -1663,11 +1760,15 @@ jobs:
 
   deploy-billing:
     name: 'deploy BillingStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && needs.names.result == 'success' && needs.skip-deploy-check.result == 'success' && needs.push-images.result == 'success' && needs.validate-secrets.result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-billing')) }}
     needs:
       - names
       - skip-deploy-check
       - push-images
       - validate-secrets
+      - stack-holdings
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -1689,11 +1790,15 @@ jobs:
 
   deploy-diya-gl:
     name: 'deploy DiyaGlStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && needs.names.result == 'success' && needs.skip-deploy-check.result == 'success' && needs.push-images.result == 'success' && needs.validate-secrets.result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-diya-gl')) }}
     needs:
       - names
       - skip-deploy-check
       - push-images
       - validate-secrets
+      - stack-holdings
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -1735,7 +1840,18 @@ jobs:
 
   deploy-api:
     name: 'deploy api'
+    if: >-
+      ${{ !cancelled() && needs.params.result == 'success' && needs.names.result == 'success' && needs.skip-deploy-check.result == 'success' && needs.push-images.result == 'success' && needs.deploy-mcp.result == 'success'
+      && (needs.deploy-auth.result == 'success' || (needs.deploy-auth.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-auth')))
+      && (needs.deploy-hmrc.result == 'success' || (needs.deploy-hmrc.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc')))
+      && (needs.deploy-hmrc-itsa.result == 'success' || (needs.deploy-hmrc-itsa.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc-itsa')))
+      && (needs.deploy-companies-house.result == 'success' || (needs.deploy-companies-house.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-companies-house')))
+      && (needs.deploy-account.result == 'success' || (needs.deploy-account.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-account')))
+      && (needs.deploy-billing.result == 'success' || (needs.deploy-billing.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-billing')))
+      && (needs.deploy-diya-gl.result == 'success' || (needs.deploy-diya-gl.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-diya-gl')))
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-api')) }}
     needs:
+      - stack-holdings
       - params
       - names
       - skip-deploy-check
@@ -1900,7 +2016,16 @@ jobs:
 
   deploy-edge:
     name: 'deploy EdgeStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && needs.params.result == 'success' && needs.names.result == 'success' && needs.skip-deploy-check.result == 'success' && needs.mvn-package.result == 'success' && needs.push-images.result == 'success'
+      && (needs.deploy-auth.result == 'success' || (needs.deploy-auth.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-auth')))
+      && (needs.deploy-hmrc.result == 'success' || (needs.deploy-hmrc.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc')))
+      && (needs.deploy-hmrc-itsa.result == 'success' || (needs.deploy-hmrc-itsa.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc-itsa')))
+      && (needs.deploy-account.result == 'success' || (needs.deploy-account.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-account')))
+      && (needs.deploy-api.result == 'success' || (needs.deploy-api.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-api')))
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-edge')) }}
     needs:
+      - stack-holdings
       - params
       - names
       - skip-deploy-check
@@ -1932,7 +2057,12 @@ jobs:
 
   deploy-publish:
     name: 'deploy publish'
+    if: >-
+      ${{ !cancelled() && needs.params.result == 'success' && needs.names.result == 'success' && needs.skip-deploy-check.result == 'success' && needs.mvn-package.result == 'success' && needs.push-images.result == 'success'
+      && (needs.deploy-edge.result == 'success' || (needs.deploy-edge.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-edge')))
+      && (needs.deploy-api.result == 'success' || (needs.deploy-api.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-api'))) }}
     needs:
+      - stack-holdings
       - params
       - names
       - skip-deploy-check
@@ -2218,7 +2348,13 @@ jobs:
 
   deploy-ops:
     name: 'deploy OpsStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && needs.params.result == 'success' && needs.names.result == 'success' && needs.skip-deploy-check.result == 'success' && needs.mvn-package.result == 'success' && needs.push-images.result == 'success'
+      && (needs.deploy-api.result == 'success' || (needs.deploy-api.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-api')))
+      && (needs.deploy-edge.result == 'success' || (needs.deploy-edge.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-edge')))
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-ops')) }}
     needs:
+      - stack-holdings
       - params
       - names
       - skip-deploy-check

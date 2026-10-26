@@ -17,9 +17,9 @@ for, earned by evidence before it may skip anything.
 
 ## Where it stands
 
-- `select-jobs` runs in advisory mode on every branch push. In `.github/workflows/deploy.yml`
-  (the `select-jobs` job, comment at line 235) nothing reads its output. It uploads a decision
-  artifact per run (`select-jobs-decision-deploy-<run-id>`, `select-jobs-decision-test-<run-id>`).
+- `select-jobs` runs on every branch push. In `.github/workflows/deploy.yml` its `advised-json`
+  is read by the `web-test-*` jobs and, through `stack-holdings`, by the stack jobs. It uploads a
+  decision artifact per run (`select-jobs-decision-deploy-<run-id>`, `select-jobs-decision-test-<run-id>`).
 - `.github/workflows/test.yml` already gates `lint-workflows` (line 158) and `lint-js` (line 201)
   on its `skip-json` output, so those two jobs can already be skipped; JF-1's table shows their
   record like any other class.
@@ -201,28 +201,65 @@ The next step is one edit per group: replace the job's `skip-json` clause with t
 | 1 | `npm-test-web-unit`, `npm-mcp-test`, `npm-system-test`, `mvn-test`, `lint-workflows`, `npm-test-cdk-ci`, `npm-test-cdk-prod` (test.yml) | `advised-json` | enforced |
 | 2 | `behaviour-test-proxy-submit-vat`, `behaviour-test-simulator-bundle`, `behaviour-test-simulator-file-micro-entity-accounts` (test.yml) | `advised-json` | enforced |
 | 3 | the 30 `web-test-*` classes at the bar (deploy.yml; `select-jobs` carries `advised-json`) | `advised-json` | enforced |
-| 3, remainder | the ten `deploy-*` classes and `web-test` | `advised-json` | advisory |
+| 3, remainder | the ten `deploy-*` classes | `advised-json` and `stack-holdings` `skip-json` | enforced, live proof open |
+| 3, `web-test` | `web-test` | none | runs: `set-last-known-good-deployment` and the apex promotion rest on it |
 
 Each group stays enforced while its miss count stays at zero. Model: Sonnet. Size: ~3 files.
 
-#### Group 3 remainder: the stack jobs and `web-test`
+#### Group 3 remainder: the stack jobs
 
-A skipped job skips every job that `needs` it unless the dependent's condition says otherwise.
+A stack job skips only when the model advises it and the deployment still holds what the advice
+compared from. The advice diffs this commit against the head of the branch's last green
+`deploy.yml` run. A ci slot (`ci-set1`, `ci-set2`) passes from branch to branch, so a stack that
+exists can belong to another branch. The `stack-holdings` job (`scripts/ci/stack-holdings.mjs`)
+lets an advised stack job skip only when all of these are true:
 
-- `deploy-api` needs all of `deploy-auth`, `deploy-hmrc`, `deploy-hmrc-itsa`, `deploy-companies-house`,
-  `deploy-account`, `deploy-billing`, `deploy-diya-gl` and `deploy-mcp`. `deploy-edge`, `deploy-publish`
-  and `deploy-ops` need `deploy-api` and more, with implicit success conditions, so one skipped stack
-  job skips the chain behind it.
-- `enable-native-auth`, `generate-test-pass`, `verify-api` and every `web-test*` job carry `!cancelled()`,
-  so they still run after that skip, against a deployment whose api, edge and publish stacks were never
-  created. A branch deploy creates a new deployment name, so a skipped stack job leaves no stack at all.
-- `set-last-known-good-deployment` needs `web-test.result == 'success'` and `promote-ci-apex` needs that
-  job, so a skipped `web-test` stops the apex switch.
+- `select-jobs` compared from a green run of this branch (its new `compared-from` output), and
+  that run's head is that commit.
+- That run deployed to this deployment name. The name comes from its reusable stack jobs
+  (`... / deploy <name>-app-<Stack>`).
+- Every stack of the job stands in `CREATE_COMPLETE` or `UPDATE_COMPLETE` (`list-stacks` in
+  eu-west-2, and in us-east-1 for `EdgeStack`).
+- No stack of the job was created or updated after that run ended.
 
-Design to enforce them: a stack job skips only when the model advises it and the deployment already
-holds that stack (the app stacks of an existing deployment name); every dependent's condition becomes
-`!cancelled() && needs.<job>.result != 'failure'` for the stack jobs it needs; `web-test` runs, or
-`set-last-known-good-deployment` accepts `skipped`, so a deploy that proved nothing cannot promote the
-apex. The ci deploy of the branch that lands this must show: each advised stack job `skipped`, each
-dependent `success` or `skipped` and none `failure`, and `promote-ci-apex` as before. Until then these
-eleven classes stay advisory.
+Its `skip-json` output names the jobs that may skip. On `main`, on prod, with `REASONED_JOB_FILTER`
+`off`, when the deploy is skipped, or on any error, the job is skipped or writes nothing, and every
+stack job runs. "Held" below means: the job is `skipped` and `skip-json` names it.
+
+| Job | Old condition | New condition | When a needed stack job is skipped |
+| --- | --- | --- | --- |
+| `stack-holdings` | (new) | branch, ci, filter on, deploy not skipped, advice from a green run | (needs no stack job) |
+| the seven leaf stack jobs | implicit `success()` | `!cancelled()`, its four needs `success`, not held | (needs no stack job) |
+| `deploy-mcp` | implicit `success()` | unchanged | (needs no stack job) |
+| `deploy-api` | implicit `success()` | `!cancelled()`, other needs `success`, each stack need `success` or held, not held itself | runs when held; skips otherwise, as before |
+| `deploy-edge` | implicit `success()` | as `deploy-api` | runs when held; skips otherwise |
+| `deploy-publish` | implicit `success()` | `!cancelled()`, other needs `success`, `deploy-edge` and `deploy-api` `success` or held | runs when held; skips otherwise |
+| `deploy-ops` | implicit `success()` | as `deploy-api` | runs when held; skips otherwise |
+| `set-origins` | prod only | unchanged | prod has no held job |
+| `enable-native-auth`, `generate-test-pass`, `verify-api`, every `web-test*` | `!cancelled()` | unchanged | `deploy-publish` runs, so they test a published set |
+| `set-last-known-good-deployment`, `promote-ci-apex` | `web-test` `success` | unchanged | (needs no stack job) |
+| `rollback-origins`, `destroy-previous` | prod only | unchanged | prod has no held job |
+| `record-dora`, `release-ci-slot`, `check-ci-sweep`, `sweep-ci` | `!cancelled()` or `always()` | unchanged | a held `deploy-ops` is `skipped`, which they do not read |
+
+The seven leaf stack jobs are `deploy-auth`, `deploy-hmrc`, `deploy-hmrc-itsa`,
+`deploy-companies-house`, `deploy-account`, `deploy-billing` and `deploy-diya-gl`. Their four needs
+are `names`, `skip-deploy-check`, `push-images` and `validate-secrets`. A stack job that skips for
+any other reason (a failed `validate-secrets`, a skipped deploy) still skips everything behind it.
+
+Live proof, on one branch whose second push changes only files outside every stack (for example
+one page under `web/public/`):
+
+1. The first push deploys to a slot and creates or updates every stack. `stack-holdings` is
+   skipped (no green run to compare from), and every stack job is `success`.
+2. The second push, inside the slot's self-destruct window, wins the same slot back. Its
+   `select-jobs` summary says `comparing <first head>..<second head>`. The `stack-holdings`
+   summary lists each advised stack job as `skips` with "held since the green run".
+3. In that run each listed stack job is `skipped`. `deploy-mcp` and `deploy-application-self-destruct`
+   are `success`. `deploy-api`, `deploy-edge` and `deploy-ops` are `skipped` when listed, and
+   `success` when not. `deploy-publish` is `success`.
+4. `enable-native-auth`, `generate-test-pass`, `verify-api` and `web-test` are `success`. No job is
+   `failure`. `set-last-known-good-deployment` and `promote-ci-apex` are `success`, as on the first
+   push.
+
+If the second push lands on the other slot, the summary says "the green run deployed to ...",
+every stack job runs, and the proof needs a third push.
