@@ -22,6 +22,8 @@ import {
 import { QUARTERLY_PERIOD_TYPES } from "@diy-accounting-uk/diya-gl/dist/app/lib/derivations/itsa.js";
 import { z } from "zod";
 
+import { callSubmitApi, hmrcAccessTokenFor, HMRC_ACCOUNTS, requireField } from "./submit-tools.js";
+
 export { QUARTERLY_PERIOD_TYPES };
 
 function requireLoaded(session) {
@@ -85,6 +87,78 @@ export async function deriveUkPropertyAnnual(session, params = {}) {
   return deriveUkPropertyAnnualFromBook(session.book, session.lines, params);
 }
 
+const moneySection = z.record(z.string(), z.number());
+
+function itsaHeaders(hmrcAccount, govTestScenario) {
+  return { hmrcAccount, ...(govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {}) };
+}
+
+/**
+ * submit_itsa_quarterly_update: files one period of the Self Employment Business API over the
+ * deployed route, with the session's HMRC grant for the itsa service. Sends only the sections
+ * the caller gave; the route drops an empty one.
+ * @param {Object} session
+ * @param {{nino: string, businessId: string, taxYear: string, periodStartDate?: string, periodEndDate?: string,
+ *   periodIncome?: Object, periodExpenses?: Object, periodDisallowableExpenses?: Object, hmrcAccount?: string,
+ *   govTestScenario?: string, runFraudPreventionHeaderValidation?: boolean}} params
+ */
+export async function submitItsaQuarterlyUpdate(session, params = {}) {
+  const nino = requireField("submit_itsa_quarterly_update", params, "nino");
+  const businessId = requireField("submit_itsa_quarterly_update", params, "businessId");
+  const taxYear = requireField("submit_itsa_quarterly_update", params, "taxYear");
+  const { periodStartDate, periodEndDate, periodIncome, periodExpenses, periodDisallowableExpenses } = params;
+  const { govTestScenario, runFraudPreventionHeaderValidation } = params;
+  const { accessToken, hmrcAccount } = await hmrcAccessTokenFor(session, "submit_itsa_quarterly_update", params.hmrcAccount);
+
+  return callSubmitApi(session, "/api/v1/hmrc/itsa/self-employment/period", {
+    method: "POST",
+    customAuthorizer: true,
+    headers: { Authorization: `Bearer ${accessToken}`, ...itsaHeaders(hmrcAccount, govTestScenario) },
+    body: {
+      nino,
+      businessId,
+      taxYear,
+      ...(periodStartDate ? { periodStartDate } : {}),
+      ...(periodEndDate ? { periodEndDate } : {}),
+      ...(periodIncome ? { periodIncome } : {}),
+      ...(periodExpenses ? { periodExpenses } : {}),
+      ...(periodDisallowableExpenses ? { periodDisallowableExpenses } : {}),
+      ...(runFraudPreventionHeaderValidation !== undefined ? { runFraudPreventionHeaderValidation } : {}),
+    },
+  });
+}
+
+/**
+ * submit_itsa_annual_submission: files the year's allowances and adjustments over the deployed
+ * Self Employment annual route, with the session's HMRC grant for the itsa service.
+ * @param {Object} session
+ * @param {{nino: string, businessId: string, taxYear: string, adjustments?: Object, allowances?: Object,
+ *   nonFinancials?: Object, hmrcAccount?: string, govTestScenario?: string,
+ *   runFraudPreventionHeaderValidation?: boolean}} params
+ */
+export async function submitItsaAnnualSubmission(session, params = {}) {
+  const nino = requireField("submit_itsa_annual_submission", params, "nino");
+  const businessId = requireField("submit_itsa_annual_submission", params, "businessId");
+  const taxYear = requireField("submit_itsa_annual_submission", params, "taxYear");
+  const { adjustments, allowances, nonFinancials, govTestScenario, runFraudPreventionHeaderValidation } = params;
+  const { accessToken, hmrcAccount } = await hmrcAccessTokenFor(session, "submit_itsa_annual_submission", params.hmrcAccount);
+
+  return callSubmitApi(session, "/api/v1/hmrc/itsa/self-employment/annual", {
+    method: "PUT",
+    customAuthorizer: true,
+    headers: { Authorization: `Bearer ${accessToken}`, ...itsaHeaders(hmrcAccount, govTestScenario) },
+    body: {
+      nino,
+      businessId,
+      taxYear,
+      ...(adjustments ? { adjustments } : {}),
+      ...(allowances ? { allowances } : {}),
+      ...(nonFinancials ? { nonFinancials } : {}),
+      ...(runFraudPreventionHeaderValidation !== undefined ? { runFraudPreventionHeaderValidation } : {}),
+    },
+  });
+}
+
 /**
  * The ITSA tools keyed by MCP name, in the shape server.js's TOOLS table
  * uses; createServer registers them beside it.
@@ -134,5 +208,54 @@ export const ITSA_TOOLS = {
       taxYear: z.string().describe("The tax year, as 2025-26"),
     },
     handler: deriveUkPropertyAnnual,
+  },
+  submit_itsa_quarterly_update: {
+    description:
+      "Files one period of HMRC's Self Employment Business API (derive_itsa_quarterly_update's figures, once the user " +
+      "has confirmed them) over the deployed API. In a tax year filed as cumulative period summaries (2025-26 on) the " +
+      "figures are the running total from 6 April and the period dates are optional; in earlier years they are required. " +
+      "Uses the session's HMRC authorisation for the itsa service: call request_hmrc_authorisation with services " +
+      '["itsa"] first if this tool says none is held.',
+    inputSchema: {
+      nino: z.string().describe("The customer's National Insurance number"),
+      businessId: z.string().describe("The self-employment business id HMRC holds, for example XAIS12345678901"),
+      taxYear: z.string().describe("The tax year, as 2025-26"),
+      periodStartDate: z.string().optional().describe("The period's start, YYYY-MM-DD"),
+      periodEndDate: z.string().optional().describe("The period's end, YYYY-MM-DD"),
+      periodIncome: moneySection.optional().describe("Income by field, as derive_itsa_quarterly_update answers it"),
+      periodExpenses: moneySection.optional().describe("Expenses by field, as derive_itsa_quarterly_update answers it"),
+      periodDisallowableExpenses: moneySection
+        .optional()
+        .describe("Disallowable expenses by field, as derive_itsa_quarterly_update answers it"),
+      hmrcAccount: z
+        .enum(HMRC_ACCOUNTS)
+        .optional()
+        .describe("Which HMRC environment to call; defaults to the session's HMRC authorisation's own"),
+      govTestScenario: z.string().optional().describe("HMRC sandbox test scenario"),
+      runFraudPreventionHeaderValidation: z.boolean().optional(),
+    },
+    handler: submitItsaQuarterlyUpdate,
+  },
+  submit_itsa_annual_submission: {
+    description:
+      "Files the year's allowances and adjustments for HMRC's Self Employment Business API annual submission " +
+      "(derive_itsa_annual_submission's figures, once the user has confirmed them) over the deployed API. Uses the " +
+      'session\'s HMRC authorisation for the itsa service: call request_hmrc_authorisation with services ["itsa"] first if ' +
+      "this tool says none is held.",
+    inputSchema: {
+      nino: z.string().describe("The customer's National Insurance number"),
+      businessId: z.string().describe("The self-employment business id HMRC holds, for example XAIS12345678901"),
+      taxYear: z.string().describe("The tax year, as 2025-26"),
+      adjustments: moneySection.optional().describe("Adjustments by field, as derive_itsa_annual_submission answers them"),
+      allowances: moneySection.optional().describe("Allowances by field, as derive_itsa_annual_submission answers them"),
+      nonFinancials: z.record(z.string(), z.unknown()).optional().describe("The non-financial facts HMRC takes, when the year needs them"),
+      hmrcAccount: z
+        .enum(HMRC_ACCOUNTS)
+        .optional()
+        .describe("Which HMRC environment to call; defaults to the session's HMRC authorisation's own"),
+      govTestScenario: z.string().optional().describe("HMRC sandbox test scenario"),
+      runFraudPreventionHeaderValidation: z.boolean().optional(),
+    },
+    handler: submitItsaAnnualSubmission,
   },
 };

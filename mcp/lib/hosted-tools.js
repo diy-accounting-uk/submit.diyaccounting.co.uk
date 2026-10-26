@@ -22,6 +22,8 @@ export const HOSTED_TOOL_NAMES = [
   "derive_small_company_accounts",
   "derive_itsa_quarterly_update",
   "derive_itsa_annual_submission",
+  "submit_itsa_quarterly_update",
+  "submit_itsa_annual_submission",
   "derive_uk_property_period",
   "derive_uk_property_annual",
   "derive_company_tax_return",

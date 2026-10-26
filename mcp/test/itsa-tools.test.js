@@ -6,7 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterAll, beforeEach, describe, expect, test } from "vitest";
+import { afterAll, afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 import { createSession, openBook } from "../lib/book-tools.js";
 import { annualFieldSlotsForTaxYear, quarterlyFieldSlots } from "@diy-accounting-uk/diya-gl/dist/app/lib/derivations/itsa.js";
@@ -16,6 +16,8 @@ import {
   deriveItsaQuarterlyUpdate,
   deriveUkPropertyAnnual,
   deriveUkPropertyPeriod,
+  submitItsaAnnualSubmission,
+  submitItsaQuarterlyUpdate,
 } from "../lib/itsa-tools.js";
 
 const FIXTURES = fileURLToPath(new URL("./fixtures/", import.meta.url));
@@ -236,5 +238,86 @@ describe("the UK property derivations", () => {
   test("both refuse when no book is loaded", async () => {
     await expect(deriveUkPropertyPeriod(createSession(), {})).rejects.toThrow(/No book is loaded/);
     await expect(deriveUkPropertyAnnual(createSession(), {})).rejects.toThrow(/No book is loaded/);
+  });
+});
+
+describe("the Income Tax filing tools", () => {
+  const GRANT_ID = "11111111-2222-4333-8444-555555555555";
+  const reply = (body, status = 200) => ({ ok: status < 300, status, json: async () => body, headers: { get: () => null } });
+  let session;
+  let calls;
+
+  beforeEach(() => {
+    process.env.DIYA_SUBMIT_BASE_URL = "https://submit.diyaccounting.co.uk";
+    session = createSession({ credentials: { accessToken: async () => "session-bearer", idToken: async () => "session-id" } });
+    session.hmrcGrant = { grantId: GRANT_ID, hmrcAccount: "synthetic" };
+    calls = [];
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url, init) => {
+        if (String(url).includes(`/api/v1/mcp/hmrc-grants/${GRANT_ID}`)) {
+          return reply({ status: "granted", accessToken: "hmrc-token", hmrcAccount: "synthetic" });
+        }
+        calls.push({ url: String(url), init });
+        return reply({ receipt: { ok: true } });
+      }),
+    );
+  });
+
+  afterEach(() => {
+    delete process.env.DIYA_SUBMIT_BASE_URL;
+    vi.unstubAllGlobals();
+  });
+
+  const ids = { nino: "AA123456A", businessId: "XAIS12345678901", taxYear: "2025-26" };
+
+  test("the quarterly update posts the confirmed sections with the HMRC token on Authorization and the session on X-Authorization", async () => {
+    const result = await submitItsaQuarterlyUpdate(session, {
+      ...ids,
+      periodIncome: { turnover: 1000 },
+      periodExpenses: { costOfGoods: 200 },
+      govTestScenario: "STATEFUL",
+    });
+    expect(result).toEqual({ receipt: { ok: true } });
+    const [{ url, init }] = calls;
+    expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/hmrc/itsa/self-employment/period");
+    expect(init.method).toBe("POST");
+    expect(init.headers.Authorization).toBe("Bearer hmrc-token");
+    expect(init.headers["X-Authorization"]).toBe("Bearer session-bearer");
+    expect(init.headers.hmrcAccount).toBe("synthetic");
+    expect(init.headers["Gov-Test-Scenario"]).toBe("STATEFUL");
+    expect(JSON.parse(init.body)).toEqual({ ...ids, periodIncome: { turnover: 1000 }, periodExpenses: { costOfGoods: 200 } });
+  });
+
+  test("the quarterly update requires the identifiers", async () => {
+    await expect(submitItsaQuarterlyUpdate(session, { nino: ids.nino, taxYear: ids.taxYear })).rejects.toThrow("businessId");
+  });
+
+  test("the annual submission puts the allowances and adjustments", async () => {
+    await submitItsaAnnualSubmission(session, {
+      ...ids,
+      allowances: { annualInvestmentAllowance: 12000 },
+      adjustments: { includedNonTaxableProfits: 5 },
+    });
+    const [{ url, init }] = calls;
+    expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/hmrc/itsa/self-employment/annual");
+    expect(init.method).toBe("PUT");
+    expect(init.headers.Authorization).toBe("Bearer hmrc-token");
+    expect(JSON.parse(init.body)).toEqual({
+      ...ids,
+      allowances: { annualInvestmentAllowance: 12000 },
+      adjustments: { includedNonTaxableProfits: 5 },
+    });
+  });
+
+  test("both refuse with the authorisation message when the session holds no HMRC grant", async () => {
+    session.hmrcGrant = null;
+    await expect(submitItsaQuarterlyUpdate(session, ids)).rejects.toThrow(/request_hmrc_authorisation/);
+    await expect(submitItsaAnnualSubmission(session, ids)).rejects.toThrow(/request_hmrc_authorisation/);
+    expect(calls).toEqual([]);
+  });
+
+  test("a call for the live account is refused on a synthetic grant", async () => {
+    await expect(submitItsaAnnualSubmission(session, { ...ids, hmrcAccount: "live" })).rejects.toThrow(/synthetic account, not live/);
   });
 });
