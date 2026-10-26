@@ -1525,10 +1525,10 @@
       "videoFile": "target/videos/itsa-year-part-sim/itsa-year-part.mp4",
       "captionFile": "target/videos/itsa-year-part-sim/itsa-year-part.vtt",
       "title": "DIY Accounting Submit: an Income Tax year, quarter to adjustments (coming soon - sandbox example)",
-      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video walks the first part of a tax year: signing in, taking out Resident, picking a business, filing a quarterly update for a self-employment business and for a UK property business, then the annual submission and the year-end adjustments HMRC accepts. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 The dashboard's business picker\n00:57 Both businesses\n01:48 Quarter: self-employment\n02:31 Quarter: UK property\n03:12 Year end: adjustable summary\n04:16 Year end: annual submission",
+      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video walks the first part of a tax year: signing in, taking out Resident, picking a business, filing a quarterly update for a self-employment business and for a UK property business, then the annual submission and the year-end adjustments HMRC accepts. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 The dashboard's business picker\n00:50 Both businesses\n01:40 Quarter: self-employment\n02:23 Quarter: UK property\n03:04 Year end: adjustable summary\n03:59 Year end: annual submission",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "X8RrDKCuW1k",
+      "videoId": "rEWyKs_0ueM",
       "walkthrough": [
         {
           "scene": "business-picker",
@@ -1562,25 +1562,16 @@
           "step": 4,
           "headline": "Enter your NI number",
           "caption": "Type the National Insurance number HMRC asks for.",
-          "startSeconds": 23,
+          "startSeconds": 22,
           "thumb": "videos/itsa-year-part/business-picker-4-thumb.webp",
           "full": "videos/itsa-year-part/business-picker-4.webp"
-        },
-        {
-          "scene": "business-picker",
-          "step": 5,
-          "headline": "Ask HMRC for businesses",
-          "caption": "Ask HMRC which businesses it holds against that number.",
-          "startSeconds": 30,
-          "thumb": "videos/itsa-year-part/business-picker-5-thumb.webp",
-          "full": "videos/itsa-year-part/business-picker-5.webp"
         },
         {
           "scene": "business-picker",
           "step": 6,
           "headline": "Grant access, faster",
           "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
-          "startSeconds": 38,
+          "startSeconds": 31,
           "thumb": "videos/itsa-year-part/business-picker-6-thumb.webp",
           "full": "videos/itsa-year-part/business-picker-6.webp"
         },
@@ -1589,7 +1580,7 @@
           "step": 7,
           "headline": "HMRC lists your businesses",
           "caption": "HMRC answers with the businesses behind this Self Assessment.",
-          "startSeconds": 44,
+          "startSeconds": 37,
           "thumb": "videos/itsa-year-part/business-picker-7-thumb.webp",
           "full": "videos/itsa-year-part/business-picker-7.webp"
         },
@@ -1598,7 +1589,7 @@
           "step": 8,
           "headline": "Note each business ID",
           "caption": "Each business carries an ID.",
-          "startSeconds": 50,
+          "startSeconds": 43,
           "thumb": "videos/itsa-year-part/business-picker-8-thumb.webp",
           "full": "videos/itsa-year-part/business-picker-8.webp"
         },
@@ -1607,7 +1598,7 @@
           "step": 0,
           "headline": "Two businesses this year",
           "caption": "This year has a self-employment and a UK property business.",
-          "startSeconds": 57,
+          "startSeconds": 50,
           "thumb": "videos/itsa-year-part/business-details-0-thumb.webp",
           "full": "videos/itsa-year-part/business-details-0.webp"
         },
@@ -1616,7 +1607,7 @@
           "step": 1,
           "headline": "List businesses by type",
           "caption": "Business Details lists every business by type.",
-          "startSeconds": 65,
+          "startSeconds": 57,
           "thumb": "videos/itsa-year-part/business-details-1-thumb.webp",
           "full": "videos/itsa-year-part/business-details-1.webp"
         },
@@ -1625,7 +1616,7 @@
           "step": 3,
           "headline": "Self-employment and property",
           "caption": "This sandbox account holds a self-employment and a property business.",
-          "startSeconds": 72,
+          "startSeconds": 64,
           "thumb": "videos/itsa-year-part/business-details-3-thumb.webp",
           "full": "videos/itsa-year-part/business-details-3.webp"
         },
@@ -1634,7 +1625,7 @@
           "step": 4,
           "headline": "Same NI number",
           "caption": "The same National Insurance number, every business.",
-          "startSeconds": 78,
+          "startSeconds": 70,
           "thumb": "videos/itsa-year-part/business-details-4-thumb.webp",
           "full": "videos/itsa-year-part/business-details-4.webp"
         },
@@ -1643,7 +1634,7 @@
           "step": 5,
           "headline": "Same scope covers this",
           "caption": "The scope granted a moment ago still covers this.",
-          "startSeconds": 85,
+          "startSeconds": 77,
           "thumb": "videos/itsa-year-part/business-details-5-thumb.webp",
           "full": "videos/itsa-year-part/business-details-5.webp"
         },
@@ -1652,7 +1643,7 @@
           "step": 6,
           "headline": "Both businesses, two IDs",
           "caption": "HMRC answers with both businesses and their IDs.",
-          "startSeconds": 91,
+          "startSeconds": 83,
           "thumb": "videos/itsa-year-part/business-details-6-thumb.webp",
           "full": "videos/itsa-year-part/business-details-6.webp"
         },
@@ -1661,7 +1652,7 @@
           "step": 8,
           "headline": "One form per business",
           "caption": "One quarterly update form per business type, all year.",
-          "startSeconds": 99,
+          "startSeconds": 91,
           "thumb": "videos/itsa-year-part/business-details-8-thumb.webp",
           "full": "videos/itsa-year-part/business-details-8.webp"
         },
@@ -1670,7 +1661,7 @@
           "step": 0,
           "headline": "First quarter, self-employment",
           "caption": "First quarter, the self-employment business.",
-          "startSeconds": 108,
+          "startSeconds": 100,
           "thumb": "videos/itsa-year-part/quarterly-update-self-employment-0-thumb.webp",
           "full": "videos/itsa-year-part/quarterly-update-self-employment-0.webp"
         },
@@ -1679,7 +1670,7 @@
           "step": 2,
           "headline": "The self-employment ID",
           "caption": "This business's ID, from Business Details.",
-          "startSeconds": 116,
+          "startSeconds": 108,
           "thumb": "videos/itsa-year-part/quarterly-update-self-employment-2-thumb.webp",
           "full": "videos/itsa-year-part/quarterly-update-self-employment-2.webp"
         },
@@ -1688,7 +1679,7 @@
           "step": 3,
           "headline": "Choose the tax year",
           "caption": "The tax year this quarter falls in.",
-          "startSeconds": 123,
+          "startSeconds": 115,
           "thumb": "videos/itsa-year-part/quarterly-update-self-employment-3-thumb.webp",
           "full": "videos/itsa-year-part/quarterly-update-self-employment-3.webp"
         },
@@ -1697,7 +1688,7 @@
           "step": 6,
           "headline": "Income and expenses",
           "caption": "Then the quarter's income and expenses.",
-          "startSeconds": 131,
+          "startSeconds": 123,
           "thumb": "videos/itsa-year-part/quarterly-update-self-employment-6-thumb.webp",
           "full": "videos/itsa-year-part/quarterly-update-self-employment-6.webp"
         },
@@ -1706,7 +1697,7 @@
           "step": 9,
           "headline": "File with HMRC",
           "caption": "File it with HMRC.",
-          "startSeconds": 139,
+          "startSeconds": 131,
           "thumb": "videos/itsa-year-part/quarterly-update-self-employment-9-thumb.webp",
           "full": "videos/itsa-year-part/quarterly-update-self-employment-9.webp"
         },
@@ -1715,7 +1706,7 @@
           "step": 10,
           "headline": "HMRC accepts the quarter",
           "caption": "HMRC accepts the period summary.",
-          "startSeconds": 144,
+          "startSeconds": 136,
           "thumb": "videos/itsa-year-part/quarterly-update-self-employment-10-thumb.webp",
           "full": "videos/itsa-year-part/quarterly-update-self-employment-10.webp"
         },
@@ -1724,7 +1715,7 @@
           "step": 0,
           "headline": "Same quarter, property business",
           "caption": "Same quarter, the UK property business - its own form.",
-          "startSeconds": 151,
+          "startSeconds": 143,
           "thumb": "videos/itsa-year-part/quarterly-update-uk-property-0-thumb.webp",
           "full": "videos/itsa-year-part/quarterly-update-uk-property-0.webp"
         },
@@ -1733,7 +1724,7 @@
           "step": 2,
           "headline": "The property ID",
           "caption": "The property business's own ID.",
-          "startSeconds": 162,
+          "startSeconds": 153,
           "thumb": "videos/itsa-year-part/quarterly-update-uk-property-2-thumb.webp",
           "full": "videos/itsa-year-part/quarterly-update-uk-property-2.webp"
         },
@@ -1742,7 +1733,7 @@
           "step": 6,
           "headline": "Rent and expenses",
           "caption": "Rent received, and the expenses against it.",
-          "startSeconds": 172,
+          "startSeconds": 163,
           "thumb": "videos/itsa-year-part/quarterly-update-uk-property-6-thumb.webp",
           "full": "videos/itsa-year-part/quarterly-update-uk-property-6.webp"
         },
@@ -1751,7 +1742,7 @@
           "step": 9,
           "headline": "File with HMRC",
           "caption": "File it with HMRC.",
-          "startSeconds": 180,
+          "startSeconds": 172,
           "thumb": "videos/itsa-year-part/quarterly-update-uk-property-9-thumb.webp",
           "full": "videos/itsa-year-part/quarterly-update-uk-property-9.webp"
         },
@@ -1760,7 +1751,7 @@
           "step": 10,
           "headline": "Both businesses now filed",
           "caption": "Both businesses now have this quarter on file.",
-          "startSeconds": 185,
+          "startSeconds": 177,
           "thumb": "videos/itsa-year-part/quarterly-update-uk-property-10-thumb.webp",
           "full": "videos/itsa-year-part/quarterly-update-uk-property-10.webp"
         },
@@ -1769,7 +1760,7 @@
           "step": 0,
           "headline": "HMRC works out a summary",
           "caption": "HMRC works out a business source adjustable summary from the quarters filed.",
-          "startSeconds": 192,
+          "startSeconds": 184,
           "thumb": "videos/itsa-year-part/adjustments-0-thumb.webp",
           "full": "videos/itsa-year-part/adjustments-0.webp"
         },
@@ -1778,7 +1769,7 @@
           "step": 6,
           "headline": "Trigger HMRC's summary",
           "caption": "Trigger the summary and read what HMRC calculated.",
-          "startSeconds": 208,
+          "startSeconds": 200,
           "thumb": "videos/itsa-year-part/adjustments-6-thumb.webp",
           "full": "videos/itsa-year-part/adjustments-6.webp"
         },
@@ -1787,7 +1778,7 @@
           "step": 7,
           "headline": "Turnover, expenses, net profit",
           "caption": "Turnover, expenses and the net profit HMRC worked out.",
-          "startSeconds": 214,
+          "startSeconds": 207,
           "thumb": "videos/itsa-year-part/adjustments-7-thumb.webp",
           "full": "videos/itsa-year-part/adjustments-7.webp"
         },
@@ -1795,35 +1786,17 @@
           "scene": "adjustments",
           "step": 9,
           "headline": "Correct a figure",
-          "caption": "Change a figure if HMRC's version is wrong.",
-          "startSeconds": 226,
+          "caption": "Change a figure if HMRC's version is wrong, then submit.",
+          "startSeconds": 219,
           "thumb": "videos/itsa-year-part/adjustments-9-thumb.webp",
           "full": "videos/itsa-year-part/adjustments-9.webp"
-        },
-        {
-          "scene": "adjustments",
-          "step": 12,
-          "headline": "HMRC accepts the change",
-          "caption": "HMRC accepts the adjustment.",
-          "startSeconds": 236,
-          "thumb": "videos/itsa-year-part/adjustments-12-thumb.webp",
-          "full": "videos/itsa-year-part/adjustments-12.webp"
-        },
-        {
-          "scene": "adjustments",
-          "step": 15,
-          "headline": "Adjustment submitted",
-          "caption": "Submitted. HMRC has the corrected figures.",
-          "startSeconds": 244,
-          "thumb": "videos/itsa-year-part/adjustments-15-thumb.webp",
-          "full": "videos/itsa-year-part/adjustments-15.webp"
         },
         {
           "scene": "annual-submission",
           "step": 0,
           "headline": "The annual submission",
           "caption": "The last year-end step saves the annual submission.",
-          "startSeconds": 256,
+          "startSeconds": 239,
           "thumb": "videos/itsa-year-part/annual-submission-0-thumb.webp",
           "full": "videos/itsa-year-part/annual-submission-0.webp"
         },
@@ -1832,7 +1805,7 @@
           "step": 4,
           "headline": "Load the year so far",
           "caption": "Load what HMRC already holds for the year.",
-          "startSeconds": 266,
+          "startSeconds": 249,
           "thumb": "videos/itsa-year-part/annual-submission-4-thumb.webp",
           "full": "videos/itsa-year-part/annual-submission-4.webp"
         },
@@ -1841,7 +1814,7 @@
           "step": 6,
           "headline": "Claim the trading allowance",
           "caption": "Claim the trading income allowance instead of itemised ones.",
-          "startSeconds": 273,
+          "startSeconds": 256,
           "thumb": "videos/itsa-year-part/annual-submission-6-thumb.webp",
           "full": "videos/itsa-year-part/annual-submission-6.webp"
         },
@@ -1850,7 +1823,7 @@
           "step": 8,
           "headline": "Save allowances and adjustments",
           "caption": "Save the year's allowances and adjustments.",
-          "startSeconds": 282,
+          "startSeconds": 265,
           "thumb": "videos/itsa-year-part/annual-submission-8-thumb.webp",
           "full": "videos/itsa-year-part/annual-submission-8.webp"
         },
@@ -1859,7 +1832,7 @@
           "step": 9,
           "headline": "HMRC accepts the year",
           "caption": "HMRC accepts the annual submission.",
-          "startSeconds": 289,
+          "startSeconds": 272,
           "thumb": "videos/itsa-year-part/annual-submission-9-thumb.webp",
           "full": "videos/itsa-year-part/annual-submission-9.webp"
         },
@@ -1868,7 +1841,7 @@
           "step": 10,
           "headline": "The record as submitted",
           "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
-          "startSeconds": 294,
+          "startSeconds": 277,
           "thumb": "videos/itsa-year-part/annual-submission-10-thumb.webp",
           "full": "videos/itsa-year-part/annual-submission-10.webp"
         },
@@ -1877,7 +1850,7 @@
           "step": 12,
           "headline": "Keep this copy",
           "caption": "Every figure you claimed is on the record, ready to keep.",
-          "startSeconds": 307,
+          "startSeconds": 290,
           "thumb": "videos/itsa-year-part/annual-submission-12-thumb.webp",
           "full": "videos/itsa-year-part/annual-submission-12.webp"
         }
@@ -3931,17 +3904,17 @@
       "videoFile": "target/videos/itsa-uk-property-year-sim/itsa-uk-property-year.mp4",
       "captionFile": "target/videos/itsa-uk-property-year-sim/itsa-uk-property-year.vtt",
       "title": "DIY Accounting Submit: a UK property quarter, amended and closed out (coming soon - sandbox example)",
-      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax for a UK property business: see what's filed so far, open it, correct a figure, then close the year out with the annual submission and its adjustable summary. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Resident\n00:14 What's filed so far\n00:52 Open it\n01:16 Correct it\n02:02 Year end: adjustable summary\n03:01 Year end: annual submission",
+      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax for a UK property business: see what's filed so far, open it, correct a figure, then close the year out with the annual submission and its adjustable summary. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:07 Resident\n00:15 What's filed so far\n00:54 Open it\n01:18 Correct it\n02:03 Year end: adjustable summary\n02:54 Year end: annual submission",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "-muP2E9g9kA",
+      "videoId": "tl2MfT6WRmQ",
       "walkthrough": [
         {
           "scene": "list-quarters",
           "step": 0,
           "headline": "What's filed so far",
           "caption": "Check what you've already told HMRC for this property.",
-          "startSeconds": 14,
+          "startSeconds": 15,
           "thumb": "videos/itsa-uk-property-year/list-quarters-0-thumb.webp",
           "full": "videos/itsa-uk-property-year/list-quarters-0.webp"
         },
@@ -3950,7 +3923,7 @@
           "step": 1,
           "headline": "Your NI number",
           "caption": "Your National Insurance number.",
-          "startSeconds": 21,
+          "startSeconds": 22,
           "thumb": "videos/itsa-uk-property-year/list-quarters-1-thumb.webp",
           "full": "videos/itsa-uk-property-year/list-quarters-1.webp"
         },
@@ -3959,7 +3932,7 @@
           "step": 2,
           "headline": "The property ID",
           "caption": "The property business's ID.",
-          "startSeconds": 26,
+          "startSeconds": 27,
           "thumb": "videos/itsa-uk-property-year/list-quarters-2-thumb.webp",
           "full": "videos/itsa-uk-property-year/list-quarters-2.webp"
         },
@@ -3968,7 +3941,7 @@
           "step": 3,
           "headline": "One running total",
           "caption": "This tax year reports one running total, not a list of quarters.",
-          "startSeconds": 31,
+          "startSeconds": 32,
           "thumb": "videos/itsa-uk-property-year/list-quarters-3-thumb.webp",
           "full": "videos/itsa-uk-property-year/list-quarters-3.webp"
         },
@@ -3977,7 +3950,7 @@
           "step": 5,
           "headline": "Ask HMRC for the total",
           "caption": "Ask HMRC for the current total.",
-          "startSeconds": 38,
+          "startSeconds": 40,
           "thumb": "videos/itsa-uk-property-year/list-quarters-5-thumb.webp",
           "full": "videos/itsa-uk-property-year/list-quarters-5.webp"
         },
@@ -3986,7 +3959,7 @@
           "step": 6,
           "headline": "The year-to-date total",
           "caption": "HMRC answers with the year-to-date total.",
-          "startSeconds": 44,
+          "startSeconds": 46,
           "thumb": "videos/itsa-uk-property-year/list-quarters-6-thumb.webp",
           "full": "videos/itsa-uk-property-year/list-quarters-6.webp"
         },
@@ -3994,7 +3967,7 @@
           "scene": "view-quarter",
           "headline": "Open it",
           "caption": "Retrieve it from HMRC. Rental income, other income and repairs, year to date.",
-          "startSeconds": 52,
+          "startSeconds": 54,
           "thumb": "videos/itsa-uk-property-year/view-quarter-thumb.webp",
           "full": "videos/itsa-uk-property-year/view-quarter.webp"
         },
@@ -4003,7 +3976,7 @@
           "step": 0,
           "headline": "Correct a filed figure",
           "caption": "Filed the wrong figure? Correct it here.",
-          "startSeconds": 76,
+          "startSeconds": 78,
           "thumb": "videos/itsa-uk-property-year/amend-quarter-0-thumb.webp",
           "full": "videos/itsa-uk-property-year/amend-quarter-0.webp"
         },
@@ -4012,7 +3985,7 @@
           "step": 3,
           "headline": "A running total",
           "caption": "This tax year reports a running total, not one quarter.",
-          "startSeconds": 86,
+          "startSeconds": 88,
           "thumb": "videos/itsa-uk-property-year/amend-quarter-3-thumb.webp",
           "full": "videos/itsa-uk-property-year/amend-quarter-3.webp"
         },
@@ -4021,7 +3994,7 @@
           "step": 5,
           "headline": "Load the current total",
           "caption": "Load what HMRC holds before changing it.",
-          "startSeconds": 92,
+          "startSeconds": 94,
           "thumb": "videos/itsa-uk-property-year/amend-quarter-5-thumb.webp",
           "full": "videos/itsa-uk-property-year/amend-quarter-5.webp"
         },
@@ -4030,7 +4003,7 @@
           "step": 7,
           "headline": "Edit to the new total",
           "caption": "Edit it to the corrected total for the year so far.",
-          "startSeconds": 99,
+          "startSeconds": 101,
           "thumb": "videos/itsa-uk-property-year/amend-quarter-7-thumb.webp",
           "full": "videos/itsa-uk-property-year/amend-quarter-7.webp"
         },
@@ -4039,7 +4012,7 @@
           "step": 10,
           "headline": "Send the correction",
           "caption": "Send the correction to HMRC.",
-          "startSeconds": 109,
+          "startSeconds": 111,
           "thumb": "videos/itsa-uk-property-year/amend-quarter-10-thumb.webp",
           "full": "videos/itsa-uk-property-year/amend-quarter-10.webp"
         },
@@ -4048,7 +4021,7 @@
           "step": 11,
           "headline": "HMRC accepts it",
           "caption": "HMRC accepts the amendment.",
-          "startSeconds": 115,
+          "startSeconds": 117,
           "thumb": "videos/itsa-uk-property-year/amend-quarter-11-thumb.webp",
           "full": "videos/itsa-uk-property-year/amend-quarter-11.webp"
         },
@@ -4057,7 +4030,7 @@
           "step": 0,
           "headline": "HMRC works out a summary",
           "caption": "HMRC works out a business source adjustable summary from the quarters filed.",
-          "startSeconds": 122,
+          "startSeconds": 123,
           "thumb": "videos/itsa-uk-property-year/adjustments-0-thumb.webp",
           "full": "videos/itsa-uk-property-year/adjustments-0.webp"
         },
@@ -4066,7 +4039,7 @@
           "step": 6,
           "headline": "Trigger HMRC's summary",
           "caption": "Trigger the summary and read what HMRC calculated.",
-          "startSeconds": 137,
+          "startSeconds": 139,
           "thumb": "videos/itsa-uk-property-year/adjustments-6-thumb.webp",
           "full": "videos/itsa-uk-property-year/adjustments-6.webp"
         },
@@ -4075,7 +4048,7 @@
           "step": 7,
           "headline": "Rent, expenses, profit",
           "caption": "Rental income, expenses and the net profit HMRC worked out.",
-          "startSeconds": 144,
+          "startSeconds": 146,
           "thumb": "videos/itsa-uk-property-year/adjustments-7-thumb.webp",
           "full": "videos/itsa-uk-property-year/adjustments-7.webp"
         },
@@ -4083,35 +4056,17 @@
           "scene": "adjustments",
           "step": 9,
           "headline": "Correct a figure",
-          "caption": "Change a figure if HMRC's version is wrong.",
-          "startSeconds": 152,
+          "caption": "Change a figure if HMRC's version is wrong, then submit.",
+          "startSeconds": 155,
           "thumb": "videos/itsa-uk-property-year/adjustments-9-thumb.webp",
           "full": "videos/itsa-uk-property-year/adjustments-9.webp"
-        },
-        {
-          "scene": "adjustments",
-          "step": 11,
-          "headline": "HMRC accepts the change",
-          "caption": "HMRC accepts the adjustment.",
-          "startSeconds": 161,
-          "thumb": "videos/itsa-uk-property-year/adjustments-11-thumb.webp",
-          "full": "videos/itsa-uk-property-year/adjustments-11.webp"
-        },
-        {
-          "scene": "adjustments",
-          "step": 14,
-          "headline": "Adjustment submitted",
-          "caption": "Submitted. HMRC has the corrected rental figure.",
-          "startSeconds": 169,
-          "thumb": "videos/itsa-uk-property-year/adjustments-14-thumb.webp",
-          "full": "videos/itsa-uk-property-year/adjustments-14.webp"
         },
         {
           "scene": "annual-submission",
           "step": 0,
           "headline": "The annual submission",
           "caption": "The last year-end step saves the annual submission.",
-          "startSeconds": 181,
+          "startSeconds": 174,
           "thumb": "videos/itsa-uk-property-year/annual-submission-0-thumb.webp",
           "full": "videos/itsa-uk-property-year/annual-submission-0.webp"
         },
@@ -4120,7 +4075,7 @@
           "step": 4,
           "headline": "Load the year so far",
           "caption": "Load what HMRC already holds for the year.",
-          "startSeconds": 191,
+          "startSeconds": 185,
           "thumb": "videos/itsa-uk-property-year/annual-submission-4-thumb.webp",
           "full": "videos/itsa-uk-property-year/annual-submission-4.webp"
         },
@@ -4129,7 +4084,7 @@
           "step": 6,
           "headline": "Claim the property allowance",
           "caption": "Claim the property income allowance instead of itemised ones.",
-          "startSeconds": 198,
+          "startSeconds": 193,
           "thumb": "videos/itsa-uk-property-year/annual-submission-6-thumb.webp",
           "full": "videos/itsa-uk-property-year/annual-submission-6.webp"
         },
@@ -4138,7 +4093,7 @@
           "step": 9,
           "headline": "Save allowances and adjustments",
           "caption": "Save the year's allowances and adjustments.",
-          "startSeconds": 209,
+          "startSeconds": 204,
           "thumb": "videos/itsa-uk-property-year/annual-submission-9-thumb.webp",
           "full": "videos/itsa-uk-property-year/annual-submission-9.webp"
         },
@@ -4147,7 +4102,7 @@
           "step": 10,
           "headline": "HMRC accepts the year",
           "caption": "HMRC accepts the annual submission.",
-          "startSeconds": 216,
+          "startSeconds": 211,
           "thumb": "videos/itsa-uk-property-year/annual-submission-10-thumb.webp",
           "full": "videos/itsa-uk-property-year/annual-submission-10.webp"
         },
@@ -4156,7 +4111,7 @@
           "step": 11,
           "headline": "The record as submitted",
           "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
-          "startSeconds": 221,
+          "startSeconds": 216,
           "thumb": "videos/itsa-uk-property-year/annual-submission-11-thumb.webp",
           "full": "videos/itsa-uk-property-year/annual-submission-11.webp"
         },
@@ -4165,7 +4120,7 @@
           "step": 13,
           "headline": "Keep this copy",
           "caption": "Every figure you claimed is on the record, ready to keep.",
-          "startSeconds": 234,
+          "startSeconds": 229,
           "thumb": "videos/itsa-uk-property-year/annual-submission-13-thumb.webp",
           "full": "videos/itsa-uk-property-year/annual-submission-13.webp"
         }
@@ -4274,22 +4229,22 @@
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": 38071926770,
-      "sourceArtifact": "video-itsa-loss-claims-ci",
-      "videoFile": "target/videos/video-itsa-loss-claims-ci/itsa-loss-claims.mp4",
-      "captionFile": "target/videos/video-itsa-loss-claims-ci/itsa-loss-claims.vtt",
+      "sourceRun": null,
+      "sourceArtifact": null,
+      "videoFile": "target/videos/itsa-loss-claims-sim/itsa-loss-claims.mp4",
+      "captionFile": "target/videos/itsa-loss-claims-sim/itsa-loss-claims.vtt",
       "title": "DIY Accounting Submit: a sole trade loss carried sideways and back (coming soon - sandbox example)",
-      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's losses and claims for a self-employment business: sign in, take out Resident, get HMRC's access for the year, then set a loss sideways against this year's other income and back against an earlier year, and say which claim applies first. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
+      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's losses and claims for a self-employment business: sign in, take out Resident, get HMRC's access for the year, then set a loss sideways against this year's other income and back against an earlier year, and say which claim applies first. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:02 Sign in\n00:07 Resident\n00:18 The dashboard's business picker\n00:28 A self-employment loss: sideways, back and which first",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "FaiKd_Dcr3Y",
+      "videoId": "KYZ25Thyr1w",
       "walkthrough": [
         {
           "scene": "losses-and-claims",
           "step": 0,
           "headline": "A loss, three ways",
           "caption": "A loss can carry forward, sideways, or back to an earlier year.",
-          "startSeconds": 69,
+          "startSeconds": 28,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-0-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-0.webp"
         },
@@ -4298,7 +4253,7 @@
           "step": 2,
           "headline": "The self-employment ID",
           "caption": "The self-employment business's own ID.",
-          "startSeconds": 79,
+          "startSeconds": 37,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-2-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-2.webp"
         },
@@ -4307,7 +4262,7 @@
           "step": 3,
           "headline": "Choose the tax year",
           "caption": "HMRC's sandbox needs this tax year for carry-back claims.",
-          "startSeconds": 85,
+          "startSeconds": 44,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-3-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-3.webp"
         },
@@ -4316,7 +4271,7 @@
           "step": 4,
           "headline": "Suspend the tax year check",
           "caption": "The sandbox's current tax year hasn't really ended, so suspend that check.",
-          "startSeconds": 92,
+          "startSeconds": 51,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-4-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-4.webp"
         },
@@ -4325,7 +4280,7 @@
           "step": 5,
           "headline": "Load the loss position",
           "caption": "Load this business's loss position for the year.",
-          "startSeconds": 98,
+          "startSeconds": 58,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-5-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-5.webp"
         },
@@ -4334,7 +4289,7 @@
           "step": 7,
           "headline": "Carry the loss sideways",
           "caption": "Carry sideways: set this year's loss against this year's other income.",
-          "startSeconds": 109,
+          "startSeconds": 65,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-7-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-7.webp"
         },
@@ -4343,7 +4298,7 @@
           "step": 8,
           "headline": "Carry the loss back",
           "caption": "Carry back: set the rest against an earlier year's general income.",
-          "startSeconds": 116,
+          "startSeconds": 73,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-8-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-8.webp"
         },
@@ -4352,7 +4307,7 @@
           "step": 9,
           "headline": "Which claim goes first",
           "caption": "Claiming both at once means saying which one HMRC applies first.",
-          "startSeconds": 123,
+          "startSeconds": 80,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-9-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-9.webp"
         },
@@ -4361,7 +4316,7 @@
           "step": 10,
           "headline": "Sideways applies first",
           "caption": "Sideways first, then whatever is left carries back.",
-          "startSeconds": 131,
+          "startSeconds": 89,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-10-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-10.webp"
         },
@@ -4370,7 +4325,7 @@
           "step": 13,
           "headline": "Save the claim",
           "caption": "Save the claim.",
-          "startSeconds": 138,
+          "startSeconds": 97,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-13-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-13.webp"
         },
@@ -4379,16 +4334,25 @@
           "step": 14,
           "headline": "HMRC accepts the claim",
           "caption": "HMRC accepts the claim.",
-          "startSeconds": 142,
+          "startSeconds": 102,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-14-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-14.webp"
         },
         {
           "scene": "losses-and-claims",
+          "step": 15,
+          "headline": "The record as submitted",
+          "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
+          "startSeconds": 107,
+          "thumb": "videos/itsa-loss-claims/losses-and-claims-15-thumb.webp",
+          "full": "videos/itsa-loss-claims/losses-and-claims-15.webp"
+        },
+        {
+          "scene": "losses-and-claims",
           "step": 17,
-          "headline": "Claim saved",
-          "caption": "Saved. The claim order is on record with HMRC.",
-          "startSeconds": 153,
+          "headline": "Keep this copy",
+          "caption": "Every loss and claim you sent is on the record, with which applies first.",
+          "startSeconds": 120,
           "thumb": "videos/itsa-loss-claims/losses-and-claims-17-thumb.webp",
           "full": "videos/itsa-loss-claims/losses-and-claims-17.webp"
         }
@@ -4399,22 +4363,22 @@
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": 38072467996,
-      "sourceArtifact": "video-itsa-foreign-property-losses-ci",
-      "videoFile": "target/videos/video-itsa-foreign-property-losses-ci/itsa-foreign-property-losses.mp4",
-      "captionFile": "target/videos/video-itsa-foreign-property-losses-ci/itsa-foreign-property-losses.vtt",
+      "sourceRun": null,
+      "sourceArtifact": null,
+      "videoFile": "target/videos/itsa-foreign-property-losses-sim/itsa-foreign-property-losses.mp4",
+      "captionFile": "target/videos/itsa-foreign-property-losses-sim/itsa-foreign-property-losses.vtt",
       "title": "DIY Accounting Submit: a foreign property loss: carried forward only (coming soon - sandbox example)",
-      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's losses and claims for a foreign property business: sign in, take out Resident, get HMRC's access for the year, then set a landlord's loss to carry forward, since carry-back is not on offer for a property business. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
+      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's losses and claims for a foreign property business: sign in, take out Resident, get HMRC's access for the year, then set a landlord's loss to carry forward, since carry-back is not on offer for a property business. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Resident\n00:18 The dashboard's business picker\n00:33 A foreign property loss carries forward",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "Rsoq0-K4kU4",
+      "videoId": "ZUCeLSFGzic",
       "walkthrough": [
         {
           "scene": "losses-and-claims",
           "step": 0,
           "headline": "A foreign rental loss",
           "caption": "A rental loss abroad is claimed here too.",
-          "startSeconds": 70,
+          "startSeconds": 33,
           "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-0-thumb.webp",
           "full": "videos/itsa-foreign-property-losses/losses-and-claims-0.webp"
         },
@@ -4423,7 +4387,7 @@
           "step": 2,
           "headline": "Foreign property business",
           "caption": "Choose foreign property as the business type.",
-          "startSeconds": 79,
+          "startSeconds": 41,
           "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-2-thumb.webp",
           "full": "videos/itsa-foreign-property-losses/losses-and-claims-2.webp"
         },
@@ -4432,7 +4396,7 @@
           "step": 3,
           "headline": "Only carries forward",
           "caption": "Carry-back is only for a sole trade. A landlord's loss carries forward.",
-          "startSeconds": 84,
+          "startSeconds": 47,
           "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-3-thumb.webp",
           "full": "videos/itsa-foreign-property-losses/losses-and-claims-3.webp"
         },
@@ -4441,7 +4405,7 @@
           "step": 4,
           "headline": "The foreign property ID",
           "caption": "This foreign property business's own ID.",
-          "startSeconds": 92,
+          "startSeconds": 56,
           "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-4-thumb.webp",
           "full": "videos/itsa-foreign-property-losses/losses-and-claims-4.webp"
         },
@@ -4450,7 +4414,7 @@
           "step": 5,
           "headline": "Choose the tax year",
           "caption": "The tax year this loss falls in.",
-          "startSeconds": 98,
+          "startSeconds": 62,
           "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-5-thumb.webp",
           "full": "videos/itsa-foreign-property-losses/losses-and-claims-5.webp"
         },
@@ -4459,7 +4423,7 @@
           "step": 6,
           "headline": "Suspend the tax year check",
           "caption": "The sandbox's current tax year hasn't really ended, so suspend that check.",
-          "startSeconds": 103,
+          "startSeconds": 67,
           "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-6-thumb.webp",
           "full": "videos/itsa-foreign-property-losses/losses-and-claims-6.webp"
         },
@@ -4468,7 +4432,7 @@
           "step": 7,
           "headline": "Load the loss position",
           "caption": "Load this business's loss position for the year.",
-          "startSeconds": 110,
+          "startSeconds": 74,
           "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-7-thumb.webp",
           "full": "videos/itsa-foreign-property-losses/losses-and-claims-7.webp"
         },
@@ -4477,7 +4441,7 @@
           "step": 9,
           "headline": "No carry-back for property",
           "caption": "Carry back is hidden here - it's not on offer for a property business.",
-          "startSeconds": 118,
+          "startSeconds": 81,
           "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-9-thumb.webp",
           "full": "videos/itsa-foreign-property-losses/losses-and-claims-9.webp"
         },
@@ -4486,7 +4450,7 @@
           "step": 10,
           "headline": "Carry the loss forward",
           "caption": "This year's loss, carried forward to set against next year's rental income.",
-          "startSeconds": 124,
+          "startSeconds": 87,
           "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-10-thumb.webp",
           "full": "videos/itsa-foreign-property-losses/losses-and-claims-10.webp"
         },
@@ -4495,7 +4459,7 @@
           "step": 13,
           "headline": "Save the claim",
           "caption": "Save the claim.",
-          "startSeconds": 133,
+          "startSeconds": 97,
           "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-13-thumb.webp",
           "full": "videos/itsa-foreign-property-losses/losses-and-claims-13.webp"
         },
@@ -4504,16 +4468,25 @@
           "step": 14,
           "headline": "HMRC accepts the claim",
           "caption": "HMRC accepts the claim.",
-          "startSeconds": 137,
+          "startSeconds": 101,
           "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-14-thumb.webp",
           "full": "videos/itsa-foreign-property-losses/losses-and-claims-14.webp"
         },
         {
           "scene": "losses-and-claims",
+          "step": 15,
+          "headline": "The record as submitted",
+          "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
+          "startSeconds": 106,
+          "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-15-thumb.webp",
+          "full": "videos/itsa-foreign-property-losses/losses-and-claims-15.webp"
+        },
+        {
+          "scene": "losses-and-claims",
           "step": 17,
-          "headline": "Claim saved",
-          "caption": "Saved. The loss is on record for next year.",
-          "startSeconds": 147,
+          "headline": "Keep this copy",
+          "caption": "The loss HMRC holds for next year is on the record, ready to keep.",
+          "startSeconds": 119,
           "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-17-thumb.webp",
           "full": "videos/itsa-foreign-property-losses/losses-and-claims-17.webp"
         }
@@ -5018,22 +4991,22 @@
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": 38073073738,
-      "sourceArtifact": "video-itsa-carry-back-adjustments-ci",
-      "videoFile": "target/videos/video-itsa-carry-back-adjustments-ci/itsa-carry-back-adjustments.mp4",
-      "captionFile": "target/videos/video-itsa-carry-back-adjustments-ci/itsa-carry-back-adjustments.vtt",
+      "sourceRun": null,
+      "sourceArtifact": null,
+      "videoFile": "target/videos/itsa-carry-back-adjustments-sim/itsa-carry-back-adjustments.mp4",
+      "captionFile": "target/videos/itsa-carry-back-adjustments-sim/itsa-carry-back-adjustments.vtt",
       "title": "DIY Accounting Submit: the tax a carry-back claim saves (coming soon - sandbox example)",
-      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's tax liability adjustments: sign in, take out Resident, get HMRC's access for the year, make a carry-back loss claim off camera, then record what that claim saves against the earlier tax year it reduces. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
+      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's tax liability adjustments: sign in, take out Resident, get HMRC's access for the year, make a carry-back loss claim off camera, then record what that claim saves against the earlier tax year it reduces. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Resident\n00:17 The dashboard's business picker\n00:26 What the claim saves",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "umGgcmmWytg",
+      "videoId": "JJSlJCW2dC0",
       "walkthrough": [
         {
           "scene": "adjustments",
           "step": 0,
           "headline": "The second half",
           "caption": "This is the second half of a carry-back claim.",
-          "startSeconds": 59,
+          "startSeconds": 26,
           "thumb": "videos/itsa-carry-back-adjustments/adjustments-0-thumb.webp",
           "full": "videos/itsa-carry-back-adjustments/adjustments-0.webp"
         },
@@ -5042,7 +5015,7 @@
           "step": 2,
           "headline": "The earlier tax year",
           "caption": "The earlier tax year the claim decreases.",
-          "startSeconds": 67,
+          "startSeconds": 34,
           "thumb": "videos/itsa-carry-back-adjustments/adjustments-2-thumb.webp",
           "full": "videos/itsa-carry-back-adjustments/adjustments-2.webp"
         },
@@ -5051,7 +5024,7 @@
           "step": 4,
           "headline": "Load the earlier year",
           "caption": "Load what HMRC already holds for that year.",
-          "startSeconds": 72,
+          "startSeconds": 39,
           "thumb": "videos/itsa-carry-back-adjustments/adjustments-4-thumb.webp",
           "full": "videos/itsa-carry-back-adjustments/adjustments-4.webp"
         },
@@ -5060,7 +5033,7 @@
           "step": 7,
           "headline": "HMRC's own figure",
           "caption": "Retrieve HMRC's own calculation for that year.",
-          "startSeconds": 80,
+          "startSeconds": 46,
           "thumb": "videos/itsa-carry-back-adjustments/adjustments-7-thumb.webp",
           "full": "videos/itsa-carry-back-adjustments/adjustments-7.webp"
         },
@@ -5069,7 +5042,7 @@
           "step": 8,
           "headline": "Before this claim",
           "caption": "The total Income Tax and National Insurance due, before this claim.",
-          "startSeconds": 86,
+          "startSeconds": 54,
           "thumb": "videos/itsa-carry-back-adjustments/adjustments-8-thumb.webp",
           "full": "videos/itsa-carry-back-adjustments/adjustments-8.webp"
         },
@@ -5078,7 +5051,7 @@
           "step": 10,
           "headline": "What the claim saves",
           "caption": "Enter what the carry-back claim saves in Income Tax.",
-          "startSeconds": 100,
+          "startSeconds": 65,
           "thumb": "videos/itsa-carry-back-adjustments/adjustments-10-thumb.webp",
           "full": "videos/itsa-carry-back-adjustments/adjustments-10.webp"
         },
@@ -5087,7 +5060,7 @@
           "step": 14,
           "headline": "Save the adjustment",
           "caption": "Save the adjustment.",
-          "startSeconds": 110,
+          "startSeconds": 77,
           "thumb": "videos/itsa-carry-back-adjustments/adjustments-14-thumb.webp",
           "full": "videos/itsa-carry-back-adjustments/adjustments-14.webp"
         },
@@ -5096,16 +5069,25 @@
           "step": 15,
           "headline": "Liability now credited",
           "caption": "HMRC accepts the adjustment. This year's liability is credited.",
-          "startSeconds": 114,
+          "startSeconds": 82,
           "thumb": "videos/itsa-carry-back-adjustments/adjustments-15-thumb.webp",
           "full": "videos/itsa-carry-back-adjustments/adjustments-15.webp"
         },
         {
           "scene": "adjustments",
+          "step": 16,
+          "headline": "The record as submitted",
+          "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
+          "startSeconds": 90,
+          "thumb": "videos/itsa-carry-back-adjustments/adjustments-16-thumb.webp",
+          "full": "videos/itsa-carry-back-adjustments/adjustments-16.webp"
+        },
+        {
+          "scene": "adjustments",
           "step": 18,
-          "headline": "Adjustments saved",
-          "caption": "Saved. The adjustment is on the year's record.",
-          "startSeconds": 126,
+          "headline": "Keep this copy",
+          "caption": "Each decrease you claimed is on the record, ready to keep.",
+          "startSeconds": 103,
           "thumb": "videos/itsa-carry-back-adjustments/adjustments-18-thumb.webp",
           "full": "videos/itsa-carry-back-adjustments/adjustments-18.webp"
         }
@@ -5121,17 +5103,17 @@
       "videoFile": "target/videos/itsa-in-year-estimate-sim/itsa-in-year-estimate.mp4",
       "captionFile": "target/videos/itsa-in-year-estimate-sim/itsa-in-year-estimate.vtt",
       "title": "DIY Accounting Submit: check what the tax year owes so far (coming soon - sandbox example)",
-      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's tax calculation: sign in, take out Resident, get HMRC's access for the year, then ask HMRC for an in-year estimate of what the tax year owes, based on what has been submitted so far. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:07 Resident\n00:15 In-year estimate",
+      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's tax calculation: sign in, take out Resident, get HMRC's access for the year, then ask HMRC for an in-year estimate of what the tax year owes, based on what has been submitted so far. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Resident\n00:14 In-year estimate",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "8OchgVgE4sY",
+      "videoId": "QdG4iJzxH-k",
       "walkthrough": [
         {
           "scene": "in-year-estimate",
           "step": 0,
           "headline": "Check anytime",
           "caption": "Check what the year owes at any point, not just at the end.",
-          "startSeconds": 15,
+          "startSeconds": 14,
           "thumb": "videos/itsa-in-year-estimate/in-year-estimate-0-thumb.webp",
           "full": "videos/itsa-in-year-estimate/in-year-estimate-0.webp"
         },
@@ -5155,12 +5137,12 @@
         },
         {
           "scene": "in-year-estimate",
-          "step": 5,
+          "step": 4,
           "headline": "Calculate now",
           "caption": "Ask HMRC to calculate now.",
           "startSeconds": 34,
-          "thumb": "videos/itsa-in-year-estimate/in-year-estimate-5-thumb.webp",
-          "full": "videos/itsa-in-year-estimate/in-year-estimate-5.webp"
+          "thumb": "videos/itsa-in-year-estimate/in-year-estimate-4-thumb.webp",
+          "full": "videos/itsa-in-year-estimate/in-year-estimate-4.webp"
         },
         {
           "scene": "in-year-estimate",
@@ -5185,7 +5167,7 @@
           "step": 9,
           "headline": "Still an estimate",
           "caption": "It is an estimate, and it can still change.",
-          "startSeconds": 63,
+          "startSeconds": 65,
           "thumb": "videos/itsa-in-year-estimate/in-year-estimate-9-thumb.webp",
           "full": "videos/itsa-in-year-estimate/in-year-estimate-9.webp"
         },
@@ -5194,7 +5176,7 @@
           "step": 10,
           "headline": "What it owes so far",
           "caption": "What the year owes so far, based on what's been submitted.",
-          "startSeconds": 70,
+          "startSeconds": 71,
           "thumb": "videos/itsa-in-year-estimate/in-year-estimate-10-thumb.webp",
           "full": "videos/itsa-in-year-estimate/in-year-estimate-10.webp"
         },
@@ -5203,7 +5185,7 @@
           "step": 11,
           "headline": "The estimate as made",
           "caption": "This is the estimate as HMRC made it: the calculation ID, its status and the date.",
-          "startSeconds": 79,
+          "startSeconds": 78,
           "thumb": "videos/itsa-in-year-estimate/in-year-estimate-11-thumb.webp",
           "full": "videos/itsa-in-year-estimate/in-year-estimate-11.webp"
         },
@@ -5212,7 +5194,7 @@
           "step": 13,
           "headline": "What is due so far",
           "caption": "What is due and how it is made up, as calculated so far.",
-          "startSeconds": 90,
+          "startSeconds": 91,
           "thumb": "videos/itsa-in-year-estimate/in-year-estimate-13-thumb.webp",
           "full": "videos/itsa-in-year-estimate/in-year-estimate-13.webp"
         }

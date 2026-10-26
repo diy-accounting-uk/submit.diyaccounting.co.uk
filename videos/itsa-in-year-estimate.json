@@ -135,13 +135,16 @@
           "headline": "An in-year estimate",
           "keyWord": "estimate"
         },
-        { "action": "testScenario", "value": "UK_SE_GIFTAID_EXAMPLE" },
         {
-          "action": "click",
-          "target": "#triggerBtn",
+          "action": "testScenario",
+          "value": "UK_SE_GIFTAID_EXAMPLE",
           "caption": "Ask HMRC to calculate now.",
           "headline": "Calculate now",
           "keyWord": "Calculate"
+        },
+        {
+          "action": "click",
+          "target": "#triggerBtn"
         },
         {
           "action": "hmrcAuthorise",
