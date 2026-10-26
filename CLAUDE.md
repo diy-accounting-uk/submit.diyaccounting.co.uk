@@ -85,6 +85,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/visual-review/SKILL.md` — judge screenshots as a reader sees them (realistic data, not a bug, clean edges, space used, readable, current, safe) after a major visual change, then refresh and review the guide and site screenshots and the videos; the look pass in the visual definition of done
 - `.claude/skills/explore/SKILL.md` — walk the deployed ci site as a person would, one role at a time (visitor, customer, practice, operator) with the Playwright MCP browser; verify the findings against the oracle; write one review with screenshots in the private repository; invoke as `/explore`
 - `.claude/skills/companies-house-review/SKILL.md` — review our accounts filings as the Companies House XML team does: rebuild each filed case, render it beside the example of its type, run the test validator, and write `findings.md` and `walkthrough.md` under `target/companies-house-review/<date>/`; invoke as `/companies-house-review`
+- `.claude/skills/companies-house-judge/SKILL.md` — judge a Companies House review folder as the XML team would, as an LLM: our data in `source/`, the example in `reference/`, input against output in `reconciliation.md`, one `index.html` per review, `judge.json` per case, and a NEXT.md row per fix; runs after every review and before any email cites it; invoke as `/companies-house-judge`
 
 ## Permission Handling
 
