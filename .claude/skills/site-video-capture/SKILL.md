@@ -50,6 +50,19 @@ and positioned so it reads as a label, not a subtitle.
   mid-fade; the real capture never does, because every step's own pacing already waits longer
   than that before anything else happens).
 
+## Step 1aa — start the frame at an element
+
+A walkthrough frame is cut from the page as a step leaves it, and a line of text cut by the top
+edge of the frame fails the look pass. A step can carry `scrollTo`, a target (the same shapes as
+`target`): before the step acts, the page scrolls so that element's top edge sits 16px below the
+top of the viewport (an `await` or `goto` step scrolls after it finishes, so the element can
+appear during it). Pick an element with a blank gap above it: a section, a card, a heading, the
+`#syntheticIndicator` banner. A page too short to scroll that far stays where it is.
+
+The recorder also saves `stills/step-<scene>-<index>.png` for every step with a headline, with the
+headline card hidden. `scripts/video-walkthrough.js` cuts the guide frame from that still when it
+exists, and from the recording otherwise.
+
 ## Step 1b — a non-site target
 
 A scene script's target is normally the submit site itself (`--base-url`). A script whose target

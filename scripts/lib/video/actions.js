@@ -365,6 +365,29 @@ async function doNotePeriod(page, step, ctx) {
   return { waitMs: 0, rect: null };
 }
 
+// A step with scrollTo snaps the page so the named element's top edge sits this far below the top
+// of the viewport before the step acts, so the frame starts at that element and no line above it is
+// cut by the frame's top edge.
+export const SCROLL_TO_TOP_MARGIN_PX = 16;
+
+async function snapToElementTop(page, step, ctx) {
+  const locator = resolveTarget(page, step.scrollTo);
+  if ((await locator.count()) === 0) {
+    await writeFailureStill(page, ctx);
+    throw new SceneStepError(
+      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (scrollTo): target not found: ${JSON.stringify(step.scrollTo)}`,
+      {
+        sceneId: ctx.sceneId,
+        stepIndex: ctx.stepIndex,
+        target: step.scrollTo,
+      },
+    );
+  }
+  const top = await locator.evaluate((el, margin) => window.scrollY + el.getBoundingClientRect().top - margin, SCROLL_TO_TOP_MARGIN_PX);
+  const currentX = await page.evaluate(() => window.scrollX);
+  await overlay.scrollTo(page, currentX, Math.max(0, top), ctx.pacing.aroundMotionMs);
+}
+
 async function doScroll(page, step, ctx) {
   let targetY;
   if (step.target) {
@@ -756,5 +779,14 @@ export async function executeAction(page, step, ctx) {
       target: step.target ?? null,
     });
   }
+  if (!step.scrollTo) return handler(page, step, ctx);
+  // A goto loads a page and an await waits for something to appear, so the element they scroll to
+  // may not exist until they have finished; every other step acts at the scrolled position.
+  if (step.action === "await" || step.action === "goto") {
+    const result = await handler(page, step, ctx);
+    await snapToElementTop(page, step, ctx);
+    return result;
+  }
+  await snapToElementTop(page, step, ctx);
   return handler(page, step, ctx);
 }

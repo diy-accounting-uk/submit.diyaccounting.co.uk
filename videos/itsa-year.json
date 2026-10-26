@@ -233,6 +233,7 @@
       "still": true,
       "steps": [
         {
+          "scrollTo": "#syntheticIndicator",
           "action": "goto",
           "url": "/hmrc/itsa/dashboard.html",
           "waitFor": "#businessPickerForm",
@@ -294,6 +295,7 @@
           "target": "#businessDetailsTable"
         },
         {
+          "scrollTo": "#syntheticIndicator",
           "action": "point",
           "target": "#businessDetailsTable",
           "caption": "One quarterly update form per business type, all year.",
@@ -705,6 +707,7 @@
           "label": "Loading losses and claims"
         },
         {
+          "scrollTo": { "role": "heading", "name": "Carry forward" },
           "action": "fill",
           "target": "#currentYearLosses",
           "value": "200",

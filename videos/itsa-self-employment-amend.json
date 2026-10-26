@@ -177,6 +177,7 @@
           "keyWord": "list"
         },
         {
+          "scrollTo": "#periodsResults",
           "action": "await",
           "until": "#periodsResults",
           "label": "Waiting for HMRC",

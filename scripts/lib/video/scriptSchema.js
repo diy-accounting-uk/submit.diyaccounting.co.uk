@@ -61,6 +61,9 @@ const STEP_REQUIRED_FIELDS = {
   submitReturn: [],
 };
 
+// Steps the recorder runs itself, without the page: scrollTo has nothing to scroll for them.
+const NO_SCROLL_TO_ACTIONS = new Set(["caption", "hold", "still"]);
+
 // Actions that run one of the behaviour tests' journey step functions. They drive credentials
 // and a real identity provider, so a script may only use them once it has declared auth "user".
 const USER_ONLY_ACTIONS = new Set([
@@ -122,6 +125,10 @@ function validateStep(step, scenePath, sceneId, stepIndex, auth) {
   if (!(step.action in STEP_REQUIRED_FIELDS)) fail(path, `unknown action "${step.action}"`);
   requireKeys(step, STEP_REQUIRED_FIELDS[step.action], path);
   if ("target" in step) validateTarget(step.target, `${path}.target`);
+  if ("scrollTo" in step) {
+    if (NO_SCROLL_TO_ACTIONS.has(step.action)) fail(`${path}.scrollTo`, `a "${step.action}" step has no page to scroll`);
+    validateTarget(step.scrollTo, `${path}.scrollTo`);
+  }
   if (step.action === "dropFile") {
     if (typeof step.file !== "string" || step.file.length === 0) fail(`${path}.file`, "must be a non-empty repo-relative path");
     if ("name" in step && (typeof step.name !== "string" || step.name.length === 0)) fail(`${path}.name`, "must be a non-empty string");

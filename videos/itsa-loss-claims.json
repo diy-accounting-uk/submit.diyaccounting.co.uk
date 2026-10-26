@@ -247,6 +247,7 @@
           "keyWord": "sideways"
         },
         {
+          "scrollTo": { "role": "heading", "name": "Carry back" },
           "action": "fill",
           "target": "#previousYearGeneralIncome",
           "value": "150",
@@ -255,6 +256,7 @@
           "keyWord": "back"
         },
         {
+          "scrollTo": "#preferenceOrderSection",
           "action": "point",
           "target": "#preferenceOrderSection",
           "caption": "Claiming both at once means saying which one HMRC applies first.",
@@ -263,6 +265,7 @@
           "dwellMs": 500
         },
         {
+          "scrollTo": "#preferenceOrderSection",
           "action": "select",
           "target": "#applyFirst",
           "value": "carry-sideways",
@@ -273,6 +276,7 @@
         { "action": "point", "target": "#claimSummary", "dwellMs": 500 },
         { "action": "hold", "ms": 500 },
         {
+          "scrollTo": "#preferenceOrderSection",
           "action": "click",
           "target": "#saveBtn",
           "caption": "Save the claim.",
