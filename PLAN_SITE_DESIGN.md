@@ -519,7 +519,7 @@ Tabled fails, one row each for the board:
 
 Systemic, on every frame with the page header, not counted above:
 
-- **GJ2-S1.** The header reads "DIY Accounting ..." and "Logged in as synthetic-user@test.diyacco..." at the 1000px frame width. Page: `web/public/widgets/page-chrome.js`.
+- **GJ2-S1.** The header reads "DIY Accounting ..." and the "Logged in as" line with the user's address cut short at the 1000px frame width. Page: `web/public/widgets/page-chrome.js`.
 - **GJ2-S2.** Submission numbers read `000001`, `000002` and `000003` on every result and record frame. The sandbox issues them.
 
 UX pass (`ui-ux-pro-max`: accessibility, forms and feedback, layout), over the guide that `web/public/guide.page.js` builds from the three walkthroughs:
