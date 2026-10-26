@@ -1057,15 +1057,17 @@ public class ObservabilityStack extends Stack {
                         "arn:aws:ssm:eu-west-2:%s:parameter/submit/%s/*".formatted(this.getAccount(), props.envName())))
                 .build());
 
-        // The one write this role makes to the lake: an agent-run ledger row, one JSON object per
-        // run, under its own prefix. Scoped to that prefix alone so it cannot touch any other
-        // curated table, and to PutObject alone - the DenyCustomerData statement below already
-        // denies this role every read of the lake, and that stays true here.
+        // The writes this role makes to the lake: an agent-run ledger row per run, and the support
+        // triage's draft row per drafted reply, each under its own prefix. Scoped to those prefixes
+        // so it cannot touch any other curated table, and to PutObject alone - the DenyCustomerData
+        // statement below already denies this role every read of the lake, and that stays true here.
         String analyticsLakeBucketArn = "arn:aws:s3:::" + props.sharedNames().analyticsLakeBucketName;
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("WriteAgentRunLedgerRows")
                 .actions(List.of("s3:PutObject"))
-                .resources(List.of(analyticsLakeBucketArn + "/curated/agent-runs/*"))
+                .resources(List.of(
+                        analyticsLakeBucketArn + "/curated/agent-runs/*",
+                        analyticsLakeBucketArn + "/curated/support-drafts/*"))
                 .build());
 
         // The weekly security review's full report: file, line and exploit path for each finding.
