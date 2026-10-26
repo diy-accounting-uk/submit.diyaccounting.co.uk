@@ -715,9 +715,12 @@ export async function assertReaderView(page, options = {}) {
   try {
     defects = await findReaderViewDefects(page, options);
   } catch (error) {
-    // A client-side redirect can replace the document between the load event and the check.
-    if (!String(error?.message).includes("Execution context was destroyed")) throw error;
+    // A client-side redirect can replace the document between the load event and the check, and
+    // the replacement document has no body until it parses.
+    const message = String(error?.message);
+    if (!message.includes("Execution context was destroyed") && !message.includes("createTreeWalker")) throw error;
     await page.waitForLoadState("load");
+    await page.waitForFunction(() => document.body !== null);
     defects = await findReaderViewDefects(page, options);
   }
   if (defects.length > 0) {
