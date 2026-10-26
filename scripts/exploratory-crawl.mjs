@@ -440,8 +440,9 @@ async function crawlOne({ browser, lane, role, viewport, theme, baseUrl, maxPage
   });
   page.on("response", async (response) => {
     try {
-      const length = Number(response.headers()["content-length"] ?? 0);
-      bytes += Number.isFinite(length) ? length : 0;
+      const declared = response.headers()["content-length"];
+      const length = declared === undefined ? (await response.request().sizes()).responseBodySize : Number(declared);
+      bytes += Number.isFinite(length) && length > 0 ? length : 0;
     } catch {
       // A response with no readable headers adds nothing to the weight.
     }
