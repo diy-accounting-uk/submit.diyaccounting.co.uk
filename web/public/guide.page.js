@@ -127,7 +127,7 @@ function frameStep(scene) {
   open.setAttribute("aria-label", `View full size: ${scene.headline}`);
   const image = document.createElement("img");
   image.src = scene.thumb;
-  image.alt = `${scene.headline}: ${scene.caption}`;
+  image.alt = scene.caption;
   image.loading = "lazy";
   open.append(image);
   item.append(open, el("p", "guide-caption", scene.caption));

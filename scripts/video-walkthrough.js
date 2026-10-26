@@ -18,6 +18,11 @@
 // fastForward (those compress a step every video repeats, such as sign-in, into seconds).
 // A scene with more than three captioned steps gets one frame per captioned step.
 //
+// The frame is cut from a moment with no headline card in it: the recording is sampled, each
+// sample is tested for the card (frameCut.js), and the frame is the first card-free sample after
+// the step ends. The cut then starts below a text line or control the scroll position cut at the
+// top edge, and ends before an empty tail, by reading the frame.
+//
 // A recording of the submit site is cropped to its content column (CONTENT_COLUMN_CSS_PX wide,
 // centred) before scaling, because the app is 800 to 960px wide in a 1920px viewport and the
 // frame outside it is blank. A script with a localApp records another tool's full-width page
@@ -29,6 +34,7 @@ import { spawnSync } from "child_process";
 import { fileURLToPath } from "url";
 import { resolveFfmpegBinary } from "./lib/video/encode.js";
 import { captionTextForStep } from "./lib/video/captions.js";
+import { findCutRegion, frameHasCard, pickCardFreeMs } from "./lib/video/frameCut.js";
 import { loadPublishList, savePublishList } from "./youtube-upload.js";
 import { copyVideosManifest } from "./copy-videos-manifest.js";
 
@@ -39,6 +45,8 @@ export const CONTENT_COLUMN_CSS_PX = 1000;
 export const COLUMN_FULL_WIDTH = 1000;
 export const FULL_MAX_BYTES = 150 * 1024;
 export const WEBP_QUALITIES = [90, 82, 74, 66, 58, 50, 42];
+export const SAMPLE_FPS = 10;
+export const SAMPLE_WIDTH = 125;
 export const MAX_CAPTIONS_PER_SCENE = 2;
 export const MAX_CAPTIONS_PER_SCENE_FRAME = 3;
 
@@ -153,6 +161,78 @@ export function columnCropFilter(script) {
   return `crop=${keep}:ih:(iw-${keep})/2:0,`;
 }
 
+function ffmpegProbeSize(ffmpeg, mp4Path) {
+  const report = spawnSync(ffmpeg, ["-i", mp4Path, "-hide_banner"], { encoding: "utf8" }).stderr || "";
+  const match = report.match(/Video:.*?,\s(\d{2,5})x(\d{2,5})/);
+  if (!match) throw new Error(`could not read the size of ${mp4Path}`);
+  return { width: Number(match[1]), height: Number(match[2]) };
+}
+
+/** Every SAMPLE_FPS-th of a second of the recording, cropped as the frames are, tested for the headline card. */
+export function sampleCards(ffmpeg, mp4Path, script) {
+  const video = ffmpegProbeSize(ffmpeg, mp4Path);
+  const keepWidth = script.localApp ? video.width : Math.trunc((video.width * CONTENT_COLUMN_CSS_PX) / script.viewport.width / 2) * 2;
+  const height = Math.max(8, Math.round((SAMPLE_WIDTH * video.height) / keepWidth));
+  const result = spawnSync(
+    ffmpeg,
+    [
+      "-v",
+      "error",
+      "-i",
+      mp4Path,
+      "-vf",
+      `fps=${SAMPLE_FPS},${columnCropFilter(script)}scale=${SAMPLE_WIDTH}:${height}:flags=area`,
+      "-f",
+      "rawvideo",
+      "-pix_fmt",
+      "rgb24",
+      "pipe:1",
+    ],
+    { maxBuffer: 2 * 1024 * 1024 * 1024 },
+  );
+  if (result.status !== 0) throw new Error(`ffmpeg sampling failed for ${mp4Path}: ${result.stderr}`);
+  const frameBytes = SAMPLE_WIDTH * height * 3;
+  const samples = [];
+  for (let i = 0; i * frameBytes + frameBytes <= result.stdout.length; i++) {
+    const rgb = result.stdout.subarray(i * frameBytes, (i + 1) * frameBytes);
+    samples.push({ ms: Math.round((i * 1000) / SAMPLE_FPS), card: frameHasCard({ rgb, width: SAMPLE_WIDTH, height }) });
+  }
+  return samples;
+}
+
+/** The crop filter that drops the cut top line and the empty tail of the frame at frameMs; empty when the frame needs neither. */
+export function regionCropFilter(ffmpeg, mp4Path, frameMs, cropFilter) {
+  if (!cropFilter) return "";
+  const result = spawnSync(
+    ffmpeg,
+    [
+      "-v",
+      "error",
+      "-ss",
+      (frameMs / 1000).toFixed(3),
+      "-i",
+      mp4Path,
+      "-frames:v",
+      "1",
+      "-vf",
+      `${cropFilter}scale=${COLUMN_FULL_WIDTH}:-2:flags=area`,
+      "-f",
+      "rawvideo",
+      "-pix_fmt",
+      "gray",
+      "pipe:1",
+    ],
+    { maxBuffer: 64 * 1024 * 1024 },
+  );
+  if (result.status !== 0) throw new Error(`ffmpeg failed reading ${mp4Path} at ${frameMs}ms: ${result.stderr}`);
+  const gray = result.stdout;
+  const height = Math.floor(gray.length / COLUMN_FULL_WIDTH);
+  const { top, bottom } = findCutRegion({ gray, width: COLUMN_FULL_WIDTH, height });
+  if (top === 0 && bottom === height) return "";
+  const even = (rows) => `trunc(ih*${rows}/${height}/2)*2`;
+  return `crop=iw:${even(bottom - top)}:0:${even(top)},`;
+}
+
 function writeWebp(ffmpeg, mp4Path, frameMs, width, quality, outPath, cropFilter) {
   const result = spawnSync(
     ffmpeg,
@@ -217,12 +297,24 @@ export function buildForEntry(entry, { ffmpeg = resolveFfmpegBinary(), outRoot =
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
   let bytes = 0;
+  const samples = sampleCards(ffmpeg, mp4Path, script);
   for (const item of plan) {
-    writeWebp(ffmpeg, mp4Path, item.frameMs, THUMB_WIDTH, 70, path.join(outDir, `${frameKey(item)}-thumb.webp`), cropFilter);
+    const timing = timeline.steps.filter(
+      (step) => step.sceneId === item.scene && (item.step === undefined || step.stepIndex === item.step),
+    );
+    const picked = pickCardFreeMs(samples, {
+      startMs: Math.min(...timing.map((step) => step.startMs)),
+      endMs: Math.max(...timing.map((step) => step.endMs)),
+      fallbackMs: item.frameMs,
+    });
+    if (!picked.clean) console.warn(`${entry.id}: ${frameKey(item)} has the headline card in every sample; the frame keeps it`);
+    const frameMs = picked.ms;
+    const itemCrop = `${cropFilter}${regionCropFilter(ffmpeg, mp4Path, frameMs, cropFilter)}`;
+    writeWebp(ffmpeg, mp4Path, frameMs, THUMB_WIDTH, 70, path.join(outDir, `${frameKey(item)}-thumb.webp`), itemCrop);
     const fullPath = path.join(outDir, `${frameKey(item)}.webp`);
     let size = Infinity;
     for (const quality of WEBP_QUALITIES) {
-      size = writeWebp(ffmpeg, mp4Path, item.frameMs, fullWidth, quality, fullPath, cropFilter);
+      size = writeWebp(ffmpeg, mp4Path, frameMs, fullWidth, quality, fullPath, itemCrop);
       if (size <= FULL_MAX_BYTES) break;
     }
     bytes += size + fs.statSync(path.join(outDir, `${frameKey(item)}-thumb.webp`)).size;

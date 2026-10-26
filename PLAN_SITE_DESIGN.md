@@ -485,3 +485,86 @@ DS1 took every page signed out, so these states need a signed-in DS1 run before 
 - success and HMRC error messages after a submit;
 - the token balance and entitlement text in the header;
 - hover, pressed and keyboard focus states, which a still image does not show.
+
+### SQ1: every walkthrough frame, judged
+
+512 frames in 44 videos. 414 pass, 98 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
+
+Fails by cause: O 58 (15 in re-cut videos, 43 in the five videos that were not re-cut), C 36 (21 and 15), E 18 (all re-cut videos), 1 four.
+
+Not re-cut, frames unchanged: `change-registered-email`, `file-company-tax-return-book`, `file-company-tax-return-typed` (no recording on this machine: `target/videos/*-sim` and `local-change-registered-email` are absent); `change-registered-office`, `file-micro-entity-accounts` (the downloaded recording has 5 steps in scene `result`, the script has 7 and 10: re-record).
+
+| Video | Frames | Pass | Fails (frame, criteria) |
+|---|---|---|---|
+| accounting-diya-gl-profit | 24 | 24 | none |
+| accounting-spreadsheet-profit | 13 | 2 | april-0 E; april-15 E; april-17 E; april-2 E; april-23 E; april-25 E; april-3 E; april-5 E; april-7 E; april-8 E; may E |
+| bundles | 4 | 4 | none |
+| change-registered-email (not re-cut) | 7 | 7 | none |
+| change-registered-office (not re-cut) | 7 | 3 | company-lookup-0 O; company-lookup-2 O; company-lookup-3 O; company-lookup-5 O |
+| company-lookup | 2 | 2 | none |
+| file-company-tax-return-book (not re-cut) | 18 | 3 | company-lookup-0 O; company-lookup-2 O; company-lookup-3 O; company-lookup-5 O; import-book-0 O; import-book-1 O; import-book-3 O,C; import-book-5 O,C; result-0 O; result-1 O; result-10 O,C; result-13 O,C; result-4 O; result-5 O; result-8 O |
+| file-company-tax-return-typed (not re-cut) | 19 | 3 | company-lookup-0 O; company-lookup-2 O; company-lookup-3 O; company-lookup-5 O; details C; figures-0 O,C; figures-10 O,C; figures-12 O,C; figures-5 O,C; result-0 O; result-1 O; result-10 O,C; result-13 O,C; result-4 O; result-5 O; result-8 O |
+| file-confirmation-statement | 2 | 2 | none |
+| file-micro-entity-accounts (not re-cut) | 12 | 2 | accounts-form-0 O; accounts-form-16 O,C; accounts-form-18 O,C; accounts-form-2 O; accounts-form-8 O,C; company-lookup-0 O; company-lookup-2 O; company-lookup-3 O; company-lookup-5 O; preview C |
+| file-psc-verification-statement | 12 | 12 | none |
+| file-small-company-accounts | 21 | 17 | accounts-form-38 1; accounts-form-39 1; accounts-form-41 1; preview C,1 |
+| generate-pass-digital | 4 | 3 | generate-5 O |
+| generate-pass-physical | 1 | 1 | none |
+| hmrc-authorise | 2 | 0 | authorise E; results E |
+| itsa-annual-from-book | 8 | 8 | none |
+| itsa-business-details | 7 | 6 | results E |
+| itsa-carry-back-adjustments | 9 | 9 | none |
+| itsa-foreign-property-losses | 12 | 12 | none |
+| itsa-in-year-estimate | 8 | 8 | none |
+| itsa-loss-claims | 12 | 1 | losses-and-claims-10 O,C; losses-and-claims-13 O,C; losses-and-claims-14 O; losses-and-claims-17 O; losses-and-claims-2 O; losses-and-claims-3 O; losses-and-claims-4 O; losses-and-claims-5 O; losses-and-claims-7 O; losses-and-claims-8 O,C; losses-and-claims-9 O,C |
+| itsa-quarterly-from-books | 14 | 12 | import-book-0 C; import-book-1 C |
+| itsa-quarterly-update | 22 | 22 | none |
+| itsa-self-employment-amend | 13 | 12 | list-quarters-6 C |
+| itsa-uk-property-year | 24 | 20 | amend-quarter-10 C; amend-quarter-11 C; amend-quarter-7 C; view-quarter C |
+| itsa-year | 53 | 48 | business-details-0 C; business-details-8 C; losses-and-claims-7 C; quarterly-update-self-employment-10 O; quarterly-update-uk-property-10 O |
+| itsa-year-part | 37 | 34 | business-details-0 C; business-details-8 C; quarterly-update-self-employment-10 O |
+| mcp-cli | 8 | 8 | none |
+| mcp-diya-gl | 7 | 7 | none |
+| mcp-docker | 8 | 8 | none |
+| mcp-hosted | 7 | 4 | connect-0 E; connect-1 E; connect-2 E |
+| my-receipts | 4 | 4 | none |
+| sign-in | 4 | 4 | none |
+| submit-return | 20 | 19 | record-12 C |
+| subscription-management | 3 | 3 | none |
+| tokens | 5 | 5 | none |
+| tour | 6 | 5 | help C |
+| vat-from-books | 16 | 15 | record-12 C |
+| vat-hmrc-assist | 16 | 15 | record-12 C |
+| view-liabilities | 7 | 7 | none |
+| view-obligations | 7 | 6 | results E |
+| view-payments | 7 | 7 | none |
+| view-penalties | 6 | 6 | none |
+| view-return | 14 | 14 | none |
+
+Remaining fails, by fix:
+
+| Fail | Frames | What a reader sees | Fix |
+|---|---|---|---|
+| O | `itsa-loss-claims` 11, `itsa-year` 2, `itsa-year-part` 1, `generate-pass-digital/generate-5` | A card in every sample from step start to 700 ms after its end: the next step's card follows at once | The recorder writes a card-free still per step (`page.screenshot` after the card hides), and the cutter prefers it |
+| O, C, E | the five videos not re-cut | As before the cutter change | Re-record, then `node scripts/video-walkthrough.js --id <id>` |
+| C | 21 re-cut frames (`submit-return/record-12`, `vat-from-books/record-12`, `vat-hmrc-assist/record-12`, `itsa-uk-property-year` x4, `itsa-year` x3 and `itsa-year-part` x2 `business-details`/`losses-and-claims`, `itsa-loss-claims` x4, `itsa-quarterly-from-books/import-book-0,1`, `file-small-company-accounts/preview`, `tour/help`, `itsa-self-employment-amend/list-quarters-6`) | Text at the first row where no blank band lies in the top 30% | Snap the scene script's `scroll` to the target element's top |
+| C (not detected) | `file-psc-verification-statement` psc-3 to psc-9, `submit-return` `result`/`record` frames | A table fragment or the word "statement." at the top edge; the script finds no blank band | Same scroll fix |
+| E | 11 frames of `accounting-spreadsheet-profit`, `mcp-hosted/connect-0..2`, `hmrc-authorise/authorise,results`, `itsa-business-details/results`, `view-obligations/results` | 70 to 80 percent blank rows: a spreadsheet grid with two rows filled, or a short form | localApp frames: crop to the filled area in the scene script's viewport; site frames: a result page shorter than the cut |
+| 1 | `file-small-company-accounts` accounts-form-38, 39, 41, preview | "Jo Director" in the directors field and the report | The scene scripts now carry "Joanna Hale"; shows after a re-recording of `file-small-company-accounts` and `file-micro-entity-accounts` |
+| 2 | `itsa-year`, `itsa-loss-claims` and other ITSA frames of a form load | "Loading ..." spinner and the "Synthetic mode - calls go to HMRC's sandbox API" banner in the frame | Step waits for the loaded state before the caption; banner is the synthetic account's, hide it with the script's `suppress` list |
+| 3 | `itsa-loss-claims` frames | The chapter label "and which first" is clipped at the left edge of the crop | Place the chapter label inside the content column |
+| 5 | `accounting-diya-gl-profit`, `accounting-spreadsheet-profit` | Spreadsheet text under 8 px at the thumbnail size | Record the localApp scenes at a smaller viewport |
+| 9 | `file-psc-verification-statement/record` | The caption names steps the frame does not show | Split the scene so one caption matches the frame |
+| 4 | `file-psc-verification-statement` psc-3 to psc-6 | Four frames that look the same | One frame per distinct state |
+
+#### ui-ux-pro-max over `guide.html` and `guide.page.js`
+
+| # | Finding | Fix |
+|---|---|---|
+| 1 | The guide lists 44 collapsed journeys with no index, search or filter at the top; a reader must open each | A jump list of journey titles at the top of each group |
+| 2 | Thumbnails carry no width and height, so the page shifts when each loads (the reserved ratio 480:518 differs from the new trimmed frame heights) | Write the image's pixel size into each `walkthrough` entry and set `width` and `height` on the `img` |
+| 3 | A thumbnail is 480 px wide for a 1000 px frame: the page text is 7 px, unreadable without opening the lightbox | Crop the thumbnail to the area the step points at, or show the frame at 720 px |
+| 4 | The alt text equals the visible caption under it, so a screen reader says each sentence twice | Alt text names what the frame shows in one short phrase; the caption stays visible |
+| 5 | The lightbox close control is a `span` with a role; Tab is held on it, so a keyboard user cannot read the image's alt or move on except by closing | Use a `button` element and keep focus inside the dialog with a real trap |
+| 6 | The lightbox has no previous and next control, so a reader opens, closes and opens for each step | Arrow keys and two buttons through the journey's frames |
+| 7 | A step has no link of its own; only a journey has a hash | An id on each step and a copy-link control |
