@@ -377,9 +377,12 @@ describe("services/smallCompanyAccountsIxbrl", () => {
       expect(xhtml).toContain("section 444(5A) of the Companies Act 2006");
     });
 
-    test("reports filleted accounts with the signing director named and no principal activity that no page shows", () => {
+    test("reports filleted accounts with the signing director named and the principal activity shown in the notes", () => {
       expect(dimensionNames(xhtml)).toContainEqual({ dimension: "bus:AccountsTypeDimension", member: "bus:FilletedAccounts" });
-      expect(xhtml).not.toContain("DescriptionPrincipalActivities");
+      expect(hiddenText(xhtml, "bus:DescriptionPrincipalActivities")).toBeUndefined();
+      expect(parseXmlDocument(xhtml).getElementsByTagName("body")[0].textContent).toContain(
+        `The principal activity of the company is ${SAMPLE_INPUT.principalActivity}.`,
+      );
       expect(xhtml).toMatch(/name="bus:NameEntityOfficer" contextRef="y2026-director-1">Jo Smith</);
     });
 

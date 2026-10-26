@@ -446,7 +446,13 @@ export function buildSmallCompanyAccounts(input) {
     : SMALL_COMPANY_STATEMENT_KEYS;
 
   const notes = [
-    companyInformationNote(input, refs),
+    companyInformationNote(
+      {
+        ...input,
+        principalActivityShown: input.filleted ? input.principalActivity : undefined,
+      },
+      refs,
+    ),
     {
       title: "Accounting policies",
       html: `<p>${renderTextFact("statementComplianceWithReportingFramework", refs.current, SMALL_COMPANY_FRAMEWORK_COMPLIANCE)}</p>

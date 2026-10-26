@@ -531,16 +531,17 @@ const COUNTRY_PHRASE = {
  * @param {string} input.companyName
  * @param {string} input.companyNumber
  * @param {string} input.registeredOffice - the registered office address on one line
+ * @param {string} [input.principalActivityShown] - the principal activity, stated in the note when no directors' report shows it
  * @param {{current: string}} refs
  * @returns {{title: string, html: string}} the note
  */
-export function companyInformationNote({ companyName, companyNumber, registeredOffice }, refs) {
+export function companyInformationNote({ companyName, companyNumber, registeredOffice, principalActivityShown }, refs) {
   const office = typeof registeredOffice === "string" ? registeredOffice.trim() : "";
   if (!office) throw new Error("registeredOffice is required: the accounts state the registered office address");
   const country = COUNTRY_PHRASE[countryMemberForCompanyNumber(companyNumber).name];
   return {
     title: "General information",
-    html: `<p>${renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName)} is a private company limited by shares, registered in ${country}, registered number ${renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber)}. Its registered office is ${escapeXmlText(office)}.</p>`,
+    html: `<p>${renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName)} is a private company limited by shares, registered in ${country}, registered number ${renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber)}. Its registered office is ${escapeXmlText(office)}.</p>${principalActivityShown ? `\n<p>The principal activity of the company is ${renderTextFact("descriptionPrincipalActivities", refs.current, principalActivityShown)}.</p>` : ""}`,
   };
 }
 
