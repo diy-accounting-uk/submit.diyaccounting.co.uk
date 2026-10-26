@@ -405,7 +405,7 @@ export async function renderMicroEntityAccounts(session, params = {}) {
  * companyNumber or, when clientId is given instead, for that practice client's own company number
  * (companiesHouseAccountsPost.js resolves it from the client row; a client that is not this
  * practice's own, or not yet authorised for Companies House filing, answers 403). Returns
- * {submissionNumber, gatewayTimestamp, pollInterval}; poll_accounts_submission_sandbox takes the
+ * {submissionNumber, gatewayTimestamp, pollInterval}; poll_submission with kind accounts takes the
  * submissionNumber to reach the filing's outcome. This route answers synchronously (200/201),
  * unlike list_vat_obligations and submit_vat_return.
  * @param {Object} session
@@ -416,18 +416,6 @@ export async function submitMicroEntityAccounts(session, params = {}) {
   const codesEntryId = requireField("submit_micro_entity_accounts_sandbox", params, "codesEntryId");
   const body = accountsFilingBody("submit_micro_entity_accounts_sandbox", params, { allowClientId: true });
   return callSubmitApi(session, "/api/v1/companies-house/accounts", { method: "POST", body: { ...body, codesEntryId } });
-}
-
-/**
- * poll_accounts_submission_sandbox: the filing's outcome — {submissionNumber, statusCode, companyNumber,
- * rejections}, where statusCode is "PENDING" while Companies House has not answered yet, "ACCEPT"
- * once filed (with a receiptId added), or "REJECT" with rejections carrying the reasons.
- * @param {Object} session
- * @param {{submissionNumber: string}} params
- */
-export async function pollAccountsSubmission(session, params = {}) {
-  const submissionNumber = requireField("poll_accounts_submission_sandbox", params, "submissionNumber");
-  return callSubmitApi(session, `/api/v1/companies-house/accounts/${encodeURIComponent(submissionNumber)}`);
 }
 
 /**
@@ -514,7 +502,7 @@ export async function renderConfirmationStatement(session, params = {}) {
  * and every director's personal code, which the user typed on the page request_companies_house_codes
  * linked to; the directors array must list the directors that link was minted for, in the same
  * order, and the route puts each personal code on its director. Returns
- * {submissionNumber, gatewayTimestamp, pollInterval}; poll_confirmation_statement_sandbox takes the
+ * {submissionNumber, gatewayTimestamp, pollInterval}; poll_submission with kind confirmation-statement takes the
  * submissionNumber to reach the filing's outcome. This route answers synchronously (200/201),
  * unlike list_vat_obligations and submit_vat_return.
  * @param {Object} session
@@ -526,17 +514,27 @@ export async function submitConfirmationStatement(session, params = {}) {
   return callSubmitApi(session, "/api/v1/companies-house/confirmation-statement", { method: "POST", body: { ...body, codesEntryId } });
 }
 
+const SUBMISSION_ROUTES = {
+  "accounts": "/api/v1/companies-house/accounts",
+  "confirmation-statement": "/api/v1/companies-house/confirmation-statement",
+};
+
+export const SUBMISSION_KINDS = Object.keys(SUBMISSION_ROUTES);
+
 /**
- * poll_confirmation_statement_sandbox: the filing's outcome — {submissionNumber, statusCode,
- * companyNumber, rejections}, where statusCode is "PENDING" while Companies House has not
- * answered yet, "ACCEPT" once filed (with a receiptId added), or "REJECT" with rejections
- * carrying the reasons.
+ * poll_submission: the outcome of a Companies House filing of one kind (micro-entity accounts or a
+ * confirmation statement) — {submissionNumber, statusCode, companyNumber, rejections}, where
+ * statusCode is "PENDING" while Companies House has not answered yet, "ACCEPT" once filed (with a
+ * receiptId added), or "REJECT" with rejections carrying the reasons.
  * @param {Object} session
- * @param {{submissionNumber: string}} params
+ * @param {{kind: "accounts"|"confirmation-statement", submissionNumber: string}} params
  */
-export async function pollConfirmationStatement(session, params = {}) {
-  const submissionNumber = requireField("poll_confirmation_statement_sandbox", params, "submissionNumber");
-  return callSubmitApi(session, `/api/v1/companies-house/confirmation-statement/${encodeURIComponent(submissionNumber)}`);
+export async function pollSubmission(session, params = {}) {
+  const kind = requireField("poll_submission", params, "kind");
+  const route = SUBMISSION_ROUTES[kind];
+  if (!route) throw new Error(`poll_submission kind must be one of ${SUBMISSION_KINDS.join(", ")}`);
+  const submissionNumber = requireField("poll_submission", params, "submissionNumber");
+  return callSubmitApi(session, `${route}/${encodeURIComponent(submissionNumber)}`);
 }
 
 const CODES_KINDS = ["accounts", "confirmation-statement", "confirmation-statement-data"];

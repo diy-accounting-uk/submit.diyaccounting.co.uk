@@ -32,11 +32,11 @@ import {
   listVatReceipts,
   renderMicroEntityAccounts,
   submitMicroEntityAccounts,
-  pollAccountsSubmission,
+  pollSubmission,
+  SUBMISSION_KINDS,
   getConfirmationStatementData,
   renderConfirmationStatement,
   submitConfirmationStatement,
-  pollConfirmationStatement,
   requestCompaniesHouseCodes,
   requestHmrcAuthorisation,
   HMRC_SERVICES,
@@ -481,13 +481,6 @@ export const TOOLS = {
     },
     handler: requestCompaniesHouseCodes,
   },
-  poll_accounts_submission_sandbox: {
-    description: "Accepted, rejected with reasons, or pending, for a submitted micro-entity accounts filing, over the deployed API.",
-    inputSchema: {
-      submissionNumber: z.string().describe("The 6-character submission number"),
-    },
-    handler: pollAccountsSubmission,
-  },
   get_confirmation_statement_data_sandbox: {
     description:
       "The register data a confirmation statement form is built from -- MadeUpDate, NextDueDate, SIC codes, " +
@@ -527,12 +520,16 @@ export const TOOLS = {
     },
     handler: submitConfirmationStatement,
   },
-  poll_confirmation_statement_sandbox: {
-    description: "Accepted, rejected with reasons, or pending, for a submitted confirmation statement filing, over the deployed API.",
+  poll_submission: {
+    description:
+      "Accepted, rejected with reasons, or pending, for a submitted Companies House filing, over the deployed API. kind " +
+      "accounts is a micro-entity accounts filing (submit_micro_entity_accounts_sandbox); kind confirmation-statement is " +
+      "a confirmation statement (submit_confirmation_statement_sandbox).",
     inputSchema: {
+      kind: z.enum(SUBMISSION_KINDS).describe("accounts or confirmation-statement"),
       submissionNumber: z.string().describe("The 6-character submission number"),
     },
-    handler: pollConfirmationStatement,
+    handler: pollSubmission,
   },
   move_book_to_client: {
     description:

@@ -51,7 +51,7 @@ the practice tools that still take an HMRC token, and `run_for_clients` are not 
 | `render_micro_entity_accounts_sandbox` | The rendered micro-entity iXBRL for confirmed figures, without reaching the Companies House gateway. Inputs: `companyNumber`, `companyName`, `periodStart`, `periodEnd`, `balanceSheet`, `averageEmployees`, `director`, `statementsAccepted`. |
 | `request_companies_house_codes` | A link where the user types the Companies House codes instead of the chat. `kind` is `accounts`, `confirmation-statement` (with `directors` in filing order) or `confirmation-statement-data`; answers `entryId`, `url`, `expiresAt`. The entry lasts ten minutes and one filing call uses it up. With `clientIds` (no `companyNumber`) the page asks for one code per practice client and each client's filing call, including through `run_for_clients`, takes only its own. |
 | `submit_micro_entity_accounts_sandbox` | Files the same figures with the codes the user typed on that link, named by `codesEntryId`; answers `submissionNumber`. |
-| `poll_accounts_submission_sandbox` | The filing's outcome for a `submissionNumber`: `PENDING`, `ACCEPT` (with `receiptId`) or `REJECT` (with `rejections`). |
+| `poll_submission` | The outcome of a Companies House filing, `kind` `accounts` or `confirmation-statement`, for a `submissionNumber`: `PENDING`, `ACCEPT` (with `receiptId`) or `REJECT` (with `rejections`). |
 
 The filing tools call the deployed REST API at `DIYA_SUBMIT_BASE_URL` with the MCP's own sign-in bearer (`sign_in`), and poll a 202 answer to its terminal status. They validate required inputs before any request.
 

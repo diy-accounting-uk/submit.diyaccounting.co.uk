@@ -22,11 +22,10 @@ import {
   listVatReceipts,
   renderMicroEntityAccounts,
   submitMicroEntityAccounts,
-  pollAccountsSubmission,
+  pollSubmission,
   getConfirmationStatementData,
   renderConfirmationStatement,
   submitConfirmationStatement,
-  pollConfirmationStatement,
   requestCompaniesHouseCodes,
 } from "../lib/submit-tools.js";
 import { createSession } from "../lib/book-tools.js";
@@ -579,12 +578,12 @@ describe("submit-tools", () => {
     });
   });
 
-  describe("poll_accounts_submission_sandbox", () => {
+  describe("poll_submission for accounts", () => {
     it("gets the filing outcome by submission number, pending before Companies House answers", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_ACCOUNTS_SUBMISSION_PENDING_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await pollAccountsSubmission(session, { submissionNumber: "000001" });
+      const result = await pollSubmission(session, { kind: "accounts", submissionNumber: "000001" });
 
       expect(result).toEqual(POLL_ACCOUNTS_SUBMISSION_PENDING_RESPONSE);
       expect(result.statusCode).toBe("PENDING");
@@ -595,14 +594,19 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_ACCOUNTS_SUBMISSION_ACCEPTED_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await pollAccountsSubmission(session, { submissionNumber: "000001" });
+      const result = await pollSubmission(session, { kind: "accounts", submissionNumber: "000001" });
 
       expect(result.statusCode).toBe("ACCEPT");
       expect(result.receiptId).toBe(POLL_ACCOUNTS_SUBMISSION_ACCEPTED_RESPONSE.receiptId);
     });
 
     it("requires submissionNumber", async () => {
-      await expect(pollAccountsSubmission(session, {})).rejects.toThrow("submissionNumber");
+      await expect(pollSubmission(session, { kind: "accounts" })).rejects.toThrow("submissionNumber");
+    });
+
+    it("requires a known kind", async () => {
+      await expect(pollSubmission(session, { submissionNumber: "000001" })).rejects.toThrow("kind");
+      await expect(pollSubmission(session, { kind: "vat", submissionNumber: "000001" })).rejects.toThrow(/kind must be one of/);
     });
   });
 
@@ -771,12 +775,12 @@ describe("submit-tools", () => {
     });
   });
 
-  describe("poll_confirmation_statement_sandbox", () => {
+  describe("poll_submission for a confirmation statement", () => {
     it("gets the filing outcome by submission number, pending before Companies House answers", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_CONFIRMATION_STATEMENT_PENDING_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await pollConfirmationStatement(session, { submissionNumber: "000002" });
+      const result = await pollSubmission(session, { kind: "confirmation-statement", submissionNumber: "000002" });
 
       expect(result).toEqual(POLL_CONFIRMATION_STATEMENT_PENDING_RESPONSE);
       expect(result.statusCode).toBe("PENDING");
@@ -787,29 +791,28 @@ describe("submit-tools", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_CONFIRMATION_STATEMENT_ACCEPTED_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await pollConfirmationStatement(session, { submissionNumber: "000002" });
+      const result = await pollSubmission(session, { kind: "confirmation-statement", submissionNumber: "000002" });
 
       expect(result.statusCode).toBe("ACCEPT");
       expect(result.receiptId).toBe(POLL_CONFIRMATION_STATEMENT_ACCEPTED_RESPONSE.receiptId);
     });
 
     it("requires submissionNumber", async () => {
-      await expect(pollConfirmationStatement(session, {})).rejects.toThrow("submissionNumber");
+      await expect(pollSubmission(session, { kind: "confirmation-statement" })).rejects.toThrow("submissionNumber");
     });
   });
 
   describe("server registration", () => {
-    it("registers all ten tools with their handlers", () => {
+    it("registers the nine Submit tools with their handlers", () => {
       expect(TOOLS.list_vat_obligations.handler).toBe(listVatObligations);
       expect(TOOLS.submit_vat_return.handler).toBe(submitVatReturn);
       expect(TOOLS.get_vat_receipt.handler).toBe(getVatReceipt);
       expect(TOOLS.render_micro_entity_accounts_sandbox.handler).toBe(renderMicroEntityAccounts);
       expect(TOOLS.submit_micro_entity_accounts_sandbox.handler).toBe(submitMicroEntityAccounts);
-      expect(TOOLS.poll_accounts_submission_sandbox.handler).toBe(pollAccountsSubmission);
+      expect(TOOLS.poll_submission.handler).toBe(pollSubmission);
       expect(TOOLS.get_confirmation_statement_data_sandbox.handler).toBe(getConfirmationStatementData);
       expect(TOOLS.render_confirmation_statement_sandbox.handler).toBe(renderConfirmationStatement);
       expect(TOOLS.submit_confirmation_statement_sandbox.handler).toBe(submitConfirmationStatement);
-      expect(TOOLS.poll_confirmation_statement_sandbox.handler).toBe(pollConfirmationStatement);
     });
   });
 

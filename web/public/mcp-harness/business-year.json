@@ -174,8 +174,9 @@
     {
       "id": "accountsOutcome",
       "role": "tool",
-      "tool": "poll_accounts_submission_sandbox",
+      "tool": "poll_submission",
       "arguments": {
+        "kind": "accounts",
         "submissionNumber": "${accountsFiled.submissionNumber}"
       }
     },

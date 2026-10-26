@@ -99,14 +99,17 @@
             <dd>The accounts figures for the current and prior year.</dd>
             <dt>
               <code>render_micro_entity_accounts_sandbox</code>, <code>submit_micro_entity_accounts_sandbox</code>,
-              <code>poll_accounts_submission_sandbox</code>
+              <code>poll_submission</code>
             </dt>
             <dd>Render the filing, file confirmed accounts with Companies House, and check the outcome.</dd>
             <dt>
               <code>get_confirmation_statement_data_sandbox</code>, <code>render_confirmation_statement_sandbox</code>,
-              <code>submit_confirmation_statement_sandbox</code>, <code>poll_confirmation_statement_sandbox</code>
+              <code>submit_confirmation_statement_sandbox</code>
             </dt>
-            <dd>Read the company's confirmation statement data, render the statement, file it and check the outcome.</dd>
+            <dd>
+              Read the company's confirmation statement data, render the statement, file it, then check the outcome with
+              <code>poll_submission</code>.
+            </dd>
             <dt><code>list_clients</code>, <code>add_client</code>, <code>move_book_to_client</code></dt>
             <dd>For a practice: list its clients, add one, and move a book under a client.</dd>
           </dl>
@@ -203,7 +206,7 @@
             <dd>The seven micro-entity balance sheet figures for the current and prior year.</dd>
             <dt>
               <code>render_micro_entity_accounts_sandbox</code>, <code>submit_micro_entity_accounts_sandbox</code>,
-              <code>poll_accounts_submission_sandbox</code>
+              <code>poll_submission</code>
             </dt>
             <dd>Render the filing, file confirmed accounts with Companies House, and check the filing's outcome.</dd>
             <dt><code>derive_itsa_quarterly_update</code>, <code>derive_itsa_annual_submission</code></dt>
