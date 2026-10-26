@@ -557,9 +557,9 @@ DS1 took every page signed out, so these states need a signed-in DS1 run before 
 
 ### SQ1: every walkthrough frame, judged
 
-512 frames in 44 videos. 414 pass, 98 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
+512 frames in 44 videos. 439 pass, 73 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
 
-Fails by cause: O 58 (15 in re-cut videos, 43 in the five videos that were not re-cut), C 36 (21 and 15), E 18 (all re-cut videos), 1 four.
+Fails by cause: O 43 (all in the five videos that were not re-cut), C 16 (15 in those five, `tour/help`), E 18 (all re-cut videos), 1 thirteen (`generate-pass-digital` 2, `itsa-year` 4 and `itsa-quarterly-from-books` 3 from the simulator recordings, which show `http://localhost:3000` pass links and "Period ID -" or "Submission ID -" where the ci run showed real ids).
 
 Not re-cut, frames unchanged: `change-registered-email`, `file-company-tax-return-book`, `file-company-tax-return-typed` (no recording on this machine: `target/videos/*-sim` and `local-change-registered-email` are absent); `change-registered-office`, `file-micro-entity-accounts` (the downloaded recording has 5 steps in scene `result`, the script has 7 and 10: re-record).
 
@@ -576,8 +576,8 @@ Not re-cut, frames unchanged: `change-registered-email`, `file-company-tax-retur
 | file-confirmation-statement | 2 | 2 | none |
 | file-micro-entity-accounts (not re-cut) | 12 | 2 | accounts-form-0 O; accounts-form-16 O,C; accounts-form-18 O,C; accounts-form-2 O; accounts-form-8 O,C; company-lookup-0 O; company-lookup-2 O; company-lookup-3 O; company-lookup-5 O; preview C |
 | file-psc-verification-statement | 12 | 12 | none |
-| file-small-company-accounts | 21 | 17 | accounts-form-38 1; accounts-form-39 1; accounts-form-41 1; preview C,1 |
-| generate-pass-digital | 4 | 3 | generate-5 O |
+| file-small-company-accounts | 21 | 21 | none |
+| generate-pass-digital | 4 | 2 | generate-3 1; generate-5 1 |
 | generate-pass-physical | 1 | 1 | none |
 | hmrc-authorise | 2 | 0 | authorise E; results E |
 | itsa-annual-from-book | 8 | 8 | none |
@@ -585,25 +585,25 @@ Not re-cut, frames unchanged: `change-registered-email`, `file-company-tax-retur
 | itsa-carry-back-adjustments | 9 | 9 | none |
 | itsa-foreign-property-losses | 12 | 12 | none |
 | itsa-in-year-estimate | 8 | 8 | none |
-| itsa-loss-claims | 12 | 1 | losses-and-claims-10 O,C; losses-and-claims-13 O,C; losses-and-claims-14 O; losses-and-claims-17 O; losses-and-claims-2 O; losses-and-claims-3 O; losses-and-claims-4 O; losses-and-claims-5 O; losses-and-claims-7 O; losses-and-claims-8 O,C; losses-and-claims-9 O,C |
-| itsa-quarterly-from-books | 14 | 12 | import-book-0 C; import-book-1 C |
+| itsa-loss-claims | 12 | 12 | none |
+| itsa-quarterly-from-books | 14 | 11 | submit-1 1; submit-2 1; submit-5 1 |
 | itsa-quarterly-update | 22 | 22 | none |
-| itsa-self-employment-amend | 13 | 12 | list-quarters-6 C |
-| itsa-uk-property-year | 24 | 20 | amend-quarter-10 C; amend-quarter-11 C; amend-quarter-7 C; view-quarter C |
-| itsa-year | 53 | 48 | business-details-0 C; business-details-8 C; losses-and-claims-7 C; quarterly-update-self-employment-10 O; quarterly-update-uk-property-10 O |
-| itsa-year-part | 37 | 34 | business-details-0 C; business-details-8 C; quarterly-update-self-employment-10 O |
+| itsa-self-employment-amend | 13 | 13 | none |
+| itsa-uk-property-year | 24 | 24 | none |
+| itsa-year | 53 | 49 | quarterly-update-self-employment-9 1; quarterly-update-self-employment-10 1; quarterly-update-uk-property-9 1; quarterly-update-uk-property-10 1 |
+| itsa-year-part | 37 | 37 | none |
 | mcp-cli | 8 | 8 | none |
 | mcp-diya-gl | 7 | 7 | none |
 | mcp-docker | 8 | 8 | none |
 | mcp-hosted | 7 | 4 | connect-0 E; connect-1 E; connect-2 E |
 | my-receipts | 4 | 4 | none |
 | sign-in | 4 | 4 | none |
-| submit-return | 20 | 19 | record-12 C |
+| submit-return | 20 | 20 | none |
 | subscription-management | 3 | 3 | none |
 | tokens | 5 | 5 | none |
 | tour | 6 | 5 | help C |
-| vat-from-books | 16 | 15 | record-12 C |
-| vat-hmrc-assist | 16 | 15 | record-12 C |
+| vat-from-books | 16 | 16 | none |
+| vat-hmrc-assist | 16 | 16 | none |
 | view-liabilities | 7 | 7 | none |
 | view-obligations | 7 | 6 | results E |
 | view-payments | 7 | 7 | none |
@@ -614,14 +614,12 @@ Remaining fails, by fix:
 
 | Fail | Frames | What a reader sees | Fix |
 |---|---|---|---|
-| O | `itsa-loss-claims` 11, `itsa-year` 2, `itsa-year-part` 1, `generate-pass-digital/generate-5` | A card in every sample from step start to 700 ms after its end: the next step's card follows at once | The recorder writes a card-free still per step (`page.screenshot` after the card hides), and the cutter prefers it |
 | O, C, E | the five videos not re-cut | As before the cutter change | Re-record, then `node scripts/video-walkthrough.js --id <id>` |
-| C | 21 re-cut frames (`submit-return/record-12`, `vat-from-books/record-12`, `vat-hmrc-assist/record-12`, `itsa-uk-property-year` x4, `itsa-year` x3 and `itsa-year-part` x2 `business-details`/`losses-and-claims`, `itsa-loss-claims` x4, `itsa-quarterly-from-books/import-book-0,1`, `file-small-company-accounts/preview`, `tour/help`, `itsa-self-employment-amend/list-quarters-6`) | Text at the first row where no blank band lies in the top 30% | Snap the scene script's `scroll` to the target element's top |
-| C (not detected) | `file-psc-verification-statement` psc-3 to psc-9, `submit-return` `result`/`record` frames | A table fragment or the word "statement." at the top edge; the script finds no blank band | Same scroll fix |
+| C | `tour/help` | Text at the first row where no blank band lies in the top 30% | `videos/tour.json` carries `scrollTo` on the help scene's last scroll; the scene "guide" step 1 waits for "Submit your VAT return in 3 steps", which the static site no longer shows, so the tour is not re-recorded |
+| C (not detected) | `file-psc-verification-statement` psc-1, psc-3 to psc-9 | The word "statement." from the receipt above the PSC section at the top edge | The PSC section sits at the foot of the page, so the page cannot scroll its top to the viewport top; needs the receipt collapsed or the section moved above it |
+| 1 | `generate-pass-digital` generate-3, generate-5; `itsa-year` quarterly-update-self-employment-9, -10 and quarterly-update-uk-property-9, -10; `itsa-quarterly-from-books` submit-1, -2, -5 | The simulator's pass link `http://localhost:3000/bundles.html?pass=...`; "Period ID -" and "Submission ID -" where HMRC's sandbox returns an id | Record these videos on the ci lane, or have the simulator return an id and the app's origin |
 | E | 11 frames of `accounting-spreadsheet-profit`, `mcp-hosted/connect-0..2`, `hmrc-authorise/authorise,results`, `itsa-business-details/results`, `view-obligations/results` | 70 to 80 percent blank rows: a spreadsheet grid with two rows filled, or a short form | localApp frames: crop to the filled area in the scene script's viewport; site frames: a result page shorter than the cut |
-| 1 | `file-small-company-accounts` accounts-form-38, 39, 41, preview | "Jo Director" in the directors field and the report | The scene scripts now carry "Joanna Hale"; shows after a re-recording of `file-small-company-accounts` and `file-micro-entity-accounts` |
 | 2 | `itsa-year`, `itsa-loss-claims` and other ITSA frames of a form load | "Loading ..." spinner and the "Synthetic mode - calls go to HMRC's sandbox API" banner in the frame | Step waits for the loaded state before the caption; banner is the synthetic account's, hide it with the script's `suppress` list |
-| 3 | `itsa-loss-claims` frames | The chapter label "and which first" is clipped at the left edge of the crop | Place the chapter label inside the content column |
 | 5 | `accounting-diya-gl-profit`, `accounting-spreadsheet-profit` | Spreadsheet text under 8 px at the thumbnail size | Record the localApp scenes at a smaller viewport |
 | 9 | `file-psc-verification-statement/record` | The caption names steps the frame does not show | Split the scene so one caption matches the frame |
 | 4 | `file-psc-verification-statement` psc-3 to psc-6 | Four frames that look the same | One frame per distinct state |
