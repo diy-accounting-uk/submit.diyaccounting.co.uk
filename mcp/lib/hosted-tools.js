@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// hosted-tools.js -- the tools the hosted MCP endpoint registers, and the two
+// hosted-tools.js -- the tools the hosted MCP endpoint registers, and the three
 // that change shape there: open_book reads the DIYA cloud only, and
-// derive_itsa_annual_submission answers without writing a file. The tools left
-// out are the sign-in pair (the connector owns sign-in) and the filesystem
+// derive_itsa_annual_submission and derive_company_tax_return answer without
+// writing a file. The tools left out are the sign-in pair (the connector owns sign-in) and the filesystem
 // tools. The practice tools (invite_client, client_authorisation_status,
 // run_for_clients) read the session's HMRC grant and take no token argument.
 
 import { z } from "zod";
 
+import { deriveCompanyTaxReturn } from "./accounts-tools.js";
 import { openBook } from "./book-tools.js";
 import { deriveItsaAnnualSubmission } from "./itsa-tools.js";
 
@@ -21,6 +22,9 @@ export const HOSTED_TOOL_NAMES = [
   "derive_small_company_accounts",
   "derive_itsa_quarterly_update",
   "derive_itsa_annual_submission",
+  "derive_uk_property_period",
+  "derive_uk_property_annual",
+  "derive_company_tax_return",
   "request_hmrc_authorisation",
   "list_vat_obligations",
   "list_vat_liabilities",
@@ -69,5 +73,14 @@ export const HOSTED_OVERRIDES = {
       taxYear: z.string().optional().describe("Override the tax year the book's dates imply, as 2025-26"),
     },
     handler: (session, { taxYear } = {}) => deriveItsaAnnualSubmission(session, { taxYear }),
+  },
+  derive_company_tax_return: {
+    description:
+      "The figures the Company Tax Return form takes, from the session's loaded Company book: the accounting period, the " +
+      "computation figures, the profit and loss account from the engine's published statements, and the book's own " +
+      "trading profit and Corporation Tax as a working sheet for a check. Refuses a book that is not a Company book, " +
+      "makes a trading loss or carries net non-trading loan relationship debits.",
+    inputSchema: {},
+    handler: (session) => deriveCompanyTaxReturn(session, {}),
   },
 };

@@ -16,7 +16,7 @@ import { z } from "zod";
 import { createSession, listBooks, openBook, saveBook, SAVE_FORMATS } from "./book-tools.js";
 import { signIn, signOut } from "./auth.js";
 import { writeFinancePackage } from "./finance/package-writer.js";
-import { deriveMicroEntityAccounts, deriveSmallCompanyAccounts } from "./accounts-tools.js";
+import { deriveCompanyTaxReturn, deriveMicroEntityAccounts, deriveSmallCompanyAccounts } from "./accounts-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
 import { ITSA_TOOLS } from "./itsa-tools.js";
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
@@ -293,6 +293,19 @@ export const TOOLS = {
       "whose published or opening balance sheet does not balance.",
     inputSchema: {},
     handler: deriveSmallCompanyAccounts,
+  },
+  derive_company_tax_return: {
+    description:
+      "The figures the Company Tax Return form takes, from the session's loaded Company book: the accounting period, the " +
+      "computation figures (depreciation, amortisation, entertaining, capital allowances, franked investment income, " +
+      "losses brought forward), the profit and loss account from the engine's published statements, and the book's own " +
+      "trading profit and Corporation Tax as a working sheet for a check. Refuses a book that is not a Company book, " +
+      "makes a trading loss or carries net non-trading loan relationship debits. With a path, also writes the answer as " +
+      'the JSON file the Company Tax Return page\'s "Fill from your books" card reads.',
+    inputSchema: {
+      path: z.string().optional().describe("Where to write the answer as JSON for the Company Tax Return page's import"),
+    },
+    handler: deriveCompanyTaxReturn,
   },
   request_hmrc_authorisation: {
     description:

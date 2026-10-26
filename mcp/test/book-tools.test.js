@@ -121,6 +121,7 @@ describe("the server", () => {
     expect(Object.keys(TOOLS).sort()).toEqual([
       "add_client",
       "client_authorisation_status",
+      "derive_company_tax_return",
       "derive_micro_entity_accounts",
       "derive_small_company_accounts",
       "derive_vat_return",

@@ -8,7 +8,7 @@
 // render through buildMicroEntityAccounts, and an unbalanced sheet is
 // refused.
 
-import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -21,6 +21,7 @@ import { loadTaxDataForBook, productOf } from "@diy-accounting-uk/diya-gl/dist/a
 import { buildMicroEntityAccounts } from "../../app/services/microEntityAccountsIxbrl.js";
 import {
   BALANCE_SHEET_LINES,
+  deriveCompanyTaxReturn,
   deriveMicroEntityAccounts,
   linesFromOpeningBalance,
   linesFromPublishedBalanceSheet,
@@ -220,5 +221,41 @@ describe("derive_micro_entity_accounts", () => {
     await expect(deriveMicroEntityAccounts(createSession())).rejects.toThrow(/Call open_book first/);
     expect(TOOLS.derive_micro_entity_accounts.handler).toBe(deriveMicroEntityAccounts);
     expect(TOOLS.derive_micro_entity_accounts.inputSchema).toEqual({});
+  });
+});
+
+describe("derive_company_tax_return", () => {
+  it("answers the figures file the Company Tax Return card reads, from the book's own working sheet", async () => {
+    const session = createSession();
+    await openBook(session, { path: join(FIXTURES, EXAMPLES[0].dir) });
+    const answer = await deriveCompanyTaxReturn(session);
+    expect(answer.kind).toBe("ct600");
+    expect(answer.sourceFileName).toBe(EXAMPLES[0].dir);
+    expect(answer.packageVersion).toMatch(/^\d+\.\d+\.\d+/);
+    expect(answer.period).toEqual({ periodStart: "2025-04-01", periodEnd: "2026-03-31" });
+    expect(answer.figures.depreciation).toBe(1200);
+    expect(answer.figures.workingSheet.tradingProfit).toBe(7969);
+    expect(answer.figures.profitAndLoss.current).toBeDefined();
+  });
+
+  it("writes the answer as JSON when given a path", async () => {
+    const session = createSession();
+    await openBook(session, { path: join(FIXTURES, EXAMPLES[1].dir) });
+    const path = join(scratch, "nested", "ct600.json");
+    const answer = await deriveCompanyTaxReturn(session, { path });
+    expect(answer.path).toBe(path);
+    const written = JSON.parse(readFileSync(path, "utf8"));
+    expect(written.kind).toBe("ct600");
+    expect(written.path).toBeUndefined();
+  });
+
+  it("refuses a sole trader book", async () => {
+    const session = createSession();
+    await openBook(session, { path: join(FIXTURES, "brickwork-pro-se-vat") });
+    await expect(deriveCompanyTaxReturn(session)).rejects.toThrow();
+  });
+
+  it("refuses when no book is loaded", async () => {
+    await expect(deriveCompanyTaxReturn(createSession())).rejects.toThrow(/No book is loaded/);
   });
 });

@@ -11,10 +11,16 @@ import { afterAll, beforeEach, describe, expect, test } from "vitest";
 import { createSession, openBook } from "../lib/book-tools.js";
 import { annualFieldSlotsForTaxYear, quarterlyFieldSlots } from "@diy-accounting-uk/diya-gl/dist/app/lib/derivations/itsa.js";
 
-import { deriveItsaAnnualSubmission, deriveItsaQuarterlyUpdate } from "../lib/itsa-tools.js";
+import {
+  deriveItsaAnnualSubmission,
+  deriveItsaQuarterlyUpdate,
+  deriveUkPropertyAnnual,
+  deriveUkPropertyPeriod,
+} from "../lib/itsa-tools.js";
 
 const FIXTURES = fileURLToPath(new URL("./fixtures/", import.meta.url));
 const SE_VAT = join(FIXTURES, "brickwork-pro-se-vat");
+const LANDLORD = join(FIXTURES, "landlord-uk-property");
 const LTD = join(FIXTURES, "precision-code-ltd-full");
 
 function readPath(target, path) {
@@ -198,5 +204,37 @@ describe("derive_itsa_annual_submission", () => {
     const ltd = createSession();
     await openBook(ltd, { path: LTD });
     await expect(deriveItsaAnnualSubmission(ltd)).rejects.toThrow(/"ltd" book/);
+  });
+});
+
+describe("the UK property derivations", () => {
+  let landlord;
+  beforeEach(async () => {
+    landlord = createSession();
+    await openBook(landlord, { path: LANDLORD });
+  });
+
+  test("derive_uk_property_period answers the period's income and expenses from the landlord book", async () => {
+    const answer = await deriveUkPropertyPeriod(landlord, { periodStartDate: "2025-04-06", periodEndDate: "2025-07-05" });
+    expect(answer.periodDates).toEqual({ periodStartDate: "2025-04-06", periodEndDate: "2025-07-05" });
+    expect(answer.income).toEqual({ periodAmount: 2000, premiumsOfLeaseGrant: 500, otherIncome: 75.5 });
+    expect(answer.expenses.repairsAndMaintenance).toBe(450.25);
+  });
+
+  test("derive_uk_property_period refuses an end date before the start date", async () => {
+    await expect(deriveUkPropertyPeriod(landlord, { periodStartDate: "2025-07-05", periodEndDate: "2025-04-06" })).rejects.toThrow(
+      /after it ends/,
+    );
+  });
+
+  test("derive_uk_property_annual answers the named tax year", async () => {
+    const answer = await deriveUkPropertyAnnual(landlord, { taxYear: "2025-26" });
+    expect(answer.taxYear).toBe("2025-26");
+    expect(answer.leftToPage.length).toBeGreaterThan(0);
+  });
+
+  test("both refuse when no book is loaded", async () => {
+    await expect(deriveUkPropertyPeriod(createSession(), {})).rejects.toThrow(/No book is loaded/);
+    await expect(deriveUkPropertyAnnual(createSession(), {})).rejects.toThrow(/No book is loaded/);
   });
 });

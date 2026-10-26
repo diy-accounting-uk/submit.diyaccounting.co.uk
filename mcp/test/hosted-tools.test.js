@@ -17,10 +17,15 @@ describe("the hosted tool set", () => {
     expect(all.filter((name) => !HOSTED_TOOL_NAMES.includes(name)).sort()).toEqual([...NOT_HOSTED].sort());
   });
 
-  it("overrides open_book and derive_itsa_annual_submission only", () => {
-    expect(Object.keys(HOSTED_OVERRIDES).sort()).toEqual(["derive_itsa_annual_submission", "open_book"]);
+  it("overrides open_book and the two derivations that write a file locally only", () => {
+    expect(Object.keys(HOSTED_OVERRIDES).sort()).toEqual(["derive_company_tax_return", "derive_itsa_annual_submission", "open_book"]);
+    expect(Object.keys(HOSTED_OVERRIDES.derive_company_tax_return.inputSchema)).toEqual([]);
     expect(Object.keys(HOSTED_OVERRIDES.open_book.inputSchema)).toEqual(["bookId", "clientId"]);
     expect(Object.keys(HOSTED_OVERRIDES.derive_itsa_annual_submission.inputSchema)).toEqual(["taxYear"]);
+  });
+
+  it("refuses the company tax return with no book loaded", async () => {
+    await expect(HOSTED_OVERRIDES.derive_company_tax_return.handler(createSession(), {})).rejects.toThrow(/No book is loaded/);
   });
 
   it("refuses open_book without a bookId", async () => {

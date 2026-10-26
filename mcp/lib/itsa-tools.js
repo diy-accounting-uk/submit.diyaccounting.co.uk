@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// itsa-tools.js -- the two ITSA derivations over the session's loaded book:
+// itsa-tools.js -- the ITSA derivations over the session's loaded book:
 // derive_itsa_quarterly_update answers one period of HMRC's Self Employment
 // Business API (a period's own figures in a tax year filed as dated period
 // summaries, a running total from 6 April in a year filed as cumulative
@@ -16,6 +16,8 @@ import { dirname, resolve as resolvePath } from "node:path";
 import {
   deriveItsaAnnualSubmission as deriveAnnualFromBook,
   deriveItsaQuarterlyUpdate as deriveQuarterlyFromBook,
+  deriveUkPropertyAnnual as deriveUkPropertyAnnualFromBook,
+  deriveUkPropertyPeriod as deriveUkPropertyPeriodFromBook,
 } from "@diy-accounting-uk/diya-gl";
 import { QUARTERLY_PERIOD_TYPES } from "@diy-accounting-uk/diya-gl/dist/app/lib/derivations/itsa.js";
 import { z } from "zod";
@@ -64,6 +66,26 @@ export async function deriveItsaAnnualSubmission(session, { taxYear, path } = {}
 }
 
 /**
+ * derive_uk_property_period: one period's rental income and expenses from the loaded landlord book.
+ * @param {Object} session
+ * @param {{periodStartDate: string, periodEndDate: string}} params
+ */
+export async function deriveUkPropertyPeriod(session, params = {}) {
+  requireLoaded(session);
+  return deriveUkPropertyPeriodFromBook(session.book, session.lines, params);
+}
+
+/**
+ * derive_uk_property_annual: the year's adjustments and allowances from the loaded landlord book.
+ * @param {Object} session
+ * @param {{taxYear: string}} params
+ */
+export async function deriveUkPropertyAnnual(session, params = {}) {
+  requireLoaded(session);
+  return deriveUkPropertyAnnualFromBook(session.book, session.lines, params);
+}
+
+/**
  * The ITSA tools keyed by MCP name, in the shape server.js's TOOLS table
  * uses; createServer registers them beside it.
  */
@@ -91,5 +113,26 @@ export const ITSA_TOOLS = {
       path: z.string().optional().describe("Where to write the answer as JSON for the annual submission page's import"),
     },
     handler: deriveItsaAnnualSubmission,
+  },
+  derive_uk_property_period: {
+    description:
+      "One period of HMRC's UK property income and expenses from the loaded landlord book whose chart names the property " +
+      "accounts: the period's own figures, both ends inclusive; a cumulative year's running total is the same call with the " +
+      "period starting on 6 April. Answers the income, the expenses, the slots the book did not fill and the postings behind " +
+      "each figure. Refuses a period carrying both consolidated and itemised expenses.",
+    inputSchema: {
+      periodStartDate: z.string().describe("The period's first day, YYYY-MM-DD"),
+      periodEndDate: z.string().describe("The period's last day, YYYY-MM-DD"),
+    },
+    handler: deriveUkPropertyPeriod,
+  },
+  derive_uk_property_annual: {
+    description:
+      "The year's adjustments and allowances for HMRC's UK property annual submission from the loaded landlord book whose " +
+      "chart names the property accounts. The elections and the landlord facts are left to the annual submission page and named in leftToPage.",
+    inputSchema: {
+      taxYear: z.string().describe("The tax year, as 2025-26"),
+    },
+    handler: deriveUkPropertyAnnual,
   },
 };
