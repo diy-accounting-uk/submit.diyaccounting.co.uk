@@ -91,6 +91,7 @@ const FIXED_ASSET_NOTE = {
 const SAMPLE_INPUT = {
   companyNumber: "02706061",
   companyName: "TEST SMALL LIMITED",
+  registeredOffice: "1 Test Street, London, EC1A 1AA",
   periodStart: "2025-07-01",
   periodEnd: "2026-06-30",
   averageNumberOfEmployees: 4,
@@ -340,7 +341,7 @@ describe("services/smallCompanyAccountsIxbrl", () => {
       const stocks = labels.indexOf("Stocks");
       expect(labels[stocks - 1]).toBe("Current assets");
       expect(rows[stocks + 3]).toEqual(["", "", "5,000", "4,000"]);
-      expect(rows).toContainEqual(["Fixed assets", "3", "10,000", "8,000"]);
+      expect(rows).toContainEqual(["Fixed assets", "4", "10,000", "8,000"]);
     });
 
     test("the fixed asset note has a column per class and a total", () => {
@@ -355,6 +356,19 @@ describe("services/smallCompanyAccountsIxbrl", () => {
     });
   });
 
+  describe("company information", () => {
+    const xhtml = buildSmallCompanyAccounts(WITH_COMPARATIVES);
+
+    test("states the legal form, country, number and registered office in the notes", () => {
+      expect(xhtml).toContain("is a private company limited by shares, registered in England and Wales, registered number");
+      expect(xhtml).toContain("Its registered office is 1 Test Street, London, EC1A 1AA.");
+    });
+
+    test("refuses an input without a registered office", () => {
+      expect(() => buildSmallCompanyAccounts({ ...WITH_COMPARATIVES, registeredOffice: " " })).toThrow(/registeredOffice/);
+    });
+  });
+
   describe("buildSmallCompanyAccounts, filleted", () => {
     const xhtml = buildSmallCompanyAccounts({ ...WITH_COMPARATIVES, filleted: true });
 
@@ -363,9 +377,12 @@ describe("services/smallCompanyAccountsIxbrl", () => {
       expect(xhtml).toContain("section 444(5A) of the Companies Act 2006");
     });
 
-    test("reports filleted accounts, with the principal activity and the signing director named", () => {
+    test("reports filleted accounts with the signing director named and the principal activity shown in the notes", () => {
       expect(dimensionNames(xhtml)).toContainEqual({ dimension: "bus:AccountsTypeDimension", member: "bus:FilletedAccounts" });
-      expect(hiddenText(xhtml, "bus:DescriptionPrincipalActivities")).toBe(SAMPLE_INPUT.principalActivity);
+      expect(hiddenText(xhtml, "bus:DescriptionPrincipalActivities")).toBeUndefined();
+      expect(parseXmlDocument(xhtml).getElementsByTagName("body")[0].textContent).toContain(
+        `The principal activity of the company is ${SAMPLE_INPUT.principalActivity}.`,
+      );
       expect(xhtml).toMatch(/name="bus:NameEntityOfficer" contextRef="y2026-director-1">Jo Smith</);
     });
 

@@ -37,6 +37,15 @@ export function extractAndValidateParameters(event, errorMessages) {
 }
 
 // HTTP request/response, aware Lambda ingestHandler function
+// The registered office on one line, as the register shows it.
+export function registeredOfficeLine(address) {
+  if (!address || typeof address !== "object") return "";
+  return ["address_line_1", "address_line_2", "locality", "region", "postal_code"]
+    .map((key) => (typeof address[key] === "string" ? address[key].trim() : ""))
+    .filter(Boolean)
+    .join(", ");
+}
+
 export async function ingestHandler(event) {
   await initializeSalt();
   validateEnv(["COMPANIES_HOUSE_BASE_URI"]);
@@ -103,6 +112,7 @@ export async function getCompanyProfile(companyNumber) {
     dateOfCreation: data.date_of_creation,
     jurisdiction: data.jurisdiction,
     registeredOfficeAddress: data.registered_office_address,
+    registeredOffice: registeredOfficeLine(data.registered_office_address),
     sicCodes: data.sic_codes,
     accountsNextDue: data.accounts?.next_accounts?.due_on,
     accountsNextPeriodEnd: data.accounts?.next_accounts?.period_end_on,

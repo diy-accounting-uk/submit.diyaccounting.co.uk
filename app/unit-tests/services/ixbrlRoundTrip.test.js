@@ -79,7 +79,7 @@ describe("the builders' accounts read back through the diya-gl reader", () => {
       expect(mapped.fixedAssetNote).toEqual(small.fixedAssetNote);
       expect(mapped.averageEmployees).toBe(testCase.averageEmployees);
       expect(mapped.principalActivity).toBe(small.principalActivity);
-      expect(mapped.directors).toEqual(small.directors);
+      expect(mapped.directors).toEqual(small.filleted ? [testCase.director.name] : small.directors);
       expect(mapped.signer).toBe(testCase.director.name);
     },
   );

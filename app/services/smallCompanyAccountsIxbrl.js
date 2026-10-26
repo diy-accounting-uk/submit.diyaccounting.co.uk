@@ -38,6 +38,7 @@ import {
   buildOfficerContext,
   renderSigningDirectorFact,
   renderCompanyDescriptionFacts,
+  companyInformationNote,
 } from "./accountsIxbrlCommon.js";
 import { recordFigure, recordTable } from "../lib/submissionRecord.js";
 
@@ -335,6 +336,7 @@ ${heading}<p>The directors present their report and the financial statements for
  * @param {object} input
  * @param {string} input.companyNumber
  * @param {string} input.companyName
+ * @param {string} input.registeredOffice - the registered office address on one line
  * @param {string} input.periodStart - ISO date
  * @param {string} input.periodEnd - ISO date
  * @param {string} [input.priorBalanceSheetDate] - ISO date; defaults to the day before periodStart
@@ -400,7 +402,6 @@ export function buildSmallCompanyAccounts(input) {
     hiddenFacts.push(
       `<ix:nonNumeric name="${qname(CONCEPTS.reportIncludesDetailedProfitLossStatement)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
       `<ix:nonNumeric name="${qname(CONCEPTS.exemptionNotPublishingOwnProfitLossAccount)}" contextRef="${refs.current}">true</ix:nonNumeric>`,
-      renderTextFact("descriptionPrincipalActivities", refs.current, input.principalActivity),
     );
   } else {
     hiddenFacts.push(renderFixedFact("directorSigningDirectorsReport", refs.current));
@@ -445,6 +446,13 @@ export function buildSmallCompanyAccounts(input) {
     : SMALL_COMPANY_STATEMENT_KEYS;
 
   const notes = [
+    companyInformationNote(
+      {
+        ...input,
+        principalActivityShown: input.filleted ? input.principalActivity : undefined,
+      },
+      refs,
+    ),
     {
       title: "Accounting policies",
       html: `<p>${renderTextFact("statementComplianceWithReportingFramework", refs.current, SMALL_COMPANY_FRAMEWORK_COMPLIANCE)}</p>

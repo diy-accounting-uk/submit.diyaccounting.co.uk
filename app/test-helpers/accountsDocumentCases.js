@@ -50,17 +50,18 @@ const SMALL_BALANCE_SHEET_LABELS = [
 ];
 
 export const SMALL_COMPANY_CASE_INPUT = {
-  companyNumber: "03176906",
-  companyName: "MILLENNIUM STADIUM PLC",
-  periodStart: "2025-01-01",
-  periodEnd: "2025-12-31",
+  companyNumber: "04549236",
+  companyName: "MORGAN TECHNICAL LIMITED",
+  registeredOffice: "Unit 4 Morgan Court, Cardiff, CF10 1AA",
+  periodStart: "2025-04-01",
+  periodEnd: "2026-03-31",
   averageNumberOfEmployees: 4,
   principalActivity: "Software consultancy",
   accountingPolicies:
     "The financial statements have been prepared under the historical cost convention and in accordance with FRS 102 section 1A. Tangible fixed assets are depreciated at 25% a year on cost.",
-  directors: ["Maldwyn Beynon", "Alex Jones"],
-  directorName: "Maldwyn Beynon",
-  dateOfApproval: "2026-01-15",
+  directors: ["Alan James Morgan", "Alex Jones"],
+  directorName: "Alan James Morgan",
+  dateOfApproval: "2026-09-15",
   balanceSheet: {
     current: {
       fixedAssets: 10000,
@@ -137,6 +138,7 @@ function microInputFromTestServiceCase(testCase) {
   return {
     companyNumber: testCase.companyNumber,
     companyName: testCase.companyName,
+    registeredOffice: testCase.registeredOffice,
     periodStart: testCase.periodStart,
     periodEnd: testCase.periodEnd,
     balanceSheet: { current: testCase.balanceSheet.currentYear, prior: testCase.balanceSheet.priorYear },

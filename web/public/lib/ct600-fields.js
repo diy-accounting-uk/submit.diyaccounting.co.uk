@@ -980,6 +980,7 @@ export function ct600RequestFromValues(values, company, workingSheet) {
   return {
     companyNumber: company.companyNumber,
     companyName: company.companyName,
+    registeredOffice: company.registeredOffice,
     ...accountsFromValues(values),
     statementsAccepted: {
       section477Exemption: values.statementSection477Exemption,

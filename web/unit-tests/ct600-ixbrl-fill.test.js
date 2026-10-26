@@ -31,34 +31,33 @@ describe("the form values from a small company's iXBRL accounts", () => {
   test("opens the small company regime on the document's period", () => {
     expect(valueOf(entries, "regimeSmall")).toBe(true);
     expect(valueOf(entries, "regimeMicro")).toBeUndefined();
-    expect(valueOf(entries, "periodStart")).toBe("2025-01-01");
-    expect(valueOf(entries, "periodEnd")).toBe("2025-12-31");
+    expect(valueOf(entries, "periodStart")).toBe("2025-04-01");
+    expect(valueOf(entries, "periodEnd")).toBe("2026-03-31");
   });
 
   test("carries the profit and loss account and the balance sheets for both years", () => {
-    expect(valueOf(entries, "currentTurnover")).toBe("20000");
-    expect(valueOf(entries, "currentCostOfSales")).toBe("5000");
-    expect(valueOf(entries, "currentTax")).toBe("600");
-    expect(valueOf(entries, "currentCashAtBank")).toBe("2000");
+    expect(valueOf(entries, "currentTurnover")).toBe("8500");
+    expect(valueOf(entries, "currentCostOfSales")).toBe("0");
+    expect(valueOf(entries, "currentTax")).toBe("1102");
+    expect(valueOf(entries, "currentCashAtBank")).toBe("5200");
     expect(valueOf(entries, "includeComparatives")).toBe(true);
-    expect(valueOf(entries, "priorTurnover")).toBe("18000");
-    expect(valueOf(entries, "priorCreditorsAfterOneYear")).toBe("600");
+    expect(valueOf(entries, "priorTurnover")).toBe("7639");
+    expect(valueOf(entries, "priorCreditorsAfterOneYear")).toBe("0");
   });
 
   test("starts the depreciation added back as the fixed asset note's charge for the year", () => {
     expect(valueOf(entries, "includeFixedAssetNote")).toBe(true);
-    expect(valueOf(entries, "notePlantMachineryDepreciationCharge")).toBe("150");
-    expect(valueOf(entries, "noteComputerEquipmentDepreciationCharge")).toBe("230");
-    expect(valueOf(entries, "depreciation")).toBe("380");
+    expect(valueOf(entries, "noteComputerEquipmentDepreciationCharge")).toBe("400");
+    expect(valueOf(entries, "depreciation")).toBe("400");
   });
 
   test("carries the text answers, the employees and the director", () => {
-    expect(valueOf(entries, "principalActivity")).toBe("Stadium operation and events");
-    expect(valueOf(entries, "tradeName")).toBe("Stadium operation and events");
-    expect(valueOf(entries, "directors")).toBe("Maldwyn Beynon");
-    expect(valueOf(entries, "averageEmployees")).toBe("4");
-    expect(valueOf(entries, "directorName")).toBe("Maldwyn Beynon");
-    expect(valueOf(entries, "declarantName")).toBe("Maldwyn Beynon");
+    expect(valueOf(entries, "principalActivity")).toBe("Retailer of accounting software");
+    expect(valueOf(entries, "tradeName")).toBe("Retailer of accounting software");
+    expect(valueOf(entries, "directors")).toBe("Antony Christopher Cartwright\nSamantha Ashley Cartwright\nJane Elizabeth Grundy");
+    expect(valueOf(entries, "averageEmployees")).toBe("0");
+    expect(valueOf(entries, "directorName")).toBe("Antony Christopher Cartwright");
+    expect(valueOf(entries, "declarantName")).toBe("Antony Christopher Cartwright");
   });
 });
 
@@ -68,13 +67,13 @@ describe("the form values from a micro-entity's iXBRL accounts", () => {
   test("opens the micro-entity regime and fills its balance sheets", () => {
     expect(valueOf(entries, "regimeMicro")).toBe(true);
     expect(valueOf(entries, "regimeSmall")).toBeUndefined();
-    expect(valueOf(entries, "microCurrentFixedAssets")).toBe("1000");
-    expect(valueOf(entries, "microCurrentCurrentAssets")).toBe("5000");
-    expect(valueOf(entries, "microPriorFixedAssets")).toBe("900");
+    expect(valueOf(entries, "microCurrentFixedAssets")).toBe("0");
+    expect(valueOf(entries, "microCurrentCurrentAssets")).toBe("8300");
+    expect(valueOf(entries, "microPriorFixedAssets")).toBe("0");
   });
 
   test("names the micro-entity's trade after the company", () => {
-    expect(valueOf(entries, "tradeName")).toBe("MILLENNIUM STADIUM PLC");
+    expect(valueOf(entries, "tradeName")).toBe("DIY ACCOUNTING LIMITED");
   });
 
   test("leaves the small company fields and the depreciation alone", () => {
@@ -92,7 +91,7 @@ describe("a document that does not match the form", () => {
 
   test("another period is refused", () => {
     expect(() => mappedCase("small-company-accounts-full", { periodStart: "2024-04-01", periodEnd: "2025-03-31" })).toThrow(
-      /end on 2025-12-31/,
+      /end on 2026-03-31/,
     );
   });
 });

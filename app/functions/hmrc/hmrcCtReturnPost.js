@@ -23,6 +23,7 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
+import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments, boxesThatDiffer } from "../../services/hmrcCtReturnRequest.js";
 import {
   buildCt600SubmissionRequest,
@@ -83,6 +84,7 @@ export async function ingestHandler(event) {
 
   const errorMessages = [];
   const returnRequest = extractAndValidateCtReturnParameters(event, errorMessages);
+  if (errorMessages.length === 0) await fillRegisteredOffice(returnRequest.accounts, errorMessages);
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }

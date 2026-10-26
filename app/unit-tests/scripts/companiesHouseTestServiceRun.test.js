@@ -328,6 +328,7 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
       type: "accounts",
       companyNumber: FIXTURE_COMPANY_NUMBER,
       companyName: "EXAMPLE ACCOUNTS LIMITED",
+      registeredOffice: "1 Test Street, London, EC1A 1AA",
       companyAuthCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
       periodStart: "2025-01-01",
       periodEnd: "2025-12-31",
