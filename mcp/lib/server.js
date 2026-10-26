@@ -345,7 +345,8 @@ export const TOOLS = {
   get_vat_return: {
     description:
       "One past VAT return as HMRC holds it, by its period key (the periodKey list_vat_obligations answers for a " +
-      "fulfilled obligation), over the deployed API. Uses the session's HMRC authorisation: call " +
+      "fulfilled obligation), over the deployed API. Use it to see what HMRC holds; to read Submit's stored copy of a " +
+      "return it filed, use get_vat_receipt. Uses the session's HMRC authorisation: call " +
       "request_hmrc_authorisation first if this tool says none is held.",
     inputSchema: {
       vrn: z.string().describe("VAT registration number, 9 digits"),
@@ -388,7 +389,8 @@ export const TOOLS = {
   },
   get_vat_receipt: {
     description:
-      "A stored HMRC VAT receipt by its file name, over the deployed API. clientId, when given, narrows the fetch to " +
+      "A stored HMRC VAT receipt by its file name, over the deployed API: Submit's own copy of what it filed. To read " +
+      "HMRC's copy of a return by period key, use get_vat_return. clientId, when given, narrows the fetch to " +
       "one of the practice's clients but does not change which receipt is read.",
     inputSchema: {
       name: z.string().describe("The receipt file name, including .json (submit_vat_return answers receiptId without the suffix)"),
