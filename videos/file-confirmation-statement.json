@@ -313,7 +313,11 @@
         },
         {
           "action": "click",
-          "target": "#stateConfirmation"
+          "target": "#stateConfirmation",
+          "scrollTo": {
+            "role": "heading",
+            "name": "Lawful purpose statement"
+          }
         },
         {
           "action": "hold",
@@ -360,15 +364,14 @@
       "steps": [
         {
           "action": "click",
-          "target": "#submitFilingBtn",
-          "caption": "File the statement with Companies House's sandbox."
+          "target": "#submitFilingBtn"
         },
         {
           "action": "await",
           "until": "#filingRecord:has-text('Submission number')",
           "label": "Waiting for Companies House",
           "timeoutMs": 180000,
-          "caption": "Companies House checks the filing and reports the outcome.",
+          "caption": "File the statement. Companies House checks it and reports the outcome.",
           "headline": "The filing outcome",
           "keyWord": "outcome"
         },
@@ -380,7 +383,7 @@
         {
           "action": "point",
           "scrollTo": "#filingRecord",
-          "caption": "Your copy shows the submission number, the status, the date and the statement as filed.",
+          "caption": "Your copy shows the number, status, date and statement. It stays on your receipts.",
           "headline": "Your copy of the filing",
           "keyWord": "copy",
           "target": "#filingRecord h2.customer-copy-title",
@@ -396,8 +399,7 @@
         },
         {
           "action": "hold",
-          "ms": 2500,
-          "caption": "The statement is filed and your copy is kept."
+          "ms": 6000
         }
       ]
     }
