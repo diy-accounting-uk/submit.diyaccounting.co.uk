@@ -2241,21 +2241,21 @@
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": 38020235907,
-      "sourceArtifact": "video-file-confirmation-statement-ci",
+      "sourceRun": null,
+      "sourceArtifact": null,
       "videoFile": "target/videos/video-file-confirmation-statement-ci/file-confirmation-statement.mp4",
       "captionFile": "target/videos/video-file-confirmation-statement-ci/file-confirmation-statement.vtt",
       "title": "DIY Accounting Submit: start a company's confirmation statement",
-      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows starting a confirmation statement (CS01): sign in, take out Resident, look up a company, then read its directors and persons with significant control from Companies House's register. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
+      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows a confirmation statement (CS01) from start to finish: sign in, take out Resident, look up a company, read its directors and persons with significant control from Companies House's register, review and verify, then file it. It runs against Companies House's test service, so nothing reaches the live register. It's a real recording of the product, not a mockup. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:07 Resident\n00:17 Which company?\n00:39 The register\n00:56 Review the statement\n01:22 Confirm the directors\n01:49 Preview\n02:04 The filing",
       "tags": ["DIY Accounting", "Companies House", "confirmation statement", "CS01"],
       "categoryId": "27",
-      "videoId": "P0aG_mLfhZI",
+      "videoId": "o8RJtvM2vic",
       "walkthrough": [
         {
           "scene": "company-lookup",
           "headline": "Which company?",
           "caption": "Type the company number. Companies House confirms the next statement due.",
-          "startSeconds": 39,
+          "startSeconds": 17,
           "thumb": "videos/file-confirmation-statement/company-lookup-thumb.webp",
           "full": "videos/file-confirmation-statement/company-lookup.webp"
         },
@@ -2263,9 +2263,41 @@
           "scene": "register",
           "headline": "The register",
           "caption": "This is the company's own register of officers. And its people with significant control.",
-          "startSeconds": 65,
+          "startSeconds": 39,
           "thumb": "videos/file-confirmation-statement/register-thumb.webp",
           "full": "videos/file-confirmation-statement/register.webp"
+        },
+        {
+          "scene": "review",
+          "headline": "Review the statement",
+          "caption": "Companies House's register fills in the statement. The statement is filled in from the register. Change anything that is out of date.",
+          "startSeconds": 56,
+          "thumb": "videos/file-confirmation-statement/review-thumb.webp",
+          "full": "videos/file-confirmation-statement/review.webp"
+        },
+        {
+          "scene": "directors",
+          "headline": "Confirm the directors",
+          "caption": "Each director's other forenames and personal code are needed. Confirm the company's future activities are lawful.",
+          "startSeconds": 82,
+          "thumb": "videos/file-confirmation-statement/directors-thumb.webp",
+          "full": "videos/file-confirmation-statement/directors.webp"
+        },
+        {
+          "scene": "preview",
+          "headline": "Preview",
+          "caption": "Preview the statement as it will be filed. Nothing has gone to Companies House yet.",
+          "startSeconds": 109,
+          "thumb": "videos/file-confirmation-statement/preview-thumb.webp",
+          "full": "videos/file-confirmation-statement/preview.webp"
+        },
+        {
+          "scene": "result",
+          "headline": "The filing",
+          "caption": "File the statement. Companies House checks it and reports the outcome. Your copy shows the number, status, date and statement. It stays on your receipts.",
+          "startSeconds": 124,
+          "thumb": "videos/file-confirmation-statement/result-thumb.webp",
+          "full": "videos/file-confirmation-statement/result.webp"
         }
       ]
     },

@@ -557,7 +557,7 @@ DS1 took every page signed out, so these states need a signed-in DS1 run before 
 
 ### SQ1: every walkthrough frame, judged
 
-534 frames in 44 videos. 512 pass, 22 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
+538 frames in 44 videos. 516 pass, 22 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
 
 Fails by cause: O 4 (`change-registered-office`), E 18 (listed below).
 
@@ -573,7 +573,7 @@ Not re-cut, frames unchanged: `change-registered-email` (passes), `change-regist
 | company-lookup | 2 | 2 | none |
 | file-company-tax-return-book | 18 | 18 | none |
 | file-company-tax-return-typed | 19 | 19 | none |
-| file-confirmation-statement | 2 | 2 | none |
+| file-confirmation-statement | 6 | 6 | none |
 | file-micro-entity-accounts | 16 | 16 | none |
 | file-psc-verification-statement | 12 | 12 | none |
 | file-small-company-accounts | 21 | 21 | none |
