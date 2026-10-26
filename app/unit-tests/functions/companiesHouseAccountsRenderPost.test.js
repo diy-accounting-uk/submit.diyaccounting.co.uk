@@ -67,6 +67,12 @@ vi.mock("@app/services/microEntityAccountsIxbrl.js", async (importOriginal) => (
   buildMicroEntityAccounts: (...args) => mockBuildMicroEntityAccounts(...args),
 }));
 
+const mockGetCompanyProfile = vi.fn();
+vi.mock("@app/functions/companies-house/companiesHouseCompanyGet.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  getCompanyProfile: (...args) => mockGetCompanyProfile(...args),
+}));
+
 import { ingestHandler as companiesHouseAccountsRenderPostHandler } from "@app/functions/companies-house/companiesHouseAccountsRenderPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -218,6 +224,31 @@ describe("companiesHouseAccountsRenderPost ingestHandler", () => {
     expect(input.companyNumber).toBe("00000001");
     expect(input.balanceSheet.current.fixedAssets).toBe(1000);
     expect(input.companyAuthCode).toBeUndefined();
+  });
+
+  test("takes the registered office from the company profile when the request omits it", async () => {
+    mockGetCompanyProfile.mockResolvedValue({ profile: { registeredOffice: "9 Register Road, Cardiff, CF10 1AA" } });
+    const response = await companiesHouseAccountsRenderPostHandler(
+      buildEvent({ body: buildAccountsBody({ registeredOffice: undefined }) }),
+    );
+    expect(response.statusCode).toBe(200);
+    expect(mockGetCompanyProfile).toHaveBeenCalledWith("00000001");
+    expect(mockBuildMicroEntityAccounts.mock.calls[0][0].registeredOffice).toBe("9 Register Road, Cardiff, CF10 1AA");
+  });
+
+  test("keeps the registered office the request carries without a profile lookup", async () => {
+    await companiesHouseAccountsRenderPostHandler(buildEvent());
+    expect(mockGetCompanyProfile).not.toHaveBeenCalled();
+  });
+
+  test("answers 400 Missing registeredOffice when the request and the profile hold none", async () => {
+    mockGetCompanyProfile.mockResolvedValue({ profile: { registeredOffice: "" } });
+    const response = await companiesHouseAccountsRenderPostHandler(
+      buildEvent({ body: buildAccountsBody({ registeredOffice: undefined }) }),
+    );
+    expect(response.statusCode).toBe(400);
+    expect(parseResponseBody(response).message).toContain("Missing registeredOffice");
+    expect(mockBuildMicroEntityAccounts).not.toHaveBeenCalled();
   });
 
   test("rejects an invalid company number with 400", async () => {

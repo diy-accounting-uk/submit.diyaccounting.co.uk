@@ -29,6 +29,7 @@ import {
   sharesIssuedFor,
 } from "../../services/microEntityAccountsIxbrl.js";
 import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
+import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateSmallCompany } from "../../services/smallCompanyAccountsRequest.js";
 import {
   buildAccountsSubmission,
@@ -115,9 +116,6 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     errorMessages.push("Missing companyName");
   }
   const trimmedRegisteredOffice = typeof registeredOffice === "string" ? registeredOffice.trim() : "";
-  if (!trimmedRegisteredOffice) {
-    errorMessages.push("Missing registeredOffice - the registered office address as shown on the register");
-  }
 
   let trimmedCompanyAuthCode;
   if (requireCompanyAuthCode) {
@@ -356,6 +354,10 @@ export async function ingestHandler(event) {
   // body: buildMicroEntityAccounts and buildAccountsSubmission below both read it off `accounts`.
   if (clientId) {
     accounts.companyNumber = client.identifiers?.companyNumber;
+  }
+  await fillRegisteredOffice(accounts, errorMessages);
+  if (errorMessages.length > 0) {
+    return buildValidationError(request, errorMessages, responseHeaders);
   }
 
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;

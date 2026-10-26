@@ -111,6 +111,7 @@ describe("derive_small_company_accounts", () => {
         const xhtml = buildSmallCompanyAccounts({
           companyNumber: "12345678",
           companyName: answer.companyName,
+          registeredOffice: "1 Test Street, London, EC1A 1AA",
           periodStart: answer.periodStart,
           periodEnd: answer.periodEnd,
           priorBalanceSheetDate: answer.priorBalanceSheetDate,
