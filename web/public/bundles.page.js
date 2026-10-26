@@ -695,6 +695,7 @@ document.addEventListener("click", async (e) => {
 
 // --- remove individual bundle
 async function removeBundle(bundleId, fireAndForget = true) {
+  const bundleName = __catalogueData?.bundles?.find((cb) => cb.id === bundleId)?.name || bundleId;
   const idToken = getIdToken();
   if (!idToken) {
     showStatus("Please log in first to remove bundles.", "warning");
@@ -703,7 +704,7 @@ async function removeBundle(bundleId, fireAndForget = true) {
   }
 
   // Show status immediately before making the request
-  showStatus(`Removing bundle "${bundleId}"...`, "info");
+  showStatus(`Removing bundle "${bundleName}"...`, "info");
 
   try {
     const response = await window.fetchWithIdToken("/api/v1/bundle", {
@@ -734,7 +735,7 @@ async function removeBundle(bundleId, fireAndForget = true) {
       updateBundleStatus(); // Update the request buttons
       // Notify developer mode toggle to refresh
       window.dispatchEvent(new CustomEvent("bundle-changed"));
-      showStatus(`Bundle "${bundleId}" removed successfully.`, "success");
+      showStatus(`Bundle "${bundleName}" removed successfully.`, "success");
     } else {
       showStatus(`Failed to remove bundle: ${result.error || "Unknown error"}`, "error");
     }
