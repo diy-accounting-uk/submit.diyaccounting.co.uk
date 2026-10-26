@@ -44,6 +44,7 @@ async function fetchReceipts() {
       // Date cell
       const dateCell = document.createElement("td");
       dateCell.textContent = HmrcDisplayFormat.formatDateTime(it.timestamp);
+      dateCell.className = "receipt-nowrap";
 
       // Receipt cell with clickable label and download icon
       const receiptCell = document.createElement("td");
@@ -75,7 +76,8 @@ async function fetchReceipts() {
 
       // Size cell
       const sizeCell = document.createElement("td");
-      sizeCell.textContent = typeof it.size === "number" && Number.isFinite(it.size) ? `${it.size.toLocaleString("en-GB")} bytes` : "—";
+      sizeCell.textContent = typeof it.size === "number" && Number.isFinite(it.size) ? it.size.toLocaleString("en-GB") : "—";
+      sizeCell.className = "receipt-nowrap";
 
       tr.appendChild(dateCell);
       tr.appendChild(receiptCell);

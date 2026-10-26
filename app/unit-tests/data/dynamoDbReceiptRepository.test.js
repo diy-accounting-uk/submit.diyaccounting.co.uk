@@ -111,6 +111,23 @@ describe("data/dynamoDbReceiptRepository", () => {
       expect(receipts[0].clientId).toBe("client-1");
     });
 
+    test("each receipt carries the byte size of its stored record, whatever its kind", async () => {
+      const vatReceipt = { formBundleNumber: "FB1" };
+      const ctReceipt = { kind: "company-tax-return", formBundleNumber: "FB2", figures: { turnover: 1000 } };
+      mockSend.mockResolvedValueOnce({
+        Items: [
+          { hashedSub: "h", receiptId: "2026-01-01T00:00:00.000Z-FB1", createdAt: "2026-01-01T00:00:00.000Z", receipt: vatReceipt },
+          { hashedSub: "h", receiptId: "2026-01-02T00:00:00.000Z-FB2", createdAt: "2026-01-02T00:00:00.000Z", receipt: ctReceipt },
+        ],
+      });
+
+      const receipts = await listUserReceipts("practice-sub");
+
+      const byId = Object.fromEntries(receipts.map((receipt) => [receipt.receiptId, receipt.size]));
+      expect(byId["2026-01-01T00:00:00.000Z-FB1"]).toBe(Buffer.byteLength(JSON.stringify(vatReceipt)));
+      expect(byId["2026-01-02T00:00:00.000Z-FB2"]).toBe(Buffer.byteLength(JSON.stringify(ctReceipt)));
+    });
+
     test("a client id matching no receipt returns an empty list, never another client's", async () => {
       mockSend.mockResolvedValueOnce({ Items: items });
 

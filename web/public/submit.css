@@ -1741,6 +1741,10 @@ caption {
   border-bottom: 1px solid var(--c-rule-subtle);
 }
 
+.data-table .receipt-nowrap {
+  white-space: nowrap;
+}
+
 .data-table th,
 .results-table th,
 .receipt-display th,

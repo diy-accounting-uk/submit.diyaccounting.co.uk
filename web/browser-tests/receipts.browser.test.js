@@ -67,6 +67,29 @@ test.describe("Receipts page - receipt details", () => {
     );
   }
 
+  test("lists each receipt with its size in bytes, and a dash only when the list gives none", async ({ page }) => {
+    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
+    await page.evaluate(async () => {
+      localStorage.setItem("cognitoIdToken", "token");
+      const items = [
+        {
+          name: "2026-10-02T09:00:00.000Z-AAA.json",
+          timestamp: "2026-10-02T09:00:00.000Z",
+          formBundleNumber: "AAA",
+          kind: "company-tax-return",
+          size: 32749,
+        },
+        { name: "2026-10-01T09:00:00.000Z-BBB.json", timestamp: "2026-10-01T09:00:00.000Z", formBundleNumber: "BBB", kind: null },
+      ];
+      window.fetchWithIdToken = async () => ({ ok: true, json: async () => ({ receipts: items }) });
+      await window.fetchReceipts();
+    });
+
+    await expect(page.locator("#receiptsTable thead th").nth(2)).toHaveText("Size (bytes)");
+    await expect(page.locator("#receiptsTable tbody tr").nth(0).locator("td").nth(2)).toHaveText("32,749");
+    await expect(page.locator("#receiptsTable tbody tr").nth(1).locator("td").nth(2)).toHaveText("—");
+  });
+
   test("shows a VAT receipt as a record inside the customer copy", async ({ page }) => {
     await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
 
