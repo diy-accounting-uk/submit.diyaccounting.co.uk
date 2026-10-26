@@ -17,7 +17,8 @@ async function loadTestReports() {
     const indexResponse = await fetch("test-reports-index.txt");
 
     if (!indexResponse.ok) {
-      throw new Error("Test reports index not found");
+      showNoReports();
+      return;
     }
 
     const indexText = await indexResponse.text();
@@ -119,19 +120,9 @@ function renderReports(reports) {
         <p style="color: #666; margin-bottom: 1rem; font-size: 0.95rem;">
           ${escapedDescription}
         </p>
-        <div style="margin-bottom: 1rem;">
-          <iframe
-            src="${escapedTestName}/html-report/index.html"
-            style="width: 100%; height: 400px; border: 1px solid #ddd; border-radius: 4px;"
-            title="Playwright Test Report for ${escapedTestName}">
-          </iframe>
-        </div>
         <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
           <a href="test-report-template.html?test=${encodedTestName}" target="_blank" class="btn" style="text-decoration: none; display: inline-block;">
             View Full Test Details
-          </a>
-          <a href="${escapedTestName}/html-report/index.html" target="_blank" class="btn" style="text-decoration: none; display: inline-block; background-color: #6c757d; border-color: #6c757d;">
-            Open Playwright Report
           </a>
         </div>
         <p style="margin-top: 1rem; margin-bottom: 0; font-size: 0.85rem; color: #999;">

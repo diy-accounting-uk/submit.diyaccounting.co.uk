@@ -60,15 +60,6 @@ function renderReport(report) {
   document.getElementById("testName").textContent = report.testName;
   document.getElementById("generatedAt").textContent = new Date(report.generatedAt).toLocaleString();
 
-  // Set Playwright link (validate test name)
-  const playwrightLink = document.getElementById("playwrightLink");
-  if (/^[a-zA-Z0-9_-]+$/.test(report.testName)) {
-    playwrightLink.href = `test-reports/${report.testName}/html-report/index.html`;
-  } else {
-    playwrightLink.href = "#";
-    playwrightLink.style.display = "none";
-  }
-
   // Render test context JSON
   document.getElementById("testContextJson").textContent = JSON.stringify(report.testContext, null, 2);
 

@@ -57,3 +57,44 @@ test.describe("test-report pages under the edge script policy", () => {
     });
   }
 });
+
+test.describe("test-report pages layout and content", () => {
+  test("the index shows the published report and no iframe of the Playwright report", async ({ page }) => {
+    const errors = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
+    await serveRealSiteWithEdgePolicy(page);
+    await page.goto("http://localhost:3000/tests/index.html", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#reportsContainer h2").first()).toBeVisible();
+    await expect(page.locator("#reportsContainer iframe")).toHaveCount(0);
+    expect(errors).toEqual([]);
+  });
+
+  test("the index says no reports are published, without a console error, when the index file is not published", async ({ page }) => {
+    const errors = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") errors.push(message.text());
+    });
+    await serveRealSiteWithEdgePolicy(page);
+    await page.route("**/tests/test-reports-index.txt", (route) =>
+      route.fulfill({ status: 404, contentType: "text/plain", body: "Not found" }),
+    );
+    await page.goto("http://localhost:3000/tests/index.html", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#noReportsMessage")).toBeVisible();
+    expect(errors.filter((text) => /index not found/i.test(text))).toEqual([]);
+  });
+
+  test("the report page has no page-level horizontal scroll at 390px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 800 });
+    await serveRealSiteWithEdgePolicy(page);
+    await page.goto("http://localhost:3000/tests/test-report-template.html?test=web-test-local", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#content")).toBeVisible();
+    await expect(page.locator(".api-request h4").first()).toBeVisible();
+    const widths = await page.evaluate(() => ({
+      scroll: document.documentElement.scrollWidth,
+      client: document.documentElement.clientWidth,
+    }));
+    expect(widths.scroll).toBeLessThanOrEqual(widths.client);
+  });
+});

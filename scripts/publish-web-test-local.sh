@@ -17,9 +17,7 @@ else
 fi
 
 targetTestDir="web/public/tests/behaviour-test-results/${targetTest?}/"
-targetTestReportDir="web/public/tests/test-reports/${targetTest?}/"
 mkdir -p "${targetTestDir?}"
-mkdir -p "${targetTestReportDir?}"
 cp -v "${sourceReport?}" "web/public/tests/test-report-${targetTest?}.json"
 cat "web/public/tests/test-report-${targetTest?}.json" | jq '.artifacts.screenshots.[]' --raw-output
 # find the full path of each file in web/public/tests/test-report-web-test-local.json
@@ -46,10 +44,5 @@ if [[ "${sourceTestName?}" != "${targetTest?}" ]]; then
   # Replace occurrences of sourceTestName in web/public/tests/test-report-web-test-local.json with targetTest
   sed "${sedInPlace[@]}" "s/${sourceTestName?}/${targetTest?}/g" "web/public/tests/test-report-${targetTest?}.json"
 fi
-# [local run variant] Copy target/test-reports/html-report (if it exists) to web/public/tests/test-reports/web-test-local
-if [[ -d "target/test-reports/html-report" ]]; then
-  cp -rv "target/test-reports/html-report" "${targetTestReportDir?}"
-# [GitHub Actions run variant] Copy "target/test-reports/${sourceTestName?}/html-report" (if it exists) to web/public/tests/test-reports/web-test-local
-elif [[ -d "target/test-reports/${sourceTestName?}/html-report" ]]; then
-  cp -rv "target/test-reports/${sourceTestName?}/html-report" "${targetTestReportDir?}"
-fi
+# The tests index page lists the published reports from this file, one report file name per line.
+(cd web/public/tests && ls test-report-*.json | sort) > web/public/tests/test-reports-index.txt

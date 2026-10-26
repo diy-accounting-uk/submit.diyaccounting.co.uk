@@ -59,7 +59,7 @@ function sceneItem(video, scene) {
   open.dataset.scene = sceneKey(scene);
   open.setAttribute("aria-label", `View full size: ${scene.headline}`);
   const image = document.createElement("img");
-  image.src = scene.thumb;
+  image.dataset.src = scene.thumb;
   image.alt = "";
   image.loading = "lazy";
   image.width = 480;
@@ -92,6 +92,14 @@ export function walkthroughElement(video) {
   const list = el("ol", "walkthrough-list");
   list.append(...video.walkthrough.map((scene) => sceneItem(video, scene)));
   details.append(list);
+  // The thumbnails download when the twistie first opens, so a closed twistie adds no image weight.
+  details.addEventListener("toggle", () => {
+    if (!details.open) return;
+    for (const image of list.querySelectorAll("img[data-src]")) {
+      image.src = image.dataset.src;
+      image.removeAttribute("data-src");
+    }
+  });
   return details;
 }
 

@@ -983,20 +983,14 @@ jobs:
 
           # Copy the following files to S3:
           # web/public/tests/test-report-web-test.json
-          # web/public/tests/test-reports/web-test/html-report/*
+          # web/public/tests/test-reports-index.txt
           # web/public/tests/behaviour-test-results/web-test/*
 
           echo "Uploading test report JSON file to S3 bucket: ${BUCKET_NAME?}"
           ls -l web/public/tests/test-report-web-test.json
           aws s3 cp web/public/tests/test-report-web-test.json s3://${BUCKET_NAME?}/tests/test-report-web-test.json
 
-          if [ -d web/public/tests/test-reports/web-test/html-report/ ]; then
-            echo "Uploading test reports to S3 bucket: ${BUCKET_NAME?}"
-            find web/public/tests/test-reports/web-test/html-report/ -type f
-            aws s3 cp web/public/tests/test-reports/web-test/html-report/ s3://${BUCKET_NAME?}/tests/test-reports/web-test/html-report/ --recursive
-          else
-            echo "No html-report directory produced for this suite, skipping upload"
-          fi
+          aws s3 cp web/public/tests/test-reports-index.txt s3://${BUCKET_NAME?}/tests/test-reports-index.txt
 
           echo "Uploading behaviour test artifacts to S3 bucket: ${BUCKET_NAME?}"
           find web/public/tests/behaviour-test-results/web-test/ -type f
