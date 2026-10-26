@@ -82,15 +82,15 @@ test.describe("guide.html", () => {
         total: images.length,
         notLoaded: images.filter((img) => !(img.naturalWidth > 0)).map((img) => img.src),
         noAlt: images.filter((img) => !(img.alt && img.alt.trim())).map((img) => img.src),
-        altNotCaption: images
-          .filter((img) => img.alt !== img.closest(".guide-step").querySelector(".guide-caption").textContent)
+        altIsCaption: images
+          .filter((img) => img.alt === img.closest(".guide-step").querySelector(".guide-caption").textContent)
           .map((img) => img.src),
       };
     });
     expect(result.total).toBeGreaterThan(100);
     expect(result.notLoaded).toEqual([]);
     expect(result.noAlt).toEqual([]);
-    expect(result.altNotCaption).toEqual([]);
+    expect(result.altIsCaption).toEqual([]);
   });
 
   test("a screenshot opens full size in the lightbox and Escape closes it", async ({ page }) => {
@@ -126,8 +126,12 @@ test.describe("guide.html", () => {
     await expect(lightbox).toHaveAttribute("aria-modal", "true");
     const close = lightbox.locator(".lightbox-close");
     await expect(close).toBeFocused();
-    await page.keyboard.press("Tab");
-    await expect(close).toBeFocused();
+    expect(await close.evaluate((node) => node.tagName)).toBe("BUTTON");
+    for (let press = 0; press < 6; press++) {
+      await page.keyboard.press("Tab");
+      expect(await page.evaluate(() => document.activeElement.closest("#lightbox") !== null)).toBe(true);
+    }
+    await close.focus();
     await page.keyboard.press("Enter");
     await expect(lightbox).not.toHaveClass(/active/);
     await expect(thumb).toBeFocused();
@@ -140,7 +144,9 @@ test.describe("guide.html", () => {
     expect(lightboxZ).toBeGreaterThan(10000);
   });
 
-  test("a thumbnail reserves its space before it loads and the page does not scroll sideways at phone width", async ({ page }) => {
+  test("a thumbnail carries its pixel size so the page does not shift as it loads, and the page does not scroll sideways at phone width", async ({
+    page,
+  }) => {
     await page.setViewportSize({ width: 390, height: 800 });
     await serveRealSite(page);
     await page.goto("http://localhost:3000/guide.html", { waitUntil: "load" });
@@ -149,14 +155,12 @@ test.describe("guide.html", () => {
     for (let i = 0; i < count; i++) await journeys.nth(i).locator("summary").click();
     const result = await page.evaluate(() => ({
       sideways: document.documentElement.scrollWidth > window.innerWidth,
-      fixedAttributes: [...document.querySelectorAll(".guide-thumb img")].filter(
-        (img) => img.hasAttribute("width") || img.hasAttribute("height"),
+      unsized: [...document.querySelectorAll(".guide-thumb img")].filter(
+        (img) => !(Number(img.getAttribute("width")) > 0 && Number(img.getAttribute("height")) > 0),
       ).length,
-      aspect: getComputedStyle(document.querySelector(".guide-thumb img")).aspectRatio,
     }));
     expect(result.sideways).toBe(false);
-    expect(result.fixedAttributes).toBe(0);
-    expect(result.aspect).toContain("auto");
+    expect(result.unsized).toBe(0);
   });
 
   test("changing the link hash to a journey opens it", async ({ page }) => {
@@ -167,5 +171,57 @@ test.describe("guide.html", () => {
       window.location.hash = "#view-payments";
     });
     await expect(page.locator("details#view-payments")).toHaveAttribute("open", "");
+  });
+
+  test("the lightbox moves through a journey's frames with buttons and arrow keys and closes with its button", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/guide.html", { waitUntil: "load" });
+    const journey = page.locator("details.guide-journey#submit-return");
+    await journey.locator("summary").click();
+    const frameCount = await journey.locator(".guide-thumb").count();
+    expect(frameCount).toBeGreaterThan(2);
+    await journey.locator(".guide-thumb").first().click();
+    const lightbox = page.locator("#lightbox");
+    const image = page.locator("#lightbox-image");
+    const first = await image.getAttribute("src");
+    await expect(lightbox.locator(".lightbox-previous")).toBeDisabled();
+    await expect(lightbox.locator(".lightbox-position")).toHaveText(`1 of ${frameCount}`);
+
+    await page.keyboard.press("ArrowRight");
+    await expect(lightbox.locator(".lightbox-position")).toHaveText(`2 of ${frameCount}`);
+    const second = await image.getAttribute("src");
+    expect(second).not.toBe(first);
+    expect(second).toBe(await journey.locator(".guide-thumb").nth(1).getAttribute("data-full"));
+
+    await lightbox.locator(".lightbox-next").click();
+    await expect(lightbox).toHaveClass(/active/);
+    await expect(lightbox.locator(".lightbox-position")).toHaveText(`3 of ${frameCount}`);
+    await lightbox.locator(".lightbox-previous").click();
+    await page.keyboard.press("ArrowLeft");
+    await expect(image).toHaveAttribute("src", first);
+
+    await lightbox.locator(".lightbox-close").click();
+    await expect(lightbox).not.toHaveClass(/active/);
+    await expect(journey.locator(".guide-thumb").first()).toBeFocused();
+  });
+
+  test("each group has a jump list that opens its journey, and each step has an id and a copy-link control", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/guide.html", { waitUntil: "load" });
+    await expect(page.locator("details.guide-journey").first()).toBeVisible();
+    const groups = await page.locator("section.guide-group").count();
+    expect(await page.locator("nav.guide-jump-nav").count()).toBe(groups);
+
+    const jump = page.locator('nav.guide-jump-nav a[href="#view-penalties"]');
+    await jump.click();
+    await expect(page.locator("details#view-penalties")).toHaveAttribute("open", "");
+
+    const step = page.locator("details#view-penalties li.guide-step").nth(1);
+    expect(await step.getAttribute("id")).toBe("view-penalties-step-2");
+    await expect(step.locator(".guide-step-link")).toBeVisible();
+
+    await page.goto("http://localhost:3000/guide.html#view-return-step-3", { waitUntil: "load" });
+    await expect(page.locator("details#view-return")).toHaveAttribute("open", "");
+    await expect(page.locator("#view-return-step-3")).toBeInViewport();
   });
 });

@@ -68,9 +68,14 @@
 
     <!-- Lightbox modal for expandable images -->
     <div class="lightbox-overlay" id="lightbox">
-      <span class="lightbox-close" aria-label="Close">&times;</span>
+      <button type="button" class="lightbox-close" aria-label="Close full size screenshot">&times;</button>
+      <button type="button" class="lightbox-nav lightbox-previous" aria-label="Previous step">&#8249;</button>
       <img src="" alt="" id="lightbox-image" />
-      <span class="lightbox-hint">Click anywhere to close</span>
+      <button type="button" class="lightbox-nav lightbox-next" aria-label="Next step">&#8250;</button>
+      <span class="lightbox-hint"
+        ><span class="lightbox-position" aria-live="polite"></span>
+        <span class="lightbox-keys"> &middot; Arrow keys move, Escape closes</span></span
+      >
     </div>
 
     <script src="widgets/page-chrome.js"></script>

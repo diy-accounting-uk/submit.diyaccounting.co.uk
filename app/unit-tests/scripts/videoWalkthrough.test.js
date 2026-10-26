@@ -166,7 +166,11 @@ describe("buildWalkthroughEntries", () => {
 
 describe("parseArgs", () => {
   it("collects every --id", () => {
-    expect(parseArgs(["--id", "a", "--id", "b"])).toEqual({ ids: ["a", "b"] });
+    expect(parseArgs(["--id", "a", "--id", "b"])).toEqual({ ids: ["a", "b"], sizesOnly: false });
+  });
+
+  it("reads --sizes", () => {
+    expect(parseArgs(["--sizes"])).toEqual({ ids: [], sizesOnly: true });
   });
 
   it("rejects an unknown argument and a bare --id", () => {

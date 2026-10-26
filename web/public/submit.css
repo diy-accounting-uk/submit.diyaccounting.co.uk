@@ -3421,14 +3421,52 @@ body.developer-mode .developer-only-section {
 
 .guide-step {
   counter-increment: guide-step;
+  scroll-margin-top: var(--space-4);
   background: var(--c-canvas);
   border: 1px solid var(--c-rule-subtle);
   border-radius: var(--radius-control);
   padding: var(--space-2);
 }
 
-.guide-step-title {
+.guide-step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
   margin: var(--space-1) 0 var(--space-2);
+}
+
+.guide-step-title {
+  margin: 0;
+}
+
+.guide-step-link {
+  flex: none;
+  background: none;
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-control);
+  color: var(--c-brand);
+  font-size: var(--step--1);
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+}
+
+.guide-jump {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+}
+
+.guide-jump a {
+  display: inline-block;
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-control);
+  background: var(--c-paper);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--step--1);
 }
 
 .guide-step-title::before {
@@ -3459,7 +3497,6 @@ body.developer-mode .developer-only-section {
   display: block;
   width: 100%;
   height: auto;
-  aspect-ratio: auto 480 / 518;
   border-radius: var(--radius-control);
 }
 
@@ -3491,10 +3528,55 @@ body.developer-mode .developer-only-section {
 }
 
 .lightbox-overlay img {
-  max-width: 95%;
-  max-height: 95%;
+  max-width: min(95%, calc(100% - 7rem));
+  max-height: calc(100% - 4.5rem);
   object-fit: contain;
   border-radius: var(--radius-control);
+}
+
+.lightbox-close,
+.lightbox-nav {
+  background: none;
+  border: 0;
+  padding: var(--space-2);
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--c-on-scrim);
+  font-size: var(--step-4);
+  line-height: 1;
+  cursor: pointer;
+  z-index: 10002;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  text-shadow: 0 0 6px var(--c-scrim-strong);
+}
+
+@media (max-width: 699px) {
+  .lightbox-keys {
+    display: none;
+  }
+}
+
+.lightbox-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.lightbox-previous {
+  left: var(--space-2);
+}
+
+.lightbox-next {
+  right: var(--space-2);
+}
+
+.lightbox-nav:focus-visible {
+  outline: 3px solid var(--c-on-scrim);
+  outline-offset: 4px;
 }
 
 .lightbox-close {
@@ -3521,6 +3603,7 @@ body.developer-mode .developer-only-section {
   transform: translateX(-50%);
   color: var(--c-on-scrim);
   font-size: var(--step--1);
+  white-space: nowrap;
 }
 
 /* About */
