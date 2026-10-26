@@ -2386,7 +2386,15 @@ jobs:
     # Prod only. A ci set proves itself on its own host, and the ci apex follows the set that
     # passed, one promotion behind this run, through promote-ci-apex.yml. Skipping this job on ci
     # does not skip the jobs that need it: every one of them is `if: !cancelled()`.
-    if: ${{ needs.names.outputs.environment-name == 'prod' }}
+    # The condition names each need's result, because the implicit success() is false whenever
+    # any job upstream was skipped, and stack-holdings is skipped on main by design.
+    if: >-
+      ${{ !cancelled() && needs.names.result == 'success' && needs.names.outputs.environment-name == 'prod'
+      && needs.skip-deploy-check.result == 'success' && needs.deploy-api.result == 'success'
+      && needs.deploy-auth.result == 'success' && needs.deploy-hmrc.result == 'success'
+      && needs.deploy-hmrc-itsa.result == 'success' && needs.deploy-account.result == 'success'
+      && needs.deploy-edge.result == 'success' && needs.deploy-publish.result == 'success'
+      && needs.deploy-ops.result == 'success' }}
     needs:
       - names
       - skip-deploy-check

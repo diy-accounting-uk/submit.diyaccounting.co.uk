@@ -468,6 +468,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server: use when a session must click through the ci site as a person would, or read a page's accessibility snapshot and take screenshots.
     - [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server: use when the playwright MCP server needs the ci lane's test user already signed in, or the state file has expired.
     - [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role: use when the operator asks to explore ci, for an exploratory or judgement pass, or for a human-eye review of the site.
+    - [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday: use when you need every page's status, console errors, failed requests, broken images, sideways or text overflow, page weight and raw identifiers, as the visitor and the signed-in customer, with a contact sheet per role, viewport and theme; or when a review needs the week's crawl output.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -4565,7 +4566,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -4887,6 +4888,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server
 - [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server
 - [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role
+- [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -5125,6 +5127,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/explore/SKILL.md, PLAN_EXPLORATORY_QA.md
 - **Keywords:** explore skill, exploratory qa, judgement pass, role pass, review document, findings with screenshots
 - **Related:** DEV-46, DEV-48, DEV-49
+
+#### DEV-51 Crawl the deployed site blind every Sunday
+
+- **Use when:** you need every page's status, console errors, failed requests, broken images, sideways or text overflow, page weight and raw identifiers, as the visitor and the signed-in customer, with a contact sheet per role, viewport and theme; or when a review needs the week's crawl output.
+- **Does:** `scripts/exploratory-crawl.mjs` follows every same-origin link and submits up to three forms per page empty, 300 pages per role, viewport and theme, at 1280x800 and 390x844 in light and dark; it writes `target/exploratory-crawl/<lane>/<role>/<viewport>-<theme>/` with `contact-sheet.html`, one PNG per page and `findings.json`, and `summary-<lane>.md`. The `exploratory-crawl` job in `test.yml` runs it on the scheduled run on Sundays and on dispatch: prod as the visitor, ci as both roles behind the native-auth enable and disable, the counts in the job summary, the folder as an artifact, the sheets copied to the deployment's bucket under `tests/exploratory/<date>/`.
+- **Run:** `gh workflow run test.yml --ref main -f runExploratoryCrawl=true`; locally `node scripts/exploratory-crawl.mjs --lane simulator --base-url http://localhost:3000 --roles visitor --viewports desktop --themes light`
+- **Entry:** `scripts/exploratory-crawl.mjs`
+- **Files:** scripts/exploratory-crawl.mjs, app/unit-tests/scripts/exploratoryCrawl.test.js, .github/workflows/test.yml (job `exploratory-crawl`), PLAN_EXPLORATORY_QA.md
+- **Keywords:** exploratory crawl, blind crawl, weekly crawl, contact sheet, findings.json, console errors, failed requests, overflow, raw identifiers, Sunday job
+- **Related:** DEV-46, DEV-49, DEV-50
 
 
 ## Spreadsheets and diya-gl (SS)
@@ -6023,6 +6035,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - billing stack: [BILL-37](#bill-37-cdk-billing-app-stack)
 - billion laughs: [CH-11](#ch-11-parse-xml-safely)
 - blast radius: [SS-42](#ss-42-route-tests-by-blast-radius)
+- blind crawl: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - blocked requests: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - board: [DEV-27](#dev-27-render-the-open-work-board)
 - board agent: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
@@ -6284,9 +6297,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - consent mode: [SITE-15](#site-15-show-and-persist-cookie-consent)
 - consent.analytics: [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - consent.rum: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum)
-- console errors: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
+- console errors: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page), [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - console links: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation), [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
 - consume token: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
+- contact sheet: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - context: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - continuous backups: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - contrast: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
@@ -6618,6 +6632,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - expiry: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - expiry window: [OPS-12](#ops-12-clean-up-expired-test-users)
 - explicit date: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
+- exploratory crawl: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - exploratory qa: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server), [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - explore skill: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - export: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
@@ -6632,6 +6647,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - extract_book: [SS-06](#ss-06-serve-the-diya-gl-mcp-server)
 - fail closed: [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope), [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition)
 - fail fast: [OPS-84](#ops-84-validate-required-environment-variables-at-startup)
+- failed requests: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - failed rules metric: [DATA-11](#data-11-run-glue-data-quality-checks)
 - failover: [OPS-116](#ops-116-provision-the-holding-page-stack), [SS-30](#ss-30-serve-the-holding-page-and-failover)
 - false positive: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
@@ -6663,6 +6679,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - findings: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - findings report: [OPS-62](#ops-62-report-accessibility-penetration-testing)
 - findings with screenshots: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
+- findings.json: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - finish-only rerun: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - fire and forget: [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - firehose putrecordbatch: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
@@ -7246,6 +7263,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - output value: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - outside cdk: [OPS-32](#ops-32-detect-cloudformation-drift)
 - over budget: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
+- overflow: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - overlay: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
 - overloaded batch: [DEV-35](#dev-35-cool-down-an-overloaded-batch)
 - owasp: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
@@ -7445,6 +7463,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - rates: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - rates and allowances: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - raw export: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
+- raw identifiers: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - re-key: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
 - re-record: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - read-only: [DATA-44](#data-44-assert-google-oauth-client-configuration)
@@ -7822,6 +7841,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - subscription updated: [BILL-28](#bill-28-process-stripe-webhook-events)
 - subscriptions: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - subscriptions snapshot: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
+- sunday job: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - superseded deploy: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - supplier invoices: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - supply chain: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
@@ -8060,6 +8080,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - webhooks: [OPS-60](#ops-60-guide-github-repository-configuration)
 - webp: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - webvtt: [OPS-90](#ops-90-encode-captured-video-frames-and-captions)
+- weekly crawl: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - weekly review: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - weekly schedule: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)
 - weekly verification: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
