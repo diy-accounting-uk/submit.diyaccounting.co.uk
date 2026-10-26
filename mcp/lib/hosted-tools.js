@@ -42,8 +42,10 @@ export const HOSTED_TOOL_NAMES = [
   "get_vat_receipt",
   "list_vat_receipts",
   "render_micro_entity_accounts_sandbox",
+  "render_small_company_accounts_sandbox",
   "request_companies_house_codes",
   "submit_micro_entity_accounts_sandbox",
+  "submit_small_company_accounts_sandbox",
   "poll_submission",
   "get_confirmation_statement_data_sandbox",
   "render_confirmation_statement_sandbox",
@@ -85,7 +87,7 @@ export const HOSTED_OVERRIDES = {
       "Runs one client-scoped tool once per client in the practice's own list (list_clients), passing each client's " +
       "clientId in turn. Returns one row per client -- {clientId, displayName, ok, result or error} -- plus a summary " +
       `count; one client's failure never stops the rest. tool is one of ${HOSTED_RUN_FOR_CLIENTS_TOOLS.join(", ")}. ` +
-      "For submit_micro_entity_accounts_sandbox, put in args a codesEntryId that request_companies_house_codes answered " +
+      "For submit_micro_entity_accounts_sandbox or submit_small_company_accounts_sandbox, put in args a codesEntryId that request_companies_house_codes answered " +
       "for these clients' clientIds; each client's call takes its own codes from it.",
     inputSchema: {
       tool: z.enum(HOSTED_RUN_FOR_CLIENTS_TOOLS).describe("The client-scoped tool to run for every client"),

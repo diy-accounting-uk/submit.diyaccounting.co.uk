@@ -418,6 +418,79 @@ export async function submitMicroEntityAccounts(session, params = {}) {
   return callSubmitApi(session, "/api/v1/companies-house/accounts", { method: "POST", body: { ...body, codesEntryId } });
 }
 
+const SMALL_COMPANY_STATEMENT_FIELDS = [
+  "section477Exemption",
+  "membersNotRequiredAudit",
+  "directorsResponsibilities",
+  "smallCompaniesRegime",
+];
+
+/**
+ * The body both small-company accounts calls take. The routes are the micro-entity ones
+ * (companies-house/accounts and companies-house/accounts/render); a smallCompany section in the
+ * body selects the FRS 102 section 1A regime, so the figures live there and not in a top-level
+ * balanceSheet.
+ */
+function smallCompanyFilingBody(toolName, params, { allowClientId = false } = {}) {
+  const clientId = allowClientId ? params?.clientId : undefined;
+  if (!params?.companyNumber && !clientId) {
+    requireField(toolName, params, "companyNumber");
+  }
+  const companyName = requireField(toolName, params, "companyName");
+  const periodStart = requireField(toolName, params, "periodStart");
+  const periodEnd = requireField(toolName, params, "periodEnd");
+  const averageEmployees = requireField(toolName, params, "averageEmployees");
+  const director = requireField(toolName, params, "director");
+  const statementsAccepted = requireField(toolName, params, "statementsAccepted");
+  const smallCompany = requireField(toolName, params, "smallCompany");
+  if (!smallCompany.balanceSheet?.currentYear) throw new Error(`${toolName} requires smallCompany.balanceSheet.currentYear`);
+  if (!smallCompany.profitAndLoss?.currentYear) throw new Error(`${toolName} requires smallCompany.profitAndLoss.currentYear`);
+  for (const field of SMALL_COMPANY_STATEMENT_FIELDS) {
+    if (statementsAccepted?.[field] !== true) throw new Error(`${toolName} requires statementsAccepted.${field} to be accepted`);
+  }
+  return {
+    ...(params.companyNumber ? { companyNumber: params.companyNumber } : {}),
+    ...(clientId ? { clientId } : {}),
+    companyName,
+    periodStart,
+    periodEnd,
+    averageEmployees: Number(averageEmployees),
+    director,
+    statementsAccepted,
+    smallCompany,
+  };
+}
+
+/**
+ * render_small_company_accounts_sandbox: the rendered FRS 102 section 1A iXBRL for confirmed
+ * figures (derive_small_company_accounts' answer), without reaching the Companies House XML
+ * Gateway. Like the micro-entity render, it takes companyNumber only, not clientId.
+ * @param {Object} session
+ * @param {Object} params - companyNumber, companyName, periodStart, periodEnd, averageEmployees,
+ *   director, statementsAccepted and the smallCompany section
+ */
+export async function renderSmallCompanyAccounts(session, params = {}) {
+  const body = smallCompanyFilingBody("render_small_company_accounts_sandbox", params);
+  return callSubmitApi(session, "/api/v1/companies-house/accounts/render", { method: "POST", body });
+}
+
+/**
+ * submit_small_company_accounts_sandbox: files confirmed small-company figures with the company
+ * authentication code the user typed on the page request_companies_house_codes linked to (the
+ * call carries the entry's id, never the code), for companyNumber or, when clientId is given
+ * instead, for that practice client's own company number. Returns
+ * {submissionNumber, gatewayTimestamp, pollInterval}; poll_submission with kind accounts takes
+ * the submissionNumber to reach the filing's outcome.
+ * @param {Object} session
+ * @param {Object} params - as renderSmallCompanyAccounts, but companyNumber is optional when
+ *   clientId is given, plus codesEntryId
+ */
+export async function submitSmallCompanyAccounts(session, params = {}) {
+  const codesEntryId = requireField("submit_small_company_accounts_sandbox", params, "codesEntryId");
+  const body = smallCompanyFilingBody("submit_small_company_accounts_sandbox", params, { allowClientId: true });
+  return callSubmitApi(session, "/api/v1/companies-house/accounts", { method: "POST", body: { ...body, codesEntryId } });
+}
+
 /**
  * get_confirmation_statement_data_sandbox: the register data a confirmation statement form is built
  * from — MadeUpDate, NextDueDate, SIC codes, RegisteredEmailAddress, officers, PSCs,
@@ -522,8 +595,8 @@ const SUBMISSION_ROUTES = {
 export const SUBMISSION_KINDS = Object.keys(SUBMISSION_ROUTES);
 
 /**
- * poll_submission: the outcome of a Companies House filing of one kind (micro-entity accounts or a
- * confirmation statement) — {submissionNumber, statusCode, companyNumber, rejections}, where
+ * poll_submission: the outcome of a Companies House filing of one kind (micro-entity or small-company
+ * accounts, or a confirmation statement) — {submissionNumber, statusCode, companyNumber, rejections}, where
  * statusCode is "PENDING" while Companies House has not answered yet, "ACCEPT" once filed (with a
  * receiptId added), or "REJECT" with rejections carrying the reasons.
  * @param {Object} session

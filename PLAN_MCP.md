@@ -134,7 +134,7 @@ A customer is one business that files for itself. A practice files for clients a
 
 - A hosted chat cannot save a book. `save_book` is local only.
 - Income Tax files the self-employment quarterly update and annual submission. The web also has final declaration, losses, calculation and business details pages, which have no tool.
-- The small-company accounts and the UK property periods have derive tools and no filing tool. The Company Tax Return has `derive_company_tax_return` and no filing tool.
+- The UK property periods have derive tools and no filing tool. The Company Tax Return has `derive_company_tax_return` and no filing tool.
 
 ## The drop cards
 
@@ -144,7 +144,7 @@ The "Fill from your books" card (`web/public/widgets/books-import.js`) is the we
 |-----------|----------|-------|
 | `vat` | `derive_vat_return` | Matched. |
 | `micro-entity-accounts` | `derive_micro_entity_accounts` | Matched. |
-| `small-company-accounts` | `derive_small_company_accounts` | Figures only. |
+| `small-company-accounts` | `derive_small_company_accounts`, `render_small_company_accounts_sandbox`, `submit_small_company_accounts_sandbox` | Matched. |
 | `itsa-quarterly`, `itsa-annual` | `derive_itsa_*` | Self-employment only. |
 | `uk-property-period`, `uk-property-annual` | `derive_uk_property_period`, `derive_uk_property_annual` | Matched. |
 | `ct600` | `derive_company_tax_return` | Matched. |
@@ -155,7 +155,7 @@ The "Fill from your books" card (`web/public/widgets/books-import.js`) is the we
 - [x] MS1-b. Add a `list_books` tool, local and hosted, over `GET` of the diya-gl list route, so a hosted `open_book` has a `bookId` to take.
 - [x] MS1-c. Add `derive_company_tax_return`, `derive_uk_property_period` and `derive_uk_property_annual`, the MCP twins of the three drop cards that have none.
 - [x] MS1-d. Add the filing partners of the Income Tax derive tools: `submit_itsa_quarterly_update` and `submit_itsa_annual_submission`, over the existing routes and the HMRC grant with `services: ["itsa"]`.
-- [ ] MS1-e. Add `submit_small_company_accounts_sandbox`, `render_small_company_accounts_sandbox` and their kind on `poll_submission`. A client's filing is authorised by its `codesEntryId` (MC1b).
+- [x] MS1-e. Add `submit_small_company_accounts_sandbox`, `render_small_company_accounts_sandbox` and their kind on `poll_submission`. A client's filing is authorised by its `codesEntryId` (MC1b).
 - [x] MS1-f. Merge the two `poll_*_sandbox` tools into `poll_submission` with a `kind`. Update the harness scripts and `REPORT_CAPABILITIES.md` in the same change.
 - [x] MS1-g. Add a `list_vat_receipts` tool over the receipts the account page lists, so a chat can find a receipt it did not just file.
 - [x] MS1-h. State in the descriptions of `get_vat_receipt` and `get_vat_return` when to use the other one.

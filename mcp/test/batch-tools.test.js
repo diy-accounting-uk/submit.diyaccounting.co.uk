@@ -114,6 +114,7 @@ describe("run_for_clients", () => {
         "submit_vat_return",
         "get_vat_receipt",
         "submit_micro_entity_accounts_sandbox",
+        "submit_small_company_accounts_sandbox",
         "open_book",
         "save_book",
       ].sort(),

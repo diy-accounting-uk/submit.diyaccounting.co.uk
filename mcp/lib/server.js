@@ -32,6 +32,8 @@ import {
   listVatReceipts,
   renderMicroEntityAccounts,
   submitMicroEntityAccounts,
+  renderSmallCompanyAccounts,
+  submitSmallCompanyAccounts,
   pollSubmission,
   SUBMISSION_KINDS,
   getConfirmationStatementData,
@@ -80,6 +82,82 @@ const accountsFilingInputSchema = {
       microEntityProvisions: z.boolean(),
     })
     .describe("Every micro-entity exemption statement, confirmed true by the user before filing"),
+};
+
+const smallCompanyBalanceSheetYearSchema = z.object({
+  fixedAssets: z.number(),
+  stocks: z.number(),
+  debtors: z.number(),
+  cashAtBank: z.number(),
+  tradeCreditors: z.number(),
+  corporationTax: z.number(),
+  otherCreditors: z.number(),
+  creditorsAfterOneYear: z.number(),
+  calledUpShareCapital: z.number(),
+  profitAndLossAccount: z.number(),
+  capitalAndReserves: z.number(),
+});
+
+const smallCompanyProfitAndLossYearSchema = z.object({
+  turnover: z.number(),
+  costOfSales: z.number(),
+  grossProfit: z.number(),
+  administrativeExpenses: z.number(),
+  operatingProfit: z.number(),
+  interestReceivable: z.number(),
+  profitBeforeTax: z.number(),
+  tax: z.number(),
+  profit: z.number(),
+});
+
+const fixedAssetClassSchema = z.object({
+  costAtStart: z.number(),
+  additions: z.number(),
+  disposals: z.number(),
+  depreciationAtStart: z.number(),
+  depreciationCharge: z.number(),
+  depreciationOnDisposals: z.number(),
+});
+
+const smallCompanyFilingInputSchema = {
+  companyNumber: z.string().describe("The 8-character Companies House company number"),
+  companyName: z.string().describe("The registered company name"),
+  periodStart: z.string().describe("The accounting period's start date, YYYY-MM-DD"),
+  periodEnd: z.string().describe("The accounting period's end date, YYYY-MM-DD"),
+  averageEmployees: z.number().describe("The average number of employees in the period"),
+  director: z
+    .object({ name: z.string(), dateApproved: z.string().describe("YYYY-MM-DD") })
+    .describe("The signing director and the date the accounts were approved"),
+  statementsAccepted: z
+    .object({
+      section477Exemption: z.boolean(),
+      membersNotRequiredAudit: z.boolean(),
+      directorsResponsibilities: z.boolean(),
+      smallCompaniesRegime: z.boolean(),
+    })
+    .describe("Every small-company statement, confirmed true by the user before filing"),
+  smallCompany: z
+    .object({
+      filleted: z.boolean().optional().describe("True to file the filleted copy, without the profit and loss account"),
+      principalActivity: z.string(),
+      accountingPolicies: z.string(),
+      directors: z.array(z.string()).describe("Every director's name, at least one"),
+      balanceSheet: z.object({
+        currentYear: smallCompanyBalanceSheetYearSchema,
+        priorYear: smallCompanyBalanceSheetYearSchema.optional(),
+      }),
+      profitAndLoss: z.object({
+        currentYear: smallCompanyProfitAndLossYearSchema,
+        priorYear: smallCompanyProfitAndLossYearSchema.optional(),
+      }),
+      fixedAssetNote: z
+        .record(
+          z.enum(["landBuildings", "plantMachinery", "furnitureFittings", "computerEquipment", "motorVehicles"]),
+          fixedAssetClassSchema,
+        )
+        .optional(),
+    })
+    .describe("The figures and notes, as derive_small_company_accounts answers them plus principalActivity and accountingPolicies"),
 };
 
 const confirmationStatementDirectorSchema = z.object({
@@ -456,6 +534,33 @@ export const TOOLS = {
     },
     handler: submitMicroEntityAccounts,
   },
+  render_small_company_accounts_sandbox: {
+    description:
+      "The rendered FRS 102 section 1A small-company iXBRL for confirmed figures (derive_small_company_accounts' answer, " +
+      "with principalActivity and accountingPolicies added), over the deployed API. Never reaches the Companies House XML " +
+      "Gateway. The route never resolves a company from a practice client's row, so this tool takes companyNumber only, " +
+      "not clientId.",
+    inputSchema: smallCompanyFilingInputSchema,
+    handler: renderSmallCompanyAccounts,
+  },
+  submit_small_company_accounts_sandbox: {
+    description:
+      "Files confirmed small-company accounts through the Companies House XML Gateway, over the deployed API, for " +
+      "companyNumber or, when clientId is given instead, for that practice client's own company number; returns the " +
+      "submission number. The company authentication code is not an argument: the user types it on the link " +
+      "request_companies_house_codes answers (kind accounts), and this call names that entry by codesEntryId. A single entry " +
+      "is used up by this call; a batch entry (clientIds) gives up only this clientId's codes, so run_for_clients can pass " +
+      "one codesEntryId for every client. poll_submission with kind accounts reaches the outcome.",
+    inputSchema: {
+      ...smallCompanyFilingInputSchema,
+      companyNumber: smallCompanyFilingInputSchema.companyNumber.optional().describe("Required unless clientId is given"),
+      clientId: z.string().optional().describe("A practice client's id, to resolve companyNumber from the client row instead"),
+      codesEntryId: z
+        .string()
+        .describe("The entryId request_companies_house_codes answered, once the user has typed the codes on its link"),
+    },
+    handler: submitSmallCompanyAccounts,
+  },
   request_companies_house_codes: {
     description:
       "Answers a link where the user types the Companies House codes a filing needs, so the codes never appear in " +
@@ -464,7 +569,7 @@ export const TOOLS = {
       "used up by one filing call; ask again for a second filing. To file for several practice clients through " +
       "run_for_clients, give clientIds (kind accounts or confirmation-statement-data, no companyNumber): the page then asks " +
       "for one company authentication code per client by name, and each client's filing call takes only its own client's codes, so " +
-      "the one entryId serves the whole batch. kind accounts is for submit_micro_entity_accounts_sandbox, " +
+      "the one entryId serves the whole batch. kind accounts is for submit_micro_entity_accounts_sandbox and submit_small_company_accounts_sandbox, " +
       "confirmation-statement-data for get_confirmation_statement_data_sandbox, and confirmation-statement (with " +
       "directors, in the order the filing lists them) for submit_confirmation_statement_sandbox. Over the deployed API.",
     inputSchema: {
@@ -523,7 +628,7 @@ export const TOOLS = {
   poll_submission: {
     description:
       "Accepted, rejected with reasons, or pending, for a submitted Companies House filing, over the deployed API. kind " +
-      "accounts is a micro-entity accounts filing (submit_micro_entity_accounts_sandbox); kind confirmation-statement is " +
+      "accounts is a micro-entity or small-company accounts filing (submit_micro_entity_accounts_sandbox, submit_small_company_accounts_sandbox); kind confirmation-statement is " +
       "a confirmation statement (submit_confirmation_statement_sandbox).",
     inputSchema: {
       kind: z.enum(SUBMISSION_KINDS).describe("accounts or confirmation-statement"),
@@ -594,7 +699,7 @@ export const TOOLS = {
       "Runs one client-scoped tool once per client in the practice's own list (list_clients), passing each client's " +
       "clientId in turn. Returns one row per client -- {clientId, displayName, ok, result or error} -- plus a summary " +
       "count; one client's failure never stops the rest. tool is one of list_vat_obligations, submit_vat_return, " +
-      "get_vat_receipt, submit_micro_entity_accounts_sandbox, open_book, save_book. For submit_micro_entity_accounts_sandbox, " +
+      "get_vat_receipt, submit_micro_entity_accounts_sandbox, submit_small_company_accounts_sandbox, open_book, save_book. For the two accounts tools, " +
       "put in args a codesEntryId that request_companies_house_codes answered for these clients' clientIds; each client's call " +
       "takes its own codes from it.",
     inputSchema: {

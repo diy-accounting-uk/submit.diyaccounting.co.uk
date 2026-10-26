@@ -141,6 +141,7 @@ describe("the server", () => {
       "poll_submission",
       "render_confirmation_statement_sandbox",
       "render_micro_entity_accounts_sandbox",
+      "render_small_company_accounts_sandbox",
       "request_companies_house_codes",
       "request_hmrc_authorisation",
       "run_for_clients",
@@ -149,6 +150,7 @@ describe("the server", () => {
       "sign_out",
       "submit_confirmation_statement_sandbox",
       "submit_micro_entity_accounts_sandbox",
+      "submit_small_company_accounts_sandbox",
       "submit_vat_return",
       "write_finance_package",
     ]);
