@@ -117,6 +117,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts: use when the FRS 102/105 taxonomy fixture needs refreshing, or a generated iXBRL document needs checking against Companies House's validator.
     - [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it: use when an accounts or CT computations iXBRL builder changes, or a document must be checked before it is filed.
     - [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does: use when accounts test or live submissions are about to go to Companies House, or the operator asks for a walk-through of the review results.
+    - [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would: use when a companies-house-review run has finished, before any accounts submission or retest email cites it, or the operator asks whether the accounts are ready for Companies House.
     - [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack: use when adding, renaming or rewiring a Companies House Lambda function or its API Gateway route.
 - **[Billing and entitlements](#billing-and-entitlements-bill)**
   - [Bundle grants and entitlements](#bundle-grants-and-entitlements-bill)
@@ -1303,7 +1304,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Micro-entity accounts filing](#micro-entity-accounts-filing-ch): [CH-07](#ch-07-render-micro-entity-accounts-for-review) Render micro-entity accounts for review · [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house) File micro-entity accounts to Companies House
 - [Company Tax Return filing](#company-tax-return-filing-ch): [CH-15](#ch-15-file-a-company-tax-return-with-hmrc) File a Company Tax Return with HMRC
 - [Filing infrastructure](#filing-infrastructure-ch): [CH-09](#ch-09-query-and-submit-document-transactions) Query and submit document transactions · [CH-10](#ch-10-fetch-http-with-a-timeout) Fetch HTTP with a timeout · [CH-11](#ch-11-parse-xml-safely) Parse XML safely
-- [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
+- [Test, validation and provisioning](#test-validation-and-provisioning-ch): [CH-12](#ch-12-generate-synthetic-test-companies) Generate synthetic test companies · [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts · [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it · [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does · [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would · [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:area CH -->
 
 ### OAuth and identity (CH)
@@ -1475,6 +1476,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts) Map the FRC iXBRL taxonomy and validate accounts
 - [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it) Check an accounts iXBRL document as a reader sees it
 - [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does) Review accounts filings as the Companies House XML team does
+- [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would) Judge a Companies House review as the XML team would
 - [CH-14](#ch-14-provision-the-companies-house-cdk-stack) Provision the Companies House CDK stack
 <!-- /generated:group test-validation-and-provisioning-ch -->
 
@@ -1517,6 +1519,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/companies-house-review/SKILL.md, scripts/companies-house-review.mjs, scripts/fixtures/companies-house-test-service-cases.json
 - **Keywords:** companies house, xml gateway, accounts review, ixbrl, accounts data product, example accounts, filleted, micro-entity, dormant, findings, walkthrough
 - **Related:** CH-13, CH-16
+
+#### CH-18 Judge a Companies House review as the XML team would
+
+- **Use when:** a companies-house-review run has finished, before any accounts submission or retest email cites it, or the operator asks whether the accounts are ready for Companies House.
+- **Does:** The companies-house-judge skill moves our data into source/ and the other company's example into reference/, reconciles every input figure against its tagged value and visible text, recomputes every total, and renders one index.html per review. The session reads every file and screenshot as an LLM judge, writes judge.json with a verdict, added checks and reasoning per case, and boards a NEXT.md row per cause.
+- **Run:** `/companies-house-judge`; `python3 -I .claude/skills/companies-house-judge/prepare_sources.py <review folder>`; `python3 -I .claude/skills/companies-house-judge/build_review.py <review folder>`
+- **Entry:** `.claude/skills/companies-house-judge/SKILL.md`; `.claude/skills/companies-house-judge/build_review.py:main`
+- **Files:** .claude/skills/companies-house-judge/SKILL.md, .claude/skills/companies-house-judge/prepare_sources.py, .claude/skills/companies-house-judge/build_review.py
+- **Keywords:** companies house, llm judge, reconciliation, source data, reference example, index.html, judge.json, triage, xml gateway, retest
+- **Related:** CH-17, CH-16
 
 #### CH-14 Provision the Companies House CDK stack
 
@@ -6259,7 +6271,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - commit signatures: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
 - commits: [DATA-07](#data-07-pull-github-operator-effort-data)
 - community page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
-- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
+- companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - companies house codes: [MCP-20](#mcp-20-take-companies-house-codes-on-a-page-instead-of-in-the-chat)
 - company accounts: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
@@ -6921,6 +6933,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - independent recalculation: [SS-01](#ss-01-run-the-diya-gl-calculation-engine)
 - index: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - index-only: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
+- index.html: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would)
 - index.json: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - indexeddb: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - infosec runbook: [OPS-64](#ops-64-runbook-information-security-operations)
@@ -6979,6 +6992,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - jszip: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - judge reconciliation: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - judge rubric: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
+- judge.json: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would)
 - judgement pass: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - jwt: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - kb-search: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
@@ -7041,7 +7055,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - listlapsedbundleowners: [BILL-21](#bill-21-sweep-lapsed-diya-gl-books)
 - live mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
 - llm as judge: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
-- llm judge: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
+- llm judge: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - llm voice tells: [DEV-38](#dev-38-write-plain-human-prose)
 - llm-voice: [SS-57](#ss-57-write-plain-human-prose)
 - loading spinner: [SITE-14](#site-14-render-page-chrome-and-widgets)
@@ -7484,7 +7498,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - recognition email: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - reconcile: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - reconcile stripe: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
-- reconciliation: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
+- reconciliation: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - reconciliation pages: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - recording: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
 - recover checkout: [BILL-27](#bill-27-recover-an-abandoned-checkout)
@@ -7498,6 +7512,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - redirect-function.js: [SS-24](#ss-24-compile-the-redirect-engine)
 - redirects.toml: [SS-24](#ss-24-compile-the-redirect-engine)
 - reference check: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
+- reference example: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would)
 - references page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - refine: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - refine skill: [SS-48](#ss-48-refine-nextmd-before-a-wave)
@@ -7559,6 +7574,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - resume work: [DEV-36](#dev-36-resume-normal-work-from-cool-down), [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - retention: [BILL-17](#bill-17-upload-a-diya-gl-book), [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
 - retention days: [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently)
+- retest: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would)
 - retire.js: [SS-45](#ss-45-run-compliance-checks)
 - retrieved: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - retrieveuserbundles: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
@@ -7744,6 +7760,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - software composition: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - sole trader: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
 - sonnet escalation: [OPS-18](#ops-18-run-alarm-and-support-triage)
+- source data: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would)
 - source-derived: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - sourced facts: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - spdx: [DEV-20](#dev-20-check-spdx-licence-headers)
@@ -7944,7 +7961,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - transform: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - trend: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - trend deep link: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
-- triage: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
+- triage: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
 - triage agent: [OPS-18](#ops-18-run-alarm-and-support-triage)
 - triage workflow: [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - triage-generated pr: [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope)
@@ -8118,7 +8135,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - xlsx export: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - xlsx xml: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - xml: [CH-11](#ch-11-parse-xml-safely)
-- xml gateway: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-11](#ch-11-parse-xml-safely), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
+- xml gateway: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-11](#ch-11-parse-xml-safely), [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - xml submission: [CH-05](#ch-05-file-a-change-of-registered-office-address)
 - xmldom: [CH-11](#ch-11-parse-xml-safely)
 - xxe: [CH-11](#ch-11-parse-xml-safely)
