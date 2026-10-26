@@ -4,9 +4,9 @@
 // hosted-tools.js -- the tools the hosted MCP endpoint registers, and the two
 // that change shape there: open_book reads the DIYA cloud only, and
 // derive_itsa_annual_submission answers without writing a file. The tools left
-// out are the sign-in pair (the connector owns sign-in), the filesystem tools,
-// the practice tools that still take an HMRC token as an argument, and the
-// fan-out over every client.
+// out are the sign-in pair (the connector owns sign-in) and the filesystem
+// tools. The practice tools (invite_client, client_authorisation_status,
+// run_for_clients) read the session's HMRC grant and take no token argument.
 
 import { z } from "zod";
 
@@ -39,6 +39,9 @@ export const HOSTED_TOOL_NAMES = [
   "list_clients",
   "add_client",
   "move_book_to_client",
+  "invite_client",
+  "client_authorisation_status",
+  "run_for_clients",
 ];
 
 export const HOSTED_OVERRIDES = {

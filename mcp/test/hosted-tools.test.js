@@ -8,15 +8,7 @@ import { HOSTED_OVERRIDES, HOSTED_TOOL_NAMES } from "../lib/hosted-tools.js";
 import { ITSA_TOOLS } from "../lib/itsa-tools.js";
 import { createServer, TOOLS } from "../lib/server.js";
 
-const NOT_HOSTED = [
-  "sign_in",
-  "sign_out",
-  "save_book",
-  "write_finance_package",
-  "invite_client",
-  "client_authorisation_status",
-  "run_for_clients",
-];
+const NOT_HOSTED = ["sign_in", "sign_out", "save_book", "write_finance_package"];
 
 describe("the hosted tool set", () => {
   it("names only registered tools, and leaves out exactly the tools that cannot run hosted", () => {
