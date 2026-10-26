@@ -269,12 +269,12 @@
     "balanceSheet": {
       "currentYear": {
         "fixedAssets": 0,
-        "currentAssets": 5200,
-        "creditorsWithinOneYear": 3466,
+        "currentAssets": 8300,
+        "creditorsWithinOneYear": 3468,
         "creditorsAfterOneYear": 0,
         "calledUpShareCapital": 100,
-        "profitAndLossAccount": 1634,
-        "capitalAndReserves": 1734
+        "profitAndLossAccount": 4732,
+        "capitalAndReserves": 4832
       },
       "priorYear": {
         "fixedAssets": 0,
@@ -286,7 +286,7 @@
         "capitalAndReserves": 134
       }
     },
-    "averageEmployees": 1,
+    "averageEmployees": 0,
     "director": {
       "name": "Antony Christopher Cartwright",
       "dateApproved": "2026-09-15"
@@ -300,7 +300,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": true,
-      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic."
+      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025)."
     }
   },
   {
@@ -362,7 +362,7 @@
     "companyAuthCode": "AUTH09",
     "periodStart": "2025-04-01",
     "periodEnd": "2026-03-31",
-    "averageEmployees": 1,
+    "averageEmployees": 0,
     "director": {
       "name": "Antony Christopher Cartwright",
       "dateApproved": "2026-09-15"
@@ -375,31 +375,31 @@
     },
     "smallCompany": {
       "filleted": false,
-      "principalActivity": "Retail sale via mail order houses or via Internet (SIC 47910): online accounting software and services",
+      "principalActivity": "Retailer of accounting software",
       "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
-      "directors": ["Antony Christopher Cartwright"],
+      "directors": ["Antony Christopher Cartwright", "Samantha Ashley Cartwright", "Jane Elizabeth Grundy"],
       "balanceSheet": {
         "currentYear": {
           "fixedAssets": 800,
           "stocks": 0,
-          "debtors": 1200,
-          "cashAtBank": 3000,
-          "tradeCreditors": 1000,
-          "corporationTax": 494,
-          "otherCreditors": 1266,
+          "debtors": 800,
+          "cashAtBank": 5200,
+          "tradeCreditors": 500,
+          "corporationTax": 1102,
+          "otherCreditors": 366,
           "creditorsAfterOneYear": 0,
           "calledUpShareCapital": 100,
-          "profitAndLossAccount": 2140,
-          "capitalAndReserves": 2240
+          "profitAndLossAccount": 4732,
+          "capitalAndReserves": 4832
         },
         "priorYear": {
           "fixedAssets": 0,
           "stocks": 0,
           "debtors": 1200,
           "cashAtBank": 2153,
-          "tradeCreditors": 1500,
-          "corporationTax": 0,
-          "otherCreditors": 1719,
+          "tradeCreditors": 500,
+          "corporationTax": 984,
+          "otherCreditors": 1735,
           "creditorsAfterOneYear": 0,
           "calledUpShareCapital": 100,
           "profitAndLossAccount": 34,
@@ -408,26 +408,26 @@
       },
       "profitAndLoss": {
         "currentYear": {
-          "turnover": 24000,
-          "costOfSales": 3000,
-          "grossProfit": 21000,
-          "administrativeExpenses": 18400,
-          "operatingProfit": 2600,
+          "turnover": 8500,
+          "costOfSales": 0,
+          "grossProfit": 8500,
+          "administrativeExpenses": 2700,
+          "operatingProfit": 5800,
           "interestReceivable": 0,
-          "profitBeforeTax": 2600,
-          "tax": 494,
-          "profit": 2106
+          "profitBeforeTax": 5800,
+          "tax": 1102,
+          "profit": 4698
         },
         "priorYear": {
-          "turnover": 12000,
-          "costOfSales": 1500,
-          "grossProfit": 10500,
-          "administrativeExpenses": 10466,
-          "operatingProfit": 34,
-          "interestReceivable": 0,
-          "profitBeforeTax": 34,
-          "tax": 0,
-          "profit": 34
+          "turnover": 7639,
+          "costOfSales": 0,
+          "grossProfit": 7639,
+          "administrativeExpenses": 2482,
+          "operatingProfit": 5157,
+          "interestReceivable": 22,
+          "profitBeforeTax": 5179,
+          "tax": 984,
+          "profit": 4195
         }
       },
       "fixedAssetNote": {
@@ -444,7 +444,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic."
+      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025). The prior-year profit and loss is the filed 2025 one, with its 22 of other income shown as interest receivable because the builder has no other operating income line."
     }
   },
   {
@@ -456,7 +456,7 @@
     "companyAuthCode": "AUTH09",
     "periodStart": "2025-04-01",
     "periodEnd": "2026-03-31",
-    "averageEmployees": 1,
+    "averageEmployees": 0,
     "director": {
       "name": "Antony Christopher Cartwright",
       "dateApproved": "2026-09-15"
@@ -469,31 +469,31 @@
     },
     "smallCompany": {
       "filleted": true,
-      "principalActivity": "Retail sale via mail order houses or via Internet (SIC 47910): online accounting software and services",
+      "principalActivity": "Retailer of accounting software",
       "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
-      "directors": ["Antony Christopher Cartwright"],
+      "directors": ["Antony Christopher Cartwright", "Samantha Ashley Cartwright", "Jane Elizabeth Grundy"],
       "balanceSheet": {
         "currentYear": {
           "fixedAssets": 800,
           "stocks": 0,
-          "debtors": 1200,
-          "cashAtBank": 3000,
-          "tradeCreditors": 1000,
-          "corporationTax": 494,
-          "otherCreditors": 1266,
+          "debtors": 800,
+          "cashAtBank": 5200,
+          "tradeCreditors": 500,
+          "corporationTax": 1102,
+          "otherCreditors": 366,
           "creditorsAfterOneYear": 0,
           "calledUpShareCapital": 100,
-          "profitAndLossAccount": 2140,
-          "capitalAndReserves": 2240
+          "profitAndLossAccount": 4732,
+          "capitalAndReserves": 4832
         },
         "priorYear": {
           "fixedAssets": 0,
           "stocks": 0,
           "debtors": 1200,
           "cashAtBank": 2153,
-          "tradeCreditors": 1500,
-          "corporationTax": 0,
-          "otherCreditors": 1719,
+          "tradeCreditors": 500,
+          "corporationTax": 984,
+          "otherCreditors": 1735,
           "creditorsAfterOneYear": 0,
           "calledUpShareCapital": 100,
           "profitAndLossAccount": 34,
@@ -502,26 +502,26 @@
       },
       "profitAndLoss": {
         "currentYear": {
-          "turnover": 24000,
-          "costOfSales": 3000,
-          "grossProfit": 21000,
-          "administrativeExpenses": 18400,
-          "operatingProfit": 2600,
+          "turnover": 8500,
+          "costOfSales": 0,
+          "grossProfit": 8500,
+          "administrativeExpenses": 2700,
+          "operatingProfit": 5800,
           "interestReceivable": 0,
-          "profitBeforeTax": 2600,
-          "tax": 494,
-          "profit": 2106
+          "profitBeforeTax": 5800,
+          "tax": 1102,
+          "profit": 4698
         },
         "priorYear": {
-          "turnover": 12000,
-          "costOfSales": 1500,
-          "grossProfit": 10500,
-          "administrativeExpenses": 10466,
-          "operatingProfit": 34,
-          "interestReceivable": 0,
-          "profitBeforeTax": 34,
-          "tax": 0,
-          "profit": 34
+          "turnover": 7639,
+          "costOfSales": 0,
+          "grossProfit": 7639,
+          "administrativeExpenses": 2482,
+          "operatingProfit": 5157,
+          "interestReceivable": 22,
+          "profitBeforeTax": 5179,
+          "tax": 984,
+          "profit": 4195
         }
       },
       "fixedAssetNote": {
@@ -538,7 +538,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic."
+      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025). The prior-year profit and loss is the filed 2025 one, with its 22 of other income shown as interest receivable because the builder has no other operating income line."
     }
   }
 ]
