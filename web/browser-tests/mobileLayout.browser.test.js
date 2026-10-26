@@ -101,6 +101,28 @@ test.describe("Mobile layout - no page-level horizontal scroll", () => {
   }
 });
 
+test.describe("Mobile layout - spreadsheet pages at 390px", () => {
+  for (const pagePath of ["spreadsheets.html", "diy-accounting-spreadsheets.html"]) {
+    test(`${pagePath} is no wider than the viewport at 390px`, async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 800 });
+      await serveRealSite(page);
+      await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "domcontentloaded" });
+      await delay(300);
+
+      const widths = await page.evaluate(() => ({
+        scroll: document.documentElement.scrollWidth,
+        client: document.documentElement.clientWidth,
+        wide: [...document.body.querySelectorAll("*")]
+          .filter((el) => el.getBoundingClientRect().right > document.documentElement.clientWidth + 0.5)
+          .slice(0, 5)
+          .map((el) => `${el.tagName.toLowerCase()}.${el.className}`),
+      }));
+      expect(widths.scroll, `too wide: ${widths.wide.join(", ")}`).toBeLessThanOrEqual(widths.client);
+      expect(await hasRealHorizontalScroll(page)).toBe(false);
+    });
+  }
+});
+
 test.describe("Mobile layout - specific findings", () => {
   test("header auth section wraps instead of clipping the Logout link at 375px", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });

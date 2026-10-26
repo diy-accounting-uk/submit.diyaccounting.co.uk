@@ -284,6 +284,20 @@ public class EdgeStack extends Stack {
                                         "arn:aws:cloudfront::" + this.getAccount() + ":distribution/*")))
                 .build());
 
+        // With s3:ListBucket, S3 answers 404 for a missing key; without it S3 answers 403.
+        this.originBucket.addToResourcePolicy(PolicyStatement.Builder.create()
+                .sid("AllowCloudFrontListViaOAC")
+                .principals(List.of(new ServicePrincipal("cloudfront.amazonaws.com")))
+                .actions(List.of("s3:ListBucket"))
+                .resources(List.of(this.originBucket.getBucketArn()))
+                .conditions(Map.of(
+                        "StringEquals", Map.of("AWS:SourceAccount", this.getAccount()),
+                        "ArnLike",
+                                Map.of(
+                                        "AWS:SourceArn",
+                                        "arn:aws:cloudfront::" + this.getAccount() + ":distribution/*")))
+                .build());
+
         S3OriginAccessControl oac = S3OriginAccessControl.Builder.create(this, "MyOAC")
                 .signing(Signing.SIGV4_ALWAYS) // NEVER // SIGV4_NO_OVERRIDE
                 .build();

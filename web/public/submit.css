@@ -1383,7 +1383,9 @@ textarea.input--error {
 
 .btn {
   width: 100%;
+  max-width: 100%;
   font-size: var(--step-1);
+  overflow-wrap: anywhere;
 }
 
 .btn-secondary,

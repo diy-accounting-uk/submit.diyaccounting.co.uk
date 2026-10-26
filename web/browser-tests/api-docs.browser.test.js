@@ -22,11 +22,12 @@ const EDGE_CSP =
   "default-src 'self'; " +
   "script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com https://accounts.google.com https://apis.google.com https://www.gstatic.com; " +
   "style-src 'self' 'unsafe-inline' https://www.gstatic.com; img-src 'self' data:; connect-src 'self'";
+const DEPLOYED_HOST = "submit.example.test";
 
 async function serveRealSiteWithEdgePolicy(page) {
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
-    if (url.hostname !== "localhost") {
+    if (url.hostname !== "localhost" && url.hostname !== DEPLOYED_HOST) {
       await route.abort();
       return;
     }
@@ -65,5 +66,22 @@ test.describe("page load", () => {
     expect(failedRequests).toEqual([]);
     expect(consoleErrors).toEqual([]);
     expect(pageErrors).toEqual([]);
+  });
+
+  test("a deployed host loads no validator badge and raises no content security policy violation", async ({ page }) => {
+    const validatorRequests = [];
+    const violations = [];
+    page.on("request", (request) => {
+      if (new URL(request.url()).hostname === "validator.swagger.io") validatorRequests.push(request.url());
+    });
+    page.on("console", (message) => {
+      if (message.type() === "error" && /Content Security Policy/i.test(message.text())) violations.push(message.text());
+    });
+    await serveRealSiteWithEdgePolicy(page);
+    await page.goto(`https://${DEPLOYED_HOST}/docs/api/index.html`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#swagger-ui .opblock").first()).toBeVisible({ timeout: 30000 });
+    await page.waitForLoadState("networkidle");
+    expect(validatorRequests).toEqual([]);
+    expect(violations).toEqual([]);
   });
 });

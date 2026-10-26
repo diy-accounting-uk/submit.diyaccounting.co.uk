@@ -175,6 +175,34 @@ class EdgeStackTest {
     }
 
     @Test
+    void originBucketLetsCloudFrontListSoAMissingKeyAnswers404NotForbidden() {
+        Template template = Template.fromStack(synthEdgeStack());
+        template.hasResourceProperties(
+                "AWS::S3::BucketPolicy",
+                Map.of(
+                        "PolicyDocument",
+                        Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Sid",
+                                        "AllowCloudFrontListViaOAC",
+                                        "Action",
+                                        "s3:ListBucket",
+                                        "Effect",
+                                        "Allow",
+                                        "Principal",
+                                        Map.of("Service", "cloudfront.amazonaws.com"),
+                                        "Condition",
+                                        Map.of(
+                                                "StringEquals",
+                                                Map.of("AWS:SourceAccount", "111111111111"),
+                                                "ArnLike",
+                                                Map.of(
+                                                        "AWS:SourceArn",
+                                                        "arn:aws:cloudfront::111111111111:distribution/*")))))))));
+    }
+
+    @Test
     void contentSecurityPolicyScriptSrcCarriesNoUnsafeInline() {
         String templateJson = Template.fromStack(synthEdgeStack()).toJSON().toString();
         java.util.regex.Matcher matcher =
