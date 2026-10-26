@@ -301,58 +301,6 @@
       ]
     },
     {
-      "id": "annual-submission",
-      "chapter": "Year end: annual submission",
-      "still": true,
-      "steps": [
-        {
-          "action": "goto",
-          "url": "/hmrc/itsa/ukPropertyAnnualSubmission.html",
-          "waitFor": "#itsaAnnualLoadForm",
-          "caption": "Once the year's quarters are in, the year-end steps start here.",
-          "headline": "Year-end steps start",
-          "keyWord": "Year-end"
-        },
-        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
-        { "action": "fill", "target": "#businessId", "value": "XPIS00000000002" },
-        { "action": "select", "target": "#taxYear", "value": "2026-27" },
-        {
-          "action": "click",
-          "target": "#loadBtn",
-          "caption": "Load what HMRC already holds for the year.",
-          "headline": "Load the year so far",
-          "keyWord": "Load"
-        },
-        { "action": "await", "until": "#annualEditForm", "label": "Loading the annual submission" },
-        {
-          "action": "click",
-          "target": "#allowanceTypePropertyIncome",
-          "caption": "Claim the property income allowance instead of itemised ones.",
-          "headline": "Claim the property allowance",
-          "keyWord": "allowance"
-        },
-        { "action": "fill", "target": "#propertyIncomeAllowance", "value": "1000" },
-        { "action": "fill", "target": "#privateUseAdjustment", "value": "0" },
-        {
-          "action": "click",
-          "target": "#saveBtn",
-          "caption": "Save the year's allowances and adjustments.",
-          "headline": "Save allowances and adjustments",
-          "keyWord": "adjustments"
-        },
-        {
-          "action": "await",
-          "until": "#annualSubmissionResults",
-          "label": "Waiting for HMRC",
-          "timeoutMs": 60000,
-          "caption": "HMRC accepts the annual submission.",
-          "headline": "HMRC accepts the year",
-          "keyWord": "accepts"
-        },
-        { "action": "hold", "ms": 500 }
-      ]
-    },
-    {
       "id": "adjustments",
       "chapter": "Year end: adjustable summary",
       "still": true,
@@ -418,6 +366,92 @@
         { "action": "hold", "ms": 2500 },
         { "action": "still", "name": "uk-property-adjustments" },
         { "action": "hold", "ms": 1200 }
+      ]
+    },
+    {
+      "id": "annual-submission",
+      "chapter": "Year end: annual submission",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/ukPropertyAnnualSubmission.html",
+          "waitFor": "#itsaAnnualLoadForm",
+          "caption": "The last year-end step saves the annual submission.",
+          "headline": "The annual submission",
+          "keyWord": "annual"
+        },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        { "action": "fill", "target": "#businessId", "value": "XPIS00000000002" },
+        { "action": "select", "target": "#taxYear", "value": "2026-27" },
+        {
+          "action": "click",
+          "target": "#loadBtn",
+          "caption": "Load what HMRC already holds for the year.",
+          "headline": "Load the year so far",
+          "keyWord": "Load"
+        },
+        { "action": "await", "until": "#annualEditForm", "label": "Loading the annual submission" },
+        {
+          "action": "click",
+          "target": "#allowanceTypePropertyIncome",
+          "caption": "Claim the property income allowance instead of itemised ones.",
+          "headline": "Claim the property allowance",
+          "keyWord": "allowance"
+        },
+        { "action": "fill", "target": "#propertyIncomeAllowance", "value": "1000" },
+        { "action": "fill", "target": "#privateUseAdjustment", "value": "0" },
+        {
+          "action": "click",
+          "target": "#saveBtn",
+          "caption": "Save the year's allowances and adjustments.",
+          "headline": "Save allowances and adjustments",
+          "keyWord": "adjustments"
+        },
+        {
+          "action": "await",
+          "until": "#annualSubmissionResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC accepts the annual submission.",
+          "headline": "HMRC accepts the year",
+          "keyWord": "accepts"
+        },
+        {
+          "action": "point",
+          "scrollTo": "#annualSubmissionCopy .customer-copy-header",
+          "target": "#annualSubmissionCopy .customer-copy-header",
+          "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
+          "headline": "The record as submitted",
+          "keyWord": "record",
+          "dwellMs": 600
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "point",
+          "scrollTo": "#annualSubmissionCopy .customer-copy-section:nth-of-type(2)",
+          "target": "#annualSubmissionCopy .customer-copy-section:nth-of-type(2)",
+          "caption": "Every figure you claimed is on the record, ready to keep.",
+          "headline": "Keep this copy",
+          "keyWord": "keep",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
+        {
+          "action": "hold",
+          "ms": 800
+        },
+        {
+          "action": "still",
+          "name": "itsa-uk-property-annual-record"
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        }
       ]
     }
   ]

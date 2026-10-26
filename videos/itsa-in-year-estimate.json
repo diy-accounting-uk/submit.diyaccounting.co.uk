@@ -145,9 +145,6 @@
         },
         {
           "action": "hmrcAuthorise",
-          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
-          "headline": "Grant access, faster",
-          "keyWord": "faster",
           "timeoutMs": 60000,
           "fastForward": true
         },
@@ -159,6 +156,13 @@
           "caption": "HMRC shows this disclaimer before any figure.",
           "headline": "HMRC's disclaimer first",
           "keyWord": "disclaimer"
+        },
+        {
+          "action": "caption",
+          "text": "See the full HMRC access walkthrough in our HMRC authorisation video.",
+          "holdMs": 1200,
+          "headline": "Grant access, faster",
+          "keyWord": "faster"
         },
         {
           "action": "point",
@@ -176,8 +180,41 @@
           "keyWord": "owes",
           "dwellMs": 700
         },
-        { "action": "still", "name": "in-year-estimate" },
-        { "action": "hold", "ms": 1200 }
+        {
+          "action": "point",
+          "scrollTo": "#calculationCopy .customer-copy-header",
+          "target": "#calculationCopy .customer-copy-header",
+          "caption": "This is the estimate as HMRC made it: the calculation ID, its status and the date.",
+          "headline": "The estimate as made",
+          "keyWord": "estimate",
+          "dwellMs": 600
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "point",
+          "scrollTo": "#calculationCopy .customer-copy-section",
+          "target": "#calculationCopy .customer-copy-section",
+          "caption": "What is due and how it is made up, as calculated so far.",
+          "headline": "What is due so far",
+          "keyWord": "due",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
+        {
+          "action": "hold",
+          "ms": 800
+        },
+        {
+          "action": "still",
+          "name": "in-year-estimate"
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        }
       ]
     }
   ]

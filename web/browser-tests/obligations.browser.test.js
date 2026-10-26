@@ -124,6 +124,32 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
     await expect(ninoInput).toHaveValue("AB123456C");
   });
 
+  test("fills the carried NINO and leaves the optional business ID empty", async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem("carriedNino", "AB123456C");
+      sessionStorage.setItem("carriedBusinessId", "XBIS00000000001");
+    });
+    await page.route("**/*.js", async (route) => {
+      const request = route.request();
+      if (request.resourceType() === "script") {
+        await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+      } else {
+        await route.continue();
+      }
+    });
+    await page.route("**/hmrc/itsa/obligations.html", async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: obligationsHtmlContent });
+    });
+    await serveItsaPageScripts(page);
+    await serveCarriedIdentifiers(page);
+
+    await page.goto("http://localhost:3000/hmrc/itsa/obligations.html", { waitUntil: "domcontentloaded" });
+    await delay(200);
+
+    await expect(page.locator("#nino")).toHaveValue("AB123456C");
+    await expect(page.locator("#businessId")).toHaveValue("");
+  });
+
   test("displays a table row per obligation when results render", async ({ page }) => {
     await page.route("**/*.js", async (route) => {
       const request = route.request();

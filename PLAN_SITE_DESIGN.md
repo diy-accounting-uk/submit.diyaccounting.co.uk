@@ -557,9 +557,9 @@ DS1 took every page signed out, so these states need a signed-in DS1 run before 
 
 ### SQ1: every walkthrough frame, judged
 
-516 frames in 44 videos. 485 pass, 31 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
+536 frames in 44 videos. 511 pass, 25 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
 
-Fails by cause: O 4 (`change-registered-office`), E 18 (re-cut videos), 1 thirteen (`generate-pass-digital` 2, `itsa-year` 4 and `itsa-quarterly-from-books` 3 from the simulator recordings, which show `http://localhost:3000` pass links and "Period ID -" or "Submission ID -" where the ci run showed real ids).
+Fails by cause: O 4 (`change-registered-office`), E 20 (the 18 listed below, and the "Adjustment submitted" frame of `itsa-uk-property-year` and `itsa-year-part`), 1 one (`itsa-in-year-estimate` in-year-estimate-3: the simulator's grant page).
 
 Not re-cut, frames unchanged: `change-registered-email` (passes), `change-registered-office` (no recording on this machine).
 
@@ -577,21 +577,21 @@ Not re-cut, frames unchanged: `change-registered-email` (passes), `change-regist
 | file-micro-entity-accounts | 16 | 16 | none |
 | file-psc-verification-statement | 12 | 12 | none |
 | file-small-company-accounts | 21 | 21 | none |
-| generate-pass-digital | 4 | 2 | generate-3 1; generate-5 1 |
+| generate-pass-digital | 4 | 4 | none |
 | generate-pass-physical | 1 | 1 | none |
 | hmrc-authorise | 2 | 0 | authorise E; results E |
-| itsa-annual-from-book | 8 | 8 | none |
+| itsa-annual-from-book | 9 | 9 | none |
 | itsa-business-details | 7 | 6 | results E |
 | itsa-carry-back-adjustments | 9 | 9 | none |
 | itsa-foreign-property-losses | 12 | 12 | none |
-| itsa-in-year-estimate | 8 | 8 | none |
+| itsa-in-year-estimate | 10 | 9 | in-year-estimate-3 1 |
 | itsa-loss-claims | 12 | 12 | none |
-| itsa-quarterly-from-books | 14 | 11 | submit-1 1; submit-2 1; submit-5 1 |
-| itsa-quarterly-update | 22 | 22 | none |
-| itsa-self-employment-amend | 13 | 13 | none |
-| itsa-uk-property-year | 24 | 24 | none |
-| itsa-year | 53 | 49 | quarterly-update-self-employment-9 1; quarterly-update-self-employment-10 1; quarterly-update-uk-property-9 1; quarterly-update-uk-property-10 1 |
-| itsa-year-part | 37 | 37 | none |
+| itsa-quarterly-from-books | 18 | 18 | none |
+| itsa-quarterly-update | 26 | 26 | none |
+| itsa-self-employment-amend | 17 | 17 | none |
+| itsa-uk-property-year | 26 | 25 | adjustments-14 E |
+| itsa-year | 54 | 54 | none |
+| itsa-year-part | 39 | 38 | adjustments-15 E |
 | mcp-cli | 8 | 8 | none |
 | mcp-diya-gl | 7 | 7 | none |
 | mcp-docker | 8 | 8 | none |
@@ -616,8 +616,8 @@ Remaining fails, by fix:
 |---|---|---|---|
 | O | `change-registered-office` company-lookup frames | As before the cutter change | Re-record, then `node scripts/video-walkthrough.js --id <id>` |
 | C (not detected) | `file-psc-verification-statement` psc-1, psc-3 to psc-9 | The word "statement." from the receipt above the PSC section at the top edge | The PSC section sits at the foot of the page, so the page cannot scroll its top to the viewport top; needs the receipt collapsed or the section moved above it |
-| 1 | `generate-pass-digital` generate-3, generate-5; `itsa-year` quarterly-update-self-employment-9, -10 and quarterly-update-uk-property-9, -10; `itsa-quarterly-from-books` submit-1, -2, -5 | The simulator's pass link `http://localhost:3000/bundles.html?pass=...`; "Period ID -" and "Submission ID -" where HMRC's sandbox returns an id | Record these videos on the ci lane, or have the simulator return an id and the app's origin |
-| E | 11 frames of `accounting-spreadsheet-profit`, `mcp-hosted/connect-0..2`, `hmrc-authorise/authorise,results`, `itsa-business-details/results`, `view-obligations/results` | 70 to 80 percent blank rows: a spreadsheet grid with two rows filled, or a short form | localApp frames: crop to the filled area in the scene script's viewport; site frames: a result page shorter than the cut |
+| 1 | `itsa-in-year-estimate` in-year-estimate-3 | The simulator's "Grant Authority" page for the click that goes to HMRC | Cut the frame from the page before the redirect, or record the authorise step off camera |
+| E | 11 frames of `accounting-spreadsheet-profit`, `mcp-hosted/connect-0..2`, `hmrc-authorise/authorise,results`, `itsa-business-details/results`, `view-obligations/results`; `itsa-uk-property-year/adjustments-14` and `itsa-year-part/adjustments-15` ("Adjustment submitted" panel, lower 55% blank) | 70 to 80 percent blank rows: a spreadsheet grid with two rows filled, or a short form | localApp frames: crop to the filled area in the scene script's viewport; site frames: a result page shorter than the cut |
 | 2 | `itsa-year`, `itsa-loss-claims` and other ITSA frames of a form load | "Loading ..." spinner and the "Synthetic mode - calls go to HMRC's sandbox API" banner in the frame | Step waits for the loaded state before the caption; banner is the synthetic account's, hide it with the script's `suppress` list |
 | 5 | `accounting-diya-gl-profit`, `accounting-spreadsheet-profit` | Spreadsheet text under 8 px at the thumbnail size | Record the localApp scenes at a smaller viewport |
 | 9 | `file-psc-verification-statement/record` | The caption names steps the frame does not show | Split the scene so one caption matches the frame |

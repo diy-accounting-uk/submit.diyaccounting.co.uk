@@ -15,6 +15,9 @@ const state = {
   testSupportBusinesses: new Map(),
   // HMRC Assist reports issued by this simulator, keyed by reportId
   assistReports: new Map(),
+  // Self-employment period summaries held for a business, keyed by `${nino}:${businessId}:${periodId}`
+  // for a dated period and `${nino}:${businessId}:${taxYear}` for a cumulative tax year
+  periodSummaries: new Map(),
 };
 
 /**
@@ -26,6 +29,36 @@ export function reset() {
   state.tokens.clear();
   state.testSupportBusinesses.clear();
   state.assistReports.clear();
+  state.periodSummaries.clear();
+}
+
+/**
+ * Remember the period summary a create or amend call sent, so a later read returns it
+ * @param {string} key - `${nino}:${businessId}:${periodId or taxYear}`, NINO upper case without spaces
+ * @param {Object} summary - Period summary body
+ */
+export function storePeriodSummary(key, summary) {
+  state.periodSummaries.set(key, summary);
+}
+
+/**
+ * Get the period summary an earlier create or amend call stored
+ * @param {string} key - Key the summary was stored under
+ * @returns {Object|undefined}
+ */
+export function getPeriodSummary(key) {
+  return state.periodSummaries.get(key);
+}
+
+/**
+ * Build the key a self-employment period summary is stored under
+ * @param {string} nino - National Insurance number
+ * @param {string} businessId - Business ID
+ * @param {string} periodOrTaxYear - Period ID of a dated period, or tax year of a cumulative total
+ * @returns {string}
+ */
+export function periodSummaryKey(nino, businessId, periodOrTaxYear) {
+  return `${String(nino).replace(/\s+/g, "").toUpperCase()}:${businessId}:${periodOrTaxYear}`;
 }
 
 /**

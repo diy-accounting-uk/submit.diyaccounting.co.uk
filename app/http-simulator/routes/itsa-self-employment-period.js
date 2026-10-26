@@ -6,6 +6,7 @@
 // Handles: POST /individuals/business/self-employment/{nino}/{businessId}/period
 
 import { getSelfEmploymentPeriodErrorForScenario } from "../scenarios/itsa-self-employment-period.js";
+import { periodSummaryKey, storePeriodSummary } from "../state/store.js";
 
 /**
  * Validate National Insurance number format (two letters, six digits, one suffix letter).
@@ -74,9 +75,9 @@ export function apiEndpoint(app) {
       return res.status(scenarioError.status).json(scenarioError.body);
     }
 
-    // Default and STATEFUL: perform a real create. The simulator has no per-user mutable
-    // state to track across requests, so STATEFUL behaves the same as the default.
+    // Default and STATEFUL: perform a real create and hold the summary for later reads.
     const periodId = `${periodDates.periodStartDate}_${periodDates.periodEndDate}`;
+    storePeriodSummary(periodSummaryKey(nino, businessId, periodId), req.body);
 
     res.setHeader("Content-Type", "application/json");
     res.status(200).json({ periodId });

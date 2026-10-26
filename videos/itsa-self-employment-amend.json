@@ -297,6 +297,95 @@
         { "action": "still", "name": "self-employment-period-amend" },
         { "action": "hold", "ms": 1200 }
       ]
+    },
+    {
+      "id": "amended-record",
+      "chapter": "The amended record",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/selfEmploymentPeriodView.html",
+          "waitFor": "#itsaSelfEmploymentPeriodViewForm",
+          "caption": "Open the quarter again to read the amended record.",
+          "headline": "Read the amended record",
+          "keyWord": "amended"
+        },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XBIS00000000001"
+        },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2024-25"
+        },
+        {
+          "action": "fill",
+          "target": "#periodId",
+          "value": "2017-04-06_2017-07-04"
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        },
+        {
+          "action": "click",
+          "target": "#retrieveBtn",
+          "caption": "Retrieve the quarter from HMRC.",
+          "headline": "Retrieve the record",
+          "keyWord": "Retrieve"
+        },
+        {
+          "action": "await",
+          "until": "#periodViewResults .customer-copy-header",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000
+        },
+        {
+          "action": "point",
+          "scrollTo": "#periodDetails .customer-copy-header",
+          "target": "#periodDetails .customer-copy-header",
+          "caption": "The record shows its period ID, its status and the date it was retrieved.",
+          "headline": "Number, status and date",
+          "keyWord": "status",
+          "dwellMs": 600
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "point",
+          "scrollTo": "#periodDetails .customer-copy-section",
+          "target": "#periodDetails .customer-copy-section",
+          "caption": "Below it, the corrected income and expenses HMRC now holds.",
+          "headline": "The corrected totals",
+          "keyWord": "corrected",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
+        {
+          "action": "hold",
+          "ms": 800
+        },
+        {
+          "action": "still",
+          "name": "self-employment-period-amended-record"
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        }
+      ]
     }
   ]
 }

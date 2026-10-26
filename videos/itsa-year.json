@@ -888,24 +888,31 @@
           "keyWord": "filed"
         },
         {
-          "action": "scroll",
-          "target": "#finalDeclarationResults"
-        },
-        {
-          "action": "hold",
-          "ms": 600
-        },
-        {
           "action": "point",
-          "target": "#finalDeclarationResults h3",
-          "caption": "Filed. The whole year is now closed out.",
-          "headline": "Final declaration filed",
-          "keyWord": "filed",
+          "scrollTo": "#declarationCopy .customer-copy-header",
+          "target": "#declarationCopy .customer-copy-header",
+          "caption": "Filed. This is the declaration as made: the calculation ID, its status and the date.",
+          "headline": "The declaration as made",
+          "keyWord": "declaration",
           "dwellMs": 600
         },
         {
           "action": "hold",
           "ms": 2500
+        },
+        {
+          "action": "point",
+          "scrollTo": "#declarationCopy .customer-copy-section:last-of-type",
+          "target": "#declarationCopy .customer-copy-section:last-of-type",
+          "caption": "The total you declared and the statement you confirmed are on the record.",
+          "headline": "Total and confirmation",
+          "keyWord": "confirmation",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
+        {
+          "action": "hold",
+          "ms": 800
         },
         {
           "action": "still",

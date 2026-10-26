@@ -48,8 +48,8 @@ const errorScenarios = {
 
 /**
  * Get the retrieve-a-period-summary response for a Gov-Test-Scenario header. STATEFUL falls
- * through to the default set: this simulator has no per-user mutable state to reflect an
- * earlier create/amend back into a read.
+ * through to the default set, which the route replaces with the summary an earlier
+ * create or amend stored.
  * @param {string|undefined} scenario - Gov-Test-Scenario header value
  * @param {string} periodId - the periodId path parameter, used to echo back plausible dates
  * @returns {{periodSummary: object}|{status: number, body: object}}

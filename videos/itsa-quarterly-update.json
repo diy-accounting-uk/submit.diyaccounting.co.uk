@@ -420,6 +420,95 @@
           "ms": 1200
         }
       ]
+    },
+    {
+      "id": "period-record",
+      "chapter": "The record of the quarter",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/selfEmploymentPeriodView.html",
+          "waitFor": "#itsaSelfEmploymentPeriodViewForm",
+          "caption": "Open the quarter you filed to read its record.",
+          "headline": "Read the record back",
+          "keyWord": "record"
+        },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XBIS12345678901"
+        },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2024-25"
+        },
+        {
+          "action": "fill",
+          "target": "#periodId",
+          "value": "2024-04-06_2024-07-05"
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        },
+        {
+          "action": "click",
+          "target": "#retrieveBtn",
+          "caption": "Retrieve the period summary from HMRC.",
+          "headline": "Retrieve the record",
+          "keyWord": "Retrieve"
+        },
+        {
+          "action": "await",
+          "until": "#periodViewResults .customer-copy-header",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000
+        },
+        {
+          "action": "point",
+          "scrollTo": "#periodDetails .customer-copy-header",
+          "target": "#periodDetails .customer-copy-header",
+          "caption": "The record shows its period ID, its status and the date it was retrieved.",
+          "headline": "Number, status and date",
+          "keyWord": "status",
+          "dwellMs": 600
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "point",
+          "scrollTo": "#periodDetails .customer-copy-section",
+          "target": "#periodDetails .customer-copy-section",
+          "caption": "Below it, the income and expenses HMRC holds for the quarter.",
+          "headline": "The totals HMRC holds",
+          "keyWord": "totals",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
+        {
+          "action": "hold",
+          "ms": 800
+        },
+        {
+          "action": "still",
+          "name": "itsa-quarterly-update-record"
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        }
+      ]
     }
   ]
 }

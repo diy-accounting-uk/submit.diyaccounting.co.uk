@@ -97,8 +97,8 @@ const getErrorScenarios = {
 
 /**
  * Get the create-or-amend response for a Gov-Test-Scenario header. Default and STATEFUL both
- * accept the submission with no body - HMRC's cumulative PUT returns 204 either way, since this
- * simulator has no per-user mutable state to reflect a submission back into a later read.
+ * accept the submission with no body - HMRC's cumulative PUT returns 204 either way. The route
+ * holds the submitted total so a later read returns it.
  * @param {string|undefined} scenario - Gov-Test-Scenario header value
  * @returns {null|{status: number, body: object}}
  */
