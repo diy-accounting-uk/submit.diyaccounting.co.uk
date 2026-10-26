@@ -2455,10 +2455,6 @@ jobs:
           npm ci --ignore-scripts
           npx playwright install chromium --with-deps
 
-      - name: Crawl prod as the visitor
-        if: ${{ steps.gate.outputs.run == 'true' }}
-        run: node scripts/exploratory-crawl.mjs --lane prod --roles visitor
-
       - name: Enable native auth and refresh the ci test user
         if: ${{ steps.gate.outputs.run == 'true' }}
         run: npm run test:enableCognitoNative -- ci
@@ -2472,6 +2468,12 @@ jobs:
       - name: Disable native auth
         if: ${{ always() && steps.gate.outputs.run == 'true' }}
         run: npm run test:disableCognitoNative
+
+      # Last among the steps that need no AWS session: the paced prod crawl runs past the one-hour
+      # life of the chained role session, so every AWS step above it finishes first.
+      - name: Crawl prod as the visitor
+        if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
+        run: node scripts/exploratory-crawl.mjs --lane prod --roles visitor
 
       - name: Write the counts per class to the job summary
         if: ${{ !cancelled() && steps.gate.outputs.run == 'true' }}
