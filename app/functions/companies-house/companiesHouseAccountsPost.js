@@ -84,6 +84,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   const {
     companyNumber,
     companyName,
+    registeredOffice,
     companyAuthCode,
     periodStart,
     periodEnd,
@@ -112,6 +113,10 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   const trimmedCompanyName = typeof companyName === "string" ? companyName.trim() : "";
   if (!trimmedCompanyName) {
     errorMessages.push("Missing companyName");
+  }
+  const trimmedRegisteredOffice = typeof registeredOffice === "string" ? registeredOffice.trim() : "";
+  if (!trimmedRegisteredOffice) {
+    errorMessages.push("Missing registeredOffice - the registered office address as shown on the register");
   }
 
   let trimmedCompanyAuthCode;
@@ -169,6 +174,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
       regime: "small-company",
       companyNumber: normalisedCompanyNumber,
       companyName: trimmedCompanyName,
+      registeredOffice: trimmedRegisteredOffice,
       ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
       periodStart,
       periodEnd,
@@ -201,6 +207,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     regime: "micro-entity",
     companyNumber: normalisedCompanyNumber,
     companyName: trimmedCompanyName,
+    registeredOffice: trimmedRegisteredOffice,
     ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
     periodStart,
     periodEnd,

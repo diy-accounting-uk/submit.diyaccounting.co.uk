@@ -517,6 +517,33 @@ export function renderCompanyDescriptionFacts({ companyNumber, refs, entityIdent
   ];
 }
 
+const COUNTRY_PHRASE = {
+  [MEMBERS.englandWales.name]: "England and Wales",
+  [MEMBERS.scotland.name]: "Scotland",
+  [MEMBERS.northernIreland.name]: "Northern Ireland",
+};
+
+/**
+ * The company information a set of accounts states under section 396(A1) of the Companies Act
+ * 2006, as the first note: the legal form, where the company is registered, its number and its
+ * registered office. The name and number are tagged where they appear.
+ * @param {object} input
+ * @param {string} input.companyName
+ * @param {string} input.companyNumber
+ * @param {string} input.registeredOffice - the registered office address on one line
+ * @param {{current: string}} refs
+ * @returns {{title: string, html: string}} the note
+ */
+export function companyInformationNote({ companyName, companyNumber, registeredOffice }, refs) {
+  const office = typeof registeredOffice === "string" ? registeredOffice.trim() : "";
+  if (!office) throw new Error("registeredOffice is required: the accounts state the registered office address");
+  const country = COUNTRY_PHRASE[countryMemberForCompanyNumber(companyNumber).name];
+  return {
+    title: "General information",
+    html: `<p>${renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName)} is a private company limited by shares, registered in ${country}, registered number ${renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber)}. Its registered office is ${escapeXmlText(office)}.</p>`,
+  };
+}
+
 function netLabel(base, values) {
   return values.some((value) => value < 0) ? `${base} (liabilities)` : base;
 }
