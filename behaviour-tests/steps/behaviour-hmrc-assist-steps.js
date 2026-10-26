@@ -93,7 +93,7 @@ export async function fillInVatBoxesForOpenPeriod(page, boxes = VAT_ASSIST_BOXES
     }
     const declaration = page.locator("#declaration");
     if (!(await declaration.isChecked())) await declaration.check();
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-boxes-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-boxes-filled.png`, readerView: true });
   });
 }
 

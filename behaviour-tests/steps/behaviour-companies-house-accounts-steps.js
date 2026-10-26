@@ -25,7 +25,7 @@ export async function goToFileMicroEntityAccounts(page, screenshotPath = default
     });
     await page.waitForLoadState("networkidle");
     await expect(page.locator("#companyForm")).toBeVisible();
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-form.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-form.png`, readerView: true });
   });
 }
 
@@ -146,7 +146,7 @@ export async function goToFileSmallCompanyAccounts(page, screenshotPath = defaul
     });
     await page.waitForLoadState("networkidle");
     await expect(page.locator("#companyForm")).toBeVisible();
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-company-form.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-company-form.png`, readerView: true });
   });
 }
 

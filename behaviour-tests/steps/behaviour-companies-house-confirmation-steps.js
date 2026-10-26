@@ -70,7 +70,7 @@ export async function goToFileConfirmationStatement(page, screenshotPath = defau
     });
     await page.waitForLoadState("networkidle");
     await expect(page.locator("#companyForm")).toBeVisible();
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-form.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-form.png`, readerView: true });
   });
 }
 

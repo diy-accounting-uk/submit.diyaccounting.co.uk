@@ -12,30 +12,30 @@ export async function goToCompanySearch(page, screenshotPath = defaultScreenshot
   const activityButtonText = "Company Lookup (Companies House)";
   await test.step(`The user navigates to ${activityButtonText} and sees the search form`, async () => {
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-search.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-search.png`, readerView: true });
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting Company Lookup", { screenshotPath, timeout: 60000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-company-search.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-company-search.png`, readerView: true });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-company-search.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-company-search.png`, readerView: true });
     await expect(page.locator("#companySearchForm")).toBeVisible();
   });
 }
 
 export async function fillInCompanySearch(page, query, screenshotPath = defaultScreenshotPath) {
   await test.step(`The user fills in the company search with "${query}"`, async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-search-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-search-fill-in.png`, readerView: true });
     await loggedFill(page, "#companyQuery", query, "Company name or number", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-company-search-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-company-search-fill-in.png`, readerView: true });
   });
 }
 
 export async function submitCompanySearch(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the company search form", async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-search-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-search-submit.png`, readerView: true });
     await loggedClick(page, "#searchBtn", "Submitting company search", { screenshotPath });
     await page.waitForLoadState("networkidle");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-company-search-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-company-search-submit.png`, readerView: true });
   });
 }
 

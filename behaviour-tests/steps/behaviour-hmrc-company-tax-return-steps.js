@@ -24,7 +24,7 @@ export async function goToFileCompanyTaxReturn(page, screenshotPath = defaultScr
     });
     await page.waitForLoadState("networkidle");
     await expect(page.locator("#companyForm")).toBeVisible();
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-form.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-form.png`, readerView: true });
   });
 }
 
@@ -55,7 +55,7 @@ export async function fillInCompanyTaxReturnForm(page, { utr, declarantName, reg
     await page.check("#statementDirectorsResponsibilities");
     await page.check(regime === "micro" ? "#statementMicroEntityProvisions" : "#statementSmallCompaniesRegime");
     await page.check("#declarationAccepted");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-return-form-filled-${regime}.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-return-form-filled-${regime}.png`, readerView: true });
   });
 }
 
@@ -92,7 +92,7 @@ export async function fillInCompanyTaxReturnFormFromIxbrl(
     await page.check("#statementDirectorsResponsibilities");
     await page.check("#statementMicroEntityProvisions");
     await page.check("#declarationAccepted");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-return-form-filled-ixbrl.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-return-form-filled-ixbrl.png`, readerView: true });
   });
 }
 
@@ -128,7 +128,7 @@ export async function typeInCompanyTaxReturnForm(page, screenshotPath = defaultS
     await page.check("#statementSmallCompaniesRegime");
     await page.check("#declarationAccepted");
     await expect(page.locator("[aria-invalid=true]")).toHaveCount(0);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-return-form-typed.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-return-form-typed.png`, readerView: true });
   });
 }
 
@@ -141,7 +141,7 @@ export async function changeAnAnswerFromTheReview(page, { fieldId, value }, scre
       .click();
     await expect(page.locator("#formView")).toBeVisible();
     await expect(page.locator(`#${fieldId}`)).toBeFocused();
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-change-answer.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-change-answer.png`, readerView: true });
     await loggedFill(page, `#${fieldId}`, value, fieldId);
     await loggedClick(page, "#previewBtn", "Returning to the review", { screenshotPath });
     await expect(page.locator("#previewView")).toBeVisible({ timeout: 30000 });

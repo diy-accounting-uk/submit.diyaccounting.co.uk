@@ -11,10 +11,10 @@ const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behavio
 export async function goToReceiptsPageUsingMainNav(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user navigates to the Receipts page via main navigation", async () => {
     console.log("Navigating to Receipts via main navigation...");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-nav.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-nav.png`, readerView: true });
     await expect(page.locator("nav.main-nav a:has-text('Receipts')")).toBeVisible({ timeout: 10000 });
     await loggedClick(page, "nav.main-nav a:has-text('Receipts')", "Clicking Receipts in main navigation", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-nav-clicked.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-nav-clicked.png`, readerView: true });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
     await takeScreenshot(page, {
@@ -38,9 +38,9 @@ export async function verifyAtLeastOneClickableReceipt(page, screenshotPath = de
 
     if (hasReceipts) {
       console.log("Found receipts, clicking on first receipt...");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-receipts-page-found.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-receipts-page-found.png`, readerView: true });
       await loggedClick(page, firstReceiptLink, "Open first receipt", { screenshotPath });
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-receipts-page-clicked.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-receipts-page-clicked.png`, readerView: true });
       await page.waitForLoadState("networkidle");
       await page.waitForTimeout(500);
       await takeScreenshot(page, {

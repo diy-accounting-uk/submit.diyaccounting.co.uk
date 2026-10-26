@@ -12,20 +12,20 @@ const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behavio
 
 export async function clickLogIn(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user chooses to log in from the home page and arrives at the sign-in options", async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-login.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-login.png`, readerView: true });
     await loggedClick(page, "a:has-text('Log in')", "Clicking login link", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-login-clicked.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-login-clicked.png`, readerView: true });
 
     // Login
     console.log("Logging in...");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-login-logging-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-login-logging-in.png`, readerView: true });
 
     // await Promise.all([
     //  page.waitForURL(/auth\/login\.html$/, { waitUntil: "domcontentloaded", timeout: 30000 }).catch(() => {}),
     //  // the click already happened above; we still wait for the URL change
     // ]);
     await expect(page.getByText("Google account")).toBeVisible({ timeout: 15000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-login.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-login.png`, readerView: true });
   });
 }
 
@@ -38,27 +38,30 @@ export async function loginWithCognitoOrMockAuth(
 ) {
   if (testAuthProvider === "mock" || testAuthProvider === "simulator") {
     // Mock OAuth flow (used by both mock and simulator providers)
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-login-with-cognito-or-mock-auth.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-login-with-cognito-or-mock-auth.png`, readerView: true });
     await initMockAuth(page, screenshotPath);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-login-with-cognito-or-mock-auth.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-login-with-cognito-or-mock-auth.png`, readerView: true });
     await fillInMockAuth(page, testAuthUsername, screenshotPath);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-login-with-cognito-or-mock-auth.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-login-with-cognito-or-mock-auth.png`, readerView: true });
     await submitMockAuth(page, screenshotPath);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-login-with-cognito-or-mock-auth.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-login-with-cognito-or-mock-auth.png`, readerView: true });
   } else if (testAuthProvider === "cognito-native") {
     // Native Cognito user authentication via the Cognito Hosted UI email/password form
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-login-with-cognito-native.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-login-with-cognito-native.png`, readerView: true });
     await initCognitoAuth(page, screenshotPath);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-login-with-cognito-native-hosted-ui.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-login-with-cognito-native-hosted-ui.png`, readerView: true });
     await fillInHostedUINativeAuth(page, testAuthUsername, testAuthPassword, screenshotPath);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-login-with-cognito-native-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-login-with-cognito-native-filled.png`, readerView: true });
     await submitHostedUINativeAuth(page, screenshotPath);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-login-with-cognito-native-submitted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-login-with-cognito-native-submitted.png`, readerView: true });
     // Handle TOTP MFA challenge if a TOTP secret is available
     const totpSecret = process.env.TEST_AUTH_TOTP_SECRET;
     if (totpSecret) {
       await handleTotpChallenge(page, totpSecret, screenshotPath);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-login-with-cognito-native-totp-completed.png` });
+      await takeScreenshot(page, {
+        path: `${screenshotPath}/${timestamp()}-05-login-with-cognito-native-totp-completed.png`,
+        readerView: true,
+      });
     }
   }
 }
@@ -66,7 +69,7 @@ export async function loginWithCognitoOrMockAuth(
 export async function verifyLoggedInStatus(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user returns to the home page and sees their logged-in status", async () => {
     console.log("Checking home page...");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-home.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-home.png`, readerView: true });
     await expect(page.getByText("Logged in as")).toBeVisible({ timeout: 16000 });
   });
 }
@@ -74,7 +77,7 @@ export async function verifyLoggedInStatus(page, screenshotPath = defaultScreens
 export async function logOutAndExpectToBeLoggedOut(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user logs out and sees the public home page with the log in link", async () => {
     console.log("Logging out from home page");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-home-before-waiting.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-home-before-waiting.png`, readerView: true });
     await expect(page.locator("a:has-text('Logout')")).toBeVisible({ timeout: 5000 });
 
     await Promise.all([
@@ -115,7 +118,7 @@ async function readHostedUiErrorText(page) {
 
 export async function initCognitoAuth(page, screenshotPath = defaultScreenshotPath) {
   await test.step("Google account", async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-cognito-auth.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-cognito-auth.png`, readerView: true });
     await expect(page.getByText("Google account")).toBeVisible();
 
     const appOrigin = new URL(page.url()).origin;
@@ -140,6 +143,7 @@ export async function initCognitoAuth(page, screenshotPath = defaultScreenshotPa
         await page.waitForTimeout(500);
         await takeScreenshot(page, {
           path: `${screenshotPath}/${timestamp()}-02-cognito-provider-auth-clicked.png`,
+          readerView: true,
         });
         return;
       } catch {
@@ -149,7 +153,10 @@ export async function initCognitoAuth(page, screenshotPath = defaultScreenshotPa
           pageTitle: await page.title(),
           statusText: await readAppStatusMessage(page),
         });
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-cognito-redirect-not-followed-${attempt}.png` });
+        await takeScreenshot(page, {
+          path: `${screenshotPath}/${timestamp()}-cognito-redirect-not-followed-${attempt}.png`,
+          readerView: true,
+        });
         console.error(failure);
         if (attempt === hostedUiRedirectAttempts) {
           throw new Error(failure);
@@ -162,12 +169,12 @@ export async function initCognitoAuth(page, screenshotPath = defaultScreenshotPa
 
 export async function initMockAuth(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user continues with the mock identity provider and sees the sign-in form", async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-init-mock-auth.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-init-mock-auth.png`, readerView: true });
     await expect(page.getByText("Continue with mock-oauth2-server")).toBeVisible();
     await loggedClick(page, "button:has-text('Continue with mock-oauth2-server')", "Continue with OAuth provider", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-init-mock-auth.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-init-mock-auth.png`, readerView: true });
     await expect(page.locator('input[type="submit"][value="Sign-in"]')).toBeVisible({ timeout: 10000 });
   });
 }
@@ -175,9 +182,9 @@ export async function initMockAuth(page, screenshotPath = defaultScreenshotPath)
 export async function fillInMockAuth(page, testAuthUsername, screenshotPath = defaultScreenshotPath) {
   await test.step("The user enters a username and identity claims for the session", async () => {
     // <input class="u-full-width" required="" type="text" name="username" placeholder="Enter any user/subject" autofocus="on">
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-fill-in-mock.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-fill-in-mock.png`, readerView: true });
     await loggedFill(page, 'input[name="username"]', `${testAuthUsername}`, "Entering username", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-fill-in-mock-filled-username.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-fill-in-mock-filled-username.png`, readerView: true });
     await page.waitForTimeout(100);
 
     // <textarea class="u-full-width claims" name="claims" rows="15" placeholder="Optional claims JSON" autofocus="on"></textarea>
@@ -186,9 +193,9 @@ export async function fillInMockAuth(page, testAuthUsername, screenshotPath = de
       email: `synthetic-${testAuthUsername}@test.diyaccounting.co.uk`,
     };
     await loggedFill(page, 'textarea[name="claims"]', JSON.stringify(identityToken), "Entering identity claims", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-fill-in-moc-filled-claims.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-fill-in-moc-filled-claims.png`, readerView: true });
     await page.waitForTimeout(100);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-fill-in-mock.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-fill-in-mock.png`, readerView: true });
   });
 }
 
@@ -196,7 +203,7 @@ export async function submitMockAuth(page, screenshotPath = defaultScreenshotPat
   await test.step("The user submits the sign-in form and returns to the app as an authenticated user", async () => {
     // Home page has logged in user email
     // <input class="button-primary" type="submit" value="Sign-in">
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submit-mock.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submit-mock.png`, readerView: true });
     await loggedClick(page, 'input[type="submit"][value="Sign-in"]', "Submitting sign-in form", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
@@ -214,7 +221,7 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
     throw new Error("fillInHostedUINativeAuth: testAuthUsername is missing (TEST_AUTH_USERNAME not set)");
   }
   await test.step("The user enters their credentials on the Cognito Hosted UI", async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-hosted-ui-native-auth.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-hosted-ui-native-auth.png`, readerView: true });
 
     // The Cognito Hosted UI renders duplicate forms (desktop/mobile) synced by JS.
     // Playwright's fill() hangs even with force:true (editable check blocks), so the
@@ -242,11 +249,11 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
         });
         if (attempt === maxAttempts) {
           console.error(failure);
-          await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-hosted-ui-form-not-found.png` });
+          await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-hosted-ui-form-not-found.png`, readerView: true });
           throw new Error(failure, { cause: error });
         }
         console.log(`${failure} Reloading and retrying...`);
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-hosted-ui-retry-${attempt}.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-hosted-ui-retry-${attempt}.png`, readerView: true });
         await page.reload({ waitUntil: "networkidle" });
         await page.waitForTimeout(2000 * attempt);
       }
@@ -283,7 +290,7 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
     });
 
     await page.waitForTimeout(100);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-hosted-ui-native-auth-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-hosted-ui-native-auth-filled.png`, readerView: true });
   });
 }
 
@@ -292,7 +299,7 @@ export async function fillInHostedUINativeAuth(page, testAuthUsername, testAuthP
 // such a page passes "load".
 export async function submitHostedUINativeAuth(page, screenshotPath = defaultScreenshotPath, { settle = "networkidle" } = {}) {
   await test.step("The user submits the Cognito Hosted UI login form", async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submit-hosted-ui-native.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submit-hosted-ui-native.png`, readerView: true });
     // The Cognito Hosted UI sign-in button is input[name="signInSubmitButton"][type="submit"].
     // Click the VISIBLE submit button (second instance = desktop form).
     await page.evaluate(() => {
@@ -306,7 +313,7 @@ export async function submitHostedUINativeAuth(page, screenshotPath = defaultScr
     console.log(`Clicked sign-in button on Hosted UI`);
     await page.waitForLoadState(settle);
     await page.waitForTimeout(1000);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-hosted-ui-native-signed-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-hosted-ui-native-signed-in.png`, readerView: true });
   });
 }
 
@@ -314,7 +321,7 @@ export async function submitHostedUINativeAuth(page, screenshotPath = defaultScr
 // `settle` is the load state awaited after each submit; see submitHostedUINativeAuth.
 export async function handleTotpChallenge(page, totpSecret, screenshotPath = defaultScreenshotPath, { settle = "networkidle" } = {}) {
   await test.step("The user completes the TOTP MFA challenge on the Cognito Hosted UI", async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-totp-challenge.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-totp-challenge.png`, readerView: true });
 
     // Wait for the TOTP challenge page to appear
     // The Cognito Hosted UI presents a code input field after username/password submission
@@ -330,7 +337,7 @@ export async function handleTotpChallenge(page, totpSecret, screenshotPath = def
     }
 
     console.log("TOTP challenge page detected");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-totp-challenge-page.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-totp-challenge-page.png`, readerView: true });
 
     // Generate and submit TOTP code, retrying once if Cognito rejects it.
     // Cognito rejects a code that was already consumed in the same 30-second window
@@ -361,7 +368,7 @@ export async function handleTotpChallenge(page, totpSecret, screenshotPath = def
       await page.keyboard.type(code, { delay: 10 });
       console.log("Typed TOTP code on challenge page");
 
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-totp-code-entered.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-totp-code-entered.png`, readerView: true });
 
       // Submit the TOTP form
       await page.evaluate(() => {
@@ -379,7 +386,7 @@ export async function handleTotpChallenge(page, totpSecret, screenshotPath = def
 
       await page.waitForLoadState(settle);
       await page.waitForTimeout(1000);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-totp-challenge-completed.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-totp-challenge-completed.png`, readerView: true });
 
       // Check if Cognito rejected the code (error message still on the TOTP page)
       // If the page navigated away (context destroyed), the TOTP was accepted successfully.
