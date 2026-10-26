@@ -16,6 +16,7 @@ export { mountCopy } from "./itsa-calculation-record.js";
 const KIND_NAMES = {
   "self-employment": "Self-employment",
   "uk-property": "UK property",
+  "foreign-property": "Foreign property",
 };
 
 const FIELD_LABELS = {
@@ -76,6 +77,24 @@ const FIELD_LABELS = {
   "residentialFinancialCost": "Residential financial costs",
   "residentialFinancialCostsCarriedForward": "Residential financial costs carried forward",
   "travelCosts": "Travel costs",
+  // Losses and claims
+  "broughtForwardLosses": "Losses brought forward",
+  "carryForward: currentYearLosses": "This year's loss carried forward",
+  "carryForward: previousYearsLosses": "Earlier years' losses carried forward",
+  "carrySideways: currentYearGeneralIncome": "Set against this year's other income",
+  "carryBack: previousYearGeneralIncome": "Carried back against the previous year's income",
+  "carryBack: earlyYearLosses": "Early year losses carried back",
+  "carryBack: terminalLosses": "Terminal losses carried back",
+  "preferenceOrder: applyFirst": "Applies first",
+  // Tax liability adjustments
+  "carryBackLossesDecrease: incomeTax": "Income tax decreased",
+  "carryBackLossesDecrease: class4": "Class 4 National Insurance decreased",
+  "carryBackLossesDecrease: capitalGainsTax": "Capital gains tax decreased",
+};
+
+const CLAIM_ORDER_LABELS = {
+  "carry-sideways": "Carry sideways first",
+  "carry-back": "Carry back first",
 };
 
 const EXEMPTION_REASON_LABELS = {
@@ -161,6 +180,7 @@ function valueCell(entry) {
   if (leaf === "class4NicsExemptionReason" && nonEmptyText(value)) {
     return textCell(EXEMPTION_REASON_LABELS[value.trim()] || humanise(value));
   }
+  if (leaf === "applyFirst" && nonEmptyText(value)) return textCell(CLAIM_ORDER_LABELS[value.trim()] || humanise(value));
   if (typeof value === "string" && formatLongDate(value)) return textCell(formatLongDate(value));
   return textCell(ABSENT);
 }
@@ -379,6 +399,127 @@ export function periodCopyHtml({ kind, period, nino, businessId, taxYear, period
           expenseEntries.length > 0
             ? periodTable(columnHeading, expenseEntries, "period-expenses", EXPENSE_LABEL_OVERRIDES[kind] || {})
             : `<p class="no-data">HMRC holds no expenses for this period.</p>`,
+      },
+    ],
+    links,
+  });
+}
+
+const LOSSES_SECTIONS = [
+  {
+    heading: "Losses",
+    explanation: "These are the losses you told HMRC about for the year. A figure you left at 0 was not sent, so it does not appear.",
+    prefix: "losses",
+  },
+  {
+    heading: "Claims",
+    explanation:
+      "These are the claims you made for the year. A loss can carry forward, be set against this year's other income, or be carried back to an earlier year.",
+    prefix: "claims",
+  },
+];
+
+/**
+ * The customer copy of a losses and claims save: the losses and claims that were sent, the
+ * business and the date HMRC accepted them. HMRC answers the save with no body and no claim
+ * id of its own, so the business ID is the reference and HMRC's correlation ID, when it sent
+ * one, is the second reference line.
+ *
+ * @param {object} input
+ * @param {"self-employment"|"uk-property"|"foreign-property"} input.kind
+ * @param {string} [input.nino]
+ * @param {string} [input.businessId]
+ * @param {string} [input.taxYear] - e.g. "2026-27"
+ * @param {string} [input.savedAt] - ISO timestamp of the save
+ * @param {string|null} [input.correlationId] - HMRC's X-CorrelationId for the save
+ * @param {{losses?: object, claims?: object}} [input.sent]
+ * @param {{href: string, text: string}[]} [input.links]
+ * @returns {string}
+ */
+export function lossesCopyHtml({ kind, nino, businessId, taxYear, savedAt, correlationId, sent, links = [] }) {
+  const year = nonEmptyText(taxYear);
+  const saved = formatTimestamp(savedAt);
+  const kindName = KIND_NAMES[kind] || "Business";
+  const groups = isRecordObject(sent) ? sent : {};
+  const columnHeading = year || "Amount";
+
+  const recordHead = recordHeading({
+    nameHtml: escapeRecordText(`${kindName} losses and claims`),
+    referenceHtml: referenceLines({ nino, businessId, correlationId }),
+    title: year ? `Tax year ${year}` : "Tax year",
+    subtitleHtml: escapeRecordText(saved ? `Saved with HMRC on ${saved}` : "Saved with HMRC"),
+  });
+
+  const sections = LOSSES_SECTIONS.map((section, index) => {
+    const group = section.prefix === "losses" ? groups.losses : groups.claims;
+    const entries = collectEntries(group);
+    const body =
+      entries.length > 0
+        ? entriesTable(columnHeading, entries, `losses-${section.prefix}`)
+        : `<p class="no-data">You sent no ${section.heading.toLowerCase()} for this year.</p>`;
+    return {
+      heading: section.heading,
+      explanation: section.explanation,
+      recordHtml: (index === 0 ? recordHead : "") + body,
+    };
+  });
+
+  return customerCopyHtml({
+    title: year
+      ? `Your copy of the ${kindPhrase(kindName)} losses and claims for ${year}`
+      : `Your copy of the ${kindPhrase(kindName)} losses and claims`,
+    reference: { label: "Business ID", value: nonEmptyText(businessId) || ABSENT },
+    status: { kind: "accepted", text: "Accepted by HMRC" },
+    date: saved || "Not recorded",
+    sections,
+    links,
+  });
+}
+
+/**
+ * The customer copy of a tax liability adjustments save: the amounts by which a carry-back
+ * claim decreases the earlier year's liability, the year and the date HMRC accepted them.
+ * HMRC answers the save with no body and no id of its own, so the tax year is the reference
+ * and HMRC's correlation ID, when it sent one, is the last reference line.
+ *
+ * @param {object} input
+ * @param {string} [input.nino]
+ * @param {string} [input.taxYear] - the earlier year the claim decreases, e.g. "2025-26"
+ * @param {string} [input.savedAt] - ISO timestamp of the save
+ * @param {string|null} [input.correlationId] - HMRC's X-CorrelationId for the save
+ * @param {object} [input.carryBackLossesDecrease]
+ * @param {{href: string, text: string}[]} [input.links]
+ * @returns {string}
+ */
+export function adjustmentsCopyHtml({ nino, taxYear, savedAt, correlationId, carryBackLossesDecrease, links = [] }) {
+  const year = nonEmptyText(taxYear);
+  const saved = formatTimestamp(savedAt);
+  const columnHeading = year || "Amount";
+  const entries = collectEntries({ carryBackLossesDecrease }).filter((entry) => entry.value !== undefined);
+
+  const recordHead = recordHeading({
+    nameHtml: escapeRecordText("Tax liability adjustments"),
+    referenceHtml: referenceLines({ nino, correlationId }),
+    title: year ? `Tax year ${year}` : "Tax year",
+    subtitleHtml: escapeRecordText(saved ? `Saved with HMRC on ${saved}` : "Saved with HMRC"),
+  });
+
+  const body =
+    entries.length > 0
+      ? entriesTable(columnHeading, entries, "adjustments")
+      : `<p class="no-data">You sent no carry-back decrease for this year.</p>`;
+
+  return customerCopyHtml({
+    title: year ? `Your copy of the tax liability adjustments for ${year}` : "Your copy of the tax liability adjustments",
+    reference: { label: "Tax year", value: year || ABSENT },
+    status: { kind: "accepted", text: "Accepted by HMRC" },
+    date: saved || "Not recorded",
+    sections: [
+      {
+        heading: "Carry-back decrease",
+        explanation:
+          "These are the amounts by which your carry-back claim decreases the tax due for this earlier year. A figure you left at 0 was not sent, so it does not appear.",
+        recordHtml: recordHead + body,
       },
     ],
     links,

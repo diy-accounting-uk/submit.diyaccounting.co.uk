@@ -11,6 +11,30 @@ let loadedBusinessId = "";
 let loadedTaxYear = "";
 let loadedTypeOfBusiness = "self-employment";
 
+const JOURNEY_LINKS = [
+  { href: "dashboard.html", text: "Back to Income Tax" },
+  { href: "obligations.html", text: "See your obligations" },
+];
+
+async function showSavedRecord(lossesDetails, correlationId) {
+  const { lossesCopyHtml, mountCopy } = await import("../../lib/itsa-submission-record.js");
+  mountCopy(
+    document.getElementById("lossesCopy"),
+    lossesCopyHtml({
+      kind: lossesDetails.typeOfBusiness,
+      nino: lossesDetails.nino,
+      businessId: lossesDetails.businessId,
+      taxYear: lossesDetails.taxYear,
+      savedAt: new Date().toISOString(),
+      correlationId,
+      sent: { losses: lossesDetails.losses, claims: lossesDetails.claims },
+      links: JOURNEY_LINKS,
+    }),
+  );
+  document.getElementById("lossesEditForm").style.display = "none";
+  document.getElementById("lossesResults").style.display = "block";
+}
+
 function initializePage() {
   const hmrcAccount = sessionStorage.getItem("hmrcAccount");
 
@@ -199,14 +223,13 @@ async function continueAfterOAuth() {
     } else if (pendingSave) {
       showLoading();
       showStatus("Saving losses and claims...", "info");
-      await saveLossesAndClaims(
+      const saved = await saveLossesAndClaims(
         pendingSave.lossesDetails,
         pendingSave.testScenario,
         pendingSave.runFraudPreventionHeaderValidation,
         accessToken,
       );
-      document.getElementById("lossesEditForm").style.display = "none";
-      document.getElementById("lossesResults").style.display = "block";
+      await showSavedRecord(pendingSave.lossesDetails, saved?.correlationId);
       hideStatus();
       sessionStorage.removeItem("pendingLossesSaveRequest");
     } else {
@@ -327,9 +350,8 @@ async function handleSaveClick() {
         showLoading();
         hideStatus();
         showStatus("Saving losses and claims...", "info");
-        await saveLossesAndClaims(lossesDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
-        document.getElementById("lossesEditForm").style.display = "none";
-        document.getElementById("lossesResults").style.display = "block";
+        const saved = await saveLossesAndClaims(lossesDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
+        await showSavedRecord(lossesDetails, saved?.correlationId);
         hideStatus();
       } catch (error) {
         showStatus(`Failed to save losses and claims: ${error.message}`, "error");
