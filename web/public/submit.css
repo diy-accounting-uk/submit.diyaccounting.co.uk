@@ -456,7 +456,7 @@ header:has(> .chrome-fallback) {
   display: flex;
   align-items: center;
   gap: var(--space-1);
-  min-width: 0;
+  flex-shrink: 0;
 }
 
 .home-link,
@@ -479,7 +479,7 @@ header:has(> .chrome-fallback) {
 .home-link {
   padding-left: 0;
   justify-content: flex-start;
-  min-width: 0;
+  flex-shrink: 0;
 }
 
 .home-link:hover,
@@ -504,7 +504,6 @@ header:has(> .chrome-fallback) {
   font-weight: var(--weight-strong);
   font-size: var(--step-1);
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 /* Home icon used outside the band */
@@ -749,6 +748,11 @@ dd {
   .brand-name,
   .login-prefix {
     display: none;
+  }
+
+  .header-left {
+    min-width: 0;
+    flex-shrink: 1;
   }
 
   .login-status {
