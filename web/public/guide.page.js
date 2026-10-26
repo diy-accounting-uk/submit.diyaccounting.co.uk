@@ -50,43 +50,14 @@ const GROUPS = [
       { video: "change-registered-email" },
       { video: "file-confirmation-statement" },
       { video: "file-micro-entity-accounts" },
-      {
-        id: "file-small-company-accounts",
-        title: "File small company accounts",
-        steps: [
-          ["Look up the company", "Enter the company number and select Look up company."],
-          ["Choose the period", "Enter the period start and end dates."],
-          [
-            "Enter the figures",
-            "Fill in the current year's profit and loss and balance sheet, and the prior year if you include comparatives.",
-          ],
-          ["Review what Companies House receives", "Check the preview of the accounts before you send them."],
-          ["File", "Send the accounts. The result shows whether Companies House accepted them."],
-        ],
-      },
+      { video: "file-small-company-accounts" },
+      { video: "file-psc-verification-statement" },
     ],
   },
   {
     title: "Company Tax Return (CT600)",
     intro: "File the corporation tax return from the company's book.",
-    journeys: [
-      {
-        id: "file-company-tax-return",
-        title: "File a Company Tax Return",
-        steps: [
-          ["Look up the company", "Enter the company number and select Look up company."],
-          ["Enter the Unique Taxpayer Reference", "Type the company's UTR."],
-          ["Load the figures from the book", "Choose the book export file. The return takes its figures and accounts from it."],
-          ["Answer the director's loan account question", "Say whether the company has a director's loan account."],
-          ["Name the declarant", "Enter the name and status of the person signing the return."],
-          ["Preview the return", "Review the CT600 boxes and the computations."],
-          [
-            "Sign in to HMRC and submit",
-            "Enter your Government Gateway details and select Submit to HMRC. The result is the submission record.",
-          ],
-        ],
-      },
-    ],
+    journeys: [{ video: "file-company-tax-return-book" }, { video: "file-company-tax-return-typed" }],
   },
   {
     title: "Receipts",
@@ -101,21 +72,7 @@ const GROUPS = [
   {
     title: "Bundles and your account",
     intro: "Sign in, see what an activity costs and manage a subscription.",
-    journeys: [
-      { video: "sign-in" },
-      { video: "tokens" },
-      { video: "subscription-management" },
-      {
-        id: "bundles",
-        title: "View and edit your bundles",
-        steps: [
-          ["Open Bundles", "Select Bundles in the navigation bar to see your current bundles."],
-          ["Redeem a pass", "Type a passphrase under Have a Pass? and select the button to add its bundle."],
-          ["Remove a bundle", "Select Remove on a bundle you no longer want."],
-        ],
-      },
-      { video: "tour" },
-    ],
+    journeys: [{ video: "sign-in" }, { video: "tokens" }, { video: "subscription-management" }, { video: "bundles" }, { video: "tour" }],
   },
   {
     title: "Your books (diya-gl)",
