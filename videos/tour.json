@@ -109,15 +109,15 @@
         {
           "action": "click",
           "target": { "role": "link", "name": "User Guide" },
-          "caption": "The user guide walks through a return in three steps.",
-          "headline": "Three steps to submit",
-          "keyWord": "three"
+          "caption": "The user guide walks through every journey, step by step.",
+          "headline": "Every journey, step by step",
+          "keyWord": "step"
         },
-        { "action": "scroll", "target": { "text": "Submit your VAT return in 3 steps" } },
+        { "action": "await", "until": "details#view-obligations", "label": "the journeys to load" },
         { "action": "hold", "ms": 900 },
         {
           "action": "scroll",
-          "target": "#obligations",
+          "target": "#view-obligations",
           "caption": "It also covers obligations, liabilities, payments and penalties.",
           "headline": "Covers every VAT activity",
           "keyWord": "activity"
@@ -125,7 +125,7 @@
         { "action": "hold", "ms": 500 },
         {
           "action": "scroll",
-          "target": "#receipts",
+          "target": "#my-receipts",
           "caption": "Every submission leaves a receipt you can find again.",
           "headline": "Keep every receipt",
           "keyWord": "receipt"

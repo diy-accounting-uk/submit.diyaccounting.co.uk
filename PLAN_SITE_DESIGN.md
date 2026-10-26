@@ -557,9 +557,9 @@ DS1 took every page signed out, so these states need a signed-in DS1 run before 
 
 ### SQ1: every walkthrough frame, judged
 
-516 frames in 44 videos. 482 pass, 34 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
+516 frames in 44 videos. 483 pass, 33 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
 
-Fails by cause: O 4 (`change-registered-office`), C 1 (`tour/help`), E 18 (re-cut videos), 1 thirteen (`generate-pass-digital` 2, `itsa-year` 4 and `itsa-quarterly-from-books` 3 from the simulator recordings, which show `http://localhost:3000` pass links and "Period ID -" or "Submission ID -" where the ci run showed real ids), R 2 (`result-4` of each Company Tax Return video) (R = the receipts list: a "—" Size cell and the lower 45% of the frame empty).
+Fails by cause: O 4 (`change-registered-office`), E 18 (re-cut videos), 1 thirteen (`generate-pass-digital` 2, `itsa-year` 4 and `itsa-quarterly-from-books` 3 from the simulator recordings, which show `http://localhost:3000` pass links and "Period ID -" or "Submission ID -" where the ci run showed real ids), R 2 (`result-4` of each Company Tax Return video) (R = the receipts list: a "—" Size cell and the lower 45% of the frame empty).
 
 Not re-cut, frames unchanged: `change-registered-email` (passes), `change-registered-office` (no recording on this machine).
 
@@ -601,7 +601,7 @@ Not re-cut, frames unchanged: `change-registered-email` (passes), `change-regist
 | submit-return | 20 | 20 | none |
 | subscription-management | 3 | 3 | none |
 | tokens | 5 | 5 | none |
-| tour | 6 | 5 | help C |
+| tour | 6 | 6 | none |
 | vat-from-books | 16 | 16 | none |
 | vat-hmrc-assist | 16 | 16 | none |
 | view-liabilities | 7 | 7 | none |
@@ -616,7 +616,6 @@ Remaining fails, by fix:
 |---|---|---|---|
 | O | `change-registered-office` company-lookup frames | As before the cutter change | Re-record, then `node scripts/video-walkthrough.js --id <id>` |
 | R | `file-company-tax-return-book` and `-typed` result-4 | The receipts list: a "—" in the Size column and the lower 45% of the frame empty | The page shows no size for a Company Tax Return receipt and holds one row; needs a size or the column hidden in the app, or the frame cut to the table |
-| C | `tour/help` | Text at the first row where no blank band lies in the top 30% | `videos/tour.json` carries `scrollTo` on the help scene's last scroll; the scene "guide" step 1 waits for "Submit your VAT return in 3 steps", which the static site no longer shows, so the tour is not re-recorded |
 | C (not detected) | `file-psc-verification-statement` psc-1, psc-3 to psc-9 | The word "statement." from the receipt above the PSC section at the top edge | The PSC section sits at the foot of the page, so the page cannot scroll its top to the viewport top; needs the receipt collapsed or the section moved above it |
 | 1 | `generate-pass-digital` generate-3, generate-5; `itsa-year` quarterly-update-self-employment-9, -10 and quarterly-update-uk-property-9, -10; `itsa-quarterly-from-books` submit-1, -2, -5 | The simulator's pass link `http://localhost:3000/bundles.html?pass=...`; "Period ID -" and "Submission ID -" where HMRC's sandbox returns an id | Record these videos on the ci lane, or have the simulator return an id and the app's origin |
 | E | 11 frames of `accounting-spreadsheet-profit`, `mcp-hosted/connect-0..2`, `hmrc-authorise/authorise,results`, `itsa-business-details/results`, `view-obligations/results` | 70 to 80 percent blank rows: a spreadsheet grid with two rows filled, or a short form | localApp frames: crop to the filled area in the scene script's viewport; site frames: a result page shorter than the cut |

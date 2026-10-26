@@ -1976,15 +1976,15 @@
       "group": "account",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": 37612853628,
-      "sourceArtifact": "video-tour-prod",
-      "videoFile": "target/videos/video-tour-prod/tour.mp4",
-      "captionFile": "target/videos/video-tour-prod/tour.vtt",
+      "sourceRun": null,
+      "sourceArtifact": null,
+      "videoFile": "target/videos/tour-sim/tour.mp4",
+      "captionFile": "target/videos/tour-sim/tour.vtt",
       "title": "DIY Accounting Submit: a tour of the site",
-      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video is an unauthenticated tour of the site: what it does, how to use it, the bundles that unlock each activity, and where to find help and accessibility information. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
+      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video is an unauthenticated tour of the site: what it does, how to use it, the bundles that unlock each activity, and where to find help and accessibility information. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:24 About\n00:45 User guide\n01:11 Help\n01:39 Bundles\n01:59 Accessibility",
       "tags": ["DIY Accounting", "tour", "overview", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "o8QQ4mue0ao",
+      "videoId": "AtSWPCMi5Lk",
       "walkthrough": [
         {
           "scene": "home",
@@ -2006,7 +2006,7 @@
           "scene": "guide",
           "headline": "User guide",
           "caption": "It also covers obligations, liabilities, payments and penalties. Every submission leaves a receipt you can find again.",
-          "startSeconds": 44,
+          "startSeconds": 45,
           "thumb": "videos/tour/guide-thumb.webp",
           "full": "videos/tour/guide.webp"
         },
@@ -2014,7 +2014,7 @@
           "scene": "help",
           "headline": "Help",
           "caption": "Type a word to filter the questions. If nothing fits, the support form reaches a person.",
-          "startSeconds": 70,
+          "startSeconds": 71,
           "thumb": "videos/tour/help-thumb.webp",
           "full": "videos/tour/help.webp"
         },
@@ -2022,7 +2022,7 @@
           "scene": "bundles",
           "headline": "Bundles",
           "caption": "Bundles decide what you can run and how many submissions you get. Got a pass? Redeem it here.",
-          "startSeconds": 98,
+          "startSeconds": 99,
           "thumb": "videos/tour/bundles-thumb.webp",
           "full": "videos/tour/bundles.webp"
         },
@@ -2030,7 +2030,7 @@
           "scene": "accessibility",
           "headline": "Accessibility",
           "caption": "Including what still does not work. Start at submit.diyaccounting.co.uk.",
-          "startSeconds": 118,
+          "startSeconds": 119,
           "thumb": "videos/tour/accessibility-thumb.webp",
           "full": "videos/tour/accessibility.webp"
         }
