@@ -25,6 +25,9 @@ async function initializePage() {
   if (periodEnd) {
     document.getElementById("periodEnd").value = periodEnd;
   }
+  window.CarriedIdentifiers.bind("vrn", document.getElementById("vrn"));
+  window.CarriedIdentifiers.bind("periodStart", document.getElementById("periodStart"));
+  window.CarriedIdentifiers.bind("periodEnd", document.getElementById("periodEnd"));
 
   // Show synthetic indicator if hmrcAccount=synthetic
   if (hmrcAccount === "synthetic") {

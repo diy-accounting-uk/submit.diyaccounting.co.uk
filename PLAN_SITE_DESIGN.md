@@ -387,7 +387,6 @@ Stage 1: the six VAT pages and `receipt/receipts`.
 - `viewVatReturn`: signed-out panel, summary errors, no placeholder, inline `<style>` moved to `submit.css`, period dates fill their halves.
 - `vatObligations`, `vatLiabilities`, `vatPayments`, `vatPenalties`: signed-out panel, `novalidate` with the summary, `.choice` for the fraud-header option, sentence-case toggle labels.
 - `receipts`: `h1` "Your receipts", signed-out panel in place of the red line, inline `<style>` and `data-theme="light"` dropped, `Submission ID` named beside `Period ID`.
-- **Remaining**: `viewVatReturn` has no pick-from-list for the period (the obligations call is on `submitVat` only).
 
 Stage 2: the 19 `itsa/` pages.
 
@@ -401,7 +400,7 @@ Stage 2: the 19 `itsa/` pages.
 - `taxCalculation` carries an intent-to-finalise calculation ID to `finalDeclaration`.
 - `ukPropertyPeriod`: empty money fields, one hint each, dates share a row.
 - `adjustments`, `ukPropertyAdjustments`, `finalDeclaration`: "Trigger" becomes "Request". `annualSubmission`, `ukPropertyAnnualSubmission`, `lossesAndClaims`, `taxLiabilityAdjustments`: `.choice` options, signed-out panel, amount boxes narrowed.
-- **Remaining**: `Period ID` (self-employment) and `Submission ID` (property) stay two names, as `receipts` maps them; the IDs fill only after a period is chosen on the same browser session; `annualSubmission` and `ukPropertyAnnualSubmission` read the business ID from the dashboard pick only.
+- **Remaining**: `Period ID` (self-employment) and `Submission ID` (property) stay two names, as `receipts` maps them; `annualSubmission` and `ukPropertyAnnualSubmission` read the business ID from the dashboard pick only.
 
 ### DS5: root, account and error pages
 

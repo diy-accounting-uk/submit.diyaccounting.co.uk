@@ -465,6 +465,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions: use when the operator asks which donors use submit, whether donors file, or for the donor-to-usage cross reference.
     - [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them: use when a major change to anything a person sees has passed its tests, a guide or site screenshot set was refreshed, or the operator asks for a visual, look or screenshot review.
     - [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page: use when a design pass or visual review needs every page under web/public at phone and desktop width, light and dark, with the console errors each page logs.
+    - [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server: use when a session must click through the ci site as a person would, or read a page's accessibility snapshot and take screenshots.
+    - [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server: use when the playwright MCP server needs the ci lane's test user already signed in, or the state file has expired.
+    - [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role: use when the operator asks to explore ci, for an exploratory or judgement pass, or for a human-eye review of the site.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -4562,7 +4565,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -4881,6 +4884,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions
 - [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them
 - [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page
+- [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server
+- [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server
+- [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -5089,6 +5095,36 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/site-screenshots.mjs, package.json
 - **Keywords:** site screenshots, page screenshots, whole-site design pass, console errors, dark mode, responsive, phone width, empty form, index.json
 - **Related:** DEV-14, DEV-46
+
+#### DEV-48 Browse the deployed site with a headless browser MCP server
+
+- **Use when:** a session must click through the ci site as a person would, or read a page's accessibility snapshot and take screenshots.
+- **Does:** .mcp.json registers the playwright server, @playwright/mcp 0.0.83. It runs headless Chrome for Testing at 1280x800. Each context starts isolated from the storage state in .cache/playwright-mcp/ci-state.json. The operator approves the server once in /mcp.
+- **Run:** `claude mcp list`; `npx -y @playwright/mcp@0.0.83 install-browser chrome-for-testing`
+- **Entry:** `.mcp.json`
+- **Files:** .mcp.json
+- **Keywords:** playwright mcp, browser mcp, headless browser, exploratory qa, browser_navigate, browser_snapshot, storage state
+- **Related:** DEV-49, DEV-50
+
+#### DEV-49 Mint the signed-in browser state for the MCP server
+
+- **Use when:** the playwright MCP server needs the ci lane's test user already signed in, or the state file has expired.
+- **Does:** mint-exploratory-state.mjs reads cognito-native-test-credentials.json. It opens the host the ci site names in submit.env. It signs in through the Cognito Hosted UI with the password and the TOTP code. It writes the context's storage state to ci-state.json, and an empty visitor-state.json.
+- **Run:** `export AWS_PROFILE=diya-submit-ci; npm run test:enableCognitoNative && node scripts/mint-exploratory-state.mjs [--base-url <url>] [--out <dir>]; npm run test:disableCognitoNative`
+- **Entry:** `scripts/mint-exploratory-state.mjs:main`
+- **Files:** scripts/mint-exploratory-state.mjs, app/unit-tests/scripts/mintExploratoryState.test.js
+- **Keywords:** storage state, mint state, cognito native sign-in, totp, ci-state.json, visitor-state.json
+- **Related:** DEV-48, DEV-50, SITE-01
+
+#### DEV-50 Explore the deployed site role by role
+
+- **Use when:** the operator asks to explore ci, for an exploratory or judgement pass, or for a human-eye review of the site.
+- **Does:** The explore skill mints the state, then dispatches one Opus sub-agent per role: visitor, customer, practice, operator. A Sonnet sub-agent verifies each finding against the oracle. The coordinator writes one review with screenshots in the private repository and lists proposed rows.
+- **Run:** `/explore`
+- **Entry:** `.claude/skills/explore/SKILL.md`
+- **Files:** .claude/skills/explore/SKILL.md, PLAN_EXPLORATORY_QA.md
+- **Keywords:** explore skill, exploratory qa, judgement pass, role pass, review document, findings with screenshots
+- **Related:** DEV-46, DEV-48, DEV-49
 
 
 ## Spreadsheets and diya-gl (SS)
@@ -6022,8 +6058,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - break-even: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - brief completeness: [SS-48](#ss-48-refine-nextmd-before-a-wave)
 - brief preparation: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
+- browser mcp: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server)
 - browser test: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - browser tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
+- browser_navigate: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server)
+- browser_snapshot: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server)
 - brute force: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
 - bsas: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
 - bst se ltd: [SS-13](#ss-13-cross-check-figures-across-product-packages)
@@ -6133,6 +6172,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ci or prod: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - ci slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - ci-set: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex), [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
+- ci-state.json: [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - cis: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - cis benchmark: [OPS-121](#ops-121-provision-the-security-baseline-stack)
 - citation references: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
@@ -6194,6 +6234,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cognito: [SITE-01](#site-01-sign-customers-in-via-cognito), [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle), [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - cognito client id: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - cognito export: [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup)
+- cognito native sign-in: [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - cognito test user: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow), [OPS-12](#ops-12-clean-up-expired-test-users), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs), [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning)
 - cognito user pool: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention)
 - cognito-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
@@ -6577,6 +6618,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - expiry: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - expiry window: [OPS-12](#ops-12-clean-up-expired-test-users)
 - explicit date: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
+- exploratory qa: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server), [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
+- explore skill: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - export: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - export user data: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
 - export wiring: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
@@ -6619,6 +6662,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - find command: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - findings: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - findings report: [OPS-62](#ops-62-report-accessibility-penetration-testing)
+- findings with screenshots: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - finish-only rerun: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - fire and forget: [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - firehose putrecordbatch: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
@@ -6767,6 +6811,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - header nav footer: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - header validation: [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - headless: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
+- headless browser: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server)
 - headline indicators: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - headlines strip: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - health alarm: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
@@ -6917,6 +6962,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - jszip: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - judge reconciliation: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - judge rubric: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
+- judgement pass: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - jwt: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - kb-search: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - keep it green: [SS-50](#ss-50-watch-github-ci-to-green)
@@ -7069,6 +7115,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mileage: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - milestones: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - minimum functionality standards: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
+- mint state: [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - missed night: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - mock billing: [SITE-08](#site-08-bootstrap-the-app-server), [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
 - mock oauth: [SITE-08](#site-08-bootstrap-the-app-server), [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
@@ -7282,6 +7329,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - playwright component test: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - playwright config: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - playwright fixtures: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
+- playwright mcp: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server)
 - playwright recording: [DEV-40](#dev-40-record-a-product-demo-video)
 - playwright steps: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
 - pna: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
@@ -7504,12 +7552,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - revenue daily: [DATA-28](#data-28-sql-views-revenue-and-subscription)
 - revenue view: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake), [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - review: [BILL-44](#bill-44-document-the-price-update-project)
+- review document: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - review thread check: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - review threads: [SS-51](#ss-51-merge-every-pr-that-is-ready)
 - revival: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - revival notes: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch), [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - right to be forgotten: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - role diff apply: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
+- role pass: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - role prompt: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
 - root domain: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
 - rotated-at: [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags)
@@ -7721,6 +7771,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - step definitions: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
 - step functions: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - stop agents: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
+- storage state: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server), [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - storage tiering: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - strategy: [SITE-20](#site-20-document-business-governance-and-positioning)
 - stray project: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
@@ -7854,7 +7905,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - token refresh retry: [SITE-09](#site-09-track-and-poll-async-api-requests)
 - toml parser: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - tool registry: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
-- totp: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
+- totp: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle), [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - traceparent: [SITE-17](#site-17-trace-and-secure-client-requests)
 - trackevent: [SS-33](#ss-33-send-diya-gl-ga4-events)
 - trademarks: [SITE-20](#site-20-document-business-governance-and-positioning)
@@ -7976,6 +8027,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - visibility: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
 - visitor classification: [SITE-04](#site-04-track-visits-via-session-beacon)
 - visitor kind: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
+- visitor-state.json: [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - visitor_kind property: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
 - visitors by kind: [DATA-27](#data-27-sql-views-activity-and-traffic)
 - visual review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)

@@ -388,6 +388,9 @@ function displayObligations(obligations) {
       openReturn(vrn, obligation.periodKey || "", obligation.start || "", obligation.end || "");
     });
 
+    const usePeriodButton = element("button", { class: "action-button btn", type: "button" }, "Use this period");
+    usePeriodButton.addEventListener("click", () => usePeriod(obligation.start || "", obligation.end || "", periodDisplay));
+
     return element(
       "tr",
       {},
@@ -395,7 +398,7 @@ function displayObligations(obligations) {
       element("td", {}, dueDateDisplay),
       element("td", {}, element("span", statusClass ? { class: statusClass } : {}, statusText)),
       element("td", {}, receivedDisplay),
-      element("td", {}, actionButton),
+      element("td", {}, actionButton, usePeriodButton),
     );
   });
 
@@ -404,6 +407,14 @@ function displayObligations(obligations) {
 
 const formatDate = HmrcDisplayFormat.formatDate;
 const formatDateRange = HmrcDisplayFormat.formatDateRange;
+
+// Remembers the chosen period so the return view opens with its dates filled in.
+function usePeriod(periodStart, periodEnd, periodDisplay) {
+  window.CarriedIdentifiers.remember("periodStart", periodStart);
+  window.CarriedIdentifiers.remember("periodEnd", periodEnd);
+  document.getElementById("periodNextSteps").hidden = false;
+  showStatus(`Period ${periodDisplay} is chosen. View its return with the link below the list.`, "info");
+}
 
 function viewReturn(vrn, periodKey, periodStart, periodEnd) {
   // Navigate to view VAT return page with period dates (hmrcAccount is in sessionStorage)
