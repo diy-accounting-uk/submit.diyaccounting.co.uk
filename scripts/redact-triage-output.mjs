@@ -17,6 +17,17 @@ import { readFileSync, writeFileSync } from "node:fs";
 // Order matters: eori and hash64 run before vrn so a longer identifier is redacted whole
 // rather than leaving a residual 9-digit fragment unmatched by a later pass.
 export const DENY_PATTERNS = [
+  // Credential shapes run first so a digit run inside a token is not cut by the identifier passes.
+  { label: "github-token", re: /\bgh[pousr]_[A-Za-z0-9]{36,}\b/g },
+  { label: "github-pat", re: /\bgithub_pat_[A-Za-z0-9_]{22,}\b/g },
+  // A 40-character secret access key, labelled, or standing next to the word aws or secret and
+  // carrying upper case, lower case and a digit (a 40-hex git SHA has no upper case).
+  {
+    label: "aws-secret-key",
+    re: /\b(?:[Aa][Ww][Ss]|[Ss][Ee][Cc][Rr][Ee][Tt])[A-Za-z_ -]{0,30}["'\s:=]{1,6}(?=[A-Za-z0-9/+=]{40}\b)(?=[A-Za-z0-9/+=]*[A-Z])(?=[A-Za-z0-9/+=]*[a-z])(?=[A-Za-z0-9/+=]*\d)[A-Za-z0-9/+=]{40}\b/g,
+  },
+  { label: "aws-session-token", re: /\b(?:FwoGZXIvYXdzE|IQoJb3JpZ2luX2Vj)[A-Za-z0-9/+=]*/g },
+  { label: "long-base64", re: /[A-Za-z0-9+/]{200,}={0,2}/g },
   { label: "ipv4", re: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g },
   // {3,7} repeats (4-8 hex groups) rather than {2,7}: a plain HH:MM:SS clock time has only two
   // colons (three groups), and a full, uncompressed IPv6 address never has fewer than three.

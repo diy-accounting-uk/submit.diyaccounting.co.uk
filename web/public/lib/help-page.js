@@ -39,8 +39,18 @@ class HelpPage {
       const faqData = window.TOML.parse(tomlText);
       this.faqSearch = new FAQSearch(faqData.faq);
 
-      // Initial render
-      this.render(this.faqSearch.search(""));
+      // Initial render; a #<faq-id> link shows that entry first and opens it
+      const initial = this.faqSearch.search("");
+      const linkedId = decodeURIComponent(window.location.hash.slice(1));
+      const linked = faqData.faq.find((faq) => faq.id === linkedId);
+      this.render(linked ? [linked, ...initial.filter((faq) => faq.id !== linkedId)] : initial);
+      if (linked) {
+        const item = this.faqList.querySelector(`[data-id="${linked.id}"]`);
+        if (item) {
+          this.toggleFaq(item.querySelector(".faq-question"));
+          item.scrollIntoView();
+        }
+      }
     } catch (error) {
       console.error("Error loading FAQs:", error);
       this.faqList.innerHTML = '<div class="no-results"><p>Unable to load FAQs. Please refresh the page.</p></div>';
