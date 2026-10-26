@@ -105,6 +105,33 @@ Steps 1 to 7 are Claude Code's. Run every command from this repository's root.
 7. **Report** to the operator: the page path with the open command in a `!` block, the verdict per
    case in one table, the rows written, and what is not proven.
 
+## The page
+
+`index.html` is the deliverable the operator reads, and its shape is fixed: the 2026-10-25 review's
+page is the reference (operator, 2026-10-26: "this output was much better"). `build_review.py`
+writes it; a change to the builder, or CHR2's port into `scripts/companies-house-review.mjs`, keeps
+every part below, in this order, and is checked against a fresh build of that folder.
+
+1. A title with the review date, one line on what the four filings are, and a link per case.
+2. Per case, a card: Proven (input fields and totals with the mismatch count, the validator, the
+   gateway), Not proven (acceptance while PENDING; synthetic figures), Figures from (the fixture
+   and its line), Company from (the test register file), Judge (verdict and summary).
+3. "1. Our input against our output": one row per input field (input, the concept and context it
+   is tagged as, the tagged value, shown as text, result), then one row per total (rule, tagged,
+   recomputed, result).
+4. "2. Companies House's rules and requests": per findings.md row, the check, why we check it
+   (email, TIS or section of the Act), the result, what we found, links to the data, the judge's
+   note; then "2b. Checks the judge added" in the same columns; the visible text and the validator
+   output folded underneath.
+5. "3. What the gateway answered": taken for processing (qualifier, errors, gateway time) and the
+   last status, with links to the three source files.
+6. "4. Our layout beside a published example": ours and the example side by side, the example
+   named as a different company for layout only, and the link to fact-comparison.md.
+7. "5. Judge's reasoning": the paragraphs from judge.json.
+
+Colours carry meaning only: green for a match or pass, red for a mismatch or fail, amber for
+pending or a question. The page works at 390 pixels wide with no sideways scroll, and in dark mode.
+
 ## Rules
 
 - `source/` is our data only. The example is a different company; never put it in `source/` and
