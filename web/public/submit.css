@@ -750,10 +750,20 @@ dd {
     display: none;
   }
 
+  /* Two rows: the 2.75rem icons, the 2.5rem account row, the padding and the rule.
+     The fallback reserves the same height so the band's insertion does not move the title. */
+  header {
+    --phone-band-height: calc(2.75rem + 2.5rem + var(--space-1) + 3px);
+  }
+
+  .chrome-fallback {
+    height: var(--phone-band-height);
+  }
+
   .header-nav {
     flex-wrap: wrap;
     height: auto;
-    min-height: var(--band-height);
+    min-height: var(--phone-band-height);
     row-gap: 0;
     padding-bottom: var(--space-1);
   }
