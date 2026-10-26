@@ -14,6 +14,7 @@ import { openBook } from "./book-tools.js";
 import { deriveItsaAnnualSubmission } from "./itsa-tools.js";
 
 export const HOSTED_TOOL_NAMES = [
+  "list_books",
   "open_book",
   "derive_vat_return",
   "derive_micro_entity_accounts",

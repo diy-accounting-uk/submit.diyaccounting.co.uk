@@ -13,7 +13,7 @@ import { fileURLToPath } from "node:url";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
-import { createSession, openBook, saveBook, SAVE_FORMATS } from "./book-tools.js";
+import { createSession, listBooks, openBook, saveBook, SAVE_FORMATS } from "./book-tools.js";
 import { signIn, signOut } from "./auth.js";
 import { writeFinancePackage } from "./finance/package-writer.js";
 import { deriveMicroEntityAccounts, deriveSmallCompanyAccounts } from "./accounts-tools.js";
@@ -209,6 +209,15 @@ export const TOOLS = {
       clientId: z.string().optional().describe("A practice client's id, to open that client's book instead of the practice's own"),
     },
     handler: openBook,
+  },
+  list_books: {
+    description:
+      "List the books saved in the DIYA cloud, most recently updated first, signed in as the session's credentials. Each " +
+      "row carries the bookId open_book takes. With clientId, lists that practice client's books instead of the practice's own.",
+    inputSchema: {
+      clientId: z.string().optional().describe("A practice client's id, to list that client's books instead of the practice's own"),
+    },
+    handler: listBooks,
   },
   save_book: {
     description:
