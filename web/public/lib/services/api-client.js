@@ -210,6 +210,15 @@ export async function authorizedFetch(input, init = {}) {
   return second;
 }
 
+async function isUpstreamRejection(response) {
+  try {
+    const body = await response.clone().json();
+    return Boolean(body && (body.error || body.responseCode));
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Fetch with ID token and automatic 401/403 handling
  * This is specifically for endpoints that use the Authorization header with idToken
@@ -252,6 +261,10 @@ export async function fetchWithIdToken(input, init = {}) {
 
   // Handle 401 Unauthorized - token expired or invalid
   if (response.status !== 401) return response;
+
+  // A 401 the upstream provider caused (its OAuth error rides in the body) is not a Cognito
+  // expiry, and a refreshed session would meet the same answer.
+  if (await isUpstreamRejection(response)) return response;
 
   // One-time retry after forcing refresh
   console.log("Received 401, attempting token refresh...");

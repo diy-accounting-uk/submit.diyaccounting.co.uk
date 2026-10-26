@@ -100,6 +100,39 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
     await expect(resultsContainer).toBeHidden();
   });
 
+  test("leaves a pending VAT request alone and makes no API call", async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem("hmrcAccessToken", "stale-token");
+      sessionStorage.setItem("pendingObligationsRequest", JSON.stringify({ vrn: "123456789" }));
+      sessionStorage.setItem("currentActivity", "/hmrc/vat/vatObligations.html");
+    });
+    const apiCalls = [];
+    await page.route("**/api/**", async (route) => {
+      apiCalls.push(route.request().url());
+      await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
+    });
+    await page.route("**/*.js", async (route) => {
+      if (route.request().resourceType() === "script") {
+        await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+      } else {
+        await route.continue();
+      }
+    });
+    await page.route("**/hmrc/itsa/obligations.html", async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: obligationsHtmlContent });
+    });
+    await serveItsaPageScripts(page);
+    await serveCarriedIdentifiers(page);
+
+    await page.goto("http://localhost:3000/hmrc/itsa/obligations.html", { waitUntil: "domcontentloaded" });
+    await delay(500);
+
+    expect(apiCalls).toEqual([]);
+    await expect(page.locator("#itsaObligationsForm")).toBeVisible();
+    const stored = await page.evaluate(() => sessionStorage.getItem("pendingObligationsRequest"));
+    expect(JSON.parse(stored)).toEqual({ vrn: "123456789" });
+  });
+
   test("uppercases the NINO as the user types", async ({ page }) => {
     await page.route("**/*.js", async (route) => {
       const request = route.request();

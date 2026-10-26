@@ -71,7 +71,7 @@ async function handleOAuthCallback() {
       succeeded = true;
     } catch (error) {
       console.error("Submission error:", error);
-      showStatus(`Submission failed: ${error.message}`, "error");
+      showStatus(`HMRC sign-in for ${pendingActivityName()} failed: ${error.message}`, "error");
     } finally {
       hideLoading();
     }
@@ -94,11 +94,32 @@ document.getElementById("navigationBtn").addEventListener("click", () => {
   window.location.href = navigationTarget;
 });
 
+const UPPERCASE_WORDS = new Set(["vat", "itsa", "nino", "hmrc", "bsas", "uk"]);
+
+// The name of the activity the pending request was for, from the page it was stored on:
+// "/hmrc/vat/vatObligations.html" is "VAT obligations".
+function pendingActivityName() {
+  const currentActivity = sessionStorage.getItem("currentActivity");
+  const fileName = currentActivity
+    ? currentActivity
+        .split("?")[0]
+        .split("/")
+        .pop()
+        .replace(/\.html$/, "")
+    : "";
+  if (!fileName) return "HMRC";
+  return fileName
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .split(" ")
+    .map((word) => (UPPERCASE_WORDS.has(word.toLowerCase()) ? word.toUpperCase() : word.toLowerCase()))
+    .join(" ");
+}
+
 function offerReturnToActivity() {
   const currentActivity = sessionStorage.getItem("currentActivity");
   const navigationBtn = document.getElementById("navigationBtn");
   if (currentActivity && navigationBtn) {
-    navigationBtn.textContent = "Back to VAT submission";
+    navigationBtn.textContent = `Back to ${pendingActivityName()}`;
     navigationTarget = currentActivity;
   }
 }

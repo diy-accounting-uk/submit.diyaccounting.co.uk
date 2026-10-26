@@ -201,6 +201,12 @@ public class SubmitApplication {
                 : "(unknown cognitoUserPoolId because no cognitoUserPoolArn)";
         var hmrcClientSecretArn =
                 envOr("HMRC_CLIENT_SECRET_ARN", appProps.hmrcClientSecretArn, "(from hmrcClientSecretArn in cdk.json)");
+        var hmrcClientId = envOr("HMRC_CLIENT_ID", appProps.hmrcClientId, "(from hmrcClientId in cdk.json)");
+        var hmrcBaseUri = envOr("HMRC_BASE_URI", appProps.hmrcBaseUri, "(from hmrcBaseUri in cdk.json)");
+        var hmrcAgentAuthorisationBaseUri = envOr(
+                "HMRC_AGENT_AUTHORISATION_BASE_URI",
+                appProps.hmrcAgentAuthorisationBaseUri,
+                "(from hmrcAgentAuthorisationBaseUri in cdk.json)");
         var hmrcSandboxClientSecretArn = envOr(
                 "HMRC_SANDBOX_CLIENT_SECRET_ARN",
                 appProps.hmrcSandboxClientSecretArn,
@@ -384,8 +390,8 @@ public class SubmitApplication {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
-                        .hmrcBaseUri(appProps.hmrcBaseUri)
-                        .hmrcClientId(appProps.hmrcClientId)
+                        .hmrcBaseUri(hmrcBaseUri)
+                        .hmrcClientId(hmrcClientId)
                         .hmrcClientSecretArn(hmrcClientSecretArn)
                         .hmrcSandboxBaseUri(appProps.hmrcSandboxBaseUri)
                         .hmrcSandboxClientId(appProps.hmrcSandboxClientId)
@@ -411,7 +417,7 @@ public class SubmitApplication {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
-                        .hmrcBaseUri(appProps.hmrcBaseUri)
+                        .hmrcBaseUri(hmrcBaseUri)
                         .hmrcSandboxBaseUri(appProps.hmrcSandboxBaseUri)
                         .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
                         .build());
@@ -477,9 +483,7 @@ public class SubmitApplication {
                         .githubAppInstallationId(githubAppInstallationId != null ? githubAppInstallationId : "")
                         .feedbackEngagementEnabled("true".equalsIgnoreCase(appProps.feedbackEngagementEnabled))
                         .hmrcAgentAuthorisationBaseUri(
-                                appProps.hmrcAgentAuthorisationBaseUri != null
-                                        ? appProps.hmrcAgentAuthorisationBaseUri
-                                        : "")
+                                hmrcAgentAuthorisationBaseUri != null ? hmrcAgentAuthorisationBaseUri : "")
                         .booksAllowedOrigins(booksAllowedOrigins)
                         .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
                         .build());
@@ -572,8 +576,8 @@ public class SubmitApplication {
                             .baseImageTag(baseImageTag)
                             .cognitoUserPoolId(cognitoUserPoolId)
                             .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
-                            .hmrcBaseUri(appProps.hmrcBaseUri)
-                            .hmrcClientId(appProps.hmrcClientId)
+                            .hmrcBaseUri(hmrcBaseUri)
+                            .hmrcClientId(hmrcClientId)
                             .hmrcClientSecretArn(hmrcClientSecretArn)
                             .hmrcSandboxBaseUri(appProps.hmrcSandboxBaseUri)
                             .hmrcSandboxClientId(appProps.hmrcSandboxClientId)

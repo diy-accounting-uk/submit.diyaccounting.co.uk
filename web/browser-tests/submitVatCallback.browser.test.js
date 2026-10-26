@@ -86,7 +86,7 @@ test.describe("VAT submission OAuth callback error persistence", () => {
 
     const errorMessage = page.locator(".status-message.status-error, .status-error");
     await expect(errorMessage).toBeVisible();
-    await expect(errorMessage).toContainText("Submission failed");
+    await expect(errorMessage).toContainText("HMRC sign-in for submit VAT failed");
 
     // The page must not have navigated away, and the message must still be present
     // after a delay long enough to read it.
@@ -96,13 +96,33 @@ test.describe("VAT submission OAuth callback error persistence", () => {
 
     // The user gets an explicit way back to retry, rather than an automatic redirect.
     const navigationBtn = page.locator("#navigationBtn");
-    await expect(navigationBtn).toHaveText("Back to VAT submission");
+    await expect(navigationBtn).toHaveText("Back to submit VAT");
 
     // The message has a dismiss control consistent with the shared status widget.
     const closeButton = errorMessage.locator(".status-close-button");
     await expect(closeButton).toBeVisible();
     await closeButton.click();
     await expect(errorMessage).toHaveCount(0);
+  });
+
+  test("names the obligations activity when its token exchange is rejected", async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem("oauth_state", "expected-state");
+      sessionStorage.setItem("currentActivity", "/hmrc/vat/vatObligations.html");
+    });
+    await setupRoutes(page, {
+      tokenResponseStatus: 401,
+      tokenResponseBody: { message: "Upstream token endpoint rejected the token exchange", error: "invalid_client" },
+    });
+
+    await page.goto("http://localhost:3000/activities/submitVatCallback.html?code=test-code&state=expected-state", {
+      waitUntil: "domcontentloaded",
+    });
+
+    const errorMessage = page.locator(".status-message.status-error, .status-error");
+    await expect(errorMessage).toContainText("HMRC sign-in for VAT obligations failed");
+    await expect(errorMessage).not.toContainText("Submission failed");
+    await expect(page.locator("#navigationBtn")).toHaveText("Back to VAT obligations");
   });
 
   test("redirects back to the pending activity after a successful token exchange", async ({ page }) => {
