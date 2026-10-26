@@ -34,8 +34,8 @@ section is their board.
 | B34c | `CompaniesHouseStack.java` sets the prod gateway values; one accounts filing on the prod lane for the operator's own company, polled to a terminal state; `prod` added to the activity's `environments` and `resident`'s listing | ~5 | Sonnet | O34c |
 | CS-A4 | Claude Code assembles the evidence pack from a `companies-house-test-service.yml` run inside 14 days; the operator sends it to `xml@companieshouse.gov.uk` (the live package reference is OCS1, asked for once every test passes) | 0 | Sonnet | — (in flight: the pack from run 38029097822 rides on B34's email) |
 | CS-11b | Customer prod launch: `prod` on the confirmation statement activity's `environments`, the live Stripe price for the £61.35 fee, prod gateway values and the live package reference, the operator's own proof filing first, `compliance.toml` rows | ~7 | Sonnet | CS-A4, CS-11a |
-| OCH1 | Companies House sandbox user for the opt-in ci REST suites, created by a session under `antony+ch-sandbox@diyaccounting.co.uk` (NEXT.md OCH1) | 0 | Sonnet | none |
-| OCH1k | A sandbox Test API client key from the Developer Hub, set as `COMPANIES_HOUSE_SANDBOX_API_KEY` on ci (NEXT.md OCH1k) | 0 | none | none |
+| OCH1 | Companies House sandbox user for the opt-in ci REST suites, created by a session under `antony+ch-sandbox@diyaccounting.co.uk` (NEXT.md OCH1). On main (72dc8535d) | 0 | Sonnet | none |
+| OCH1k | A sandbox Test API client key from the Developer Hub, set as `COMPANIES_HOUSE_SANDBOX_API_KEY` on ci (NEXT.md OCH1k). On main (0d46e6ae9) | 0 | none | none |
 
 ### Human-driven
 

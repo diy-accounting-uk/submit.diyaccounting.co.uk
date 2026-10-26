@@ -508,7 +508,7 @@ Codes: **O** overlay hides page text (criterion 7). **C** crop cuts text or a co
 
 By criterion: 7 (O) 21 frames, 3 (C) 17, 4 (E) 5, 1 (D) 4, 9 (A) 5, 2 (B) 1.
 
-Tabled fails, one row each for the board:
+GJ2 on main (089437317). Tabled fails, one row each for the board:
 
 - **GJ2-O (21 frames).** The headline card burned into the recording sits over page text: the `h1` on `company-lookup-0`, `result-0` and `result-3`; "Choose a file" on `company-lookup-3`; the "Amount (£)" header on `accounts-form-2` and `-8`; a field label on `accounts-form-18` and `-38`; "Date approved" on `accounts-form-39`; "Submission 000002 was ACCEPT" on `psc-6`; "All your receipts" on `psc-9` and `record`. Fix: place the card where it covers no page text, in `scripts/lib/video/` (the card) and `scripts/video-walkthrough.js` (the frame cut). Record the three videos again.
 - **GJ2-C (17 frames).** The scroll position cuts a line or a control at the top edge: the date field on `accounts-form-2`, `-7` and `-8`; input boxes on `-18`, `-19`, `-35` and `-38`; "Filed 26 October 2026" on every `psc-*` frame and `record`; the top button on `bundles/pass`; the header on `bundles/remove`; the iframe text and the code field on `preview`. Fix: scroll each scene to a block boundary in `videos/file-small-company-accounts.json`, `videos/file-psc-verification-statement.json` and `videos/bundles.json`. Record again.

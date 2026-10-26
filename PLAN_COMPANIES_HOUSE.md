@@ -300,11 +300,11 @@ The PSC verification statement joins rows 1 to 9 with CS-13b.
 
 ## Horizons
 
-**PSC verification statement (VS01).** CS-13 splits into the build and the sandbox proof. CS-13a:
+**PSC verification statement (VS01).** CS-13 splits into the build and the sandbox proof. CS-13a (on main, e7a806bb3):
 `buildPscVerificationStatementSubmission` over `PSCVerificationStatement-v1-0.xsd` (its fixture
 landed with CS-1), a submit and poll Lambda pair through the shared `pollSubmission`, a simulator
 class, tests, and a result-view section on the confirmation statement page for each director-PSC —
-machine-only, nothing blocks it. CS-13b: its cases in the CS-A2 harness, run by its weekly workflow, blocked
+machine-only, nothing blocks it. CS-13b (on main, ff612ab0f): its cases in the CS-A2 harness, run by its weekly workflow, blocked
 by CS-13a and CS-A2.
 
 **FRS 102 section 1A small-company accounts (34e), dormant company accounts (34f), and CT600
