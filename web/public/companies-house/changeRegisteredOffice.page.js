@@ -165,6 +165,27 @@ function renderFilingResult(transaction) {
   container.replaceChildren(...paragraphs);
 }
 
+async function renderFilingRecord(transaction) {
+  const { registeredChangeCopyHtml, todayText } = await import("../lib/filing-result-record.js");
+  const html = registeredChangeCopyHtml({
+    title: "Change of registered office address",
+    companyNumber: filing.companyNumber,
+    transaction,
+    details: [
+      ["Premises", filing.premises],
+      ["Address line 1", filing.addressLine1],
+      ["Address line 2", filing.addressLine2],
+      ["Town or city", filing.locality],
+      ["County", filing.region],
+      ["Postcode", filing.postalCode],
+      ["Country", filing.country],
+    ],
+    dateText: todayText(),
+  });
+  const parsed = new DOMParser().parseFromString(html, "text/html");
+  document.getElementById("filingRecord").replaceChildren(...parsed.body.childNodes);
+}
+
 function renderValidationErrors(errors) {
   const container = document.getElementById("validationErrors");
   container.style.display = "block";
@@ -219,6 +240,7 @@ async function runFilingSequence() {
     const transaction = await pollTransactionUntilSettled(filing.transactionId);
 
     renderFilingResult(transaction);
+    await renderFilingRecord(transaction);
     document.getElementById("startAgainBtn").style.display = "inline-block";
     clearPendingFiling();
     showView("resultView");
@@ -249,6 +271,7 @@ function startAgain() {
   document.getElementById("companyForm").reset();
   document.getElementById("officeAddressForm").reset();
   document.getElementById("validationErrors").style.display = "none";
+  document.getElementById("filingRecord").replaceChildren();
   document.getElementById("startAgainBtn").style.display = "none";
   hideStatus();
   showView("companyView");

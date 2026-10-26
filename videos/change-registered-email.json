@@ -238,7 +238,7 @@
         },
         {
           "action": "scroll",
-          "target": "#filingResult"
+          "target": "#filingRecord"
         },
         {
           "action": "hold",
@@ -251,7 +251,7 @@
         {
           "action": "hold",
           "ms": 6500,
-          "caption": "The reference and the outcome are the record of this change.",
+          "caption": "The record shows the submission number, the status, the date and the change as submitted.",
           "headline": "The filing record",
           "keyWord": "record"
         }

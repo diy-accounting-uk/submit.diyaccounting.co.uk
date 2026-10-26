@@ -2252,7 +2252,7 @@
           "step": 0,
           "headline": "Open the activity",
           "caption": "Open Change Registered Office Address to find the company.",
-          "startSeconds": 6,
+          "startSeconds": 5,
           "thumb": "videos/change-registered-office/company-lookup-0-thumb.webp",
           "full": "videos/change-registered-office/company-lookup-0.webp"
         },
@@ -2287,7 +2287,7 @@
           "scene": "new-address",
           "headline": "The new address",
           "caption": "Confirm the address is one the company can be reached at. Review before anything is filed.",
-          "startSeconds": 32,
+          "startSeconds": 31,
           "thumb": "videos/change-registered-office/new-address-thumb.webp",
           "full": "videos/change-registered-office/new-address.webp"
         },
@@ -2302,13 +2302,13 @@
         {
           "scene": "result",
           "headline": "The outcome",
-          "caption": "Companies House settles on an outcome. The reference and the outcome are the record of this change.",
+          "caption": "Companies House settles on an outcome. The record shows the submission number, the status, the date and the change as submitted.",
           "startSeconds": 79,
           "thumb": "videos/change-registered-office/result-thumb.webp",
           "full": "videos/change-registered-office/result.webp"
         }
       ],
-      "videoId": "OWeaPepvbyY"
+      "videoId": "_LYmQm5_RFA"
     },
     {
       "id": "change-registered-email",
@@ -2321,7 +2321,7 @@
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered email address: check eligibility, enter the new address, review it, then file with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. It ends on the filing result with its Companies House reference. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Which company?\n00:32 The new address\n00:53 Review\n01:06 The outcome",
       "tags": ["DIY Accounting", "Companies House", "registered email", "sandbox"],
       "categoryId": "27",
-      "videoId": "G1jCq7pi6IQ",
+      "videoId": "a88kbuvhIs4",
       "walkthrough": [
         {
           "scene": "company-lookup",
@@ -2346,7 +2346,7 @@
           "step": 3,
           "headline": "Check eligibility first",
           "caption": "This checks eligibility at Companies House.",
-          "startSeconds": 19,
+          "startSeconds": 18,
           "thumb": "videos/change-registered-email/company-lookup-3-thumb.webp",
           "full": "videos/change-registered-email/company-lookup-3.webp"
         },
@@ -2355,7 +2355,7 @@
           "step": 4,
           "headline": "Grant Companies House access",
           "caption": "Sign in to Companies House and say yes once.",
-          "startSeconds": 25,
+          "startSeconds": 24,
           "thumb": "videos/change-registered-email/company-lookup-4-thumb.webp",
           "full": "videos/change-registered-email/company-lookup-4.webp"
         },
@@ -2378,8 +2378,8 @@
         {
           "scene": "result",
           "headline": "The outcome",
-          "caption": "Companies House settles on an outcome. The reference and the outcome are the record of this change.",
-          "startSeconds": 66,
+          "caption": "Companies House settles on an outcome. The record shows the submission number, the status, the date and the change as submitted.",
+          "startSeconds": 65,
           "thumb": "videos/change-registered-email/result-thumb.webp",
           "full": "videos/change-registered-email/result.webp"
         }

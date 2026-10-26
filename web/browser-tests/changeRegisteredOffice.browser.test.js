@@ -4,7 +4,7 @@
 // web/browser-tests/changeRegisteredOffice.browser.test.js
 
 import { test, expect } from "@playwright/test";
-import { servePageScripts } from "./hmrcFieldTableAssets.js";
+import { servePageScripts, serveFilingResultRecord } from "./hmrcFieldTableAssets.js";
 import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
@@ -47,9 +47,13 @@ test.describe("Change Registered Office Address page", () => {
     });
   }
 
-  async function setupRoutes(page, { address = CURRENT_ADDRESS, lookupError = null } = {}) {
+  async function setupRoutes(
+    page,
+    { address = CURRENT_ADDRESS, lookupError = null, filingBaseUri = "https://api-sandbox.company-information.service.gov.uk" } = {},
+  ) {
     await page.addInitScript(
-      ({ addressArg, lookupErrorArg }) => {
+      ({ addressArg, lookupErrorArg, filingBaseUriArg }) => {
+        window.envReady = Promise.resolve({ COMPANIES_HOUSE_FILING_BASE_URI: filingBaseUriArg });
         window.showStatus = window.showStatus || (() => {});
         window.hideStatus = window.hideStatus || (() => {});
         window.showLoading = window.showLoading || (() => {});
@@ -103,7 +107,7 @@ test.describe("Change Registered Office Address page", () => {
             ],
           });
       },
-      { addressArg: address, lookupErrorArg: lookupError },
+      { addressArg: address, lookupErrorArg: lookupError, filingBaseUriArg: filingBaseUri },
     );
 
     const modifiedHtml = pageHtmlContent.replace("<head>", '<head><base href="http://localhost:3000/companies-house/">');
@@ -124,6 +128,7 @@ test.describe("Change Registered Office Address page", () => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
     });
     await servePageScripts(page);
+    await serveFilingResultRecord(page);
   }
 
   async function loadPage(page) {
@@ -270,5 +275,49 @@ test.describe("Change Registered Office Address page", () => {
     const openCalls = await page.evaluate(() => window.__openTransactionCalls);
     expect(openCalls).toHaveLength(1);
     expect(openCalls[0].companyNumber).toBe("00000001");
+  });
+
+  test("shows the filing result as a submission record with the new address", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+
+    await lookUpCompany(page);
+    await fillInAddress(page);
+    await page.check("#acceptOfficeStatement");
+    await page.click("#continueBtn");
+    await delay(200);
+    await page.click("#submitFilingBtn");
+    await delay(500);
+
+    const record = page.locator("#filingRecord .customer-copy");
+    await expect(record).toBeVisible();
+    await expect(record.locator(".customer-copy-submission")).toContainText("test-transaction-id");
+    await expect(record.locator(".customer-copy-status")).toHaveText("Accepted by Companies House");
+    await expect(record.locator(".customer-copy-submission")).toContainText(String(new Date().getFullYear()));
+    await expect(record).toContainText("Bedford Road");
+    await expect(record).toContainText("LS12 3AB");
+    await expect(record).toContainText("00000001");
+  });
+
+  test("the banner reads sandbox when the filing service is the Companies House test service", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+
+    const banner = page.locator("p.hint[data-feature-status]").first();
+    await expect(banner).toHaveAttribute("data-feature-status", "sandbox");
+    await expect(banner).toContainText("Status: sandbox.");
+    await expect(banner).toContainText("test service");
+  });
+
+  test("the banner reads production when the filing service is the live register", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page, { filingBaseUri: "https://api.company-information.service.gov.uk" });
+    await loadPage(page);
+
+    const banner = page.locator("p.hint[data-feature-status]").first();
+    await expect(banner).toHaveAttribute("data-feature-status", "production");
+    await expect(banner).toContainText("Status: production.");
   });
 });
