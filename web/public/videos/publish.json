@@ -2094,22 +2094,22 @@
       "group": "account",
       "publish": true,
       "pipelineVersion": 10,
-      "sourceRun": 38013644172,
-      "sourceArtifact": "video-generate-pass-digital-prod",
-      "videoFile": "target/videos/video-generate-pass-digital-prod/generate-pass-digital.mp4",
-      "captionFile": "target/videos/video-generate-pass-digital-prod/generate-pass-digital.vtt",
+      "sourceRun": null,
+      "sourceArtifact": null,
+      "videoFile": "target/videos/generate-pass-digital-sim/generate-pass-digital.mp4",
+      "captionFile": "target/videos/generate-pass-digital-sim/generate-pass-digital.vtt",
       "title": "DIY Accounting Submit: generate a digital pass to give away",
-      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows generating a digital pass: a shareable link that gives whoever redeems it free VAT submission access for 7 days. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
+      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows generating a digital pass: a shareable link that gives whoever redeems it free VAT submission access for 7 days. This is a recording against a local simulator, not a live system. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:00 Sign in\n00:06 Resident VAT\n00:15 Generate the pass",
       "tags": ["DIY Accounting", "digital pass", "day pass", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "sR5gi4CJlx4",
+      "videoId": "nYATYJWMKVU",
       "walkthrough": [
         {
           "scene": "generate",
           "step": 0,
           "headline": "Open Generate Digital Pass",
           "caption": "This spends a handful of tokens to mint a shareable pass.",
-          "startSeconds": 30,
+          "startSeconds": 15,
           "thumb": "videos/generate-pass-digital/generate-0-thumb.webp",
           "full": "videos/generate-pass-digital/generate-0.webp"
         },
@@ -2118,7 +2118,7 @@
           "step": 2,
           "headline": "Add a note (optional)",
           "caption": "A note for your own records, not shown to whoever redeems it.",
-          "startSeconds": 39,
+          "startSeconds": 23,
           "thumb": "videos/generate-pass-digital/generate-2-thumb.webp",
           "full": "videos/generate-pass-digital/generate-2.webp"
         },
@@ -2127,7 +2127,7 @@
           "step": 3,
           "headline": "Always redeemed anonymously",
           "caption": "Companies House and HMRC never see who redeems it.",
-          "startSeconds": 46,
+          "startSeconds": 31,
           "thumb": "videos/generate-pass-digital/generate-3-thumb.webp",
           "full": "videos/generate-pass-digital/generate-3.webp"
         },
@@ -2136,7 +2136,7 @@
           "step": 5,
           "headline": "Share this code",
           "caption": "This is the pass code, ready to share.",
-          "startSeconds": 54,
+          "startSeconds": 40,
           "thumb": "videos/generate-pass-digital/generate-5-thumb.webp",
           "full": "videos/generate-pass-digital/generate-5.webp"
         }

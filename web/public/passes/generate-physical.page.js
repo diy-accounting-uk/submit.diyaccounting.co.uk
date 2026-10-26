@@ -219,11 +219,11 @@ document.getElementById("generatePassBtn").addEventListener("click", async () =>
 
     // Display result
     __generatedPassCode = body.code;
-    __generatedPassUrl = body.url;
+    __generatedPassUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(body.code)}`;
     __generatedWords = body.code.split("-");
 
     document.getElementById("generatedPassCode").textContent = body.code;
-    document.getElementById("generatedPassUrl").textContent = body.url;
+    document.getElementById("generatedPassUrl").textContent = __generatedPassUrl;
     document.getElementById("passCodeSmall").textContent = body.code;
 
     // Render front and back previews

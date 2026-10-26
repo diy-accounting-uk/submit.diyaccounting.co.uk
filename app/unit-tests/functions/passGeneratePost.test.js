@@ -121,7 +121,7 @@ describe("passGeneratePost", () => {
     expect(body.maxUses).toBe(20);
     expect(body.tokensConsumed).toBe(10);
     expect(body.tokensRemaining).toBe(90);
-    expect(body.url).toContain("bundles.html?pass=tiger-happy-mountain-silver");
+    expect(body).not.toHaveProperty("url");
   });
 
   test("returns 200 with pass details on success (physical-pass)", async () => {

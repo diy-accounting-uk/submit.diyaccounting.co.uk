@@ -495,7 +495,11 @@ async function handleFormSubmission(event) {
 
 function displayResult(result) {
   const periodIdResult = document.getElementById("periodIdResult");
-  periodIdResult.textContent = result?.periodId || "-";
+  // HMRC's cumulative model (2025-26 onwards) answers 204 with no period ID: the year's running
+  // total is the one resource, so the result reads "Year to date" as the submission record does.
+  const hasPeriodId = Boolean(result?.periodId);
+  document.getElementById("periodIdLabel").textContent = hasPeriodId ? "Period ID" : "Reporting";
+  periodIdResult.textContent = hasPeriodId ? result.periodId : "Year to date";
 }
 
 document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {
