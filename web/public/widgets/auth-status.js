@@ -162,7 +162,10 @@
       const userLabel = pickDisplayName(user);
       console.log("User info:", user);
       console.log("User label:", userLabel);
-      loginStatusElement.textContent = "Logged in as " + userLabel;
+      const prefix = document.createElement("span");
+      prefix.className = "login-prefix";
+      prefix.textContent = "Logged in as ";
+      loginStatusElement.replaceChildren(prefix, userLabel);
       loginLinkElement.textContent = "Logout";
       loginLinkElement.href = "#";
       loginLinkElement.onclick = logout;

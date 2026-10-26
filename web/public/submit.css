@@ -475,7 +475,7 @@ header:has(> .chrome-fallback) {
 }
 
 /* The home icon lines up with the content edge below it. When the account
-   row is wide, the brand name gives way first and ends in an ellipsis. */
+   row is wide, the signed-in line wraps and the brand name keeps its width. */
 .home-link {
   padding-left: 0;
   justify-content: flex-start;
@@ -504,9 +504,7 @@ header:has(> .chrome-fallback) {
   font-weight: var(--weight-strong);
   font-size: var(--step-1);
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  min-width: 0;
+  flex-shrink: 0;
 }
 
 /* Home icon used outside the band */
@@ -568,9 +566,9 @@ header:has(> .chrome-fallback) {
 .login-status {
   color: var(--c-ink-muted);
   font-size: var(--step--1);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.2;
+  text-align: right;
+  overflow-wrap: anywhere;
   min-width: 0;
 }
 
@@ -748,8 +746,13 @@ dd {
     margin-bottom: var(--space-1);
   }
 
-  .brand-name {
+  .brand-name,
+  .login-prefix {
     display: none;
+  }
+
+  .login-status {
+    line-height: 1.1;
   }
 
   header h1 {
