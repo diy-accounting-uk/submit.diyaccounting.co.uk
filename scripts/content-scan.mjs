@@ -31,6 +31,8 @@ const RESERVED_EMAIL_DOMAINS = ["example.com", "example.org", "example.net"];
 const RESERVED_EMAIL_TLDS = ["example", "test", "invalid", "localhost"];
 
 const PERSONAL_DATA_EXEMPT_PREFIXES = [
+  // Third-party bundles vendored from npm: their minified text is not authored here.
+  "web/public/docs/api/vendor/",
   "app/unit-tests/",
   "app/system-tests/",
   "web/unit-tests/",

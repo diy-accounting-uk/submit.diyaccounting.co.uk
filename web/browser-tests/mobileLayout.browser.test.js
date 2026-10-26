@@ -129,3 +129,62 @@ test.describe("Mobile layout - specific findings", () => {
     expect(await hasRealHorizontalScroll(page)).toBe(false);
   });
 });
+
+test.describe("Header text is never truncated", () => {
+  const LONG_ADDRESS = "synthetic-user@test.diyaccounting.co.uk";
+
+  async function openHeader(page, width, signedIn) {
+    await page.setViewportSize({ width, height: 700 });
+    await serveRealSite(page);
+    await page.addInitScript(
+      ({ signedIn, address }) => {
+        try {
+          if (signedIn) localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: address }));
+          else {
+            localStorage.removeItem("userInfo");
+            localStorage.removeItem("cognitoIdToken");
+          }
+        } catch {}
+      },
+      { signedIn, address: LONG_ADDRESS },
+    );
+    await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+    await delay(500);
+  }
+
+  for (const width of [1000, 390]) {
+    for (const signedIn of [true, false]) {
+      const state = signedIn ? "signed in" : "signed out";
+      test(`brand and signed-in line fit whole at ${width}px, ${state}`, async ({ page }) => {
+        await openHeader(page, width, signedIn);
+
+        const status = page.locator(".login-status");
+        await expect(status).toHaveText(signedIn ? `Logged in as ${LONG_ADDRESS}` : "Not logged in");
+        const fits = await page.evaluate(() =>
+          [".login-status", ".brand-name"].map((selector) => {
+            const el = document.querySelector(selector);
+            const style = getComputedStyle(el);
+            return {
+              selector,
+              hidden: style.display === "none",
+              clipped: el.scrollWidth > el.clientWidth || el.scrollHeight - el.clientHeight > 1,
+              ellipsis: style.textOverflow === "ellipsis" && style.overflow !== "visible",
+            };
+          }),
+        );
+        for (const item of fits) {
+          if (item.hidden) continue;
+          expect(item.clipped, `${item.selector} is clipped`).toBe(false);
+          expect(item.ellipsis, `${item.selector} ends in an ellipsis`).toBe(false);
+        }
+        if (width === 1000) await expect(page.locator(".brand-name")).toBeVisible();
+        await expect(status).toBeInViewport({ ratio: 1 });
+        await expect(page.locator(".login-link")).toBeInViewport({ ratio: 1 });
+
+        await page.locator(".header-nav").screenshot({
+          path: `target/header-text/header-${width}-${signedIn ? "signed-in" : "signed-out"}.png`,
+        });
+      });
+    }
+  }
+});

@@ -635,7 +635,7 @@ test.describe("Operator Dashboard", () => {
 
       await expect(page.locator(".login-status")).toHaveText("Not logged in");
       await expect(page.locator(".login-link")).toHaveText("Log in");
-      await expect(page.locator(".login-link")).toHaveAttribute("href", "../auth/login.html");
+      await expect(page.locator(".login-link")).toHaveAttribute("href", "/auth/login.html");
     });
 
     test("carries a return-to the dashboard when a signed-out visitor logs in", async ({ page }) => {

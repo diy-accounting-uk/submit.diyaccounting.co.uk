@@ -82,11 +82,15 @@ test.describe("guide.html", () => {
         total: images.length,
         notLoaded: images.filter((img) => !(img.naturalWidth > 0)).map((img) => img.src),
         noAlt: images.filter((img) => !(img.alt && img.alt.trim())).map((img) => img.src),
+        altNotCaption: images
+          .filter((img) => img.alt !== img.closest(".guide-step").querySelector(".guide-caption").textContent)
+          .map((img) => img.src),
       };
     });
     expect(result.total).toBeGreaterThan(100);
     expect(result.notLoaded).toEqual([]);
     expect(result.noAlt).toEqual([]);
+    expect(result.altNotCaption).toEqual([]);
   });
 
   test("a screenshot opens full size in the lightbox and Escape closes it", async ({ page }) => {

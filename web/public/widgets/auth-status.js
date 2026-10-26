@@ -162,7 +162,10 @@
       const userLabel = pickDisplayName(user);
       console.log("User info:", user);
       console.log("User label:", userLabel);
-      loginStatusElement.textContent = "Logged in as " + userLabel;
+      const prefix = document.createElement("span");
+      prefix.className = "login-prefix";
+      prefix.textContent = "Logged in as ";
+      loginStatusElement.replaceChildren(prefix, userLabel);
       loginLinkElement.textContent = "Logout";
       loginLinkElement.href = "#";
       loginLinkElement.onclick = logout;
@@ -180,7 +183,7 @@
       } else {
         loginLinkElement.style.display = "";
         loginLinkElement.textContent = "Log in";
-        loginLinkElement.href = "../auth/login.html";
+        loginLinkElement.href = "/auth/login.html";
       }
       loginLinkElement.onclick = null;
     }
@@ -235,7 +238,7 @@
   // Logout function
   async function logout(e) {
     // Prevent the <a> default action — without this, updateLoginStatus() changes
-    // the href from "#" to "../auth/login.html" and the browser's default <a> click
+    // the href from "#" to "/auth/login.html" and the browser's default <a> click
     // navigation races with (and overrides) the Cognito redirect below.
     if (e && e.preventDefault) e.preventDefault();
 

@@ -56,6 +56,8 @@ the licence its directory takes in the table above.
 - **qrcode** (`web/public/lib/qrcode.min.js`), MIT. The vendored copy carries node-qrcode's
   own MIT notice at the top of the file. A runtime dependency of the `qrcode` package named
   in `package.json`.
+- **swagger-ui-dist** 5.10.3 (`web/public/docs/api/vendor/`), Apache-2.0, SmartBear Software. The
+  licence text sits beside the vendored files; the API docs page serves them from the site.
 - **Google "G" logo** (`web/public/images/g-logo.png`), used on `web/public/auth/login.html`
   under Google's brand guidelines for a sign-in button. Not licensed onward.
 - **PolicyBee logo** (`web/public/images/policybee-logo.png`), used under the partner

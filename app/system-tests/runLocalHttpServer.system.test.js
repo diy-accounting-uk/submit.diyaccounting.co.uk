@@ -33,4 +33,16 @@ describe("System: runLocalHttpServer() helper", () => {
     expect(text).toBeTypeOf("string");
     expect(text.length).toBeGreaterThan(0);
   });
+
+  it("answers a missing .html path with the 404 page and status 404", async () => {
+    const { status, text } = await httpGet(`http://127.0.0.1:${port}/hmrc/auth/login.html`);
+    expect(status).toBe(404);
+    expect(text).toContain("<html");
+    expect(text).not.toContain("index.page.js");
+  });
+
+  it("answers a missing directory path with status 404", async () => {
+    const { status } = await httpGet(`http://127.0.0.1:${port}/hmrc/auth/`);
+    expect(status).toBe(404);
+  });
 });

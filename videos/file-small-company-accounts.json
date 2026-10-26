@@ -430,7 +430,7 @@
         {
           "action": "type",
           "target": "#directors",
-          "text": "Jo Director",
+          "text": "Joanna Hale",
           "caption": "Name the directors.",
           "headline": "Name the directors",
           "keyWord": "directors"
@@ -438,7 +438,7 @@
         {
           "action": "type",
           "target": "#directorName",
-          "text": "Jo Director",
+          "text": "Joanna Hale",
           "caption": "Name the director approving the accounts.",
           "headline": "Name the approving director",
           "keyWord": "approving"
