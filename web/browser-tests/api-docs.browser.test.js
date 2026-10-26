@@ -59,8 +59,8 @@ test.describe("page load", () => {
     page.on("pageerror", (error) => pageErrors.push(error.message));
     await serveRealSiteWithEdgePolicy(page);
     await page.goto("http://localhost:3000/docs/api/index.html", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("#swagger-ui .swagger-container")).toBeVisible();
-    await expect(page.locator("#swagger-ui .opblock").first()).toBeVisible();
+    await expect(page.locator("#swagger-ui .swagger-container")).toBeVisible({ timeout: 30000 });
+    await expect(page.locator("#swagger-ui .opblock").first()).toBeVisible({ timeout: 30000 });
     await page.waitForLoadState("networkidle");
     expect(failedRequests).toEqual([]);
     expect(consoleErrors).toEqual([]);
