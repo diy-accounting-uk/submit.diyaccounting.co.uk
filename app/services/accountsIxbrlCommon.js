@@ -539,9 +539,14 @@ export function companyInformationNote({ companyName, companyNumber, registeredO
   const office = typeof registeredOffice === "string" ? registeredOffice.trim() : "";
   if (!office) throw new Error("registeredOffice is required: the accounts state the registered office address");
   const country = COUNTRY_PHRASE[countryMemberForCompanyNumber(companyNumber).name];
+  const activity = principalActivityShown
+    ? `\n<p>The principal activity of the company is ${renderTextFact("descriptionPrincipalActivities", refs.current, principalActivityShown)}.</p>`
+    : "";
+  const name = renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName);
+  const number = renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber);
   return {
     title: "General information",
-    html: `<p>${renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName)} is a private company limited by shares, registered in ${country}, registered number ${renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber)}. Its registered office is ${escapeXmlText(office)}.</p>${principalActivityShown ? `\n<p>The principal activity of the company is ${renderTextFact("descriptionPrincipalActivities", refs.current, principalActivityShown)}.</p>` : ""}`,
+    html: `<p>${name} is a private company limited by shares, registered in ${country}, registered number ${number}. Its registered office is ${escapeXmlText(office)}.</p>${activity}`,
   };
 }
 
