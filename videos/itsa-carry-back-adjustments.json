@@ -287,14 +287,23 @@
           "headline": "Liability now credited",
           "keyWord": "credited"
         },
-        { "action": "scroll", "target": "#adjustmentsResults" },
-        { "action": "hold", "ms": 600 },
         {
           "action": "point",
-          "target": "#adjustmentsResults h3",
-          "caption": "Saved. The adjustment is on the year's record.",
-          "headline": "Adjustments saved",
-          "keyWord": "saved",
+          "scrollTo": "h1",
+          "target": "#adjustmentsCopy .customer-copy-header",
+          "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
+          "headline": "The record as submitted",
+          "keyWord": "record",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
+        {
+          "action": "point",
+          "scrollTo": "h1",
+          "target": "#adjustmentsCopy .customer-copy-section",
+          "caption": "Each decrease you claimed is on the record, ready to keep.",
+          "headline": "Keep this copy",
+          "keyWord": "keep",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 2500 },
