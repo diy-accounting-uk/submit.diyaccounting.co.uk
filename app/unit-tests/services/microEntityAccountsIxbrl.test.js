@@ -25,6 +25,7 @@ import { parseXmlDocument } from "@app/lib/xmlDom.js";
 const SAMPLE_INPUT = {
   companyNumber: "02706061",
   companyName: "TEST MICRO LIMITED",
+  registeredOffice: "1 Test Street, London, EC1A 1AA",
   periodStart: "2025-07-01",
   periodEnd: "2026-06-30",
   averageNumberOfEmployees: 2,
@@ -261,6 +262,23 @@ describe("services/microEntityAccountsIxbrl", () => {
       expect(xhtml).toMatch(
         /name="core:StatementComplianceWithApplicableReportingFramework" contextRef="y2026">These financial statements/,
       );
+    });
+
+    test("states the company information in the first note", () => {
+      for (const document of [xhtml, dormantXhtml]) {
+        expect(document).toContain("is a private company limited by shares, registered in England and Wales, registered number");
+        expect(document).toContain("Its registered office is 1 Test Street, London, EC1A 1AA.");
+      }
+      expect(() => buildMicroEntityAccounts({ ...SAMPLE_INPUT, registeredOffice: "" })).toThrow(/registeredOffice/);
+    });
+
+    test("prints the never-traded sentence only for a company that has never traded", () => {
+      const neverTraded = buildMicroEntityAccounts({ ...DORMANT_INPUT, dormantTradingStatus: "neverTraded" });
+      const sentence = "The company has not traded during the year or the preceding financial period.";
+      expect(neverTraded).toContain(sentence);
+      expect(neverTraded).toContain("therefore no profit and loss account is presented.");
+      expect(dormantXhtml).not.toContain(sentence);
+      expect(xhtml).not.toContain(sentence);
     });
 
     test("describes a dormant company as dormant and a trading company with the micro-entity default", () => {

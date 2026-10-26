@@ -41,7 +41,7 @@ import {
 
 const builderSource = readFileSync(join(process.cwd(), "app/services/ct600Xml.js"), "utf8");
 const BOOK_DIRECTORY = join(process.cwd(), "fixtures", "diya-gl", "precision-code-ltd");
-const COMPANY = { companyName: "Precision Code Ltd", companyNumber: "12345678" };
+const COMPANY = { companyName: "Precision Code Ltd", companyNumber: "12345678", registeredOffice: "1 Test Street, London, EC1A 1AA" };
 
 // Every box the envelope builder reads, as b[<box>], is a box the return can fill.
 function boxesTheBuilderEmits() {

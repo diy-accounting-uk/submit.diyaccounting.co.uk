@@ -31,8 +31,8 @@ describe("the form values from a small company's iXBRL accounts", () => {
   test("opens the small company regime on the document's period", () => {
     expect(valueOf(entries, "regimeSmall")).toBe(true);
     expect(valueOf(entries, "regimeMicro")).toBeUndefined();
-    expect(valueOf(entries, "periodStart")).toBe("2025-01-01");
-    expect(valueOf(entries, "periodEnd")).toBe("2025-12-31");
+    expect(valueOf(entries, "periodStart")).toBe("2025-04-01");
+    expect(valueOf(entries, "periodEnd")).toBe("2026-03-31");
   });
 
   test("carries the profit and loss account and the balance sheets for both years", () => {
@@ -53,12 +53,12 @@ describe("the form values from a small company's iXBRL accounts", () => {
   });
 
   test("carries the text answers, the employees and the director", () => {
-    expect(valueOf(entries, "principalActivity")).toBe("Stadium operation and events");
-    expect(valueOf(entries, "tradeName")).toBe("Stadium operation and events");
-    expect(valueOf(entries, "directors")).toBe("Maldwyn Beynon");
+    expect(valueOf(entries, "principalActivity")).toBe("Technical consultancy services");
+    expect(valueOf(entries, "tradeName")).toBe("Technical consultancy services");
+    expect(valueOf(entries, "directors")).toBe("Alan James Morgan");
     expect(valueOf(entries, "averageEmployees")).toBe("4");
-    expect(valueOf(entries, "directorName")).toBe("Maldwyn Beynon");
-    expect(valueOf(entries, "declarantName")).toBe("Maldwyn Beynon");
+    expect(valueOf(entries, "directorName")).toBe("Alan James Morgan");
+    expect(valueOf(entries, "declarantName")).toBe("Alan James Morgan");
   });
 });
 
@@ -74,7 +74,7 @@ describe("the form values from a micro-entity's iXBRL accounts", () => {
   });
 
   test("names the micro-entity's trade after the company", () => {
-    expect(valueOf(entries, "tradeName")).toBe("MILLENNIUM STADIUM PLC");
+    expect(valueOf(entries, "tradeName")).toBe("MORGAN TECHNICAL LIMITED");
   });
 
   test("leaves the small company fields and the depreciation alone", () => {
@@ -92,7 +92,7 @@ describe("a document that does not match the form", () => {
 
   test("another period is refused", () => {
     expect(() => mappedCase("small-company-accounts-full", { periodStart: "2024-04-01", periodEnd: "2025-03-31" })).toThrow(
-      /end on 2025-12-31/,
+      /end on 2026-03-31/,
     );
   });
 });

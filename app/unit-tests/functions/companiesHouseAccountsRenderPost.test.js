@@ -75,6 +75,7 @@ function buildAccountsBody(overrides = {}) {
   return {
     companyNumber: "00000001",
     companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
+    registeredOffice: "1 Test Street, London, EC1A 1AA",
     periodStart: "2025-01-01",
     periodEnd: "2025-12-31",
     balanceSheet: {
