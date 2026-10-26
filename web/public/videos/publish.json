@@ -2416,7 +2416,7 @@
           "step": 2,
           "headline": "Enter the company number",
           "caption": "Type the company number.",
-          "startSeconds": 23,
+          "startSeconds": 24,
           "thumb": "videos/file-micro-entity-accounts/company-lookup-2-thumb.webp",
           "full": "videos/file-micro-entity-accounts/company-lookup-2.webp"
         },
@@ -2434,7 +2434,7 @@
           "step": 5,
           "headline": "Confirm the company name",
           "caption": "Companies House confirms the company name.",
-          "startSeconds": 35,
+          "startSeconds": 36,
           "thumb": "videos/file-micro-entity-accounts/company-lookup-5-thumb.webp",
           "full": "videos/file-micro-entity-accounts/company-lookup-5.webp"
         },
@@ -2443,7 +2443,7 @@
           "step": 0,
           "headline": "Set the accounting period",
           "caption": "Set the accounting period.",
-          "startSeconds": 42,
+          "startSeconds": 43,
           "thumb": "videos/file-micro-entity-accounts/accounts-form-0-thumb.webp",
           "full": "videos/file-micro-entity-accounts/accounts-form-0.webp"
         },
@@ -2452,7 +2452,7 @@
           "step": 2,
           "headline": "This year, then last year",
           "caption": "Enter this year's balance sheet, then last year's for comparison.",
-          "startSeconds": 49,
+          "startSeconds": 51,
           "thumb": "videos/file-micro-entity-accounts/accounts-form-2-thumb.webp",
           "full": "videos/file-micro-entity-accounts/accounts-form-2.webp"
         },
@@ -2461,33 +2461,33 @@
           "step": 8,
           "headline": "Net assets must balance",
           "caption": "This checks net assets against capital and reserves.",
-          "startSeconds": 65,
+          "startSeconds": 67,
           "thumb": "videos/file-micro-entity-accounts/accounts-form-8-thumb.webp",
           "full": "videos/file-micro-entity-accounts/accounts-form-8.webp"
         },
         {
           "scene": "accounts-form",
-          "step": 16,
+          "step": 17,
           "headline": "Name the approving director",
           "caption": "Name the director approving the accounts.",
-          "startSeconds": 84,
-          "thumb": "videos/file-micro-entity-accounts/accounts-form-16-thumb.webp",
-          "full": "videos/file-micro-entity-accounts/accounts-form-16.webp"
+          "startSeconds": 89,
+          "thumb": "videos/file-micro-entity-accounts/accounts-form-17-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/accounts-form-17.webp"
         },
         {
           "scene": "accounts-form",
-          "step": 18,
+          "step": 21,
           "headline": "Accept the statements",
           "caption": "Accept the four statutory statements.",
-          "startSeconds": 92,
-          "thumb": "videos/file-micro-entity-accounts/accounts-form-18-thumb.webp",
-          "full": "videos/file-micro-entity-accounts/accounts-form-18.webp"
+          "startSeconds": 101,
+          "thumb": "videos/file-micro-entity-accounts/accounts-form-21-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/accounts-form-21.webp"
         },
         {
           "scene": "preview",
           "headline": "Preview",
           "caption": "Preview the iXBRL before anything is filed. These are the accounts as they will be filed. Nothing has gone to Companies House yet.",
-          "startSeconds": 104,
+          "startSeconds": 109,
           "thumb": "videos/file-micro-entity-accounts/preview-thumb.webp",
           "full": "videos/file-micro-entity-accounts/preview.webp"
         },
@@ -2495,7 +2495,7 @@
           "scene": "submit",
           "headline": "File it",
           "caption": "Type the company's Companies House authentication code. Submit the filing to Companies House's sandbox.",
-          "startSeconds": 121,
+          "startSeconds": 127,
           "thumb": "videos/file-micro-entity-accounts/submit-thumb.webp",
           "full": "videos/file-micro-entity-accounts/submit.webp"
         },
@@ -2504,7 +2504,7 @@
           "step": 0,
           "headline": "Companies House checks it",
           "caption": "The filing goes to Companies House.",
-          "startSeconds": 136,
+          "startSeconds": 142,
           "thumb": "videos/file-micro-entity-accounts/result-0-thumb.webp",
           "full": "videos/file-micro-entity-accounts/result-0.webp"
         },
@@ -2513,7 +2513,7 @@
           "step": 1,
           "headline": "Companies House has the filing",
           "caption": "Companies House has the filing and reports the outcome here.",
-          "startSeconds": 140,
+          "startSeconds": 147,
           "thumb": "videos/file-micro-entity-accounts/result-1-thumb.webp",
           "full": "videos/file-micro-entity-accounts/result-1.webp"
         },
@@ -2522,7 +2522,7 @@
           "step": 3,
           "headline": "Open your copy",
           "caption": "Open your copy of the filing.",
-          "startSeconds": 149,
+          "startSeconds": 157,
           "thumb": "videos/file-micro-entity-accounts/result-3-thumb.webp",
           "full": "videos/file-micro-entity-accounts/result-3.webp"
         },
@@ -2531,18 +2531,18 @@
           "step": 6,
           "headline": "The filed accounts",
           "caption": "Your copy shows the filed accounts, the submission number and the status.",
-          "startSeconds": 157,
+          "startSeconds": 164,
           "thumb": "videos/file-micro-entity-accounts/result-6-thumb.webp",
           "full": "videos/file-micro-entity-accounts/result-6.webp"
         },
         {
           "scene": "result",
-          "step": 9,
+          "step": 11,
           "headline": "Kept on your receipts",
           "caption": "Your copy stays on your receipts page.",
-          "startSeconds": 169,
-          "thumb": "videos/file-micro-entity-accounts/result-9-thumb.webp",
-          "full": "videos/file-micro-entity-accounts/result-9.webp"
+          "startSeconds": 181,
+          "thumb": "videos/file-micro-entity-accounts/result-11-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/result-11.webp"
         }
       ]
     },
@@ -2575,7 +2575,7 @@
           "step": 2,
           "headline": "Enter the company number",
           "caption": "Type the company number.",
-          "startSeconds": 25,
+          "startSeconds": 26,
           "thumb": "videos/file-company-tax-return-book/company-lookup-2-thumb.webp",
           "full": "videos/file-company-tax-return-book/company-lookup-2.webp"
         },
@@ -2593,7 +2593,7 @@
           "step": 5,
           "headline": "Confirm the company name",
           "caption": "Companies House confirms the company name.",
-          "startSeconds": 37,
+          "startSeconds": 39,
           "thumb": "videos/file-company-tax-return-book/company-lookup-5-thumb.webp",
           "full": "videos/file-company-tax-return-book/company-lookup-5.webp"
         },
@@ -2602,7 +2602,7 @@
           "step": 0,
           "headline": "Drop your book",
           "caption": "Drop the company's diya-gl book on the form.",
-          "startSeconds": 45,
+          "startSeconds": 49,
           "thumb": "videos/file-company-tax-return-book/import-book-0-thumb.webp",
           "full": "videos/file-company-tax-return-book/import-book-0.webp"
         },
@@ -2611,7 +2611,7 @@
           "step": 1,
           "headline": "The form fills itself",
           "caption": "The accounts and the tax figures fill from the book.",
-          "startSeconds": 50,
+          "startSeconds": 61,
           "thumb": "videos/file-company-tax-return-book/import-book-1-thumb.webp",
           "full": "videos/file-company-tax-return-book/import-book-1.webp"
         },
@@ -2620,7 +2620,7 @@
           "step": 3,
           "headline": "Turnover from the book",
           "caption": "Turnover comes straight from the book.",
-          "startSeconds": 57,
+          "startSeconds": 71,
           "thumb": "videos/file-company-tax-return-book/import-book-3-thumb.webp",
           "full": "videos/file-company-tax-return-book/import-book-3.webp"
         },
@@ -2629,7 +2629,7 @@
           "step": 5,
           "headline": "The tax is worked out",
           "caption": "The tax is worked out beside your answers.",
-          "startSeconds": 65,
+          "startSeconds": 79,
           "thumb": "videos/file-company-tax-return-book/import-book-5-thumb.webp",
           "full": "videos/file-company-tax-return-book/import-book-5.webp"
         },
@@ -2637,7 +2637,7 @@
           "scene": "finish-form",
           "headline": "Complete the answers",
           "caption": "Accept the four statutory statements. Tick the declaration to confirm the return is accurate.",
-          "startSeconds": 74,
+          "startSeconds": 91,
           "thumb": "videos/file-company-tax-return-book/finish-form-thumb.webp",
           "full": "videos/file-company-tax-return-book/finish-form.webp"
         },
@@ -2645,7 +2645,7 @@
           "scene": "preview",
           "headline": "Review the return",
           "caption": "These are the CT600 boxes as HMRC will receive them. The tax computation sits beside the return.",
-          "startSeconds": 103,
+          "startSeconds": 120,
           "thumb": "videos/file-company-tax-return-book/preview-thumb.webp",
           "full": "videos/file-company-tax-return-book/preview.webp"
         },
@@ -2653,7 +2653,7 @@
           "scene": "submit",
           "headline": "File it",
           "caption": "Type the Government Gateway password. Submit the return to HMRC's test service.",
-          "startSeconds": 130,
+          "startSeconds": 148,
           "thumb": "videos/file-company-tax-return-book/submit-thumb.webp",
           "full": "videos/file-company-tax-return-book/submit.webp"
         },
@@ -2662,7 +2662,7 @@
           "step": 0,
           "headline": "HMRC accepts the return",
           "caption": "HMRC's test service accepts the return.",
-          "startSeconds": 156,
+          "startSeconds": 172,
           "thumb": "videos/file-company-tax-return-book/result-0-thumb.webp",
           "full": "videos/file-company-tax-return-book/result-0.webp"
         },
@@ -2671,7 +2671,7 @@
           "step": 1,
           "headline": "The IRmark",
           "caption": "The IRmark proves the return arrived unchanged.",
-          "startSeconds": 161,
+          "startSeconds": 178,
           "thumb": "videos/file-company-tax-return-book/result-1-thumb.webp",
           "full": "videos/file-company-tax-return-book/result-1.webp"
         },
@@ -2680,7 +2680,7 @@
           "step": 4,
           "headline": "Find your filing",
           "caption": "Your receipts page lists the filing.",
-          "startSeconds": 172,
+          "startSeconds": 190,
           "thumb": "videos/file-company-tax-return-book/result-4-thumb.webp",
           "full": "videos/file-company-tax-return-book/result-4.webp"
         },
@@ -2689,7 +2689,7 @@
           "step": 5,
           "headline": "Open your copy",
           "caption": "Open your copy of the filing.",
-          "startSeconds": 179,
+          "startSeconds": 195,
           "thumb": "videos/file-company-tax-return-book/result-5-thumb.webp",
           "full": "videos/file-company-tax-return-book/result-5.webp"
         },
@@ -2698,7 +2698,7 @@
           "step": 8,
           "headline": "The return as filed",
           "caption": "Your copy shows the return as filed, with its figures and declaration.",
-          "startSeconds": 187,
+          "startSeconds": 203,
           "thumb": "videos/file-company-tax-return-book/result-8-thumb.webp",
           "full": "videos/file-company-tax-return-book/result-8.webp"
         },
@@ -2707,7 +2707,7 @@
           "step": 10,
           "headline": "HMRC's receipt",
           "caption": "It ends with HMRC's receipt, the status and the date filed.",
-          "startSeconds": 202,
+          "startSeconds": 215,
           "thumb": "videos/file-company-tax-return-book/result-10-thumb.webp",
           "full": "videos/file-company-tax-return-book/result-10.webp"
         },
@@ -2716,7 +2716,7 @@
           "step": 13,
           "headline": "Kept on your receipts",
           "caption": "Your copy stays on your receipts page.",
-          "startSeconds": 219,
+          "startSeconds": 228,
           "thumb": "videos/file-company-tax-return-book/result-13-thumb.webp",
           "full": "videos/file-company-tax-return-book/result-13.webp"
         }
@@ -2742,7 +2742,7 @@
           "step": 0,
           "headline": "Find the company",
           "caption": "Open File Company Tax Return to find the company.",
-          "startSeconds": 16,
+          "startSeconds": 18,
           "thumb": "videos/file-company-tax-return-typed/company-lookup-0-thumb.webp",
           "full": "videos/file-company-tax-return-typed/company-lookup-0.webp"
         },
@@ -2751,7 +2751,7 @@
           "step": 2,
           "headline": "Enter the company number",
           "caption": "Type the company number.",
-          "startSeconds": 23,
+          "startSeconds": 26,
           "thumb": "videos/file-company-tax-return-typed/company-lookup-2-thumb.webp",
           "full": "videos/file-company-tax-return-typed/company-lookup-2.webp"
         },
@@ -2760,7 +2760,7 @@
           "step": 3,
           "headline": "Look up the company",
           "caption": "Look up the company with Companies House.",
-          "startSeconds": 28,
+          "startSeconds": 32,
           "thumb": "videos/file-company-tax-return-typed/company-lookup-3-thumb.webp",
           "full": "videos/file-company-tax-return-typed/company-lookup-3.webp"
         },
@@ -2769,7 +2769,7 @@
           "step": 5,
           "headline": "Confirm the company name",
           "caption": "Companies House confirms the company name.",
-          "startSeconds": 35,
+          "startSeconds": 38,
           "thumb": "videos/file-company-tax-return-typed/company-lookup-5-thumb.webp",
           "full": "videos/file-company-tax-return-typed/company-lookup-5.webp"
         },
@@ -2777,7 +2777,7 @@
           "scene": "period",
           "headline": "The period",
           "caption": "Type the Unique Taxpayer Reference. Set the accounting period.",
-          "startSeconds": 42,
+          "startSeconds": 46,
           "thumb": "videos/file-company-tax-return-typed/period-thumb.webp",
           "full": "videos/file-company-tax-return-typed/period.webp"
         },
@@ -2786,7 +2786,7 @@
           "step": 0,
           "headline": "Type the figures",
           "caption": "Type this year's profit and loss, then the balance sheet.",
-          "startSeconds": 56,
+          "startSeconds": 63,
           "thumb": "videos/file-company-tax-return-typed/figures-0-thumb.webp",
           "full": "videos/file-company-tax-return-typed/figures-0.webp"
         },
@@ -2795,7 +2795,7 @@
           "step": 5,
           "headline": "A figure with a typo",
           "caption": "Here the cash figure has lost a digit.",
-          "startSeconds": 70,
+          "startSeconds": 78,
           "thumb": "videos/file-company-tax-return-typed/figures-5-thumb.webp",
           "full": "videos/file-company-tax-return-typed/figures-5.webp"
         },
@@ -2804,7 +2804,7 @@
           "step": 10,
           "headline": "The check catches it",
           "caption": "The check says the balance sheet does not balance.",
-          "startSeconds": 82,
+          "startSeconds": 91,
           "thumb": "videos/file-company-tax-return-typed/figures-10-thumb.webp",
           "full": "videos/file-company-tax-return-typed/figures-10.webp"
         },
@@ -2813,7 +2813,7 @@
           "step": 12,
           "headline": "Correct the figure",
           "caption": "Put the missing digit back and the message clears.",
-          "startSeconds": 89,
+          "startSeconds": 100,
           "thumb": "videos/file-company-tax-return-typed/figures-12-thumb.webp",
           "full": "videos/file-company-tax-return-typed/figures-12.webp"
         },
@@ -2821,7 +2821,7 @@
           "scene": "details",
           "headline": "The details",
           "caption": "Accept the four statutory statements. Tick the declaration to confirm the return is accurate.",
-          "startSeconds": 99,
+          "startSeconds": 111,
           "thumb": "videos/file-company-tax-return-typed/details-thumb.webp",
           "full": "videos/file-company-tax-return-typed/details.webp"
         },
@@ -2829,7 +2829,7 @@
           "scene": "preview",
           "headline": "Review the return",
           "caption": "These are the CT600 boxes as HMRC will receive them. The tax computation sits beside the return.",
-          "startSeconds": 132,
+          "startSeconds": 146,
           "thumb": "videos/file-company-tax-return-typed/preview-thumb.webp",
           "full": "videos/file-company-tax-return-typed/preview.webp"
         },
@@ -2837,7 +2837,7 @@
           "scene": "submit",
           "headline": "File it",
           "caption": "Type the Government Gateway password. Submit the return to HMRC's test service.",
-          "startSeconds": 159,
+          "startSeconds": 174,
           "thumb": "videos/file-company-tax-return-typed/submit-thumb.webp",
           "full": "videos/file-company-tax-return-typed/submit.webp"
         },
@@ -2846,7 +2846,7 @@
           "step": 0,
           "headline": "HMRC accepts the return",
           "caption": "HMRC's test service accepts the return.",
-          "startSeconds": 182,
+          "startSeconds": 199,
           "thumb": "videos/file-company-tax-return-typed/result-0-thumb.webp",
           "full": "videos/file-company-tax-return-typed/result-0.webp"
         },
@@ -2855,7 +2855,7 @@
           "step": 1,
           "headline": "The IRmark",
           "caption": "The IRmark proves the return arrived unchanged.",
-          "startSeconds": 188,
+          "startSeconds": 205,
           "thumb": "videos/file-company-tax-return-typed/result-1-thumb.webp",
           "full": "videos/file-company-tax-return-typed/result-1.webp"
         },
@@ -2864,7 +2864,7 @@
           "step": 4,
           "headline": "Find your filing",
           "caption": "Your receipts page lists the filing.",
-          "startSeconds": 199,
+          "startSeconds": 217,
           "thumb": "videos/file-company-tax-return-typed/result-4-thumb.webp",
           "full": "videos/file-company-tax-return-typed/result-4.webp"
         },
@@ -2873,7 +2873,7 @@
           "step": 5,
           "headline": "Open your copy",
           "caption": "Open your copy of the filing.",
-          "startSeconds": 207,
+          "startSeconds": 222,
           "thumb": "videos/file-company-tax-return-typed/result-5-thumb.webp",
           "full": "videos/file-company-tax-return-typed/result-5.webp"
         },
@@ -2882,7 +2882,7 @@
           "step": 8,
           "headline": "The return as filed",
           "caption": "Your copy shows the return as filed, with its figures and declaration.",
-          "startSeconds": 215,
+          "startSeconds": 230,
           "thumb": "videos/file-company-tax-return-typed/result-8-thumb.webp",
           "full": "videos/file-company-tax-return-typed/result-8.webp"
         },
@@ -2891,7 +2891,7 @@
           "step": 10,
           "headline": "HMRC's receipt",
           "caption": "It ends with HMRC's receipt, the status and the date filed.",
-          "startSeconds": 226,
+          "startSeconds": 242,
           "thumb": "videos/file-company-tax-return-typed/result-10-thumb.webp",
           "full": "videos/file-company-tax-return-typed/result-10.webp"
         },
@@ -2900,7 +2900,7 @@
           "step": 13,
           "headline": "Kept on your receipts",
           "caption": "Your copy stays on your receipts page.",
-          "startSeconds": 239,
+          "startSeconds": 255,
           "thumb": "videos/file-company-tax-return-typed/result-13-thumb.webp",
           "full": "videos/file-company-tax-return-typed/result-13.webp"
         }

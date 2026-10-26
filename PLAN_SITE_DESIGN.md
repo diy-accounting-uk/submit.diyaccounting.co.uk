@@ -557,11 +557,11 @@ DS1 took every page signed out, so these states need a signed-in DS1 run before 
 
 ### SQ1: every walkthrough frame, judged
 
-512 frames in 44 videos. 439 pass, 73 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
+516 frames in 44 videos. 482 pass, 34 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
 
-Fails by cause: O 43 (all in the five videos that were not re-cut), C 16 (15 in those five, `tour/help`), E 18 (all re-cut videos), 1 thirteen (`generate-pass-digital` 2, `itsa-year` 4 and `itsa-quarterly-from-books` 3 from the simulator recordings, which show `http://localhost:3000` pass links and "Period ID -" or "Submission ID -" where the ci run showed real ids).
+Fails by cause: O 4 (`change-registered-office`), C 1 (`tour/help`), E 18 (re-cut videos), 1 thirteen (`generate-pass-digital` 2, `itsa-year` 4 and `itsa-quarterly-from-books` 3 from the simulator recordings, which show `http://localhost:3000` pass links and "Period ID -" or "Submission ID -" where the ci run showed real ids), R 2 (`result-4` of each Company Tax Return video) (R = the receipts list: a "—" Size cell and the lower 45% of the frame empty).
 
-Not re-cut, frames unchanged: `change-registered-email`, `file-company-tax-return-book`, `file-company-tax-return-typed` (no recording on this machine: `target/videos/*-sim` and `local-change-registered-email` are absent); `change-registered-office`, `file-micro-entity-accounts` (the downloaded recording has 5 steps in scene `result`, the script has 7 and 10: re-record).
+Not re-cut, frames unchanged: `change-registered-email` (passes), `change-registered-office` (no recording on this machine).
 
 | Video | Frames | Pass | Fails (frame, criteria) |
 |---|---|---|---|
@@ -571,10 +571,10 @@ Not re-cut, frames unchanged: `change-registered-email`, `file-company-tax-retur
 | change-registered-email (not re-cut) | 7 | 7 | none |
 | change-registered-office (not re-cut) | 7 | 3 | company-lookup-0 O; company-lookup-2 O; company-lookup-3 O; company-lookup-5 O |
 | company-lookup | 2 | 2 | none |
-| file-company-tax-return-book (not re-cut) | 18 | 3 | company-lookup-0 O; company-lookup-2 O; company-lookup-3 O; company-lookup-5 O; import-book-0 O; import-book-1 O; import-book-3 O,C; import-book-5 O,C; result-0 O; result-1 O; result-10 O,C; result-13 O,C; result-4 O; result-5 O; result-8 O |
-| file-company-tax-return-typed (not re-cut) | 19 | 3 | company-lookup-0 O; company-lookup-2 O; company-lookup-3 O; company-lookup-5 O; details C; figures-0 O,C; figures-10 O,C; figures-12 O,C; figures-5 O,C; result-0 O; result-1 O; result-10 O,C; result-13 O,C; result-4 O; result-5 O; result-8 O |
+| file-company-tax-return-book | 18 | 17 | result-4 R |
+| file-company-tax-return-typed | 19 | 18 | result-4 R |
 | file-confirmation-statement | 2 | 2 | none |
-| file-micro-entity-accounts (not re-cut) | 12 | 2 | accounts-form-0 O; accounts-form-16 O,C; accounts-form-18 O,C; accounts-form-2 O; accounts-form-8 O,C; company-lookup-0 O; company-lookup-2 O; company-lookup-3 O; company-lookup-5 O; preview C |
+| file-micro-entity-accounts | 16 | 16 | none |
 | file-psc-verification-statement | 12 | 12 | none |
 | file-small-company-accounts | 21 | 21 | none |
 | generate-pass-digital | 4 | 2 | generate-3 1; generate-5 1 |
@@ -614,7 +614,8 @@ Remaining fails, by fix:
 
 | Fail | Frames | What a reader sees | Fix |
 |---|---|---|---|
-| O, C, E | the five videos not re-cut | As before the cutter change | Re-record, then `node scripts/video-walkthrough.js --id <id>` |
+| O | `change-registered-office` company-lookup frames | As before the cutter change | Re-record, then `node scripts/video-walkthrough.js --id <id>` |
+| R | `file-company-tax-return-book` and `-typed` result-4 | The receipts list: a "—" in the Size column and the lower 45% of the frame empty | The page shows no size for a Company Tax Return receipt and holds one row; needs a size or the column hidden in the app, or the frame cut to the table |
 | C | `tour/help` | Text at the first row where no blank band lies in the top 30% | `videos/tour.json` carries `scrollTo` on the help scene's last scroll; the scene "guide" step 1 waits for "Submit your VAT return in 3 steps", which the static site no longer shows, so the tour is not re-recorded |
 | C (not detected) | `file-psc-verification-statement` psc-1, psc-3 to psc-9 | The word "statement." from the receipt above the PSC section at the top edge | The PSC section sits at the foot of the page, so the page cannot scroll its top to the viewport top; needs the receipt collapsed or the section moved above it |
 | 1 | `generate-pass-digital` generate-3, generate-5; `itsa-year` quarterly-update-self-employment-9, -10 and quarterly-update-uk-property-9, -10; `itsa-quarterly-from-books` submit-1, -2, -5 | The simulator's pass link `http://localhost:3000/bundles.html?pass=...`; "Period ID -" and "Submission ID -" where HMRC's sandbox returns an id | Record these videos on the ci lane, or have the simulator return an id and the app's origin |
