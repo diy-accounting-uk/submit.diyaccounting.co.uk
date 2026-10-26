@@ -39,7 +39,7 @@ export const DEFAULT_MAX_PAGES = 300;
 // The prod web ACL blocks an address that sends more than 2000 requests in 5 minutes. The crawl
 // keeps its own count under that line, across all of its browser contexts, which share one address.
 export const PACING_WINDOW_MS = 5 * 60 * 1000;
-export const PROD_REQUEST_BUDGET = 1500;
+export const PROD_REQUEST_BUDGET = 1200;
 // Requests one page may add after the pacer lets it start: the page, its assets and the form retries.
 export const PAGE_REQUEST_RESERVE = 80;
 export const BLOCKED_RUN_MINIMUM = 3;
@@ -143,7 +143,17 @@ export function parseArguments(argv) {
 
 // Counts the requests of every browser context in a sliding window and holds a page back until its
 // reserve fits under the budget. A budget of 0 never waits.
-export function createRequestPacer({ budget, windowMs = PACING_WINDOW_MS, reserve = PAGE_REQUEST_RESERVE, now = Date.now, sleep }) {
+// Every concurrent crawl may start a page at the same moment, so the room kept free is one reserve
+// for each of them.
+export function createRequestPacer({
+  budget,
+  windowMs = PACING_WINDOW_MS,
+  reserve = PAGE_REQUEST_RESERVE,
+  concurrency = 1,
+  now = Date.now,
+  sleep,
+}) {
+  const room = reserve * concurrency;
   const sleepFor = sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
   const stamps = [];
   const prune = () => {
@@ -162,7 +172,7 @@ export function createRequestPacer({ budget, windowMs = PACING_WINDOW_MS, reserv
       if (!budget) return 0;
       let waited = 0;
       prune();
-      while (stamps.length > 0 && stamps.length + reserve > budget) {
+      while (stamps.length > 0 && stamps.length + room > budget) {
         const delay = Math.max(1, stamps[0] + windowMs - now() + 1);
         await sleepFor(delay);
         waited += delay;
@@ -417,7 +427,7 @@ async function crawlOne({ browser, lane, role, viewport, theme, baseUrl, maxPage
     hasTouch: viewport === "phone",
   });
   const page = await context.newPage();
-  page.on("request", () => pacer.record());
+  context.on("request", () => pacer.record());
   let consoleErrors = [];
   let failedRequests = [];
   let bytes = 0;
@@ -482,6 +492,7 @@ async function crawlOne({ browser, lane, role, viewport, theme, baseUrl, maxPage
 
     await pacer.waitForRoom();
     if (isDownloadLink(urlString)) {
+      pacer.record();
       const response = await context.request.get(urlString, { failOnStatusCode: false, timeout: 30000 }).catch(() => null);
       const body = response ? await response.body().catch(() => Buffer.alloc(0)) : Buffer.alloc(0);
       sequence += 1;
@@ -572,7 +583,10 @@ export async function main(argv = process.argv.slice(2)) {
   const { chromium } = await import("playwright");
   const browser = await chromium.launch({ headless: true });
   const runs = [];
-  const pacer = createRequestPacer({ budget: options.requestBudget });
+  const pacer = createRequestPacer({
+    budget: options.requestBudget,
+    concurrency: options.viewports.length * options.themes.length,
+  });
   try {
     for (const role of options.roles) {
       const storageState = role === "visitor" ? undefined : options.stateFile;

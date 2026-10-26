@@ -11,6 +11,7 @@ import {
   getSelfEmploymentCumulativeGetForScenario,
 } from "../scenarios/itsa-self-employment-cumulative.js";
 import { findEmptyOptionalSections } from "./itsa-self-employment-period.js";
+import { getPeriodSummary, periodSummaryKey, storePeriodSummary } from "../state/store.js";
 
 /**
  * Validate National Insurance number format (two letters, six digits, one suffix letter).
@@ -66,7 +67,7 @@ export function apiEndpoint(app) {
 
     res.setHeader("Content-Type", "application/json");
     res.setHeader("x-correlationid", randomUUID());
-    res.json(result.periodSummary);
+    res.json(getPeriodSummary(periodSummaryKey(nino, businessId, taxYear)) ?? result.periodSummary);
   });
 
   // PUT /individuals/business/self-employment/{nino}/{businessId}/cumulative/{taxYear}
@@ -96,7 +97,9 @@ export function apiEndpoint(app) {
       return res.status(scenarioError.status).json(scenarioError.body);
     }
 
-    // Default and STATEFUL: HMRC's cumulative create-or-amend returns 204 with no body.
+    // Default and STATEFUL: hold the running total for later reads. HMRC's cumulative
+    // create-or-amend returns 204 with no body.
+    storePeriodSummary(periodSummaryKey(nino, businessId, taxYear), req.body);
     res.setHeader("x-correlationid", randomUUID());
     res.status(204).send();
   });

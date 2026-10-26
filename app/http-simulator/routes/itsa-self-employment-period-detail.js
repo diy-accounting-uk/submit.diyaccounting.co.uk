@@ -11,6 +11,7 @@ import {
   getSelfEmploymentPeriodAmendErrorForScenario,
 } from "../scenarios/itsa-self-employment-period-detail.js";
 import { findEmptyOptionalSections } from "./itsa-self-employment-period.js";
+import { getPeriodSummary, periodSummaryKey, storePeriodSummary } from "../state/store.js";
 
 /**
  * Validate National Insurance number format (two letters, six digits, one suffix letter).
@@ -66,7 +67,7 @@ export function apiEndpoint(app) {
 
     res.setHeader("Content-Type", "application/json");
     res.setHeader("x-correlationid", randomUUID());
-    res.json(result.periodSummary);
+    res.json(getPeriodSummary(periodSummaryKey(nino, businessId, periodId)) ?? result.periodSummary);
   });
 
   // PUT /individuals/business/self-employment/{nino}/{businessId}/period/{taxYear}/{periodId}
@@ -94,7 +95,13 @@ export function apiEndpoint(app) {
       return res.status(scenarioError.status).json(scenarioError.body);
     }
 
-    // Default and STATEFUL: HMRC's amend endpoint returns 204 with no body.
+    // Default and STATEFUL: hold the amended summary for later reads. HMRC's amend endpoint
+    // returns 204 with no body.
+    const [periodStartDate, periodEndDate] = String(periodId).split("_");
+    storePeriodSummary(periodSummaryKey(nino, businessId, periodId), {
+      periodDates: { periodStartDate, periodEndDate },
+      ...req.body,
+    });
     res.setHeader("x-correlationid", randomUUID());
     res.status(204).send();
   });

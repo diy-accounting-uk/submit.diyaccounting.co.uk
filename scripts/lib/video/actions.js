@@ -66,8 +66,11 @@ export class SceneStepError extends Error {
 export function resolveTarget(page, target) {
   if (typeof target === "string") return page.locator(target).first();
   if (target && typeof target === "object") {
-    if ("role" in target) return page.getByRole(target.role, { name: target.name }).first();
-    if ("text" in target) return page.getByText(target.text, { exact: false }).first();
+    // A target with `frame` is looked up inside the iframe that selector names.
+    const scope = "frame" in target ? page.frameLocator(target.frame) : page;
+    if ("role" in target) return scope.getByRole(target.role, { name: target.name }).first();
+    if ("text" in target) return scope.getByText(target.text, { exact: false }).first();
+    if ("selector" in target) return scope.locator(target.selector).first();
   }
   throw new Error(`resolveTarget: unrecognised target shape ${JSON.stringify(target)}`);
 }
@@ -84,6 +87,11 @@ async function writeFailureStill(page, ctx) {
 
 async function requireLocator(page, step, ctx) {
   const locator = resolveTarget(page, step.target);
+  // A frame's own document loads after the step before it, so a frame target waits for its element
+  // to appear; a page target is looked up as it stands.
+  if (step.target?.frame) {
+    await locator.waitFor({ state: "attached", timeout: step.timeoutMs || 30000 }).catch(() => {});
+  }
   const count = await locator.count();
   if (count === 0) {
     await writeFailureStill(page, ctx);

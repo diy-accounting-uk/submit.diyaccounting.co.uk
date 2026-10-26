@@ -2,7 +2,6 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
-window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
 
 // Global variables
 let searchCriteriaHidden = false;

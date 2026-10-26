@@ -112,7 +112,6 @@ export async function ingestHandler(event) {
       headers: responseHeaders,
       data: {
         code: pass.code,
-        url: `${getBaseUrl(event)}/bundles.html?pass=${pass.code}`,
         passTypeId: pass.passTypeId,
         bundleId: pass.bundleId,
         validFrom: pass.validFrom,
@@ -131,14 +130,4 @@ export async function ingestHandler(event) {
       error: { detail: error.message },
     });
   }
-}
-
-function getBaseUrl(event) {
-  // Try to derive from request headers, fall back to env
-  const host = event.headers?.host || event.headers?.Host;
-  if (host) {
-    const proto = host.includes("localhost") ? "http" : "https";
-    return `${proto}://${host}`;
-  }
-  return process.env.APEX_URL || "https://submit.diyaccounting.co.uk";
 }

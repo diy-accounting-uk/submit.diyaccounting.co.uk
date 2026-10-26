@@ -1741,6 +1741,10 @@ caption {
   border-bottom: 1px solid var(--c-rule-subtle);
 }
 
+.data-table .receipt-nowrap {
+  white-space: nowrap;
+}
+
 .data-table th,
 .results-table th,
 .receipt-display th,
@@ -3781,6 +3785,8 @@ body.page-wide {
   flex-direction: column;
   gap: var(--space-2);
   min-height: 18rem;
+  max-height: 32rem;
+  overflow-y: auto;
 }
 
 .harness-turn {

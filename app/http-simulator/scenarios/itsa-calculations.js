@@ -61,6 +61,16 @@ function emptyMessages() {
   return { info: [], warnings: [], errors: [] };
 }
 
+/** The period and timestamp a calculation of the requested tax year carries. */
+function taxYearDates(taxYear) {
+  const startYear = Number(String(taxYear).split("-")[0]);
+  return {
+    periodFrom: `${startYear}-04-06`,
+    periodTo: `${startYear + 1}-04-05`,
+    calculationTimestamp: `${startYear}-06-15T09:30:00.000Z`,
+  };
+}
+
 /**
  * Build the UK_SE_SAVINGS_EXAMPLE calculation: self-employment income with savings.
  * calculationType echoes whatever the trigger call asked for (in-year, intent-to-finalise or
@@ -74,12 +84,10 @@ function ukSeSavingsExample(nino, taxYear, calculationId, calculationType = "in-
       taxYear,
       requestedBy: "customer",
       calculationReason: "customer-request",
-      calculationTimestamp: "2024-06-15T09:30:00.000Z",
       calculationType,
       intentToSubmitFinalDeclaration: calculationType === "intent-to-finalise",
       finalDeclaration: false,
-      periodFrom: "2023-04-06",
-      periodTo: "2024-04-05",
+      ...taxYearDates(taxYear),
     },
     inputs: {
       personalInformation: { identifier: nino, taxRegime: "uk" },
@@ -134,12 +142,10 @@ function errorMessagesExist(nino, taxYear, calculationId, calculationType = "in-
       taxYear,
       requestedBy: "customer",
       calculationReason: "customer-request",
-      calculationTimestamp: "2024-06-15T09:30:00.000Z",
       calculationType,
       intentToSubmitFinalDeclaration: calculationType === "intent-to-finalise",
       finalDeclaration: false,
-      periodFrom: "2023-04-06",
-      periodTo: "2024-04-05",
+      ...taxYearDates(taxYear),
     },
     messages: {
       info: [],
@@ -149,22 +155,12 @@ function errorMessagesExist(nino, taxYear, calculationId, calculationType = "in-
   };
 }
 
-/** Build a DYNAMIC calculation: the date fields reflect the requested taxYear. */
-function dynamicExample(nino, taxYear, calculationId, calculationType = "in-year") {
-  const example = ukSeSavingsExample(nino, taxYear, calculationId, calculationType);
-  const [startYear] = taxYear.split("-");
-  example.metadata.periodFrom = `${startYear}-04-06`;
-  example.metadata.periodTo = `${Number(startYear) + 1}-04-05`;
-  example.metadata.calculationTimestamp = `${startYear}-06-15T09:30:00.000Z`;
-  return example;
-}
-
 const retrieveScenarioBuilders = {
   UK_SE_SAVINGS_EXAMPLE: ukSeSavingsExample,
   UK_SE_GIFTAID_EXAMPLE: ukSeGiftaidExample,
   SCOT_SE_DIVIDENDS_EXAMPLE: scotSeDividendsExample,
   ERROR_MESSAGES_EXIST: errorMessagesExist,
-  DYNAMIC: dynamicExample,
+  DYNAMIC: ukSeSavingsExample,
 };
 
 const NOT_FOUND_RESPONSE = {

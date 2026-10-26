@@ -23,6 +23,10 @@ import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
 import { moveBookToClient, listClients, addClient, inviteClient, clientAuthorisationStatus } from "./practice-tools.js";
 import {
   listVatObligations,
+  listVatLiabilities,
+  listVatPayments,
+  listVatPenalties,
+  getVatReturn,
   submitVatReturn,
   getVatReceipt,
   renderMicroEntityAccounts,
@@ -154,6 +158,20 @@ function asToolError(err) {
  * one calls: a test can drive the handlers directly against a session
  * without a transport.
  */
+function hmrcAccountSchema() {
+  return z.enum(HMRC_ACCOUNTS).optional().describe("Which HMRC environment to call; defaults to the session's HMRC authorisation's own");
+}
+
+function vatEnquirySchema() {
+  return {
+    vrn: z.string().describe("VAT registration number, 9 digits"),
+    from: z.string().optional().describe("From date, YYYY-MM-DD; HMRC's default range when omitted"),
+    to: z.string().optional().describe("To date, YYYY-MM-DD; HMRC's default range when omitted"),
+    hmrcAccount: hmrcAccountSchema(),
+    govTestScenario: z.string().optional().describe("HMRC sandbox test scenario"),
+  };
+}
+
 export const TOOLS = {
   sign_in: {
     description:
@@ -302,6 +320,40 @@ export const TOOLS = {
       govTestScenario: z.string().optional().describe("HMRC sandbox test scenario"),
     },
     handler: listVatObligations,
+  },
+  list_vat_liabilities: {
+    description:
+      "What HMRC says the business owes for VAT, by period, for one VRN over the deployed API. Uses the session's HMRC " +
+      "authorisation: call request_hmrc_authorisation first if this tool says none is held.",
+    inputSchema: vatEnquirySchema(),
+    handler: listVatLiabilities,
+  },
+  list_vat_payments: {
+    description:
+      "The VAT payments HMRC has received from the business, by date, for one VRN over the deployed API. Uses the " +
+      "session's HMRC authorisation: call request_hmrc_authorisation first if this tool says none is held.",
+    inputSchema: vatEnquirySchema(),
+    handler: listVatPayments,
+  },
+  list_vat_penalties: {
+    description:
+      "The VAT penalties and late-submission points HMRC holds for one VRN over the deployed API. Uses the session's " +
+      "HMRC authorisation: call request_hmrc_authorisation first if this tool says none is held.",
+    inputSchema: vatEnquirySchema(),
+    handler: listVatPenalties,
+  },
+  get_vat_return: {
+    description:
+      "One past VAT return as HMRC holds it, by its period key (the periodKey list_vat_obligations answers for a " +
+      "fulfilled obligation), over the deployed API. Uses the session's HMRC authorisation: call " +
+      "request_hmrc_authorisation first if this tool says none is held.",
+    inputSchema: {
+      vrn: z.string().describe("VAT registration number, 9 digits"),
+      periodKey: z.string().describe("The obligation's period key, for example 18A1"),
+      hmrcAccount: hmrcAccountSchema(),
+      govTestScenario: z.string().optional().describe("HMRC sandbox test scenario"),
+    },
+    handler: getVatReturn,
   },
   submit_vat_return: {
     description:

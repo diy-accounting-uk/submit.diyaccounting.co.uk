@@ -112,10 +112,15 @@ function validateTarget(target, path) {
     return;
   }
   if (target && typeof target === "object") {
-    if ("role" in target && "name" in target) return;
-    if ("text" in target) return;
+    if ("frame" in target) {
+      if (typeof target.frame !== "string" || target.frame.length === 0) fail(path, "target frame must be a non-empty selector");
+      if ("selector" in target || "text" in target || ("role" in target && "name" in target)) return;
+    } else {
+      if ("role" in target && "name" in target) return;
+      if ("text" in target) return;
+    }
   }
-  fail(path, "target must be a CSS selector string, {role,name}, or {text}");
+  fail(path, "target must be a CSS selector string, {role,name}, {text}, or one of those with a frame selector ({frame,selector})");
 }
 
 function validateStep(step, scenePath, sceneId, stepIndex, auth) {

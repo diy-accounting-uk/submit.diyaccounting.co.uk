@@ -13,6 +13,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import {
   listVatObligations,
+  listVatLiabilities,
+  listVatPayments,
+  listVatPenalties,
+  getVatReturn,
   submitVatReturn,
   getVatReceipt,
   renderMicroEntityAccounts,
@@ -123,6 +127,47 @@ describe("submit-tools", () => {
     delete process.env.DIYA_SUBMIT_BASE_URL;
     vi.unstubAllGlobals();
     vi.useRealTimers();
+  });
+
+  describe("VAT enquiries", () => {
+    const cases = [
+      ["list_vat_liabilities", listVatLiabilities, "/api/v1/hmrc/vat/liability"],
+      ["list_vat_payments", listVatPayments, "/api/v1/hmrc/vat/payment"],
+      ["list_vat_penalties", listVatPenalties, "/api/v1/hmrc/vat/penalty"],
+    ];
+
+    for (const [name, call, route] of cases) {
+      it(`${name} gets ${route} with the grant's HMRC token and the date range`, async () => {
+        const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { items: [] }));
+        vi.stubGlobal("fetch", withGrant(mockFetch));
+
+        const result = await call(session, { vrn: VRN, from: "2025-01-01", to: "2025-12-31" });
+
+        expect(result).toEqual({ items: [] });
+        const [url, init] = mockFetch.mock.calls[0];
+        expect(url).toBe(`https://submit.diyaccounting.co.uk${route}?vrn=${VRN}&from=2025-01-01&to=2025-12-31`);
+        expect(init.headers["X-Authorization"]).toBe("Bearer session-access-token");
+        expect(init.headers["Authorization"]).toBe(`Bearer ${HMRC_ACCESS_TOKEN}`);
+        expect(init.headers.hmrcAccount).toBe("live");
+      });
+
+      it(`${name} requires vrn`, async () => {
+        await expect(call(session, {})).rejects.toThrow(`${name} requires vrn`);
+      });
+    }
+
+    it("get_vat_return gets one return by period key", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { periodKey: "18A1" }));
+      vi.stubGlobal("fetch", withGrant(mockFetch));
+
+      await getVatReturn(session, { vrn: VRN, periodKey: "18A1" });
+
+      expect(mockFetch.mock.calls[0][0]).toBe(`https://submit.diyaccounting.co.uk/api/v1/hmrc/vat/return?vrn=${VRN}&periodKey=18A1`);
+    });
+
+    it("get_vat_return requires periodKey", async () => {
+      await expect(getVatReturn(session, { vrn: VRN })).rejects.toThrow("get_vat_return requires periodKey");
+    });
   });
 
   describe("list_vat_obligations", () => {

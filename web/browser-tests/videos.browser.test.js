@@ -313,6 +313,23 @@ test.describe("walkthrough under a video", () => {
     await expect(twistie.locator(".walkthrough-headline").first()).toHaveText(SCENES[0].headline);
   });
 
+  test("walkthrough thumbnails download only when the twistie opens, and the posters load lazily", async ({ page }) => {
+    const thumbRequests = [];
+    page.on("request", (request) => {
+      if (/\.webp$/.test(new URL(request.url()).pathname)) thumbRequests.push(request.url());
+    });
+    await serveWalkthroughManifest(page);
+    await page.goto(AREA_URL, { waitUntil: "domcontentloaded" });
+    const twistie = page.locator(`section#${WITH_WALKTHROUGH.id} details.walkthrough`);
+    await expect(twistie).toHaveCount(1);
+    await page.waitForLoadState("networkidle");
+    expect(thumbRequests).toEqual([]);
+    await expect(page.locator("section.video-section .video-facade img:not([loading='lazy'])")).toHaveCount(0);
+    await twistie.locator("summary").click();
+    await expect.poll(() => thumbRequests.length).toBe(3);
+    await expect(twistie.locator(".walkthrough-thumb img[loading='lazy']")).toHaveCount(3);
+  });
+
   test("a video with no walkthrough data has no twistie", async ({ page }) => {
     await serveWalkthroughManifest(page);
     await page.goto(AREA_URL, { waitUntil: "domcontentloaded" });

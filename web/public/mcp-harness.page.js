@@ -36,7 +36,12 @@
     body.textContent = text;
     turn.appendChild(body);
     chat.appendChild(turn);
+    keepLatestTurnInView();
     return turn;
+  }
+
+  function keepLatestTurnInView() {
+    chat.scrollTop = chat.scrollHeight;
   }
 
   function browserStepLink(result) {
@@ -55,7 +60,7 @@
   }
 
   // A string argument of the form "${turnId.path.to.value}" takes that value from an earlier tool
-  // answer; a "[*]" step in the path collects the field from every item of an array.
+  // answer (inside a longer string, the value is written into the text); a "[*]" step in the path collects the field from every item of an array.
   function resolveReference(reference) {
     const [turnId, ...steps] = reference.split(".");
     let value = answers[turnId];
@@ -73,8 +78,9 @@
 
   function resolveArguments(value) {
     if (typeof value === "string") {
-      const match = /^\$\{([^}]+)\}$/.exec(value);
-      return match ? resolveReference(match[1]) : value;
+      const whole = /^\$\{([^}]+)\}$/.exec(value);
+      if (whole) return resolveReference(whole[1]);
+      return value.replace(/\$\{([^}]+)\}/g, (_, reference) => String(resolveReference(reference)));
     }
     if (Array.isArray(value)) return value.map(resolveArguments);
     if (value && typeof value === "object") {
@@ -106,6 +112,7 @@
       card.dataset.outcome = ok ? "ok" : "error";
       if (turn.id) answers[turn.id] = result;
       output.textContent = typeof result === "string" ? result : JSON.stringify(result, null, 2);
+      keepLatestTurnInView();
       const link = ok ? browserStepLink(result) : null;
       if (link) showBrowserStep(link);
     } catch (error) {

@@ -232,6 +232,33 @@ describe("request pacing", () => {
     expect(pacer.count()).toBe(0);
   });
 
+  test("keeps one reserve free for each concurrent crawl", async () => {
+    let clock = 0;
+    const sleeps = [];
+    const pacer = createRequestPacer({
+      budget: 100,
+      windowMs: 1000,
+      reserve: 10,
+      concurrency: 4,
+      now: () => clock,
+      sleep: async (ms) => {
+        sleeps.push(ms);
+        clock += ms;
+      },
+    });
+    for (let count = 0; count < 61; count += 1) pacer.record();
+    await pacer.waitForRoom();
+    expect(sleeps).toEqual([1001]);
+    const single = createRequestPacer({ budget: 100, windowMs: 1000, reserve: 10, now: () => clock, sleep: async (ms) => sleeps.push(ms) });
+    for (let count = 0; count < 61; count += 1) single.record();
+    await single.waitForRoom();
+    expect(sleeps).toEqual([1001]);
+  });
+
+  test("keeps the prod budget below the edge limit with room for every concurrent page", () => {
+    expect(PROD_REQUEST_BUDGET + 4 * 80).toBeLessThan(2000);
+  });
+
   test("does not wait while the reserve fits, or with no budget", async () => {
     const sleeps = [];
     const sleep = async (ms) => sleeps.push(ms);

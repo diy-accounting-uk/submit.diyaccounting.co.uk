@@ -497,7 +497,11 @@ async function handleFormSubmission(event) {
 
 function displayResult(result) {
   const submissionIdResult = document.getElementById("submissionIdResult");
-  submissionIdResult.textContent = result?.submissionId || "-";
+  // HMRC's cumulative model (2025-26 onwards) answers 204 with no submission ID: the year's running
+  // total is the one resource, so the result reads "Year to date" as the submission record does.
+  const hasSubmissionId = Boolean(result?.submissionId);
+  document.getElementById("submissionIdLabel").textContent = hasSubmissionId ? "Submission ID" : "Reporting";
+  submissionIdResult.textContent = hasSubmissionId ? result.submissionId : "Year to date";
 }
 
 document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {

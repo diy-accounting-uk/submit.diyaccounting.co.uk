@@ -224,6 +224,7 @@ export async function listUserReceipts(userSub, clientId) {
           lastModified: item.createdAt, // Use createdAt as lastModified for compatibility
           clientId: item.clientId || null,
           kind: item.receipt?.kind || null,
+          size: Buffer.byteLength(JSON.stringify(item.receipt ?? {})),
         };
       });
 

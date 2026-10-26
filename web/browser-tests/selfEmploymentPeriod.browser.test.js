@@ -154,4 +154,34 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
     const periodIdResult = page.locator("#periodIdResult");
     await expect(periodIdResult).toHaveText("2024-04-06_2024-07-05");
   });
+
+  test("reads Year to date when the result carries no periodId", async ({ page }) => {
+    await page.route("**/*.js", async (route) => {
+      const request = route.request();
+      if (request.resourceType() === "script") {
+        await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+      } else {
+        await route.continue();
+      }
+    });
+    await serveItsaPageScripts(page);
+    await serveCarriedIdentifiers(page);
+    await serveSelfEmploymentExpenses(page);
+    await serveItsaSubmissionModel(page);
+
+    const modifiedHtml = periodHtmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">');
+    await page.setContent(modifiedHtml, {
+      url: "http://localhost:3000/hmrc/itsa/selfEmploymentPeriod.html",
+      waitUntil: "domcontentloaded",
+    });
+    await delay(200);
+
+    await page.evaluate(() => {
+      window.displayResult({ model: "cumulative" });
+    });
+
+    const periodIdResult = page.locator("#periodIdResult");
+    await expect(periodIdResult).toHaveText("Year to date");
+    await expect(page.locator("#periodIdLabel")).toHaveText("Reporting");
+  });
 });

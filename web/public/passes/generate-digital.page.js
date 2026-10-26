@@ -140,15 +140,15 @@ document.getElementById("generatePassBtn").addEventListener("click", async () =>
 
     // Display result
     __generatedPassCode = body.code;
-    __generatedPassUrl = body.url;
+    __generatedPassUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(body.code)}`;
 
     document.getElementById("generatedPassCode").textContent = body.code;
-    document.getElementById("generatedPassUrl").textContent = body.url;
+    document.getElementById("generatedPassUrl").textContent = __generatedPassUrl;
     document.getElementById("passCodeSmall").textContent = body.code;
 
     // Generate QR code SVG client-side
     try {
-      const qrSvg = await QRCode.toString(body.url, {
+      const qrSvg = await QRCode.toString(__generatedPassUrl, {
         type: "svg",
         width: 250,
         margin: 2,
