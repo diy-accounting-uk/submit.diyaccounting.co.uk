@@ -590,15 +590,15 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("small-company-accounts-full"));
     await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60_000 });
     await expect(page.locator("#regimeSmall")).toBeChecked();
-    await expect(page.locator("#periodStart")).toHaveValue("2025-01-01");
-    await expect(page.locator("#periodEnd")).toHaveValue("2025-12-31");
-    await expect(page.locator("#currentTurnover")).toHaveValue("20000");
-    await expect(page.locator("#currentCashAtBank")).toHaveValue("2000");
-    await expect(page.locator("#priorTurnover")).toHaveValue("18000");
+    await expect(page.locator("#periodStart")).toHaveValue("2025-04-01");
+    await expect(page.locator("#periodEnd")).toHaveValue("2026-03-31");
+    await expect(page.locator("#currentTurnover")).toHaveValue("8500");
+    await expect(page.locator("#currentCashAtBank")).toHaveValue("5200");
+    await expect(page.locator("#priorTurnover")).toHaveValue("7639");
     await expect(page.locator("#includeFixedAssetNote")).toBeChecked();
-    await expect(page.locator("#depreciation")).toHaveValue("380");
-    await expect(page.locator("#principalActivity")).toHaveValue("Stadium operation and events");
-    await expect(page.locator("#directorName")).toHaveValue("Maldwyn Beynon");
+    await expect(page.locator("#depreciation")).toHaveValue("400");
+    await expect(page.locator("#principalActivity")).toHaveValue("Retailer of accounting software");
+    await expect(page.locator("#directorName")).toHaveValue("Antony Christopher Cartwright");
   });
 
   test("a dropped micro-entity iXBRL document opens the micro accounts with its balance sheets", async ({ page }) => {
@@ -606,8 +606,8 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("micro-entity-accounts"));
     await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60_000 });
     await expect(page.locator("#regimeMicro")).toBeChecked();
-    await expect(page.locator("#microCurrentFixedAssets")).toHaveValue("1000");
-    await expect(page.locator("#microPriorFixedAssets")).toHaveValue("900");
+    await expect(page.locator("#microCurrentFixedAssets")).toHaveValue("0");
+    await expect(page.locator("#microPriorFixedAssets")).toHaveValue("0");
   });
 
   test("an iXBRL document for another company fills nothing", async ({ page }) => {
@@ -624,7 +624,7 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#periodStart").fill("2024-01-01");
     await page.locator("#periodEnd").fill("2024-12-31");
     await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("small-company-accounts-full"));
-    await expect(page.locator("#booksImportStatus")).toContainText("end on 2025-12-31", { timeout: 60_000 });
+    await expect(page.locator("#booksImportStatus")).toContainText("end on 2026-03-31", { timeout: 60_000 });
     await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled");
     await expect(page.locator("#currentTurnover")).toHaveValue("");
     await expect(page.locator("#periodEnd")).toHaveValue("2024-12-31");

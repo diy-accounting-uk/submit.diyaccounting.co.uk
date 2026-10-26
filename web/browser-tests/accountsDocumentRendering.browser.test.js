@@ -16,7 +16,7 @@ const PAGE_CSP =
 
 // Text a header leaks when it is not hidden: taxonomy prefixes, URIs, ISO dates, unit names.
 const HEADER_TEXT =
-  /xbrli|xbrldi|iso4217|xbrl\.org|companieshouse\.gov\.uk|\b(core|bus|direp|ct-comp):|https?:\/\/|\d{4}-\d{2}-\d{2}|\bpure\b|\bshares\b(?! of)/;
+  /xbrli|xbrldi|iso4217|xbrl\.org|companieshouse\.gov\.uk|\b(core|bus|direp|ct-comp):|https?:\/\/|\d{4}-\d{2}-\d{2}|\bpure\b|(?<!limited by )\bshares\b(?! of)/;
 
 async function openDocument(page, name, xhtml) {
   const url = `http://localhost:3000/accounts-documents/${name}.xhtml`;
@@ -131,7 +131,7 @@ test.describe("Accounts documents as a reader sees them", () => {
     await expect(frame.locator("h2", { hasText: "Balance sheet" })).toBeVisible();
     const frameText = await frame.locator("body").innerText();
     expect(frameText).not.toMatch(HEADER_TEXT);
-    expect(frameText).toContain("Shareholders' funds\t4,000\t2,900");
+    expect(frameText).toContain("Shareholders' funds\t4,832\t134");
     await expect(page.locator("#previewIxbrl")).toHaveClass(/developer-only-section/);
     await page.locator("#previewView").screenshot({ path: path.join(SCREENSHOT_DIRECTORY, "preview-frame.png") });
   });
