@@ -70,6 +70,24 @@ export const SMALL_COMPANY_PROFIT_AND_LOSS_LINES = [
   "profit",
 ];
 
+export const SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES = [
+  "turnover",
+  "changeInStocks",
+  "ownWorkCapitalised",
+  "otherOperatingIncome",
+  "rawMaterialsConsumables",
+  "otherExternalCharges",
+  "staffCosts",
+  "depreciation",
+  "otherOperatingExpenses",
+  "operatingProfit",
+  "interestReceivable",
+  "interestPayable",
+  "profitBeforeTax",
+  "tax",
+  "profit",
+];
+
 export const FIXED_ASSET_CLASSES = ["landBuildings", "plantMachinery", "furnitureFittings", "computerEquipment", "motorVehicles"];
 
 export const FIXED_ASSET_CLASS_LABEL = {
@@ -124,6 +142,53 @@ export const PROFIT_AND_LOSS_CONCEPT_KEY = {
   profit: "profitLoss",
 };
 
+export const FORMAT_2_PROFIT_AND_LOSS_CONCEPT_KEY = {
+  turnover: "turnoverRevenue",
+  changeInStocks: "increaseDecreaseInStocks",
+  ownWorkCapitalised: "ownWorkCapitalised",
+  otherOperatingIncome: "otherOperatingIncome",
+  rawMaterialsConsumables: "rawMaterialsConsumablesUsed",
+  otherExternalCharges: "otherExternalCharges",
+  staffCosts: "staffCosts",
+  depreciation: "depreciationWrittenOff",
+  otherOperatingExpenses: "otherOperatingExpenses",
+  operatingProfit: "operatingProfitLoss",
+  interestReceivable: "otherInterestReceivable",
+  interestPayable: "interestPayable",
+  profitBeforeTax: "profitLossBeforeTax",
+  tax: "taxOnProfitLoss",
+  profit: "profitLoss",
+};
+
+const FORMAT_2_PROFIT_AND_LOSS_LABEL = {
+  turnover: "Turnover",
+  changeInStocks: "Change in stocks of finished goods and in work in progress",
+  ownWorkCapitalised: "Own work capitalised",
+  otherOperatingIncome: "Other operating income",
+  rawMaterialsConsumables: "Raw materials and consumables",
+  otherExternalCharges: "Other external charges",
+  staffCosts: "Staff costs",
+  depreciation: "Depreciation and other amounts written off tangible and intangible fixed assets",
+  otherOperatingExpenses: "Other operating expenses",
+  operatingProfit: "Operating profit",
+  interestReceivable: "Interest receivable and similar income",
+  interestPayable: "Interest payable and similar expenses",
+  profitBeforeTax: "Profit on ordinary activities before taxation",
+  tax: "Tax on profit on ordinary activities",
+  profit: "Profit for the financial year",
+};
+
+export const PROFIT_AND_LOSS_FORMATS = [1, 2];
+
+/**
+ * The profit and loss lines of a format.
+ * @param {1|2} format
+ * @returns {string[]}
+ */
+export function profitAndLossLinesOf(format) {
+  return format === 2 ? SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES : SMALL_COMPANY_PROFIT_AND_LOSS_LINES;
+}
+
 const PROFIT_AND_LOSS_LABEL = {
   turnover: "Turnover",
   costOfSales: "Cost of sales",
@@ -166,6 +231,43 @@ export function profitAndLossProblems(figures) {
 }
 
 /**
+ * The Format 2 profit and loss identities a set of figures must hold, as messages; empty when they hold.
+ * @param {object} figures - the lines of SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES
+ * @returns {string[]}
+ */
+export function format2ProfitAndLossProblems(figures) {
+  const problems = [];
+  const operatingProfit =
+    figures.turnover +
+    figures.changeInStocks +
+    figures.ownWorkCapitalised +
+    figures.otherOperatingIncome -
+    figures.rawMaterialsConsumables -
+    figures.otherExternalCharges -
+    figures.staffCosts -
+    figures.depreciation -
+    figures.otherOperatingExpenses;
+  if (figures.operatingProfit !== operatingProfit)
+    problems.push(
+      "operatingProfit must equal turnover plus changeInStocks, ownWorkCapitalised and otherOperatingIncome, less rawMaterialsConsumables, otherExternalCharges, staffCosts, depreciation and otherOperatingExpenses",
+    );
+  if (figures.profitBeforeTax !== figures.operatingProfit + figures.interestReceivable - figures.interestPayable)
+    problems.push("profitBeforeTax must equal operatingProfit plus interestReceivable less interestPayable");
+  if (figures.profit !== figures.profitBeforeTax - figures.tax) problems.push("profit must equal profitBeforeTax less tax");
+  return problems;
+}
+
+/**
+ * The profit and loss identities of a format.
+ * @param {object} figures
+ * @param {1|2} [format]
+ * @returns {string[]}
+ */
+export function profitAndLossProblemsOf(figures, format = 1) {
+  return format === 2 ? format2ProfitAndLossProblems(figures) : profitAndLossProblems(figures);
+}
+
+/**
  * The fixed asset note's closing figures for each class, derived from its movements.
  * @param {object} classFigures - the FIXED_ASSET_CLASS_FIELDS of one class
  * @returns {{costAtEnd: number, depreciationAtEnd: number, netBookValue: number}}
@@ -201,13 +303,47 @@ const PROFIT_AND_LOSS_ROW = {
   profit: { style: "total" },
 };
 
-function profitAndLossPage({ heading, refs, current, prior, columns }) {
-  const rows = SMALL_COMPANY_PROFIT_AND_LOSS_LINES.map((line) => {
-    const { deduction, style } = PROFIT_AND_LOSS_ROW[line];
-    const conceptKey = PROFIT_AND_LOSS_CONCEPT_KEY[line];
+const FORMAT_2_PROFIT_AND_LOSS_ROW = {
+  turnover: {},
+  changeInStocks: {},
+  ownWorkCapitalised: {},
+  otherOperatingIncome: {},
+  rawMaterialsConsumables: { deduction: true },
+  otherExternalCharges: { deduction: true },
+  staffCosts: { deduction: true },
+  depreciation: { deduction: true },
+  otherOperatingExpenses: { deduction: true },
+  operatingProfit: { style: "subtotal" },
+  interestReceivable: {},
+  interestPayable: { deduction: true },
+  profitBeforeTax: { style: "subtotal" },
+  tax: { deduction: true },
+  profit: { style: "total" },
+};
+
+const FORMAT_DETAILS = {
+  1: {
+    lines: SMALL_COMPANY_PROFIT_AND_LOSS_LINES,
+    rows: PROFIT_AND_LOSS_ROW,
+    concepts: PROFIT_AND_LOSS_CONCEPT_KEY,
+    labels: PROFIT_AND_LOSS_LABEL,
+  },
+  2: {
+    lines: SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES,
+    rows: FORMAT_2_PROFIT_AND_LOSS_ROW,
+    concepts: FORMAT_2_PROFIT_AND_LOSS_CONCEPT_KEY,
+    labels: FORMAT_2_PROFIT_AND_LOSS_LABEL,
+  },
+};
+
+function profitAndLossPage({ heading, refs, current, prior, columns, format }) {
+  const details = FORMAT_DETAILS[format];
+  const rows = details.lines.map((line) => {
+    const { deduction, style } = details.rows[line];
+    const conceptKey = details.concepts[line];
     const cells = [recordFigure(money(conceptKey, refs.current, current[line]), current[line], { deduction })];
     if (prior) cells.push(recordFigure(money(conceptKey, refs.prior, prior[line]), prior[line], { deduction }));
-    return { label: PROFIT_AND_LOSS_LABEL[line], style, cells };
+    return { label: details.labels[line], style, cells };
   });
   return `<div class="page">
 ${heading}${recordTable({ columns: prior ? columns : columns.slice(0, 1), rows })}
@@ -347,11 +483,14 @@ ${heading}<p>The directors present their report and the financial statements for
  * @param {string} input.directorName - the director who signs
  * @param {string} input.dateOfApproval - ISO date
  * @param {{current: object, prior?: object}} input.balanceSheet - SMALL_COMPANY_BALANCE_SHEET_LINES
- * @param {{current: object, prior?: object}} input.profitAndLoss - SMALL_COMPANY_PROFIT_AND_LOSS_LINES
+ * @param {1|2} [input.profitAndLossFormat] - 1 (by function, the default) or 2 (by nature)
+ * @param {{current: object, prior?: object}} input.profitAndLoss - the lines of the format: SMALL_COMPANY_PROFIT_AND_LOSS_LINES or SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES
  * @param {Record<string, object>} [input.fixedAssetNote] - FIXED_ASSET_CLASSES to FIXED_ASSET_CLASS_FIELDS
  * @returns {string} the XHTML document
  */
 export function buildSmallCompanyAccounts(input) {
+  const profitAndLossFormat = input.profitAndLossFormat ?? 1;
+  if (!PROFIT_AND_LOSS_FORMATS.includes(profitAndLossFormat)) throw new Error("profitAndLossFormat must be 1 or 2");
   const priorBalanceSheet = input.balanceSheet.prior;
   const priorProfitAndLoss = input.profitAndLoss.prior;
   const hasFixedAssetNote = Boolean(input.fixedAssetNote) && Object.keys(input.fixedAssetNote).length > 0;
@@ -369,8 +508,10 @@ export function buildSmallCompanyAccounts(input) {
   const hiddenFacts = [];
 
   const problems = [
-    ...profitAndLossProblems(input.profitAndLoss.current).map((message) => `profitAndLoss.current: ${message}`),
-    ...(priorProfitAndLoss ? profitAndLossProblems(priorProfitAndLoss).map((message) => `profitAndLoss.prior: ${message}`) : []),
+    ...profitAndLossProblemsOf(input.profitAndLoss.current, profitAndLossFormat).map((message) => `profitAndLoss.current: ${message}`),
+    ...(priorProfitAndLoss
+      ? profitAndLossProblemsOf(priorProfitAndLoss, profitAndLossFormat).map((message) => `profitAndLoss.prior: ${message}`)
+      : []),
   ];
   if (problems.length > 0) throw new Error(problems.join("; "));
   if (input.fixedAssetNote && fixedAssetNoteNetBookValue(input.fixedAssetNote) !== input.balanceSheet.current.fixedAssets) {
@@ -500,6 +641,7 @@ export function buildSmallCompanyAccounts(input) {
         current: input.profitAndLoss.current,
         prior: priorProfitAndLoss,
         columns,
+        format: profitAndLossFormat,
       }),
     );
   }

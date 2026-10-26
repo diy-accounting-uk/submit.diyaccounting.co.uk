@@ -7,6 +7,14 @@
 import { readFileSync } from "node:fs";
 import { describe, test, expect } from "vitest";
 import { mapIxbrlAccounts } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-accounts.js";
+import { readIxbrl } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-reader.js";
+import { SMALL_COMPANY_FORMAT_2_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
+import {
+  buildSmallCompanyAccounts,
+  SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES,
+  FORMAT_2_PROFIT_AND_LOSS_CONCEPT_KEY,
+} from "@app/services/smallCompanyAccountsIxbrl.js";
+import { CONCEPTS } from "@app/services/accountsIxbrlCommon.js";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 
 const cases = JSON.parse(readFileSync("scripts/fixtures/companies-house-test-service-cases.json", "utf8")).filter(
@@ -94,5 +102,25 @@ describe("the builders' accounts read back through the diya-gl reader", () => {
 
   test("a document for another company number is refused", () => {
     expect(() => mapIxbrlAccounts(builtDocument(cases[0]), { companyNumber: "99999999" })).toThrow(/99999999/);
+  });
+
+  test("a Format 2 small company document reads back with the figures it was built from", () => {
+    const { facts } = readIxbrl(buildSmallCompanyAccounts(SMALL_COMPANY_FORMAT_2_CASE_INPUT));
+    const valueOf = (localName, periodEnd) => {
+      const fact = facts.find(
+        (candidate) =>
+          candidate.localName === localName && candidate.period.endDate === periodEnd && Object.keys(candidate.dimensions).length === 0,
+      );
+      return fact ? Number(fact.value) : undefined;
+    };
+    for (const [year, periodEnd] of [
+      ["current", "2025-12-31"],
+      ["prior", "2024-12-31"],
+    ]) {
+      for (const line of SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES) {
+        const { name } = CONCEPTS[FORMAT_2_PROFIT_AND_LOSS_CONCEPT_KEY[line]];
+        expect(valueOf(name, periodEnd), `${year} ${line}`).toBe(SMALL_COMPANY_FORMAT_2_CASE_INPUT.profitAndLoss[year][line]);
+      }
+    }
   });
 });

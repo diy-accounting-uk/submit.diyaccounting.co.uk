@@ -27,6 +27,7 @@ import {
   goToFileMicroEntityAccounts,
   goToFileSmallCompanyAccounts,
   fillInSmallCompanyAccountsForm,
+  showPreviewPage,
   verifyPreviewContains,
   enterCompanyNumberAndLookUp,
   verifyCompanyLookedUp,
@@ -105,9 +106,43 @@ function buildAccounts() {
   };
 }
 
-function buildSmallCompanyAccounts({ withComparatives = false } = {}) {
+const FORMAT_2_PROFIT_AND_LOSS = {
+  current: {
+    turnover: 20000,
+    changeInStocks: 100,
+    ownWorkCapitalised: 0,
+    otherOperatingIncome: 200,
+    rawMaterialsConsumables: 3000,
+    otherExternalCharges: 1500,
+    staffCosts: 7000,
+    depreciation: 300,
+    otherOperatingExpenses: 2500,
+    interestReceivable: 0,
+    interestPayable: 0,
+    tax: 600,
+  },
+  prior: {
+    turnover: 15000,
+    changeInStocks: -50,
+    ownWorkCapitalised: 0,
+    otherOperatingIncome: 0,
+    rawMaterialsConsumables: 2500,
+    otherExternalCharges: 1000,
+    staffCosts: 6000,
+    depreciation: 250,
+    otherOperatingExpenses: 2200,
+    interestReceivable: 0,
+    interestPayable: 0,
+    tax: 200,
+  },
+};
+
+function buildSmallCompanyAccounts({ withComparatives = false, profitAndLossFormat = 1 } = {}) {
   const currentYear = {
-    profitAndLoss: { turnover: 20000, costOfSales: 5000, administrativeExpenses: 12000, interestReceivable: 0, tax: 600 },
+    profitAndLoss:
+      profitAndLossFormat === 2
+        ? FORMAT_2_PROFIT_AND_LOSS.current
+        : { turnover: 20000, costOfSales: 5000, administrativeExpenses: 12000, interestReceivable: 0, tax: 600 },
     balanceSheet: {
       fixedAssets: 1000,
       stocks: 500,
@@ -122,7 +157,10 @@ function buildSmallCompanyAccounts({ withComparatives = false } = {}) {
     },
   };
   const priorYear = {
-    profitAndLoss: { turnover: 15000, costOfSales: 4000, administrativeExpenses: 10000, interestReceivable: 0, tax: 200 },
+    profitAndLoss:
+      profitAndLossFormat === 2
+        ? FORMAT_2_PROFIT_AND_LOSS.prior
+        : { turnover: 15000, costOfSales: 4000, administrativeExpenses: 10000, interestReceivable: 0, tax: 200 },
     balanceSheet: {
       fixedAssets: 900,
       stocks: 400,
@@ -286,6 +324,45 @@ test("Click through: file small company accounts in full with comparatives and s
       source: ["core:TurnoverRevenue", 'contextRef="y2024"'],
       notInSource: ["section 444(5A)"],
       rendered: ["Profit and loss account", "Directors' report", "Balance sheet", "Notes to the financial statements"],
+    },
+    screenshotPath,
+  );
+  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await verifyFilingAccepted(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file Format 2 small company accounts with comparatives and see the filing accepted", async ({ page }, testInfo) => {
+  addOnPageLogging(page);
+  fs.mkdirSync(testInfo.outputPath(""), { recursive: true });
+
+  await signInWithResidentBundle(page, baseUrl);
+  await goToFileSmallCompanyAccounts(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await fillInSmallCompanyAccountsForm(
+    page,
+    buildSmallCompanyAccounts({ withComparatives: true, profitAndLossFormat: 2 }),
+    { profitAndLossFormat: 2 },
+    screenshotPath,
+  );
+  await previewAccounts(page, screenshotPath);
+  await showPreviewPage(page, "Profit and loss account", screenshotPath);
+  await verifyPreviewContains(
+    page,
+    {
+      source: ["core:IncreaseDecreaseInStocksInventoriesFinishedGoodsWorkInProgress", "core:OtherExternalCharges", 'contextRef="y2024"'],
+      notInSource: ["core:CostSales", "core:AdministrativeExpenses", "section 444(5A)"],
+      rendered: [
+        "Profit and loss account",
+        "Change in stocks of finished goods and in work in progress",
+        "Raw materials and consumables",
+        "Staff costs",
+        "Profit for the financial year",
+        "Balance sheet",
+      ],
+      notRendered: ["Cost of sales", "Administrative expenses"],
     },
     screenshotPath,
   );

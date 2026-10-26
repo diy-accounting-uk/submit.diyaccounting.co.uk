@@ -8,11 +8,12 @@
 
 import {
   SMALL_COMPANY_BALANCE_SHEET_LINES,
-  SMALL_COMPANY_PROFIT_AND_LOSS_LINES,
+  PROFIT_AND_LOSS_FORMATS,
+  profitAndLossLinesOf,
   FIXED_ASSET_CLASSES,
   FIXED_ASSET_CLASS_FIELDS,
   withBalanceSheetTotals,
-  profitAndLossProblems,
+  profitAndLossProblemsOf,
   fixedAssetNoteNetBookValue,
 } from "./smallCompanyAccountsIxbrl.js";
 
@@ -55,10 +56,10 @@ function readBalanceSheetYear(values, label, errorMessages) {
   return figures;
 }
 
-function readProfitAndLossYear(values, label, errorMessages) {
-  const figures = readFigures(values, SMALL_COMPANY_PROFIT_AND_LOSS_LINES, label, errorMessages);
+function readProfitAndLossYear(values, format, label, errorMessages) {
+  const figures = readFigures(values, profitAndLossLinesOf(format), label, errorMessages);
   if (allFinite(figures)) {
-    for (const problem of profitAndLossProblems(figures)) errorMessages.push(`${label}: ${problem}`);
+    for (const problem of profitAndLossProblemsOf(figures, format)) errorMessages.push(`${label}: ${problem}`);
   }
   return figures;
 }
@@ -123,13 +124,18 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
   const priorBalanceSheet = section.balanceSheet?.priorYear
     ? readBalanceSheetYear(section.balanceSheet.priorYear, "smallCompany.balanceSheet.priorYear", errorMessages)
     : undefined;
+  const profitAndLossFormat = section.profitAndLossFormat ?? 1;
+  if (!PROFIT_AND_LOSS_FORMATS.includes(profitAndLossFormat)) {
+    errorMessages.push("Invalid smallCompany.profitAndLossFormat - must be 1 or 2");
+  }
   const currentProfitAndLoss = readProfitAndLossYear(
     section.profitAndLoss?.currentYear,
+    profitAndLossFormat,
     "smallCompany.profitAndLoss.currentYear",
     errorMessages,
   );
   const priorProfitAndLoss = section.profitAndLoss?.priorYear
-    ? readProfitAndLossYear(section.profitAndLoss.priorYear, "smallCompany.profitAndLoss.priorYear", errorMessages)
+    ? readProfitAndLossYear(section.profitAndLoss.priorYear, profitAndLossFormat, "smallCompany.profitAndLoss.priorYear", errorMessages)
     : undefined;
   const fixedAssetNote = readFixedAssetNote(section.fixedAssetNote, currentBalanceSheet.fixedAssets, errorMessages);
 
@@ -141,6 +147,7 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
 
   return {
     filleted: section.filleted === true,
+    profitAndLossFormat,
     principalActivity,
     accountingPolicies,
     directors,

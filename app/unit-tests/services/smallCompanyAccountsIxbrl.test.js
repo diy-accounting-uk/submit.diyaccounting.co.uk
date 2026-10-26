@@ -9,6 +9,9 @@ import {
   buildSmallCompanyAccounts,
   withBalanceSheetTotals,
   profitAndLossProblems,
+  format2ProfitAndLossProblems,
+  SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES,
+  FORMAT_2_PROFIT_AND_LOSS_CONCEPT_KEY,
   fixedAssetClosingFigures,
   fixedAssetNoteNetBookValue,
   SMALL_COMPANY_MANDATORY_CONCEPT_KEYS,
@@ -16,6 +19,10 @@ import {
 } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { CONCEPTS, loadFrcTaxonomyConcepts } from "@app/services/accountsIxbrlCommon.js";
 import { parseXmlDocument } from "@app/lib/xmlDom.js";
+import {
+  SMALL_COMPANY_FORMAT_2_CASE_INPUT,
+  SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LABELS,
+} from "@app/test-helpers/accountsDocumentCases.js";
 
 const CURRENT_BALANCE_SHEET = {
   fixedAssets: 10000,
@@ -124,6 +131,10 @@ function dimensionNames(xhtml) {
 // The countries module is outside the business, core and direp lists in the checked-in concept file.
 function inFrcBusinessOrCoreTaxonomy({ dimension, member }) {
   return !dimension.startsWith("countries:") && !member.startsWith("countries:");
+}
+
+function qnameOf({ prefix, name }) {
+  return `${prefix}:${name}`;
 }
 
 function nonFractionValue(xhtml, name, contextRef) {
@@ -478,6 +489,79 @@ describe("services/smallCompanyAccountsIxbrl", () => {
         netBookValue: 4000,
       });
       expect(fixedAssetNoteNetBookValue(FIXED_ASSET_NOTE)).toBe(10000);
+    });
+  });
+
+  describe("Format 2 profit and loss account", () => {
+    const format2 = SMALL_COMPANY_FORMAT_2_CASE_INPUT;
+    const xhtml = buildSmallCompanyAccounts(format2);
+
+    test("carries each line's concept on the current and the prior context", () => {
+      for (const line of SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES) {
+        const name = qnameOf(CONCEPTS[FORMAT_2_PROFIT_AND_LOSS_CONCEPT_KEY[line]]);
+        expect(nonFractionValue(xhtml, name, "y2025"), `${line} current`).toBe(Math.abs(format2.profitAndLoss.current[line]));
+        expect(nonFractionValue(xhtml, name, "y2024"), `${line} prior`).toBe(Math.abs(format2.profitAndLoss.prior[line]));
+      }
+    });
+
+    test("tags a decrease in stocks with a sign attribute", () => {
+      expect(xhtml).toMatch(
+        /name="core:IncreaseDecreaseInStocksInventoriesFinishedGoodsWorkInProgress" contextRef="y2024"[^>]*sign="-">50</,
+      );
+    });
+
+    test("prints the Schedule 1 labels in order", () => {
+      let from = xhtml.indexOf("Profit and loss account");
+      for (const label of SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LABELS) {
+        const at = xhtml.indexOf(label, from);
+        expect(at, label).toBeGreaterThan(from);
+        from = at;
+      }
+    });
+
+    test("carries no Format 1 line", () => {
+      for (const name of ["core:CostSales", "core:GrossProfitLoss", "core:AdministrativeExpenses"]) {
+        expect(xhtml).not.toContain(`name="${name}"`);
+      }
+    });
+
+    test("uses only concepts in the FRC taxonomy", () => {
+      const known = new Set(loadFrcTaxonomyConcepts());
+      const unknown = factNames(xhtml).filter((name) => !known.has(name));
+      expect(unknown).toEqual([]);
+    });
+
+    test("refuses an operating profit that is not the lines above it", () => {
+      const bad = { ...format2, profitAndLoss: { current: { ...format2.profitAndLoss.current, operatingProfit: 5501 } } };
+      expect(() => buildSmallCompanyAccounts(bad)).toThrow(/profitAndLoss.current: operatingProfit must equal turnover plus/);
+    });
+
+    test("refuses a profit before tax that ignores the interest payable", () => {
+      const bad = { ...format2, profitAndLoss: { current: { ...format2.profitAndLoss.current, profitBeforeTax: 5600, profit: 4600 } } };
+      expect(() => buildSmallCompanyAccounts(bad)).toThrow(
+        /profitBeforeTax must equal operatingProfit plus interestReceivable less interestPayable/,
+      );
+    });
+
+    test("refuses a prior-year profit that is not profit before tax less tax", () => {
+      const bad = {
+        ...format2,
+        profitAndLoss: { current: format2.profitAndLoss.current, prior: { ...format2.profitAndLoss.prior, profit: 1 } },
+      };
+      expect(() => buildSmallCompanyAccounts(bad)).toThrow(/profitAndLoss.prior: profit must equal profitBeforeTax less tax/);
+    });
+
+    test("holds no problem for the case figures", () => {
+      expect(format2ProfitAndLossProblems(format2.profitAndLoss.current)).toEqual([]);
+      expect(format2ProfitAndLossProblems(format2.profitAndLoss.prior)).toEqual([]);
+    });
+
+    test("refuses a format that is neither 1 nor 2", () => {
+      expect(() => buildSmallCompanyAccounts({ ...format2, profitAndLossFormat: 3 })).toThrow(/profitAndLossFormat must be 1 or 2/);
+    });
+
+    test("Format 1 output is unchanged when the format is named", () => {
+      expect(buildSmallCompanyAccounts({ ...SAMPLE_INPUT, profitAndLossFormat: 1 })).toBe(buildSmallCompanyAccounts(SAMPLE_INPUT));
     });
   });
 });

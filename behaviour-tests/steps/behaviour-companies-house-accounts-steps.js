@@ -151,7 +151,23 @@ export async function goToFileSmallCompanyAccounts(page, screenshotPath = defaul
 }
 
 const SMALL_COMPANY_INPUT_FIELDS = {
-  profitAndLoss: ["turnover", "costOfSales", "administrativeExpenses", "interestReceivable", "tax"],
+  profitAndLoss: {
+    1: ["turnover", "costOfSales", "administrativeExpenses", "interestReceivable", "tax"],
+    2: [
+      "turnover",
+      "changeInStocks",
+      "ownWorkCapitalised",
+      "otherOperatingIncome",
+      "rawMaterialsConsumables",
+      "otherExternalCharges",
+      "staffCosts",
+      "depreciation",
+      "otherOperatingExpenses",
+      "interestReceivable",
+      "interestPayable",
+      "tax",
+    ],
+  },
   balanceSheet: [
     "fixedAssets",
     "stocks",
@@ -170,8 +186,8 @@ function upperFirst(text) {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-async function fillSmallCompanyYear(page, prefix, year) {
-  for (const field of SMALL_COMPANY_INPUT_FIELDS.profitAndLoss) {
+async function fillSmallCompanyYear(page, prefix, year, profitAndLossFormat) {
+  for (const field of SMALL_COMPANY_INPUT_FIELDS.profitAndLoss[profitAndLossFormat]) {
     await loggedFill(page, `#${prefix}${upperFirst(field)}`, String(year.profitAndLoss[field]), `${prefix} ${field}`);
   }
   for (const field of SMALL_COMPANY_INPUT_FIELDS.balanceSheet) {
@@ -179,15 +195,21 @@ async function fillSmallCompanyYear(page, prefix, year) {
   }
 }
 
-export async function fillInSmallCompanyAccountsForm(page, accounts, { filleted = false } = {}, screenshotPath = defaultScreenshotPath) {
-  await test.step(`The user fills in the small company accounts (${filleted ? "filleted" : "full"} copy)`, async () => {
+export async function fillInSmallCompanyAccountsForm(
+  page,
+  accounts,
+  { filleted = false, profitAndLossFormat = 1 } = {},
+  screenshotPath = defaultScreenshotPath,
+) {
+  await test.step(`The user fills in the small company accounts (${filleted ? "filleted" : "full"} copy, profit and loss Format ${profitAndLossFormat})`, async () => {
     await loggedFill(page, "#periodStart", accounts.periodStart, "Period start");
     await loggedFill(page, "#periodEnd", accounts.periodEnd, "Period end");
     if (filleted) await page.check("#copyFilleted");
-    await fillSmallCompanyYear(page, "current", accounts.currentYear);
+    if (profitAndLossFormat === 2) await page.check("#profitAndLossFormat2");
+    await fillSmallCompanyYear(page, "current", accounts.currentYear, profitAndLossFormat);
     if (accounts.priorYear) {
       await page.check("#includeComparatives");
-      await fillSmallCompanyYear(page, "prior", accounts.priorYear);
+      await fillSmallCompanyYear(page, "prior", accounts.priorYear, profitAndLossFormat);
     }
     await loggedFill(page, "#principalActivity", accounts.principalActivity, "Principal activity");
     await loggedFill(page, "#accountingPolicies", accounts.accountingPolicies, "Accounting policies");
@@ -200,6 +222,18 @@ export async function fillInSmallCompanyAccountsForm(page, accounts, { filleted 
     await page.check("#statementDirectorsResponsibilities");
     await page.check("#statementSmallCompaniesRegime");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-accounts-form-filled.png`, readerView: true });
+  });
+}
+
+export async function showPreviewPage(page, heading, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user scrolls the preview to the ${heading} page`, async () => {
+    const title = page.frameLocator("#previewRendered").locator("h2", { hasText: heading });
+    await title.scrollIntoViewIfNeeded();
+    await expect(title).toBeVisible();
+    await takeScreenshot(page, {
+      path: `${screenshotPath}/${timestamp()}-02-preview-${heading.toLowerCase().replaceAll(" ", "-")}.png`,
+      readerView: true,
+    });
   });
 }
 

@@ -112,6 +112,34 @@
             </div>
           </section>
           <section class="form-section">
+            <h3>Profit and loss format</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="profitAndLossFormat1" name="profitAndLossFormat" value="1" checked /><label
+                  for="profitAndLossFormat1"
+                  >Format 1, costs by function: cost of sales and administrative expenses</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="radio"
+                  id="profitAndLossFormat2"
+                  name="profitAndLossFormat"
+                  value="2"
+                  aria-describedby="profitAndLossFormat2-hint"
+                /><label for="profitAndLossFormat2"
+                  >Format 2, costs by nature: raw materials, staff costs, depreciation and other charges</label
+                >
+              </div>
+              <p id="profitAndLossFormat2-hint" class="hint">
+                Schedule 1 to the Small Companies and Groups (Accounts and Directors' Report) Regulations 2008 gives both formats. Use the
+                format the company used last year.
+              </p>
+            </div>
+          </section>
+          <section class="form-section">
             <h3>Current year</h3>
             <h4>Profit and loss account</h4>
             <p id="ledgerHint1" class="hint">Whole pounds. For example, £600 or £1,200.</p>
@@ -123,6 +151,170 @@
                 </tr>
               </thead>
               <tbody>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th scope="row">Change in stocks of finished goods and in work in progress</th>
+                  <td class="ledger__figure">
+                    <label for="currentChangeInStocks" class="visually-hidden"
+                      >Change in stocks of finished goods and in work in progress, this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentChangeInStocks"
+                        name="currentChangeInStocks"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter change in stocks of finished goods and in work in progress this year"
+                        disabled
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th scope="row">Own work capitalised</th>
+                  <td class="ledger__figure">
+                    <label for="currentOwnWorkCapitalised" class="visually-hidden">Own work capitalised, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentOwnWorkCapitalised"
+                        name="currentOwnWorkCapitalised"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter own work capitalised this year"
+                        disabled
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th scope="row">Other operating income</th>
+                  <td class="ledger__figure">
+                    <label for="currentOtherOperatingIncome" class="visually-hidden">Other operating income, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentOtherOperatingIncome"
+                        name="currentOtherOperatingIncome"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter other operating income this year"
+                        disabled
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th scope="row">Raw materials and consumables</th>
+                  <td class="ledger__figure">
+                    <label for="currentRawMaterialsConsumables" class="visually-hidden">Raw materials and consumables, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentRawMaterialsConsumables"
+                        name="currentRawMaterialsConsumables"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter raw materials and consumables this year"
+                        disabled
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th scope="row">Other external charges</th>
+                  <td class="ledger__figure">
+                    <label for="currentOtherExternalCharges" class="visually-hidden">Other external charges, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentOtherExternalCharges"
+                        name="currentOtherExternalCharges"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter other external charges this year"
+                        disabled
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th scope="row">Staff costs</th>
+                  <td class="ledger__figure">
+                    <label for="currentStaffCosts" class="visually-hidden">Staff costs, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentStaffCosts"
+                        name="currentStaffCosts"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter staff costs this year"
+                        disabled
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th scope="row">Depreciation and other amounts written off tangible and intangible fixed assets</th>
+                  <td class="ledger__figure">
+                    <label for="currentDepreciation" class="visually-hidden"
+                      >Depreciation and other amounts written off tangible and intangible fixed assets, this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentDepreciation"
+                        name="currentDepreciation"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter depreciation and other amounts written off tangible and intangible fixed assets this year"
+                        disabled
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th scope="row">Other operating expenses</th>
+                  <td class="ledger__figure">
+                    <label for="currentOtherOperatingExpenses" class="visually-hidden">Other operating expenses, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentOtherOperatingExpenses"
+                        name="currentOtherOperatingExpenses"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter other operating expenses this year"
+                        disabled
+                      />
+                    </div>
+                  </td>
+                </tr>
                 <tr>
                   <th scope="row">Turnover</th>
                   <td class="ledger__figure">
@@ -142,7 +334,7 @@
                     </div>
                   </td>
                 </tr>
-                <tr>
+                <tr data-profit-and-loss-format="1">
                   <th scope="row">Cost of sales</th>
                   <td class="ledger__figure">
                     <label for="currentCostOfSales" class="visually-hidden">Cost of sales, this year</label>
@@ -161,7 +353,7 @@
                     </div>
                   </td>
                 </tr>
-                <tr>
+                <tr data-profit-and-loss-format="1">
                   <th scope="row">Administrative expenses</th>
                   <td class="ledger__figure">
                     <label for="currentAdministrativeExpenses" class="visually-hidden">Administrative expenses, this year</label>
@@ -195,6 +387,26 @@
                         inputmode="decimal"
                         data-money="whole-pounds"
                         data-required-message="Enter interest receivable and similar income this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr data-profit-and-loss-format="2" hidden>
+                  <th scope="row">Interest payable and similar expenses</th>
+                  <td class="ledger__figure">
+                    <label for="currentInterestPayable" class="visually-hidden">Interest payable and similar expenses, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentInterestPayable"
+                        name="currentInterestPayable"
+                        value="0"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                        data-required-message="Enter interest payable and similar expenses this year"
+                        disabled
                       />
                     </div>
                   </td>
@@ -454,6 +666,170 @@
                   </tr>
                 </thead>
                 <tbody>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th scope="row">Change in stocks of finished goods and in work in progress</th>
+                    <td class="ledger__figure">
+                      <label for="priorChangeInStocks" class="visually-hidden"
+                        >Change in stocks of finished goods and in work in progress, last year</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorChangeInStocks"
+                          name="priorChangeInStocks"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter change in stocks of finished goods and in work in progress last year"
+                          disabled
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th scope="row">Own work capitalised</th>
+                    <td class="ledger__figure">
+                      <label for="priorOwnWorkCapitalised" class="visually-hidden">Own work capitalised, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorOwnWorkCapitalised"
+                          name="priorOwnWorkCapitalised"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter own work capitalised last year"
+                          disabled
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th scope="row">Other operating income</th>
+                    <td class="ledger__figure">
+                      <label for="priorOtherOperatingIncome" class="visually-hidden">Other operating income, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorOtherOperatingIncome"
+                          name="priorOtherOperatingIncome"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter other operating income last year"
+                          disabled
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th scope="row">Raw materials and consumables</th>
+                    <td class="ledger__figure">
+                      <label for="priorRawMaterialsConsumables" class="visually-hidden">Raw materials and consumables, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorRawMaterialsConsumables"
+                          name="priorRawMaterialsConsumables"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter raw materials and consumables last year"
+                          disabled
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th scope="row">Other external charges</th>
+                    <td class="ledger__figure">
+                      <label for="priorOtherExternalCharges" class="visually-hidden">Other external charges, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorOtherExternalCharges"
+                          name="priorOtherExternalCharges"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter other external charges last year"
+                          disabled
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th scope="row">Staff costs</th>
+                    <td class="ledger__figure">
+                      <label for="priorStaffCosts" class="visually-hidden">Staff costs, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorStaffCosts"
+                          name="priorStaffCosts"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter staff costs last year"
+                          disabled
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th scope="row">Depreciation and other amounts written off tangible and intangible fixed assets</th>
+                    <td class="ledger__figure">
+                      <label for="priorDepreciation" class="visually-hidden"
+                        >Depreciation and other amounts written off tangible and intangible fixed assets, last year</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorDepreciation"
+                          name="priorDepreciation"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter depreciation and other amounts written off tangible and intangible fixed assets last year"
+                          disabled
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th scope="row">Other operating expenses</th>
+                    <td class="ledger__figure">
+                      <label for="priorOtherOperatingExpenses" class="visually-hidden">Other operating expenses, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorOtherOperatingExpenses"
+                          name="priorOtherOperatingExpenses"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter other operating expenses last year"
+                          disabled
+                        />
+                      </div>
+                    </td>
+                  </tr>
                   <tr>
                     <th scope="row">Turnover</th>
                     <td class="ledger__figure">
@@ -472,7 +848,7 @@
                       </div>
                     </td>
                   </tr>
-                  <tr>
+                  <tr data-profit-and-loss-format="1">
                     <th scope="row">Cost of sales</th>
                     <td class="ledger__figure">
                       <label for="priorCostOfSales" class="visually-hidden">Cost of sales, last year</label>
@@ -490,7 +866,7 @@
                       </div>
                     </td>
                   </tr>
-                  <tr>
+                  <tr data-profit-and-loss-format="1">
                     <th scope="row">Administrative expenses</th>
                     <td class="ledger__figure">
                       <label for="priorAdministrativeExpenses" class="visually-hidden">Administrative expenses, last year</label>
@@ -523,6 +899,26 @@
                           inputmode="decimal"
                           data-money="whole-pounds"
                           data-required-message="Enter interest receivable and similar income last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr data-profit-and-loss-format="2" hidden>
+                    <th scope="row">Interest payable and similar expenses</th>
+                    <td class="ledger__figure">
+                      <label for="priorInterestPayable" class="visually-hidden">Interest payable and similar expenses, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint3"
+                          type="text"
+                          id="priorInterestPayable"
+                          name="priorInterestPayable"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter interest payable and similar expenses last year"
+                          disabled
                         />
                       </div>
                     </td>

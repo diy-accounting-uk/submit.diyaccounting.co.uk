@@ -557,7 +557,27 @@
     return `Filled ${plural(filled, "field")} from ${fileName} for the period ${accounts.periodStart} to ${accounts.periodEnd}. Check them, add the date approved and the statements, then preview.${dormantText}`;
   }
 
-  const SMALL_PROFIT_AND_LOSS_LINES = ["turnover", "costOfSales", "administrativeExpenses", "interestReceivable", "tax"];
+  const SMALL_PROFIT_AND_LOSS_LINES = {
+    1: ["turnover", "costOfSales", "administrativeExpenses", "interestReceivable", "tax"],
+    2: [
+      "turnover",
+      "changeInStocks",
+      "ownWorkCapitalised",
+      "otherOperatingIncome",
+      "rawMaterialsConsumables",
+      "otherExternalCharges",
+      "staffCosts",
+      "depreciation",
+      "otherOperatingExpenses",
+      "interestReceivable",
+      "interestPayable",
+      "tax",
+    ],
+  };
+
+  function chosenProfitAndLossFormat() {
+    return document.getElementById("profitAndLossFormat2")?.checked ? 2 : 1;
+  }
   const SMALL_BALANCE_SHEET_LINES = [
     "fixedAssets",
     "stocks",
@@ -587,14 +607,18 @@
     setField("periodEnd", mapped.period.end);
     filled += 2;
     setChecked(mapped.filleted ? "copyFilleted" : "copyFull", true);
-    if (mapped.profitAndLoss) filled += setFigures("current", mapped.profitAndLoss.currentYear, SMALL_PROFIT_AND_LOSS_LINES);
+    const profitAndLossFormat = mapped.profitAndLoss?.format === 2 ? 2 : 1;
+    setChecked(profitAndLossFormat === 2 ? "profitAndLossFormat2" : "profitAndLossFormat1", true);
+    if (mapped.profitAndLoss) {
+      filled += setFigures("current", mapped.profitAndLoss.currentYear, SMALL_PROFIT_AND_LOSS_LINES[profitAndLossFormat]);
+    }
     filled += setFigures("current", currentYear, SMALL_BALANCE_SHEET_LINES);
     const hasPrior = Object.keys(priorYear).length > 0;
     if (hasPrior) {
       setChecked("includeComparatives", true);
       filled += setFigures("prior", priorYear, SMALL_BALANCE_SHEET_LINES);
       if (mapped.profitAndLoss && !mapped.filleted)
-        filled += setFigures("prior", mapped.profitAndLoss.priorYear, SMALL_PROFIT_AND_LOSS_LINES);
+        filled += setFigures("prior", mapped.profitAndLoss.priorYear, SMALL_PROFIT_AND_LOSS_LINES[profitAndLossFormat]);
     }
     const noteClasses = Object.entries(mapped.fixedAssetNote || {});
     if (noteClasses.length > 0) {
@@ -641,7 +665,9 @@
     setField("periodStart", accounts.periodStart);
     setField("periodEnd", accounts.periodEnd);
     filled += 2;
-    filled += setFigures("current", accounts.profitAndLoss.currentYear, SMALL_PROFIT_AND_LOSS_LINES);
+    const profitAndLossFormat = chosenProfitAndLossFormat();
+    const bookProfitAndLoss = profitAndLossFormat === 2 ? accounts.profitAndLossFormat2 : accounts.profitAndLoss;
+    filled += setFigures("current", bookProfitAndLoss.currentYear, SMALL_PROFIT_AND_LOSS_LINES[profitAndLossFormat]);
     filled += setFigures("current", accounts.balanceSheet.currentYear, SMALL_BALANCE_SHEET_LINES);
     const noteClasses = Object.entries(accounts.fixedAssetNote || {});
     if (noteClasses.length > 0) {

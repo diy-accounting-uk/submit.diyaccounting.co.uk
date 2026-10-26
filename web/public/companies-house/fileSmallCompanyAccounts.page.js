@@ -5,7 +5,23 @@
 // Companies House OAuth token: the filing goes through the XML Gateway with the operator's
 // presenter credentials, so only the Cognito id token is needed to reach the API.
 
-const PROFIT_AND_LOSS_INPUT_FIELDS = ["turnover", "costOfSales", "administrativeExpenses", "interestReceivable", "tax"];
+const PROFIT_AND_LOSS_INPUT_FIELDS = {
+  1: ["turnover", "costOfSales", "administrativeExpenses", "interestReceivable", "tax"],
+  2: [
+    "turnover",
+    "changeInStocks",
+    "ownWorkCapitalised",
+    "otherOperatingIncome",
+    "rawMaterialsConsumables",
+    "otherExternalCharges",
+    "staffCosts",
+    "depreciation",
+    "otherOperatingExpenses",
+    "interestReceivable",
+    "interestPayable",
+    "tax",
+  ],
+};
 const BALANCE_SHEET_INPUT_FIELDS = [
   "fixedAssets",
   "stocks",
@@ -54,16 +70,46 @@ function readPounds(inputId) {
   return window.parseMoneyInput(document.getElementById(inputId).value, { wholePounds: true }) ?? 0;
 }
 
+function profitAndLossFormat() {
+  return document.getElementById("profitAndLossFormat2").checked ? 2 : 1;
+}
+
 function readProfitAndLoss(prefix) {
+  const format = profitAndLossFormat();
   const figures = {};
-  PROFIT_AND_LOSS_INPUT_FIELDS.forEach((field) => {
+  PROFIT_AND_LOSS_INPUT_FIELDS[format].forEach((field) => {
     figures[field] = readPounds(prefix + upperFirst(field));
   });
-  figures.grossProfit = figures.turnover - figures.costOfSales;
-  figures.operatingProfit = figures.grossProfit - figures.administrativeExpenses;
-  figures.profitBeforeTax = figures.operatingProfit + figures.interestReceivable;
+  if (format === 2) {
+    figures.operatingProfit =
+      figures.turnover +
+      figures.changeInStocks +
+      figures.ownWorkCapitalised +
+      figures.otherOperatingIncome -
+      figures.rawMaterialsConsumables -
+      figures.otherExternalCharges -
+      figures.staffCosts -
+      figures.depreciation -
+      figures.otherOperatingExpenses;
+    figures.profitBeforeTax = figures.operatingProfit + figures.interestReceivable - figures.interestPayable;
+  } else {
+    figures.grossProfit = figures.turnover - figures.costOfSales;
+    figures.operatingProfit = figures.grossProfit - figures.administrativeExpenses;
+    figures.profitBeforeTax = figures.operatingProfit + figures.interestReceivable;
+  }
   figures.profit = figures.profitBeforeTax - figures.tax;
   return figures;
+}
+
+function applyProfitAndLossFormat() {
+  const format = String(profitAndLossFormat());
+  document.querySelectorAll("tr[data-profit-and-loss-format]").forEach((row) => {
+    const shown = row.dataset.profitAndLossFormat === format;
+    row.hidden = !shown;
+    row.querySelectorAll("input").forEach((input) => {
+      input.disabled = !shown;
+    });
+  });
 }
 
 function readBalanceSheet(prefix) {
@@ -119,8 +165,9 @@ function renderTotals() {
   ["current", "prior"].forEach((prefix) => {
     if (prefix === "prior" && !comparativesIncluded()) return;
     const profitAndLoss = readProfitAndLoss(prefix);
+    const grossProfitText = profitAndLossFormat() === 1 ? `Gross profit: ${profitAndLoss.grossProfit}. ` : "";
     document.getElementById(prefix + "ProfitAndLossTotals").textContent =
-      `Gross profit: ${profitAndLoss.grossProfit}. Operating profit: ${profitAndLoss.operatingProfit}. ` +
+      `${grossProfitText}Operating profit: ${profitAndLoss.operatingProfit}. ` +
       `Profit before tax: ${profitAndLoss.profitBeforeTax}. Profit for the year: ${profitAndLoss.profit}.`;
     const balanceSheet = readBalanceSheet(prefix);
     const netAssets = netAssetsOf(balanceSheet);
@@ -143,6 +190,7 @@ function renderTotals() {
 }
 
 function toggleSections() {
+  applyProfitAndLossFormat();
   document.getElementById("comparativeFields").style.display = comparativesIncluded() ? "block" : "none";
   document.getElementById("fixedAssetNoteFields").style.display = document.getElementById("includeFixedAssetNote").checked
     ? "block"
@@ -203,6 +251,7 @@ function buildAccountsPayload() {
         currentYear: readBalanceSheet("current"),
         ...(includeComparatives ? { priorYear: readBalanceSheet("prior") } : {}),
       },
+      profitAndLossFormat: profitAndLossFormat(),
       profitAndLoss: {
         currentYear: readProfitAndLoss("current"),
         ...(includeComparatives ? { priorYear: readProfitAndLoss("prior") } : {}),
@@ -384,6 +433,7 @@ document.getElementById("accountsForm").addEventListener("submit", handleAccount
 document.getElementById("accountsForm").addEventListener("input", renderTotals);
 document.getElementById("includeComparatives").addEventListener("change", toggleSections);
 document.getElementById("includeFixedAssetNote").addEventListener("change", toggleSections);
+document.querySelectorAll('input[name="profitAndLossFormat"]').forEach((radio) => radio.addEventListener("change", toggleSections));
 document.getElementById("backToFormBtn").addEventListener("click", () => showView("formView"));
 document.getElementById("submitFilingBtn").addEventListener("click", handleSubmitFiling);
 document.getElementById("startAgainBtn").addEventListener("click", startAgain);
@@ -392,4 +442,5 @@ document.getElementById("changeCompanyLink").addEventListener("click", (event) =
   showView("companyView");
 });
 
+applyProfitAndLossFormat();
 window.booksImport.mount(document.getElementById("booksImport"), { kind: "small-company-accounts" });
