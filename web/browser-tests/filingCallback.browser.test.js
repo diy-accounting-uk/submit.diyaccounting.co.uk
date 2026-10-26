@@ -4,7 +4,7 @@
 // web/browser-tests/filingCallback.browser.test.js
 
 import { test, expect } from "@playwright/test";
-import { servePageScripts } from "./hmrcFieldTableAssets.js";
+import { servePageScripts, serveFilingResultRecord } from "./hmrcFieldTableAssets.js";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -117,6 +117,7 @@ test.describe("Companies House filing OAuth callback", () => {
       }
     });
     await servePageScripts(page);
+    await serveFilingResultRecord(page);
 
     await page.route("**/*.css", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/css", body: "" });
