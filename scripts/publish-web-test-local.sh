@@ -19,23 +19,46 @@ fi
 targetTestDir="web/public/tests/behaviour-test-results/${targetTest?}/"
 mkdir -p "${targetTestDir?}"
 cp -v "${sourceReport?}" "web/public/tests/test-report-${targetTest?}.json"
-cat "web/public/tests/test-report-${targetTest?}.json" | jq '.artifacts.screenshots.[]' --raw-output
-# find the full path of each file in web/public/tests/test-report-web-test-local.json
-# under the containing directory of sourceReport
-# and copy each file to web/public/tests/behaviour-test-results/web-test-local/
-cat "web/public/tests/test-report-${targetTest?}.json" \
-| jq '.artifacts.screenshots.[]' --raw-output \
-| while read -r screenshotFilename; do
-  screenshotPath=$(find "${reportDir?}" -name "${screenshotFilename?}" | head -1)
-  # fullPath="${reportDir?}/${screenshotPath?}"
-  # Strip the volatile part of the file name from the screenshot filename,
-  # e.g. 2026-01-04_17-54-34-236753738-10-fill-in-submission-pagedown.png -> 10-fill-in-submission-pagedown.png
-  cleanScreenshotFilename=${screenshotFilename##*[0-9][0-9]-}
-  echo "Cleaned from ${screenshotFilename?} to ${cleanScreenshotFilename?}"
-  cp -v "${screenshotPath?}" "${targetTestDir?}${cleanScreenshotFilename?}"
-  # Clean the screenshot name in the report
-  sed "${sedInPlace[@]}" "s/${screenshotFilename?}/${cleanScreenshotFilename?}/g" "web/public/tests/test-report-${targetTest?}.json"
-done
+targetReport="web/public/tests/test-report-${targetTest?}.json"
+# Each screenshot and video the report names is copied under a flat name into the target directory,
+# and the report is rewritten to those names. A file that cannot be found is dropped from the
+# report, so the page lists only files that are published.
+# The report names a screenshot as a flat file name or as a path below the report directory,
+# e.g. screenshots/behaviour-helpers/2026-01-04_17-54-34-236753738-10-fill-in-submission-pagedown.png.
+# The published name joins the directories with "-" and drops the volatile timestamp:
+# screenshots-behaviour-helpers-10-fill-in-submission-pagedown.png
+renameMap='{}'
+missing='[]'
+publish_artifact() {
+  local reportedName="${1?}"
+  local sourcePath="${reportDir?}/${reportedName?}"
+  if [[ ! -f "${sourcePath?}" ]]; then
+    sourcePath=$(find "${reportDir?}" -name "$(basename "${reportedName?}")" | head -1)
+  fi
+  if [[ -z "${sourcePath}" || ! -f "${sourcePath?}" ]]; then
+    echo "Not found, dropped from the report: ${reportedName?}"
+    missing=$(jq -c --arg n "${reportedName?}" '. + [$n]' <<<"${missing?}")
+    return
+  fi
+  local publishedName
+  publishedName=$(echo "${reportedName?}" | tr '/' '-' | sed -E 's/(^|-)[0-9]{4}-[0-9]{2}-[0-9]{2}_[0-9]{2}-[0-9]{2}-[0-9]{2}-[0-9]+-/\1/')
+  if [[ -e "${targetTestDir?}${publishedName?}" ]]; then
+    publishedName=$(echo "${reportedName?}" | tr '/' '-')
+  fi
+  echo "Published ${reportedName?} as ${publishedName?}"
+  cp -v "${sourcePath?}" "${targetTestDir?}${publishedName?}"
+  renameMap=$(jq -c --arg o "${reportedName?}" --arg n "${publishedName?}" '. + {($o): $n}' <<<"${renameMap?}")
+}
+while read -r artifactName; do
+  publish_artifact "${artifactName?}"
+done < <(jq -r '(.artifacts.screenshots // [])[], (.artifacts.videos // [])[]' "${targetReport?}")
+jq --argjson map "${renameMap?}" --argjson missing "${missing?}" '
+  def renamed: if type == "string" and $map[.] != null then $map[.] else . end;
+  if .artifacts == null then . else
+    .artifacts.screenshots = [(.artifacts.screenshots // [])[] | select(. as $n | $missing | index($n) | not) | renamed]
+    | .artifacts.videos = [(.artifacts.videos // [])[] | select(. as $n | $missing | index($n) | not) | renamed]
+    | (if .artifacts.figures then .artifacts.figures |= [.[] | select(.filename as $n | $missing | index($n) | not) | (.filename |= renamed)] else . end)
+  end' "${targetReport?}" >"${targetReport?}.tmp" && mv "${targetReport?}.tmp" "${targetReport?}"
 # The fraud-prevention headers carry the machine's real public IP; the report is published, so
 # swap every IPv4 on those header lines for a documentation address (RFC 5737).
 sed -E "${sedInPlace[@]}" '/Public-IP|Forwarded/ s/([0-9]{1,3}\.){3}[0-9]{1,3}/198.51.100.10/g' "web/public/tests/test-report-${targetTest?}.json"
