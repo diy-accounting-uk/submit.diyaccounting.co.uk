@@ -573,10 +573,29 @@ export const loggedSelectOption = async (page, selectorOrLocator, valueOrOptions
 export async function takeScreenshot(page, options) {
   await page.waitForLoadState("load");
   const { readerView, ...screenshotOptions } = options || {};
-  if (readerView) {
+  if (readerView && isOwnPage(page.url())) {
     await assertReaderView(page, readerView === true ? {} : readerView);
   }
   return page.screenshot(screenshotOptions);
+}
+
+/**
+ * Our site, or the local server and simulator a behaviour test runs against. HMRC's sign-in pages,
+ * Stripe checkout and other services a journey passes through are not ours to judge.
+ *
+ * @param {string} url
+ * @returns {boolean}
+ */
+export function isOwnPage(url) {
+  let hostname;
+  try {
+    hostname = new URL(url).hostname;
+  } catch {
+    return false;
+  }
+  return (
+    hostname === "localhost" || hostname === "127.0.0.1" || hostname === "diyaccounting.co.uk" || hostname.endsWith(".diyaccounting.co.uk")
+  );
 }
 
 /**
@@ -692,7 +711,15 @@ export async function findReaderViewDefects(page, options = {}) {
  * mode off; horizontal overflow; or a form control far narrower than its siblings.
  */
 export async function assertReaderView(page, options = {}) {
-  const defects = await findReaderViewDefects(page, options);
+  let defects;
+  try {
+    defects = await findReaderViewDefects(page, options);
+  } catch (error) {
+    // A client-side redirect can replace the document between the load event and the check.
+    if (!String(error?.message).includes("Execution context was destroyed")) throw error;
+    await page.waitForLoadState("load");
+    defects = await findReaderViewDefects(page, options);
+  }
   if (defects.length > 0) {
     const lines = defects.slice(0, 20).map((defect) => `  [${defect.rule}] ${defect.detail}`);
     throw new Error(`The page shows ${defects.length} defect(s) a reader would see at ${page.url()}:\n${lines.join("\n")}`);
