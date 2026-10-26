@@ -36,29 +36,32 @@ describe("the form values from a small company's iXBRL accounts", () => {
   });
 
   test("carries the profit and loss account and the balance sheets for both years", () => {
-    expect(valueOf(entries, "currentTurnover")).toBe("20000");
-    expect(valueOf(entries, "currentCostOfSales")).toBe("5000");
-    expect(valueOf(entries, "currentTax")).toBe("600");
-    expect(valueOf(entries, "currentCashAtBank")).toBe("2000");
+    expect(valueOf(entries, "currentTurnover")).toBe("24000");
+    expect(valueOf(entries, "currentCostOfSales")).toBe("3000");
+    expect(valueOf(entries, "currentTax")).toBe("494");
+    expect(valueOf(entries, "currentCashAtBank")).toBe("3000");
     expect(valueOf(entries, "includeComparatives")).toBe(true);
-    expect(valueOf(entries, "priorTurnover")).toBe("18000");
-    expect(valueOf(entries, "priorCreditorsAfterOneYear")).toBe("600");
+    expect(valueOf(entries, "priorTurnover")).toBe("12000");
+    expect(valueOf(entries, "priorCreditorsAfterOneYear")).toBe("0");
   });
 
   test("starts the depreciation added back as the fixed asset note's charge for the year", () => {
     expect(valueOf(entries, "includeFixedAssetNote")).toBe(true);
-    expect(valueOf(entries, "notePlantMachineryDepreciationCharge")).toBe("150");
-    expect(valueOf(entries, "noteComputerEquipmentDepreciationCharge")).toBe("230");
-    expect(valueOf(entries, "depreciation")).toBe("380");
+    expect(valueOf(entries, "noteComputerEquipmentDepreciationCharge")).toBe("400");
+    expect(valueOf(entries, "depreciation")).toBe("400");
   });
 
   test("carries the text answers, the employees and the director", () => {
-    expect(valueOf(entries, "principalActivity")).toBe("Technical consultancy services");
-    expect(valueOf(entries, "tradeName")).toBe("Technical consultancy services");
-    expect(valueOf(entries, "directors")).toBe("Alan James Morgan");
-    expect(valueOf(entries, "averageEmployees")).toBe("4");
-    expect(valueOf(entries, "directorName")).toBe("Alan James Morgan");
-    expect(valueOf(entries, "declarantName")).toBe("Alan James Morgan");
+    expect(valueOf(entries, "principalActivity")).toBe(
+      "Retail sale via mail order houses or via Internet (SIC 47910): online accounting software and services",
+    );
+    expect(valueOf(entries, "tradeName")).toBe(
+      "Retail sale via mail order houses or via Internet (SIC 47910): online accounting software and services",
+    );
+    expect(valueOf(entries, "directors")).toBe("Antony Christopher Cartwright");
+    expect(valueOf(entries, "averageEmployees")).toBe("1");
+    expect(valueOf(entries, "directorName")).toBe("Antony Christopher Cartwright");
+    expect(valueOf(entries, "declarantName")).toBe("Antony Christopher Cartwright");
   });
 });
 
@@ -68,13 +71,13 @@ describe("the form values from a micro-entity's iXBRL accounts", () => {
   test("opens the micro-entity regime and fills its balance sheets", () => {
     expect(valueOf(entries, "regimeMicro")).toBe(true);
     expect(valueOf(entries, "regimeSmall")).toBeUndefined();
-    expect(valueOf(entries, "microCurrentFixedAssets")).toBe("1000");
-    expect(valueOf(entries, "microCurrentCurrentAssets")).toBe("5000");
-    expect(valueOf(entries, "microPriorFixedAssets")).toBe("900");
+    expect(valueOf(entries, "microCurrentFixedAssets")).toBe("0");
+    expect(valueOf(entries, "microCurrentCurrentAssets")).toBe("5200");
+    expect(valueOf(entries, "microPriorFixedAssets")).toBe("0");
   });
 
   test("names the micro-entity's trade after the company", () => {
-    expect(valueOf(entries, "tradeName")).toBe("MORGAN TECHNICAL LIMITED");
+    expect(valueOf(entries, "tradeName")).toBe("DIY ACCOUNTING LIMITED");
   });
 
   test("leaves the small company fields and the depreciation alone", () => {

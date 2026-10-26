@@ -260,35 +260,35 @@
   {
     "name": "micro-entity-accounts",
     "type": "accounts",
-    "companyNumber": "04549236",
-    "companyName": "MORGAN TECHNICAL LIMITED",
-    "registeredOffice": "Unit 4 Morgan Court, Cardiff, CF10 1AA",
+    "companyNumber": "06846849",
+    "companyName": "DIY ACCOUNTING LIMITED",
+    "registeredOffice": "37 Sutherland Avenue, Leeds, England, LS8 1BY",
     "companyAuthCode": "AUTH09",
     "periodStart": "2025-04-01",
     "periodEnd": "2026-03-31",
     "balanceSheet": {
       "currentYear": {
-        "fixedAssets": 1000,
-        "currentAssets": 5000,
-        "creditorsWithinOneYear": 2000,
+        "fixedAssets": 0,
+        "currentAssets": 5200,
+        "creditorsWithinOneYear": 3466,
         "creditorsAfterOneYear": 0,
         "calledUpShareCapital": 100,
-        "profitAndLossAccount": 3900,
-        "capitalAndReserves": 4000
+        "profitAndLossAccount": 1634,
+        "capitalAndReserves": 1734
       },
       "priorYear": {
-        "fixedAssets": 900,
-        "currentAssets": 3500,
-        "creditorsWithinOneYear": 1500,
+        "fixedAssets": 0,
+        "currentAssets": 3353,
+        "creditorsWithinOneYear": 3219,
         "creditorsAfterOneYear": 0,
         "calledUpShareCapital": 100,
-        "profitAndLossAccount": 2800,
-        "capitalAndReserves": 2900
+        "profitAndLossAccount": 34,
+        "capitalAndReserves": 134
       }
     },
-    "averageEmployees": 2,
+    "averageEmployees": 1,
     "director": {
-      "name": "Alan James Morgan",
+      "name": "Antony Christopher Cartwright",
       "dateApproved": "2026-09-15"
     },
     "statementsAccepted": {
@@ -300,41 +300,41 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": true,
-      "note": "Not yet filed with this company's data."
+      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic."
     }
   },
   {
     "name": "micro-entity-accounts-dormant",
     "type": "accounts",
-    "companyNumber": "04549236",
-    "companyName": "MORGAN TECHNICAL LIMITED",
-    "registeredOffice": "Unit 4 Morgan Court, Cardiff, CF10 1AA",
+    "companyNumber": "00000000",
+    "companyName": "DORMANT TEST COMPANY LIMITED",
+    "registeredOffice": "1 Fictional Lane, Testville, TS1 1ZZ",
     "companyAuthCode": "AUTH09",
     "periodStart": "2025-04-01",
     "periodEnd": "2026-03-31",
     "balanceSheet": {
       "currentYear": {
         "fixedAssets": 0,
-        "currentAssets": 100,
+        "currentAssets": 1,
         "creditorsWithinOneYear": 0,
         "creditorsAfterOneYear": 0,
-        "calledUpShareCapital": 100,
+        "calledUpShareCapital": 1,
         "profitAndLossAccount": 0,
-        "capitalAndReserves": 100
+        "capitalAndReserves": 1
       },
       "priorYear": {
         "fixedAssets": 0,
-        "currentAssets": 100,
+        "currentAssets": 1,
         "creditorsWithinOneYear": 0,
         "creditorsAfterOneYear": 0,
-        "calledUpShareCapital": 100,
+        "calledUpShareCapital": 1,
         "profitAndLossAccount": 0,
-        "capitalAndReserves": 100
+        "capitalAndReserves": 1
       }
     },
     "averageEmployees": 0,
     "director": {
-      "name": "Alan James Morgan",
+      "name": "Dormant Test Director",
       "dateApproved": "2026-09-15"
     },
     "statementsAccepted": {
@@ -346,7 +346,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": true,
-      "note": "Not yet filed with this company's data."
+      "note": "Not yet filed with this data. A fictional private company: DIY Accounting Limited has traded, so the never-traded case cannot describe it. The authentication code is a placeholder."
     },
     "dormant": true,
     "dormantTradingStatus": "neverTraded",
@@ -356,15 +356,15 @@
   {
     "name": "small-company-accounts-full",
     "type": "accounts",
-    "companyNumber": "04549236",
-    "companyName": "MORGAN TECHNICAL LIMITED",
-    "registeredOffice": "Unit 4 Morgan Court, Cardiff, CF10 1AA",
+    "companyNumber": "06846849",
+    "companyName": "DIY ACCOUNTING LIMITED",
+    "registeredOffice": "37 Sutherland Avenue, Leeds, England, LS8 1BY",
     "companyAuthCode": "AUTH09",
     "periodStart": "2025-04-01",
     "periodEnd": "2026-03-31",
-    "averageEmployees": 4,
+    "averageEmployees": 1,
     "director": {
-      "name": "Alan James Morgan",
+      "name": "Antony Christopher Cartwright",
       "dateApproved": "2026-09-15"
     },
     "statementsAccepted": {
@@ -375,76 +375,68 @@
     },
     "smallCompany": {
       "filleted": false,
-      "principalActivity": "Technical consultancy services",
-      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for services provided in the year, excluding VAT.",
-      "directors": ["Alan James Morgan"],
+      "principalActivity": "Retail sale via mail order houses or via Internet (SIC 47910): online accounting software and services",
+      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "directors": ["Antony Christopher Cartwright"],
       "balanceSheet": {
         "currentYear": {
-          "fixedAssets": 1000,
-          "stocks": 500,
-          "debtors": 2500,
-          "cashAtBank": 2000,
+          "fixedAssets": 800,
+          "stocks": 0,
+          "debtors": 1200,
+          "cashAtBank": 3000,
           "tradeCreditors": 1000,
-          "corporationTax": 600,
-          "otherCreditors": 400,
+          "corporationTax": 494,
+          "otherCreditors": 1266,
           "creditorsAfterOneYear": 0,
           "calledUpShareCapital": 100,
-          "profitAndLossAccount": 3900,
-          "capitalAndReserves": 4000
+          "profitAndLossAccount": 2140,
+          "capitalAndReserves": 2240
         },
         "priorYear": {
-          "fixedAssets": 800,
-          "stocks": 300,
-          "debtors": 1500,
-          "cashAtBank": 1000,
-          "tradeCreditors": 800,
-          "corporationTax": 540,
-          "otherCreditors": 60,
-          "creditorsAfterOneYear": 600,
+          "fixedAssets": 0,
+          "stocks": 0,
+          "debtors": 1200,
+          "cashAtBank": 2153,
+          "tradeCreditors": 1500,
+          "corporationTax": 0,
+          "otherCreditors": 1719,
+          "creditorsAfterOneYear": 0,
           "calledUpShareCapital": 100,
-          "profitAndLossAccount": 1500,
-          "capitalAndReserves": 1600
+          "profitAndLossAccount": 34,
+          "capitalAndReserves": 134
         }
       },
       "profitAndLoss": {
         "currentYear": {
-          "turnover": 20000,
-          "costOfSales": 5000,
-          "grossProfit": 15000,
-          "administrativeExpenses": 12000,
-          "operatingProfit": 3000,
+          "turnover": 24000,
+          "costOfSales": 3000,
+          "grossProfit": 21000,
+          "administrativeExpenses": 18400,
+          "operatingProfit": 2600,
           "interestReceivable": 0,
-          "profitBeforeTax": 3000,
-          "tax": 600,
-          "profit": 2400
+          "profitBeforeTax": 2600,
+          "tax": 494,
+          "profit": 2106
         },
         "priorYear": {
-          "turnover": 18000,
-          "costOfSales": 4500,
-          "grossProfit": 13500,
-          "administrativeExpenses": 10800,
-          "operatingProfit": 2700,
+          "turnover": 12000,
+          "costOfSales": 1500,
+          "grossProfit": 10500,
+          "administrativeExpenses": 10466,
+          "operatingProfit": 34,
           "interestReceivable": 0,
-          "profitBeforeTax": 2700,
-          "tax": 540,
-          "profit": 2160
+          "profitBeforeTax": 34,
+          "tax": 0,
+          "profit": 34
         }
       },
       "fixedAssetNote": {
-        "plantMachinery": {
-          "costAtStart": 1500,
-          "additions": 400,
-          "disposals": 100,
-          "depreciationAtStart": 1000,
-          "depreciationCharge": 150,
-          "depreciationOnDisposals": 80
-        },
         "computerEquipment": {
-          "costAtStart": 800,
-          "additions": 200,
+          "costAtStart": 0,
+          "additions": 1200,
           "disposals": 0,
-          "depreciationAtStart": 500,
-          "depreciationCharge": 230,
+          "depreciationAtStart": 0,
+          "depreciationCharge": 400,
           "depreciationOnDisposals": 0
         }
       }
@@ -452,21 +444,21 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Not yet filed with this company's data."
+      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic."
     }
   },
   {
     "name": "small-company-accounts-filleted",
     "type": "accounts",
-    "companyNumber": "04549236",
-    "companyName": "MORGAN TECHNICAL LIMITED",
-    "registeredOffice": "Unit 4 Morgan Court, Cardiff, CF10 1AA",
+    "companyNumber": "06846849",
+    "companyName": "DIY ACCOUNTING LIMITED",
+    "registeredOffice": "37 Sutherland Avenue, Leeds, England, LS8 1BY",
     "companyAuthCode": "AUTH09",
     "periodStart": "2025-04-01",
     "periodEnd": "2026-03-31",
-    "averageEmployees": 4,
+    "averageEmployees": 1,
     "director": {
-      "name": "Alan James Morgan",
+      "name": "Antony Christopher Cartwright",
       "dateApproved": "2026-09-15"
     },
     "statementsAccepted": {
@@ -477,76 +469,68 @@
     },
     "smallCompany": {
       "filleted": true,
-      "principalActivity": "Technical consultancy services",
-      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for services provided in the year, excluding VAT.",
-      "directors": ["Alan James Morgan"],
+      "principalActivity": "Retail sale via mail order houses or via Internet (SIC 47910): online accounting software and services",
+      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "directors": ["Antony Christopher Cartwright"],
       "balanceSheet": {
         "currentYear": {
-          "fixedAssets": 1000,
-          "stocks": 500,
-          "debtors": 2500,
-          "cashAtBank": 2000,
+          "fixedAssets": 800,
+          "stocks": 0,
+          "debtors": 1200,
+          "cashAtBank": 3000,
           "tradeCreditors": 1000,
-          "corporationTax": 600,
-          "otherCreditors": 400,
+          "corporationTax": 494,
+          "otherCreditors": 1266,
           "creditorsAfterOneYear": 0,
           "calledUpShareCapital": 100,
-          "profitAndLossAccount": 3900,
-          "capitalAndReserves": 4000
+          "profitAndLossAccount": 2140,
+          "capitalAndReserves": 2240
         },
         "priorYear": {
-          "fixedAssets": 800,
-          "stocks": 300,
-          "debtors": 1500,
-          "cashAtBank": 1000,
-          "tradeCreditors": 800,
-          "corporationTax": 540,
-          "otherCreditors": 60,
-          "creditorsAfterOneYear": 600,
+          "fixedAssets": 0,
+          "stocks": 0,
+          "debtors": 1200,
+          "cashAtBank": 2153,
+          "tradeCreditors": 1500,
+          "corporationTax": 0,
+          "otherCreditors": 1719,
+          "creditorsAfterOneYear": 0,
           "calledUpShareCapital": 100,
-          "profitAndLossAccount": 1500,
-          "capitalAndReserves": 1600
+          "profitAndLossAccount": 34,
+          "capitalAndReserves": 134
         }
       },
       "profitAndLoss": {
         "currentYear": {
-          "turnover": 20000,
-          "costOfSales": 5000,
-          "grossProfit": 15000,
-          "administrativeExpenses": 12000,
-          "operatingProfit": 3000,
+          "turnover": 24000,
+          "costOfSales": 3000,
+          "grossProfit": 21000,
+          "administrativeExpenses": 18400,
+          "operatingProfit": 2600,
           "interestReceivable": 0,
-          "profitBeforeTax": 3000,
-          "tax": 600,
-          "profit": 2400
+          "profitBeforeTax": 2600,
+          "tax": 494,
+          "profit": 2106
         },
         "priorYear": {
-          "turnover": 18000,
-          "costOfSales": 4500,
-          "grossProfit": 13500,
-          "administrativeExpenses": 10800,
-          "operatingProfit": 2700,
+          "turnover": 12000,
+          "costOfSales": 1500,
+          "grossProfit": 10500,
+          "administrativeExpenses": 10466,
+          "operatingProfit": 34,
           "interestReceivable": 0,
-          "profitBeforeTax": 2700,
-          "tax": 540,
-          "profit": 2160
+          "profitBeforeTax": 34,
+          "tax": 0,
+          "profit": 34
         }
       },
       "fixedAssetNote": {
-        "plantMachinery": {
-          "costAtStart": 1500,
-          "additions": 400,
-          "disposals": 100,
-          "depreciationAtStart": 1000,
-          "depreciationCharge": 150,
-          "depreciationOnDisposals": 80
-        },
         "computerEquipment": {
-          "costAtStart": 800,
-          "additions": 200,
+          "costAtStart": 0,
+          "additions": 1200,
           "disposals": 0,
-          "depreciationAtStart": 500,
-          "depreciationCharge": 230,
+          "depreciationAtStart": 0,
+          "depreciationCharge": 400,
           "depreciationOnDisposals": 0
         }
       }
@@ -554,7 +538,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Not yet filed with this company's data."
+      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic."
     }
   }
 ]
