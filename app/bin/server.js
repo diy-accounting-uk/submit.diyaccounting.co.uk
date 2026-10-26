@@ -384,8 +384,9 @@ billingRecoverPostApiEndpoint(app);
 billingWebhookPostApiEndpoint(app);
 
 // A path with no file answers with the site's 404 page and status 404, as the deployed site does.
+const notFoundPage = fs.readFileSync(path.join(__dirname, "../../web/public/errors/404.html"), "utf8");
 app.get(/.*/, (req, res) => {
-  res.status(404).sendFile(path.join(__dirname, "../../web/public/errors/404.html"), { dotfiles: "allow" });
+  res.status(404).type("html").send(notFoundPage);
 });
 
 // Registered last so a throw or rejected promise from any route above answers as JSON.
