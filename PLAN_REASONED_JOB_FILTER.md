@@ -199,7 +199,7 @@ The next step is one edit per group: replace the job's `skip-json` clause with t
 | Group | Classes | Condition | State |
 | --- | --- | --- | --- |
 | 1 | `npm-test-web-unit`, `npm-mcp-test`, `npm-system-test`, `mvn-test`, `lint-workflows`, `npm-test-cdk-ci`, `npm-test-cdk-prod` (test.yml) | `advised-json` | enforced |
-| 2 | `behaviour-test-proxy-submit-vat`, `behaviour-test-simulator-bundle`, `behaviour-test-simulator-file-micro-entity-accounts` (test.yml) | `advised-json` | advisory |
+| 2 | `behaviour-test-proxy-submit-vat`, `behaviour-test-simulator-bundle`, `behaviour-test-simulator-file-micro-entity-accounts` (test.yml) | `advised-json` | enforced |
 | 3 | the ten `deploy-*` classes and the 31 `web-test*` classes at the bar (deploy.yml; needs `advised-json` on its `select-jobs`) | `advised-json` | advisory |
 
 Each group stays enforced while its miss count stays at zero. Model: Sonnet. Size: ~3 files.
