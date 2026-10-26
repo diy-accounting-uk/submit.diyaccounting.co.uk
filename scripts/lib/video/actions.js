@@ -410,8 +410,11 @@ async function doScroll(page, step, ctx) {
     targetY = 0;
   } else if (step.to === "bottom") {
     targetY = await page.evaluate(() => document.documentElement.scrollHeight);
+  } else if (step.scrollTo) {
+    // executeAction has already scrolled the named element's top to the top of the viewport.
+    return { waitMs: 0, rect: null };
   } else {
-    throw new SceneStepError(`scene "${ctx.sceneId}" step ${ctx.stepIndex} (scroll): needs "target" or "to"`, {
+    throw new SceneStepError(`scene "${ctx.sceneId}" step ${ctx.stepIndex} (scroll): needs "target", "to" or "scrollTo"`, {
       sceneId: ctx.sceneId,
       stepIndex: ctx.stepIndex,
       target: null,

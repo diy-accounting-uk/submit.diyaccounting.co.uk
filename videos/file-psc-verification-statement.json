@@ -407,7 +407,7 @@
         },
         {
           "action": "scroll",
-          "target": "#pscFollowUp",
+          "scrollTo": "#pscFollowUp",
           "caption": "Two directors are also people with significant control.",
           "headline": "Directors who are PSCs",
           "keyWord": "PSCs"
@@ -489,7 +489,7 @@
       "steps": [
         {
           "action": "scroll",
-          "target": "#filingRecord",
+          "scrollTo": "#filingRecord",
           "caption": "Your copy of the confirmation statement shows the submission number, status and date.",
           "headline": "Your copy of the filing",
           "keyWord": "copy"

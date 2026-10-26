@@ -74,6 +74,13 @@ describe("scrollTo before a step", () => {
     overlay.scrollTo.mockReset();
   });
 
+  test("a scroll step with scrollTo and no target scrolls once, to the element's top", async () => {
+    const page = pageWithElements({ sectionTop: 700, scrollY: 1000 });
+    await executeAction(page, { action: "scroll", scrollTo: "#section" }, ctx);
+    expect(overlay.scrollTo).toHaveBeenCalledTimes(1);
+    expect(overlay.scrollTo).toHaveBeenCalledWith(expect.anything(), 0, 1000 + 700 - SCROLL_TO_TOP_MARGIN_PX, 400);
+  });
+
   test("a step without scrollTo does not scroll first", async () => {
     const page = pageWithElements({ sectionTop: 700, scrollY: 1000 });
     await executeAction(page, { action: "point", target: "#field" }, ctx);
