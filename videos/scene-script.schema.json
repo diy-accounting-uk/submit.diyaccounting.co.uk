@@ -163,6 +163,31 @@
           "additionalProperties": false,
           "required": ["text"],
           "properties": { "text": { "type": "string", "minLength": 1 } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["frame", "selector"],
+          "description": "An element inside the iframe that the `frame` selector names.",
+          "properties": { "frame": { "type": "string", "minLength": 1 }, "selector": { "type": "string", "minLength": 1 } }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["frame", "role", "name"],
+          "description": "An element found by role and name inside the iframe that the `frame` selector names.",
+          "properties": {
+            "frame": { "type": "string", "minLength": 1 },
+            "role": { "type": "string", "minLength": 1 },
+            "name": { "type": "string", "minLength": 1 }
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["frame", "text"],
+          "description": "An element found by text inside the iframe that the `frame` selector names.",
+          "properties": { "frame": { "type": "string", "minLength": 1 }, "text": { "type": "string", "minLength": 1 } }
         }
       ]
     },

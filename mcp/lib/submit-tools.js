@@ -198,6 +198,61 @@ export async function listVatObligations(session, params = {}) {
   return callSubmitApi(session, `/api/v1/hmrc/vat/obligation?${query.toString()}`, { customAuthorizer: true, headers });
 }
 
+// The VAT enquiry reads other than obligations: HMRC's liabilities, payments and penalties for one
+// VRN over a date range, and one past return by its period key. They use the session's HMRC grant
+// and the custom authoriser exactly as list_vat_obligations does.
+async function vatEnquiry(session, toolName, route, params, extraQuery = {}) {
+  const { vrn, from, to, govTestScenario } = params;
+  if (!vrn) throw new Error(`${toolName} requires vrn`);
+  const { accessToken, hmrcAccount } = await hmrcAccessTokenFor(session, toolName, params.hmrcAccount);
+  const query = new URLSearchParams({ vrn });
+  for (const [key, value] of Object.entries({ from, to, ...extraQuery })) {
+    if (value) query.set(key, value);
+  }
+  if (govTestScenario) query.set("Gov-Test-Scenario", govTestScenario);
+  return callSubmitApi(session, `${route}?${query.toString()}`, {
+    customAuthorizer: true,
+    headers: { Authorization: `Bearer ${accessToken}`, hmrcAccount },
+  });
+}
+
+/**
+ * list_vat_liabilities: what HMRC says the business owes for VAT, by period.
+ * @param {Object} session
+ * @param {{vrn: string, from?: string, to?: string, hmrcAccount?: string, govTestScenario?: string}} params
+ */
+export function listVatLiabilities(session, params = {}) {
+  return vatEnquiry(session, "list_vat_liabilities", "/api/v1/hmrc/vat/liability", params);
+}
+
+/**
+ * list_vat_payments: the VAT payments HMRC has received, by date.
+ * @param {Object} session
+ * @param {{vrn: string, from?: string, to?: string, hmrcAccount?: string, govTestScenario?: string}} params
+ */
+export function listVatPayments(session, params = {}) {
+  return vatEnquiry(session, "list_vat_payments", "/api/v1/hmrc/vat/payment", params);
+}
+
+/**
+ * list_vat_penalties: the VAT penalties and late-submission points HMRC holds.
+ * @param {Object} session
+ * @param {{vrn: string, from?: string, to?: string, hmrcAccount?: string, govTestScenario?: string}} params
+ */
+export function listVatPenalties(session, params = {}) {
+  return vatEnquiry(session, "list_vat_penalties", "/api/v1/hmrc/vat/penalty", params);
+}
+
+/**
+ * get_vat_return: one past return as HMRC holds it, by its period key.
+ * @param {Object} session
+ * @param {{vrn: string, periodKey: string, hmrcAccount?: string, govTestScenario?: string}} params
+ */
+export async function getVatReturn(session, params = {}) {
+  const periodKey = requireField("get_vat_return", params, "periodKey");
+  return vatEnquiry(session, "get_vat_return", "/api/v1/hmrc/vat/return", params, { periodKey });
+}
+
 const VAT_RETURN_BOX_FIELDS = [
   "vatDueSales",
   "vatDueAcquisitions",

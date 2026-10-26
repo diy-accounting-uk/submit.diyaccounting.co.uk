@@ -94,7 +94,7 @@ const GROUPS = [
   {
     title: "MCP servers",
     intro: "Connect an assistant to your books and submissions.",
-    journeys: [{ video: "mcp-hosted" }, { video: "mcp-diya-gl" }, { video: "mcp-docker" }, { video: "mcp-cli" }],
+    journeys: [{ video: "mcp-hosted" }, { video: "mcp-harness" }, { video: "mcp-diya-gl" }, { video: "mcp-docker" }, { video: "mcp-cli" }],
   },
 ];
 

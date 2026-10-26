@@ -3149,6 +3149,461 @@
       ]
     },
     {
+      "id": "mcp-harness",
+      "group": "account",
+      "publish": true,
+      "pipelineVersion": 10,
+      "videoFile": "target/videos/mcp-harness/mcp-harness.mp4",
+      "captionFile": "target/videos/mcp-harness/mcp-harness.vtt",
+      "title": "DIY Accounting Submit: a company's year through the MCP",
+      "description": "DIY Accounting Submit runs as an MCP server, so a chat assistant can file for a company. This video plays a scripted chat that makes real tool calls: it works out a VAT return from the company's book, asks HMRC for permission on the page, files the return, reads the account back from HMRC, then files the year's accounts with Companies House's test service. The figures come from an example book and the services are test services. It is a real recording. Try DIY Accounting Submit at https://submit.diyaccounting.co.uk.\n\n00:00 Connect the server\n00:14 The VAT figures\n01:12 HMRC permission\n02:18 File the return\n03:13 Ask HMRC about the account\n04:03 File the accounts",
+      "tags": ["DIY Accounting", "MCP", "Model Context Protocol", "VAT", "Companies House"],
+      "categoryId": "27",
+      "videoId": "HUCzDeEdJLM",
+      "walkthrough": [
+        {
+          "scene": "configuration",
+          "headline": "Connect the server",
+          "caption": "A chat app reaches the submission server with one command or one web address. This is the command for Claude Code.",
+          "startSeconds": 0,
+          "thumb": "videos/mcp-harness/configuration-thumb.webp",
+          "full": "videos/mcp-harness/configuration.webp"
+        },
+        {
+          "scene": "vat-figures",
+          "step": 0,
+          "headline": "The request",
+          "caption": "The person asks for this quarter's VAT return and the year's accounts.",
+          "startSeconds": 14,
+          "thumb": "videos/mcp-harness/vat-figures-0-thumb.webp",
+          "full": "videos/mcp-harness/vat-figures-0.webp"
+        },
+        {
+          "scene": "vat-figures",
+          "step": 1,
+          "headline": "Claude plans the calls",
+          "caption": "Claude says what it will do.",
+          "startSeconds": 23,
+          "thumb": "videos/mcp-harness/vat-figures-1-thumb.webp",
+          "full": "videos/mcp-harness/vat-figures-1.webp"
+        },
+        {
+          "scene": "vat-figures",
+          "step": 2,
+          "headline": "Open the book",
+          "caption": "Claude opens the company's book on disk.",
+          "startSeconds": 29,
+          "thumb": "videos/mcp-harness/vat-figures-2-thumb.webp",
+          "full": "videos/mcp-harness/vat-figures-2.webp"
+        },
+        {
+          "scene": "vat-figures",
+          "step": 3,
+          "headline": "The book is open",
+          "caption": "The server reports the book it opened.",
+          "startSeconds": 37,
+          "thumb": "videos/mcp-harness/vat-figures-3-thumb.webp",
+          "full": "videos/mcp-harness/vat-figures-3.webp"
+        },
+        {
+          "scene": "vat-figures",
+          "step": 4,
+          "headline": "The company's book",
+          "caption": "The book is Precision Code Ltd's year, 736 lines.",
+          "startSeconds": 42,
+          "thumb": "videos/mcp-harness/vat-figures-4-thumb.webp",
+          "full": "videos/mcp-harness/vat-figures-4.webp"
+        },
+        {
+          "scene": "vat-figures",
+          "step": 5,
+          "headline": "Work out the boxes",
+          "caption": "Claude works out the VAT boxes from the book.",
+          "startSeconds": 51,
+          "thumb": "videos/mcp-harness/vat-figures-5-thumb.webp",
+          "full": "videos/mcp-harness/vat-figures-5.webp"
+        },
+        {
+          "scene": "vat-figures",
+          "step": 6,
+          "headline": "The nine boxes",
+          "caption": "The nine boxes come from the book's own figures.",
+          "startSeconds": 57,
+          "thumb": "videos/mcp-harness/vat-figures-6-thumb.webp",
+          "full": "videos/mcp-harness/vat-figures-6.webp"
+        },
+        {
+          "scene": "vat-figures",
+          "step": 7,
+          "headline": "Net VAT due",
+          "caption": "Box 5 is the net VAT due, worked out by the accounting engine.",
+          "startSeconds": 63,
+          "thumb": "videos/mcp-harness/vat-figures-7-thumb.webp",
+          "full": "videos/mcp-harness/vat-figures-7.webp"
+        },
+        {
+          "scene": "hmrc-permission",
+          "step": 0,
+          "headline": "Ask for permission",
+          "caption": "Claude asks for HMRC's permission link.",
+          "startSeconds": 72,
+          "thumb": "videos/mcp-harness/hmrc-permission-0-thumb.webp",
+          "full": "videos/mcp-harness/hmrc-permission-0.webp"
+        },
+        {
+          "scene": "hmrc-permission",
+          "step": 1,
+          "headline": "A link, not a token",
+          "caption": "The server answers with a link, not a token.",
+          "startSeconds": 79,
+          "thumb": "videos/mcp-harness/hmrc-permission-1-thumb.webp",
+          "full": "videos/mcp-harness/hmrc-permission-1.webp"
+        },
+        {
+          "scene": "hmrc-permission",
+          "step": 2,
+          "headline": "Claude explains",
+          "caption": "Claude tells the person what to do.",
+          "startSeconds": 85,
+          "thumb": "videos/mcp-harness/hmrc-permission-2-thumb.webp",
+          "full": "videos/mcp-harness/hmrc-permission-2.webp"
+        },
+        {
+          "scene": "hmrc-permission",
+          "step": 3,
+          "headline": "HMRC's page opens",
+          "caption": "The link opens HMRC's permission page beside the chat.",
+          "startSeconds": 91,
+          "thumb": "videos/mcp-harness/hmrc-permission-3-thumb.webp",
+          "full": "videos/mcp-harness/hmrc-permission-3.webp"
+        },
+        {
+          "scene": "hmrc-permission",
+          "step": 4,
+          "headline": "Sign in to HMRC",
+          "caption": "The person signs in to the HMRC online service.",
+          "startSeconds": 99,
+          "thumb": "videos/mcp-harness/hmrc-permission-4-thumb.webp",
+          "full": "videos/mcp-harness/hmrc-permission-4.webp"
+        },
+        {
+          "scene": "hmrc-permission",
+          "step": 5,
+          "headline": "HMRC user id",
+          "caption": "The sandbox user id.",
+          "startSeconds": 106,
+          "thumb": "videos/mcp-harness/hmrc-permission-5-thumb.webp",
+          "full": "videos/mcp-harness/hmrc-permission-5.webp"
+        },
+        {
+          "scene": "hmrc-permission",
+          "step": 6,
+          "headline": "HMRC password",
+          "caption": "The sandbox password.",
+          "startSeconds": 112,
+          "thumb": "videos/mcp-harness/hmrc-permission-6-thumb.webp",
+          "full": "videos/mcp-harness/hmrc-permission-6.webp"
+        },
+        {
+          "scene": "hmrc-permission",
+          "step": 7,
+          "headline": "Sign in",
+          "caption": "HMRC asks whether to give Submit permission.",
+          "startSeconds": 118,
+          "thumb": "videos/mcp-harness/hmrc-permission-7-thumb.webp",
+          "full": "videos/mcp-harness/hmrc-permission-7.webp"
+        },
+        {
+          "scene": "hmrc-permission",
+          "step": 8,
+          "headline": "Give permission",
+          "caption": "The person gives permission.",
+          "startSeconds": 125,
+          "thumb": "videos/mcp-harness/hmrc-permission-8-thumb.webp",
+          "full": "videos/mcp-harness/hmrc-permission-8.webp"
+        },
+        {
+          "scene": "hmrc-permission",
+          "step": 9,
+          "headline": "The token stays put",
+          "caption": "Submit keeps HMRC's token. It never passes through the chat.",
+          "startSeconds": 130,
+          "thumb": "videos/mcp-harness/hmrc-permission-9-thumb.webp",
+          "full": "videos/mcp-harness/hmrc-permission-9.webp"
+        },
+        {
+          "scene": "vat-file",
+          "step": 0,
+          "headline": "List the obligations",
+          "caption": "Claude lists the obligations HMRC holds.",
+          "startSeconds": 138,
+          "thumb": "videos/mcp-harness/vat-file-0-thumb.webp",
+          "full": "videos/mcp-harness/vat-file-0.webp"
+        },
+        {
+          "scene": "vat-file",
+          "step": 1,
+          "headline": "Open obligations",
+          "caption": "HMRC lists the open obligations.",
+          "startSeconds": 146,
+          "thumb": "videos/mcp-harness/vat-file-1-thumb.webp",
+          "full": "videos/mcp-harness/vat-file-1.webp"
+        },
+        {
+          "scene": "vat-file",
+          "step": 2,
+          "headline": "Claude asks first",
+          "caption": "Claude shows the boxes and asks for a yes.",
+          "startSeconds": 152,
+          "thumb": "videos/mcp-harness/vat-file-2-thumb.webp",
+          "full": "videos/mcp-harness/vat-file-2.webp"
+        },
+        {
+          "scene": "vat-file",
+          "step": 3,
+          "headline": "File the return",
+          "caption": "Once the person says yes, Claude files the return.",
+          "startSeconds": 159,
+          "thumb": "videos/mcp-harness/vat-file-3-thumb.webp",
+          "full": "videos/mcp-harness/vat-file-3.webp"
+        },
+        {
+          "scene": "vat-file",
+          "step": 4,
+          "headline": "HMRC accepts it",
+          "caption": "HMRC accepts the return and the server answers with its receipt.",
+          "startSeconds": 166,
+          "thumb": "videos/mcp-harness/vat-file-4-thumb.webp",
+          "full": "videos/mcp-harness/vat-file-4.webp"
+        },
+        {
+          "scene": "vat-file",
+          "step": 5,
+          "headline": "The receipt",
+          "caption": "The receipt id and period key come back in the answer.",
+          "startSeconds": 173,
+          "thumb": "videos/mcp-harness/vat-file-5-thumb.webp",
+          "full": "videos/mcp-harness/vat-file-5.webp"
+        },
+        {
+          "scene": "vat-file",
+          "step": 6,
+          "headline": "Fetch the receipt",
+          "caption": "Claude fetches the stored receipt.",
+          "startSeconds": 181,
+          "thumb": "videos/mcp-harness/vat-file-6-thumb.webp",
+          "full": "videos/mcp-harness/vat-file-6.webp"
+        },
+        {
+          "scene": "vat-file",
+          "step": 7,
+          "headline": "The stored receipt",
+          "caption": "The stored receipt is the record of the filing.",
+          "startSeconds": 187,
+          "thumb": "videos/mcp-harness/vat-file-7-thumb.webp",
+          "full": "videos/mcp-harness/vat-file-7.webp"
+        },
+        {
+          "scene": "vat-enquiry",
+          "step": 0,
+          "headline": "The account",
+          "caption": "Next the person wants to know where the account stands.",
+          "startSeconds": 193,
+          "thumb": "videos/mcp-harness/vat-enquiry-0-thumb.webp",
+          "full": "videos/mcp-harness/vat-enquiry-0.webp"
+        },
+        {
+          "scene": "vat-enquiry",
+          "step": 1,
+          "headline": "What is owed",
+          "caption": "What does HMRC say the business owes?",
+          "startSeconds": 200,
+          "thumb": "videos/mcp-harness/vat-enquiry-1-thumb.webp",
+          "full": "videos/mcp-harness/vat-enquiry-1.webp"
+        },
+        {
+          "scene": "vat-enquiry",
+          "step": 2,
+          "headline": "The liabilities",
+          "caption": "HMRC lists the liabilities.",
+          "startSeconds": 206,
+          "thumb": "videos/mcp-harness/vat-enquiry-2-thumb.webp",
+          "full": "videos/mcp-harness/vat-enquiry-2.webp"
+        },
+        {
+          "scene": "vat-enquiry",
+          "step": 3,
+          "headline": "What is paid",
+          "caption": "What has been paid?",
+          "startSeconds": 212,
+          "thumb": "videos/mcp-harness/vat-enquiry-3-thumb.webp",
+          "full": "videos/mcp-harness/vat-enquiry-3.webp"
+        },
+        {
+          "scene": "vat-enquiry",
+          "step": 4,
+          "headline": "The payments",
+          "caption": "HMRC lists the payments it has received.",
+          "startSeconds": 217,
+          "thumb": "videos/mcp-harness/vat-enquiry-4-thumb.webp",
+          "full": "videos/mcp-harness/vat-enquiry-4.webp"
+        },
+        {
+          "scene": "vat-enquiry",
+          "step": 5,
+          "headline": "A past return",
+          "caption": "What did an earlier return say?",
+          "startSeconds": 223,
+          "thumb": "videos/mcp-harness/vat-enquiry-5-thumb.webp",
+          "full": "videos/mcp-harness/vat-enquiry-5.webp"
+        },
+        {
+          "scene": "vat-enquiry",
+          "step": 6,
+          "headline": "The return, as filed",
+          "caption": "HMRC gives back the filed return.",
+          "startSeconds": 228,
+          "thumb": "videos/mcp-harness/vat-enquiry-6-thumb.webp",
+          "full": "videos/mcp-harness/vat-enquiry-6.webp"
+        },
+        {
+          "scene": "vat-enquiry",
+          "step": 7,
+          "headline": "Read back from HMRC",
+          "caption": "The return is read back from HMRC, not from our own copy.",
+          "startSeconds": 234,
+          "thumb": "videos/mcp-harness/vat-enquiry-7-thumb.webp",
+          "full": "videos/mcp-harness/vat-enquiry-7.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 0,
+          "headline": "The accounts",
+          "caption": "Then the year's accounts, from the same book.",
+          "startSeconds": 243,
+          "thumb": "videos/mcp-harness/accounts-0-thumb.webp",
+          "full": "videos/mcp-harness/accounts-0.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 1,
+          "headline": "The balance sheet",
+          "caption": "Claude works out the balance sheet lines.",
+          "startSeconds": 249,
+          "thumb": "videos/mcp-harness/accounts-1-thumb.webp",
+          "full": "videos/mcp-harness/accounts-1.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 2,
+          "headline": "The seven lines",
+          "caption": "The seven balance sheet lines, this year and last.",
+          "startSeconds": 255,
+          "thumb": "videos/mcp-harness/accounts-2-thumb.webp",
+          "full": "videos/mcp-harness/accounts-2.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 3,
+          "headline": "Ask for the code link",
+          "caption": "Claude asks for a link to type the Companies House code.",
+          "startSeconds": 261,
+          "thumb": "videos/mcp-harness/accounts-3-thumb.webp",
+          "full": "videos/mcp-harness/accounts-3.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 4,
+          "headline": "A link for the code",
+          "caption": "The server answers with a link.",
+          "startSeconds": 268,
+          "thumb": "videos/mcp-harness/accounts-4-thumb.webp",
+          "full": "videos/mcp-harness/accounts-4.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 5,
+          "headline": "Claude explains",
+          "caption": "Claude tells the person what to do.",
+          "startSeconds": 273,
+          "thumb": "videos/mcp-harness/accounts-5-thumb.webp",
+          "full": "videos/mcp-harness/accounts-5.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 6,
+          "headline": "The code goes on the page",
+          "caption": "The person types the company's authentication code on the page, not in the chat.",
+          "startSeconds": 279,
+          "thumb": "videos/mcp-harness/accounts-6-thumb.webp",
+          "full": "videos/mcp-harness/accounts-6.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 7,
+          "headline": "Save the code",
+          "caption": "Saving the code puts it behind the link.",
+          "startSeconds": 289,
+          "thumb": "videos/mcp-harness/accounts-7-thumb.webp",
+          "full": "videos/mcp-harness/accounts-7.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 8,
+          "headline": "File the accounts",
+          "caption": "Claude files the accounts with the Companies House test service.",
+          "startSeconds": 295,
+          "thumb": "videos/mcp-harness/accounts-8-thumb.webp",
+          "full": "videos/mcp-harness/accounts-8.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 9,
+          "headline": "A submission number",
+          "caption": "The gateway gives a submission number.",
+          "startSeconds": 303,
+          "thumb": "videos/mcp-harness/accounts-9-thumb.webp",
+          "full": "videos/mcp-harness/accounts-9.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 10,
+          "headline": "Were they accepted",
+          "caption": "Claude asks whether Companies House accepted them.",
+          "startSeconds": 308,
+          "thumb": "videos/mcp-harness/accounts-10-thumb.webp",
+          "full": "videos/mcp-harness/accounts-10.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 11,
+          "headline": "The outcome",
+          "caption": "Companies House reports the outcome.",
+          "startSeconds": 314,
+          "thumb": "videos/mcp-harness/accounts-11-thumb.webp",
+          "full": "videos/mcp-harness/accounts-11.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 12,
+          "headline": "Pending at Companies House",
+          "caption": "Companies House's test service reports the filing as pending.",
+          "startSeconds": 319,
+          "thumb": "videos/mcp-harness/accounts-12-thumb.webp",
+          "full": "videos/mcp-harness/accounts-12.webp"
+        },
+        {
+          "scene": "accounts",
+          "step": 13,
+          "headline": "The summary",
+          "caption": "Claude sums up.",
+          "startSeconds": 325,
+          "thumb": "videos/mcp-harness/accounts-13-thumb.webp",
+          "full": "videos/mcp-harness/accounts-13.webp"
+        }
+      ]
+    },
+    {
       "id": "mcp-cli",
       "group": "account",
       "publish": true,

@@ -107,3 +107,60 @@ The seal key is HKDF-SHA256 of the MCP blob key with the info `hmrc-grant`, so a
 - Simulator lane: `behaviour-tests/mcpHmrcGrant.behaviour.test.js` starts the grant through the tool, walks the simulator's HMRC consent pages in a browser, lands on the real callback page, and lists obligations through the MCP with no token argument.
 - Infra: `./mvnw clean verify`.
 - Proxy lane against HMRC's sandbox, 2026-10-25, `npm run mcp:vat-sandbox-proof`: sign_in by PKCE; open_book BrickWork Pro Ltd (171 lines); derive_vat_return 2025-07-01 to 2025-09-30, netVatDue 216; request_hmrc_authorisation and consent through the callback page; list_vat_obligations 1 listed (periodKey 18A1); submit_vat_return periodKey 17A2, receiptId `2026-10-25T09:36:21.968Z-537588192506`; get_vat_receipt processingDate `2026-10-25T09:36:22.009Z`, formBundleNumber `537588192506`; sign_out revoked the refresh token; `Result: filed`.
+
+# The tool surface as one story
+
+A company's year through the MCP is the test of the tool set. The harness script `web/public/mcp-harness/business-year.json` plays it, and `videos/mcp-harness.json` records it. The chat opens a book, files a VAT return, asks HMRC about the account, and files the accounts.
+
+## Who uses which tool
+
+A customer is one business that files for itself. A practice files for clients and holds the client list. "Hosted" means the tool is in `HOSTED_TOOL_NAMES`, so a claude.ai connector can call it.
+
+| Group | Tools | Customer | Practice | Hosted |
+|-------|-------|----------|----------|--------|
+| Books | `open_book`, `save_book`, `write_finance_package` | Opens a local book. | Opens a book per client with `clientId`. | `open_book` only, by cloud `bookId` |
+| Figures | `derive_vat_return`, `derive_micro_entity_accounts`, `derive_small_company_accounts`, `derive_itsa_quarterly_update`, `derive_itsa_annual_submission` | Yes. | Yes, per client book. | All five |
+| VAT | `request_hmrc_authorisation`, `list_vat_obligations`, `submit_vat_return`, `get_vat_receipt`, and now `list_vat_liabilities`, `list_vat_payments`, `list_vat_penalties`, `get_vat_return` | Yes. | `clientId` on obligations, return and receipt. | All |
+| Companies House | `request_companies_house_codes`, `render_*`, `submit_*`, `poll_*` for accounts and the confirmation statement, `get_confirmation_statement_data_sandbox` | Yes. | One code per client through the batch entry. | All |
+| Practice | `list_clients`, `add_client`, `move_book_to_client`, `invite_client`, `client_authorisation_status`, `run_for_clients` | Not used. | The core of a practice's day. | `list_clients`, `add_client`, `move_book_to_client` only |
+
+## Overlaps
+
+- `get_vat_receipt` reads Submit's stored copy of what was filed. `get_vat_return` reads HMRC's copy by period key. Each description now needs to say when to use the other.
+- `render_*_sandbox` and `submit_*_sandbox` take the same figures. The render is the preview before the person says yes. The pair is deliberate.
+- `poll_accounts_submission_sandbox` and `poll_confirmation_statement_sandbox` differ only in the route. One `poll_submission` tool with a `kind` would cut two names to one.
+- `open_book` takes a path locally and a `bookId` when hosted. The name is the same and the input differs by surface.
+
+## Gaps
+
+- A hosted chat cannot find a `bookId`. The API lists cloud books (`app/functions/diyaGl/diyaGlListGet.js`) and no tool offers it.
+- A hosted chat cannot save a book. `save_book` is local only.
+- `invite_client`, `client_authorisation_status` and `run_for_clients` read the HMRC grant already, and are not in `HOSTED_TOOL_NAMES`. The header comment of `mcp/lib/hosted-tools.js` still says they take a token as an argument.
+- Income Tax stops at figures. The two `derive_itsa_*` tools have no filing partner, and the web has period, annual, final declaration, losses, calculation and business details pages.
+- The small-company accounts and the UK property periods have a web drop card and no filing tool. The Company Tax Return has a drop card and no MCP tool of any kind, although the card accepts the file a `derive_company_tax_return` tool would write.
+- There is no list of stored receipts. A chat learns a receipt name only from the filing it just made.
+- A practice client's Companies House filing needs a `CH-ACCOUNTS` key that no route grants (OMC1, MC1b).
+
+## The drop cards
+
+The "Fill from your books" card (`web/public/widgets/books-import.js`) is the web twin of the derive tools. It reads a book in the browser and fills a form.
+
+| Card kind | MCP twin | State |
+|-----------|----------|-------|
+| `vat` | `derive_vat_return` | Matched. |
+| `micro-entity-accounts` | `derive_micro_entity_accounts` | Matched. |
+| `small-company-accounts` | `derive_small_company_accounts` | Figures only. |
+| `itsa-quarterly`, `itsa-annual` | `derive_itsa_*` | Self-employment only. |
+| `uk-property-period`, `uk-property-annual` | none | Missing. |
+| `ct600` | none | Missing. |
+
+## Tasks
+
+- [ ] MS1-a. Add `invite_client`, `client_authorisation_status` and `run_for_clients` to `HOSTED_TOOL_NAMES`, and correct the header comment of `mcp/lib/hosted-tools.js`. Proof: the hosted tool list test.
+- [ ] MS1-b. Add a `list_books` tool, local and hosted, over `GET` of the diya-gl list route, so a hosted `open_book` has a `bookId` to take.
+- [ ] MS1-c. Add `derive_company_tax_return`, `derive_uk_property_period` and `derive_uk_property_annual`, the MCP twins of the three drop cards that have none.
+- [ ] MS1-d. Add the filing partners of the Income Tax derive tools: `submit_itsa_quarterly_update` and `submit_itsa_annual_submission`, over the existing routes and the HMRC grant with `services: ["itsa"]`.
+- [ ] MS1-e. Add `submit_small_company_accounts_sandbox`, `render_small_company_accounts_sandbox` and their poll, after MC1b settles how a client's filing is authorised.
+- [ ] MS1-f. Merge the two `poll_*_sandbox` tools into `poll_submission` with a `kind`. Update the harness scripts and `REPORT_CAPABILITIES.md` in the same change.
+- [ ] MS1-g. Add a `list_vat_receipts` tool over the receipts the account page lists, so a chat can find a receipt it did not just file.
+- [ ] MS1-h. State in the descriptions of `get_vat_receipt` and `get_vat_return` when to use the other one.

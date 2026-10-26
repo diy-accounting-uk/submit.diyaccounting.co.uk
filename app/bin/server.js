@@ -193,11 +193,26 @@ app.use((req, res, next) => {
   next();
 });
 
+// The origin of the local HMRC simulator, for the chat harness page alone: only a plain-http
+// localhost or 127.0.0.1 base URI counts, so a deployed environment's https base URIs never match.
+function localSimulatorFrameOrigin(requestPath) {
+  if (requestPath !== "/mcp-harness.html") return "";
+  try {
+    const { protocol, hostname, origin } = new URL(process.env.HMRC_SANDBOX_BASE_URI || "");
+    return protocol === "http:" && (hostname === "localhost" || hostname === "127.0.0.1") ? ` ${origin}` : "";
+  } catch {
+    return "";
+  }
+}
+
 // Security headers middleware (fixes ZAP findings)
 app.use((req, res, next) => {
   // X-Frame-Options: Prevents clickjacking attacks. The chat harness (this server only) shows the
   // MCP codes page in an iframe on its own origin, so that one page may be framed by itself.
-  const framedByHarness = req.path === "/companies-house/mcpCodes.html";
+  // The HMRC consent walk opens in the same frame on the simulator lane, where the HMRC stand-in
+  // is a local http origin and its redirect lands on the VAT callback page; HMRC's own pages and
+  // every https base URI stay unframed.
+  const framedByHarness = req.path === "/companies-house/mcpCodes.html" || req.path === "/activities/submitVatCallback.html";
   res.setHeader("X-Frame-Options", framedByHarness ? "SAMEORIGIN" : "DENY");
   // X-Content-Type-Options: Prevents MIME type sniffing
   res.setHeader("X-Content-Type-Options", "nosniff");
@@ -209,12 +224,14 @@ app.use((req, res, next) => {
     // img-src needs the wildcard, not just https://www.google-analytics.com: GA4's /g/collect
     // beacon lands on a region-specific subdomain (e.g. region1.google-analytics.com), which the
     // literal host doesn't match and CSP then silently drops the pixel.
-    `default-src 'self'; script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://www.googletagmanager.com https://i.ytimg.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://www.youtube-nocookie.com; frame-ancestors ${framedByHarness ? "'self'" : "'none'"}; form-action 'self'`,
+    `default-src 'self'; script-src 'self' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://www.googletagmanager.com https://i.ytimg.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://www.youtube-nocookie.com${localSimulatorFrameOrigin(req.path)}; frame-ancestors ${framedByHarness ? "'self'" : "'none'"}; form-action 'self'`,
   );
   // Cross-Origin-Opener-Policy: Isolates browsing context (Spectre mitigation)
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
   // Cross-Origin-Embedder-Policy: Requires CORS/CORP for cross-origin resources
-  res.setHeader("Cross-Origin-Embedder-Policy", "credentialless");
+  // The harness page frames the simulator's HMRC stand-in, which sets no embedder policy of its own,
+  // so a credentialless parent would block the frame.
+  res.setHeader("Cross-Origin-Embedder-Policy", localSimulatorFrameOrigin(req.path) ? "unsafe-none" : "credentialless");
   // Referrer-Policy: Controls how much referrer info is sent
   res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
   // Permissions-Policy: Restricts browser features

@@ -1,14 +1,16 @@
 {
   "$schema": "./scene-script.schema.json",
   "name": "mcp-harness",
-  "title": "A chat driving the submission MCP",
-  "description": "A scripted conversation in the local chat harness. Each tool turn is a real MCP tool call against the running server; the page shows the MCP configuration beside it.",
-  "auth": "none",
+  "title": "A company's year through the submission MCP",
+  "description": "A scripted conversation in the local chat harness. Each tool turn is a real MCP tool call against the running server: a VAT return, a look at the VAT account, and the year's accounts.",
+  "auth": "user",
   "pages": ["web/public/mcp-harness.html"],
-  "viewport": { "width": 1920, "height": 1080 },
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
   "deviceScaleFactor": 2,
   "fps": 30,
-
   "pacing": {
     "perCharMs": 90,
     "betweenActionsMs": 700,
@@ -19,7 +21,6 @@
     "waitCompressionAfterMs": 6000,
     "waitCompressionFactor": 8
   },
-
   "captions": {
     "fontPx": 40,
     "lineHeightPx": 56,
@@ -28,15 +29,16 @@
     "charsPerSecond": 15,
     "minMs": 1500,
     "fadeMs": 250,
-    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
   },
-
   "consentAnswer": "declined",
   "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
   "environments": ["ci", "simulator"],
-
   "finalHoldMs": 6000,
-
   "scenes": [
     {
       "id": "configuration",
@@ -45,7 +47,7 @@
       "steps": [
         {
           "action": "goto",
-          "url": "/mcp-harness.html",
+          "url": "/mcp-harness.html?script=business-year",
           "waitFor": "#configHosted",
           "caption": "A chat app reaches the submission server with one command or one web address.",
           "headline": "One command to connect",
@@ -62,55 +64,493 @@
       ]
     },
     {
-      "id": "conversation",
-      "chapter": "Ask about VAT returns",
+      "id": "vat-figures",
+      "chapter": "The VAT figures",
       "still": true,
       "steps": [
         {
           "action": "click",
-          "target": { "role": "button", "name": "Next turn" },
-          "caption": "The person asks which VAT returns are due.",
-          "headline": "The question",
-          "keyWord": "question"
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "The person asks for this quarter's VAT return and the year's accounts.",
+          "headline": "The request",
+          "keyWord": "request"
         },
         {
           "action": "click",
-          "target": { "role": "button", "name": "Next turn" },
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
           "caption": "Claude says what it will do.",
-          "headline": "Claude plans the call",
+          "headline": "Claude plans the calls",
           "keyWord": "plans"
         },
         {
           "action": "click",
-          "target": { "role": "button", "name": "Next turn" },
-          "caption": "Then it calls the list VAT obligations tool on the server.",
-          "headline": "A real tool call",
-          "keyWord": "real"
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Claude opens the company's book on disk.",
+          "headline": "Open the book",
+          "keyWord": "book"
         },
         {
           "action": "await",
-          "until": ".harness-turn[data-role='tool'][data-outcome]",
-          "label": "the tool answer",
-          "caption": "The server answers with the obligations HMRC holds.",
-          "headline": "The server answers",
-          "keyWord": "answers"
-        },
-        {
-          "action": "click",
-          "target": { "role": "button", "name": "Next turn" },
-          "caption": "Claude turns the answer into a reply.",
-          "headline": "Claude replies",
-          "keyWord": "replies"
+          "until": ".harness-turn[data-turn-id='book'][data-outcome]",
+          "label": "book",
+          "caption": "The server reports the book it opened.",
+          "headline": "The book is open",
+          "keyWord": "open"
         },
         {
           "action": "point",
-          "target": ".harness-turn[data-role='tool'] pre",
+          "target": ".harness-turn[data-turn-id='book'] pre",
           "dwellMs": 600,
-          "caption": "The obligations on screen came from the server, not from a model.",
-          "headline": "Straight from the server",
-          "keyWord": "server"
+          "caption": "The book is Precision Code Ltd's year, 736 lines.",
+          "headline": "The company's book",
+          "keyWord": "book"
         },
-        { "action": "hold", "ms": 1500 }
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Claude works out the VAT boxes from the book.",
+          "headline": "Work out the boxes",
+          "keyWord": "boxes"
+        },
+        {
+          "action": "await",
+          "until": ".harness-turn[data-turn-id='derived'][data-outcome]",
+          "label": "derived",
+          "caption": "The nine boxes come from the book's own figures.",
+          "headline": "The nine boxes",
+          "keyWord": "nine"
+        },
+        {
+          "action": "point",
+          "target": ".harness-turn[data-turn-id='derived'] pre",
+          "dwellMs": 600,
+          "caption": "Box 5 is the net VAT due, worked out by the accounting engine.",
+          "headline": "Net VAT due",
+          "keyWord": "due"
+        }
+      ]
+    },
+    {
+      "id": "hmrc-permission",
+      "chapter": "HMRC permission",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Claude asks for HMRC's permission link.",
+          "headline": "Ask for permission",
+          "keyWord": "permission"
+        },
+        {
+          "action": "await",
+          "until": ".harness-turn[data-turn-id='authorise'][data-outcome]",
+          "label": "authorise",
+          "caption": "The server answers with a link, not a token.",
+          "headline": "A link, not a token",
+          "keyWord": "link"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Claude tells the person what to do.",
+          "headline": "Claude explains",
+          "keyWord": "explains"
+        },
+        {
+          "action": "click",
+          "target": {
+            "frame": "#browserStep",
+            "role": "button",
+            "name": "Continue"
+          },
+          "caption": "The link opens HMRC's permission page beside the chat.",
+          "headline": "HMRC's page opens",
+          "keyWord": "page"
+        },
+        {
+          "action": "click",
+          "target": {
+            "frame": "#browserStep",
+            "role": "button",
+            "name": "Sign in to the HMRC online service"
+          },
+          "caption": "The person signs in to the HMRC online service.",
+          "headline": "Sign in to HMRC",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "fill",
+          "target": {
+            "frame": "#browserStep",
+            "selector": "#userId"
+          },
+          "value": "mcp-grant-user",
+          "secret": true,
+          "caption": "The sandbox user id.",
+          "headline": "HMRC user id",
+          "keyWord": "user"
+        },
+        {
+          "action": "fill",
+          "target": {
+            "frame": "#browserStep",
+            "selector": "#password"
+          },
+          "value": "mcp-grant-password",
+          "secret": true,
+          "caption": "The sandbox password.",
+          "headline": "HMRC password",
+          "keyWord": "password"
+        },
+        {
+          "action": "click",
+          "target": {
+            "frame": "#browserStep",
+            "role": "button",
+            "name": "Sign in"
+          },
+          "caption": "HMRC asks whether to give Submit permission.",
+          "headline": "Sign in",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "click",
+          "target": {
+            "frame": "#browserStep",
+            "selector": "#givePermission"
+          },
+          "caption": "The person gives permission.",
+          "headline": "Give permission",
+          "keyWord": "permission"
+        },
+        {
+          "action": "await",
+          "until": "#browserStep",
+          "label": "the frame",
+          "caption": "Submit keeps HMRC's token. It never passes through the chat.",
+          "headline": "The token stays put",
+          "keyWord": "token"
+        }
+      ]
+    },
+    {
+      "id": "vat-file",
+      "chapter": "File the return",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Claude lists the obligations HMRC holds.",
+          "headline": "List the obligations",
+          "keyWord": "obligations"
+        },
+        {
+          "action": "await",
+          "until": ".harness-turn[data-turn-id='obligations'][data-outcome]",
+          "label": "obligations",
+          "caption": "HMRC lists the open obligations.",
+          "headline": "Open obligations",
+          "keyWord": "open"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Claude shows the boxes and asks for a yes.",
+          "headline": "Claude asks first",
+          "keyWord": "asks"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Once the person says yes, Claude files the return.",
+          "headline": "File the return",
+          "keyWord": "file"
+        },
+        {
+          "action": "await",
+          "until": ".harness-turn[data-turn-id='filed'][data-outcome]",
+          "label": "filed",
+          "caption": "HMRC accepts the return and the server answers with its receipt.",
+          "headline": "HMRC accepts it",
+          "keyWord": "accepts"
+        },
+        {
+          "action": "point",
+          "target": ".harness-turn[data-turn-id='filed'] pre",
+          "dwellMs": 600,
+          "caption": "The receipt id and period key come back in the answer.",
+          "headline": "The receipt",
+          "keyWord": "receipt"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Claude fetches the stored receipt.",
+          "headline": "Fetch the receipt",
+          "keyWord": "receipt"
+        },
+        {
+          "action": "await",
+          "until": ".harness-turn[data-turn-id='receipt'][data-outcome]",
+          "label": "receipt",
+          "caption": "The stored receipt is the record of the filing.",
+          "headline": "The stored receipt",
+          "keyWord": "stored"
+        }
+      ]
+    },
+    {
+      "id": "vat-enquiry",
+      "chapter": "Ask HMRC about the account",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Next the person wants to know where the account stands.",
+          "headline": "The account",
+          "keyWord": "account"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "What does HMRC say the business owes?",
+          "headline": "What is owed",
+          "keyWord": "owed"
+        },
+        {
+          "action": "await",
+          "until": ".harness-turn[data-turn-id='liabilities'][data-outcome]",
+          "label": "liabilities",
+          "caption": "HMRC lists the liabilities.",
+          "headline": "The liabilities",
+          "keyWord": "liabilities"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "What has been paid?",
+          "headline": "What is paid",
+          "keyWord": "paid"
+        },
+        {
+          "action": "await",
+          "until": ".harness-turn[data-turn-id='payments'][data-outcome]",
+          "label": "payments",
+          "caption": "HMRC lists the payments it has received.",
+          "headline": "The payments",
+          "keyWord": "payments"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "What did an earlier return say?",
+          "headline": "A past return",
+          "keyWord": "return"
+        },
+        {
+          "action": "await",
+          "until": ".harness-turn[data-turn-id='pastReturn'][data-outcome]",
+          "label": "pastReturn",
+          "caption": "HMRC gives back the filed return.",
+          "headline": "The return, as filed",
+          "keyWord": "filed"
+        },
+        {
+          "action": "point",
+          "target": ".harness-turn[data-turn-id='pastReturn'] pre",
+          "dwellMs": 600,
+          "caption": "The return is read back from HMRC, not from our own copy.",
+          "headline": "Read back from HMRC",
+          "keyWord": "HMRC"
+        }
+      ]
+    },
+    {
+      "id": "accounts",
+      "chapter": "File the accounts",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Then the year's accounts, from the same book.",
+          "headline": "The accounts",
+          "keyWord": "accounts"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Claude works out the balance sheet lines.",
+          "headline": "The balance sheet",
+          "keyWord": "balance"
+        },
+        {
+          "action": "await",
+          "until": ".harness-turn[data-turn-id='accountsFigures'][data-outcome]",
+          "label": "accountsFigures",
+          "caption": "The seven balance sheet lines, this year and last.",
+          "headline": "The seven lines",
+          "keyWord": "seven"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Claude asks for a link to type the Companies House code.",
+          "headline": "Ask for the code link",
+          "keyWord": "code"
+        },
+        {
+          "action": "await",
+          "until": ".harness-turn[data-turn-id='codes'][data-outcome]",
+          "label": "codes",
+          "caption": "The server answers with a link.",
+          "headline": "A link for the code",
+          "keyWord": "link"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Claude tells the person what to do.",
+          "headline": "Claude explains",
+          "keyWord": "explains"
+        },
+        {
+          "action": "fill",
+          "target": {
+            "frame": "#browserStep",
+            "selector": "#companyAuthCode"
+          },
+          "value": "Sim0123",
+          "secret": true,
+          "caption": "The person types the company's authentication code on the page, not in the chat.",
+          "headline": "The code goes on the page",
+          "keyWord": "page"
+        },
+        {
+          "action": "click",
+          "target": {
+            "frame": "#browserStep",
+            "selector": "#saveCodesBtn"
+          },
+          "caption": "Saving the code puts it behind the link.",
+          "headline": "Save the code",
+          "keyWord": "Save"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Claude files the accounts with the Companies House test service.",
+          "headline": "File the accounts",
+          "keyWord": "accounts"
+        },
+        {
+          "action": "await",
+          "until": ".harness-turn[data-turn-id='accountsFiled'][data-outcome]",
+          "label": "accountsFiled",
+          "caption": "The gateway gives a submission number.",
+          "headline": "A submission number",
+          "keyWord": "number"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Claude asks whether Companies House accepted them.",
+          "headline": "Were they accepted",
+          "keyWord": "accepted"
+        },
+        {
+          "action": "await",
+          "until": ".harness-turn[data-turn-id='accountsOutcome'][data-outcome]",
+          "label": "accountsOutcome",
+          "caption": "Companies House reports the outcome.",
+          "headline": "The outcome",
+          "keyWord": "outcome"
+        },
+        {
+          "action": "point",
+          "target": ".harness-turn[data-turn-id='accountsOutcome'] pre",
+          "dwellMs": 600,
+          "caption": "Companies House's test service reports the filing as pending.",
+          "headline": "Pending at Companies House",
+          "keyWord": "Pending"
+        },
+        {
+          "action": "click",
+          "target": {
+            "role": "button",
+            "name": "Next turn"
+          },
+          "caption": "Claude sums up.",
+          "headline": "The summary",
+          "keyWord": "summary"
+        },
+        {
+          "action": "hold",
+          "ms": 1500
+        }
       ]
     }
   ]

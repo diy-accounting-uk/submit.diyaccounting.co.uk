@@ -105,6 +105,7 @@
     "video:hmrc-authorise-proxy": "bash -c 'set -o pipefail; npx dotenv -e .env.proxy -- node scripts/site-video-capture.js --script videos/hmrc-authorise.json \"$@\" 2>&1 | tee videoCapture-proxy.log' _",
     "video:hmrc-authorise-ci": "bash -c 'set -o pipefail; npx dotenv -e .env.ci -- node scripts/site-video-capture.js --script videos/hmrc-authorise.json \"$@\" 2>&1 | tee videoCapture-ci.log' _",
     "video:hmrc-authorise-prod": "bash -c 'set -o pipefail; npx dotenv -e .env.prod -- node scripts/site-video-capture.js --script videos/hmrc-authorise.json \"$@\" 2>&1 | tee videoCapture-prod.log' _",
+    "video:mcp-harness-simulator": "bash -c 'set -o pipefail; npx dotenv -e .env.simulator -- node scripts/site-video-capture.js --script videos/mcp-harness.json \"$@\" 2>&1 | tee videoCapture-simulator.log' _",
     "video:view-return-simulator": "bash -c 'set -o pipefail; npx dotenv -e .env.simulator -- node scripts/site-video-capture.js --script videos/view-return.json \"$@\" 2>&1 | tee videoCapture-simulator.log' _",
     "video:view-return-proxy": "bash -c 'set -o pipefail; npx dotenv -e .env.proxy -- node scripts/site-video-capture.js --script videos/view-return.json \"$@\" 2>&1 | tee videoCapture-proxy.log' _",
     "video:view-return-ci": "bash -c 'set -o pipefail; npx dotenv -e .env.ci -- node scripts/site-video-capture.js --script videos/view-return.json \"$@\" 2>&1 | tee videoCapture-ci.log' _",

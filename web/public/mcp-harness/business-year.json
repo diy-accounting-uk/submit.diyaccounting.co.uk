@@ -1,0 +1,188 @@
+{
+  "title": "A company's year through the submission MCP",
+  "config": {
+    "serverName": "diya-submit",
+    "hostedPath": "/mcp",
+    "stdioCommand": "node mcp/bin/diya-submit-mcp.js"
+  },
+  "turns": [
+    {
+      "id": "ask",
+      "role": "user",
+      "text": "Precision Code Ltd: file this quarter's VAT return, then the year's accounts."
+    },
+    {
+      "id": "plan",
+      "role": "assistant",
+      "text": "I will open the company's book, work out the VAT boxes from it, and ask HMRC for permission first."
+    },
+    {
+      "id": "book",
+      "role": "tool",
+      "tool": "open_book",
+      "arguments": {
+        "path": "mcp/test/fixtures/precision-code-ltd-full"
+      }
+    },
+    {
+      "id": "derived",
+      "role": "tool",
+      "tool": "derive_vat_return",
+      "arguments": {
+        "periodEnd": "2025-12-31"
+      }
+    },
+    {
+      "id": "authorise",
+      "role": "tool",
+      "tool": "request_hmrc_authorisation",
+      "arguments": {
+        "services": ["vat"],
+        "hmrcAccount": "synthetic"
+      }
+    },
+    {
+      "id": "grant",
+      "role": "assistant",
+      "text": "Sign in to HMRC on the page and grant access. HMRC's token stays with Submit and never passes through this chat."
+    },
+    {
+      "id": "obligations",
+      "role": "tool",
+      "tool": "list_vat_obligations",
+      "arguments": {
+        "vrn": "${derived.vatRegistrationNumber}",
+        "status": "O"
+      }
+    },
+    {
+      "id": "confirm",
+      "role": "assistant",
+      "text": "These are the boxes from the book. Say yes and I will file them."
+    },
+    {
+      "id": "filed",
+      "role": "tool",
+      "tool": "submit_vat_return",
+      "arguments": {
+        "vatNumber": "${derived.vatRegistrationNumber}",
+        "periodStart": "${derived.periodStart}",
+        "periodEnd": "${derived.periodEnd}",
+        "vatDueSales": "${derived.hmrc.vatDueSales}",
+        "vatDueAcquisitions": "${derived.hmrc.vatDueAcquisitions}",
+        "vatReclaimedCurrPeriod": "${derived.hmrc.vatReclaimedCurrPeriod}",
+        "totalValueSalesExVAT": "${derived.hmrc.totalValueSalesExVAT}",
+        "totalValuePurchasesExVAT": "${derived.hmrc.totalValuePurchasesExVAT}",
+        "totalValueGoodsSuppliedExVAT": "${derived.hmrc.totalValueGoodsSuppliedExVAT}",
+        "totalAcquisitionsExVAT": "${derived.hmrc.totalAcquisitionsExVAT}",
+        "allowSyntheticObligations": true
+      }
+    },
+    {
+      "id": "receipt",
+      "role": "tool",
+      "tool": "get_vat_receipt",
+      "arguments": {
+        "name": "${filed.receiptId}.json"
+      }
+    },
+    {
+      "id": "enquiry",
+      "role": "assistant",
+      "text": "Filed. Now what HMRC holds for the business: what it owes, what it has been paid, and the return itself."
+    },
+    {
+      "id": "liabilities",
+      "role": "tool",
+      "tool": "list_vat_liabilities",
+      "arguments": {
+        "vrn": "${derived.vatRegistrationNumber}",
+        "from": "2018-04-05",
+        "to": "2018-12-21",
+        "govTestScenario": "MULTIPLE_LIABILITIES_2018_19"
+      }
+    },
+    {
+      "id": "payments",
+      "role": "tool",
+      "tool": "list_vat_payments",
+      "arguments": {
+        "vrn": "${derived.vatRegistrationNumber}",
+        "from": "2018-02-27",
+        "to": "2018-12-21",
+        "govTestScenario": "MULTIPLE_PAYMENTS_2018_19"
+      }
+    },
+    {
+      "id": "pastReturn",
+      "role": "tool",
+      "tool": "get_vat_return",
+      "arguments": {
+        "vrn": "${derived.vatRegistrationNumber}",
+        "periodKey": "${filed.periodKey}"
+      }
+    },
+    {
+      "id": "accountsPlan",
+      "role": "assistant",
+      "text": "Now the year's accounts. I take the figures from the same book."
+    },
+    {
+      "id": "accountsFigures",
+      "role": "tool",
+      "tool": "derive_micro_entity_accounts",
+      "arguments": {}
+    },
+    {
+      "id": "codes",
+      "role": "tool",
+      "tool": "request_companies_house_codes",
+      "arguments": {
+        "kind": "accounts",
+        "companyNumber": "${accountsFigures.companyNumber}"
+      }
+    },
+    {
+      "id": "typeCode",
+      "role": "assistant",
+      "text": "Type the company's authentication code on the page. It never passes through this chat."
+    },
+    {
+      "id": "accountsFiled",
+      "role": "tool",
+      "tool": "submit_micro_entity_accounts_sandbox",
+      "arguments": {
+        "codesEntryId": "${codes.entryId}",
+        "companyNumber": "${accountsFigures.companyNumber}",
+        "companyName": "${accountsFigures.companyName}",
+        "periodStart": "${accountsFigures.periodStart}",
+        "periodEnd": "${accountsFigures.periodEnd}",
+        "balanceSheet": "${accountsFigures.balanceSheet}",
+        "averageEmployees": "${accountsFigures.averageNumberOfEmployees}",
+        "director": {
+          "name": "${accountsFigures.directorName}",
+          "dateApproved": "2026-05-20"
+        },
+        "statementsAccepted": {
+          "section477Exemption": true,
+          "membersNotRequiredAudit": true,
+          "directorsResponsibilities": true,
+          "microEntityProvisions": true
+        }
+      }
+    },
+    {
+      "id": "accountsOutcome",
+      "role": "tool",
+      "tool": "poll_accounts_submission_sandbox",
+      "arguments": {
+        "submissionNumber": "${accountsFiled.submissionNumber}"
+      }
+    },
+    {
+      "id": "done",
+      "role": "assistant",
+      "text": "The VAT return is filed and the accounts are with Companies House, which reports them pending."
+    }
+  ]
+}

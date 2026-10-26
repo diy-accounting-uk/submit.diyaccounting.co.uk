@@ -333,3 +333,29 @@ describe("consentAnswer", () => {
     expect(readSceneScript(name).consentAnswer).toBe("declined");
   });
 });
+
+describe("frame targets", () => {
+  const withTarget = (target) =>
+    baseScript({
+      scenes: [
+        {
+          id: "s",
+          chapter: "S",
+          steps: [
+            { action: "goto", url: "/" },
+            { action: "click", target },
+          ],
+        },
+      ],
+    });
+
+  test("accepts a selector, a role and name, or text inside a named iframe", () => {
+    expect(() => validateScript(withTarget({ frame: "#browserStep", selector: "button" }))).not.toThrow();
+    expect(() => validateScript(withTarget({ frame: "#browserStep", role: "button", name: "Continue" }))).not.toThrow();
+    expect(() => validateScript(withTarget({ frame: "#browserStep", text: "Grant" }))).not.toThrow();
+  });
+
+  test("rejects a frame without an inner target", () => {
+    expect(() => validateScript(withTarget({ frame: "#browserStep" }))).toThrow(/target/);
+  });
+});
