@@ -13,17 +13,19 @@ import fs from "fs";
 import path from "path";
 
 export const HEADLINE_CARD_ATTRIBUTE = "data-svc-headline";
-const HIDE_HEADLINE_CARD = `[${HEADLINE_CARD_ATTRIBUTE}] { visibility: hidden !important; }`;
+export const CHAPTER_LABEL_ATTRIBUTE = "data-svc-chapter";
+// The chapter label sits at the left of the viewport and a long chapter name runs into the content column.
+const HIDE_OVERLAY_TEXT = `[${HEADLINE_CARD_ATTRIBUTE}], [${CHAPTER_LABEL_ATTRIBUTE}] { visibility: hidden !important; }`;
 
 /** The file name of a step's card-free still, inside the recording's stills directory. */
 export function stepStillName(sceneId, stepIndex) {
   return `step-${sceneId}-${stepIndex}.png`;
 }
 
-/** Writes the page as it stands now, with the headline card hidden, as the step's still. */
+/** Writes the page as it stands now, with the headline card and the chapter label hidden, as the step's still. */
 export async function writeCardFreeStill(page, stillsDir, sceneId, stepIndex) {
   fs.mkdirSync(stillsDir, { recursive: true });
-  await page.screenshot({ path: path.join(stillsDir, stepStillName(sceneId, stepIndex)), style: HIDE_HEADLINE_CARD });
+  await page.screenshot({ path: path.join(stillsDir, stepStillName(sceneId, stepIndex)), style: HIDE_OVERLAY_TEXT });
 }
 
 /**

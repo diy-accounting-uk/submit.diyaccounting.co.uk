@@ -75,6 +75,7 @@
     root.appendChild(pointerEl);
 
     chapterLabel = document.createElement("div");
+    chapterLabel.setAttribute("data-svc-chapter", "");
     chapterLabel.style.cssText =
       "position:absolute;top:24px;left:24px;padding:6px 14px;border-radius:8px;" +
       "font:24px/1.3 -apple-system,Segoe UI,Roboto,sans-serif;color:#fff;background:rgba(12,14,18,0.82);" +

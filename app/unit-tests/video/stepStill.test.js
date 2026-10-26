@@ -5,7 +5,13 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, it, expect, vi } from "vitest";
-import { findStepStill, stepStillName, writeCardFreeStill, HEADLINE_CARD_ATTRIBUTE } from "../../../scripts/lib/video/stepStill.js";
+import {
+  findStepStill,
+  stepStillName,
+  writeCardFreeStill,
+  HEADLINE_CARD_ATTRIBUTE,
+  CHAPTER_LABEL_ATTRIBUTE,
+} from "../../../scripts/lib/video/stepStill.js";
 import { seekArgs } from "../../../scripts/video-walkthrough.js";
 
 describe("findStepStill", () => {
@@ -42,13 +48,14 @@ describe("seekArgs", () => {
 });
 
 describe("writeCardFreeStill", () => {
-  it("screenshots the page with the headline card hidden into the stills directory", async () => {
+  it("screenshots the page with the headline card and the chapter label hidden into the stills directory", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "step-still-"));
     const page = { screenshot: vi.fn().mockResolvedValue(undefined) };
     await writeCardFreeStill(page, path.join(dir, "stills"), "claims", 3);
     const [options] = page.screenshot.mock.calls[0];
     expect(options.path).toBe(path.join(dir, "stills", "step-claims-3.png"));
     expect(options.style).toContain(`[${HEADLINE_CARD_ATTRIBUTE}]`);
+    expect(options.style).toContain(`[${CHAPTER_LABEL_ATTRIBUTE}]`);
     expect(options.style).toContain("visibility: hidden");
   });
 });
