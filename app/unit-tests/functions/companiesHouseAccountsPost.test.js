@@ -61,6 +61,16 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
+const mockTakeCodesEntry = vi.fn();
+const mockTakeCodesEntryForClient = vi.fn();
+vi.mock("@app/data/dynamoDbCodesEntryRepository.js", () => ({
+  takeCodesEntry: (...args) => mockTakeCodesEntry(...args),
+  takeCodesEntryForClient: (...args) => mockTakeCodesEntryForClient(...args),
+}));
+vi.mock("@app/lib/codesSeal.js", () => ({
+  openCodes: async () => ({ companyAuthCode: "ABC123", personalCodes: [] }),
+}));
+
 const mockBuildMicroEntityAccounts = vi.fn();
 vi.mock("@app/services/microEntityAccountsIxbrl.js", async (importOriginal) => ({
   ...(await importOriginal()),
@@ -443,6 +453,111 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
     const body = parseResponseBody(response);
     expect(body.code).toBe("client-not-authorised");
     expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  describe("authorisation by a codes entry", () => {
+    const unauthorisedClient = {
+      clientId: "c1",
+      identifiers: { companyNumber: "00000099" },
+      authorisations: {},
+      archivedAt: null,
+    };
+
+    function fileWithEntry(overrides = {}) {
+      const body = buildAccountsBody({ clientId: "c1", codesEntryId: "entry-1", ...overrides });
+      delete body.companyNumber;
+      delete body.companyAuthCode;
+      return companiesHouseAccountsPostHandler(buildEvent({ body }));
+    }
+
+    beforeEach(() => {
+      mockTakeCodesEntry.mockResolvedValue(null);
+      mockTakeCodesEntryForClient.mockResolvedValue(null);
+    });
+
+    test("accepts a client without the CH-ACCOUNTS key when the batch entry holds that client's codes", async () => {
+      mockPracticeAndClient(unauthorisedClient);
+      mockTakeCodesEntryForClient.mockResolvedValue({ kind: "accounts", directors: [], sealed: "sealed" });
+
+      const response = await fileWithEntry();
+
+      expect(response.statusCode).toBe(201);
+      expect(mockTakeCodesEntryForClient).toHaveBeenCalledWith("entry-1", expect.any(String), "c1");
+      expect(mockBuildAccountsSubmission.mock.calls[0][0].companyNumber).toBe("00000099");
+      expect(mockPostToGateway).toHaveBeenCalled();
+    });
+
+    test("accepts a client without the CH-ACCOUNTS key when a single entry was minted for the client's company", async () => {
+      mockPracticeAndClient(unauthorisedClient);
+      mockTakeCodesEntry.mockResolvedValue({ kind: "accounts", companyNumber: "00000099", directors: [], sealed: "sealed" });
+
+      const response = await fileWithEntry();
+
+      expect(response.statusCode).toBe(201);
+    });
+
+    test("refuses a client without the CH-ACCOUNTS key when the request carries no codes entry", async () => {
+      mockPracticeAndClient(unauthorisedClient);
+
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ clientId: "c1" }) }));
+
+      expect(response.statusCode).toBe(403);
+      expect(parseResponseBody(response).code).toBe("client-not-authorised");
+      expect(mockTakeCodesEntry).not.toHaveBeenCalled();
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses an entry that is unknown, expired, consumed or another user's", async () => {
+      mockPracticeAndClient(unauthorisedClient);
+
+      const response = await fileWithEntry();
+
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("codesEntryId names no entry");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses an entry whose kind is not accounts", async () => {
+      mockPracticeAndClient(unauthorisedClient);
+      mockTakeCodesEntryForClient.mockResolvedValue({ kind: "confirmation-statement-data", directors: [], sealed: "sealed" });
+
+      const response = await fileWithEntry();
+
+      expect(response.statusCode).toBe(400);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses a single entry minted for another company number", async () => {
+      mockPracticeAndClient(unauthorisedClient);
+      mockTakeCodesEntry.mockResolvedValue({ kind: "accounts", companyNumber: "00000100", directors: [], sealed: "sealed" });
+
+      const response = await fileWithEntry();
+
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("another company number");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses a single entry when the client row names no company number", async () => {
+      mockPracticeAndClient({ ...unauthorisedClient, identifiers: {} });
+      mockTakeCodesEntry.mockResolvedValue({ kind: "accounts", companyNumber: "00000099", directors: [], sealed: "sealed" });
+
+      const response = await fileWithEntry();
+
+      expect(response.statusCode).toBe(400);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+
+    test("refuses codes sent in the body together with a codes entry", async () => {
+      mockPracticeAndClient(unauthorisedClient);
+
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildAccountsBody({ clientId: "c1", codesEntryId: "entry-1" }) }),
+      );
+
+      expect(response.statusCode).toBe(400);
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
   });
 
   test("returns 403 JSON for a client id belonging to another practice", async () => {

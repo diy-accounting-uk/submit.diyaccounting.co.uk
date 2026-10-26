@@ -17,12 +17,14 @@ const UNUSABLE_ENTRY = "codesEntryId names no entry that is filled, unexpired, u
 
 /**
  * Replaces codesEntryId in the request body with the codes the entry holds.
+ * A client-scoped request passes clientScope. An entry then applies only when it holds codes for that
+ * client (a batch entry item) or was minted for the client's own company number; any other entry fails.
  *
  * @param {object} event - the Lambda event
- * @param {{userSub: string, kind: "accounts"|"confirmation-statement"|"confirmation-statement-data"}} options
+ * @param {{userSub: string, kind: "accounts"|"confirmation-statement"|"confirmation-statement-data", clientScope?: {companyNumber?: string}}} options
  * @returns {Promise<{event: object}|{failure: string}>} the event to read the codes from, or why it cannot be had
  */
-export async function applyCodesEntry(event, { userSub, kind }) {
+export async function applyCodesEntry(event, { userSub, kind, clientScope }) {
   const body = parseRequestBody(event);
   const entryId = body?.codesEntryId;
   if (entryId === undefined) return { event };
@@ -34,6 +36,12 @@ export async function applyCodesEntry(event, { userSub, kind }) {
   const clientEntry = clientId ? await takeCodesEntryForClient(entryId, hashedSub, clientId) : null;
   const entry = clientEntry ?? (await takeCodesEntry(entryId, hashedSub));
   if (!entry || entry.kind !== kind) return { failure: UNUSABLE_ENTRY };
+  if (clientScope && !clientEntry) {
+    const clientCompany = clientScope.companyNumber ? String(clientScope.companyNumber).trim().toUpperCase() : undefined;
+    if (!clientCompany || entry.companyNumber !== clientCompany) {
+      return { failure: "codesEntryId was minted for another company number" };
+    }
+  }
   const requestedCompanyNumber = body.companyNumber ?? event.pathParameters?.companyNumber;
   if (entry.companyNumber && requestedCompanyNumber && String(requestedCompanyNumber).trim().toUpperCase() !== entry.companyNumber) {
     return { failure: "codesEntryId was minted for another company number" };
