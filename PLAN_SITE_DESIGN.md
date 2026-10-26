@@ -460,6 +460,75 @@ Stage 2: the 19 `itsa/` pages.
 - **DS7**: `fileCompanyTaxReturn` takes the company-number pattern (`.input--code`, no placeholder, one hint, summary error on an empty submit through `requireFields`) and the signed-out panel. `filings` drops `data-theme="light"`: the customer copy's frame already reads the tokens, and the filed documents stay black on white paper, in dark mode too.
 - **Remaining**: `mcpCodes` has no page chrome, because its link carries a sealed entry and no login.
 
+### GJ2: the three new walkthroughs, reviewed
+
+37 frames judged against the `visual-review` criteria: 6 pass, 31 fail, 0 fixed, 31 tabled. Frames are under `web/public/videos/<id>/`. The recordings are not in `target/videos/`, so no frame could be re-cut. Every fail needs a re-recording or a page fix.
+
+Codes: **O** overlay hides page text (criterion 7). **C** crop cuts text or a control (3). **D** placeholder data (1). **E** most of the frame is empty (4). **A** caption does not match the frame, so the alt text is wrong (9). **B** bug (2).
+
+| Frame | Verdict | Codes |
+|---|---|---|
+| file-small-company-accounts/company-lookup-0 | fail | O, E |
+| file-small-company-accounts/company-lookup-2 | fail | O, E |
+| file-small-company-accounts/company-lookup-3 | fail | O |
+| file-small-company-accounts/company-lookup-5 | fail | O |
+| file-small-company-accounts/accounts-form-0 | pass | |
+| file-small-company-accounts/accounts-form-2 | fail | C, O |
+| file-small-company-accounts/accounts-form-7 | fail | C, O |
+| file-small-company-accounts/accounts-form-8 | fail | C, O |
+| file-small-company-accounts/accounts-form-18 | fail | C, O |
+| file-small-company-accounts/accounts-form-19 | fail | C, O |
+| file-small-company-accounts/accounts-form-35 | fail | C, O |
+| file-small-company-accounts/accounts-form-38 | fail | C, D, O |
+| file-small-company-accounts/accounts-form-39 | fail | D, O |
+| file-small-company-accounts/accounts-form-41 | fail | D |
+| file-small-company-accounts/preview | fail | C, D |
+| file-small-company-accounts/submit | fail | A, E |
+| file-small-company-accounts/result-0 | fail | E, O |
+| file-small-company-accounts/result-1 | fail | E, O |
+| file-small-company-accounts/result-3 | fail | O |
+| file-small-company-accounts/result-6 | fail | O |
+| file-small-company-accounts/result-9 | fail | A, O |
+| file-psc-verification-statement/company-lookup | pass | |
+| file-psc-verification-statement/auth | pass | |
+| file-psc-verification-statement/review | fail | A |
+| file-psc-verification-statement/pay | fail | A |
+| file-psc-verification-statement/submit | pass | |
+| file-psc-verification-statement/psc-1 | fail | C |
+| file-psc-verification-statement/psc-3 | fail | C, O |
+| file-psc-verification-statement/psc-4 | fail | C |
+| file-psc-verification-statement/psc-5 | fail | C |
+| file-psc-verification-statement/psc-6 | fail | C, O |
+| file-psc-verification-statement/psc-9 | fail | C, O |
+| file-psc-verification-statement/record | fail | A, C, O |
+| bundles/open | pass | |
+| bundles/pass | fail | C |
+| bundles/add | pass | |
+| bundles/remove | fail | B, C |
+
+By criterion: 7 (O) 21 frames, 3 (C) 17, 4 (E) 5, 1 (D) 4, 9 (A) 5, 2 (B) 1.
+
+Tabled fails, one row each for the board:
+
+- **GJ2-O (21 frames).** The headline card burned into the recording sits over page text: the `h1` on `company-lookup-0`, `result-0` and `result-3`; "Choose a file" on `company-lookup-3`; the "Amount (£)" header on `accounts-form-2` and `-8`; a field label on `accounts-form-18` and `-38`; "Date approved" on `accounts-form-39`; "Submission 000002 was ACCEPT" on `psc-6`; "All your receipts" on `psc-9` and `record`. Fix: place the card where it covers no page text, in `scripts/lib/video/` (the card) and `scripts/video-walkthrough.js` (the frame cut). Record the three videos again.
+- **GJ2-C (17 frames).** The scroll position cuts a line or a control at the top edge: the date field on `accounts-form-2`, `-7` and `-8`; input boxes on `-18`, `-19`, `-35` and `-38`; "Filed 26 October 2026" on every `psc-*` frame and `record`; the top button on `bundles/pass`; the header on `bundles/remove`; the iframe text and the code field on `preview`. Fix: scroll each scene to a block boundary in `videos/file-small-company-accounts.json`, `videos/file-psc-verification-statement.json` and `videos/bundles.json`. Record again.
+- **GJ2-D (4 frames).** The director is "Jo Director" in `accounts-form-38`, `-39`, `-41` and `preview`. Fix: use a person's name at `videos/file-small-company-accounts.json` lines 433 and 441. `videos/file-micro-entity-accounts.json` line 217 has the same name. Record again.
+- **GJ2-E (5 frames).** `company-lookup-0` and `-2` show a form strip with the lower half empty. `submit`, `result-0` and `result-1` show one short card above an empty band. Fix: crop to the content in `scripts/video-walkthrough.js`.
+- **GJ2-A (5 frames).** The alt text is `headline: caption` (`web/public/guide.page.js` line 130), so a caption that names a step the frame does not show gives a wrong alt text. `file-small-company-accounts/submit` shows the result, not the code field. `result-9` shows the copy, not the receipts list. `file-psc-verification-statement/review` shows no personal codes. `pay` shows the preview, not checkout. `record` shows the PSC form, not the copy. Fix: cut each frame from the moment its caption names, or change the caption in the scene script.
+- **GJ2-B (1 frame).** `bundles/remove` shows `Bundle "day-guest" removed successfully.`, the internal id where the card reads "Day pass". `web/public/bundles.page.js` line 737 writes `bundleId`; write the bundle's display name. Record `bundles` again.
+
+Systemic, on every frame with the page header, not counted above:
+
+- **GJ2-S1.** The header reads "DIY Accounting ..." and "Logged in as synthetic-user@test.diyacco..." at the 1000px frame width. Page: `web/public/widgets/page-chrome.js`.
+- **GJ2-S2.** Submission numbers read `000001`, `000002` and `000003` on every result and record frame. The sandbox issues them.
+
+UX pass (`ui-ux-pro-max`: accessibility, forms and feedback, layout), over the guide that `web/public/guide.page.js` builds from the three walkthroughs:
+
+- The steps run in journey order in all three, and each has a headline and a one-sentence caption.
+- The PSC guide shows the filing fee (£61.35) at `review` only. The `pay` step has no frame of the checkout, so a reader without the video does not see the payment step. GJ2-A covers it.
+- Each thumbnail has `aria-label` "View full size: <headline>" and the lightbox has a close label. The thumbnail alt text is the caption, which GJ2-A corrects for five frames.
+- The frames are WebP at one size (1000 by 1080), so the guide reserves their space.
+
 ## 5. Done when
 
 The repository's definition of done for anything a person sees (`CLAUDE.md`) applies to each row:
