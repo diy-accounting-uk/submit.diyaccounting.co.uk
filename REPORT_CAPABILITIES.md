@@ -468,7 +468,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server: use when a session must click through the ci site as a person would, or read a page's accessibility snapshot and take screenshots.
     - [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server: use when the playwright MCP server needs the ci lane's test user already signed in, or the state file has expired.
     - [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role: use when the operator asks to explore ci, for an exploratory or judgement pass, or for a human-eye review of the site.
-    - [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday: use when you need every page's status, console errors, failed requests, overflow and raw identifiers as a visitor and a customer, with a contact sheet per role, viewport and theme.
+    - [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday: use when you need every page's status, console errors, failed requests, broken images, sideways or text overflow, page weight and raw identifiers, as the visitor and the signed-in customer, with a contact sheet per role, viewport and theme; or when a review needs the week's crawl output.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -6035,6 +6035,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - billing stack: [BILL-37](#bill-37-cdk-billing-app-stack)
 - billion laughs: [CH-11](#ch-11-parse-xml-safely)
 - blast radius: [SS-42](#ss-42-route-tests-by-blast-radius)
+- blind crawl: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - blocked requests: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - board: [DEV-27](#dev-27-render-the-open-work-board)
 - board agent: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
@@ -6296,9 +6297,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - consent mode: [SITE-15](#site-15-show-and-persist-cookie-consent)
 - consent.analytics: [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - consent.rum: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum)
-- console errors: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
+- console errors: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page), [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - console links: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation), [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
 - consume token: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
+- contact sheet: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - context: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - continuous backups: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - contrast: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
@@ -6630,6 +6632,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - expiry: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - expiry window: [OPS-12](#ops-12-clean-up-expired-test-users)
 - explicit date: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
+- exploratory crawl: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - exploratory qa: [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server), [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - explore skill: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
 - export: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
@@ -6644,6 +6647,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - extract_book: [SS-06](#ss-06-serve-the-diya-gl-mcp-server)
 - fail closed: [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope), [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition)
 - fail fast: [OPS-84](#ops-84-validate-required-environment-variables-at-startup)
+- failed requests: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - failed rules metric: [DATA-11](#data-11-run-glue-data-quality-checks)
 - failover: [OPS-116](#ops-116-provision-the-holding-page-stack), [SS-30](#ss-30-serve-the-holding-page-and-failover)
 - false positive: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
@@ -6675,6 +6679,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - findings: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
 - findings report: [OPS-62](#ops-62-report-accessibility-penetration-testing)
 - findings with screenshots: [DEV-50](#dev-50-explore-the-deployed-site-role-by-role)
+- findings.json: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - finish-only rerun: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - fire and forget: [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - firehose putrecordbatch: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
@@ -7258,6 +7263,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - output value: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - outside cdk: [OPS-32](#ops-32-detect-cloudformation-drift)
 - over budget: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
+- overflow: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - overlay: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
 - overloaded batch: [DEV-35](#dev-35-cool-down-an-overloaded-batch)
 - owasp: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
@@ -7457,6 +7463,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - rates: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - rates and allowances: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - raw export: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
+- raw identifiers: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - re-key: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
 - re-record: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - read-only: [DATA-44](#data-44-assert-google-oauth-client-configuration)
@@ -7834,6 +7841,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - subscription updated: [BILL-28](#bill-28-process-stripe-webhook-events)
 - subscriptions: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - subscriptions snapshot: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
+- sunday job: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - superseded deploy: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - supplier invoices: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - supply chain: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
@@ -8072,6 +8080,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - webhooks: [OPS-60](#ops-60-guide-github-repository-configuration)
 - webp: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - webvtt: [OPS-90](#ops-90-encode-captured-video-frames-and-captions)
+- weekly crawl: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - weekly review: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - weekly schedule: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)
 - weekly verification: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
