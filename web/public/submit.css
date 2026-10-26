@@ -750,9 +750,17 @@ dd {
     display: none;
   }
 
-  .header-left {
-    min-width: 0;
-    flex-shrink: 1;
+  .header-nav {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: var(--band-height);
+    row-gap: 0;
+    padding-bottom: var(--space-1);
+  }
+
+  .auth-section {
+    flex: 1 1 100%;
+    min-height: 2.5rem;
   }
 
   .login-status {

@@ -187,4 +187,49 @@ test.describe("Header text is never truncated", () => {
       });
     }
   }
+
+  for (const width of [390, 320]) {
+    test(`a long signed-in address leaves the icons whole at ${width}px`, async ({ page }) => {
+      const longAddress = "a.very.long.customer.address@example-company-name.co.uk";
+      await page.setViewportSize({ width, height: 700 });
+      await serveRealSite(page);
+      await page.addInitScript((address) => {
+        try {
+          localStorage.setItem("userInfo", JSON.stringify({ sub: "user1", email: address }));
+        } catch {}
+      }, longAddress);
+      await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+      await delay(500);
+
+      const measured = await page.evaluate(() => {
+        const left = document.querySelector(".header-left");
+        const header = document.querySelector(".header-nav").getBoundingClientRect();
+        const icons = [".home-link", ".info-link"].map((selector) => {
+          const box = document.querySelector(selector).getBoundingClientRect();
+          return { selector, left: box.left, right: box.right, width: box.width, top: box.top, bottom: box.bottom };
+        });
+        const status = document.querySelector(".login-status");
+        return {
+          leftScroll: left.scrollWidth,
+          leftClient: left.clientWidth,
+          header: { left: header.left, right: header.right, top: header.top, bottom: header.bottom },
+          icons,
+          statusClipped: status.scrollWidth > status.clientWidth || status.scrollHeight - status.clientHeight > 1,
+        };
+      });
+      expect(measured.leftScroll).toBeLessThanOrEqual(measured.leftClient);
+      for (const icon of measured.icons) {
+        expect(icon.width, `${icon.selector} width`).toBeGreaterThanOrEqual(44);
+        expect(icon.left, `${icon.selector} left`).toBeGreaterThanOrEqual(measured.header.left);
+        expect(icon.right, `${icon.selector} right`).toBeLessThanOrEqual(measured.header.right);
+        expect(icon.top, `${icon.selector} top`).toBeGreaterThanOrEqual(measured.header.top);
+        expect(icon.bottom, `${icon.selector} bottom`).toBeLessThanOrEqual(measured.header.bottom);
+      }
+      expect(measured.statusClipped, ".login-status is clipped").toBe(false);
+      await expect(page.locator(".login-link")).toBeInViewport({ ratio: 1 });
+      expect(await hasRealHorizontalScroll(page)).toBe(false);
+
+      await page.locator(".header-nav").screenshot({ path: `target/header-text/header-long-${width}.png` });
+    });
+  }
 });
