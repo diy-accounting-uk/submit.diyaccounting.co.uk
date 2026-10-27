@@ -545,15 +545,77 @@ On top of that, for this pass:
 - No 390 screenshot is wider than 390px.
 - The dark PNGs differ from the light PNGs.
 
-## 6. Not in the DS1 screenshots
+## 6. Signed-in states
 
-DS1 took every page signed out, so these states need a signed-in DS1 run before DS4 and DS6 judge them:
+136 PNGs on the simulator lane, signed in, at 390 and 1280, light and dark, in `target/site-screenshots-signed-in/<page>/<width>-<theme>-<state>.png`. Judged against `visual-review` criteria 1 to 10 and sections 1 and 2. No 390 PNG is wider than 390 px; every dark PNG differs from its light twin. The HMRC data is the simulator's fixtures; `Gov-Test-Scenario` values stand in for HMRC errors (`INSOLVENT_TRADER`, `SUBMIT_HMRC_API_HTTP_500`, `NOT_FOUND`, `INVALID_PAYLOAD`). One run of the driver gives the whole set; the receipts list holds one receipt per submitted return.
 
-- result tables (obligations, liabilities, payments, penalties, period lists, tax calculation);
-- the receipts list and a receipt;
-- success and HMRC error messages after a submit;
-- the token balance and entitlement text in the header;
-- hover, pressed and keyboard focus states, which a still image does not show.
+| State | Page | Evidence (state suffix) | PNGs | Verdict | Finding |
+|---|---|---|---|---|---|
+| Obligations table | `hmrc/vat/vatObligations.html` | `results` | 4 | fail | Period column bold, wraps at 390; two buttons stack per row; dates left-aligned in a mono-looking face; the form stays above the results |
+| Liabilities table | `hmrc/vat/vatLiabilities.html` | `results`, `results-multiple` | 8 | fail | 1280 reads as a ledger; at 390 the Outstanding and Due columns are cut off behind the edge shadow, so the amount owed is out of sight |
+| Payments table | `hmrc/vat/vatPayments.html` | `results`, `results-multiple` | 8 | fail | Same cut-off at 390 |
+| Penalties tables | `hmrc/vat/vatPenalties.html` | `results`, `results-multiple`, `results-none` | 12 | fail | Summary list passes; the two penalty tables lose their last columns at 390 (Charge Amount, Penalty Amount, Due Date) |
+| VAT return view | `hmrc/vat/viewVatReturn.html` | `results` | 4 | pass | Reads as the nine boxes |
+| ITSA obligations table | `hmrc/itsa/obligations.html` | `results` | 4 | fail | Same table rules as the VAT obligations |
+| ITSA period list | `hmrc/itsa/selfEmploymentPeriods.html` | `results` | 4 | fail | Table is wider than its card at 1280 and cuts "Cost of goods (year to date)" and its figure with no edge cue |
+| Tax calculation | `hmrc/itsa/taxCalculation.html` | `results` | 4 | fail | The three record frames render in Times, left-aligned labels, small type; the page around them is Atkinson; at 390 the frames clip their figures |
+| Receipts list | `hmrc/receipt/receipts.html` | `list` | 4 | fail | Column "Size (bytes)" is internal; at 390 the Date column is cut ("ite") and the receipt link wraps its download icon onto a second line |
+| A receipt | `hmrc/receipt/receipts.html` | `receipt` | 4 | fail | The HMRC receipt frame is Times on white, even in dark; at 390 its labels wrap per word and the charge reference is clipped |
+| Submit form filled | `hmrc/vat/submitVat.html` | `filled` | 4 | pass | Nine-box ledger cells, gutter and right-aligned figures as section 2.3 describes |
+| Submit validation | `hmrc/vat/submitVat.html` | `validation` | 4 | pass | Summary with link, inline error, focus ring on the summary |
+| Submit success | `hmrc/vat/submitVat.html` | `success` | 4 | fail | The page says success three times (banner "VAT return processed", receipt heading, body line) and shows no period, no figures filed, no VRN; "Show submission form" sits above the receipt |
+| Submit HMRC error | `hmrc/vat/submitVat.html` | `error-invalid-payload` | 4 | fail | "Failed to submit VAT (HTTP 500). An unexpected error occurred" shows a status code and no next step; the declaration box is cleared |
+| HMRC read errors | the four VAT pages and ITSA obligations | `error-not-found`, `error-500`, `error-insolvent` | 24 | fail | One failure shows three stacked banners (title, cause, repeat of cause); "Click here to add bundles" is plain text, not a link; "Access token may be invalid" appears for an insolvent-trader answer |
+| Header tokens and entitlement | every signed-in page | `signed-in`, `signed-in-resident`, `form-header-tokens` | 12 | fail | Email wraps mid-word ("co.u / k") at 1280 for a long address and "ounting.co.uk" at 390; brand name is absent at 390; the nav is cut at "MT" with no scroll cue; the token count has no label for what a token buys |
+| Bundles, signed in | `bundles.html` | `signed-in` | 4 | pass | Not defective; kept for the set |
+| Hover | button, nav link | `hover-button`, `hover-nav` | 8 | pass | Button darkens in light and lightens in dark |
+| Pressed | button | `pressed-button` | 4 | pass | Distinct from hover |
+| Keyboard focus | field, button, first control | `focus-field`, `focus-button`, `focus-first` | 12 | pass | Yellow halo with ink ring, visible on paper, canvas and brand in both themes |
+
+Cross-state:
+
+- Digits with a slashed zero appear in every figure, date and VRN (`2026`, `£1,000.00`, `176540158`). It is the figures font; the zero is readable but reads as "0 with a slash" inside body text such as "CT600" and "2006-2026".
+- Console errors: 5 per page load on every page, 10 to 28 after a submit (116 captures logged at least one). Messages are in `target/site-screenshots-signed-in/capture.log` by capture.
+- Not reached: none of the listed states. The ITSA period list shows the cumulative current total, not a dated list, because the simulator holds no submitted period for the NINO; a dated list needs a quarterly update filed first.
+
+### Proposed rows
+
+#### DS8: result tables at narrow width
+
+- **Files**: `web/public/submit.css`, `web/public/hmrc/vat/vatObligations.page.js`, `vatLiabilities.page.js`, `vatPayments.page.js`, `vatPenalties.page.js`, `web/public/hmrc/itsa/obligations.page.js`, `selfEmploymentPeriods.page.js`, `ukPropertyPeriods.page.js`.
+- **Work**: one `.results-table` with ledger cells (money right-aligned in `--font-figures`, dates not bold, period column plain). Under 40rem each row becomes a stacked block of label and value pairs, so no column is out of sight. Period lists fit their card at 1280 or scroll with a visible edge. One action per row, or a quiet link beside the primary.
+- **Pages to check**: the seven pages, 390 and 1280, light and dark, with the `results-multiple` and `results-none` states.
+- **Size / model**: 8 files, Sonnet.
+
+#### DS9: submit outcome and error messages
+
+- **Files**: `web/public/widgets/status-messages.js`, `web/public/submit.css`, `web/public/hmrc/vat/submitVat.page.js`, the same `.page.js` of the four VAT read pages and ITSA obligations, `app/lib/httpResponseHelper.js` for the one message per failure.
+- **Work**: one `.message` per failure: a title that names what failed, one line of cause, one next step as a real link (bundles, retry). No HTTP status in reader text. The success view shows one confirmation, then the period, the figures filed and the receipt references; the "Show submission form" button moves below. The declaration keeps its state after a failed submit.
+- **Pages to check**: submitVat success, `error-invalid-payload`; the `error-*` states on the five read pages.
+- **Size / model**: 8 files, Sonnet.
+
+#### DS10: record frames and the receipt list
+
+- **Files**: `web/public/hmrc/receipt/receipts.html`, `receipts.page.js`, `web/public/hmrc/itsa/taxCalculation.page.js`, the record stylesheet the iframes load, `web/public/submit.css`.
+- **Work**: the receipt and calculation record frames use the submission-record house style (Atkinson, tabular figures, labels above values at 390) on white paper; the frame keeps its paper colour in dark with a ruled edge. Drop "Size (bytes)"; keep date, reference and a download link in one row that wraps by cell at 390.
+- **Pages to check**: `receipts.html` list and receipt, `taxCalculation.html`, 390 and 1280, light and dark.
+- **Size / model**: 5 files, Sonnet.
+
+#### DS11: header at narrow width and long addresses
+
+- **Files**: `web/public/widgets/page-chrome.js`, `web/public/submit.css`.
+- **Work**: the account email truncates with an ellipsis and a title attribute instead of breaking mid-word; the brand name stays at 390; the nav row shows a visible edge and keeps the current page in view; the token count carries the word "tokens" with its refresh control named.
+- **Pages to check**: every signed-in page at 390 and 1280, with a 30-character address.
+- **Size / model**: 2 files, Sonnet.
+
+#### DS12: figures font zero
+
+- **Files**: `web/public/submit.css`, `web/public/fonts/`.
+- **Work**: turn off the slashed zero in running text (`font-feature-settings`), keep tabular figures in the ledger cells and tables.
+- **Pages to check**: index (CT600, copyright line), submitVat, liabilities.
+- **Size / model**: 2 files, Haiku.
+
+The driver is a script under the session scratchpad; it is not in the repository.
 
 ### SQ1: every walkthrough frame, judged
 
