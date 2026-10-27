@@ -24,7 +24,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Account and engagement APIs](#account-and-engagement-apis-site)
     - [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest: use when a signed-in user clicks the homepage join button to register feedback interest.
     - [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon: use when the site needs to record a visit or logout as an activity event, filtered for crawlers.
-    - [SITE-05](#site-05-submit-support-tickets) Submit support tickets: use when a visitor needs to open a support ticket as a GitHub issue from the site.
+    - [SITE-05](#site-05-submit-support-tickets) Submit support tickets: use when a visitor needs to send a support request from the site.
   - [Server and API plumbing](#server-and-api-plumbing-site)
     - [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes: use when a Lambda-style apiEndpoint handler needs to run behind the local Express dev server.
     - [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors: use when a Lambda function needs a standard JSON response, or Express needs a JSON error page.
@@ -267,7 +267,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Agent workflows](#agent-workflows-ops)
     - [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas: use when dispatching a sub-agent that needs one of these domains' conventions already loaded.
     - [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup: use when checking or changing what Copilot's review agent or coding-agent workspace knows about this repository.
-    - [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links: use when opening a support issue or PR needs the repository's standard structured template.
+    - [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links: use when opening a PR needs the repository's standard structured template, or the issue chooser needs its contact link.
     - [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents) Dispatch agentic-lib board, backlog and PR agents: use when the board, the NEXT.md backlog, or an issue-described change needs an agent dispatched from the shared agentic-lib library.
   - [Environment and accounts](#environment-and-accounts-ops)
     - [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration: use when setting up or checking a repository's branch protection, OIDC trust or webhook configuration.
@@ -606,8 +606,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### SITE-05 Submit support tickets
 
-- **Use when:** a visitor needs to open a support ticket as a GitHub issue from the site.
-- **Does:** supportTicketPost.js opens a GitHub issue using a GitHub App installation token. It caps each IP to 3 submissions per minute via the DynamoDB security-state table. It marks the issue unverified since anyone can post to it. support-api.js is the browser counterpart that calls the endpoint or offers a direct GitHub link as a fallback.
+- **Use when:** a visitor needs to send a support request from the site.
+- **Does:** supportTicketPost.js opens an issue in the private repository, labelled maintainer-review for the operator, using a GitHub App installation token limited to issues write. It caps each IP to 3 submissions per minute via the DynamoDB security-state table. It marks the issue unverified since anyone can post to it, and returns success only, with no issue link. support-api.js is the browser counterpart that calls the endpoint.
 - **Run:** `POST /api/v1/support/ticket`
 - **Entry:** `app/functions/support/supportTicketPost.js:ingestHandler`; `web/public/lib/support-api.js`
 - **Files:** app/functions/support/supportTicketPost.js, web/public/lib/support-api.js, app/unit-tests/functions/supportTicketPost.test.js, app/unit-tests/supportIssueFormCategories.test.js
@@ -3092,12 +3092,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### OPS-56 Structure GitHub issues, PRs and funding links
 
-- **Use when:** opening a support issue or PR needs the repository's standard structured template.
-- **Does:** The support issue template collects a structured category and an origin:human label for routing. The PR template captures origin, human or agent or machine or external, a summary, and issue-closing checkboxes. FUNDING.yml lists the GitHub Sponsors and PayPal donation links shown on the repository sidebar.
+- **Use when:** opening a PR needs the repository's standard structured template, or the issue chooser needs its contact link.
+- **Does:** The issue chooser config turns off blank issues and links to the help page. The PR template captures origin, human or agent or machine or external, a summary, and issue-closing checkboxes. FUNDING.yml lists the GitHub Sponsors and PayPal donation links shown on the repository sidebar.
 - **Run:** no command; see Does and Entry
-- **Entry:** `.github/ISSUE_TEMPLATE/support.yml`; `.github/PULL_REQUEST_TEMPLATE.md`
-- **Files:** .github/FUNDING.yml, .github/ISSUE_TEMPLATE/support.yml, .github/PULL_REQUEST_TEMPLATE.md
-- **Keywords:** issue template, pr template, funding links, origin label, support category
+- **Entry:** `.github/ISSUE_TEMPLATE/config.yml`; `.github/PULL_REQUEST_TEMPLATE.md`
+- **Files:** .github/FUNDING.yml, .github/ISSUE_TEMPLATE/config.yml, .github/PULL_REQUEST_TEMPLATE.md
+- **Keywords:** issue template, pr template, funding links, origin label, issue chooser
 
 #### OPS-57 Dispatch agentic-lib board, backlog and PR agents
 

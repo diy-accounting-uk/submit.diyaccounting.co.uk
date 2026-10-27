@@ -65,7 +65,7 @@ class AccountStackTest {
         assertEquals(TEST_GITHUB_APP_ID, variables.get("GITHUB_APP_ID"));
         assertEquals(TEST_GITHUB_APP_INSTALLATION_ID, variables.get("GITHUB_APP_INSTALLATION_ID"));
         assertEquals(EXPECTED_PRIVATE_KEY_SECRET_ID, variables.get("GITHUB_APP_PRIVATE_KEY_SECRET_ID"));
-        assertEquals("diy-accounting-uk/spreadsheets.diyaccounting.co.uk", variables.get("SUPPORT_GITHUB_REPO"));
+        assertEquals("diy-accounting-uk/private.diyaccounting.co.uk", variables.get("SUPPORT_GITHUB_REPO"));
 
         List<String> githubSecretResources = githubSecretReadResources(template);
         assertEquals(

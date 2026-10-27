@@ -418,7 +418,7 @@ class HelpPage {
       console.error("Support submission error:", err);
       // Use existing status messages widget
       if (window.StatusMessages) {
-        window.StatusMessages.showError("Failed to submit request. Please try the GitHub link instead.");
+        window.StatusMessages.showError("Failed to submit request. Please email support@diyaccounting.co.uk instead.");
       }
     } finally {
       submitBtn.disabled = false;

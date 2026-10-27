@@ -190,11 +190,11 @@ public class AccountStack extends Stack {
         }
 
         // The support-ticket path's own repository, separate from githubRepo() above: that value
-        // also feeds IngestionStack and SecurityLakeStack, so it must not move. Support requests
-        // go to the spreadsheets repository's issues instead of this one.
+        // also feeds IngestionStack and SecurityLakeStack, so it must not move. The support
+        // intake is the private repository's issues.
         @Value.Default
         default String supportGithubRepo() {
-            return "diy-accounting-uk/spreadsheets.diyaccounting.co.uk";
+            return "diy-accounting-uk/private.diyaccounting.co.uk";
         }
 
         @Value.Default

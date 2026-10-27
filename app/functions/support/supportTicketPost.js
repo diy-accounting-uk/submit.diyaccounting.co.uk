@@ -46,8 +46,8 @@ const logger = createLogger({ source: "app/functions/support/supportTicketPost.j
 export const SUPPORT_TICKET_RATE_LIMIT_PER_MINUTE = 3;
 
 // The five categories a support ticket can carry. web/public/help.html's support form dropdown
-// and .github/ISSUE_TEMPLATE/support.yml's category dropdown both list these same five values, so
-// a category added here without updating both would silently stop matching the form or the issue.
+// lists these same five values, so a category added here without updating it would silently stop
+// matching the form.
 export const SUPPORT_TICKET_CATEGORIES = ["connection", "submission", "bundles", "receipts", "other"];
 
 // Cache the GitHub App's private key to avoid fetching from Secrets Manager on every request.
@@ -103,6 +103,7 @@ async function getGitHubToken(githubRepo) {
     privateKey,
     installationId,
     repositories: [githubRepo.split("/")[1]],
+    permissions: { issues: "write" },
   });
 }
 
@@ -341,7 +342,8 @@ export async function ingestHandler(event) {
   // origin:machine says the shared support-ticket identity filed this, not the operator. GitHub
   // creates a label on first use if it doesn't already exist, so this never fails on a missing
   // label.
-  const labels = ["support", categoryLabels[category], "origin:machine"];
+  // maintainer-review holds the ticket until the operator removes the label.
+  const labels = ["support", categoryLabels[category], "origin:machine", "maintainer-review"];
 
   try {
     logger.info({ message: "Creating GitHub issue", subject, category, clientIp });
@@ -352,7 +354,7 @@ export async function ingestHandler(event) {
       labels,
     });
 
-    logger.info({ message: "GitHub issue created successfully", issueNumber: issue.number, issueUrl: issue.html_url });
+    logger.info({ message: "GitHub issue created successfully", issueNumber: issue.number });
     await publishActivityEvent({
       event: "support-ticket",
       summary: "Support ticket created",
@@ -363,8 +365,6 @@ export async function ingestHandler(event) {
       headers: { ...responseHeaders },
       data: {
         success: true,
-        issueNumber: issue.number,
-        issueUrl: issue.html_url,
       },
     });
   } catch (error) {

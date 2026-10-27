@@ -164,7 +164,7 @@ describe("supportTicketPost", () => {
       process.env.GITHUB_APP_ID = "12345";
       process.env.GITHUB_APP_INSTALLATION_ID = "67890";
       process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID = "test/submit/github/ops_app_private_key";
-      process.env.SUPPORT_GITHUB_REPO = "diy-accounting-uk/spreadsheets.diyaccounting.co.uk";
+      process.env.SUPPORT_GITHUB_REPO = "diy-accounting-uk/private.diyaccounting.co.uk";
       process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
       mockSecretsSend.mockResolvedValue({ SecretString: "test-private-key" });
       mockGetInstallationAccessToken.mockResolvedValue("gh-token");
@@ -208,6 +208,29 @@ describe("supportTicketPost", () => {
       expect(sentBody.body).toContain("```\nCan't log in\n```");
       expect(sentBody.body).toContain("```\nIt just spins\n```");
       expect(sentBody.body).toContain("not given");
+    });
+
+    test("labels the ticket for operator review, asks for issues write only, and returns no issue link", async () => {
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: () => Promise.resolve({ number: 9, html_url: "https://github.com/x/y/issues/9" }),
+      });
+
+      const response = await ingestHandler(
+        requestEvent({ subject: "Can't log in", description: "It just spins", category: "receipts" }, { "x-forwarded-for": "203.0.113.5" }),
+      );
+
+      expect(response.statusCode).toBe(200);
+      const [url, options] = global.fetch.mock.calls[0];
+      expect(url).toBe("https://api.github.com/repos/diy-accounting-uk/private.diyaccounting.co.uk/issues");
+      expect(JSON.parse(options.body).labels).toEqual(["support", "receipts", "origin:machine", "maintainer-review"]);
+      expect(mockGetInstallationAccessToken).toHaveBeenCalledWith(
+        expect.objectContaining({ repositories: ["private.diyaccounting.co.uk"], permissions: { issues: "write" } }),
+      );
+      const data = JSON.parse(response.body);
+      expect(data.success).toBe(true);
+      expect(data).not.toHaveProperty("issueUrl");
+      expect(data).not.toHaveProperty("issueNumber");
     });
 
     test("carries the shared automation disclosure so the issue does not read as a person's words", async () => {

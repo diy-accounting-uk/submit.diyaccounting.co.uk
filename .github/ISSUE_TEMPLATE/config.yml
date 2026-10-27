@@ -1,0 +1,8 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+blank_issues_enabled: false
+contact_links:
+  - name: Get help with DIY Accounting Submit
+    url: https://submit.diyaccounting.co.uk/help.html
+    about: Search the help page or send a support request from it.
