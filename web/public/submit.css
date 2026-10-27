@@ -1551,6 +1551,11 @@ textarea.input--error {
   margin-bottom: var(--space-3);
 }
 
+.form-toggle-buttons .secondary-button,
+.form-toggle-buttons .cancel-button {
+  margin-left: 0;
+}
+
 .button-group {
   display: flex;
   flex-wrap: wrap;
