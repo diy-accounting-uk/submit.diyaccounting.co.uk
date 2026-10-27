@@ -512,18 +512,22 @@ describe("services/smallCompanyAccountsIxbrl", () => {
   describe("Format 2 profit and loss account", () => {
     const format2 = SMALL_COMPANY_FORMAT_2_CASE_INPUT;
     const xhtml = buildSmallCompanyAccounts(format2);
+    const currentContext = `y${format2.periodEnd.slice(0, 4)}`;
+    const priorContext = `y${Number(format2.periodEnd.slice(0, 4)) - 1}`;
 
     test("carries each line's concept on the current and the prior context", () => {
       for (const line of SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES) {
         const name = qnameOf(CONCEPTS[FORMAT_2_PROFIT_AND_LOSS_CONCEPT_KEY[line]]);
-        expect(nonFractionValue(xhtml, name, "y2025"), `${line} current`).toBe(Math.abs(format2.profitAndLoss.current[line]));
-        expect(nonFractionValue(xhtml, name, "y2024"), `${line} prior`).toBe(Math.abs(format2.profitAndLoss.prior[line]));
+        expect(nonFractionValue(xhtml, name, currentContext), `${line} current`).toBe(Math.abs(format2.profitAndLoss.current[line]));
+        expect(nonFractionValue(xhtml, name, priorContext), `${line} prior`).toBe(Math.abs(format2.profitAndLoss.prior[line]));
       }
     });
 
     test("tags a decrease in stocks with a sign attribute", () => {
       expect(xhtml).toMatch(
-        /name="core:IncreaseDecreaseInStocksInventoriesFinishedGoodsWorkInProgress" contextRef="y2024"[^>]*sign="-">50</,
+        new RegExp(
+          `name="core:IncreaseDecreaseInStocksInventoriesFinishedGoodsWorkInProgress" contextRef="${priorContext}"[^>]*sign="-">50<`,
+        ),
       );
     });
 

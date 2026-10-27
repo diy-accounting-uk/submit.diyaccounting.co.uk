@@ -113,9 +113,10 @@ describe("the builders' accounts read back through the diya-gl reader", () => {
       );
       return fact ? Number(fact.value) : undefined;
     };
+    const priorPeriodEnd = new Date(Date.parse(SMALL_COMPANY_FORMAT_2_CASE_INPUT.periodStart) - 86400000).toISOString().slice(0, 10);
     for (const [year, periodEnd] of [
-      ["current", "2025-12-31"],
-      ["prior", "2024-12-31"],
+      ["current", SMALL_COMPANY_FORMAT_2_CASE_INPUT.periodEnd],
+      ["prior", priorPeriodEnd],
     ]) {
       for (const line of SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES) {
         const { name } = CONCEPTS[FORMAT_2_PROFIT_AND_LOSS_CONCEPT_KEY[line]];
