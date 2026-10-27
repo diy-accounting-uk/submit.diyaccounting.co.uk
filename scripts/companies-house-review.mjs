@@ -731,7 +731,15 @@ async function main() {
       writeFileSync(join(caseDir, "facts.json"), JSON.stringify(ours.facts, null, 2));
       let example = null;
       if (exampleRaw) {
-        example = await inspect(page, join(referenceDir, exampleRaw), join(referenceDir, "example.png"));
+        // The browser reads a file as XML only when its name ends in .xhtml, and the fact lookup needs the XML namespaces.
+        const scratchDir = mkdtempSync(join(tmpdir(), "ch-example-"));
+        const scratchPath = join(scratchDir, "example.xhtml");
+        copyFileSync(join(referenceDir, exampleRaw), scratchPath);
+        try {
+          example = await inspect(page, scratchPath, join(referenceDir, "example.png"));
+        } finally {
+          rmSync(scratchDir, { recursive: true, force: true });
+        }
         if (example.parseError) console.log("  the example is not well-formed XHTML; its screenshot shows the parse error");
       }
       writeFileSync(join(caseDir, "fact-comparison.md"), factComparison(ours, example, exampleSource));
