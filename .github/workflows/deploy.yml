@@ -1958,6 +1958,11 @@ jobs:
           COGNITO_CLIENT_ID: ${{ needs.names.outputs.cognito-client-id }}
           COGNITO_DIYA_GL_CLIENT_ID: ${{ needs.names.outputs.cognito-diya-gl-client-id }}
           COGNITO_MCP_CLIENT_ID: ${{ needs.names.outputs.cognito-mcp-client-id }}
+          # ApiStack builds its routes from the AccountStack's Lambda list, and AccountStack
+          # builds the support ticket Lambda only when the diya-ops GitHub App id is set, so this
+          # synth needs the same two values deploy-cdk-stack.yml gives AccountStack.
+          GITHUB_APP_ID: ${{ vars.OPS_APP_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.OPS_APP_INSTALLATION_ID }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-api.json | jq '.'
 

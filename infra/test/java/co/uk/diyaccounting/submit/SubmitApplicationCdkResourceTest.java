@@ -55,6 +55,32 @@ import software.amazon.awscdk.assertions.Template;
 class SubmitApplicationCdkResourceTest {
 
     @Test
+    @SetEnvironmentVariable(key = "GITHUB_APP_ID", value = "123456")
+    @SetEnvironmentVariable(key = "GITHUB_APP_INSTALLATION_ID", value = "78901234")
+    void shouldRouteTheSupportTicketPostWhenTheGithubAppIsConfigured() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+        var submitApplication = new SubmitApplication(app, appProps);
+        app.synth();
+
+        assertEquals(
+                1,
+                Template.fromStack(submitApplication.accountStack)
+                        .findResources(
+                                "AWS::Lambda::Function",
+                                Map.of(
+                                        "Properties",
+                                        Map.of("FunctionName", Match.stringLikeRegexp("support-ticket-post"))))
+                        .size());
+        List<Template> apiTemplates = List.of(
+                Template.fromStack(submitApplication.apiStack), Template.fromStack(submitApplication.apiRoutesStack));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/support/ticket"));
+    }
+
+    @Test
     void shouldCreateSubmitApplicationWithResources() throws IOException {
 
         Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
