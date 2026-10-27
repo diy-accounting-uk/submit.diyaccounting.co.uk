@@ -1514,19 +1514,19 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** accounts test or live submissions are about to go to Companies House, or the operator asks for a walk-through of the review results.
 - **Does:** The companies-house-review skill reads the XML team's emails and checks the sources for newer versions. companies-house-review.mjs rebuilds each accounts case in the test-service fixture as filed. It picks the example of the same type from an Accounts Data Product zip. It renders both in Chromium and runs the test validator. It judges each criterion and writes findings.md and walkthrough.md under target/companies-house-review/<date>/.
-- **Run:** `/companies-house-review`; `node scripts/companies-house-review.mjs --adp-zip <Accounts_Bulk_Data-YYYY-MM-DD.zip> [--skip-validator]`
+- **Run:** `/companies-house-review`; `node scripts/companies-house-review.mjs --adp-zip <Accounts_Bulk_Data-YYYY-MM-DD.zip> --run <case>=<run id>... [--skip-validator]`
 - **Entry:** `.claude/skills/companies-house-review/SKILL.md`; `scripts/companies-house-review.mjs:main`
-- **Files:** .claude/skills/companies-house-review/SKILL.md, scripts/companies-house-review.mjs, scripts/fixtures/companies-house-test-service-cases.json
+- **Files:** .claude/skills/companies-house-review/SKILL.md, scripts/companies-house-review.mjs, scripts/lib/companiesHouseReviewReconcile.js, scripts/lib/companiesHouseReviewCriteria.js, scripts/lib/companiesHouseReviewPage.js, scripts/fixtures/companies-house-test-service-cases.json
 - **Keywords:** companies house, xml gateway, accounts review, ixbrl, accounts data product, example accounts, filleted, micro-entity, dormant, findings, walkthrough
 - **Related:** CH-13, CH-16
 
 #### CH-18 Judge a Companies House review as the XML team would
 
 - **Use when:** a companies-house-review run has finished, before any accounts submission or retest email cites it, or the operator asks whether the accounts are ready for Companies House.
-- **Does:** The companies-house-judge skill moves our data into source/ and the other company's example into reference/, reconciles every input figure against its tagged value and visible text, recomputes every total, and renders one index.html per review. The session reads every file and screenshot as an LLM judge, writes judge.json with a verdict, added checks and reasoning per case, and boards a NEXT.md row per cause.
-- **Run:** `/companies-house-judge`; `python3 -I .claude/skills/companies-house-judge/prepare_sources.py <review folder>`; `python3 -I .claude/skills/companies-house-judge/build_review.py <review folder>`
-- **Entry:** `.claude/skills/companies-house-judge/SKILL.md`; `.claude/skills/companies-house-judge/build_review.py:main`
-- **Files:** .claude/skills/companies-house-judge/SKILL.md, .claude/skills/companies-house-judge/prepare_sources.py, .claude/skills/companies-house-judge/build_review.py
+- **Does:** The companies-house-judge skill reads the folder that companies-house-review.mjs wrote: our data in source/, the other company's example in reference/, reconciliation.md per case and one index.html per review. The session reads every file and screenshot as an LLM judge, writes judge.json with a verdict, added checks and reasoning per case, has the script render the page again, and boards a NEXT.md row per cause.
+- **Run:** `/companies-house-judge`; `node scripts/companies-house-review.mjs --adp-zip <zip> --run <case>=<run id>...`; `node scripts/companies-house-review.mjs --render-only --out-dir <folder>` renders judge.json without a new review
+- **Entry:** `.claude/skills/companies-house-judge/SKILL.md`; `scripts/lib/companiesHouseReviewPage.js:renderIndex`
+- **Files:** .claude/skills/companies-house-judge/SKILL.md, scripts/lib/companiesHouseReviewPage.js, scripts/lib/companiesHouseReviewFolder.js, scripts/lib/companiesHouseReviewReconcile.js
 - **Keywords:** companies house, llm judge, reconciliation, source data, reference example, index.html, judge.json, triage, xml gateway, retest
 - **Related:** CH-17, CH-16
 

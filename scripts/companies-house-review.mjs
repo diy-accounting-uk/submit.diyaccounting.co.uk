@@ -13,17 +13,30 @@
  *     daily zip;
  *   - renders both in headless Chromium, saves a full-page screenshot and the visible text;
  *   - posts our document to the Companies House test validator (unless --skip-validator);
- *   - checks the criteria and writes findings.md and walkthrough.md.
+ *   - checks the criteria and writes findings.md and walkthrough.md;
+ *   - writes <case>/source/ (our case input and, from a filing run, the submit request and
+ *     response and the last poll response) and <case>/reference/ (the example, labelled a
+ *     different company for layout only);
+ *   - writes <case>/reconciliation.md (every input field against its tagged value and visible
+ *     text, every total recomputed) and index.html, which shows judge.json when one is there.
  *
  * Usage:
  *   node scripts/companies-house-review.mjs --adp-zip <Accounts_Bulk_Data-YYYY-MM-DD.zip>
  *     [--date YYYY-MM-DD] [--out-dir <dir>] [--skip-validator] [--example <case>=<file>]...
+ *     [--run <case>=<run id>]... [--runs-dir <dir>]
+ *
+ * --render-only --out-dir <folder> writes only index.html and walkthrough.md from the files already in
+ * the folder and its judge.json: no build, no validator, no gh. Use it after the judge writes judge.json.
  *
  * --out-dir defaults to target/companies-house-review/<date>/. --example replaces the example
- * the script would pick from the zip for one case.
+ * the script would pick from the zip for one case. --run names the companies-house-test-service
+ * run that filed the case; its evidence log gives the submission number, the submit exchange and
+ * the last poll. The run's artifact is downloaded with gh, or read from <runs-dir>/<run id>/ when
+ * that folder exists.
  */
 
-import { mkdirSync, readFileSync, writeFileSync, copyFileSync, existsSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, readFileSync, writeFileSync, copyFileSync, existsSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { inflateRawSync } from "node:zlib";
 import { basename, dirname, join, relative } from "node:path";
@@ -31,9 +44,20 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "../app/functions/companies-house/companiesHouseAccountsPost.js";
 import { ixbrlStructureProblems } from "../app/lib/ixbrlStructure.js";
+import { readReviewFolder } from "./lib/companiesHouseReviewFolder.js";
+import { reconcile, reconciliationMarkdown } from "./lib/companiesHouseReviewReconcile.js";
+import { isoToday, sameBalanceSheetDateCriterion, substanceCriteria } from "./lib/companiesHouseReviewCriteria.js";
+import {
+  FIXTURE_PATH as FIXTURE_RELATIVE_PATH,
+  fixtureLineOf,
+  gatewayState,
+  renderIndex,
+  walkthroughMarkdown,
+} from "./lib/companiesHouseReviewPage.js";
 
 const REPOSITORY_ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const FIXTURE_PATH = join(REPOSITORY_ROOT, "scripts", "fixtures", "companies-house-test-service-cases.json");
+const REPOSITORY_SLUG = "diy-accounting-uk/submit.diyaccounting.co.uk";
 const IX_NS = "http://www.xbrl.org/2013/inlineXBRL";
 
 // Text a header leaks when it is not hidden: taxonomy prefixes, URIs, ISO dates, unit names.
@@ -201,14 +225,19 @@ const EXAMPLE_EXCLUDE = { micro: [/EntityDormantTruefalse[^>]*>\s*true/] };
 const LLP_ENTRY = /_(OC|SO|NC)\d+_/;
 
 function parseArgs(argv) {
-  const args = { examples: {}, skipValidator: false, date: new Date().toISOString().slice(0, 10) };
+  const args = { examples: {}, runs: {}, skipValidator: false, date: new Date().toISOString().slice(0, 10) };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === "--skip-validator") args.skipValidator = true;
+    else if (flag === "--render-only") args.renderOnly = true;
     else if (flag === "--adp-zip") args.adpZip = argv[(index += 1)];
     else if (flag === "--date") args.date = argv[(index += 1)];
     else if (flag === "--out-dir") args.outDir = argv[(index += 1)];
-    else if (flag === "--example") {
+    else if (flag === "--runs-dir") args.runsDir = argv[(index += 1)];
+    else if (flag === "--run") {
+      const [caseName, runId] = argv[(index += 1)].split("=");
+      args.runs[caseName] = runId;
+    } else if (flag === "--example") {
       const [caseName, file] = argv[(index += 1)].split("=");
       args.examples[caseName] = file;
     } else throw new Error(`Unknown argument ${flag}`);
@@ -376,7 +405,7 @@ function runValidator(file) {
   return { output, verdict };
 }
 
-function judge(kind, ours, example, validator, structureProblems) {
+function judge(kind, ours, example, validator, structureProblems, { input, today }) {
   const spec = KINDS[kind];
   const rows = [];
   const add = (criterion, result, evidence, file) => rows.push({ criterion, result, evidence, file });
@@ -497,10 +526,12 @@ function judge(kind, ours, example, validator, structureProblems) {
     "facts.json",
   );
 
+  for (const found of substanceCriteria({ kind, input, ours, today })) rows.push(found);
+
   add(
     "Look: the screenshot reads as printed accounts, beside the example",
     "pending",
-    "the reviewer opens rendered.png and example.png",
+    "the reviewer opens rendered.png and reference/example.png",
     "rendered.png",
   );
   return rows;
@@ -565,45 +596,78 @@ function findingsMarkdown(date, reviews) {
   return lines.join("\n");
 }
 
-function walkthroughMarkdown(date, reviews) {
-  const lines = [
-    `# Walk-through of the Companies House review, ${date}`,
-    "",
-    "Open the files in this order.",
-    "",
-    "1. `findings.md`: the verdict per case. Note every fail and pending row.",
-  ];
-  let step = 2;
-  for (const review of reviews) {
-    const directory = review.directory;
-    const steps = [
-      [`${directory}/submission.txt`, "the submission number and the last poll outcome."],
-      [
-        `${directory}/rendered.png`,
-        "our document as the XML team sees it. Check the top for header text, the balance sheet for labels and two years, the end for anything after the notes.",
-      ],
-      [`${directory}/example.png`, "the Companies House example of the same type. Compare the layout and the statements."],
-      [`${directory}/fact-comparison.md`, "the facts the example tags that ours lacks. Each missing row needs a fix or a reason."],
-      [
-        `${directory}/visible-text.txt`,
-        "the statements word for word: section 477 or 480, the audit and responsibility statements, section 444(5) and 444(5A), the approval line.",
-      ],
-      [`${directory}/validator.txt`, "the Companies House test validator's answer."],
-      [`${directory}/filed.xhtml`, "the source, only if a finding needs the tag."],
-    ];
-    for (const [file, what] of steps) {
-      lines.push(`${step}. \`${file}\`: ${what}`);
-      step += 1;
+// The evidence log of a companies-house-test-service run: the first exchange is the submit, the
+// last poll-N is the last poll.
+function findEvidenceLog(folder) {
+  for (const entry of readdirSync(folder, { withFileTypes: true })) {
+    const path = join(folder, entry.name);
+    if (entry.isFile() && entry.name === "evidence-log.json") return path;
+    if (entry.isDirectory()) {
+      const found = findEvidenceLog(path);
+      if (found) return found;
     }
   }
-  lines.push("");
-  return lines.join("\n");
+  return null;
+}
+
+function readFilingRun(runId, caseName, runsDir) {
+  const local = runsDir ? join(runsDir, runId) : null;
+  const downloaded = local && existsSync(local) ? null : mkdtempSync(join(tmpdir(), `ch-run-${runId}-`));
+  try {
+    if (downloaded) {
+      const run = spawnSync("gh", ["run", "download", runId, "--repo", REPOSITORY_SLUG, "-D", downloaded], { encoding: "utf8" });
+      if (run.status !== 0) throw new Error(`gh run download ${runId} failed: ${run.stderr}`);
+    }
+    const logPath = findEvidenceLog(downloaded ?? local);
+    if (!logPath) throw new Error(`run ${runId} has no evidence-log.json`);
+    const entries = JSON.parse(readFileSync(logPath, "utf8"));
+    const entry = entries.find((candidate) => candidate.case === caseName);
+    if (!entry) throw new Error(`run ${runId} holds no case ${caseName} (${entries.map((candidate) => candidate.case).join(", ")})`);
+    const submit = entry.exchanges.find((exchange) => exchange.label === "submit");
+    const polls = entry.exchanges.filter((exchange) => /^poll-\d+$/.test(exchange.label));
+    if (!submit) throw new Error(`run ${runId} has no submit exchange for ${caseName}`);
+    return {
+      runId,
+      submissionNumber: entry.submissionNumber,
+      observedStatus: entry.observedStatus,
+      submitRequest: submit.requestXml ?? "",
+      submitResponse: submit.responseXml ?? "",
+      lastPoll: polls.length ? (polls[polls.length - 1].responseXml ?? "") : "",
+    };
+  } finally {
+    if (downloaded) rmSync(downloaded, { recursive: true, force: true });
+  }
+}
+
+function exampleSourceText(rawName, origin) {
+  return [
+    "A different company's accepted filing, used for layout only. None of its figures are ours.",
+    `Raw example: reference/${rawName} (${origin.description})`,
+    ...origin.lines,
+    "",
+  ].join("\n");
+}
+
+// Writes index.html and walkthrough.md from the files already in the folder and judge.json. It builds
+// no document, posts nothing to the validator and calls no gh.
+function renderOnly(args) {
+  const reviews = readReviewFolder(args.outDir, readFileSync(FIXTURE_PATH, "utf8"));
+  const judgePath = join(args.outDir, "judge.json");
+  const judgeJson = existsSync(judgePath) ? JSON.parse(readFileSync(judgePath, "utf8")) : {};
+  writeFileSync(join(args.outDir, "walkthrough.md"), walkthroughMarkdown(args.date, reviews, judgeJson));
+  writeFileSync(join(args.outDir, "index.html"), renderIndex(args.date, reviews, judgeJson));
+  console.log(`Rendered ${reviews.length} cases: ${relative(REPOSITORY_ROOT, args.outDir)}/index.html`);
 }
 
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  if (args.renderOnly) return renderOnly(args);
   mkdirSync(args.outDir, { recursive: true });
   const cases = JSON.parse(readFileSync(FIXTURE_PATH, "utf8")).filter((testCase) => testCase.type === "accounts");
+  const fixtureText = readFileSync(FIXTURE_PATH, "utf8");
+  for (const caseName of Object.keys(args.runs)) {
+    if (!cases.some((testCase) => testCase.name === caseName)) throw new Error(`--run names ${caseName}, which is not an accounts case`);
+  }
   const kinds = cases.map(kindOf);
 
   const needZip = kinds.filter((kind, index) => !args.examples[cases[index].name]);
@@ -619,10 +683,13 @@ async function main() {
       const kind = kinds[index];
       const directory = `${index + 1}-${kind}`;
       const caseDir = join(args.outDir, directory);
-      mkdirSync(caseDir, { recursive: true });
+      const sourceDir = join(caseDir, "source");
+      const referenceDir = join(caseDir, "reference");
+      mkdirSync(sourceDir, { recursive: true });
+      mkdirSync(referenceDir, { recursive: true });
       console.log(`=== ${directory} (${testCase.name}) ===`);
 
-      const { name, type, govTestScenario, expectedOutcome, ...requestBody } = testCase;
+      const { name, type, govTestScenario, expectedOutcome, fictional, ...requestBody } = testCase;
       const errors = [];
       const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify(requestBody) }, errors);
       if (errors.length) throw new Error(`Case ${name} is not a valid accounts request: ${errors.join("; ")}`);
@@ -630,29 +697,66 @@ async function main() {
       const xhtml = buildAccountsIxbrl(accounts);
       writeFileSync(filedPath, xhtml);
 
+      writeFileSync(join(sourceDir, "case-input.json"), JSON.stringify(testCase, null, 2));
+      let filing = null;
+      if (args.runs[name]) {
+        filing = readFilingRun(args.runs[name], name, args.runsDir);
+        writeFileSync(join(sourceDir, "submit-request.xml"), filing.submitRequest);
+        writeFileSync(join(sourceDir, "submit-response.xml"), filing.submitResponse);
+        writeFileSync(join(sourceDir, "last-poll-response.xml"), filing.lastPoll);
+        const sent = filing.submitRequest.match(/<Data>([^<]{200,})<\/Data>/)?.[1];
+        if (sent && Buffer.from(sent, "base64").toString("utf8") !== xhtml) {
+          console.log("  the document in the submit request differs from filed.xhtml; a builder changed after the filing");
+        }
+      }
+
       const submission = submissionOf(testCase);
+      if (filing) {
+        submission.number = filing.submissionNumber;
+        submission.status = filing.observedStatus;
+      }
       writeFileSync(
         join(caseDir, "submission.txt"),
-        `Submission number: ${submission.number}\nExpected outcome: ${submission.status}\nNote: ${submission.note}\n`,
+        `Submission number: ${submission.number}${filing ? ` (run ${filing.runId}; last poll ${filing.observedStatus})` : ""}\nExpected outcome: ${testCase.expectedOutcome?.status ?? "unknown"}\nNote: ${submission.note}\n`,
       );
 
       let exampleSource = "none";
-      const examplePath = join(caseDir, "example.xhtml");
+      let exampleRaw = null;
+      let exampleOrigin = null;
       if (args.examples[name]) {
-        copyFileSync(args.examples[name], examplePath);
+        exampleRaw = basename(args.examples[name]);
+        copyFileSync(args.examples[name], join(referenceDir, exampleRaw));
         exampleSource = args.examples[name];
+        exampleOrigin = { description: "a file chosen with --example", lines: [`File: ${args.examples[name]}`] };
       } else if (picked[kind]) {
-        writeFileSync(examplePath, picked[kind].text);
-        exampleSource = `${basename(args.adpZip)} entry ${picked[kind].name}`;
+        exampleRaw = picked[kind].name;
+        writeFileSync(join(referenceDir, exampleRaw), picked[kind].text);
+        exampleSource = `${basename(args.adpZip)} entry ${exampleRaw}`;
+        const company = exampleRaw.split("_")[2];
+        exampleOrigin = {
+          description: "unmodified entry from the zip",
+          lines: [
+            `Zip: ${basename(args.adpZip)} at target/companies-house-review/adp/, from https://download.companieshouse.gov.uk/${basename(args.adpZip)}`,
+            `Company: ${company}, https://find-and-update.company-information.service.gov.uk/company/${company}`,
+          ],
+        };
       }
-      writeFileSync(join(caseDir, "example-source.txt"), `${exampleSource}\n`);
+      if (exampleRaw) writeFileSync(join(referenceDir, "example-source.txt"), exampleSourceText(exampleRaw, exampleOrigin));
 
       const ours = await inspect(page, filedPath, join(caseDir, "rendered.png"));
       writeFileSync(join(caseDir, "visible-text.txt"), ours.visibleText);
       writeFileSync(join(caseDir, "facts.json"), JSON.stringify(ours.facts, null, 2));
       let example = null;
-      if (existsSync(examplePath)) {
-        example = await inspect(page, examplePath, join(caseDir, "example.png"));
+      if (exampleRaw) {
+        // The browser reads a file as XML only when its name ends in .xhtml, and the fact lookup needs the XML namespaces.
+        const scratchDir = mkdtempSync(join(tmpdir(), "ch-example-"));
+        const scratchPath = join(scratchDir, "example.xhtml");
+        copyFileSync(join(referenceDir, exampleRaw), scratchPath);
+        try {
+          example = await inspect(page, scratchPath, join(referenceDir, "example.png"));
+        } finally {
+          rmSync(scratchDir, { recursive: true, force: true });
+        }
         if (example.parseError) console.log("  the example is not well-formed XHTML; its screenshot shows the parse error");
       }
       writeFileSync(join(caseDir, "fact-comparison.md"), factComparison(ours, example, exampleSource));
@@ -661,20 +765,52 @@ async function main() {
       writeFileSync(join(caseDir, "validator.txt"), validator.output);
       console.log(`  validator: ${validator.verdict}`);
 
-      const rows = judge(kind, ours, example, validator, ixbrlStructureProblems(xhtml));
-      reviews.push({ directory, kind, caseName: name, submission, exampleSource, rows });
+      const rows = judge(kind, ours, example, validator, ixbrlStructureProblems(xhtml), { input: testCase, today: isoToday() });
+      const reconciliation = reconcile(testCase, ours);
+      writeFileSync(
+        join(caseDir, "reconciliation.md"),
+        reconciliationMarkdown(directory, testCase, reconciliation, FIXTURE_RELATIVE_PATH, fixtureLineOf(fixtureText, name)),
+      );
+      reviews.push({
+        directory,
+        kind,
+        caseName: name,
+        title: KINDS[kind].title,
+        input: testCase,
+        fixtureLine: fixtureLineOf(fixtureText, name),
+        submission,
+        submissionNumber: submission.number,
+        exampleSource,
+        exampleRaw: exampleRaw ?? "none",
+        exampleCompany: exampleRaw?.split("_")[2] ?? "unknown",
+        rows,
+        ours,
+        reconciliation,
+        validator,
+        visibleText: ours.visibleText,
+        gateway: filing ? gatewayState(filing.submitResponse, filing.lastPoll) : gatewayState(null, null),
+      });
     }
   } finally {
     await browser.close();
   }
 
+  // The checks across cases, before the reviewer's Look row.
+  for (const review of reviews) {
+    const lookAt = review.rows.findIndex((found) => found.criterion.startsWith("Look"));
+    review.rows.splice(lookAt < 0 ? review.rows.length : lookAt, 0, sameBalanceSheetDateCriterion(reviews, review));
+  }
+
   writeFileSync(join(args.outDir, "findings.md"), findingsMarkdown(args.date, reviews));
-  writeFileSync(join(args.outDir, "walkthrough.md"), walkthroughMarkdown(args.date, reviews));
+  const judgePath = join(args.outDir, "judge.json");
+  const judgeJson = existsSync(judgePath) ? JSON.parse(readFileSync(judgePath, "utf8")) : {};
+  writeFileSync(join(args.outDir, "walkthrough.md"), walkthroughMarkdown(args.date, reviews, judgeJson));
+  writeFileSync(join(args.outDir, "index.html"), renderIndex(args.date, reviews, judgeJson));
   for (const review of reviews) {
     const counts = review.rows.reduce((tally, row) => ({ ...tally, [row.result]: (tally[row.result] ?? 0) + 1 }), {});
     console.log(`VERDICT ${review.directory}: ${JSON.stringify(counts)}`);
   }
-  console.log(`Evidence: ${relative(REPOSITORY_ROOT, args.outDir)}/findings.md`);
+  console.log(`Evidence: ${relative(REPOSITORY_ROOT, args.outDir)}/index.html`);
 }
 
 main().catch((error) => {

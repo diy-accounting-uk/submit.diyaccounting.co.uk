@@ -308,6 +308,7 @@
     "type": "accounts",
     "companyNumber": "09991482",
     "companyName": "HARTLEY AND WREN SUPPLIES LIMITED",
+    "fictional": true,
     "registeredOffice": "14 Marsh Lane, Stockport, Cheshire, SK4 1PX",
     "companyAuthCode": "AUTH09",
     "periodStart": "2025-04-01",

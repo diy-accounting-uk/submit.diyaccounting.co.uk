@@ -1,6 +1,6 @@
 ---
 name: companies-house-judge
-description: Judge a Companies House review folder as the XML Gateway team would, as an LLM, and triage what it finds into NEXT.md rows. Prepares the folder (our data in source/, the other company's example in reference/), reconciles our input against our output, renders one index.html per review, reads every screenshot and file, writes judge.json with a verdict and reasoning per case, re-renders, and boards a fix row per cause. Invoke after every run of companies-house-review, before any accounts submission or retest email goes to Companies House, or when the operator says "judge the review", "LLM as judge", or "is this ready for Companies House".
+description: Judge a Companies House review folder as the XML Gateway team would, as an LLM, and triage what it finds into NEXT.md rows. Reads the folder the review script wrote (our data in source/, the other company's example in reference/, the reconciliation of our input against our output, one index.html per review), reads every screenshot and file, writes judge.json with a verdict and reasoning per case, re-renders, and boards a fix row per cause. Invoke after every run of companies-house-review, before any accounts submission or retest email goes to Companies House, or when the operator says "judge the review", "LLM as judge", or "is this ready for Companies House".
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
@@ -12,6 +12,8 @@ description: Judge a Companies House review folder as the XML Gateway team would
 Companies House example, and run through their test validator. It checks what a script can check.
 This skill is the person at the XML team who then reads the result: does this look like accounts a
 real company could file, do our figures say what we meant, and would anything make a reviewer stop.
+The review script writes everything the judge reads, including `index.html`; the judge adds
+`judge.json` and the script renders it.
 
 The 2026-10-25 review is the worked example (`target/companies-house-review/2026-10-25/`,
 `judge.json`, `index.html`). Every script check passed there; the judge failed all four cases,
@@ -38,7 +40,7 @@ had not ended). Judge the substance, not only the form.
 | Our test cases (the figures we file) | `scripts/fixtures/companies-house-test-service-cases.json`; read by `app/test-helpers/accountsDocumentCases.js` |
 | The builders | `app/services/accountsIxbrlCommon.js`, the micro-entity and small company builders (`grep -l 'buildMicroEntityAccounts\|buildSmallCompanyAccounts' app/services/*.js`), `app/lib/ixbrlStructure.js` |
 | The review script and its criteria | `scripts/companies-house-review.mjs`; criteria table in `.claude/skills/companies-house-review/SKILL.md` |
-| The test-service harness and its runs | `scripts/companies-house-test-service-run.js`, `.github/workflows/companies-house-test-service.yml`; each case's fixture note names its filing run and its poll run |
+| The test-service harness and its runs | `scripts/companies-house-test-service-run.js`, `.github/workflows/companies-house-test-service.yml`; the filing run of each case is passed to the review script with `--run <case>=<run id>` |
 | The test register (company, officers, statement of capital) | a `company-data-request` answer, e.g. `../staging/xmlgw-where-to-test/1-test-service-test-presenter-response.xml` for 03176906 |
 | What the XML team asked for | their emails (commands in the review skill), the record `../private.diyaccounting.co.uk/companies-house/correspondence/TRIAGE_XMLGW_ACCOUNTS_2026-10-24.md` |
 | The rules | the accounts TIS and the other sources in the review skill's Sources table; Companies Act 2006 (s384, s396, s414, s444, s475 to s481, s763) at https://www.legislation.gov.uk/ukpga/2006/46 |
@@ -47,70 +49,77 @@ had not ended). Judge the substance, not only the form.
 
 ## Run
 
-Steps 1 to 7 are Claude Code's. Run every command from this repository's root.
+Steps 1 to 6 are Claude Code's. Run every command from this repository's root.
 
-1. **Prepare.** Move our data into `source/` and the example into `reference/`, from the run
-   artifacts and the bulk zip (needs `gh`):
+1. **Review.** One run of the review script writes the folder the judge reads:
    ```bash
-   python3 -I .claude/skills/companies-house-judge/prepare_sources.py target/companies-house-review/<date>
+   node scripts/companies-house-review.mjs --adp-zip target/companies-house-review/adp/<zip> \
+     --run micro-entity-accounts=<run id> --run micro-entity-accounts-dormant=<run id> \
+     --run small-company-accounts-full=<run id> --run small-company-accounts-filleted=<run id>
    ```
-   Each case's `source/` then holds `case-input.json`, `submit-request.xml` (its Document Data is
-   `filed.xhtml`), `submit-response.xml` and `last-poll-response.xml`; `reference/` holds the raw
-   `Prod…html`, `example.png` and `example-source.txt`. The script says when the filed document
-   differs from the rebuilt `filed.xhtml` (a builder changed after the filing): judge the filed one.
-2. **Build.** Reconcile and render:
-   ```bash
-   python3 -I .claude/skills/companies-house-judge/build_review.py target/companies-house-review/<date>
-   ```
-   It writes `<case>/reconciliation.md` (every input field against its tagged value and visible
-   text; every total recomputed), the Proven / Not proven / Source lines and step 0 in
-   `walkthrough.md`, and `index.html`. It is idempotent: run it again after step 5.
-3. **Read everything.** For each case: `reconciliation.md` (any mismatch is a builder bug),
+   Each `--run` names the `companies-house-test-service` run that filed the case (needs `gh`; the
+   fixture notes name older runs, so they are not read). `--runs-dir <dir>` reads
+   `<dir>/<run id>/…/evidence-log.json` instead of downloading. Each case's `source/` holds
+   `case-input.json`, `submit-request.xml` (its Document Data is `filed.xhtml`),
+   `submit-response.xml` and `last-poll-response.xml`; `reference/` holds the raw `Prod…html`,
+   `example.png` and `example-source.txt`. The submission number in `submission.txt` comes from the
+   evidence log. The script says when the filed document differs from the rebuilt `filed.xhtml`
+   (a builder changed after the filing): judge the filed one. A case with `"fictional": true` in
+   the fixture is shown as a company not on any register; every other case links its register entry.
+   It also writes `<case>/reconciliation.md` (every input field against its tagged value and
+   visible text; every total recomputed), the Proven / Not proven / Source / Judge lines and step 0
+   in `walkthrough.md`, and `index.html`. After step 4, `--render-only` (below) renders `judge.json`.
+2. **Read everything.** For each case: `reconciliation.md` (any mismatch is a builder bug),
    `findings.md`'s rows, `visible-text.txt`, `validator.txt`, `fact-comparison.md`, the gateway files
    in `source/`, and the two screenshots with the Read tool (`rendered.png`, `reference/example.png`).
-4. **Judge.** Ask of each case, and write down the evidence for each answer:
+3. **Judge.** Ask of each case, and write down the evidence for each answer:
    - Do the figures say what we meant? (the reconciliation; the totals; profit for the year equals
      the movement on the profit and loss reserve; the fixed asset note equals the balance sheet).
-   - Could a real company file this? The company's category allows the regime claimed (a public
-     company is outside the small companies regime, s384(1)(a), and cannot claim s477, s478(a));
-     share capital equals the register's statement of capital; the period has ended and the approval
-     date is past; the figures are plausible for the company.
-   - Does it carry what the law and the examples carry? The s396(A1) company information (legal
-     form, registered in which part of the UK, number, registered office); the audit exemption,
-     s476, responsibility and regime statements for the type; s444(5A) for filleted; the
-     never-traded sentence for a dormant company; the approval line with a named director.
-   - Would a reviewer object to anything? Text in the header or footer, a fact only in `ix:hidden`
-     that the reader never sees, an ISO date, a label without a figure, anything after the notes.
+   - Could a real company file this? The script checks the company's category (a public company is
+     outside the small companies regime, s384(1)(a), and cannot claim s477, s478(a)), the s396(A1)
+     statement, that the period has ended and the approval date is past, narrative facts only in
+     `ix:hidden`, the never-traded sentence of a dormant company, placeholder text in names,
+     officers and addresses, and one balance sheet date per company. The judge reads those rows and
+     checks what the script does not: share capital against the register's statement of capital (a
+     register read the script does not make yet), and whether the figures are plausible for the company.
+   - Does it carry what the law and the examples carry? The audit exemption, s476, responsibility
+     and regime statements for the type; s444(5A) for filleted; the approval line with a named director.
+   - Would a reviewer object to anything? Text in the header or footer, an ISO date, a label
+     without a figure, anything after the notes.
    - Does it look like the example? Layout, order, statements; the example's figures are never ours.
    - What did the gateway say? `submit-response.xml` taken for processing, and the last poll:
      ACCEPT, REJECT (with its reasons) or PENDING. PENDING at every poll is POLL_TIMEOUT: not proof
      of acceptance.
-5. **Write `judge.json`** at the review folder's root, one object per case:
+4. **Write `judge.json`** at the review folder's root, one object per case:
    ```json
    {"1-micro": {
      "verdict": "pass | fail | question",
      "summary": "one sentence the operator can repeat to Companies House",
      "rows": {"<findings.md criterion, its first 30 characters suffice>": "the judge's note on that row"},
-     "added": [{"check": "", "why": "the rule or request, with its section or email", "result": "pass | fail | question", "found": "", "data": "file in the case folder, or a ../ path"}],
+     "added": [{"check": "", "why": "the rule or request, with its section or email", "result": "pass | fail | question", "found": "", "data": "file in the case folder, or ../ path; a path that starts with a case folder (3-small-full/visible-text.txt) is read from the review folder"}],
      "reasoning": ["paragraphs: evidence first, then the conclusion, then the fix"]}}
    ```
-   Then run step 2 again; the page shows the verdict, the added checks and the reasoning.
-6. **Triage.** For each cause (not each symptom), write one NEXT.md row in the board's row shape
+   Then render the page without a new review (it builds nothing, posts nothing to the validator and calls no `gh`):
+   ```bash
+   node scripts/companies-house-review.mjs --render-only --out-dir target/companies-house-review/<date>
+   ```
+   The page shows the verdict, the added checks and the reasoning.
+5. **Triage.** For each cause (not each symptom), write one NEXT.md row in the board's row shape
    (`- [ ] **<label>. <title>.** … **Source** … **Owner** … **Model** … **Size** …`): the finding,
    its basis, the files that change (fixture, builder, review script), the proof (reconciliation,
    validator, a new review, new test submissions), and what it unblocks. A cause in the test data
    or the builders blocks any email to the XML team that cites the judged submissions: rewrite that
    row's blocker to the fix row. A check the judge had to add by hand also goes to a row for
    `scripts/companies-house-review.mjs`, so the script checks it next time.
-7. **Report** to the operator: the page path with the open command in a `!` block, the verdict per
+6. **Report** to the operator: the page path with the open command in a `!` block, the verdict per
    case in one table, the rows written, and what is not proven.
 
 ## The page
 
 `index.html` is the deliverable the operator reads, and its shape is fixed: the 2026-10-25 review's
-page is the reference (operator, 2026-10-26: "this output was much better"). `build_review.py`
-writes it; a change to the builder, or CHR2's port into `scripts/companies-house-review.mjs`, keeps
-every part below, in this order, and is checked against a fresh build of that folder.
+page is the reference (operator, 2026-10-26: "this output was much better"). `scripts/companies-house-review.mjs`
+writes it (`scripts/lib/companiesHouseReviewPage.js`); a change to it keeps every part below, in
+this order, and is checked against a fresh build of a finished folder.
 
 1. A title with the review date, one line on what the four filings are, and a link per case.
 2. Per case, a card: Proven (input fields and totals with the mismatch count, the validator, the
