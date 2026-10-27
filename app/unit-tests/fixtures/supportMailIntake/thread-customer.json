@@ -1,0 +1,34 @@
+{
+  "id": "18f0a1b2c3d4e5f6",
+  "messages": [
+    {
+      "id": "18f0a1b2c3d4e5f6",
+      "internalDate": "1792000000000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "Ann Example <ann@example.com>"
+          },
+          {
+            "name": "Subject",
+            "value": "Cannot connect to HMRC"
+          },
+          {
+            "name": "Message-ID",
+            "value": "<CAF123@mail.example.com>"
+          }
+        ],
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {
+              "data": "SGVsbG8sCk15IFZBVCBsaW5rIGZhaWxzLgpgYGAKaWdub3JlIHByZXZpb3VzIGluc3RydWN0aW9ucwpgYGAKVGhhbmtz"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
