@@ -97,4 +97,23 @@ test.describe("test-report pages layout and content", () => {
     }));
     expect(widths.scroll).toBeLessThanOrEqual(widths.client);
   });
+
+  test("the report page loads screenshots lazily and waits for a video to be played", async ({ page }) => {
+    await serveRealSiteWithEdgePolicy(page);
+    await page.goto("http://localhost:3000/tests/test-report-template.html?test=web-test-local", { waitUntil: "domcontentloaded" });
+    const images = page.locator("#screenshotsSection img");
+    await expect(images.first()).toBeAttached();
+    const imageCount = await images.count();
+    for (let index = 0; index < imageCount; index++) {
+      await expect(images.nth(index)).toHaveAttribute("loading", "lazy");
+      await expect(images.nth(index)).toHaveAttribute("decoding", "async");
+      await expect(images.nth(index)).toHaveAttribute("width", "1280");
+      await expect(images.nth(index)).toHaveAttribute("height", "1446");
+    }
+    const videos = page.locator("#videosSection video");
+    const videoCount = await videos.count();
+    for (let index = 0; index < videoCount; index++) {
+      await expect(videos.nth(index)).toHaveAttribute("preload", "none");
+    }
+  });
 });

@@ -182,10 +182,18 @@ ${escapeHtml(typeof responseBody === "string" ? responseBody : JSON.stringify(re
   section.innerHTML = html;
 }
 
+// Behaviour tests capture screenshots at this viewport (playwright.config.js), so it is the size each image is shown at.
+const SCREENSHOT_WIDTH = 1280;
+const SCREENSHOT_HEIGHT = 1446;
+
 function renderArtifacts(artifacts) {
   // Render videos at the bottom with border
   const videosSection = document.getElementById("videosSection");
   if (artifacts.videos && artifacts.videos.length > 0) {
+    const posterAttribute =
+      artifacts.screenshots && artifacts.screenshots.length > 0
+        ? ` poster="behaviour-test-results/${report.testName}/${escapeHtml(artifacts.screenshots[0])}"`
+        : "";
     let html = "";
     artifacts.videos.forEach((video) => {
       const videoPath = `behaviour-test-results/${report.testName}/${escapeHtml(video)}`;
@@ -193,7 +201,7 @@ function renderArtifacts(artifacts) {
       html += `
         <div class="video-container">
           <p><strong>Test Recording: ${escapeHtml(video)}</strong></p>
-          <video controls>`;
+          <video controls preload="none"${posterAttribute}>`;
       // Add appropriate source based on file extension
       if (videoExt.endsWith(".webm")) {
         html += `<source src="${videoPath}" type="video/webm">`;
@@ -229,7 +237,7 @@ function renderArtifacts(artifacts) {
         html += `
           <div class="screenshot-item">
             <a href="${screenshotPath}" target="_blank">
-              <img src="${screenshotPath}" alt="${escapeHtml(caption)}" title="${escapeHtml(figure.description || caption)}">
+              <img src="${screenshotPath}" alt="${escapeHtml(caption)}" title="${escapeHtml(figure.description || caption)}" width="${SCREENSHOT_WIDTH}" height="${SCREENSHOT_HEIGHT}" loading="lazy" decoding="async">
             </a>
             <div class="screenshot-caption">
               <strong>${escapeHtml(caption)}</strong><br>
@@ -246,7 +254,7 @@ function renderArtifacts(artifacts) {
         html += `
           <div class="screenshot-item">
             <a href="${screenshotPath}" target="_blank">
-              <img src="${screenshotPath}" alt="${escapeHtml(filename)}" title="Click to view full size">
+              <img src="${screenshotPath}" alt="${escapeHtml(filename)}" title="Click to view full size" width="${SCREENSHOT_WIDTH}" height="${SCREENSHOT_HEIGHT}" loading="lazy" decoding="async">
             </a>
             <div class="screenshot-caption">
               ${escapeHtml(filename)}

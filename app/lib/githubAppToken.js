@@ -7,7 +7,7 @@
 // exchanged for an installation token scoped to the caller's own repository, so a Lambda holds
 // only the App's private key and never a long-lived token.
 //
-// Tokens are cached per (installation id, repositories) until 5 minutes before GitHub's own
+// Tokens are cached per (installation id, repositories, permissions) until 5 minutes before GitHub's own
 // expires_at, so a warm Lambda container mints one token an hour rather than one per invocation.
 
 import { createSign } from "node:crypto";
@@ -38,9 +38,15 @@ function buildAppJwt({ appId, privateKey, nowMs }) {
   return `${signingInput}.${base64UrlEncode(signature)}`;
 }
 
-function cacheKey(installationId, repositories) {
+function cacheKey(installationId, repositories, permissions) {
   const sortedRepos = repositories && repositories.length > 0 ? [...repositories].sort().join(",") : "";
-  return `${installationId}::${sortedRepos}`;
+  const sortedPermissions = permissions
+    ? Object.keys(permissions)
+        .sort()
+        .map((name) => `${name}:${permissions[name]}`)
+        .join(",")
+    : "";
+  return `${installationId}::${sortedRepos}::${sortedPermissions}`;
 }
 
 /**
@@ -52,11 +58,14 @@ function cacheKey(installationId, repositories) {
  * @param {string} params.installationId - the App's installation id
  * @param {string[]} [params.repositories] - repository names (not owner/name) to scope the
  *   token to; omitted entirely, the token can reach every repository the installation covers
+ * @param {Object<string,string>} [params.permissions] - permission name to access level (for
+ *   example `{ issues: "write" }`) to narrow the token below the installation's own grant;
+ *   omitted, the token carries everything the installation holds
  * @param {typeof fetch} [params.fetchImpl]
  * @returns {Promise<string>} the installation access token
  */
-export async function getInstallationAccessToken({ appId, privateKey, installationId, repositories, fetchImpl = fetch }) {
-  const key = cacheKey(installationId, repositories);
+export async function getInstallationAccessToken({ appId, privateKey, installationId, repositories, permissions, fetchImpl = fetch }) {
+  const key = cacheKey(installationId, repositories, permissions);
   const cached = tokenCache.get(key);
   const nowMs = Date.now();
   if (cached && cached.expiresAtMs - TOKEN_REFRESH_MARGIN_MS > nowMs) {
@@ -71,10 +80,14 @@ export async function getInstallationAccessToken({ appId, privateKey, installati
   };
 
   const hasRepositories = Array.isArray(repositories) && repositories.length > 0;
+  const hasPermissions = permissions && Object.keys(permissions).length > 0;
   const requestInit = { method: "POST", headers };
-  if (hasRepositories) {
+  if (hasRepositories || hasPermissions) {
     headers["Content-Type"] = "application/json";
-    requestInit.body = JSON.stringify({ repositories });
+    requestInit.body = JSON.stringify({
+      ...(hasRepositories ? { repositories } : {}),
+      ...(hasPermissions ? { permissions } : {}),
+    });
   }
 
   const response = await fetchImpl(`https://api.github.com/app/installations/${installationId}/access_tokens`, requestInit);

@@ -166,6 +166,7 @@ class SubmitEnvironmentCdkResourceTest {
         // an Allow, its Bedrock Allow names only the two pinned models, and the guardrail and both
         // of its SSM parameters exist.
         assertAlarmTriageResources(observability);
+        assertQuarantineReaderResources(observability);
 
         // 8c) Operations dashboard: nine widgets across four rows plus the RUM and probe rows,
         // narrowed to the live deployment (a CloudFormation dynamic reference to the
@@ -547,6 +548,98 @@ class SubmitEnvironmentCdkResourceTest {
         observability.hasResourceProperties(
                 "AWS::SSM::Parameter",
                 Match.objectLike(Map.of("Name", "/submit/test/agents/kill-switch", "Value", "off")));
+    }
+
+    /**
+     * Asserts the quarantine reader role exists, is assumed by the GitHub Actions role, and holds
+     * exactly three Allow statements: invoke on the two Haiku ARNs, apply on the guardrail, and read
+     * on three named parameters. No statement names a {@code *} resource and no Deny is needed
+     * because nothing else is allowed.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertQuarantineReaderResources(Template observability) {
+        observability.hasResourceProperties(
+                "AWS::IAM::Role",
+                Match.objectLike(
+                        Map.of(
+                                "RoleName",
+                                "test-env-quarantine-reader-role",
+                                "MaxSessionDuration",
+                                3600,
+                                "AssumeRolePolicyDocument",
+                                Match.objectLike(
+                                        Map.of(
+                                                "Statement",
+                                                Match.arrayWith(
+                                                        List.of(
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "Action",
+                                                                                "sts:AssumeRole",
+                                                                                "Effect",
+                                                                                "Allow",
+                                                                                "Principal",
+                                                                                Map.of(
+                                                                                        "AWS",
+                                                                                        Map.of(
+                                                                                                "Fn::Join",
+                                                                                                List.of(
+                                                                                                        "",
+                                                                                                        List.of(
+                                                                                                                "arn:aws:iam::",
+                                                                                                                Map.of(
+                                                                                                                        "Ref",
+                                                                                                                        "AWS::AccountId"),
+                                                                                                                ":role/submit-test-github-actions-role")))))))))))));
+
+        List<Map<String, Object>> statements = findPolicyStatementsContainingSid(observability, "InvokeReaderModel");
+        assertEquals(3, statements.size());
+        assertTrue(statements.stream().allMatch(s -> "Allow".equals(s.get("Effect"))));
+
+        Map<String, Object> invoke = statementWithSid(statements, "InvokeReaderModel");
+        assertEquals(List.of("bedrock:InvokeModel"), actionsOf(invoke));
+        List<String> invokeResources = resourcesOf(invoke);
+        assertEquals(2, invokeResources.size());
+        assertTrue(invokeResources.containsAll(List.of(
+                "arn:aws:bedrock:eu-west-2:111111111111:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0",
+                "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0")));
+
+        Map<String, Object> guardrail = statementWithSid(statements, "ApplyReaderGuardrail");
+        assertEquals(List.of("bedrock:ApplyGuardrail"), actionsOf(guardrail));
+        assertTrue(guardrail.get("Resource") instanceof Map, "the guardrail resource is one reference, not a literal");
+        assertTrue(guardrail.get("Resource").toString().contains("Guardrail"));
+
+        Map<String, Object> parameters = statementWithSid(statements, "ReadReaderParameters");
+        assertEquals(List.of("ssm:GetParameter"), actionsOf(parameters));
+        assertEquals(3, ((List<Object>) parameters.get("Resource")).size());
+        assertEquals(
+                List.of("bedrock:InvokeModel", "bedrock:ApplyGuardrail", "ssm:GetParameter"),
+                statements.stream().flatMap(s -> actionsOf(s).stream()).toList());
+
+        for (Map<String, Object> statement : statements) {
+            assertFalse(
+                    statement.get("Resource") instanceof String s && s.contains("*") && s.equals("*"),
+                    "no reader statement may use a * resource");
+            for (Object resource : statement.get("Resource") instanceof List<?> l ? l : List.of()) {
+                assertFalse("*".equals(resource), "no reader statement may use a * resource");
+            }
+        }
+    }
+
+    private static Map<String, Object> statementWithSid(List<Map<String, Object>> statements, String sid) {
+        return statements.stream()
+                .filter(s -> sid.equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> resourcesOf(Map<String, Object> statement) {
+        Object resource = statement.get("Resource");
+        List<Object> list = resource instanceof List<?> l ? (List<Object>) l : List.of(resource);
+        return list.stream()
+                .map(SubmitEnvironmentCdkResourceTest::resolveAccountToken)
+                .toList();
     }
 
     /**

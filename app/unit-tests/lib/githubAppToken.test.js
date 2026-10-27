@@ -98,6 +98,55 @@ describe("githubAppToken", () => {
     expect(JSON.parse(options.body)).toEqual({ repositories: ["submit.diyaccounting.co.uk"] });
   });
 
+  test("sends the permissions in the JSON body when asked", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(tokenResponse());
+
+    await getInstallationAccessToken({
+      appId: "12345",
+      privateKey,
+      installationId: "9",
+      repositories: ["private.diyaccounting.co.uk"],
+      permissions: { issues: "write" },
+      fetchImpl,
+    });
+
+    const [, options] = fetchImpl.mock.calls[0];
+    expect(JSON.parse(options.body)).toEqual({
+      repositories: ["private.diyaccounting.co.uk"],
+      permissions: { issues: "write" },
+    });
+  });
+
+  test("sends no permissions key when none are asked", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue(tokenResponse());
+
+    await getInstallationAccessToken({
+      appId: "12345",
+      privateKey,
+      installationId: "10",
+      repositories: ["private.diyaccounting.co.uk"],
+      fetchImpl,
+    });
+
+    const [, options] = fetchImpl.mock.calls[0];
+    expect(JSON.parse(options.body)).not.toHaveProperty("permissions");
+  });
+
+  test("mints separately for the same installation and repositories with different permissions", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(tokenResponse({ token: "ghs_read" }))
+      .mockResolvedValueOnce(tokenResponse({ token: "ghs_write" }));
+    const common = { appId: "12345", privateKey, installationId: "11", repositories: ["private.diyaccounting.co.uk"], fetchImpl };
+
+    const readToken = await getInstallationAccessToken({ ...common, permissions: { issues: "read" } });
+    const writeToken = await getInstallationAccessToken({ ...common, permissions: { issues: "write" } });
+
+    expect(readToken).toBe("ghs_read");
+    expect(writeToken).toBe("ghs_write");
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
   test("returns the token from a successful response", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(tokenResponse({ token: "ghs_abc123" }));
 

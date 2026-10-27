@@ -42,8 +42,35 @@ env:
   TRIAGE_BUDGET_PER_DAY: '8'
 
 jobs:
+  # Anyone can open an issue or a comment in a public repository, so no agent starts from one
+  # unless the issue's author and the event's sender are both on the list in
+  # scripts/issue-agent-allowlist.mjs. A dispatch needs write access already and passes.
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    outputs:
+      allowed: ${{ steps.allowlist.outputs.allowed }}
+    steps:
+      - name: Checkout the allow list
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts/issue-agent-allowlist.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Check the issue author and the event sender against the allow list
+        id: allowlist
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          EVENT_SENDER: ${{ github.event.sender.login }}
+        run: node scripts/issue-agent-allowlist.mjs
+
   triage:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'alarm')
+    needs: gate
+    if: needs.gate.outputs.allowed == 'true' && (github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'alarm'))
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
@@ -463,17 +490,51 @@ jobs:
           PR_NUMBER="${PR_URL##*/}"
           gh api "repos/${{ github.repository }}/issues/${PR_NUMBER}/labels" -f "labels[]=origin:unattended-agent"
 
+      # The triage reasoning goes to a mirror issue in the private repository, never to this
+      # public issue, which gets one deterministic line with the status and a link. The mirror
+      # issue is created on the first triage of an alarm issue and found again on later runs by
+      # the marker line in its body. Its token carries issues write on that one repository.
+      - name: Generate a token for the private repository
+        if: steps.role.outputs.configured == 'true'
+        id: private-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: write
+
       - name: Comment the triage
         if: steps.role.outputs.configured == 'true'
         id: comment-triage
         env:
           GH_TOKEN: ${{ github.token }}
+          PRIVATE_GH_TOKEN: ${{ steps.private-token.outputs.token }}
+          PRIVATE_REPO: diy-accounting-uk/private.diyaccounting.co.uk
+          TRIAGE_STOPPED: ${{ steps.triage-run.outputs.stopped }}
         run: |
           set -euo pipefail
+          OUTPUT_FILE="${{ steps.publish-filter.outputs.output-file }}"
           if [ -n "${{ steps.draft-pr.outputs.url }}" ]; then
-            printf '\n---\n\nDraft PR for the change above: %s\n' "${{ steps.draft-pr.outputs.url }}" >> "${{ steps.publish-filter.outputs.output-file }}"
+            printf '\n---\n\nDraft PR for the change above: %s\n' "${{ steps.draft-pr.outputs.url }}" >> "$OUTPUT_FILE"
           fi
-          gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body-file "${{ steps.publish-filter.outputs.output-file }}"
+          MARKER="alarm-triage-mirror: ${{ github.repository }}#${ISSUE_NUMBER}"
+          export GH_TOKEN="$PRIVATE_GH_TOKEN"
+          gh label create "alarm-mirror" --color 5319e7 --description "Private mirror of a public alarm issue" --repo "$PRIVATE_REPO" 2>/dev/null || true
+          MIRROR_LIST=$(gh issue list --repo "$PRIVATE_REPO" --label alarm-mirror --state all --limit 200 --json url,body)
+          MIRROR_URL=$(jq -r --arg marker "$MARKER" '[.[] | select(.body | contains($marker)) | .url][0] // empty' <<<"$MIRROR_LIST")
+          if [ -z "$MIRROR_URL" ]; then
+            printf 'Mirror of alarm issue %s/%s/issues/%s\n\nAlarm: %s\n\n%s\n' \
+              "${{ github.server_url }}" "${{ github.repository }}" "$ISSUE_NUMBER" "$ALARM_NAME" "$MARKER" > /tmp/mirror-body.md
+            MIRROR_URL=$(gh issue create --repo "$PRIVATE_REPO" --label alarm-mirror \
+              --title "[ALARM] ${ALARM_NAME} (public #${ISSUE_NUMBER})" --body-file /tmp/mirror-body.md)
+          fi
+          gh issue comment "$MIRROR_URL" --body-file "$OUTPUT_FILE"
+          if [ "$TRIAGE_STOPPED" = "max_turns" ]; then STATUS="stopped at its turn limit"; else STATUS="complete"; fi
+          export GH_TOKEN="${{ github.token }}"
+          gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" \
+            --body "Triage ${STATUS}. Reasoning: ${MIRROR_URL}"
 
       # Reads the model's own final "remedy: ..." line and checks it against the same row the
       # prompt gave the model, so a malformed or out-of-scope line does nothing rather than being

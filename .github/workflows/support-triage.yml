@@ -60,8 +60,35 @@ env:
   SUPPORT_TRIAGE_BUDGET_PER_DAY: '8'
 
 jobs:
+  # Anyone can open an issue or a comment in a public repository, so no agent starts from one
+  # unless the issue's author and the event's sender are both on the list in
+  # scripts/issue-agent-allowlist.mjs. A dispatch needs write access already and passes.
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    outputs:
+      allowed: ${{ steps.allowlist.outputs.allowed }}
+    steps:
+      - name: Checkout the allow list
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts/issue-agent-allowlist.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Check the issue author and the event sender against the allow list
+        id: allowlist
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          EVENT_SENDER: ${{ github.event.sender.login }}
+        run: node scripts/issue-agent-allowlist.mjs
+
   triage:
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'support')
+    needs: gate
+    if: needs.gate.outputs.allowed == 'true' && (github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'support'))
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     # Support tickets are always prod (see the module comment above), so this job's environment

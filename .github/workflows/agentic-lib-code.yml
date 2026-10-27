@@ -71,8 +71,35 @@ env:
   MINUTES: ${{ inputs.minutes || '10' }}
 
 jobs:
+  # Anyone can open an issue or a comment in a public repository, so no agent starts from one
+  # unless the issue's author and the event's sender are both on the list in
+  # scripts/issue-agent-allowlist.mjs. A dispatch needs write access already and passes.
+  gate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    outputs:
+      allowed: ${{ steps.allowlist.outputs.allowed }}
+    steps:
+      - name: Checkout the allow list
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: scripts/issue-agent-allowlist.mjs
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Check the issue author and the event sender against the allow list
+        id: allowlist
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_AUTHOR: ${{ github.event.issue.user.login }}
+          EVENT_SENDER: ${{ github.event.sender.login }}
+        run: node scripts/issue-agent-allowlist.mjs
+
   do-next:
     name: 'do next'
+    needs: gate
     runs-on: ubuntu-24.04
     # `ci`, not `prod`: the agent works against the ci deployment and reads ci logs, and
     # `vars.SUBMIT_ACTIONS_ROLE_ARN` resolves only inside a GitHub environment (it is not a
@@ -81,8 +108,9 @@ jobs:
     # On an issue event, only the agentic-lib label on an issue starts a run; a dispatch
     # always does.
     if: >-
-      github.event_name != 'issues'
-      || (github.event.label.name == 'agentic-lib' && !github.event.issue.pull_request)
+      needs.gate.outputs.allowed == 'true'
+      && (github.event_name != 'issues'
+      || (github.event.label.name == 'agentic-lib' && !github.event.issue.pull_request))
     # The agent's own budget plus room for setup, the handover write-up and artifact upload. The
     # agent is told to stop at `minutes`; this is the backstop if it does not.
     timeout-minutes: 30
