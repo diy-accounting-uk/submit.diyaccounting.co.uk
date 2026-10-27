@@ -46,6 +46,7 @@ test.describe("viewVatReturn - stale status banners", () => {
         status: 200,
         contentType: "application/javascript",
         body: `
+          import "/lib/utils/dom-utils.js";
           window.authorizedFetch = (url, options) => fetch(url, options);
           window.getGovClientHeaders = async () => ({});
         `,

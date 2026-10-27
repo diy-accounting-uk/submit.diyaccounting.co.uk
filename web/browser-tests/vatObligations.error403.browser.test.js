@@ -40,12 +40,13 @@ test.afterAll(async () => {
 });
 
 test.describe("vatObligations - 403 from HMRC", () => {
-  test("shows HMRC's own reason, not a generic error, for a 403 response", async ({ page }) => {
+  test("names the insolvent-trader cause, not a generic error, for a 403 response", async ({ page }) => {
     await page.route("**/submit.js", async (route) => {
       await route.fulfill({
         status: 200,
         contentType: "application/javascript",
         body: `
+          import "/lib/utils/dom-utils.js";
           window.authorizedFetch = (url, options) => fetch(url, options);
           window.getGovClientHeaders = async () => ({});
         `,
@@ -96,8 +97,10 @@ test.describe("vatObligations - 403 from HMRC", () => {
 
     const errorBanner = page.locator("#statusMessagesContainer .status-message.status-error");
     await expect(errorBanner).toBeVisible({ timeout: 10_000 });
-    await expect(errorBanner).toContainText("The trader is insolvent");
+    await expect(errorBanner.locator(".status-message-title")).toHaveText("Could not retrieve VAT obligations");
+    await expect(errorBanner.locator(".status-message-cause")).toContainText("insolvent");
     await expect(errorBanner).not.toContainText("An unexpected error occurred");
+    await expect(errorBanner).not.toContainText("403");
     await page.screenshot({ path: "target/browser-test-results/vatObligations-403-error.png" });
   });
 });
