@@ -63,6 +63,7 @@
   const ACCEPTED_FILES = ".zip,.xlsx,.xls,.json,application/zip,application/json";
   const ACCEPTED_ACCOUNTS_FILES = `${ACCEPTED_FILES},.xhtml,.html,.htm,.xml,application/xhtml+xml,text/html,text/xml,application/xml`;
   const IXBRL_FILE_NAME = /\.(xhtml|html|htm|xml)$/i;
+  const ZIP_FILE_NAME = /\.zip$/i;
   const PERIOD_PROBE_END = "1900-01-01";
   const MAX_UNMAPPED_SHOWN = 12;
 
@@ -442,13 +443,31 @@
 
   // Reads an iXBRL accounts document for the regime the page takes. A document for another company or
   // another regime, or one the reader cannot read, fills nothing.
-  function mapIxbrlForPage(bundle, bytes, regime, expectedPeriod = {}) {
+  // Several files, or a zip of them, are read as one set; one file is read on its own.
+  async function mapIxbrlForPage(bundle, input, regime, expectedPeriod = {}) {
     const formNumber = (document.getElementById("formCompanyNumber")?.textContent || "").trim();
+    const expect = { regime, ...(formNumber ? { companyNumber: formNumber } : {}), ...expectedPeriod };
     try {
-      return bundle.mapIxbrlAccounts(bytes, { regime, ...(formNumber ? { companyNumber: formNumber } : {}), ...expectedPeriod });
+      if (Array.isArray(input)) return (await bundle.readBookSources(input, { expect })).accounts;
+      return bundle.mapIxbrlAccounts(input, expect);
     } catch (error) {
+      if (Array.isArray(input)) throw refusedSet(error);
       throw new Refusal(`${withoutFinalStop(error.message)}. Nothing filled.`);
     }
+  }
+
+  // A set that cannot be read shows one failure message (title, cause, next step) and the card's status line.
+  function refusedSet(error) {
+    const cause = `${withoutFinalStop(error.message)}.`;
+    if (typeof window.showFailure === "function") {
+      const failure = new Error(cause);
+      failure.failure = {
+        cause,
+        next: { label: "Choose the files again", href: window.location.pathname },
+      };
+      window.showFailure(failure, "Could not read the accounts files");
+    }
+    return new Refusal(`${cause} Nothing filled.`);
   }
 
   function ixbrlLeftOutText(mapped, formTakesProfitAndLoss) {
@@ -477,7 +496,7 @@
     const heldEnd = (document.getElementById("periodEnd")?.value || "").trim();
     if (heldStart) expectedPeriod.periodStart = heldStart;
     if (heldEnd) expectedPeriod.periodEnd = heldEnd;
-    const mapped = mapIxbrlForPage(bundle, source.ixbrl, "any", expectedPeriod);
+    const mapped = await mapIxbrlForPage(bundle, source.ixbrl, "any", expectedPeriod);
     const { formEntriesFromIxbrl, applyFormEntries } = await import("../lib/ct600-fields.js");
     const filled = applyFormEntries(formEntriesFromIxbrl(mapped));
     hooks.onFilled(undefined);
@@ -498,8 +517,8 @@
     OtherShareClass1: "otherShares",
   };
 
-  function fillMicroEntityAccountsFromIxbrl({ bundle, source, fileName }) {
-    const mapped = mapIxbrlForPage(bundle, source.ixbrl, "micro");
+  async function fillMicroEntityAccountsFromIxbrl({ bundle, source, fileName }) {
+    const mapped = await mapIxbrlForPage(bundle, source.ixbrl, "micro");
     let filled = 0;
     setField("periodStart", mapped.period.start);
     setField("periodEnd", mapped.period.end);
@@ -599,8 +618,8 @@
     "depreciationOnDisposals",
   ];
 
-  function fillSmallCompanyAccountsFromIxbrl({ bundle, source, fileName }) {
-    const mapped = mapIxbrlForPage(bundle, source.ixbrl, "small");
+  async function fillSmallCompanyAccountsFromIxbrl({ bundle, source, fileName }) {
+    const mapped = await mapIxbrlForPage(bundle, source.ixbrl, "small");
     const { currentYear, priorYear } = mapped.balanceSheet;
     let filled = 0;
     setField("periodStart", mapped.period.start);
@@ -859,7 +878,9 @@
       { id: "booksImportHint", class: "hint" },
       "Drop your DIYA-GL book, spreadsheets workbook or package zip here, or choose a file. It is read in this browser and never uploaded; " +
         "only the figures you file are sent." +
-        (takesIxbrl(kind) ? " An iXBRL accounts document (.xhtml) fills the same form." : ""),
+        (takesIxbrl(kind)
+          ? " An iXBRL accounts document (.xhtml) fills the same form. A set of iXBRL documents fills it too: choose all its files together, or one zip."
+          : ""),
     );
     const dropZone = element("div", { "id": "booksImportDrop", "class": "books-import-drop", "aria-describedby": "booksImportHint" });
     const chooseButton = element("button", { type: "button", id: "booksImportChoose", class: "secondary-button" }, "Choose a file");
@@ -870,6 +891,7 @@
       id: "booksImportFile",
       name: "booksImportFile",
       accept: takesIxbrl(kind) ? ACCEPTED_ACCOUNTS_FILES : ACCEPTED_FILES,
+      ...(takesIxbrl(kind) ? { multiple: "" } : {}),
       class: "books-import-file",
       tabindex: "-1",
       hidden: "",
@@ -908,6 +930,22 @@
       }
     }
 
+    // Several files, or one zip, of iXBRL documents are one set. The reader refuses a set that mixes
+    // companies, periods or facts, and the refusal shows as one failure message.
+    async function readSet(bundle, files) {
+      const documents = await Promise.all(
+        files.map(async (file) => ({ name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) })),
+      );
+      let read;
+      try {
+        read = await bundle.readBookSources(documents);
+      } catch (error) {
+        if (error && error.name === "IxbrlError") throw refusedSet(error);
+        throw error;
+      }
+      return read.accounts ? { source: { ixbrl: documents } } : { source: read };
+    }
+
     async function readFile(file) {
       const bytes = new Uint8Array(await file.arrayBuffer());
       const startsLikeJson = bytes[0] === 0x7b || /\.json$/i.test(file.name);
@@ -931,16 +969,29 @@
       if (takesIxbrl(kind) && IXBRL_FILE_NAME.test(file.name)) {
         return { source: { ixbrl: bytes } };
       }
+      if (takesIxbrl(kind) && ZIP_FILE_NAME.test(file.name)) return readSet(bundle, [file]);
       return { source: await bundle.readBookSource(bytes, file.name) };
     }
 
-    async function handleFile(file) {
-      if (!file || working) return;
+    async function readFiles(files) {
+      if (files.length === 1) return readFile(files[0]);
+      if (!takesIxbrl(kind)) throw new FileProblem("this page reads one book at a time; drop one file");
+      return readSet(await loadBundle(), files);
+    }
+
+    function namesOf(files) {
+      return files.length <= 3 ? files.map((file) => file.name).join(", ") : `${files.length} files`;
+    }
+
+    async function handleFiles(fileList) {
+      const files = Array.from(fileList || []);
+      if (files.length === 0 || working) return;
+      const file = { name: namesOf(files) };
       working = true;
       loaded = null;
       say(`Reading ${file.name}...`);
       try {
-        const read = await readFile(file);
+        const read = await readFiles(files);
         if (read.figures) {
           say(applyAnnualFigures(read.figures, file.name, options));
         } else if (read.ct600Figures) {
@@ -1035,7 +1086,7 @@
             return;
           }
           say(`Reading ${picked.name}...`);
-          await handleFile(await drivePicker.download(picked, token));
+          await handleFiles([await drivePicker.download(picked, token)]);
         } catch (error) {
           say(`Could not open Google Drive: ${withoutFinalStop(error.message)}.`);
         } finally {
@@ -1047,7 +1098,7 @@
     offerDrive();
 
     chooseButton.addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", () => handleFile(fileInput.files && fileInput.files[0]));
+    fileInput.addEventListener("change", () => handleFiles(fileInput.files));
     ["dragenter", "dragover"].forEach((name) =>
       dropZone.addEventListener(name, (event) => {
         event.preventDefault();
@@ -1060,7 +1111,7 @@
         dropZone.classList.remove("books-import-drop--over");
       }),
     );
-    dropZone.addEventListener("drop", (event) => handleFile(event.dataTransfer && event.dataTransfer.files[0]));
+    dropZone.addEventListener("drop", (event) => handleFiles(event.dataTransfer && event.dataTransfer.files));
 
     filler.watched.forEach((id) => {
       const watchedField = document.getElementById(id);

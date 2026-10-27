@@ -1039,3 +1039,38 @@ test.describe("books import of an iXBRL accounts document", () => {
     await expect(page.locator("#currentFixedAssets")).toHaveValue("");
   });
 });
+
+const SET_FIXTURES = path.join(process.cwd(), "web/browser-tests/fixtures");
+
+function setFiles(directory) {
+  return ["accounts-1.xhtml", "accounts-2.xhtml"].map((name) => ({
+    name,
+    mimeType: "application/xhtml+xml",
+    buffer: fs.readFileSync(path.join(SET_FIXTURES, directory, name)),
+  }));
+}
+
+test.describe("books import of an iXBRL document set", () => {
+  test("the two files of a set, chosen together, fill the small company form", async ({ page }) => {
+    await openAccountsPage(page, SMALL_URL, "03176906");
+    await page.locator("#booksImportFile").setInputFiles(setFiles("ixds-two-file"));
+
+    await expect(page.locator("#booksImportStatus")).toContainText("from accounts-1.xhtml, accounts-2.xhtml (FRS 102 2026 taxonomy)", {
+      timeout: 60_000,
+    });
+    await expect(page.locator("#currentTurnover")).toHaveValue("50000");
+    await expect(page.locator("#currentCostOfSales")).toHaveValue("20000");
+    await expect(page.locator("#currentFixedAssets")).not.toHaveValue("");
+  });
+
+  test("a set whose files state one fact with two values is refused with a title, a cause and a next step", async ({ page }) => {
+    await openAccountsPage(page, SMALL_URL, "03176906");
+    await page.locator("#booksImportFile").setInputFiles(setFiles("ixds-two-file-disagree"));
+
+    await expect(page.locator(".status-message-title")).toHaveText("Could not read the accounts files", { timeout: 60_000 });
+    await expect(page.locator(".status-message-cause")).toContainText("TurnoverRevenue");
+    await expect(page.locator(".status-message-next")).toHaveText("Choose the files again");
+    await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled.");
+    await expect(page.locator("#currentTurnover")).toHaveValue("");
+  });
+});
