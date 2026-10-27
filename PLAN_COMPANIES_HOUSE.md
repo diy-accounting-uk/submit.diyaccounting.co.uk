@@ -1208,9 +1208,9 @@ the rejected option: every check and every regime rule would then need two names
 | `uk-bus:UKCompaniesHouseRegisteredNumber`, `EntityCurrentLegalOrRegisteredName`, `BalanceSheetDate`, `StartDateForPeriodCoveredByReport`, `EndDateForPeriodCoveredByReport`, `DescriptionPrincipalActivities`, `NameEntityOfficer` on `EntityOfficersDimension` | the same names |
 | `uk-bus:EntityDormant` | `EntityDormantTruefalse` |
 | `uk-gaap:NameDirectorSigningAccounts` | `DirectorSigningFinancialStatements` |
-| `uk-direp:DateApprovalAccounts` | `DateAuthorisationFinancialStatementsForIssue` |
-| `uk-direp:NumberSharesAllotted` | `NumberSharesIssuedFullyPaid` |
-| `uk-direp:NominalValueSharesIssued` | `NominalValueAllottedShareCapital` |
+| `uk-gaap:DateApprovalAccounts` | `DateAuthorisationFinancialStatementsForIssue` |
+| `uk-gaap:NumberSharesAllotted` | `NumberSharesIssuedFullyPaid` |
+| `uk-gaap:NominalValueSharesIssued` | `NominalValueAllottedShareCapital` |
 
 **The mapping additions.** `MAPPING_TABLE` in `ixbrl-accounts.js` gains two rows, which FRS 102
 files use too: `TaxationSocialSecurityPayable` (`WithinOneYear`) adds to `otherCreditors` and
@@ -1273,6 +1273,8 @@ builder therefore renders both years in the format the customer chooses. Every c
 The micro regime keeps its own rule: a micro file's lines read as the micro lines, as today. The
 note "This file's profit and loss account is Format 2, which the small company form does not take"
 goes, and the card fills the Format 2 form instead.
+
+Filed Format 2 files also tag `DepreciationAmortisationExpense`, `OtherOperatingExpensesByNature` and `ProfitLossBeforeTax`; the mapper reads them as aliases of depreciation, other operating expenses and profit before tax.
 
 **How the mapper routes Format 2 lines.**
 
