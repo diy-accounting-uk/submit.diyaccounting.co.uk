@@ -71,7 +71,9 @@ class SubmitApplicationCdkResourceTest {
                 Template.fromStack(submitApplication.accountStack)
                         .findResources(
                                 "AWS::Lambda::Function",
-                                Map.of("Properties", Map.of("FunctionName", Match.stringLikeRegexp("support-ticket-post"))))
+                                Map.of(
+                                        "Properties",
+                                        Map.of("FunctionName", Match.stringLikeRegexp("support-ticket-post"))))
                         .size());
         List<Template> apiTemplates = List.of(
                 Template.fromStack(submitApplication.apiStack), Template.fromStack(submitApplication.apiRoutesStack));
