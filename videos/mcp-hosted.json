@@ -6,8 +6,8 @@
   "auth": "user",
   "pages": ["videos/fixtures/mcp-inspector-config-hosted.json"],
   "viewport": {
-    "width": 1920,
-    "height": 1080
+    "width": 1280,
+    "height": 720
   },
   "deviceScaleFactor": 2,
   "fps": 30,

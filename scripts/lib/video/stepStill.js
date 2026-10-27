@@ -22,10 +22,30 @@ export function stepStillName(sceneId, stepIndex) {
   return `step-${sceneId}-${stepIndex}.png`;
 }
 
-/** Writes the page as it stands now, with the headline card and the chapter label hidden, as the step's still. */
+/**
+ * Writes the page as it stands now, with the headline card and the chapter label hidden, as the step's still.
+ * The cards are hidden by inline style on the elements, then restored, so a page whose content security
+ * policy refuses an injected style sheet (the Collabora editor) still gives a card-free still.
+ */
 export async function writeCardFreeStill(page, stillsDir, sceneId, stepIndex) {
   fs.mkdirSync(stillsDir, { recursive: true });
-  await page.screenshot({ path: path.join(stillsDir, stepStillName(sceneId, stepIndex)), style: HIDE_OVERLAY_TEXT });
+  const selector = `[${HEADLINE_CARD_ATTRIBUTE}], [${CHAPTER_LABEL_ATTRIBUTE}]`;
+  await page.evaluate((cardSelector) => {
+    for (const element of document.querySelectorAll(cardSelector)) {
+      element.dataset.svcPriorVisibility = element.style.visibility;
+      element.style.setProperty("visibility", "hidden", "important");
+    }
+  }, selector);
+  try {
+    await page.screenshot({ path: path.join(stillsDir, stepStillName(sceneId, stepIndex)), style: HIDE_OVERLAY_TEXT });
+  } finally {
+    await page.evaluate((cardSelector) => {
+      for (const element of document.querySelectorAll(cardSelector)) {
+        element.style.visibility = element.dataset.svcPriorVisibility || "";
+        delete element.dataset.svcPriorVisibility;
+      }
+    }, selector);
+  }
 }
 
 /**

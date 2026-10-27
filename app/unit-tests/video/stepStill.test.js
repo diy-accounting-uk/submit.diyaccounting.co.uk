@@ -50,12 +50,14 @@ describe("seekArgs", () => {
 describe("writeCardFreeStill", () => {
   it("screenshots the page with the headline card and the chapter label hidden into the stills directory", async () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "step-still-"));
-    const page = { screenshot: vi.fn().mockResolvedValue(undefined) };
+    const page = { screenshot: vi.fn().mockResolvedValue(undefined), evaluate: vi.fn().mockResolvedValue(undefined) };
     await writeCardFreeStill(page, path.join(dir, "stills"), "claims", 3);
     const [options] = page.screenshot.mock.calls[0];
     expect(options.path).toBe(path.join(dir, "stills", "step-claims-3.png"));
     expect(options.style).toContain(`[${HEADLINE_CARD_ATTRIBUTE}]`);
     expect(options.style).toContain(`[${CHAPTER_LABEL_ATTRIBUTE}]`);
     expect(options.style).toContain("visibility: hidden");
+    expect(page.evaluate).toHaveBeenCalledTimes(2);
+    expect(page.evaluate.mock.calls[0][1]).toContain(`[${HEADLINE_CARD_ATTRIBUTE}]`);
   });
 });
