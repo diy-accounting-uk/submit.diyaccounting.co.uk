@@ -52,8 +52,8 @@ describe("the form values from a small company's iXBRL accounts", () => {
   });
 
   test("carries the text answers, the employees and the director", () => {
-    expect(valueOf(entries, "principalActivity")).toBe("Retailer of accounting software");
-    expect(valueOf(entries, "tradeName")).toBe("Retailer of accounting software");
+    expect(valueOf(entries, "principalActivity")).toBe("the retail of accounting software");
+    expect(valueOf(entries, "tradeName")).toBe("the retail of accounting software");
     expect(valueOf(entries, "directors")).toBe("Antony Christopher Cartwright\nSamantha Ashley Cartwright\nJane Elizabeth Grundy");
     expect(valueOf(entries, "averageEmployees")).toBe("0");
     expect(valueOf(entries, "directorName")).toBe("Antony Christopher Cartwright");
@@ -67,8 +67,8 @@ describe("the form values from a micro-entity's iXBRL accounts", () => {
   test("opens the micro-entity regime and fills its balance sheets", () => {
     expect(valueOf(entries, "regimeMicro")).toBe(true);
     expect(valueOf(entries, "regimeSmall")).toBeUndefined();
-    expect(valueOf(entries, "microCurrentFixedAssets")).toBe("0");
-    expect(valueOf(entries, "microCurrentCurrentAssets")).toBe("8300");
+    expect(valueOf(entries, "microCurrentFixedAssets")).toBe("800");
+    expect(valueOf(entries, "microCurrentCurrentAssets")).toBe("6000");
     expect(valueOf(entries, "microPriorFixedAssets")).toBe("0");
   });
 

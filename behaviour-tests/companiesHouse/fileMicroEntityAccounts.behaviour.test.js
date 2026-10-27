@@ -377,9 +377,9 @@ test("Click through: file micro-entity accounts from an iXBRL accounts document 
     {
       periodStart: "2025-04-01",
       periodEnd: "2026-03-31",
-      currentFixedAssets: "0",
-      currentCurrentAssets: "8300",
-      currentCreditorsWithinOneYear: "3468",
+      currentFixedAssets: "800",
+      currentCurrentAssets: "6000",
+      currentCreditorsWithinOneYear: "1968",
       currentCalledUpShareCapital: "100",
       currentProfitAndLossAccount: "4732",
       currentCapitalAndReserves: "4832",

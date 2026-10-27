@@ -34,6 +34,7 @@ import {
   renderSigningDirectorFact,
   renderCompanyDescriptionFacts,
   companyInformationNote,
+  shareNoun,
 } from "./accountsIxbrlCommon.js";
 import { recordFigure, recordTable } from "../lib/submissionRecord.js";
 
@@ -139,7 +140,7 @@ const DORMANT_NEVER_TRADED_SENTENCE =
 export const DORMANT_TRADING_STATUSES = ["neverTraded", "noLongerTrading"];
 export const SHARE_CLASSES = ["ordinaryShares", "preferenceShares", "deferredShares", "otherShares"];
 
-const SHARE_CLASS_LABEL = {
+export const SHARE_CLASS_LABEL = {
   ordinaryShares: "ordinary",
   preferenceShares: "preference",
   deferredShares: "deferred",
@@ -323,7 +324,7 @@ export function buildMicroEntityAccounts(input) {
     });
     notes.push({
       title: "Called up share capital",
-      html: `<p>Allotted, called up and fully paid: <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} shares of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction> each.</p>`,
+      html: `<p>Allotted, called up and fully paid: <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesIssued)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction> each.</p>`,
     });
     shareCapitalNote = notes.length;
   }
