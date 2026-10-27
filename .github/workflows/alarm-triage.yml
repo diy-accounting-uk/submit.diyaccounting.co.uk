@@ -13,10 +13,19 @@ run-name: "alarm triage for #${{ inputs.issue-number || github.event.issue.numbe
 # already passed the regex deny-list and the Bedrock guardrail before it was posted as the issue
 # comment. The alarm reason string CloudWatch composes and whatever the agent reads from logs
 # and traces are treated as data throughout, never as instructions.
+#
+# The Sonnet escalation waits for the operator. When the Haiku first pass is unusable or unsure,
+# its result is untrusted text (the agent read log lines that outside traffic can write), so a
+# reader with no tools summarises it into code-checked fields (see support-reader.yml for the same
+# reader on support tickets). The `hold` job posts the checked summary on the private mirror issue
+# and adds `maintainer-review` to the public alarm issue. The operator removes that label to start
+# the Sonnet pass, which reads the checked fields and the operator's comments. This repository is
+# public, so no step prints the first-pass result, the reader's answer or the escalation input:
+# they cross jobs only as job outputs encrypted with a key from a secret.
 
 on:
   issues:
-    types: [opened]
+    types: [opened, unlabeled]
   workflow_dispatch:
     inputs:
       issue-number:
@@ -68,12 +77,44 @@ jobs:
           EVENT_SENDER: ${{ github.event.sender.login }}
         run: node scripts/issue-agent-allowlist.mjs
 
+  # Two events start an agent from an issue: an alarm issue opening (the first pass) and the
+  # operator removing `maintainer-review` from an alarm issue (the escalation). Any other
+  # `unlabeled` event skips every job.
   triage:
     needs: gate
-    if: needs.gate.outputs.allowed == 'true' && (github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'alarm'))
+    if: >-
+      needs.gate.outputs.allowed == 'true' && (
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.action == 'opened' && contains(github.event.issue.labels.*.name, 'alarm')) ||
+      (github.event.action == 'unlabeled' && github.event.label.name == 'maintainer-review' &&
+      github.event.sender.login == 'antonycc' && contains(github.event.issue.labels.*.name, 'alarm')))
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
+      # first-pass: the Haiku pass, held for the operator when it needs Sonnet. escalate: the
+      # operator approved the hold, so the Sonnet pass runs. blocked: a dispatch on an issue that
+      # is still waiting for the operator starts nothing.
+      - name: Decide the mode
+        id: mode
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          EVENT_ACTION: ${{ github.event.action }}
+          ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
+        run: |
+          set -euo pipefail
+          MODE=first-pass
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            if gh issue view "$ISSUE_NUMBER" --repo "${{ github.repository }}" --json labels -q '.labels[].name' | grep -qx 'maintainer-review'; then
+              MODE=blocked
+              gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" \
+                --body "Escalation to Sonnet already waits for the operator: remove \`maintainer-review\` to run it. No triage ran."
+            fi
+          elif [ "$EVENT_ACTION" = "unlabeled" ]; then
+            MODE=escalate
+          fi
+          echo "mode=${MODE}" | tee -a "$GITHUB_OUTPUT"
+
       # A local action needs the repository on disk before it can run; only the action's own
       # directory is fetched, since this job reads nothing else from the tree.
       - name: Checkout the budget action
@@ -84,6 +125,7 @@ jobs:
           persist-credentials: false
 
       - name: Stop once ${{ env.TRIAGE_BUDGET_PER_DAY }} triage runs have already posted a result today
+        if: steps.mode.outputs.mode != 'blocked'
         id: budget-guard
         uses: ./.github/actions/agent-run-budget
         with:
@@ -140,6 +182,7 @@ jobs:
             echo "environment-name=${ENV_NAME}"
           } | tee -a "$GITHUB_OUTPUT"
     outputs:
+      mode: ${{ steps.mode.outputs.mode }}
       proceed: ${{ steps.budget-guard.outputs.over-budget == 'false' }}
       alarm-name: ${{ steps.alarm.outputs.alarm-name }}
       timestamp: ${{ steps.alarm.outputs.timestamp }}
@@ -164,9 +207,14 @@ jobs:
       ALARM_WINDOW: ${{ needs.triage.outputs.window }}
       DEPLOYMENT_NAME: ${{ needs.triage.outputs.deployment }}
       ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
+      MODE: ${{ needs.triage.outputs.mode }}
       MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
       HAIKU_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
       RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+    outputs:
+      hold: ${{ steps.judge.outputs.hold }}
+      request: ${{ steps.skeleton.outputs.request }}
+      first-pass-result: ${{ steps.first-pass-result.outputs.first-pass-result }}
     steps:
       # The triage role is created by the environment's CDK deploy and its ARN is set on the
       # GitHub Environment by hand afterwards, so an alarm that arrives before that is a quiet
@@ -204,6 +252,25 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # The escalation starts only when the operator, and no bot, removed `maintainer-review`
+      # from this issue last. The check reads the issue's own timeline.
+      - name: Check the maintainer-review gate
+        if: steps.role.outputs.configured == 'true' && env.MODE == 'escalate'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/maintainer-review-gate.mjs --repo "${{ github.repository }}" --issue "$ISSUE_NUMBER"
+
+      - name: Generate a token that reads the private mirror issue
+        if: steps.role.outputs.configured == 'true' && env.MODE == 'escalate'
+        id: private-read-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: read
+
       - name: Configure AWS role via GitHub OIDC
         if: steps.role.outputs.configured == 'true'
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
@@ -239,6 +306,14 @@ jobs:
       - name: Install dependencies
         if: steps.role.outputs.configured == 'true'
         run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+
+      # The Sonnet pass reads the reader's checked fields from the private mirror issue and the
+      # operator's comments after them, never the Haiku result. The script prints no text.
+      - name: Write the escalation input from the reader's checked summary
+        if: steps.role.outputs.configured == 'true' && env.MODE == 'escalate'
+        env:
+          GH_TOKEN: ${{ steps.private-read-token.outputs.token }}
+        run: node scripts/alarm-escalation-input.mjs --repo "${{ github.repository }}" --issue "$ISSUE_NUMBER" --out /tmp/escalation-input.json
 
       # The only gate this pipeline can safely use before spending an agent run and posting to
       # the issue: re-read CloudWatch's own alarm history for the exact name and window the
@@ -322,7 +397,7 @@ jobs:
         run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
 
       - name: Run triage (Haiku)
-        if: steps.role.outputs.configured == 'true'
+        if: steps.role.outputs.configured == 'true' && env.MODE == 'first-pass'
         uses: ./.github/actions/run-triage-agent
         with:
           model-id: ${{ env.HAIKU_MODEL_ID }}
@@ -333,7 +408,7 @@ jobs:
       # spent) or unsure (it answered "Is it still broken?" with an admission it could not tell).
       # Every other case accepts Haiku's answer as final.
       - name: Judge the first pass
-        if: steps.role.outputs.configured == 'true'
+        if: steps.role.outputs.configured == 'true' && env.MODE == 'first-pass'
         id: judge
         run: |
           set -euo pipefail
@@ -359,25 +434,49 @@ jobs:
             fi
           fi
           echo "escalate=${ESCALATE}" | tee -a "$GITHUB_OUTPUT"
+          echo "hold=${ESCALATE}" >> "$GITHUB_OUTPUT"
           echo "reason=${REASON}" >> "$GITHUB_OUTPUT"
           {
             echo "alarm triage first pass: escalate=${ESCALATE}"
             if [ -n "${REASON}" ]; then echo "reason: ${REASON}"; fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
+      # Sonnet runs only after the operator approved the hold. A first pass that needs Sonnet is
+      # held instead (the steps after this one that publish skip when the run is held).
       - name: Run triage (Sonnet)
-        if: steps.role.outputs.configured == 'true' && steps.judge.outputs.escalate == 'true'
+        if: steps.role.outputs.configured == 'true' && env.MODE == 'escalate'
         uses: ./.github/actions/run-triage-agent
         with:
           model-id: ${{ env.MODEL_ID }}
           small-fast-model-id: ${{ env.HAIKU_MODEL_ID }}
           output-file: /tmp/triage.sonnet.json
 
+      # A held run hands the first-pass result to the quarantine reader, encrypted. A step that
+      # reads a job output shows the value in its log header, and this repository's logs are
+      # public. The request skeleton holds no alarm text.
+      - name: Build the quarantine reader request skeleton
+        if: steps.role.outputs.configured == 'true' && steps.judge.outputs.hold == 'true'
+        id: skeleton
+        run: node scripts/quarantine-reader-request.mjs alarm
+
+      - name: Hand the first-pass result on, encrypted
+        if: steps.role.outputs.configured == 'true' && steps.judge.outputs.hold == 'true'
+        id: first-pass-result
+        env:
+          TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -s /tmp/triage.haiku.json ]; then jq -j '.result // ""' /tmp/triage.haiku.json > /tmp/first-pass-result.txt; else : > /tmp/first-pass-result.txt; fi
+          if [ ! -s /tmp/first-pass-result.txt ]; then printf 'The first pass produced no result.' > /tmp/first-pass-result.txt; fi
+          TRANSIT_PASS=$(printf '%s' "${TRANSIT_KEY}${GITHUB_RUN_ID}" | sha256sum | cut -d' ' -f1)
+          export TRANSIT_PASS
+          echo "first-pass-result=$(openssl enc -aes-256-cbc -pbkdf2 -salt -a -A -pass env:TRANSIT_PASS < /tmp/first-pass-result.txt)" >> "$GITHUB_OUTPUT"
+
       # Sonnet's answer stands when it ran; otherwise Haiku's does. Every step below this one
       # (the usable-result gate, redaction, guardrail, comment, draft PR) reads /tmp/triage.json
       # and does not know or care which model produced it.
       - name: Select the triage result
-        if: steps.role.outputs.configured == 'true'
+        if: steps.role.outputs.configured == 'true' && steps.judge.outputs.hold != 'true'
         id: select-result
         env:
           SONNET_MODEL_ID: ${{ env.MODEL_ID }}
@@ -395,7 +494,7 @@ jobs:
           fi
 
       - name: Require a usable result
-        if: steps.role.outputs.configured == 'true'
+        if: steps.role.outputs.configured == 'true' && steps.judge.outputs.hold != 'true'
         id: triage-run
         run: |
           set -o pipefail
@@ -424,7 +523,7 @@ jobs:
           fi
 
       - name: Filter the triage answer before it is published
-        if: steps.role.outputs.configured == 'true'
+        if: steps.role.outputs.configured == 'true' && steps.judge.outputs.hold != 'true'
         id: publish-filter
         uses: ./.github/actions/publish-filter
         with:
@@ -441,7 +540,7 @@ jobs:
       # never reads the agent's raw output directly, and it runs before the comment is posted so
       # the comment can link to the PR it opened.
       - name: Open a draft PR when triage named a change
-        if: steps.role.outputs.configured == 'true'
+        if: steps.role.outputs.configured == 'true' && steps.judge.outputs.hold != 'true'
         id: draft-pr
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -495,7 +594,7 @@ jobs:
       # issue is created on the first triage of an alarm issue and found again on later runs by
       # the marker line in its body. Its token carries issues write on that one repository.
       - name: Generate a token for the private repository
-        if: steps.role.outputs.configured == 'true'
+        if: steps.role.outputs.configured == 'true' && steps.judge.outputs.hold != 'true'
         id: private-token
         uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
         with:
@@ -506,7 +605,7 @@ jobs:
           permission-issues: write
 
       - name: Comment the triage
-        if: steps.role.outputs.configured == 'true'
+        if: steps.role.outputs.configured == 'true' && steps.judge.outputs.hold != 'true'
         id: comment-triage
         env:
           GH_TOKEN: ${{ github.token }}
@@ -523,7 +622,7 @@ jobs:
           export GH_TOKEN="$PRIVATE_GH_TOKEN"
           gh label create "alarm-mirror" --color 5319e7 --description "Private mirror of a public alarm issue" --repo "$PRIVATE_REPO" 2>/dev/null || true
           MIRROR_LIST=$(gh issue list --repo "$PRIVATE_REPO" --label alarm-mirror --state all --limit 200 --json url,body)
-          MIRROR_URL=$(jq -r --arg marker "$MARKER" '[.[] | select(.body | contains($marker)) | .url][0] // empty' <<<"$MIRROR_LIST")
+          MIRROR_URL=$(jq -r --arg marker "$MARKER" '[.[] | select(.body | split("\n") | any(. == $marker)) | .url][0] // empty' <<<"$MIRROR_LIST")
           if [ -z "$MIRROR_URL" ]; then
             printf 'Mirror of alarm issue %s/%s/issues/%s\n\nAlarm: %s\n\n%s\n' \
               "${{ github.server_url }}" "${{ github.repository }}" "$ISSUE_NUMBER" "$ALARM_NAME" "$MARKER" > /tmp/mirror-body.md
@@ -541,7 +640,7 @@ jobs:
       # trusted. The row is the ceiling on what this step will ever do; the model's line only
       # decides whether to use it or fall back to a person (policy:question).
       - name: Act on the remedy the triage named
-        if: steps.role.outputs.configured == 'true'
+        if: steps.role.outputs.configured == 'true' && steps.judge.outputs.hold != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           APP_TOKEN: ${{ steps.app-token.outputs.token }}
@@ -671,6 +770,8 @@ jobs:
             OUTCOME=no-answer
           elif [ "${{ steps.verify-alarm.conclusion }}" = "failure" ]; then
             OUTCOME=verify-failed
+          elif [ "${{ steps.judge.outputs.hold }}" = "true" ]; then
+            OUTCOME=held
           elif [ "${{ steps.kill-switch.conclusion }}" = "failure" ]; then
             OUTCOME=skipped-kill-switch
           else
@@ -691,7 +792,7 @@ jobs:
           ROW_ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
           ROW_MODEL_ID: ${{ steps.select-result.outputs.model-id }}
           ROW_OUTCOME: ${{ steps.ledger-outcome.outputs.outcome }}
-          ROW_ESCALATED: ${{ steps.judge.outputs.escalate }}
+          ROW_ESCALATED: ${{ env.MODE == 'escalate' && 'true' || steps.judge.outputs.escalate }}
           ROW_REDACTIONS: ${{ steps.publish-filter.outputs.redactions }}
           ROW_GUARDRAIL_ACTION: ${{ steps.publish-filter.outputs.guardrail-action }}
           ROW_PR_URL: ${{ steps.draft-pr.outputs.url }}
@@ -746,6 +847,230 @@ jobs:
           key: ${{ steps.agent-run-row.outputs.key }}
           row: ${{ steps.agent-run-row.outputs.row }}
 
+  # Reads the held first-pass result under the quarantine reader role: a model with no tools, one
+  # guardrail call and three SSM parameters. There is no checkout and no GitHub token here, and
+  # the only permission is the OIDC token for the role.
+  quarantine:
+    needs: [triage, run-triage]
+    if: needs.run-triage.outputs.hold == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: ${{ needs.triage.outputs.environment-name }}
+    permissions:
+      id-token: write
+    env:
+      ENV_NAME: ${{ needs.triage.outputs.environment-name }}
+      READER_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+    outputs:
+      answer: ${{ steps.reply.outputs.answer }}
+      guardrail-action: ${{ steps.reply.outputs.guardrail-action }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume the quarantine reader role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.SUBMIT_ACCOUNT_ID }}:role/${{ env.ENV_NAME }}-env-quarantine-reader-role
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Stop when the agent kill switch is on
+        run: |
+          set -uo pipefail
+          if STATE=$(aws ssm get-parameter --name "/submit/${ENV_NAME}/agents/kill-switch" --query 'Parameter.Value' --output text 2>/tmp/kill-switch.err); then
+            :
+          elif grep -q ParameterNotFound /tmp/kill-switch.err; then
+            STATE=off
+          else
+            echo "::error::the kill switch could not be read"
+            exit 1
+          fi
+          if [ "$STATE" != "off" ]; then
+            echo "::error::the kill switch is not off, so the reader stops"
+            exit 1
+          fi
+
+      # jq puts the first-pass result into a JSON string value, so nothing in it can change the
+      # request's shape. The request has no `tools` key.
+      - name: Build the request
+        env:
+          TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          REQUEST_SKELETON: ${{ needs.run-triage.outputs.request }}
+          FIRST_PASS_ENCRYPTED: ${{ needs.run-triage.outputs.first-pass-result }}
+        run: |
+          set -euo pipefail
+          TRANSIT_PASS=$(printf '%s' "${TRANSIT_KEY}${GITHUB_RUN_ID}" | sha256sum | cut -d' ' -f1)
+          export TRANSIT_PASS
+          printf '%s' "$FIRST_PASS_ENCRYPTED" | openssl enc -d -aes-256-cbc -pbkdf2 -a -A -pass env:TRANSIT_PASS > /tmp/first-pass.txt
+          printf '%s' "$REQUEST_SKELETON" | base64 -d > /tmp/skeleton.json
+          jq -n --slurpfile skeleton /tmp/skeleton.json --rawfile text /tmp/first-pass.txt '
+            $skeleton[0] as $s
+            | $s
+            | .messages = [
+                { role: "user", content: ("<" + $s.tag + ">\n" + $text + "\n</" + $s.tag + ">") },
+                { role: "assistant", content: $s.prefill }
+              ]
+            | del(.prefill, .tag)' > /tmp/request.json
+          rm -f /tmp/first-pass.txt
+
+      - name: Ask the model
+        run: |
+          set -uo pipefail
+          if ! aws bedrock-runtime invoke-model --model-id "$READER_MODEL_ID" --body fileb:///tmp/request.json /tmp/response.json > /dev/null 2>/tmp/invoke.err; then
+            echo "::error::invoke-model failed: $(grep -oE '[A-Za-z]+Exception' /tmp/invoke.err | head -1)"
+            exit 1
+          fi
+          { printf '{'; jq -j '.content[0].text // ""' /tmp/response.json; } > /tmp/answer.txt
+          rm -f /tmp/request.json /tmp/response.json
+
+      - name: Apply the guardrail to the answer
+        run: |
+          set -uo pipefail
+          GUARDRAIL_ID=$(aws ssm get-parameter --name "/submit/${ENV_NAME}/alarm-triage/guardrail-id" --query 'Parameter.Value' --output text)
+          GUARDRAIL_VERSION=$(aws ssm get-parameter --name "/submit/${ENV_NAME}/alarm-triage/guardrail-version" --query 'Parameter.Value' --output text)
+          jq -Rs '[{ text: { text: . } }]' /tmp/answer.txt > /tmp/guardrail-input.json
+          if ! aws bedrock-runtime apply-guardrail --guardrail-identifier "$GUARDRAIL_ID" --guardrail-version "$GUARDRAIL_VERSION" \
+            --source OUTPUT --content file:///tmp/guardrail-input.json > /tmp/guardrail-result.json 2>/tmp/guardrail.err; then
+            echo "::error::apply-guardrail failed: $(grep -oE '[A-Za-z]+Exception' /tmp/guardrail.err | head -1)"
+            exit 1
+          fi
+          jq -r '.action' /tmp/guardrail-result.json > /tmp/guardrail-action.txt
+          if [ "$(cat /tmp/guardrail-action.txt)" = "NONE" ]; then
+            cp /tmp/answer.txt /tmp/answer-final.txt
+          else
+            jq -j '.outputs[0].text // ""' /tmp/guardrail-result.json > /tmp/answer-final.txt
+          fi
+
+      - name: Hand the answer on, encrypted
+        id: reply
+        env:
+          TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          TRANSIT_PASS=$(printf '%s' "${TRANSIT_KEY}${GITHUB_RUN_ID}" | sha256sum | cut -d' ' -f1)
+          export TRANSIT_PASS
+          echo "answer=$(openssl enc -aes-256-cbc -pbkdf2 -salt -a -A -pass env:TRANSIT_PASS < /tmp/answer-final.txt)" >> "$GITHUB_OUTPUT"
+          echo "guardrail-action=$(cat /tmp/guardrail-action.txt)" >> "$GITHUB_OUTPUT"
+
+  # Checks the reader's answer in code, posts the checked summary on the private mirror issue and
+  # adds `maintainer-review` to the public alarm issue. The operator removes that label to run
+  # Sonnet. This job holds no AWS credentials. It runs when the reader failed too, so the issue
+  # still waits for the operator.
+  hold:
+    needs: [triage, run-triage, quarantine]
+    if: always() && !cancelled() && needs.run-triage.outputs.hold == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: ${{ needs.triage.outputs.environment-name }}
+    permissions:
+      contents: read
+      issues: write
+    env:
+      ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
+      ALARM_NAME: ${{ needs.triage.outputs.alarm-name }}
+      PRIVATE_REPO: diy-accounting-uk/private.diyaccounting.co.uk
+      MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+      RUN_NUMBER: ${{ github.run_number }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+
+      - name: Generate a token that writes issues in the private repository
+        id: private-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: write
+
+      - name: Generate a token that labels this repository's issues
+        id: repo-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          permission-issues: write
+
+      - name: Check the reader's answer against the schema
+        env:
+          TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          ANSWER_ENCRYPTED: ${{ needs.quarantine.outputs.answer }}
+          GUARDRAIL_ACTION: ${{ needs.quarantine.outputs.guardrail-action }}
+          QUARANTINE_RESULT: ${{ needs.quarantine.result }}
+        run: |
+          set -euo pipefail
+          if [ "$QUARANTINE_RESULT" != "success" ]; then
+            {
+              echo "<!-- quarantine-reader:v1 -->"
+              echo "**Quarantine reader**: the reader did not run. Read the alarm and the first-pass run yourself, or dispatch alarm-triage again."
+            } > /tmp/reader-comment.md
+            exit 0
+          fi
+          TRANSIT_PASS=$(printf '%s' "${TRANSIT_KEY}${GITHUB_RUN_ID}" | sha256sum | cut -d' ' -f1)
+          export TRANSIT_PASS
+          printf '%s' "$ANSWER_ENCRYPTED" | openssl enc -d -aes-256-cbc -pbkdf2 -a -A -pass env:TRANSIT_PASS > /tmp/answer.txt
+          ANSWER_B64=$(base64 -w0 < /tmp/answer.txt)
+          rm -f /tmp/answer.txt
+          export ANSWER_B64
+          node scripts/quarantine-reader-check.mjs --kind alarm --out /tmp/reader-comment.md
+
+      # The mirror issue is created on the first triage of an alarm issue and found again by the
+      # marker line in its body. It is the same mirror the triage reasoning goes to.
+      - name: Post the reader comment on the private mirror issue
+        id: mirror
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          MARKER="alarm-triage-mirror: ${{ github.repository }}#${ISSUE_NUMBER}"
+          gh label create "alarm-mirror" --color 5319e7 --description "Private mirror of a public alarm issue" --repo "$PRIVATE_REPO" 2>/dev/null || true
+          MIRROR_LIST=$(gh issue list --repo "$PRIVATE_REPO" --label alarm-mirror --state all --limit 200 --json url,body)
+          MIRROR_URL=$(jq -r --arg marker "$MARKER" '[.[] | select(.body | split("\n") | any(. == $marker)) | .url][0] // empty' <<<"$MIRROR_LIST")
+          if [ -z "$MIRROR_URL" ]; then
+            printf 'Mirror of alarm issue %s/%s/issues/%s\n\nAlarm: %s\n\n%s\n' \
+              "${{ github.server_url }}" "${{ github.repository }}" "$ISSUE_NUMBER" "$ALARM_NAME" "$MARKER" > /tmp/mirror-body.md
+            MIRROR_URL=$(gh issue create --repo "$PRIVATE_REPO" --label alarm-mirror \
+              --title "[ALARM] ${ALARM_NAME} (public #${ISSUE_NUMBER})" --body-file /tmp/mirror-body.md)
+          fi
+          echo "url=${MIRROR_URL}" >> "$GITHUB_OUTPUT"
+          node scripts/github-issue-comment.mjs --repo "$PRIVATE_REPO" --issue "${MIRROR_URL##*/}" --body-file /tmp/reader-comment.md
+
+      - name: Hold the alarm issue for the operator
+        env:
+          GH_TOKEN: ${{ steps.repo-token.outputs.token }}
+          MIRROR_URL: ${{ steps.mirror.outputs.url }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${{ github.repository }}/issues/${ISSUE_NUMBER}/labels" -f "labels[]=maintainer-review" > /dev/null
+          GH_TOKEN="${{ github.token }}" gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" \
+            --body "Escalation to Sonnet waits for the operator: remove \`maintainer-review\` to run it. Reader: ${MIRROR_URL}"
+
   # Looks up the customer behind a failed submission and writes the result to a file in the
   # private repository, then pings the operator on Telegram with the alarm name, the issue link
   # and the file's path. The file holds personal data, so it never goes to the issue, the run log
@@ -756,6 +1081,7 @@ jobs:
     needs: triage
     if: >-
       needs.triage.outputs.proceed == 'true' &&
+      needs.triage.outputs.mode != 'escalate' &&
       (needs.triage.outputs.alarm-name == 'prod-env-hmrc-submission-failure' ||
       needs.triage.outputs.alarm-name == 'prod-env-itsa-submission-failure')
     runs-on: ubuntu-24.04
