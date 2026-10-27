@@ -48,19 +48,20 @@ function netAssetsOf(year) {
   return totalAssetsLessCurrentLiabilities - year.creditorsAfterOneYear;
 }
 
-function renderYearTotals(elementId, year) {
-  const netAssets = netAssetsOf(year);
-  const element = document.getElementById(elementId);
-  element.textContent = `Net assets: ${netAssets}. ${
-    netAssets === year.capitalAndReserves
-      ? "Matches capital and reserves."
-      : `Does not match capital and reserves (${year.capitalAndReserves}) - correct this before previewing.`
-  }`;
+function renderYearTotals(current, prior) {
+  const currentNetAssets = netAssetsOf(current);
+  const priorNetAssets = netAssetsOf(prior);
+  const mismatches = [];
+  if (currentNetAssets !== current.capitalAndReserves) mismatches.push(`this year (capital and reserves ${current.capitalAndReserves})`);
+  if (priorNetAssets !== prior.capitalAndReserves) mismatches.push(`last year (capital and reserves ${prior.capitalAndReserves})`);
+  const verdict = mismatches.length
+    ? `Does not match capital and reserves for ${mismatches.join(" and ")} - correct this before previewing.`
+    : "Matches capital and reserves.";
+  document.getElementById("yearTotals").textContent = `Net assets: ${currentNetAssets} this year, ${priorNetAssets} last year. ${verdict}`;
 }
 
 function refreshYearTotals() {
-  renderYearTotals("currentYearTotals", readYear("current"));
-  renderYearTotals("priorYearTotals", readYear("prior"));
+  renderYearTotals(readYear("current"), readYear("prior"));
 }
 
 async function handleCompanySubmit(event) {

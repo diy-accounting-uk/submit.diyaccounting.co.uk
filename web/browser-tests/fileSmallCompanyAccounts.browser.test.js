@@ -243,9 +243,9 @@ test.describe("File small company accounts page", () => {
     });
   });
 
-  test("the directors' report consistency flag is empty, read only, explained and sent nowhere", async ({ page }) => {
+  test("the directors' report consistency flag says not applicable, read only, explained and sent nowhere", async ({ page }) => {
     await openFormView(page);
-    await expect(page.locator("#directorsReportConsistent")).toHaveValue("");
+    await expect(page.locator("#directorsReportConsistent")).toHaveValue("Not applicable");
     await expect(page.locator("#directorsReportConsistent")).toHaveJSProperty("readOnly", true);
     await expect(page.locator("#directorsReportConsistent-hint")).toContainText(
       "These accounts are unaudited, so this statement does not apply",

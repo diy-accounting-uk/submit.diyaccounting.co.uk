@@ -118,10 +118,10 @@ test.describe("File micro-entity accounts page - dormant company", () => {
     expect(await page.evaluate(() => buildAccountsPayload().accountantsReport)).toBeUndefined();
   });
 
-  test("the directors' report consistency flag is empty, read only, explained and sent nowhere", async ({ page }) => {
+  test("the directors' report consistency flag says not applicable, read only, explained and sent nowhere", async ({ page }) => {
     await openFormView(page);
     const flag = page.locator("#directorsReportConsistent");
-    await expect(flag).toHaveValue("");
+    await expect(flag).toHaveValue("Not applicable");
     await expect(flag).toHaveJSProperty("readOnly", true);
     await expect(page.locator("#directorsReportConsistent-hint")).toHaveText(
       "These accounts are unaudited, so this statement does not apply. Nothing is sent.",

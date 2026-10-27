@@ -1364,8 +1364,12 @@ textarea.input--error {
 .calculated-field input[readonly] {
   background-color: var(--c-canvas);
   color: var(--c-ink);
-  border-style: dashed;
+  border: 1px dashed var(--c-rule);
   cursor: default;
+}
+
+.calculated-field input[readonly] + .hint {
+  margin-top: var(--space-2);
 }
 
 /* An optional group of boxes inside a form section, closed until the customer opens it. */
@@ -1381,7 +1385,7 @@ textarea.input--error {
 }
 
 .form-section details[open] {
-  border-left: 3px solid var(--c-rule-subtle);
+  border-left: 3px solid var(--c-rule);
   padding-left: var(--space-3);
 }
 
