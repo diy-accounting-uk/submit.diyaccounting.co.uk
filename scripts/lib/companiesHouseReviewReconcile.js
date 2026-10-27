@@ -23,6 +23,20 @@ const BALANCE_SHEET = {
   tradeCreditors: ["TradeCreditorsTradePayables", "-within-one-year"],
   corporationTax: ["CorporationTaxPayable", "-within-one-year"],
   otherCreditors: ["OtherCreditors", "-within-one-year"],
+  bankLoansOverdrafts: ["BankBorrowingsOverdrafts", "-within-one-year"],
+  taxationSocialSecurity: ["TaxationSocialSecurityPayable", "-within-one-year"],
+  bankLoansAfterOneYear: ["BankBorrowingsOverdrafts", "-after-one-year"],
+};
+// Lines checked only when the input carries a figure for them.
+const OPTIONAL_BALANCE_SHEET_LINES = new Set(["bankLoansOverdrafts", "taxationSocialSecurity", "bankLoansAfterOneYear"]);
+// Policy input field -> concept, all on the current period context.
+const POLICIES = {
+  goingConcernStatement: "DescriptionGoing-concernStatus",
+  revenueRecognitionPolicy: "RevenueRecognitionPolicy",
+  tangibleFixedAssetsPolicy: "DescriptionMeasurementBasisForPropertyPlantEquipment",
+  impairmentPolicy: "ImpairmentNon-financialAssetsPolicy",
+  financialInstrumentsPolicy: "FinancialInstrumentsRecognitionMeasurementPolicy",
+  taxPolicy: "TaxPolicy",
 };
 const PROFIT_AND_LOSS = {
   turnover: "TurnoverRevenue",
@@ -86,7 +100,7 @@ export function reconcile(input, ours) {
   };
 
   const rows = [];
-  const check = (field, value, concept, context, isNumber = true) => {
+  const check = (field, value, concept, context, isNumber = true, hidden = false) => {
     const fact = find(concept, context);
     const tagged = fact ? fact.text : null;
     let ok;
@@ -96,7 +110,7 @@ export function reconcile(input, ours) {
       shown = value !== 0 ? visible.includes(formatFigure(value)) : true;
     } else {
       ok = fact !== null && tagged.trim() === String(value).trim();
-      shown = visible.includes(String(value));
+      shown = hidden || visible.includes(String(value));
     }
     rows.push({
       field,
@@ -127,6 +141,11 @@ export function reconcile(input, ours) {
       check(`registeredOffice.${field}`, input.registeredOffice[field], concept, `y${current}-registered-office`, false);
   }
 
+  if (input.accountantsReport) {
+    check("accountantsReport.accountantsName", input.accountantsReport.accountantsName, "NameEntityAccountants", `y${current}`, false);
+    check("accountantsReport.statement", input.accountantsReport.statement, "StatementOnScopeAccountantsReport", `y${current}`, false);
+  }
+
   const small = input.smallCompany;
   const balanceSheet = small ? small.balanceSheet : input.balanceSheet;
   for (const [yearKey, y] of [
@@ -134,13 +153,29 @@ export function reconcile(input, ours) {
     ["priorYear", prior],
   ]) {
     for (const [key, value] of Object.entries(balanceSheet[yearKey])) {
-      if (key in BALANCE_SHEET) {
+      if (key in BALANCE_SHEET && (value !== 0 || !OPTIONAL_BALANCE_SHEET_LINES.has(key))) {
         const [concept, suffix] = BALANCE_SHEET[key];
         check(`balanceSheet.${yearKey}.${key}`, value, concept, `e${y}${suffix}`);
       }
     }
   }
   if (small) {
+    for (const [field, concept] of Object.entries(POLICIES)) {
+      if (small[field]) check(`smallCompany.${field}`, small[field], concept, `y${current}`, false);
+    }
+    if (small.controllingParty) {
+      const context = `y${current}-controlling-party-1`;
+      check(
+        "smallCompany.controllingParty.ultimate",
+        String(small.controllingParty.ultimate),
+        "ControllingPartyUltimateControllingPartyTruefalse",
+        context,
+        false,
+        true,
+      );
+      if (small.controllingParty.name)
+        check("smallCompany.controllingParty.name", small.controllingParty.name, "NameControllingParty", context, false);
+    }
     if (small.principalActivity) {
       check("smallCompany.principalActivity", small.principalActivity, "DescriptionPrincipalActivities", `y${current}`, false);
     }
@@ -185,11 +220,13 @@ export function reconcile(input, ours) {
       );
       add(
         `Creditors within one year ${y}`,
-        "trade + corporation tax + other",
+        "bank loans and overdrafts + trade + corporation tax + taxation and social security + other",
         valueOf("Creditors", `e${y}-within-one-year`),
         sum(
+          valueOf("BankBorrowingsOverdrafts", `e${y}-within-one-year`),
           valueOf("TradeCreditorsTradePayables", `e${y}-within-one-year`),
           valueOf("CorporationTaxPayable", `e${y}-within-one-year`),
+          valueOf("TaxationSocialSecurityPayable", `e${y}-within-one-year`),
           valueOf("OtherCreditors", `e${y}-within-one-year`),
         ),
       );

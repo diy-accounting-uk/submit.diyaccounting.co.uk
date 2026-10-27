@@ -33,6 +33,8 @@ import {
   renderTextFact,
   renderMonetaryFact,
   renderSigningDirectorFact,
+  accountsStatusMember,
+  accountantsReportPage,
   renderCompanyDescriptionFacts,
   companyInformationNote,
   shareNoun,
@@ -179,6 +181,7 @@ export function sharesIssuedFor(calledUpShareCapital, nominalValue) {
  * @param {number} input.averageNumberOfEmployees
  * @param {string} input.directorName
  * @param {string} input.dateOfApproval - ISO date
+ * @param {{accountantsName: string, statement: string}} [input.accountantsReport] - adds the accountants' report page and the audit exempt with accountants' report status
  * @param {object} input.balanceSheet
  * @param {object} input.balanceSheet.current - fixedAssets, currentAssets, creditorsWithinOneYear,
  *   creditorsAfterOneYear, calledUpShareCapital, profitAndLossAccount, capitalAndReserves
@@ -252,7 +255,7 @@ export function buildMicroEntityAccounts(input) {
   }
 
   for (const [conceptKey, dimension, member, id] of [
-    ["accountsStatusAuditedOrUnaudited", DIMENSIONS.accountsStatus, MEMBERS.auditExemptNoAccountantsReport, "accounts-status"],
+    ["accountsStatusAuditedOrUnaudited", DIMENSIONS.accountsStatus, accountsStatusMember(input), "accounts-status"],
     ["accountsType", DIMENSIONS.accountsType, profitAndLoss ? MEMBERS.fullAccounts : MEMBERS.filletedAccounts, "accounts-type"],
     ["accountingStandardsApplied", DIMENSIONS.accountingStandards, MEMBERS.microEntities, "accounting-standards"],
     ["applicableLegislation", DIMENSIONS.applicableLegislation, MEMBERS.smallCompaniesRegimeForAccounts, "applicable-legislation"],
@@ -334,6 +337,16 @@ export function buildMicroEntityAccounts(input) {
   const heading = (title, subtitleHtml) =>
     pageHeading({ companyName: input.companyName, companyNumber: input.companyNumber, title, subtitleHtml });
   const statementKeys = input.dormant ? DORMANT_STATEMENT_KEYS : STATEMENT_KEYS;
+  const accountantsPage = input.accountantsReport
+    ? `\n${accountantsReportPage({
+        heading: heading(
+          "Accountants' report",
+          `to the board of directors of ${escapeXmlText(input.companyName)} on the unaudited financial statements for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}`,
+        ),
+        accountantsReport: input.accountantsReport,
+        refs,
+      })}`
+    : "";
 
   const bodyHtml = `${coverPage({
     refs,
@@ -342,7 +355,7 @@ export function buildMicroEntityAccounts(input) {
     title: input.dormant ? "Unaudited dormant micro-entity accounts" : "Unaudited micro-entity accounts",
     periodStart: input.periodStart,
     periodEnd: input.periodEnd,
-  })}
+  })}${accountantsPage}
 <div class="page">
 ${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${recordTable({
     columns,

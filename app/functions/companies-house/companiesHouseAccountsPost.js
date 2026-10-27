@@ -100,6 +100,22 @@ export function readRegisteredOffice(value, errorMessages) {
   return Object.keys(office).length > 0 ? office : undefined;
 }
 
+// The accountants' report is optional; when present it needs the firm's name and the statement.
+export function readAccountantsReport(value, errorMessages) {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "object" || Array.isArray(value)) {
+    errorMessages.push("Invalid accountantsReport - must be an object");
+    return undefined;
+  }
+  const report = {};
+  for (const field of ["accountantsName", "statement"]) {
+    const text = typeof value[field] === "string" ? value[field].trim() : "";
+    if (!text) errorMessages.push(`Missing accountantsReport.${field}`);
+    report[field] = text;
+  }
+  return report;
+}
+
 // Extracts and validates the accounts filing request. Shared with the render Lambda, which
 // never needs the company authentication code because it never reaches the gateway.
 export function extractAndValidateAccountsParameters(event, errorMessages, { requireCompanyAuthCode = true, clientId } = {}) {
@@ -108,6 +124,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     companyNumber,
     companyName,
     registeredOffice,
+    accountantsReport,
     companyAuthCode,
     periodStart,
     periodEnd,
@@ -138,6 +155,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     errorMessages.push("Missing companyName");
   }
   const validRegisteredOffice = readRegisteredOffice(registeredOffice, errorMessages);
+  const validAccountantsReport = readAccountantsReport(accountantsReport, errorMessages);
 
   let trimmedCompanyAuthCode;
   if (requireCompanyAuthCode) {
@@ -195,6 +213,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
       companyNumber: normalisedCompanyNumber,
       companyName: trimmedCompanyName,
       registeredOffice: validRegisteredOffice,
+      ...(validAccountantsReport ? { accountantsReport: validAccountantsReport } : {}),
       ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
       periodStart,
       periodEnd,
@@ -228,6 +247,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     companyNumber: normalisedCompanyNumber,
     companyName: trimmedCompanyName,
     registeredOffice: validRegisteredOffice,
+    ...(validAccountantsReport ? { accountantsReport: validAccountantsReport } : {}),
     ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
     periodStart,
     periodEnd,

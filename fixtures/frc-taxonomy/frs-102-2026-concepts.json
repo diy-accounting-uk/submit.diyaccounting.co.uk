@@ -4,9 +4,18 @@
     "bus": "http://xbrl.frc.org.uk/cd/2026-01-01/business",
     "core": "http://xbrl.frc.org.uk/fr/2026-01-01/core",
     "direp": "http://xbrl.frc.org.uk/reports/2026-01-01/direp",
+    "accrep": "http://xbrl.frc.org.uk/reports/2026-01-01/accrep",
     "curr": "http://xbrl.frc.org.uk/cd/2026-01-01/currencies"
   },
   "concepts": [
+    "accrep:AccountantInformationHeading",
+    "accrep:AccountantsReportHeading",
+    "accrep:AccountantsReportOnFinancialStatements",
+    "accrep:DateAccountantsReport",
+    "accrep:NameAccountantResponsible",
+    "accrep:NameOrLocationAccountantsOffice",
+    "accrep:StatementOnScopeAccountantsReport",
+    "accrep:UseThirdPartyAgentStatusDimensionToIdentifyMultipleAccountantsOrJointAccountantsGuidance",
     "bus:A-AgricultureForestryFishing",
     "bus:AbridgedAccounts",
     "bus:AccountingStandardsApplied",

@@ -74,3 +74,56 @@ describe("services/smallCompanyAccountsRequest profit and loss format", () => {
     expect(errors.some((message) => message.includes("operatingProfit must equal turnover plus"))).toBe(true);
   });
 });
+
+describe("services/smallCompanyAccountsRequest optional lines, policies and controlling party", () => {
+  const withYear = (extra) => {
+    const section = sectionFrom(SMALL_COMPANY_CASE_INPUT);
+    section.balanceSheet = { ...section.balanceSheet, currentYear: { ...section.balanceSheet.currentYear, ...extra } };
+    return section;
+  };
+
+  test("an absent bank or taxation line reads as 0", () => {
+    const { result, errors } = validate(sectionFrom(SMALL_COMPANY_CASE_INPUT));
+    expect(errors).toEqual([]);
+    expect(result.balanceSheet.current).toMatchObject({ bankLoansOverdrafts: 0, taxationSocialSecurity: 0, bankLoansAfterOneYear: 0 });
+  });
+
+  test("a negative or fractional line is refused", () => {
+    expect(validate(withYear({ bankLoansOverdrafts: -5 })).errors.join(" ")).toContain("bankLoansOverdrafts");
+    expect(validate(withYear({ taxationSocialSecurity: 1.5 })).errors.join(" ")).toContain("taxationSocialSecurity");
+  });
+
+  test("bank loans after one year above the creditors after one year are refused", () => {
+    const { errors } = validate(withYear({ bankLoansAfterOneYear: 2500 }));
+    expect(errors).toContain("smallCompany.balanceSheet.currentYear.bankLoansAfterOneYear must not be more than creditorsAfterOneYear");
+  });
+
+  test("the net assets check includes the new lines", () => {
+    const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
+    const { errors } = validate(withYear({ taxationSocialSecurity: 100 }));
+    expect(errors).toContain(
+      `smallCompany.balanceSheet.currentYear.capitalAndReserves does not equal net assets (${base.capitalAndReserves - 100})`,
+    );
+  });
+
+  test("keeps the five policies as trimmed text and drops empty ones", () => {
+    const { result, errors } = validate(
+      sectionFrom(SMALL_COMPANY_CASE_INPUT, { goingConcernStatement: " Going on. ", impairmentPolicy: "  ", taxPolicy: "Tax." }),
+    );
+    expect(errors).toEqual([]);
+    expect(result.goingConcernStatement).toBe("Going on.");
+    expect(result).not.toHaveProperty("impairmentPolicy");
+    expect(result.taxPolicy).toBe("Tax.");
+    expect(validate(sectionFrom(SMALL_COMPANY_CASE_INPUT, { revenueRecognitionPolicy: 5 })).errors).toContain(
+      "Invalid smallCompany.revenueRecognitionPolicy - must be text",
+    );
+  });
+
+  test("reads the controlling party and refuses a missing ultimate flag or an ultimate party without a name", () => {
+    const party = (controllingParty) => validate(sectionFrom(SMALL_COMPANY_CASE_INPUT, { controllingParty }));
+    expect(party({ ultimate: false }).result.controllingParty).toEqual({ ultimate: false });
+    expect(party({ name: "Pat Lee", ultimate: true }).result.controllingParty).toEqual({ name: "Pat Lee", ultimate: true });
+    expect(party({ name: "Pat Lee" }).errors).toContain("Invalid smallCompany.controllingParty.ultimate - must be true or false");
+    expect(party({ ultimate: true }).errors).toContain("Missing smallCompany.controllingParty.name");
+  });
+});

@@ -551,3 +551,34 @@ describe("services/microEntityAccountsIxbrl", () => {
     });
   });
 });
+
+describe("the accountants' report of a micro-entity", () => {
+  const accountantsReport = { accountantsName: "Test Firm LLP", statement: "We compiled these accounts." };
+
+  test("adds the page after the cover, tags the firm and statement and uses the with-accountants status member", () => {
+    for (const input of [SAMPLE_INPUT, DORMANT_INPUT]) {
+      const xhtml = buildMicroEntityAccounts({ ...input, accountantsReport });
+      expect(() => parseXmlDocument(xhtml)).not.toThrow();
+      expect(xhtml).toMatch(/name="bus:NameEntityAccountants" contextRef="y2026">Test Firm LLP</);
+      expect(xhtml).toMatch(/name="accrep:StatementOnScopeAccountantsReport" contextRef="y2026">We compiled these accounts\.</);
+      expect(xhtml.indexOf("Accountants' report")).toBeGreaterThan(xhtml.indexOf('class="page cover"'));
+      expect(xhtml.indexOf("Accountants' report")).toBeLessThan(
+        xhtml.indexOf("<h1>Balance sheet") === -1 ? xhtml.indexOf("Balance sheet") : xhtml.indexOf("<h1>Balance sheet"),
+      );
+      expect(dimensionNames(xhtml)).toContainEqual({
+        dimension: "bus:AccountsStatusDimension",
+        member: "bus:AuditExemptWithAccountantsReport",
+      });
+      expect(dimensionNames(xhtml)).not.toContainEqual({
+        dimension: "bus:AccountsStatusDimension",
+        member: "bus:AuditExempt-NoAccountantsReport",
+      });
+    }
+  });
+
+  test("a request without the report builds no accountants' facts", () => {
+    const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
+    expect(xhtml).not.toContain("NameEntityAccountants");
+    expect(xhtml).not.toContain("accrep:");
+  });
+});

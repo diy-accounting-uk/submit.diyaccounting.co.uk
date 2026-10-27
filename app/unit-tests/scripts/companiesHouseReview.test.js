@@ -110,6 +110,54 @@ describe("reconcile", () => {
     expect(reconcile(c.input, { ...c.ours, facts }).mismatches).toBe(1);
   });
 
+  it("reconciles a case with an overdraft and a taxation line, recomputing the creditors total with them", () => {
+    const base = caseNamed("small-company-accounts-full").input;
+    const { name, type, govTestScenario, expectedOutcome, fictional, ...requestBody } = base;
+    const currentYear = {
+      ...base.smallCompany.balanceSheet.currentYear,
+      cashAtBank: base.smallCompany.balanceSheet.currentYear.cashAtBank + 100,
+      bankLoansOverdrafts: 100,
+      taxationSocialSecurity: 50,
+      otherCreditors: base.smallCompany.balanceSheet.currentYear.otherCreditors - 50,
+    };
+    const input = { ...base, smallCompany: { ...base.smallCompany, balanceSheet: { ...base.smallCompany.balanceSheet, currentYear } } };
+    const errors = [];
+    const accounts = extractAndValidateAccountsParameters(
+      { body: JSON.stringify({ ...requestBody, smallCompany: input.smallCompany }) },
+      errors,
+    );
+    expect(errors).toEqual([]);
+    const ours = oursFrom(buildAccountsIxbrl(accounts));
+    const result = reconcile(input, ours);
+    expect(result.mismatches).toBe(0);
+    const fields = result.rows.map((row) => row.field);
+    expect(fields).toContain("balanceSheet.currentYear.bankLoansOverdrafts");
+    expect(fields).toContain("balanceSheet.currentYear.taxationSocialSecurity");
+    expect(fields).not.toContain("balanceSheet.currentYear.bankLoansAfterOneYear");
+    expect(fields).not.toContain("balanceSheet.priorYear.bankLoansOverdrafts");
+    const withoutBank = ours.facts.filter((fact) => fact.concept !== "BankBorrowingsOverdrafts");
+    expect(reconcile(input, { ...ours, facts: withoutBank }).mismatches).toBeGreaterThan(0);
+  });
+
+  it("checks the accountants' report, the policies and the controlling party fact", () => {
+    const dormant = reconcile(caseNamed("micro-entity-accounts-dormant").input, caseNamed("micro-entity-accounts-dormant").ours);
+    expect(dormant.rows.map((row) => row.field)).toEqual(
+      expect.arrayContaining(["accountantsReport.accountantsName", "accountantsReport.statement"]),
+    );
+    const small = caseNamed("small-company-accounts-full");
+    const fields = reconcile(small.input, small.ours).rows.map((row) => row.field);
+    expect(fields).toEqual(
+      expect.arrayContaining([
+        "smallCompany.goingConcernStatement",
+        "smallCompany.revenueRecognitionPolicy",
+        "smallCompany.tangibleFixedAssetsPolicy",
+        "smallCompany.impairmentPolicy",
+        "smallCompany.financialInstrumentsPolicy",
+        "smallCompany.controllingParty.ultimate",
+      ]),
+    );
+  });
+
   it("counts a changed tagged figure as a mismatch", () => {
     const c = caseNamed("micro-entity-accounts");
     const facts = c.ours.facts.map((fact) =>

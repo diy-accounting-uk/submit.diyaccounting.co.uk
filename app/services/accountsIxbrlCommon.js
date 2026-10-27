@@ -30,6 +30,8 @@ export const NAMESPACES = {
   countries: "http://xbrl.frc.org.uk/cd/2026-01-01/countries",
   // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
   curr: "http://xbrl.frc.org.uk/cd/2026-01-01/currencies",
+  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
+  accrep: "http://xbrl.frc.org.uk/reports/2026-01-01/accrep",
 };
 
 // Resolved from the FRS 102 entry point by scripts/generate-frc-taxonomy-concepts.js (see
@@ -75,6 +77,8 @@ export const CONCEPTS = {
   reportPeriod: { prefix: "bus", name: "ReportPeriod" },
   reportPrincipalLanguage: { prefix: "bus", name: "ReportPrincipalLanguage" },
   principalCurrencyUsedInBusinessReport: { prefix: "bus", name: "PrincipalCurrencyUsedInBusinessReport" },
+  nameEntityAccountants: { prefix: "bus", name: "NameEntityAccountants" },
+  statementOnScopeAccountantsReport: { prefix: "accrep", name: "StatementOnScopeAccountantsReport" },
   accountingStandardsAppliedMatchesEntryPoint: { prefix: "bus", name: "AccountingStandardsAppliedMatchesTaxonomyEntry-pointTruefalse" },
 
   statementAuditExemptionSection477: {
@@ -156,6 +160,16 @@ export const CONCEPTS = {
   parValueShare: { prefix: "core", name: "ParValueShare" },
   descriptionShareType: { prefix: "bus", name: "DescriptionShareType" },
   taxPolicy: { prefix: "core", name: "TaxPolicy" },
+  bankBorrowingsOverdrafts: { prefix: "core", name: "BankBorrowingsOverdrafts" },
+  taxationSocialSecurityPayable: { prefix: "core", name: "TaxationSocialSecurityPayable" },
+  descriptionGoingConcernStatus: { prefix: "core", name: "DescriptionGoing-concernStatus" },
+  preparedOnGoingConcernBasis: { prefix: "core", name: "FinancialStatementsArePreparedOnGoing-concernBasisTruefalse" },
+  revenueRecognitionPolicy: { prefix: "core", name: "RevenueRecognitionPolicy" },
+  propertyPlantEquipmentMeasurementBasis: { prefix: "core", name: "DescriptionMeasurementBasisForPropertyPlantEquipment" },
+  impairmentPolicy: { prefix: "core", name: "ImpairmentNon-financialAssetsPolicy" },
+  financialInstrumentsPolicy: { prefix: "core", name: "FinancialInstrumentsRecognitionMeasurementPolicy" },
+  nameControllingParty: { prefix: "core", name: "NameControllingParty" },
+  controllingPartyIsUltimate: { prefix: "core", name: "ControllingPartyUltimateControllingPartyTruefalse" },
   depreciationExpensePropertyPlantEquipment: { prefix: "core", name: "DepreciationExpensePropertyPlantEquipment" },
 
   propertyPlantEquipment: { prefix: "core", name: "PropertyPlantEquipment" },
@@ -182,6 +196,12 @@ export const DIMENSIONS = {
   propertyPlantEquipmentClasses: { prefix: "core", name: "PropertyPlantEquipmentClassesDimension" },
   entityContactType: { prefix: "bus", name: "EntityContactTypeDimension" },
   currencies: { prefix: "curr", name: "CurrenciesDimension" },
+  controllingPartyGrouping: { prefix: "core", name: "X-ParentEntityOrControllingPartyUltimateControllingPartyGroupingDimension" },
+};
+
+const CONTROLLING_PARTY_DOMAIN = {
+  prefix: "core",
+  name: "ParentEntityOrControllingPartyAndUltimateControllingPartyGroupingDimension.domain",
 };
 
 export const MEMBERS = {
@@ -193,6 +213,7 @@ export const MEMBERS = {
   northernIreland: { prefix: "countries", name: "NorthernIreland" },
   smallCompaniesRegimeForAccounts: { prefix: "bus", name: "SmallCompaniesRegimeForAccounts" },
   auditExemptNoAccountantsReport: { prefix: "bus", name: "AuditExempt-NoAccountantsReport" },
+  auditExemptWithAccountantsReport: { prefix: "bus", name: "AuditExemptWithAccountantsReport" },
   fullAccounts: { prefix: "bus", name: "FullAccounts" },
   filletedAccounts: { prefix: "bus", name: "FilletedAccounts" },
   shareCapital: { prefix: "core", name: "ShareCapital" },
@@ -433,6 +454,77 @@ export function renderDateFact(conceptKey, contextRef, isoDate) {
 export function renderMonetaryFact(conceptKey, contextRef, unitRef, value) {
   const signAttribute = value < 0 ? ' sign="-"' : "";
   return `<ix:nonFraction name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}" unitRef="${unitRef}" decimals="0" format="${NUMBER_FORMAT}"${signAttribute}>${formatMonetary(value)}</ix:nonFraction>`;
+}
+
+/**
+ * The member of AccountsStatusDimension: audit exempt with an accountants' report when the request
+ * carries one, without otherwise.
+ * @param {{accountantsReport?: object}} input
+ */
+export function accountsStatusMember(input) {
+  return input.accountantsReport ? MEMBERS.auditExemptWithAccountantsReport : MEMBERS.auditExemptNoAccountantsReport;
+}
+
+/**
+ * A typed dimension member, as the controlling party dimension takes.
+ * @param {{prefix: string, name: string}} dimension
+ * @param {{prefix: string, name: string}} domainElement
+ * @param {string|number} value
+ */
+export function typedMemberXml(dimension, domainElement, value) {
+  return `<xbrldi:typedMember dimension="${qname(dimension)}"><${qname(domainElement)}>${escapeXmlText(String(value))}</${qname(domainElement)}></xbrldi:typedMember>`;
+}
+
+/**
+ * The controlling party context and its hidden facts: whether the party is the ultimate controlling
+ * party and, when the party is named, its name. A named party is shown by controllingPartyNote.
+ * @returns {{facts: string[], contextRef: string}}
+ */
+export function renderControllingPartyFacts({ controllingParty, refs, entityIdentifierXml, periodXml, additionalContexts }) {
+  const contextRef = buildDimensionedContext({
+    additionalContexts,
+    entityIdentifierXml,
+    periodXml: periodXml[refs.current],
+    dimensionXml: typedMemberXml(DIMENSIONS.controllingPartyGrouping, CONTROLLING_PARTY_DOMAIN, 1),
+    id: `${refs.current}-controlling-party-1`,
+  });
+  return {
+    contextRef,
+    facts: [renderTextFact("controllingPartyIsUltimate", contextRef, controllingParty.ultimate ? "true" : "false")],
+  };
+}
+
+/**
+ * The note on the controlling party. A named party is tagged in the sentence.
+ * @returns {{title: string, html: string}}
+ */
+export function controllingPartyNote({ controllingParty, contextRef }) {
+  if (!controllingParty.name) {
+    return {
+      title: "Controlling party",
+      html: "<p>The company has no ultimate controlling party. It is owned by its directors, and there is no single controlling party.</p>",
+    };
+  }
+  const kind = controllingParty.ultimate ? "ultimate controlling party" : "controlling party";
+  return {
+    title: "Controlling party",
+    html: `<p>The company's ${kind} is ${renderTextFact("nameControllingParty", contextRef, controllingParty.name)}.</p>`,
+  };
+}
+
+/**
+ * The accountants' report page: the tagged statement of scope and the tagged name of the firm.
+ * @param {object} page
+ * @param {string} page.heading - the page heading, already built
+ * @param {{accountantsName: string, statement: string}} page.accountantsReport
+ * @param {{current: string}} page.refs
+ * @returns {string}
+ */
+export function accountantsReportPage({ heading, accountantsReport, refs }) {
+  return `<div class="page">
+${heading}<p>${renderTextFact("statementOnScopeAccountantsReport", refs.current, accountantsReport.statement)}</p>
+<p class="signature">${renderTextFact("nameEntityAccountants", refs.current, accountantsReport.accountantsName)}</p>
+</div>`;
 }
 
 export function dimensionMemberXml(dimension, member) {
@@ -723,10 +815,11 @@ export function balanceSheetFacts({ contextRef, entityIdentifierXml, periodXml, 
  * @param {Array<Record<string, {xml: string, value: number}>>} rowsInput.years - balanceSheetFacts per column
  * @param {object[]} [rowsInput.currentAssetLines] - {label, cells} rows shown under "Current assets"
  * @param {object[]} [rowsInput.creditorLines] - {label, cells} rows shown under the creditors heading
+ * @param {object[]} [rowsInput.creditorAfterOneYearLines] - {label, cells} rows shown under the after one year heading
  * @param {object} [rowsInput.notes] - note numbers keyed by line (fixedAssets, calledUpShareCapital)
  * @returns {object[]} recordTable rows
  */
-export function balanceSheetRows({ years, currentAssetLines, creditorLines, notes = {} }) {
+export function balanceSheetRows({ years, currentAssetLines, creditorLines, creditorAfterOneYearLines, notes = {} }) {
   const cells = (line, options) => years.map((year) => recordFigure(year[line].xml, year[line].value, options));
   const values = (line) => years.map((year) => year[line].value);
   const rows = [{ label: "Fixed assets", note: notes.fixedAssets, cells: cells("fixedAssets") }];
@@ -748,10 +841,20 @@ export function balanceSheetRows({ years, currentAssetLines, creditorLines, note
   rows.push(
     { label: netLabel("Net current assets", values("netCurrentAssets")), style: "subtotal", cells: cells("netCurrentAssets") },
     { label: "Total assets less current liabilities", cells: cells("totalAssetsLessCurrentLiabilities") },
-    {
+  );
+  if (creditorAfterOneYearLines) {
+    rows.push(
+      { label: "Creditors: amounts falling due after more than one year", style: "heading" },
+      ...creditorAfterOneYearLines.map((line) => ({ ...line, indent: true })),
+      { label: "", style: "subtotal", cells: cells("creditorsAfterOneYear", { deduction: true }) },
+    );
+  } else {
+    rows.push({
       label: "Creditors: amounts falling due after more than one year",
       cells: cells("creditorsAfterOneYear", { deduction: true }),
-    },
+    });
+  }
+  rows.push(
     { label: netLabel("Net assets", values("netAssets")), style: "total", cells: cells("netAssets") },
     { label: "Capital and reserves", style: "heading" },
     { label: "Called up share capital", note: notes.calledUpShareCapital, indent: true, cells: cells("calledUpShareCapital") },

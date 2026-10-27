@@ -170,22 +170,23 @@ const NOT_CARRIED_REASONS = {
     "OtherDebtors",
     "Prepayments",
     "TradeDebtorsTradeReceivables",
-    "TaxationSocialSecurityPayable",
     "AmountsOwedToRelatedParties",
   ],
   "the example company's own accounting policy or going concern statement": [
     "CashCashEquivalentsPolicy",
     "DescriptionDepreciationMethodForPropertyPlantEquipment",
-    "DescriptionMeasurementBasisForPropertyPlantEquipment",
     "InventoriesPolicy",
     "PropertyPlantEquipmentPolicy",
-    "RevenueRecognitionPolicy",
     "ShareCapitalPolicy",
     "TradePayablesPolicy",
     "TradeReceivablesPolicy",
-    "FinancialStatementsArePreparedOnGoing-concernBasisTruefalse",
     "EntityHasClaimedExemptionFromReportingDisclosureRelatedPartyTransactionsForWholly-ownedEntitiesTruefalse",
   ],
+  "an accountants' report, which a company that prepares its own accounts does not have": [
+    "NameEntityAccountants",
+    "StatementOnScopeAccountantsReport",
+  ],
+  "an auditor's statement; the accounts are unaudited and audit exempt": ["DirectorsReportConsistentWithAccountsTruefalse"],
   "directors' report date, and a filleted set has no directors' report": ["DateSigningDirectorsReport"],
 };
 const NOT_CARRIED = new Map(

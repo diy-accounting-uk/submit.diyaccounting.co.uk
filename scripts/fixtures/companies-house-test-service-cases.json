@@ -352,7 +352,11 @@
     "dormant": true,
     "dormantTradingStatus": "neverTraded",
     "shareClass": "ordinaryShares",
-    "nominalValue": 1
+    "nominalValue": 1,
+    "accountantsReport": {
+      "accountantsName": "Calder Brook Accountants LLP",
+      "statement": "In accordance with your instructions, we have compiled these unaudited financial statements from the accounting records and from information and explanations you have given us."
+    }
   },
   {
     "name": "small-company-accounts-full",
@@ -377,7 +381,12 @@
     "smallCompany": {
       "filleted": false,
       "principalActivity": "the retail of accounting software",
-      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "accountingPolicies": "The financial statements have been prepared under the historical cost convention.",
+      "goingConcernStatement": "The directors expect the company to have enough resources to continue in operation for the foreseeable future, so the financial statements are prepared on a going concern basis.",
+      "revenueRecognitionPolicy": "Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "tangibleFixedAssetsPolicy": "Tangible fixed assets are measured at cost less accumulated depreciation. Computer equipment is depreciated at 33% a year on cost.",
+      "impairmentPolicy": "At each reporting date the company reviews its assets for signs of impairment. An asset whose carrying value is more than its recoverable amount is written down to that amount.",
+      "financialInstrumentsPolicy": "The company has only basic financial instruments. Debtors, cash and creditors are measured at the undiscounted amount of cash the company expects to receive or pay.",
       "directors": ["Antony Christopher Cartwright", "Samantha Ashley Cartwright", "Jane Elizabeth Grundy"],
       "balanceSheet": {
         "currentYear": {
@@ -445,6 +454,9 @@
       "shareCapital": {
         "shareClass": "ordinaryShares",
         "nominalValue": 1
+      },
+      "controllingParty": {
+        "ultimate": false
       }
     },
     "expectedOutcome": {
@@ -476,7 +488,12 @@
     "smallCompany": {
       "filleted": true,
       "principalActivity": "the retail of accounting software",
-      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "accountingPolicies": "The financial statements have been prepared under the historical cost convention.",
+      "goingConcernStatement": "The directors expect the company to have enough resources to continue in operation for the foreseeable future, so the financial statements are prepared on a going concern basis.",
+      "revenueRecognitionPolicy": "Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "tangibleFixedAssetsPolicy": "Tangible fixed assets are measured at cost less accumulated depreciation. Computer equipment is depreciated at 33% a year on cost.",
+      "impairmentPolicy": "At each reporting date the company reviews its assets for signs of impairment. An asset whose carrying value is more than its recoverable amount is written down to that amount.",
+      "financialInstrumentsPolicy": "The company has only basic financial instruments. Debtors, cash and creditors are measured at the undiscounted amount of cash the company expects to receive or pay.",
       "directors": ["Antony Christopher Cartwright", "Samantha Ashley Cartwright", "Jane Elizabeth Grundy"],
       "balanceSheet": {
         "currentYear": {
@@ -544,6 +561,9 @@
       "shareCapital": {
         "shareClass": "ordinaryShares",
         "nominalValue": 1
+      },
+      "controllingParty": {
+        "ultimate": false
       }
     },
     "expectedOutcome": {

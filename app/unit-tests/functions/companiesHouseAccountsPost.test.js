@@ -95,6 +95,7 @@ vi.mock("@app/services/companiesHouseXmlGateway.js", () => ({
 import {
   ingestHandler as companiesHouseAccountsPostHandler,
   readRegisteredOffice,
+  readAccountantsReport,
 } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -711,5 +712,26 @@ describe("readRegisteredOffice", () => {
     const text = [];
     readRegisteredOffice("1 High Street, Leeds", text);
     expect(text).toEqual(["Invalid registeredOffice - must be an object of address parts"]);
+  });
+});
+
+describe("readAccountantsReport", () => {
+  test("trims both fields and leaves an absent report absent", () => {
+    const errors = [];
+    expect(readAccountantsReport({ accountantsName: " Test Firm LLP ", statement: " We compiled these. " }, errors)).toEqual({
+      accountantsName: "Test Firm LLP",
+      statement: "We compiled these.",
+    });
+    expect(readAccountantsReport(undefined, errors)).toBeUndefined();
+    expect(errors).toEqual([]);
+  });
+
+  test("refuses a missing field and a non-object", () => {
+    const errors = [];
+    readAccountantsReport({ accountantsName: "Test Firm LLP" }, errors);
+    expect(errors).toEqual(["Missing accountantsReport.statement"]);
+    const text = [];
+    readAccountantsReport("Test Firm LLP", text);
+    expect(text).toEqual(["Invalid accountantsReport - must be an object"]);
   });
 });
