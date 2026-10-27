@@ -177,10 +177,11 @@
 .customer-copy-sheet .submission-record table.statement th.figure {
   font-family: var(--font-figures, inherit);
   width: auto;
-  min-width: 7rem;
+  white-space: nowrap;
 }
 .customer-copy-sheet .submission-record table.statement td.label {
   padding-right: 1rem;
+  overflow-wrap: anywhere;
 }
 .customer-copy-sheet .submission-record table.statement td.text-value {
   font-weight: 700;
@@ -208,10 +209,6 @@
   }
   .customer-copy-sheet .submission-record table.statement td.text-value {
     overflow-wrap: anywhere;
-  }
-  .customer-copy-sheet .submission-record table.statement td.figure,
-  .customer-copy-sheet .submission-record table.statement th.figure {
-    min-width: 5rem;
   }
 }
 
