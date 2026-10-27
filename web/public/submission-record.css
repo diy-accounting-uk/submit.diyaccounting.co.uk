@@ -186,6 +186,12 @@
   font-weight: 700;
 }
 
+.customer-copy-sheet .submission-record table.statement {
+  display: table;
+  overflow: visible;
+  background: none;
+}
+
 @media (max-width: 40rem) {
   .customer-copy-sheet .submission-record .page {
     padding: 1rem;

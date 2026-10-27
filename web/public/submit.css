@@ -1932,6 +1932,10 @@ caption {
     white-space: normal;
   }
 
+  .results-table:not(.review-table) td.money-column::before {
+    text-align: left;
+  }
+
   .results-table:not(.review-table) td.action-column,
   .results-table:not(.review-table) td.receipt-cell {
     display: grid;
@@ -1954,11 +1958,17 @@ caption {
     display: none;
   }
 
-  .results-table:not(.review-table) th[scope="row"] {
+  .results-table:not(.review-table) tbody th {
     display: block;
     text-align: left;
     border: 0;
-    padding: var(--space-1) 0 0;
+    padding: var(--space-2) 0 0;
+    color: var(--c-ink-muted);
+  }
+
+  .results-table:not(.review-table) td.receipt-cell .receipt-label {
+    white-space: nowrap;
+    overflow-wrap: normal;
   }
 }
 
