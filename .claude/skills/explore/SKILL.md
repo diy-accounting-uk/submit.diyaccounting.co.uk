@@ -95,13 +95,26 @@ Each brief is self-contained and holds:
   `../private.diyaccounting.co.uk/engineering/submit/reviews/exploratory-<date>/<role>/<viewport>-<theme>-<nn>-<slug>.png`.
   The review and its screenshots stay in the private repository because they show the test
   user's data and the site's unfinished parts.
+- The MCP server writes screenshots under `.cache/playwright-mcp/` only. The role agent saves
+  to `.cache/playwright-mcp/<role>/`, and the coordinator moves them into the review folder
+  before the verification step, which reads them there.
+- The site has no theme control: the role agent sets dark with `browser_emulate_media`.
+- The mint in step 3 of "Before" is a Cognito write, so the operator runs it, and every role
+  pass starts within an hour of it.
+- The operator pass needs the operator bundle: the operator dispatches `generate-pass.yml` with
+  `pass-type=operator` for the test user, and the role agent redeems the link on the set's own
+  host. That bundle carries no `qualifiers.synthetic`, so the developer-mode overlay needs a
+  second pass that grants it.
+- The customer pass needs a Companies House company authentication code and a CT600 book file
+  under `.cache/playwright-mcp/` to finish the filing journeys; seed them before the pass.
 - Two viewports: 1280x800 and 390x844. A user must finish each journey at 390x844 without
   sideways scrolling.
 
 ## After
 
 1. A Sonnet verification sub-agent opens each finding's screenshot beside its oracle row, gives
-   a verdict, and traces the cause to a file and line.
+   a verdict, and traces the cause to a file and line. It reads the code with `git show origin/main:<path>`
+   and cites file and line from there, because a finding's own line numbers drift.
 2. Write `../private.diyaccounting.co.uk/engineering/submit/reviews/REVIEW_EXPLORATORY_<date>.md`
    with the sections Scope, Findings (grouped by cause), Decisions and data (no row), Not
    completed, Proposed rows (the board's row shape: label, title, plan, what is wrong at which
