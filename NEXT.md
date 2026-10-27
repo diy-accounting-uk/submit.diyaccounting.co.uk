@@ -16,7 +16,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-7b6d42b** (PR #556's merge 7b6d42b18, wave helix; deploy 40438540220 succeeded 2026-10-27 about 03:50 UTC; `/submit/prod/last-known-good-deployment` reads it; 11 stacks). PR #560 (CHR2, 30981685a) changed scripts only. No spare prod set stands. `npm run video:embed-check` needs `eval "$(aws --profile diya-submit-prod configure export-credentials --format env)"` when the SDK's SSO cache reads expired. The site's `script-src` carries no `'unsafe-inline'`.
-**ci**: ci-set1 stands (12 stacks, wave helix's redeploy) and is `/submit/ci/last-known-good-deployment`; its slot is free. It stands past its 05:40 UTC self-destruct time and the 08:34 sweep; ci-set2 is gone and both slots are free.
+**ci**: ci-set1 stands (12 stacks, wave helix's redeploy) and is `/submit/ci/last-known-good-deployment`; its slot is free. As last-known-good it is held past its 05:40 UTC self-destruct by the protection window in `app/functions/infra/selfDestruct.js` (its schedule `cron(35 1/4 * * ? *)` checks again at 09:35); ci-set2 is gone and both slots are free.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
