@@ -1365,6 +1365,376 @@ IX2d-4, IX2d-6 and IX2d-7 each go through a `claude/*` branch and PR in
 `../spreadsheets.diyaccounting.co.uk/` under its `CLAUDE.md`, one at a time, because that
 repository's pre-push hook runs the scoped suite.
 
+### Design: the values Companies House's examples carry (CHG1)
+
+The design the CHG1-1 to CHG1-5 build rows build to. The evidence is the fact comparison of the
+small full case against Roman Vending Ltd's filed accounts
+(`target/companies-house-review/2026-10-27/3-small-full/fact-comparison.md`; the example is
+`reference/Prod223_4336_13928039_20260228.html` beside it). Every concept below is an element of
+the FRC 2026 schemas, fetched from `https://xbrl.frc.org.uk/`: `bus-2026-01-01.xsd`,
+`frc-core-2026-01-01.xsd`, `accrep-2026-01-01.xsd`, `currencies-2026-01-01.xsd` and their
+definition linkbases. The bulk counts are from the 7,712 FRS 102 filings of 2025 and 2026 in
+`target/companies-house-review/adp/Accounts_Bulk_Data-2026-10-24.zip`.
+
+**The rule for every optional value.** A value is tagged and shown only when the request carries
+it. An absent value, an empty string and a zero figure change nothing in the document. Two parts
+change every document: the registered office tags (section 1) and the three report facts (section
+6). No input is renamed except `registeredOffice`, which changes shape and changes in every
+caller.
+
+#### The namespaces and concepts
+
+| Prefix | Namespace | Declared by our documents today | Change |
+|---|---|---|---|
+| `bus` | `http://xbrl.frc.org.uk/cd/2026-01-01/business` | yes | none |
+| `core` | `http://xbrl.frc.org.uk/fr/2026-01-01/core` | yes | none |
+| `direp` | `http://xbrl.frc.org.uk/reports/2026-01-01/direp` | yes | none |
+| `countries` | `http://xbrl.frc.org.uk/cd/2026-01-01/countries` | yes | none |
+| `curr` | `http://xbrl.frc.org.uk/cd/2026-01-01/currencies` | no | add to `NAMESPACES` |
+| `accrep` | `http://xbrl.frc.org.uk/reports/2026-01-01/accrep` | no | add to `NAMESPACES` |
+
+The FRS 102 entry point's DTS holds both new schemas: `bus-2026-01-01.xsd` imports the currencies
+and languages schemas, and the entry point carries the `accrep` linkbases. `lang` stays out,
+because no fact sits on a languages member.
+
+`scripts/generate-frc-taxonomy-concepts.js` adds `accrep`
+(`https://xbrl.frc.org.uk/reports/2026-01-01/accrep/accrep-2026-01-01.xsd`) and `curr`
+(`https://xbrl.frc.org.uk/cd/2026-01-01/currencies/currencies-2026-01-01.xsd`) to `MODULE_URLS`,
+and the run rewrites `fixtures/frc-taxonomy/frs-102-2026-concepts.json`. The builder tests'
+dimension filter (`inFrcBusinessOrCoreTaxonomy`) takes `curr` too, so the currency member is
+checked against the list.
+
+| `CONCEPTS` key | Concept | Type, period |
+|---|---|---|
+| `addressLine1`, `addressLine2`, `addressLine3` | `bus:AddressLine1`, `bus:AddressLine2`, `bus:AddressLine3` | string, duration |
+| `principalLocationCityOrTown` | `bus:PrincipalLocation-CityOrTown` | string, duration |
+| `countyRegion` | `bus:CountyRegion` | string, duration |
+| `postalCodeZip` | `bus:PostalCodeZip` | string, duration |
+| `reportPeriod` | `bus:ReportPeriod` | `types:fixedItemType`, duration |
+| `reportPrincipalLanguage` | `bus:ReportPrincipalLanguage` | `types:fixedItemType`, duration |
+| `principalCurrencyUsedInBusinessReport` | `bus:PrincipalCurrencyUsedInBusinessReport` | `types:fixedItemType`, duration |
+| `nameEntityAccountants` | `bus:NameEntityAccountants` | string, duration |
+| `statementOnScopeAccountantsReport` | `accrep:StatementOnScopeAccountantsReport` | string, duration |
+| `bankBorrowingsOverdrafts` | `core:BankBorrowingsOverdrafts` | monetary, instant |
+| `taxationSocialSecurityPayable` | `core:TaxationSocialSecurityPayable` | monetary, instant |
+| `descriptionGoingConcernStatus` | `core:DescriptionGoing-concernStatus` | string, duration |
+| `preparedOnGoingConcernBasis` | `core:FinancialStatementsArePreparedOnGoing-concernBasisTruefalse` | boolean, duration |
+| `revenueRecognitionPolicy` | `core:RevenueRecognitionPolicy` | string, duration |
+| `propertyPlantEquipmentMeasurementBasis` | `core:DescriptionMeasurementBasisForPropertyPlantEquipment` | string, duration |
+| `impairmentPolicy` | `core:ImpairmentNon-financialAssetsPolicy` | string, duration |
+| `financialInstrumentsPolicy` | `core:FinancialInstrumentsRecognitionMeasurementPolicy` | string, duration |
+| `nameControllingParty` | `core:NameControllingParty` | string, duration |
+| `controllingPartyIsUltimate` | `core:ControllingPartyUltimateControllingPartyTruefalse` | boolean, duration |
+
+| Key | Dimension or member | Default member in the taxonomy |
+|---|---|---|
+| `DIMENSIONS.entityContactType` | `bus:EntityContactTypeDimension` | `bus:HeadOfficeDefault` |
+| `MEMBERS.registeredOffice` | `bus:RegisteredOffice` | |
+| `DIMENSIONS.currencies` | `curr:CurrenciesDimension` | `common:NotApplicableDefault` |
+| `MEMBERS.poundSterling` | `curr:PoundSterling` | |
+| `MEMBERS.auditExemptWithAccountantsReport` | `bus:AuditExemptWithAccountantsReport` | |
+| `DIMENSIONS.controllingPartyGrouping` | `core:X-ParentEntityOrControllingPartyUltimateControllingPartyGroupingDimension`, typed; its domain element is `core:ParentEntityOrControllingPartyAndUltimateControllingPartyGroupingDimension.domain` | none |
+
+#### 1. The registered office as tagged parts (every accounts type)
+
+**The input.** `registeredOffice` in the request body becomes an object:
+
+| Field | Tag | Rule |
+|---|---|---|
+| `addressLine1` | `bus:AddressLine1` | required when `registeredOffice` is present |
+| `addressLine2`, `addressLine3` | `bus:AddressLine2`, `bus:AddressLine3` | optional |
+| `cityOrTown` | `bus:PrincipalLocation-CityOrTown` | optional |
+| `countyRegion` | `bus:CountyRegion` | optional |
+| `postalCode` | `bus:PostalCodeZip` | optional |
+| `country` | shown, not tagged (the example does the same with "United Kingdom") | optional |
+
+Each field is a string and is trimmed. A field outside the table, or a value that is not a
+string, refuses: "Invalid registeredOffice.<field>". A request without `registeredOffice` takes
+it from the company profile, as today.
+
+**Where the parts come from.** The page already fetches the profile, and the profile already
+carries the Companies House `registered_office_address` object (`premises`, `care_of`, `po_box`,
+`address_line_1`, `address_line_2`, `locality`, `region`, `postal_code`, `country`).
+
+| File | Change |
+|---|---|
+| `app/functions/companies-house/companiesHouseCompanyGet.js` | `registeredOfficeLine(address)` goes. `registeredOfficeFromAddress(address)` returns the object above. The address lines are, in order and without empties: `c/o <care_of>`, `PO Box <po_box>`, `<premises> <address_line_1>` (the premises are left out when `address_line_1` already starts with them), `address_line_2`. The first three are `addressLine1` to `addressLine3`; a fourth joins `addressLine3` after ", ". `cityOrTown` is `locality`, `countyRegion` is `region`, `postalCode` is `postal_code`, `country` is `country`. `profile.registeredOffice` is that object; `profile.registeredOfficeAddress` stays the raw object `companySearch.page.js` reads |
+| `app/services/accountsIxbrlCommon.js` | `registeredOfficeLine(office)` joins `addressLine1`, `addressLine2`, `addressLine3`, `cityOrTown`, `countyRegion`, `postalCode` and `country` with ", ", the order the example prints |
+| `app/services/registeredOfficeFill.js` | fills the object; a profile whose object has no `addressLine1` gives "Missing registeredOffice" |
+| `app/functions/companies-house/companiesHouseAccountsPost.js` | `readRegisteredOffice(value, errorMessages)` validates the object; both regimes return it |
+
+The three pages (`fileMicroEntityAccounts.page.js`, `fileSmallCompanyAccounts.page.js`,
+`fileCompanyTaxReturn.page.js`) and `web/public/lib/ct600-fields.js` pass
+`profile.registeredOffice` through unchanged, so their code needs no edit.
+
+**The tags.** `companyInformationNote` builds the context `${refs.current}-registered-office`
+(the current period, `bus:EntityContactTypeDimension` = `bus:RegisteredOffice`, which bulk
+filings use 1,232 times; the default member is `HeadOfficeDefault`, so the explicit member is
+valid). It writes "Its registered office is " and then each non-empty part as its own
+`ix:nonNumeric` on that context, joined by ", ", then the untagged country, then ".". The note
+takes `additionalContexts`, `entityIdentifierXml` and `periodXml` beside `refs`, as
+`renderCompanyDescriptionFacts` does.
+
+**Callers that send a one-line string today**, each changed to the object:
+`app/test-helpers/accountsDocumentCases.js`, `app/test-helpers/ctReturnFixture.js`,
+`scripts/fixtures/companies-house-test-service-cases.json`, `scripts/validate-accounts-ixbrl.js`,
+`scripts/hmrc-tpvs-ct600.js` (its `--registered-office` flag becomes `--registered-office-line1`,
+`--registered-office-town` and `--registered-office-postcode`),
+`scripts/lib/companiesHouseReviewCriteria.js` (`companyInformationCriterion` and
+`placeholderCriterion` compare `registeredOfficeLine(input.registeredOffice)`), the unit tests
+that build a request (`companiesHouseAccountsPost`, `companiesHouseAccountsRenderPost`,
+`companies-house-xmlgw` route, `companiesHouseReview`, `companiesHouseTestServiceRun`,
+`microEntityAccountsIxbrl`, `microEntityAccountsProfitAndLoss`, `registeredOfficeFill`,
+`smallCompanyAccountsIxbrl`, `companiesHouseCompanyGet`), `mcp/test/accounts-tools.test.js`,
+`mcp/test/small-company-accounts.test.js` and `web/unit-tests/ct600-fields.test.js`.
+
+**The fixture parts.**
+
+| Case | `registeredOffice` |
+|---|---|
+| DIY Accounting Limited (the micro, small full and small filleted cases) | `addressLine1` "37 Sutherland Avenue", `cityOrTown` "Leeds", `postalCode` "LS8 1BY", `country` "England" (the register prints "37 Sutherland Avenue, Leeds, England, LS8 1BY") |
+| Hartley and Wren Supplies Limited (the dormant case) | `addressLine1` "14 Marsh Lane", `cityOrTown` "Stockport", `countyRegion` "Cheshire", `postalCode` "SK4 1PX" |
+| `SMALL_COMPANY_CASE_INPUT` | `addressLine1` "Unit 4 Morgan Court", `cityOrTown` "Cardiff", `postalCode` "CF10 1AA" |
+
+**The review.** `scripts/companies-house-review.mjs` deletes the `NOT_CARRIED_REASONS` entry
+"registered office address, which the filing does not hold". The reconciliation
+(`scripts/lib/companiesHouseReviewReconcile.js`) checks each non-empty part against its concept
+on `y<year>-registered-office`, as text.
+
+#### 2. Bank loans and overdrafts, and taxation and social security (small company)
+
+The example's creditors note carries `core:BankBorrowingsOverdrafts` and
+`core:TaxationSocialSecurityPayable`, both on its `WithinOneYear` context
+(`core:MaturitiesOrExpirationPeriodsDimension` = `core:WithinOneYear`). Our documents build the
+same contexts for `core:Creditors` already (`e<year>-within-one-year`, `e<year>-after-one-year`),
+so the new facts sit on them. The taxation and social security line is in this row because the
+spreadsheets package publishes it (`PubBalSht` `E18`), and the sheet fill puts it under "Other
+creditors" today.
+
+**The input.** `smallCompany.balanceSheet.currentYear` and `priorYear` take three optional
+lines. An absent line is `0`; each must be a whole number of pounds and not negative.
+
+| Line | Shown as | Tag | Context |
+|---|---|---|---|
+| `bankLoansOverdrafts` | "Bank loans and overdrafts", the first creditors sub-line | `core:BankBorrowingsOverdrafts` | `-within-one-year` |
+| `taxationSocialSecurity` | "Taxation and social security", after "Corporation tax" | `core:TaxationSocialSecurityPayable` | `-within-one-year` |
+| `bankLoansAfterOneYear` | "Bank loans" under the after-one-year heading | `core:BankBorrowingsOverdrafts` | `-after-one-year` |
+
+`creditorsAfterOneYear` stays the typed total, and `bankLoansAfterOneYear` is the part of it owed
+to a bank; a value larger than the total refuses.
+
+**Totals.** `withBalanceSheetTotals` in `smallCompanyAccountsIxbrl.js` gives
+`creditorsWithinOneYear` = `bankLoansOverdrafts` + `tradeCreditors` + `corporationTax` +
+`taxationSocialSecurity` + `otherCreditors`. Net current assets, total assets less current
+liabilities and net assets then follow in `balanceSheetFacts` as today, and
+`readBalanceSheetYear` in `smallCompanyAccountsRequest.js` checks net assets with the new total.
+
+**The rows.** A new sub-line row shows when its value is non-zero in any year the balance sheet
+shows; the three existing sub-lines always show. When `bankLoansAfterOneYear` is non-zero in any
+year, the after-one-year line becomes a heading with two sub-lines ("Bank loans", and "Other
+creditors" tagged `core:OtherCreditors` on `-after-one-year` with the remainder) and the
+`core:Creditors` subtotal. `balanceSheetRows` in `accountsIxbrlCommon.js` takes
+`creditorAfterOneYearLines` beside `creditorLines` for this; the micro builder passes neither.
+
+**The sheet fill** (`smallCompanyLinesFromPublishedBalanceSheet`, which reads the ltd engine's
+`PubBalSht`):
+
+| Line | Cell | Today |
+|---|---|---|
+| `bankLoansOverdrafts` | `E19` "Bank Overdraft" | not read: `E19` is inside the sheet's current liabilities (`E20`), so an overdraft drops off our creditors and `roundSmallCompanyBalanceSheet` moves it into the profit and loss reserve |
+| `taxationSocialSecurity` | `E18` "Taxation and Social Security" | read as `otherCreditors` |
+| `otherCreditors` | none; `0` | `E18` |
+| `bankLoansAfterOneYear` | none; `0` | |
+
+**The book fill** (`smallCompanyLinesFromOpeningBalance`, the prior year from the diya-gl book's
+opening balance) mirrors the sheet's own `E12` and `E19` rule. The statement accounts
+(`current_account`, `savings_account`, `credit_card`) count together. When their sum is negative
+it is `bankLoansOverdrafts`, and `cashAtBank` is `cash` alone; otherwise `cashAtBank` is their
+sum plus `cash`, as today. `taxationSocialSecurity` is `paye_due` + `vat_due` + `cis_due`, the
+sheet's opening `E26`; `otherCreditors` keeps `net_wages_due`, `wage_deductions_due` and
+`dividends_due`. `roundSmallCompanyBalanceSheet` rounds the three new lines and subtracts them in
+its capital and reserves derivation.
+
+diya-gl has no loan kind, so no fill gives `bankLoansAfterOneYear` or a bank loan within one year;
+the form is the only source until the spreadsheets row CHG1-5 adds a bank loan kind and its
+published balance sheet lines.
+
+**The review.** `BALANCE_SHEET` in `scripts/lib/companiesHouseReviewReconcile.js` gains
+`bankLoansOverdrafts` and `taxationSocialSecurity` (`-within-one-year`) and
+`bankLoansAfterOneYear` (`BankBorrowingsOverdrafts`, `-after-one-year`), and `reconcile` checks
+them only when non-zero. The "Creditors within one year" recomputation adds
+`BankBorrowingsOverdrafts` and `TaxationSocialSecurityPayable` to its sum.
+`TaxationSocialSecurityPayable` leaves the `NOT_CARRIED_REASONS` list "balance sheet detail the
+filer has no figure for".
+
+**The fixtures keep the reviewed figures.** No case has a bank balance owed, so no case gains a
+bank line, and the DIY Accounting Limited cases keep `otherCreditors` as typed.
+
+#### 3. The accountants' report (every accounts type)
+
+**Decision.** The report goes on the fictional dormant case (Hartley and Wren Supplies Limited,
+09991482, `micro-entity-accounts-dormant`). DIY Accounting Limited prepares its own accounts, so
+its cases carry no report. The micro and dormant builder and form take the report too.
+
+**The input.** A top-level `accountantsReport` in the request, read by
+`readAccountantsReport(value, errorMessages)` in `companiesHouseAccountsPost.js` for both regimes:
+
+| Field | Tag | Rule |
+|---|---|---|
+| `accountantsName` | `bus:NameEntityAccountants` on the current period context | required when `accountantsReport` is present |
+| `statement` | `accrep:StatementOnScopeAccountantsReport` on the current period context | required when `accountantsReport` is present |
+
+The example and 691 bulk filings put `NameEntityAccountants` on the plain period context.
+
+**The document.** `accountantsReportPage` in `accountsIxbrlCommon.js` renders one page with the
+heading "Accountants' report" and the subtitle "to the board of directors of <company name> on the
+unaudited financial statements for the <period>". The tagged statement is one paragraph, and the
+tagged firm name is the next. The small builder puts the page after the directors' report (after
+the cover in a filleted set); the micro builder puts it after the cover. With a report, the
+`AccountsStatusAuditedOrUnaudited` member becomes `bus:AuditExemptWithAccountantsReport` (1,998
+bulk filings) in place of `bus:AuditExempt-NoAccountantsReport`; `accountsStatusMember(input)` in
+`accountsIxbrlCommon.js` picks it for both builders.
+
+**The forms.** Both pages gain a checkbox "An accountant compiled these accounts" that shows two
+fields: the firm's name, and the statement prefilled with "In accordance with your instructions,
+we have compiled these unaudited financial statements from the accounting records and from
+information and explanations you have given us." The fields are sent only when the box is ticked.
+
+**The fixture.** The dormant case gains `accountantsReport`: `accountantsName` "Calder Brook
+Accountants LLP" (fictional), `statement` the prefilled wording.
+
+**The review.** `NOT_CARRIED_REASONS` gains "an accountants' report, which a company that prepares
+its own accounts does not have": `NameEntityAccountants`, `StatementOnScopeAccountantsReport`.
+The DIY Accounting Limited cases report them as judged.
+
+#### 4. More accounting policies (small company)
+
+`smallCompany.accountingPolicies` stays required and stays tagged
+`core:GeneralDescriptionBasisMeasurementUsedInPreparingFinancialStatements`, under a new
+subheading "Basis of preparation". Beside it and the existing `taxPolicy`, five optional texts:
+
+| Field | Subheading | Tag |
+|---|---|---|
+| `goingConcernStatement` | Going concern | `core:DescriptionGoing-concernStatus`; with it, a hidden `core:FinancialStatementsArePreparedOnGoing-concernBasisTruefalse` "true" |
+| `revenueRecognitionPolicy` | Turnover | `core:RevenueRecognitionPolicy` |
+| `tangibleFixedAssetsPolicy` | Tangible fixed assets | `core:DescriptionMeasurementBasisForPropertyPlantEquipment` |
+| `impairmentPolicy` | Impairment | `core:ImpairmentNon-financialAssetsPolicy` |
+| `financialInstrumentsPolicy` | Financial instruments | `core:FinancialInstrumentsRecognitionMeasurementPolicy` |
+
+The note keeps the order of the example: the compliance statement, basis of preparation, going
+concern, turnover, tangible fixed assets, impairment, financial instruments, taxation. Each field
+is validated as `taxPolicy` is (text or absent, trimmed, an empty string is absent). The page gains
+the five boxes and the tax policy box, which the request takes and the page lacks today, in a
+`<details>` "More accounting policies (optional)" under the accounting policies box.
+
+**The fixture** (small full and small filleted): `accountingPolicies` becomes "The financial
+statements have been prepared under the historical cost convention."; its turnover sentence moves
+to `revenueRecognitionPolicy`: "Turnover is the amount receivable for software and services
+provided in the year, excluding VAT." The other four:
+
+| Field | Text |
+|---|---|
+| `goingConcernStatement` | "The directors expect the company to have enough resources to continue in operation for the foreseeable future, so the financial statements are prepared on a going concern basis." |
+| `tangibleFixedAssetsPolicy` | "Tangible fixed assets are measured at cost less accumulated depreciation. Computer equipment is depreciated at 33% a year on cost." (the case's 1,200 additions and 400 charge) |
+| `impairmentPolicy` | "At each reporting date the company reviews its assets for signs of impairment. An asset whose carrying value is more than its recoverable amount is written down to that amount." |
+| `financialInstrumentsPolicy` | "The company has only basic financial instruments. Debtors, cash and creditors are measured at the undiscounted amount of cash the company expects to receive or pay." |
+
+**The review.** `RevenueRecognitionPolicy`, `DescriptionMeasurementBasisForPropertyPlantEquipment`
+and `FinancialStatementsArePreparedOnGoing-concernBasisTruefalse` leave the
+`NOT_CARRIED_REASONS` list "the example company's own accounting policy or going concern
+statement".
+
+#### 5. The controlling party (small company)
+
+**The input.** `smallCompany.controllingParty`, optional: `name` (required text when the object
+is present) and `ultimate` (true or false, required when the object is present).
+
+**The tags.** The context `${refs.current}-controlling-party-1` carries the typed member
+`<xbrldi:typedMember dimension="core:X-ParentEntityOrControllingPartyUltimateControllingPartyGroupingDimension"><core:ParentEntityOrControllingPartyAndUltimateControllingPartyGroupingDimension.domain>1</core:ParentEntityOrControllingPartyAndUltimateControllingPartyGroupingDimension.domain></xbrldi:typedMember>`,
+as the example and 250 bulk filings do. `typedMemberXml(dimension, domainElement, value)` in
+`accountsIxbrlCommon.js` builds it for `buildDimensionedContext`.
+`core:NameControllingParty` sits on that context in the visible text, and
+`core:ControllingPartyUltimateControllingPartyTruefalse` sits on it among the hidden facts.
+
+**The document.** A note "Controlling party": "The company's ultimate controlling party is
+<name>." when `ultimate` is true, "The company's controlling party is <name>." when false.
+
+**The fixture.** The small full and small filleted cases gain `controllingParty` once the operator
+names DIY Accounting Limited's controlling party (question 1 below). Until then the build leaves
+the fixture without it, and the comparison shows `ControllingPartyUltimateControllingPartyTruefalse`
+missing.
+
+#### 6. The three report facts (every accounts type)
+
+`renderReportHeaderFacts({ refs, entityIdentifierXml, periodXml, additionalContexts })` in
+`accountsIxbrlCommon.js` returns three hidden facts, and both builders push them with the
+production software facts:
+
+| Fact | Context | Why this context |
+|---|---|---|
+| `bus:ReportPeriod` | `refs.current` | the `bus:ReportPeriodDimension` default is `bus:FinancialYearDefault`; a default member must not be stated |
+| `bus:ReportPrincipalLanguage` | `refs.current` | the `lang:LanguagesDimension` default is `lang:EnglishDefault` |
+| `bus:PrincipalCurrencyUsedInBusinessReport` | `${refs.current}-currency`: `curr:CurrenciesDimension` = `curr:PoundSterling` | the `curr:CurrenciesDimension` default is `common:NotApplicableDefault`, so the plain context says "not applicable"; 182 bulk filings use the sterling member, 205 the plain context, the example among them |
+
+All three are written by `renderFixedFact`, an empty `ix:nonNumeric` with no `format`, as our
+other fixed facts and the example's three are.
+
+#### Tests
+
+| Test | What it proves |
+|---|---|
+| `smallCompanyAccountsIxbrl.test.js` | each optional value tagged on its context and shown when present; a request without them builds the same document as after CHG1-1, byte for byte; the creditors total with the two new lines; the after-one-year heading and its two sub-lines; the controlling party note both ways; the policies in order; the accountants' report page and the `AuditExemptWithAccountantsReport` member; every new concept in the taxonomy list |
+| `microEntityAccountsIxbrl.test.js` | the registered office parts on the registered office context; the three report facts and the sterling context; the accountants' report page and member for a micro and a dormant company |
+| `smallCompanyAccountsRequest.test.js` | the new lines (negative refuses, `bankLoansAfterOneYear` above `creditorsAfterOneYear` refuses, an absent line is 0); the policies; the controlling party (a name without `ultimate` refuses) |
+| `companiesHouseAccountsPost.test.js` | `readRegisteredOffice` (unknown field, missing `addressLine1`) and `readAccountantsReport` (a missing field refuses) for both regimes |
+| `companiesHouseCompanyGet.test.js` | `registeredOfficeFromAddress` with care of, PO box, premises repeated in line 1, and four address lines |
+| `registeredOfficeFill.test.js` | the profile object fills an absent office |
+| `smallCompanyAccountsFromResults.test.js` | a sheet with `E19` gives `bankLoansOverdrafts` and the balance sheet still balances; `E18` gives `taxationSocialSecurity`; an opening balance with an overdrawn current account and a credit card balance gives the overdraft by the sheet's rule |
+| `ixbrlRoundTrip.test.js` | the four fixture cases still read back; the fixture cases carry no bank or tax line, so the diya-gl reader's creditors check holds |
+| `companiesHouseReview.test.js` | the removed and added `NOT_CARRIED_REASONS`; the reconciliation of the registered office parts and of a case with an overdraft |
+| `fileSmallCompanyAccounts.browser.test.js`, `fileMicroEntityAccounts.dormant.browser.test.js` | the new inputs reach the request; the totals include the new lines; the accountants' report fields show only when ticked |
+
+The proof of the whole row: the four review cases rebuilt; then, after the XML team answers OAX5,
+a test-service filing, `/companies-house-review` and `/companies-house-judge`, whose fact
+comparison for the small full case shows no missing fact but
+`DirectorsReportConsistentWithAccountsTruefalse` and, until question 1 is answered,
+`ControllingPartyUltimateControllingPartyTruefalse`. The changed documents and pages fall under
+the visual definition of done in `CLAUDE.md`.
+
+#### Questions for the operator
+
+1. DIY Accounting Limited's controlling party: the name and whether it is the ultimate
+   controlling party. The other option is no statement, and then `NOT_CARRIED_REASONS` gains "a
+   controlling-party statement this company does not make" for both concepts.
+2. A credit card balance owed. The design nets it with the current and savings accounts as the
+   spreadsheets package does, so it is a bank overdraft only when the three together are
+   overdrawn. The other option puts a credit card balance owed under other creditors, which is
+   where many accountants show it; the sheet fill then disagrees with `PubBalSht` `E12` and `E19`.
+3. The dimension on `BankBorrowingsOverdrafts`. The design uses the maturity contexts alone, as
+   the example and 302 bulk filings do. The concept's documentation and at least 1,394 bulk filings also add
+   `core:FinancialInstrumentCurrentNon-currentDimension`, which needs two more contexts per year.
+4. `DirectorsReportConsistentWithAccountsTruefalse`. The design leaves it missing, so the fact
+   criterion fails on it. The other option adds it to `NOT_CARRIED_REASONS` as "an audit report
+   fact; the company is exempt from audit", and the criterion passes.
+5. The three report facts. The brief named the format `ixt2:nocontent`; the design writes them
+   with no format, as the example and our accepted fixed facts are. `ixt2:nocontent` is the other
+   option and gives the same empty value.
+6. The fixture's policy texts state DIY Accounting Limited's policies on a test filing; confirm
+   the wording or give it.
+
+#### The build rows
+
+| Label | What it builds | ~Files | Model | Blocked on |
+|---|---|---|---|---|
+| CHG1-1 | Section 1 and section 6: the `registeredOffice` object and every caller, `registeredOfficeFromAddress`, the tagged parts, the three report facts, the `curr` namespace, the fixture's office parts, the review's office checks | 27 (most are one-line test fixture edits) | Sonnet | — |
+| CHG1-2 | Sections 2 to 5 in the request, the builders and the review: the three balance sheet lines, the accountants' report for both regimes, the policies, the controlling party, the `accrep` namespace and taxonomy list, the fixture values, the reconciliation and `NOT_CARRIED_REASONS` | ~17 | Sonnet | CHG1-1 (both change the builders and the fixture) |
+| CHG1-3 | The pages and the fills: the new inputs on both pages, the sheet fill of `E18` and `E19`, the opening balance overdraft, the card's line lists in `books-import.js`, the browser tests, the screenshots | ~9 | Sonnet | CHG1-2; CHG1-4 before it reaches prod, so a filled document with an overdraft reads back |
+| CHG1-4 | spreadsheets: `ixbrl-accounts.js` maps `BankBorrowingsOverdrafts` (within one year to `bankLoansOverdrafts`, after one year into `creditorsAfterOneYear`) and `TaxationSocialSecurityPayable`, `checkTotals` adds them, and `BOILERPLATE` takes the report facts and `NameEntityAccountants`; a diya-gl release | ~3 | Sonnet | — |
+| CHG1-5 | spreadsheets, then submit: a bank loan kind in the diya-gl book with its published balance sheet lines, then the sheet fill reads them and the round trip gains a case with an overdraft | ~6 | Sonnet | CHG1-3, CHG1-4 |
+
+CHG1-4 and CHG1-5's spreadsheets part go through a `claude/*` branch and PR in
+`../spreadsheets.diyaccounting.co.uk/` under its `CLAUDE.md`.
+
 ## Fill from your books: the audit
 
 The 35 pages under `web/public/hmrc/` (26) and `web/public/companies-house/` (9), checked for figures a set of accounts holds. 14 pages take such figures. 6 fill from a book today: four have the card, and BK1 adds the micro-entity page (with its dormant case) and the small company page. 4 wait on a derivation or a page change. 4 take adjustments or losses that no book holds. The other 21 take identifiers, dates, codes or declarations, or show figures HMRC returns.
