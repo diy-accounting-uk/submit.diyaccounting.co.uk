@@ -169,6 +169,52 @@ export function fixedAssetNoteFromPublishedNotes(sheet) {
 }
 
 /**
+ * The Format 2 profit and loss lines (by nature), in whole pounds, from the engine's monthly and
+ * published profit and loss sheets. Turnover, operating profit, profit before tax and tax are
+ * rounded from the published figures; the cost lines are rounded from the monthly sheet and the
+ * remaining operating expenses line takes the rounding, so every identity holds to the pound. The
+ * book's stock movement sits inside raw materials, and its grants inside turnover, so the change
+ * in stocks, own work capitalised and other operating income are 0; its loan interest sits inside
+ * administrative expenses, so interest payable is 0.
+ * @param {Object} results - calculatedResultsFor output with MnthP&L and PubP&L
+ */
+export function smallCompanyFormat2ProfitAndLossFromResults(results) {
+  const published = results["PubP&L"];
+  const monthly = results["MnthP&L"];
+  if (!published || !monthly)
+    throw new Error(
+      "The book's product carries no published profit and loss account; only a Company (ltd) book answers small company accounts",
+    );
+  const at = (cell) => monthly[cell] ?? 0;
+  const turnover = Math.round(published.F9 ?? 0);
+  const rawMaterialsConsumables = Math.round(at("B11"));
+  const otherExternalCharges = Math.round(at("B12") + at("B13"));
+  const staffCosts = Math.round(at("B18") + at("B19") + at("B20"));
+  const depreciation = Math.round(at("B38") + at("B40"));
+  const operatingProfit = Math.round(published.F46 ?? 0);
+  const profitBeforeTax = Math.round(published.F49 ?? 0);
+  const tax = Math.round(published.F50 ?? 0);
+  const otherOperatingExpenses = turnover - operatingProfit - rawMaterialsConsumables - otherExternalCharges - staffCosts - depreciation;
+  return {
+    turnover,
+    changeInStocks: 0,
+    ownWorkCapitalised: 0,
+    otherOperatingIncome: 0,
+    rawMaterialsConsumables,
+    otherExternalCharges,
+    staffCosts,
+    depreciation,
+    otherOperatingExpenses,
+    operatingProfit,
+    interestReceivable: profitBeforeTax - operatingProfit,
+    interestPayable: 0,
+    profitBeforeTax,
+    tax,
+    profit: profitBeforeTax - tax,
+  };
+}
+
+/**
  * The figures a small company accounts filing takes, from a loaded Company book and its
  * calculated results. Pure, so the browser's books bundle runs it too.
  * @param {Object} book
@@ -216,6 +262,7 @@ export function smallCompanyAccountsFromResults(book, results, scenario, { prior
     directors: (book.directors ?? []).map((director) => director.name).filter(Boolean),
     directorName: book.directors?.[0]?.name ?? null,
     profitAndLoss: { currentYear: profitAndLoss, ...(priorYearProfitAndLoss ? { priorYear: priorYearProfitAndLoss } : {}) },
+    profitAndLossFormat2: { currentYear: smallCompanyFormat2ProfitAndLossFromResults(results) },
     balanceSheet: { currentYear, priorYear },
     fixedAssetNote,
     derivation: {

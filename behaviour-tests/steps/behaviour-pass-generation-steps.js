@@ -89,7 +89,7 @@ export async function verifyMyGeneratedPasses(page, expectedPassCode, screenshot
     const section = page.locator("#myGeneratedPasses");
     await section.scrollIntoViewIfNeeded();
     await page.waitForTimeout(2000);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-my-passes-01-section.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-my-passes-01-section.png`, readerView: true });
 
     // Verify the expected pass code appears in the list
     const passEntry = page.locator(`[data-pass-code="${expectedPassCode}"]`);
@@ -130,7 +130,7 @@ export async function selectPhysicalProductType(page, productType, screenshotPat
     const selector = page.locator(`[data-product-type="${productType}"]`);
     console.log(`[generate-pass]: Selecting product type: ${productType}`);
     await selector.click();
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-physical-product-${productType}.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-physical-product-${productType}.png`, readerView: true });
   });
 }
 

@@ -75,6 +75,7 @@ export function serveCarriedIdentifiers(page) {
 // The real page script of any page under web/public, for a test that serves the page HTML from disk.
 export async function servePageScripts(page) {
   await serveFile(page, "**/lib/hmrc-display-format.js", "lib/hmrc-display-format.js", "application/javascript");
+  await serveFile(page, "**/lib/pending-request.js", "lib/pending-request.js", "application/javascript");
   await serveFormErrors(page);
   return page.route("**/*.page.js", async (route) => {
     const pathname = decodeURIComponent(new URL(route.request().url()).pathname);
@@ -86,6 +87,7 @@ export async function servePageScripts(page) {
 
 // The real page script of an ITSA page whose other scripts are stubbed out.
 export async function serveItsaPageScripts(page) {
+  await serveFile(page, "**/lib/pending-request.js", "lib/pending-request.js", "application/javascript");
   await serveFile(page, "**/lib/submission-record.js", "lib/submission-record.js", "application/javascript");
   await serveFile(page, "**/lib/itsa-calculation-record.js", "lib/itsa-calculation-record.js", "application/javascript");
   await serveFile(page, "**/lib/itsa-submission-record.js", "lib/itsa-submission-record.js", "application/javascript");

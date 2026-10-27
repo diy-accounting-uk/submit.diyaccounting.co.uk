@@ -100,7 +100,7 @@ function handleOAuthCallback() {
 async function continueObligationsRetrieval() {
   try {
     const accessToken = sessionStorage.getItem("hmrcAccessToken");
-    const pendingRequest = JSON.parse(sessionStorage.getItem("pendingObligationsRequest") || "null");
+    const pendingRequest = window.PendingRequest.read("pendingObligationsRequest", ["vrn"]);
 
     if (!pendingRequest) {
       console.log("No pending obligations request found");

@@ -140,7 +140,7 @@ async function retrieveObligations(nino, filters, testScenario, runFraudPreventi
 async function continueObligationsRetrieval() {
   try {
     const accessToken = sessionStorage.getItem("hmrcAccessToken");
-    const pendingRequest = JSON.parse(sessionStorage.getItem("pendingObligationsRequest") || "null");
+    const pendingRequest = window.PendingRequest.read("pendingObligationsRequest", ["nino"]);
 
     if (!pendingRequest) {
       console.log("No pending obligations request found");

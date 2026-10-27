@@ -120,4 +120,26 @@ describe("findCutRegion", () => {
     );
     expect(region).toEqual({ top: 0, bottom: 340 });
   });
+
+  it("ends the frame before a footer when a blank run of an eighth of the height precedes it", () => {
+    const region = findCutRegion(
+      grayFrame(1000, 1000, [
+        [20, 60],
+        [100, 700],
+        [940, 975],
+      ]),
+    );
+    expect(region).toEqual({ top: 0, bottom: 740 });
+  });
+
+  it("keeps content below a blank run of an eighth of the height when more than a footer follows", () => {
+    const region = findCutRegion(
+      grayFrame(1000, 1000, [
+        [20, 60],
+        [100, 500],
+        [640, 960],
+      ]),
+    );
+    expect(region).toEqual({ top: 0, bottom: 1000 });
+  });
 });

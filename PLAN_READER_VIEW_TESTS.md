@@ -50,7 +50,10 @@ Only visible text nodes count (computed display, visibility, opacity, box size).
 | payment, tokenEnforcement | day guest granted, tokens exhausted, activities disabled, bundles after exhaustion, resident granted, subscription management, usage pages | on |
 | diyaGlSubscription | the diya-gl page after checkout | on |
 
-Next: the accounts preview steps, then each step of each journey.
+| every journey above, including fileSmallCompanyAccounts and fileMicroEntityAccounts | every remaining screenshot of our pages in `behaviour-tests/steps/` and the suites: sign-in, cookies, bundles, VAT, ITSA, Companies House, pass, payment | on |
+| left off | HMRC sign-in and permission pages (`behaviour-hmrc-steps.js`), Stripe checkout and portal pages, timeout failure shots, the automatic click shots in `behaviour-helpers.js` | off: not our pages |
+
+The confirmation statement has no separate PSC verification step; its company form shot is on.
 
 ## Findings
 
@@ -90,3 +93,4 @@ Next: the accounts preview steps, then each step of each journey.
 | compliance, help | privacy, terms, accessibility, guide | text cut mid-line at the image foot | long pages shot at viewport height | `fullPage: true` on the legal, accessibility, guide and help-guide shots (DS5) | RV5a |
 | payment, tokenEnforcement | home with 0 tokens | disabled buttons are pale blue with white text (about 2.4:1) and the line below repeats the reason | disabled style lowers opacity on a filled button | disabled controls take `--c-rule-subtle` fill, `--c-rule` border and `--c-ink-muted` text (DS5) | RV5a |
 | payment, tokenEnforcement | token usage | `Manage Subscription` is a teal bar; every other action is blue | one-off colour | `btn btn-secondary btn-small` (DS5) | RV5a |
+| getVatReturn | view VAT return form | period start and end dates side by side, 343px each beside a 702px control | two dates across by design; the control-width rule reads half-width as unstyled | steps in the view VAT return journey exempt `.period-date-inputs` | |

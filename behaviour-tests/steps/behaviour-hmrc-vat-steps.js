@@ -24,7 +24,7 @@ export async function initSubmitVat(page, screenshotPath = defaultScreenshotPath
     // Click "VAT Return Submission" on activities page
     // Use 60s timeout for post-HMRC-auth-return scenarios where Lambda cold starts can delay page load
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-start-submission.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-start-submission.png`, readerView: true });
 
     // Check if the button is visible; if not, the Test bundle may not have been added or activities didn't refresh
     const submitButton = page.locator(`button:has-text('${activityButtonText}')`);
@@ -35,7 +35,7 @@ export async function initSubmitVat(page, screenshotPath = defaultScreenshotPath
       await page.reload();
       await page.waitForLoadState("networkidle");
       await page.waitForTimeout(1000);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01b-after-refresh.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01b-after-refresh.png`, readerView: true });
       buttonVisible = await submitButton.isVisible({ timeout: 5000 }).catch(() => false);
     }
 
@@ -53,10 +53,10 @@ export async function initSubmitVat(page, screenshotPath = defaultScreenshotPath
       screenshotPath,
       timeout: 60000,
     });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-start-submission.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-start-submission.png`, readerView: true });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-start-submission.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-start-submission.png`, readerView: true });
     await expect(page.locator("#vatSubmissionForm")).toBeVisible();
   });
 }
@@ -83,10 +83,10 @@ export async function fillInVat(
     let testDataUsed = false;
     if (isSyntheticMode() && isTestDataLinkVisible) {
       // Use the "add test data" link in synthetic mode
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-fill-in-vat-click-test-data.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-fill-in-vat-click-test-data.png`, readerView: true });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-fill-in-vat-test-data-added.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-fill-in-vat-test-data-added.png`, readerView: true });
 
       // Verify fields are populated - check for 9-box form first
       await expect(page.locator("#vatNumber")).not.toHaveValue("");
@@ -102,11 +102,11 @@ export async function fillInVat(
     }
 
     // Fill out the VAT form manually using the correct field IDs from submitVat.html
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-fill-in-vat-submission.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-fill-in-vat-submission.png`, readerView: true });
     await page.waitForTimeout(100);
     await loggedFill(page, "#vatNumber", hmrcVatNumber, "Entering VAT number", { screenshotPath });
     await page.waitForTimeout(100);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-fill-in-vat-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-fill-in-vat-filled.png`, readerView: true });
 
     const { periodStart, periodEnd } = periodDates;
 
@@ -127,7 +127,7 @@ export async function fillInVat(
     await page.waitForTimeout(50);
 
     await page.waitForTimeout(100);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-filled.png`, readerView: true });
 
     // Check if 9-box form is present and fill accordingly
     const has9BoxForm = (await page.locator("#vatDueSales").count()) > 0;
@@ -164,7 +164,7 @@ export async function fillInVat(
       await loggedFill(page, "#vatDue", hmrcVatDueAmount, "Entering VAT due amount", { screenshotPath });
     }
     await page.waitForTimeout(100);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-filled.png`, readerView: true });
 
     if (testScenario || runFraudPreventionHeaderValidation || allowSyntheticObligations) {
       // Wait for developer-mode.js to detect synthetic bundle and set sessionStorage
@@ -183,7 +183,7 @@ export async function fillInVat(
       const devSection = page.locator("#developerSection");
       await expect(devSection).toBeVisible({ timeout: 5000 });
       console.log("Developer section visible (controlled by global developer mode)");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-dev-section-visible.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-dev-section-visible.png`, readerView: true });
 
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
@@ -210,8 +210,8 @@ export async function fillInVat(
           }
         }
       }
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-selected-scenario.png` });
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-options-shown.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-selected-scenario.png`, readerView: true });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-options-shown.png`, readerView: true });
     }
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-fill-in-vat-submission.png`, readerView: true });
 
@@ -220,7 +220,7 @@ export async function fillInVat(
 
     await expect(page.locator("#submitBtn")).toBeVisible();
     await page.waitForTimeout(200);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-fill-in-submission-pagedown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-fill-in-submission-pagedown.png`, readerView: true });
   });
 }
 
@@ -246,7 +246,7 @@ export async function fillInVat9Box(
 ) {
   await test.step("The user completes the 9-box VAT form with valid values and sees the Submit button", async () => {
     // Fill out the VAT form manually
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-fill-in-vat-9box.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-fill-in-vat-9box.png`, readerView: true });
     await page.waitForTimeout(100);
     await loggedFill(page, "#vatNumber", hmrcVatNumber, "Entering VAT number", { screenshotPath });
     await page.waitForTimeout(100);
@@ -267,7 +267,7 @@ export async function fillInVat9Box(
     );
     console.log(`Set period dates: ${periodStart} to ${periodEnd}`);
     await page.waitForTimeout(100);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-fill-in-vat-9box-vrn.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-fill-in-vat-9box-vrn.png`, readerView: true });
 
     // Fill all 9 boxes
     await loggedFill(page, "#vatDueSales", String(vatBoxData.vatDueSales), "Entering VAT due on sales (Box 1)", { screenshotPath });
@@ -290,7 +290,7 @@ export async function fillInVat9Box(
       const box5Value = await page.locator("#netVatDue").inputValue();
       console.log(`Box 5 (netVatDue) auto-calculated to: ${box5Value}, expected: ${vatBoxData.netVatDue}`);
     }
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-fill-in-vat-9box-monetary.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-fill-in-vat-9box-monetary.png`, readerView: true });
 
     await loggedFill(page, "#totalValueSalesExVAT", String(vatBoxData.totalValueSalesExVAT), "Entering total sales ex VAT (Box 6)", {
       screenshotPath,
@@ -316,7 +316,7 @@ export async function fillInVat9Box(
       screenshotPath,
     });
     await page.waitForTimeout(50);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-fill-in-vat-9box-whole.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-fill-in-vat-9box-whole.png`, readerView: true });
 
     // Check the declaration checkbox
     const declarationCheckbox = page.locator("#declaration");
@@ -324,7 +324,7 @@ export async function fillInVat9Box(
       await declarationCheckbox.check();
       console.log("Checked declaration checkbox");
     }
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-9box-declaration.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-fill-in-vat-9box-declaration.png`, readerView: true });
 
     if (testScenario || runFraudPreventionHeaderValidation || allowSyntheticObligations) {
       // Wait for developer-mode.js to detect synthetic bundle and set sessionStorage
@@ -342,7 +342,7 @@ export async function fillInVat9Box(
       const devSection = page.locator("#developerSection");
       await expect(devSection).toBeVisible({ timeout: 5000 });
       console.log("Developer section visible (controlled by global developer mode)");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-9box-options.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-fill-in-vat-9box-options.png`, readerView: true });
 
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
@@ -369,7 +369,7 @@ export async function fillInVat9Box(
           }
         }
       }
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-9box-scenario.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-fill-in-vat-9box-scenario.png`, readerView: true });
     }
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-fill-in-vat-9box-complete.png`, readerView: true });
 
@@ -384,9 +384,9 @@ export async function submitFormVat(page, screenshotPath = defaultScreenshotPath
   await test.step("The user submits the VAT form and reviews the HMRC permission page", async () => {
     // Period dates are now set via date inputs and don't need special preservation
     // Focus change before submit
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submission-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submission-submit.png`, readerView: true });
     await loggedFocus(page, "#submitBtn", "the Submit button", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-submission-submit-focused.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-submission-submit-focused.png`, readerView: true });
     // Clicking submit triggers HMRC OAuth redirect (scope upgrade to write:vat read:vat).
     // Wait for the navigation to complete before screenshotting.
     await Promise.all([
@@ -396,7 +396,7 @@ export async function submitFormVat(page, screenshotPath = defaultScreenshotPath
     const applicationName = "DIY Accounting Submit";
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-submission-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-submission-submit.png`, readerView: true });
     await expect(page.locator("#appNameParagraph")).toContainText(applicationName, { timeout: 10000 });
     await expect(page.getByRole("button", { name: "Continue" })).toContainText("Continue");
   });
@@ -405,7 +405,7 @@ export async function submitFormVat(page, screenshotPath = defaultScreenshotPath
 export async function completeVat(page, baseUrl, testScenario = null, screenshotPath = defaultScreenshotPath) {
   if (testScenario && testScenario !== "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
     await test.step("The user sees a submission error message for the HMRC sandbox scenario", async () => {
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png`, readerView: true });
       const statusContainer = page.locator("#statusMessagesContainer");
       // Wait for terminal status (failed or error). Every sandbox scenario exercised here
       // fails within seconds - SLOW_10S is excluded above - so a bounded timeout turns a
@@ -421,7 +421,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
       async () => {
         // Wait for the submission process to complete and receipt to be displayed
         console.log("Waiting for VAT submission to complete and receipt to be displayed...");
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-complete-vat-waiting.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-complete-vat-waiting.png`, readerView: true });
 
         // Check current page URL and elements
         console.log(`Current URL: ${page.url()}`);
@@ -444,7 +444,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
         console.log(`Receipt element exists: ${receiptExists > 0}`);
 
         if (receiptExists > 0) {
-          await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-complete-vat-receipt.png` });
+          await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-complete-vat-receipt.png`, readerView: true });
           const receiptStyle = await page.locator("#receiptDisplay").getAttribute("style");
           console.log(`Receipt element style: ${receiptStyle}`);
         }
@@ -453,19 +453,19 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
         console.log(`Form element exists: ${formExists > 0}`);
 
         if (formExists > 0) {
-          await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-complete-vat-form.png` });
+          await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-complete-vat-form.png`, readerView: true });
           const formStyle = await page.locator("#vatForm").getAttribute("style");
           console.log(`Form element style: ${formStyle}`);
           const receiptVisible = await page.locator("#receiptDisplay").isVisible();
           console.log(`Receipt element visible: ${receiptVisible}`);
         }
 
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-complete-vat-waiting.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-complete-vat-waiting.png`, readerView: true });
 
         // Scroll, capture a pagedown
         await page.keyboard.press("PageDown");
         await page.waitForTimeout(200);
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-complete-vat-pagedown.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-complete-vat-pagedown.png`, readerView: true });
 
         // if (checkServersAreRunning) {
         //  await checkServersAreRunning();
@@ -477,13 +477,13 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
           const currentUrl = page.url();
           const maybeSlash = baseUrl.endsWith("/") ? "" : "/";
           if (!currentUrl.includes("submitVat.html") && !currentUrl.includes("chrome-error://")) {
-            await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-complete-vat-going-back.png` });
+            await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-complete-vat-going-back.png`, readerView: true });
             console.log(`Navigating back to submitVat.html from ${currentUrl}`);
             await loggedGoto(page, `${baseUrl}${maybeSlash}hmrc/vat/submitVat.html`, "back to Submit VAT page", screenshotPath);
             await page.waitForLoadState("networkidle");
           } else if (currentUrl.includes("chrome-error://")) {
             console.log("Chrome error page detected, navigating directly to submitVat.html");
-            await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-complete-vat-error.png` });
+            await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-complete-vat-error.png`, readerView: true });
             await loggedGoto(
               page,
               `${baseUrl}${maybeSlash}hmrc/vat/submitVat.html`,
@@ -506,7 +506,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
         // Scroll, capture a pagedown
         await page.keyboard.press("PageDown");
         await page.waitForTimeout(200);
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-complete-vat-pagedown.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-complete-vat-pagedown.png`, readerView: true });
       },
       { timeout: 1_000_000 },
     );
@@ -516,7 +516,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
 export async function verifyVatSubmission(page, testScenario = null, screenshotPath = defaultScreenshotPath) {
   if (testScenario && testScenario !== "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
     await test.step("The user sees a submission error message for the HMRC sandbox scenario", async () => {
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-verify-vat-error.png`, readerView: true });
       const statusContainer = page.locator("#statusMessagesContainer");
       // Wait for terminal status (failed or error). Every sandbox scenario exercised here
       // fails within seconds - SLOW_10S is excluded above - so a bounded timeout turns a
@@ -528,7 +528,7 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
     });
   } else {
     await test.step("The user sees a successful VAT submission receipt and the VAT form is hidden", async () => {
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-verify-vat.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-verify-vat.png`, readerView: true });
       const receiptDisplay = page.locator("#receiptDisplay");
       await expect(receiptDisplay).toBeVisible();
 
@@ -581,7 +581,7 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
       await page.waitForTimeout(200);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-verify-vat-pagedown.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-verify-vat-pagedown.png`, readerView: true });
 
       console.log("VAT submission flow completed successfully with validated receipt fields");
     });
@@ -595,12 +595,12 @@ export async function initVatObligations(page, screenshotPath = defaultScreensho
   await test.step(`The user navigates to ${activityButtonText} and sees the obligations form`, async () => {
     // Use 60s timeout for post-HMRC-auth-return scenarios where Lambda cold starts can delay page load
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations.png`, readerView: true });
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT Obligations", { screenshotPath, timeout: 60000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations.png`, readerView: true });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-obligations.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-obligations.png`, readerView: true });
     await expect(page.locator("#vatObligationsForm")).toBeVisible();
   });
 }
@@ -609,7 +609,7 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
   await test.step("The user fills in the VAT obligations form with VAT registration number and date range", async () => {
     const { hmrcVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate, status, testScenario, runFraudPreventionHeaderValidation } =
       obligationsQuery || {};
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations-fill-in.png`, readerView: true });
 
     // Compute a wide date range with likely hits if not provided
     const from = hmrcVatPeriodFromDate || "2018-01-01";
@@ -625,10 +625,10 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
 
     if (isSyntheticMode() && isTestDataLinkVisible) {
       // Use the "add test data" link in synthetic mode
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations-click-test-data.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations-click-test-data.png`, readerView: true });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-obligations-test-data-added.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-obligations-test-data-added.png`, readerView: true });
 
       // Verify fields are populated
       await expect(page.locator("#vrn")).not.toHaveValue("");
@@ -639,27 +639,27 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
     // Fill out the form manually
     await page.waitForTimeout(100);
     await loggedFill(page, "#vrn", hmrcVatNumber, "Entering VAT registration number", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-obligations-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-obligations-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
     // Fill optional filters (map to actual form field IDs)
     await loggedFill(page, "#fromDate", from, "Entering from date", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-obligations-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-obligations-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
     await loggedFill(page, "#toDate", to, "Entering to date", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-obligations-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-obligations-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
 
     await loggedFocus(page, "#status", "the obligations status filter", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-obligations-pre-status-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-obligations-pre-status-fill-in.png`, readerView: true });
     if (status) {
       console.log(`Filling in status filter ${status}`);
       // Accept both label ("Open"/"Fulfilled") and value ("O"/"F")
       const statusValue = String(status) === "Open" ? "O" : String(status) === "Fulfilled" ? "F" : String(status);
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-obligations-fill-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-obligations-fill-in.png`, readerView: true });
       await loggedSelectOption(page, "#status", statusValue, "obligations status", { screenshotPath });
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-obligations-filled-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-obligations-filled-in.png`, readerView: true });
     }
     if (testScenario || runFraudPreventionHeaderValidation) {
       // Wait for developer-mode.js to detect synthetic bundle and set sessionStorage
@@ -679,7 +679,7 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
       console.log("Developer section visible (controlled by global developer mode)");
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-obligations-fill-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-obligations-fill-in.png`, readerView: true });
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
           screenshotPath,
@@ -689,17 +689,17 @@ export async function fillInVatObligations(page, obligationsQuery = {}, screensh
         await page.locator("#runFraudPreventionHeaderValidation").check();
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-11-obligations-filled-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-11-obligations-filled-in.png`, readerView: true });
     }
 
     await page.waitForTimeout(300);
     // Scroll, capture a pagedown
     await page.keyboard.press("PageUp");
     await page.waitForTimeout(200);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-12-obligations-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-12-obligations-fill-in.png`, readerView: true });
     // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-13-obligations-fill-in-pagedown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-13-obligations-fill-in-pagedown.png`, readerView: true });
     await expect(page.locator("#retrieveBtn")).toBeVisible();
   });
 }
@@ -708,7 +708,7 @@ export async function submitVatObligationsForm(page, screenshotPath = defaultScr
   await test.step("The user submits the VAT obligations form", async () => {
     // Take a focus change screenshot between last cell entry and submit
     await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations-submit.png`, readerView: true });
     // Clicking retrieve may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
     // Use waitForURL to handle both outcomes: same-page results or cross-origin OAuth redirect.
     await Promise.all([
@@ -717,7 +717,7 @@ export async function submitVatObligationsForm(page, screenshotPath = defaultScr
     ]);
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations-submit.png`, readerView: true });
   });
 }
 
@@ -731,7 +731,7 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
     const { status, testScenario } = obligationsQuery || {};
     const hasScenario = !!testScenario;
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations-results.png`, readerView: true });
     if (hasScenario) {
       switch (testScenario) {
         case "INSOLVENT_TRADER":
@@ -1027,12 +1027,12 @@ export async function initVatLiabilities(page, screenshotPath = defaultScreensho
   await test.step(`The user navigates to ${activityButtonText} and sees the liabilities form`, async () => {
     // Use 60s timeout for post-HMRC-auth-return scenarios where Lambda cold starts can delay page load
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-liabilities.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-liabilities.png`, readerView: true });
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT Liabilities", { screenshotPath, timeout: 60000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-liabilities.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-liabilities.png`, readerView: true });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-liabilities.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-liabilities.png`, readerView: true });
     await expect(page.locator("#vatLiabilitiesForm")).toBeVisible();
   });
 }
@@ -1041,7 +1041,7 @@ export async function fillInVatLiabilities(page, liabilitiesQuery = {}, screensh
   await test.step("The user fills in the VAT liabilities form with VAT registration number and date range", async () => {
     const { hmrcVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate, testScenario, runFraudPreventionHeaderValidation } =
       liabilitiesQuery || {};
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-liabilities-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-liabilities-fill-in.png`, readerView: true });
 
     // Compute a wide date range with likely hits if not provided
     const from = hmrcVatPeriodFromDate || "2018-01-01";
@@ -1057,10 +1057,10 @@ export async function fillInVatLiabilities(page, liabilitiesQuery = {}, screensh
 
     if (isSyntheticMode() && isTestDataLinkVisible) {
       // Use the "add test data" link in synthetic mode
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-liabilities-click-test-data.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-liabilities-click-test-data.png`, readerView: true });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-liabilities-test-data-added.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-liabilities-test-data-added.png`, readerView: true });
 
       // Verify fields are populated
       await expect(page.locator("#vrn")).not.toHaveValue("");
@@ -1071,13 +1071,13 @@ export async function fillInVatLiabilities(page, liabilitiesQuery = {}, screensh
     // Fill out the form manually
     await page.waitForTimeout(100);
     await loggedFill(page, "#vrn", hmrcVatNumber, "Entering VAT registration number", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-liabilities-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-liabilities-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
     await loggedFill(page, "#fromDate", from, "Entering from date", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-liabilities-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-liabilities-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
     await loggedFill(page, "#toDate", to, "Entering to date", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-liabilities-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-liabilities-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {
@@ -1098,7 +1098,7 @@ export async function fillInVatLiabilities(page, liabilitiesQuery = {}, screensh
       console.log("Developer section visible (controlled by global developer mode)");
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-liabilities-fill-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-liabilities-fill-in.png`, readerView: true });
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
           screenshotPath,
@@ -1108,17 +1108,17 @@ export async function fillInVatLiabilities(page, liabilitiesQuery = {}, screensh
         await page.locator("#runFraudPreventionHeaderValidation").check();
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-liabilities-filled-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-liabilities-filled-in.png`, readerView: true });
     }
 
     await page.waitForTimeout(300);
     // Scroll, capture a pagedown
     await page.keyboard.press("PageUp");
     await page.waitForTimeout(200);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-liabilities-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-liabilities-fill-in.png`, readerView: true });
     // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-liabilities-fill-in-pagedown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-liabilities-fill-in-pagedown.png`, readerView: true });
     await expect(page.locator("#retrieveBtn")).toBeVisible();
   });
 }
@@ -1127,7 +1127,7 @@ export async function submitVatLiabilitiesForm(page, screenshotPath = defaultScr
   await test.step("The user submits the VAT liabilities form", async () => {
     // Take a focus change screenshot between last cell entry and submit
     await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-liabilities-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-liabilities-submit.png`, readerView: true });
     // Clicking retrieve may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
     // Use waitForURL to handle both outcomes: same-page results or cross-origin OAuth redirect.
     await Promise.all([
@@ -1136,7 +1136,7 @@ export async function submitVatLiabilitiesForm(page, screenshotPath = defaultScr
     ]);
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-liabilities-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-liabilities-submit.png`, readerView: true });
   });
 }
 
@@ -1150,7 +1150,7 @@ export async function verifyVatLiabilitiesResults(page, liabilitiesQuery, screen
     const { testScenario } = liabilitiesQuery || {};
     const hasScenario = !!testScenario;
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-liabilities-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-liabilities-results.png`, readerView: true });
     if (hasScenario) {
       switch (testScenario) {
         case "INSOLVENT_TRADER":
@@ -1220,7 +1220,7 @@ export async function verifyVatLiabilitiesResults(page, liabilitiesQuery, screen
     // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
     await page.waitForTimeout(200);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-liabilities-results-pagedown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-liabilities-results-pagedown.png`, readerView: true });
   });
 }
 
@@ -1231,12 +1231,12 @@ export async function initVatPayments(page, screenshotPath = defaultScreenshotPa
   await test.step(`The user navigates to ${activityButtonText} and sees the payments form`, async () => {
     // Use 60s timeout for post-HMRC-auth-return scenarios where Lambda cold starts can delay page load
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-payments.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-payments.png`, readerView: true });
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT Payments", { screenshotPath, timeout: 60000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-payments.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-payments.png`, readerView: true });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-payments.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-payments.png`, readerView: true });
     await expect(page.locator("#vatPaymentsForm")).toBeVisible();
   });
 }
@@ -1245,7 +1245,7 @@ export async function fillInVatPayments(page, paymentsQuery = {}, screenshotPath
   await test.step("The user fills in the VAT payments form with VAT registration number and date range", async () => {
     const { hmrcVatNumber, hmrcVatPeriodFromDate, hmrcVatPeriodToDate, testScenario, runFraudPreventionHeaderValidation } =
       paymentsQuery || {};
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-payments-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-payments-fill-in.png`, readerView: true });
 
     // Compute a wide date range with likely hits if not provided
     const from = hmrcVatPeriodFromDate || "2018-01-01";
@@ -1261,10 +1261,10 @@ export async function fillInVatPayments(page, paymentsQuery = {}, screenshotPath
 
     if (isSyntheticMode() && isTestDataLinkVisible) {
       // Use the "add test data" link in synthetic mode
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-payments-click-test-data.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-payments-click-test-data.png`, readerView: true });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-payments-test-data-added.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-payments-test-data-added.png`, readerView: true });
 
       // Verify fields are populated
       await expect(page.locator("#vrn")).not.toHaveValue("");
@@ -1275,13 +1275,13 @@ export async function fillInVatPayments(page, paymentsQuery = {}, screenshotPath
     // Fill out the form manually
     await page.waitForTimeout(100);
     await loggedFill(page, "#vrn", hmrcVatNumber, "Entering VAT registration number", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-payments-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-payments-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
     await loggedFill(page, "#fromDate", from, "Entering from date", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-payments-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-payments-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
     await loggedFill(page, "#toDate", to, "Entering to date", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-payments-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-payments-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {
@@ -1302,7 +1302,7 @@ export async function fillInVatPayments(page, paymentsQuery = {}, screenshotPath
       console.log("Developer section visible (controlled by global developer mode)");
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-payments-fill-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-payments-fill-in.png`, readerView: true });
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
           screenshotPath,
@@ -1312,17 +1312,17 @@ export async function fillInVatPayments(page, paymentsQuery = {}, screenshotPath
         await page.locator("#runFraudPreventionHeaderValidation").check();
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-payments-filled-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-payments-filled-in.png`, readerView: true });
     }
 
     await page.waitForTimeout(300);
     // Scroll, capture a pagedown
     await page.keyboard.press("PageUp");
     await page.waitForTimeout(200);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-payments-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-09-payments-fill-in.png`, readerView: true });
     // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-payments-fill-in-pagedown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-10-payments-fill-in-pagedown.png`, readerView: true });
     await expect(page.locator("#retrieveBtn")).toBeVisible();
   });
 }
@@ -1331,7 +1331,7 @@ export async function submitVatPaymentsForm(page, screenshotPath = defaultScreen
   await test.step("The user submits the VAT payments form", async () => {
     // Take a focus change screenshot between last cell entry and submit
     await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-payments-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-payments-submit.png`, readerView: true });
     // Clicking retrieve may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
     // Use waitForURL to handle both outcomes: same-page results or cross-origin OAuth redirect.
     await Promise.all([
@@ -1340,7 +1340,7 @@ export async function submitVatPaymentsForm(page, screenshotPath = defaultScreen
     ]);
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-payments-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-payments-submit.png`, readerView: true });
   });
 }
 
@@ -1354,7 +1354,7 @@ export async function verifyVatPaymentsResults(page, paymentsQuery, screenshotPa
     const { testScenario } = paymentsQuery || {};
     const hasScenario = !!testScenario;
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-payments-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-payments-results.png`, readerView: true });
     if (hasScenario) {
       switch (testScenario) {
         case "INSOLVENT_TRADER":
@@ -1424,7 +1424,7 @@ export async function verifyVatPaymentsResults(page, paymentsQuery, screenshotPa
     // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
     await page.waitForTimeout(200);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-payments-results-pagedown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-payments-results-pagedown.png`, readerView: true });
   });
 }
 
@@ -1435,12 +1435,12 @@ export async function initVatPenalties(page, screenshotPath = defaultScreenshotP
   await test.step(`The user navigates to ${activityButtonText} and sees the penalties form`, async () => {
     // Use 60s timeout for post-HMRC-auth-return scenarios where Lambda cold starts can delay page load
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-penalties.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-penalties.png`, readerView: true });
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting VAT Penalties", { screenshotPath, timeout: 60000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-penalties.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-penalties.png`, readerView: true });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-penalties.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-penalties.png`, readerView: true });
     await expect(page.locator("#vatPenaltiesForm")).toBeVisible();
   });
 }
@@ -1448,7 +1448,7 @@ export async function initVatPenalties(page, screenshotPath = defaultScreenshotP
 export async function fillInVatPenalties(page, penaltiesQuery = {}, screenshotPath = defaultScreenshotPath) {
   await test.step("The user fills in the VAT penalties form with VAT registration number", async () => {
     const { hmrcVatNumber, testScenario, runFraudPreventionHeaderValidation } = penaltiesQuery || {};
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-penalties-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-penalties-fill-in.png`, readerView: true });
 
     // Check if we're in synthetic mode and can use test data link
     const testDataLink = page.locator("#testDataLink.visible");
@@ -1456,10 +1456,10 @@ export async function fillInVatPenalties(page, penaltiesQuery = {}, screenshotPa
 
     if (isSyntheticMode() && isTestDataLinkVisible) {
       // Use the "add test data" link in synthetic mode
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-penalties-click-test-data.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-penalties-click-test-data.png`, readerView: true });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-penalties-test-data-added.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-penalties-test-data-added.png`, readerView: true });
 
       // Verify fields are populated
       await expect(page.locator("#vrn")).not.toHaveValue("");
@@ -1468,7 +1468,7 @@ export async function fillInVatPenalties(page, penaltiesQuery = {}, screenshotPa
     // Fill out the form manually - no date fields on this endpoint
     await page.waitForTimeout(100);
     await loggedFill(page, "#vrn", hmrcVatNumber, "Entering VAT registration number", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-penalties-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-penalties-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {
@@ -1489,7 +1489,7 @@ export async function fillInVatPenalties(page, penaltiesQuery = {}, screenshotPa
       console.log("Developer section visible (controlled by global developer mode)");
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-penalties-fill-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-penalties-fill-in.png`, readerView: true });
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
           screenshotPath,
@@ -1499,17 +1499,17 @@ export async function fillInVatPenalties(page, penaltiesQuery = {}, screenshotPa
         await page.locator("#runFraudPreventionHeaderValidation").check();
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-penalties-filled-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-penalties-filled-in.png`, readerView: true });
     }
 
     await page.waitForTimeout(300);
     // Scroll, capture a pagedown
     await page.keyboard.press("PageUp");
     await page.waitForTimeout(200);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-penalties-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-penalties-fill-in.png`, readerView: true });
     // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-penalties-fill-in-pagedown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-penalties-fill-in-pagedown.png`, readerView: true });
     await expect(page.locator("#retrieveBtn")).toBeVisible();
   });
 }
@@ -1518,7 +1518,7 @@ export async function submitVatPenaltiesForm(page, screenshotPath = defaultScree
   await test.step("The user submits the VAT penalties form", async () => {
     // Take a focus change screenshot between last cell entry and submit
     await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-penalties-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-penalties-submit.png`, readerView: true });
     // Clicking retrieve may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
     // Use waitForURL to handle both outcomes: same-page results or cross-origin OAuth redirect.
     await Promise.all([
@@ -1527,7 +1527,7 @@ export async function submitVatPenaltiesForm(page, screenshotPath = defaultScree
     ]);
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-penalties-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-penalties-submit.png`, readerView: true });
   });
 }
 
@@ -1541,7 +1541,7 @@ export async function verifyVatPenaltiesResults(page, penaltiesQuery, screenshot
     const { testScenario } = penaltiesQuery || {};
     const hasScenario = !!testScenario;
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-penalties-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-penalties-results.png`, readerView: true });
     if (hasScenario) {
       switch (testScenario) {
         case "SUBMIT_API_HTTP_500":
@@ -1599,23 +1599,25 @@ export async function verifyVatPenaltiesResults(page, penaltiesQuery, screenshot
     // Scroll, capture a pagedown
     await page.keyboard.press("PageDown");
     await page.waitForTimeout(200);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-penalties-results-pagedown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-penalties-results-pagedown.png`, readerView: true });
   });
 }
 
 /* View VAT Return Journey Steps */
+
+const sideBySideDatesReaderView = { ignoreSelectors: [".period-date-inputs"] };
 
 export async function initViewVatReturn(page, screenshotPath = defaultScreenshotPath, hmrcAccount = null) {
   const activityButtonText = "View VAT Return (HMRC)";
   await test.step(`The user navigates to ${activityButtonText} and sees the return form`, async () => {
     // Use 60s timeout for post-HMRC-auth-return scenarios where Lambda cold starts can delay page load
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-view-vat-init.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-view-vat-init.png`, readerView: sideBySideDatesReaderView });
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting View VAT Return", { screenshotPath, timeout: 60000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-view-vat-init.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-view-vat-init.png`, readerView: sideBySideDatesReaderView });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-view-vat-init.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-view-vat-init.png`, readerView: sideBySideDatesReaderView });
     await expect(page.locator("#vatReturnForm")).toBeVisible();
   });
 }
@@ -1635,10 +1637,16 @@ export async function fillInViewVatReturn(
 
     if (isSyntheticMode() && isTestDataLinkVisible) {
       // Use the "add test data" link in synthetic mode
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-view-vat-click-test-data.png` });
+      await takeScreenshot(page, {
+        path: `${screenshotPath}/${timestamp()}-01-view-vat-click-test-data.png`,
+        readerView: sideBySideDatesReaderView,
+      });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-view-vat-test-data-added.png` });
+      await takeScreenshot(page, {
+        path: `${screenshotPath}/${timestamp()}-02-view-vat-test-data-added.png`,
+        readerView: sideBySideDatesReaderView,
+      });
 
       // Verify fields are populated - check that period dates are set
       await expect(page.locator("#vrn")).not.toHaveValue("");
@@ -1649,10 +1657,10 @@ export async function fillInViewVatReturn(
     const { periodStart, periodEnd } = periodDates;
 
     // Fill out the form manually
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-view-vat-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-view-vat-fill-in.png`, readerView: sideBySideDatesReaderView });
     await page.waitForTimeout(100);
     await loggedFill(page, "#vrn", hmrcTestVatNumber, "Entering VAT registration number", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-view-vat-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-view-vat-fill-in.png`, readerView: sideBySideDatesReaderView });
     await page.waitForTimeout(100);
 
     // Set date inputs using evaluate for reliability with type="date" inputs
@@ -1671,7 +1679,7 @@ export async function fillInViewVatReturn(
     console.log(`Set period dates: ${periodStart} to ${periodEnd}`);
     await page.waitForTimeout(100);
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-view-vat-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-view-vat-fill-in.png`, readerView: sideBySideDatesReaderView });
 
     if (testScenario || runFraudPreventionHeaderValidation) {
       // Wait for developer-mode.js to detect synthetic bundle and set sessionStorage
@@ -1691,7 +1699,10 @@ export async function fillInViewVatReturn(
       console.log("Developer section visible (controlled by global developer mode)");
       // Scroll, capture a pagedown
       await page.keyboard.press("PageDown");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-view-vat-fill-in.png` });
+      await takeScreenshot(page, {
+        path: `${screenshotPath}/${timestamp()}-06-view-vat-fill-in.png`,
+        readerView: sideBySideDatesReaderView,
+      });
       // Prefer selecting by value; if the caller provided a label, fall back to selecting by label
       if (testScenario) {
         try {
@@ -1705,10 +1716,16 @@ export async function fillInViewVatReturn(
         await page.locator("#runFraudPreventionHeaderValidation").check();
         console.log("Checked runFraudPreventionHeaderValidation checkbox");
       }
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-view-vat-filled-in.png` });
+      await takeScreenshot(page, {
+        path: `${screenshotPath}/${timestamp()}-07-view-vat-filled-in.png`,
+        readerView: sideBySideDatesReaderView,
+      });
     }
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-view-vat-fill-in-filled.png` });
+    await takeScreenshot(page, {
+      path: `${screenshotPath}/${timestamp()}-08-view-vat-fill-in-filled.png`,
+      readerView: sideBySideDatesReaderView,
+    });
     await expect(page.locator("#retrieveBtn")).toBeVisible();
   });
 }
@@ -1717,7 +1734,7 @@ export async function submitViewVatReturnForm(page, screenshotPath = defaultScre
   await test.step("The user submits the view VAT return form", async () => {
     // Focus change before submit
     await loggedFocus(page, "#retrieveBtn", "Retrieve button", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-view-vat-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-view-vat-submit.png`, readerView: sideBySideDatesReaderView });
 
     // Wait for any blur-triggered network requests to settle
     await page.waitForLoadState("networkidle", { timeout: 5000 }).catch(() => {
@@ -1725,19 +1742,22 @@ export async function submitViewVatReturnForm(page, screenshotPath = defaultScre
     });
 
     await loggedClick(page, "#retrieveBtn", "Submitting view VAT return form", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-view-vat-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-view-vat-submit.png`, readerView: sideBySideDatesReaderView });
     await page.waitForTimeout(1000);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-view-vat-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-view-vat-submit.png`, readerView: sideBySideDatesReaderView });
   });
 }
 
 export async function verifyViewVatReturnResults(page, testScenario = null, screenshotPath = defaultScreenshotPath) {
   if (testScenario && testScenario !== "SUBMIT_HMRC_API_HTTP_SLOW_10S") {
     await test.step("The user sees a retrieval error message for the HMRC sandbox scenario", async () => {
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-results-waiting.png` });
+      await takeScreenshot(page, {
+        path: `${screenshotPath}/${timestamp()}-01-results-waiting.png`,
+        readerView: sideBySideDatesReaderView,
+      });
       await page.waitForLoadState("networkidle");
       await page.waitForTimeout(500);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-results-error.png`, readerView: true });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-results-error.png`, readerView: sideBySideDatesReaderView });
       const statusContainer = page.locator("#statusMessagesContainer");
       let statusText;
       for (let attempt = 1; attempt <= 3; attempt++) {
@@ -1751,7 +1771,10 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
     });
   } else {
     await test.step("The user sees VAT return details displayed", async () => {
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-view-vat-return-results-waiting.png` });
+      await takeScreenshot(page, {
+        path: `${screenshotPath}/${timestamp()}-01-view-vat-return-results-waiting.png`,
+        readerView: sideBySideDatesReaderView,
+      });
       try {
         await waitForSuccessOrError(page, {
           successSelector: "#returnResults",
@@ -1788,7 +1811,10 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
         }
         throw error;
       }
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-view-vat-return-results.png`, readerView: true });
+      await takeScreenshot(page, {
+        path: `${screenshotPath}/${timestamp()}-02-view-vat-return-results.png`,
+        readerView: sideBySideDatesReaderView,
+      });
       const resultsContainer = page.locator("#returnResults");
       await expect(resultsContainer).toBeVisible();
 
@@ -1829,10 +1855,16 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
         console.log(`Finalised validated: ${finalisedMatch[1]}`);
       }
 
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-view-vat-return-results.png` });
+      await takeScreenshot(page, {
+        path: `${screenshotPath}/${timestamp()}-03-view-vat-return-results.png`,
+        readerView: sideBySideDatesReaderView,
+      });
       await page.keyboard.press("PageDown");
       await page.waitForTimeout(200);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-view-vat-return-results.png`, readerView: true });
+      await takeScreenshot(page, {
+        path: `${screenshotPath}/${timestamp()}-04-view-vat-return-results.png`,
+        readerView: sideBySideDatesReaderView,
+      });
 
       console.log("View VAT return completed successfully with validated fields");
     });
@@ -1853,18 +1885,18 @@ export async function clickObligationSubmitReturn(page, screenshotPath = default
 
     if (!isVisible) {
       console.log("[clickObligationSubmitReturn] No 'Submit return' button found in obligations table");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-no-submit-return-btn.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-no-submit-return-btn.png`, readerView: true });
       return { navigated: false };
     }
 
     console.log("[clickObligationSubmitReturn] Found 'Submit return' button, clicking...");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submit-return-btn-found.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submit-return-btn-found.png`, readerView: true });
 
     await Promise.all([page.waitForURL(/submitVat\.html/, { timeout: 15000 }), submitReturnBtn.click()]);
 
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-submit-return-navigated.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-submit-return-navigated.png`, readerView: true });
 
     // Extract URL params
     const url = new URL(page.url());
@@ -1884,7 +1916,7 @@ export async function clickObligationSubmitReturn(page, screenshotPath = default
     const expectedPeriod = `${longDate.format(new Date(periodStart))} to ${longDate.format(new Date(periodEnd))}`;
     await expect(page.locator("#obligationChoice")).toBeVisible({ timeout: 10000 });
     await expect(page.locator("#obligationChoice option:checked")).toContainText(expectedPeriod);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-period-choice-shown.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-period-choice-shown.png`, readerView: true });
 
     return { navigated: true, vrn, periodStart, periodEnd };
   });
@@ -1902,12 +1934,12 @@ export async function clickObligationViewReturn(page, screenshotPath = defaultSc
 
     if (!isVisible) {
       console.log("[clickObligationViewReturn] No 'View return' button found in obligations table");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-no-view-return-btn.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-no-view-return-btn.png`, readerView: true });
       return { navigated: false };
     }
 
     console.log("[clickObligationViewReturn] Found 'View return' button, clicking...");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-view-return-btn-found.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-view-return-btn-found.png`, readerView: true });
 
     await Promise.all([page.waitForURL(/viewVatReturn\.html/, { timeout: 15000 }), viewReturnBtn.click()]);
 
@@ -1936,7 +1968,7 @@ export async function clickObligationViewReturn(page, screenshotPath = defaultSc
       }
     }
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-view-return-navigated.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-view-return-navigated.png`, readerView: true });
 
     // Extract URL params
     const url = new URL(page.url());

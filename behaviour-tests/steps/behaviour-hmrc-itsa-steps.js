@@ -21,15 +21,15 @@ export async function initItsaBusinessDetails(page, screenshotPath = defaultScre
   const activityButtonText = "Self Assessment (HMRC, sandbox)";
   await test.step(`The user navigates to ${activityButtonText} and sees the business details form`, async () => {
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-business-details.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-business-details.png`, readerView: true });
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting ITSA Business Details", {
       screenshotPath,
       timeout: 60000,
     });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-business-details.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-business-details.png`, readerView: true });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-business-details.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-business-details.png`, readerView: true });
     // The activity button opens the ITSA dashboard (the first .html path listed for the
     // self-employed activity - see catalog-service.js), which links out to each ITSA page.
     await loggedClick(page, "a:has-text('Go to Business Details')", "Going to Business Details from the dashboard", {
@@ -37,7 +37,7 @@ export async function initItsaBusinessDetails(page, screenshotPath = defaultScre
     });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-business-details.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-business-details.png`, readerView: true });
     await expect(page.locator("#itsaBusinessDetailsForm")).toBeVisible();
   });
 }
@@ -45,23 +45,23 @@ export async function initItsaBusinessDetails(page, screenshotPath = defaultScre
 export async function fillInItsaBusinessDetails(page, businessDetailsQuery = {}, screenshotPath = defaultScreenshotPath) {
   await test.step("The user fills in the Business Details form with a National Insurance number", async () => {
     const { hmrcNino, testScenario, runFraudPreventionHeaderValidation } = businessDetailsQuery || {};
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-business-details-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-business-details-fill-in.png`, readerView: true });
 
     const testDataLink = page.locator("#testDataLink.visible");
     const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
 
     if (isSyntheticMode() && isTestDataLinkVisible) {
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-business-details-click-test-data.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-business-details-click-test-data.png`, readerView: true });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-business-details-test-data-added.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-business-details-test-data-added.png`, readerView: true });
 
       await expect(page.locator("#nino")).not.toHaveValue("");
     }
 
     await page.waitForTimeout(100);
     await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-business-details-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-business-details-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {
@@ -78,7 +78,7 @@ export async function fillInItsaBusinessDetails(page, businessDetailsQuery = {},
       const devSection = page.locator("#developerSection");
       await expect(devSection).toBeVisible({ timeout: 5000 });
       await page.keyboard.press("PageDown");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-business-details-fill-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-business-details-fill-in.png`, readerView: true });
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
           screenshotPath,
@@ -99,7 +99,7 @@ export async function fillInItsaBusinessDetails(page, businessDetailsQuery = {},
 
 export async function submitItsaBusinessDetailsForm(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the Business Details form", async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-business-details-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-business-details-submit.png`, readerView: true });
     // Clicking retrieve may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
     await Promise.all([
       page.waitForURL(/.*/, { timeout: 15000 }),
@@ -107,7 +107,7 @@ export async function submitItsaBusinessDetailsForm(page, screenshotPath = defau
     ]);
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-business-details-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-business-details-submit.png`, readerView: true });
   });
 }
 
@@ -120,7 +120,7 @@ export async function verifyItsaBusinessDetailsResults(page, businessDetailsQuer
     const { testScenario } = businessDetailsQuery || {};
     const hasScenario = !!testScenario;
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-business-details-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-business-details-results.png`, readerView: true });
     if (hasScenario) {
       switch (testScenario) {
         case "NOT_FOUND":
@@ -186,7 +186,7 @@ export async function initItsaObligations(page, screenshotPath = defaultScreensh
     const origin = new URL(page.url()).origin;
     await page.goto(`${origin}/hmrc/itsa/obligations.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations.png`, readerView: true });
     await expect(page.locator("#itsaObligationsForm")).toBeVisible();
   });
 }
@@ -194,16 +194,16 @@ export async function initItsaObligations(page, screenshotPath = defaultScreensh
 export async function fillInItsaObligations(page, obligationsQuery = {}, screenshotPath = defaultScreenshotPath) {
   await test.step("The user fills in the Obligations form with a National Insurance number", async () => {
     const { hmrcNino, typeOfBusiness, businessId, status, testScenario, runFraudPreventionHeaderValidation } = obligationsQuery || {};
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations-fill-in.png`, readerView: true });
 
     const testDataLink = page.locator("#testDataLink.visible");
     const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
 
     if (isSyntheticMode() && isTestDataLinkVisible) {
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations-click-test-data.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations-click-test-data.png`, readerView: true });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-obligations-test-data-added.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-obligations-test-data-added.png`, readerView: true });
 
       await expect(page.locator("#nino")).not.toHaveValue("");
     }
@@ -214,7 +214,7 @@ export async function fillInItsaObligations(page, obligationsQuery = {}, screens
       await loggedSelectOption(page, "#typeOfBusiness", String(typeOfBusiness), "a business type filter", { screenshotPath });
     if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID filter", { screenshotPath });
     if (status) await loggedSelectOption(page, "#status", String(status), "a status filter", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-obligations-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-obligations-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {
@@ -231,7 +231,7 @@ export async function fillInItsaObligations(page, obligationsQuery = {}, screens
       const devSection = page.locator("#developerSection");
       await expect(devSection).toBeVisible({ timeout: 5000 });
       await page.keyboard.press("PageDown");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-obligations-fill-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-obligations-fill-in.png`, readerView: true });
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
           screenshotPath,
@@ -252,7 +252,7 @@ export async function fillInItsaObligations(page, obligationsQuery = {}, screens
 
 export async function submitItsaObligationsForm(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the Obligations form", async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations-submit.png`, readerView: true });
     // Clicking retrieve may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
     await Promise.all([
       page.waitForURL(/.*/, { timeout: 15000 }),
@@ -260,7 +260,7 @@ export async function submitItsaObligationsForm(page, screenshotPath = defaultSc
     ]);
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-obligations-submit.png`, readerView: true });
   });
 }
 
@@ -273,7 +273,7 @@ export async function verifyItsaObligationsResults(page, obligationsQuery, scree
     const { testScenario } = obligationsQuery || {};
     const hasScenario = !!testScenario;
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-obligations-results.png`, readerView: true });
     if (hasScenario) {
       switch (testScenario) {
         case "NOT_FOUND":
@@ -338,7 +338,7 @@ export async function initItsaSelfEmploymentPeriod(page, screenshotPath = defaul
     const origin = new URL(page.url()).origin;
     await page.goto(`${origin}/hmrc/itsa/selfEmploymentPeriod.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-self-employment-period.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-self-employment-period.png`, readerView: true });
     await expect(page.locator("#itsaSelfEmploymentPeriodForm")).toBeVisible();
   });
 }
@@ -347,16 +347,22 @@ export async function fillInItsaSelfEmploymentPeriod(page, periodQuery = {}, scr
   await test.step("The user fills in the quarterly update form", async () => {
     const { hmrcNino, businessId, taxYear, periodStartDate, periodEndDate, turnover, testScenario, runFraudPreventionHeaderValidation } =
       periodQuery || {};
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-self-employment-period-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-self-employment-period-fill-in.png`, readerView: true });
 
     const testDataLink = page.locator("#testDataLink.visible");
     const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
 
     if (isSyntheticMode() && isTestDataLinkVisible && !businessId) {
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-self-employment-period-click-test-data.png` });
+      await takeScreenshot(page, {
+        path: `${screenshotPath}/${timestamp()}-02-self-employment-period-click-test-data.png`,
+        readerView: true,
+      });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-self-employment-period-test-data-added.png` });
+      await takeScreenshot(page, {
+        path: `${screenshotPath}/${timestamp()}-03-self-employment-period-test-data-added.png`,
+        readerView: true,
+      });
 
       await expect(page.locator("#nino")).not.toHaveValue("");
       if (taxYear) await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
@@ -369,7 +375,7 @@ export async function fillInItsaSelfEmploymentPeriod(page, periodQuery = {}, scr
       if (turnover !== undefined) await loggedFill(page, "#turnover", String(turnover), "Entering turnover", { screenshotPath });
     }
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-self-employment-period-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-self-employment-period-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {
@@ -386,7 +392,7 @@ export async function fillInItsaSelfEmploymentPeriod(page, periodQuery = {}, scr
       const devSection = page.locator("#developerSection");
       await expect(devSection).toBeVisible({ timeout: 5000 });
       await page.keyboard.press("PageDown");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-self-employment-period-fill-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-self-employment-period-fill-in.png`, readerView: true });
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
           screenshotPath,
@@ -410,7 +416,7 @@ export async function fillInItsaSelfEmploymentPeriod(page, periodQuery = {}, scr
 
 export async function submitItsaSelfEmploymentPeriodForm(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the quarterly update form", async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-self-employment-period-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-self-employment-period-submit.png`, readerView: true });
     // Clicking submit may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
     await Promise.all([
       page.waitForURL(/.*/, { timeout: 15000 }),
@@ -418,7 +424,7 @@ export async function submitItsaSelfEmploymentPeriodForm(page, screenshotPath = 
     ]);
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-self-employment-period-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-self-employment-period-submit.png`, readerView: true });
   });
 }
 
@@ -431,7 +437,7 @@ export async function verifyItsaSelfEmploymentPeriodResults(page, periodQuery, s
     const { testScenario } = periodQuery || {};
     const hasScenario = !!testScenario;
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-self-employment-period-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-self-employment-period-results.png`, readerView: true });
     if (hasScenario) {
       switch (testScenario) {
         case "NOT_FOUND":
@@ -484,7 +490,7 @@ export async function initItsaUkPropertyPeriod(page, screenshotPath = defaultScr
     const origin = new URL(page.url()).origin;
     await page.goto(`${origin}/hmrc/itsa/ukPropertyPeriod.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-uk-property-period.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-uk-property-period.png`, readerView: true });
     await expect(page.locator("#itsaUkPropertyPeriodForm")).toBeVisible();
   });
 }
@@ -502,16 +508,16 @@ export async function fillInItsaUkPropertyPeriod(page, periodQuery = {}, screens
       testScenario,
       runFraudPreventionHeaderValidation,
     } = periodQuery || {};
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-uk-property-period-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-uk-property-period-fill-in.png`, readerView: true });
 
     const testDataLink = page.locator("#testDataLink.visible");
     const isTestDataLinkVisible = await testDataLink.isVisible().catch(() => false);
 
     if (isSyntheticMode() && isTestDataLinkVisible && !businessId) {
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-uk-property-period-click-test-data.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-uk-property-period-click-test-data.png`, readerView: true });
       await loggedClick(page, "#testDataLink a", "Clicking add test data link", { screenshotPath });
       await page.waitForTimeout(200);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-uk-property-period-test-data-added.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-uk-property-period-test-data-added.png`, readerView: true });
 
       await expect(page.locator("#nino")).not.toHaveValue("");
     } else {
@@ -525,7 +531,7 @@ export async function fillInItsaUkPropertyPeriod(page, periodQuery = {}, screens
         await loggedFill(page, "#periodAmount", String(periodAmount), "Entering rental income", { screenshotPath });
     }
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-uk-property-period-fill-in.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-uk-property-period-fill-in.png`, readerView: true });
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {
@@ -542,7 +548,7 @@ export async function fillInItsaUkPropertyPeriod(page, periodQuery = {}, screens
       const devSection = page.locator("#developerSection");
       await expect(devSection).toBeVisible({ timeout: 5000 });
       await page.keyboard.press("PageDown");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-uk-property-period-fill-in.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-uk-property-period-fill-in.png`, readerView: true });
       if (testScenario) {
         await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", {
           screenshotPath,
@@ -563,7 +569,7 @@ export async function fillInItsaUkPropertyPeriod(page, periodQuery = {}, screens
 
 export async function submitItsaUkPropertyPeriodForm(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user submits the UK property quarterly update form", async () => {
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-uk-property-period-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-uk-property-period-submit.png`, readerView: true });
     // Clicking submit may trigger HMRC OAuth redirect (if no valid token with sufficient scope).
     await Promise.all([
       page.waitForURL(/.*/, { timeout: 15000 }),
@@ -571,7 +577,7 @@ export async function submitItsaUkPropertyPeriodForm(page, screenshotPath = defa
     ]);
     await page.waitForLoadState("domcontentloaded");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-uk-property-period-submit.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-uk-property-period-submit.png`, readerView: true });
   });
 }
 
@@ -584,7 +590,7 @@ export async function verifyItsaUkPropertyPeriodResults(page, periodQuery, scree
     const { testScenario } = periodQuery || {};
     const hasScenario = !!testScenario;
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-uk-property-period-results.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-uk-property-period-results.png`, readerView: true });
     if (hasScenario) {
       switch (testScenario) {
         case "NOT_FOUND":
@@ -636,7 +642,7 @@ export async function initItsaAnnualSubmission(page, screenshotPath = defaultScr
     const origin = new URL(page.url()).origin;
     await page.goto(`${origin}/hmrc/itsa/annualSubmission.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-annual-submission.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-annual-submission.png`, readerView: true });
     await expect(page.locator("#itsaAnnualLoadForm")).toBeVisible();
   });
 }
@@ -746,7 +752,7 @@ export async function initItsaUkPropertyAnnualSubmission(page, screenshotPath = 
     const origin = new URL(page.url()).origin;
     await page.goto(`${origin}/hmrc/itsa/ukPropertyAnnualSubmission.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-uk-property-annual-submission.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-uk-property-annual-submission.png`, readerView: true });
     await expect(page.locator("#itsaAnnualLoadForm")).toBeVisible();
   });
 }
@@ -863,7 +869,7 @@ export async function initItsaTaxCalculation(page, screenshotPath = defaultScree
     const origin = new URL(page.url()).origin;
     await page.goto(`${origin}/hmrc/itsa/taxCalculation.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-tax-calculation.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-tax-calculation.png`, readerView: true });
     await expect(page.locator("#itsaCalculationTriggerForm")).toBeVisible();
   });
 }
@@ -1000,7 +1006,7 @@ export async function initItsaLossesAndClaims(page, screenshotPath = defaultScre
     const origin = new URL(page.url()).origin;
     await page.goto(`${origin}/hmrc/itsa/lossesAndClaims.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-losses-and-claims.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-losses-and-claims.png`, readerView: true });
     await expect(page.locator("#itsaLossesLoadForm")).toBeVisible();
   });
 }

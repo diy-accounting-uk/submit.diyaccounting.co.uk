@@ -6,7 +6,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
-import { assertReaderView, findReaderViewDefects } from "../../behaviour-tests/helpers/behaviour-helpers.js";
+import { assertReaderView, findReaderViewDefects, isOwnPage } from "../../behaviour-tests/helpers/behaviour-helpers.js";
 
 const fixturesDirectory = path.join(process.cwd(), "web/browser-tests/fixtures/reader-view");
 
@@ -50,5 +50,16 @@ test.describe("Reader view check", () => {
   test("skips an ignored selector", async ({ page }) => {
     await openFixture(page, "json-as-text");
     expect(await findReaderViewDefects(page, { ignoreSelectors: ["p"] })).toEqual([]);
+  });
+
+  test("judges our pages and the local servers, never another service's", () => {
+    expect(isOwnPage("https://ci-set1.submit.diyaccounting.co.uk/bundles.html")).toBe(true);
+    expect(isOwnPage("https://submit.diyaccounting.co.uk/")).toBe(true);
+    expect(isOwnPage("http://127.0.0.1:3000/hmrc/vat/submitVat.html")).toBe(true);
+    expect(isOwnPage("http://localhost:64588/oauth/authorize")).toBe(true);
+    expect(isOwnPage("https://checkout.stripe.com/c/pay/cs_test_x")).toBe(false);
+    expect(isOwnPage("https://test-www.tax.service.gov.uk/oauth/start")).toBe(false);
+    expect(isOwnPage("https://diyaccounting.co.uk.example.com/")).toBe(false);
+    expect(isOwnPage("about:blank")).toBe(false);
   });
 });

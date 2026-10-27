@@ -557,11 +557,11 @@ DS1 took every page signed out, so these states need a signed-in DS1 run before 
 
 ### SQ1: every walkthrough frame, judged
 
-538 frames in 44 videos. 516 pass, 22 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
+537 frames in 44 videos. 523 pass, 14 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
 
-Fails by cause: O 4 (`change-registered-office`), E 18 (listed below).
+Fails by cause: E 14 (11 of `accounting-spreadsheet-profit`, `mcp-hosted/connect-0..2`).
 
-Not re-cut, frames unchanged: `change-registered-email` (passes), `change-registered-office` (no recording on this machine).
+Not re-cut, frames unchanged: `change-registered-email` (passes).
 
 | Video | Frames | Pass | Fails (frame, criteria) |
 |---|---|---|---|
@@ -569,19 +569,19 @@ Not re-cut, frames unchanged: `change-registered-email` (passes), `change-regist
 | accounting-spreadsheet-profit | 13 | 2 | april-0 E; april-15 E; april-17 E; april-2 E; april-23 E; april-25 E; april-3 E; april-5 E; april-7 E; april-8 E; may E |
 | bundles | 4 | 4 | none |
 | change-registered-email (not re-cut) | 7 | 7 | none |
-| change-registered-office (not re-cut) | 7 | 3 | company-lookup-0 O; company-lookup-2 O; company-lookup-3 O; company-lookup-5 O |
+| change-registered-office | 7 | 7 | none |
 | company-lookup | 2 | 2 | none |
 | file-company-tax-return-book | 18 | 18 | none |
 | file-company-tax-return-typed | 19 | 19 | none |
 | file-confirmation-statement | 6 | 6 | none |
 | file-micro-entity-accounts | 16 | 16 | none |
-| file-psc-verification-statement | 12 | 12 | none |
+| file-psc-verification-statement | 11 | 11 | none |
 | file-small-company-accounts | 21 | 21 | none |
 | generate-pass-digital | 4 | 4 | none |
 | generate-pass-physical | 1 | 1 | none |
-| hmrc-authorise | 2 | 0 | authorise E; results E |
+| hmrc-authorise | 2 | 2 | none |
 | itsa-annual-from-book | 9 | 9 | none |
-| itsa-business-details | 7 | 6 | results E |
+| itsa-business-details | 7 | 7 | none |
 | itsa-carry-back-adjustments | 10 | 10 | none |
 | itsa-foreign-property-losses | 13 | 13 | none |
 | itsa-in-year-estimate | 10 | 10 | none |
@@ -605,7 +605,7 @@ Not re-cut, frames unchanged: `change-registered-email` (passes), `change-regist
 | vat-from-books | 16 | 16 | none |
 | vat-hmrc-assist | 16 | 16 | none |
 | view-liabilities | 7 | 7 | none |
-| view-obligations | 7 | 6 | results E |
+| view-obligations | 7 | 7 | none |
 | view-payments | 7 | 7 | none |
 | view-penalties | 6 | 6 | none |
 | view-return | 14 | 14 | none |
@@ -614,13 +614,9 @@ Remaining fails, by fix:
 
 | Fail | Frames | What a reader sees | Fix |
 |---|---|---|---|
-| O | `change-registered-office` company-lookup frames | As before the cutter change | Re-record, then `node scripts/video-walkthrough.js --id <id>` |
-| C (not detected) | `file-psc-verification-statement` psc-1, psc-3 to psc-9 | The word "statement." from the receipt above the PSC section at the top edge | The PSC section sits at the foot of the page, so the page cannot scroll its top to the viewport top; needs the receipt collapsed or the section moved above it |
-| E | 18 frames: 11 of `accounting-spreadsheet-profit`, `mcp-hosted/connect-0..2`, `hmrc-authorise/authorise,results`, `itsa-business-details/results`, `view-obligations/results` | 70 to 80 percent blank rows: a spreadsheet grid with two rows filled, or a short form | localApp frames: crop to the filled area in the scene script's viewport; site frames: a result page shorter than the cut |
-| 2 | `itsa-year`, `itsa-loss-claims` and other ITSA frames of a form load | "Loading ..." spinner and the "Synthetic mode - calls go to HMRC's sandbox API" banner in the frame | Step waits for the loaded state before the caption; banner is the synthetic account's, hide it with the script's `suppress` list |
-| 5 | `accounting-diya-gl-profit`, `accounting-spreadsheet-profit` | Spreadsheet text under 8 px at the thumbnail size | Record the localApp scenes at a smaller viewport |
-| 9 | `file-psc-verification-statement/record` | The caption names steps the frame does not show | Split the scene so one caption matches the frame |
-| 4 | `file-psc-verification-statement` psc-3 to psc-6 | Four frames that look the same | One frame per distinct state |
+| E | 11 frames of `accounting-spreadsheet-profit` | The grid at the 1280 by 640 viewport is about half blank rows where it was 75 percent | Record at a viewport short enough for the filled rows (the Profit and Loss sheet needs 24 rows), or cut the sheet's blank rows from the frame |
+| E | `mcp-hosted/connect-0..2` | The Inspector's connect form fills a quarter of the frame | A prod capture (`video-capture.yml`, hosted sign-in) at a smaller viewport; not recordable on the simulator lane |
+| 2 | ITSA frames of `itsa-year`, `itsa-year-part`, `itsa-quarterly-from-books` and the other `auth: user` scripts | The synthetic-mode banner (and a "Loading ..." state where a form loads) in frames cut from the earlier recordings | Every signed-in script now suppresses `#syntheticIndicator`; only `itsa-loss-claims` is re-recorded and shows no banner. The rest need a re-recording, then `node scripts/video-walkthrough.js --id <id>` |
 
 #### ui-ux-pro-max over `guide.html` and `guide.page.js`
 

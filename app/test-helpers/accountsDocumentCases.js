@@ -134,6 +134,65 @@ export const SMALL_COMPANY_CASE_INPUT = {
   },
 };
 
+export const SMALL_COMPANY_FORMAT_2_CASE_INPUT = {
+  ...SMALL_COMPANY_CASE_INPUT,
+  profitAndLossFormat: 2,
+  profitAndLoss: {
+    current: {
+      turnover: 50000,
+      changeInStocks: 100,
+      ownWorkCapitalised: 400,
+      otherOperatingIncome: 500,
+      rawMaterialsConsumables: 9000,
+      otherExternalCharges: 3000,
+      staffCosts: 20000,
+      depreciation: 500,
+      otherOperatingExpenses: 13000,
+      operatingProfit: 5500,
+      interestReceivable: 100,
+      interestPayable: 200,
+      profitBeforeTax: 5400,
+      tax: 1000,
+      profit: 4400,
+    },
+    prior: {
+      turnover: 40000,
+      changeInStocks: -50,
+      ownWorkCapitalised: 0,
+      otherOperatingIncome: 250,
+      rawMaterialsConsumables: 8000,
+      otherExternalCharges: 2000,
+      staffCosts: 16000,
+      depreciation: 400,
+      otherOperatingExpenses: 10800,
+      operatingProfit: 3000,
+      interestReceivable: 0,
+      interestPayable: 0,
+      profitBeforeTax: 3000,
+      tax: 600,
+      profit: 2400,
+    },
+  },
+};
+
+export const SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LABELS = [
+  "Turnover",
+  "Change in stocks of finished goods and in work in progress",
+  "Own work capitalised",
+  "Other operating income",
+  "Raw materials and consumables",
+  "Other external charges",
+  "Staff costs",
+  "Depreciation and other amounts written off tangible and intangible fixed assets",
+  "Other operating expenses",
+  "Operating profit",
+  "Interest receivable and similar income",
+  "Interest payable and similar expenses",
+  "Profit on ordinary activities before taxation",
+  "Tax on profit on ordinary activities",
+  "Profit for the financial year",
+];
+
 function microInputFromTestServiceCase(testCase) {
   return {
     companyNumber: testCase.companyNumber,
@@ -177,6 +236,11 @@ export function accountsDocumentCases() {
     {
       name: "small-company-accounts",
       xhtml: buildSmallCompanyAccounts(SMALL_COMPANY_CASE_INPUT),
+      balanceSheetLabels: SMALL_BALANCE_SHEET_LABELS,
+    },
+    {
+      name: "small-company-accounts-format-2",
+      xhtml: buildSmallCompanyAccounts(SMALL_COMPANY_FORMAT_2_CASE_INPUT),
       balanceSheetLabels: SMALL_BALANCE_SHEET_LABELS,
     },
     {

@@ -97,14 +97,14 @@ export async function goToChangeRegisteredOffice(page, screenshotPath = defaultS
   const activityButtonText = "Change Registered Office Address (Companies House)";
   await test.step(`The user navigates to ${activityButtonText} and sees the company number form`, async () => {
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-go-to-change-office.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-go-to-change-office.png`, readerView: true });
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting Change Registered Office Address", {
       screenshotPath,
       timeout: 60000,
     });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-go-to-change-office.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-go-to-change-office.png`, readerView: true });
     await expect(page.locator("#companyForm")).toBeVisible();
   });
 }
@@ -113,14 +113,14 @@ export async function goToChangeRegisteredEmail(page, screenshotPath = defaultSc
   const activityButtonText = "Change Registered Email Address (Companies House)";
   await test.step(`The user navigates to ${activityButtonText} and sees the company number form`, async () => {
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-go-to-change-email.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-go-to-change-email.png`, readerView: true });
     await loggedClick(page, `button:has-text('${activityButtonText}')`, "Starting Change Registered Email Address", {
       screenshotPath,
       timeout: 60000,
     });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-go-to-change-email.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-go-to-change-email.png`, readerView: true });
     await expect(page.locator("#companyForm")).toBeVisible();
   });
 }
@@ -128,11 +128,11 @@ export async function goToChangeRegisteredEmail(page, screenshotPath = defaultSc
 export async function enterCompanyNumber(page, companyNumber, screenshotPath = defaultScreenshotPath) {
   await test.step(`The user enters company number ${companyNumber}`, async () => {
     await loggedFill(page, "#companyNumber", companyNumber, "Company number", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-enter-company-number.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-enter-company-number.png`, readerView: true });
     await loggedClick(page, "#companyLookupBtn", "Look up / check eligibility", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await page.waitForTimeout(500);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-enter-company-number.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-enter-company-number.png`, readerView: true });
   });
 }
 
@@ -219,12 +219,12 @@ export async function handleCompaniesHouseAuthenticatorChallenge(page, totpSecre
     await page.waitForSelector("#code", { state: "visible", timeout: 30000 });
     const totp = new TOTP({ secret: Secret.fromBase32(totpSecret), algorithm: "SHA1", digits: 6, period: 30 });
     await loggedFill(page, "#code", totp.generate(), "GOV.UK One Login authenticator code", { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-authenticator-code-entered.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-authenticator-code-entered.png`, readerView: true });
     await clickContinue(page, "Continue after the authenticator code", screenshotPath);
     // The redirect to Companies House happens but the click's own navigation wait can time out,
     // so wait on the address leaving the code page instead of on a load state.
     await page.waitForURL((url) => !url.pathname.endsWith("/enter-authenticator-app-code"), { timeout: 30000, waitUntil: "commit" });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-authenticator-challenge-completed.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-authenticator-challenge-completed.png`, readerView: true });
   });
 }
 

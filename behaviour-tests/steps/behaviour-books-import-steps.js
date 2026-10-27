@@ -34,7 +34,7 @@ export async function dropBookOnForm(page, bookFile, expectedStatus, screenshotP
     await expect(page.locator("#booksImportDrop")).toBeVisible();
     await page.locator("#booksImportFile").setInputFiles(bookFile);
     await expect(page.locator("#booksImportStatus")).toContainText(expectedStatus, { timeout: 30_000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-books-import-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-books-import-filled.png`, readerView: true });
   });
 }
 

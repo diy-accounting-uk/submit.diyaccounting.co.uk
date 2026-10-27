@@ -48,6 +48,7 @@
     }
   },
   "suppress": [
+    "#syntheticIndicator",
     "#feedbackEngagementBanner",
     "#feedbackEngagementSection",
     ".dev-float-left",
@@ -226,7 +227,7 @@
       "still": true,
       "steps": [
         {
-          "scrollTo": "#syntheticIndicator",
+          "scrollTo": "h1",
           "action": "goto",
           "url": "/hmrc/itsa/dashboard.html",
           "waitFor": "#businessPickerForm",
@@ -288,7 +289,7 @@
           "target": "#businessDetailsTable"
         },
         {
-          "scrollTo": "#syntheticIndicator",
+          "scrollTo": "h1",
           "action": "point",
           "target": "#businessDetailsTable",
           "caption": "One quarterly update form per business type, all year.",

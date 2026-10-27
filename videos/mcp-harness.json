@@ -36,7 +36,7 @@
     }
   },
   "consentAnswer": "declined",
-  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
   "environments": ["ci", "simulator"],
   "finalHoldMs": 6000,
   "scenes": [

@@ -7,7 +7,10 @@
 // recording, a thumbnail and a full-size WebP of it, and the scene's text and start time,
 // written into the "walkthrough" array of the video's entry in videos/publish.json.
 //
-// Usage: node scripts/video-walkthrough.js [--id <video id>]...
+// Usage: node scripts/video-walkthrough.js [--id <video id>]... [--sizes]
+//
+// --sizes writes only the pixel size of each existing thumbnail and full image into the
+// entries (thumbWidth, thumbHeight, fullWidth, fullHeight); it cuts no frames and needs no ffmpeg.
 //
 // For every entry with a videoId (or only the named ids) the capture artifact is downloaded to
 // target/videos/<sourceArtifact>/ when it is missing, the scene script videos/<id>.json gives
@@ -36,6 +39,7 @@ import { fileURLToPath } from "url";
 import { resolveFfmpegBinary } from "./lib/video/encode.js";
 import { captionTextForStep } from "./lib/video/captions.js";
 import { findStepStill } from "./lib/video/stepStill.js";
+import { imageSize } from "./lib/video/imageSize.js";
 import { findCutRegion, frameHasCard, pickCardFreeMs } from "./lib/video/frameCut.js";
 import { loadPublishList, savePublishList } from "./youtube-upload.js";
 import { copyVideosManifest } from "./copy-videos-manifest.js";
@@ -54,8 +58,11 @@ export const MAX_CAPTIONS_PER_SCENE_FRAME = 3;
 
 export function parseArgs(argv) {
   const ids = [];
+  let sizesOnly = false;
   for (let i = 0; i < argv.length; i++) {
-    if (argv[i] === "--id") {
+    if (argv[i] === "--sizes") {
+      sizesOnly = true;
+    } else if (argv[i] === "--id") {
       const value = argv[++i];
       if (!value) throw new Error("--id needs a video id");
       ids.push(value);
@@ -63,7 +70,7 @@ export function parseArgs(argv) {
       throw new Error(`Unknown argument: ${argv[i]}`);
     }
   }
-  return { ids };
+  return { ids, sizesOnly };
 }
 
 function sentence(text) {
@@ -143,6 +150,15 @@ export function buildWalkthroughEntries(videoId, plan) {
       thumb: `videos/${videoId}/${frameKey(item)}-thumb.webp`,
       full: `videos/${videoId}/${frameKey(item)}.webp`,
     };
+  });
+}
+
+/** The walkthrough entries with the pixel size of each entry's two images, read from the files under siteRoot. */
+export function withFrameSizes(walkthrough, siteRoot = path.resolve("web/public")) {
+  return walkthrough.map((entry) => {
+    const thumb = imageSize(path.join(siteRoot, entry.thumb));
+    const full = imageSize(path.join(siteRoot, entry.full));
+    return { ...entry, thumbWidth: thumb.width, thumbHeight: thumb.height, fullWidth: full.width, fullHeight: full.height };
   });
 }
 
@@ -332,11 +348,11 @@ export function buildForEntry(entry, { ffmpeg = resolveFfmpegBinary(), outRoot =
     }
     bytes += size + fs.statSync(path.join(outDir, `${frameKey(item)}-thumb.webp`)).size;
   }
-  return { walkthrough: buildWalkthroughEntries(entry.id, plan), bytes };
+  return { walkthrough: withFrameSizes(buildWalkthroughEntries(entry.id, plan), path.dirname(outRoot)), bytes };
 }
 
 export function main(argv = process.argv.slice(2)) {
-  const { ids } = parseArgs(argv);
+  const { ids, sizesOnly } = parseArgs(argv);
   const list = loadPublishList();
   const entries = list.videos.filter((entry) => entry.videoId && (ids.length === 0 || ids.includes(entry.id)));
   for (const id of ids) {
@@ -345,7 +361,7 @@ export function main(argv = process.argv.slice(2)) {
   const failures = [];
   for (const entry of entries) {
     try {
-      const { walkthrough, bytes } = buildForEntry(entry);
+      const { walkthrough, bytes } = sizesOnly ? { walkthrough: withFrameSizes(entry.walkthrough), bytes: 0 } : buildForEntry(entry);
       entry.walkthrough = walkthrough;
       savePublishList(list);
       copyVideosManifest();

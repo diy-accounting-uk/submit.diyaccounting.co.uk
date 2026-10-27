@@ -25,13 +25,13 @@ export async function goToBundlesPage(page, screenshotPath = defaultScreenshotPa
   await test.step("The user navigates to Bundles via main navigation", async () => {
     // Go to bundles via main navigation
     console.log("Navigating to Bundles via main navigation...");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-goto-bundles-page-nav.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-goto-bundles-page-nav.png`, readerView: true });
     await expect(page.locator("nav.main-nav a:has-text('Bundles')")).toBeVisible({ timeout: 10000 });
     await Promise.all([
       page.waitForURL(/bundles\.html/, { waitUntil: "domcontentloaded", timeout: 30000 }),
       loggedClick(page, "nav.main-nav a:has-text('Bundles')", "Clicking Bundles in main navigation", { screenshotPath }),
     ]);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-goto-bundles-page-nav.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-goto-bundles-page-nav.png`, readerView: true });
     await page.waitForTimeout(500);
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-goto-bundles-page.png`, readerView: true });
   });
@@ -43,6 +43,7 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     console.log("Removing all bundles via API...");
     await takeScreenshot(page, {
       path: `${screenshotPath}/${timestamp()}-01-removing-all-bundles.png`,
+      readerView: true,
     });
 
     // Check if any allocated bundles exist — via catalogue "Added ✓" buttons OR current bundles "Remove" buttons
@@ -52,7 +53,7 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     const removeCount = await removeButtons.count().catch(() => 0);
     if (addedCount === 0 && removeCount === 0) {
       console.log("No 'Added ✓' or 'Remove' buttons found, bundles already cleared.");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-clear-bundles-skipping.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-clear-bundles-skipping.png`, readerView: true });
       return;
     }
 
@@ -81,12 +82,13 @@ export async function clearBundles(page, screenshotPath = defaultScreenshotPath)
     console.log(`API remove all bundles result: ${JSON.stringify(result)}`);
     await takeScreenshot(page, {
       path: `${screenshotPath}/${timestamp()}-03-removing-all-bundles-api-called.png`,
+      readerView: true,
     });
 
     // Reload the page to reflect the changes
     await page.reload();
     await page.waitForLoadState("networkidle");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-page-reloaded.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-page-reloaded.png`, readerView: true });
 
     // Verify bundles are cleared by checking the API response (no allocated bundles)
     const tries = 10;
@@ -143,7 +145,7 @@ export async function ensureBundlePresent(
   await test.step(`Ensure ${bundleName} bundle is present (idempotent)`, async () => {
     const bundleId = resolveBundleId(bundleName);
     console.log(`Ensuring ${bundleName} bundle is present (hidden=${isHidden}, testPass=${testPass})...`);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-ensure-bundle.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-ensure-bundle.png`, readerView: true });
 
     // For hidden bundles, check "Your Current Bundles" section (data-remove-bundle-id buttons)
     // For visible bundles, check catalogue section ("Added ✓" buttons)
@@ -152,12 +154,12 @@ export async function ensureBundlePresent(
       const removeLocator = page.locator(`button[data-remove-bundle-id="${bundleId}"]`);
       if (await removeLocator.isVisible({ timeout: 2000 }).catch(() => false)) {
         console.log(`${bundleName} bundle already present in current bundles, skipping.`);
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png`, readerView: true });
         return;
       }
       // Hidden bundle not present — grant via pass API
       console.log(`Hidden bundle ${bundleName} not in current bundles, granting via pass API...`);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png`, readerView: true });
       await ensureBundleViaPassApi(page, bundleId, screenshotPath, { testPass });
       // Verify it now appears in current bundles
       await expect(removeLocator).toBeVisible({ timeout: 32000 });
@@ -173,10 +175,10 @@ export async function ensureBundlePresent(
         console.log(
           `[polling to ensure present]: "Added ✓ ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/${tries})`,
         );
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-ensure-bundle-waiting.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-ensure-bundle-waiting.png`, readerView: true });
         await page.waitForTimeout(1000);
         addedLocator = page.getByRole("button", { name: `Added ✓ ${bundleName}` });
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-ensure-bundle-waited.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-ensure-bundle-waited.png`, readerView: true });
         if (await addedLocator.isVisible({ timeout: 1000 })) {
           console.log(`[polling to ensure present]: ${bundleName} bundle present.`);
           break;
@@ -203,22 +205,22 @@ export async function ensureBundlePresent(
     if (testPass) {
       // testPass requested: always use pass API to ensure synthetic qualifier is set
       console.log(`testPass=true for ${bundleName}, using pass API for synthetic-qualified grant...`);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png`, readerView: true });
       await ensureBundleViaPassApi(page, bundleId, screenshotPath, { testPass });
     } else if (isRequestEnabled) {
       // Requestable and enabled bundles: skip if already present
       if (await addedLocator.isVisible({ timeout: 32000 })) {
         console.log(`${bundleName} bundle already present, skipping request.`);
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-ensure-bundle-skipping.png`, readerView: true });
         return;
       }
       console.log(`${bundleName} bundle not present, requesting via UI...`);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png`, readerView: true });
       await requestBundle(page, bundleName, screenshotPath);
     } else {
       // On-pass bundles (visible but disabled) or not visible: re-grant via pass API to ensure fresh tokens
       console.log(`"Request ${bundleName}" button not enabled (on-pass bundle), using pass API for fresh grant...`);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-ensure-bundle-adding.png`, readerView: true });
       await ensureBundleViaPassApi(page, bundleId, screenshotPath, { testPass });
     }
   });
@@ -227,7 +229,7 @@ export async function ensureBundlePresent(
 export async function removeBundle(page, bundleName = "Test", screenshotPath = defaultScreenshotPath) {
   await test.step(`Remove ${bundleName} bundle via UI`, async () => {
     console.log(`Removing ${bundleName} bundle...`);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-remove-bundle.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-remove-bundle.png`, readerView: true });
 
     // Look for the remove button in the current bundles section
     const bundleId = resolveBundleId(bundleName);
@@ -236,7 +238,7 @@ export async function removeBundle(page, bundleName = "Test", screenshotPath = d
       await removeLocator.click();
       console.log(`Clicked remove button for ${bundleName}`);
       await page.waitForTimeout(1000);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-remove-bundle-clicked.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-remove-bundle-clicked.png`, readerView: true });
     } else {
       // Fallback: remove via API
       console.log(`Remove button for ${bundleName} not found in UI, removing via API...`);
@@ -292,7 +294,7 @@ export async function verifyBundleApiResponse(page, screenshotPath = defaultScre
 export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = defaultScreenshotPath, { testPass = false } = {}) {
   return await test.step(`Ensure ${bundleId} bundle via pass API`, async () => {
     console.log(`Creating and redeeming pass for bundle ${bundleId} (testPass=${testPass})...`);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-01-creating.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-pass-01-creating.png`, readerView: true });
 
     // Step 1: Create a pass via admin API (no auth required)
     const createResult = await page.evaluate(
@@ -385,7 +387,7 @@ export async function fillAndSubmitStripeTestCard(page, screenshotPath = default
     const submitButton = page.locator('[data-testid="hosted-payment-submit-button"], button[type="submit"]');
     await submitButton.first().waitFor({ state: "visible", timeout: 60_000 });
     console.log("Stripe checkout form rendered (submit button visible)");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-04-stripe-loaded.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-04-stripe-loaded.png`, readerView: true });
 
     let filledFields = [];
 
@@ -417,7 +419,7 @@ export async function fillAndSubmitStripeTestCard(page, screenshotPath = default
     const cardNumberInput = page.locator('#cardNumber, input[name="cardNumber"], input[autocomplete="cc-number"]');
     await cardNumberInput.first().waitFor({ state: "visible", timeout: 15_000 });
     console.log("Card number input visible");
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-04b-card-accordion-expanded.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-04b-card-accordion-expanded.png`, readerView: true });
 
     // Fill card number — use pressSequentially to simulate real typing (Stripe's JS
     // listens for input/keydown events; fill() dispatches 'input' but not keystrokes,
@@ -510,7 +512,7 @@ export async function fillAndSubmitStripeTestCard(page, screenshotPath = default
     }
 
     console.log(`Stripe checkout: filled fields: [${filledFields.join(", ")}]`);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-05-stripe-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-05-stripe-filled.png`, readerView: true });
 
     if (!filledFields.includes("card")) {
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-05-CARD-NOT-FILLED.png`, fullPage: true });
@@ -554,7 +556,7 @@ export async function ensureBundleViaCheckout(
 ) {
   return await test.step(`Ensure ${bundleId} bundle via checkout flow`, async () => {
     console.log(`Starting checkout for bundle ${bundleId} (testPass=${testPass}, skipPass=${skipPass})...`);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-01-starting.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-01-starting.png`, readerView: true });
 
     if (!skipPass) {
       // Step 1: Create a pass via admin API
@@ -611,7 +613,7 @@ export async function ensureBundleViaCheckout(
 
       const data = redeemResult?.data || redeemResult;
       console.log(`Pass redemption result: ${JSON.stringify(data)}`);
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-02-pass-redeemed.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-02-pass-redeemed.png`, readerView: true });
     } // end if (!skipPass)
 
     // Step 3: Call checkout session API
@@ -641,7 +643,7 @@ export async function ensureBundleViaCheckout(
     );
 
     console.log(`Checkout session result: ${JSON.stringify(checkoutResult)}`);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-03-session-created.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-03-session-created.png`, readerView: true });
 
     if (!checkoutResult.ok || !checkoutResult.checkoutUrl) {
       throw new Error(`Failed to create checkout session: ${JSON.stringify(checkoutResult)}`);
@@ -674,7 +676,7 @@ export async function ensureBundleViaCheckout(
       await page.waitForURL(/bundles\.html/, { timeout: 60_000 });
     }
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-06-completed.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-checkout-06-completed.png`, readerView: true });
 
     // Clear bundle cache and wait for bundle to appear
     await page.evaluate(async () => {
@@ -944,7 +946,7 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
   await test.step(`The user requests a ${bundleName} bundle and sees a confirmation message`, async () => {
     console.log(`Requesting ${bundleName} bundle...`);
     // Use substring matching for button text (may include token label like "(3 tokens)")
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-request-bundle.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-request-bundle.png`, readerView: true });
     let requestBtnLocator = page.locator(`button.service-btn:has-text("Request ${bundleName}")`);
     if (!(await requestBtnLocator.first().isVisible({ timeout: 1000 }))) {
       const tries = 5;
@@ -952,9 +954,9 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
         console.log(
           `[polling be ready to request]: "Request ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/${tries})`,
         );
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-request-bundle-waiting.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-request-bundle-waiting.png`, readerView: true });
         await page.waitForTimeout(1000);
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-request-bundle-waited.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-request-bundle-waited.png`, readerView: true });
         requestBtnLocator = page.locator(`button.service-btn:has-text("Request ${bundleName}")`);
         if (await requestBtnLocator.first().isVisible({ timeout: 1000 })) {
           console.log(`[polling be ready to request]: ${bundleName} bundle request button visible.`);
@@ -972,7 +974,7 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
       const addedLocator = page.getByRole("button", { name: `Added ✓ ${bundleName}` });
       if (await addedLocator.isVisible({ timeout: 1000 })) {
         console.log(`${bundleName} bundle already present, skipping request.`);
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-request-bundle-skipping.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-request-bundle-skipping.png`, readerView: true });
         return;
       } else {
         console.log(`${bundleName} bundle request button still not visible, assuming it's a different error.`);
@@ -981,9 +983,9 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
 
     // Request the bundle (has-text does substring match, works with token labels)
     await loggedClick(page, `button:has-text('Request ${bundleName}')`, `Request ${bundleName}`, { screenshotPath });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-request-bundle-clicked.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-request-bundle-clicked.png`, readerView: true });
 
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-ensure-bundle.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-ensure-bundle.png`, readerView: true });
     let addedLocator = page.getByRole("button", { name: `Added ✓ ${bundleName}` });
     if (!(await addedLocator.isVisible({ timeout: 1000 }))) {
       const tries = 20;
@@ -991,10 +993,10 @@ export async function requestBundle(page, bundleName = "Test", screenshotPath = 
         console.log(
           `[polling to ensure request completed]: "Added ✓ ${bundleName}" button not visible, waiting 1000ms and trying again (${i + 1}/${tries})`,
         );
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-ensure-bundle-waiting.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-ensure-bundle-waiting.png`, readerView: true });
         await page.waitForTimeout(1000);
         addedLocator = page.getByRole("button", { name: `Added ✓ ${bundleName}` });
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-ensure-bundle-waited.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-ensure-bundle-waited.png`, readerView: true });
         if (await addedLocator.isVisible({ timeout: 1000 })) {
           console.log(`[polling to ensure request completed]: ${bundleName} bundle present.`);
           break;
@@ -1050,7 +1052,7 @@ export async function waitForBundleWebhookActivation(
         console.log(
           `[webhook-activation]: Bundle ${bundleId} activated by webhook after ${Date.now() - startTime}ms (${pollCount} polls). stripeSubscriptionId=${result.stripeSubscriptionId}, status=${result.subscriptionStatus}`,
         );
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-webhook-activation-confirmed.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-webhook-activation-confirmed.png`, readerView: true });
         return result;
       }
 
@@ -1076,7 +1078,7 @@ export async function navigateToStripePortal(page, bundleId, screenshotPath = de
   return await test.step(`Navigate to Stripe billing portal for ${bundleId}`, async () => {
     const manageBtn = page.locator('button[data-manage-subscription="true"]').first();
     await expect(manageBtn).toBeVisible({ timeout: 10_000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-portal-01-manage-btn-visible.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-portal-01-manage-btn-visible.png`, readerView: true });
 
     // The "Manage Subscription" button does: fetch(/api/v1/billing/portal) → window.location.href = portalUrl
     // The navigation is deferred (after async API call), so we must wait for the URL to LEAVE bundles.html.
@@ -1089,7 +1091,7 @@ export async function navigateToStripePortal(page, bundleId, screenshotPath = de
     } catch {
       // Navigation didn't happen within 15s — still on bundles.html. This is simulator behavior.
       console.log("Simulator detected: portal button did not navigate away from bundles.html");
-      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-portal-02-simulator-detected.png` });
+      await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-portal-02-simulator-detected.png`, readerView: true });
       return { isSimulator: true };
     }
 
@@ -1106,7 +1108,7 @@ export async function navigateToStripePortal(page, bundleId, screenshotPath = de
 
     // Unexpected URL — might be a different portal implementation
     console.log(`Unexpected portal URL: ${currentUrl}`);
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-portal-02-unexpected-url.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-portal-02-unexpected-url.png`, readerView: true });
     return { isSimulator: false, portalUrl: currentUrl };
   });
 }
@@ -1130,7 +1132,7 @@ export async function cancelSubscriptionViaPortal(page, returnUrl, screenshotPat
     );
 
     await cancelPlanLocator.first().waitFor({ state: "visible", timeout: 15_000 });
-    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-portal-03-cancel-btn-visible.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-portal-03-cancel-btn-visible.png`, readerView: true });
     await cancelPlanLocator.first().click({ force: true });
     console.log("Clicked 'Cancel plan' in Stripe portal");
 
@@ -1224,7 +1226,7 @@ export async function waitForCancellationWebhook(
         console.log(
           `[cancellation-webhook]: Cancellation confirmed after ${Date.now() - startTime}ms: cancelAtPeriodEnd=${result.cancelAtPeriodEnd}, status=${result.subscriptionStatus}`,
         );
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-cancellation-webhook-confirmed.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-cancellation-webhook-confirmed.png`, readerView: true });
         return { cancelAtPeriodEnd: result.cancelAtPeriodEnd, subscriptionStatus: result.subscriptionStatus };
       }
 
@@ -1332,7 +1334,7 @@ export async function verifySubscriptionDeletionWebhook(
         console.log(
           `[deletion-webhook]: Subscription deletion confirmed after ${Date.now() - startTime}ms (${pollCount} polls). status=${result.subscriptionStatus}`,
         );
-        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-deletion-webhook-confirmed.png` });
+        await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-deletion-webhook-confirmed.png`, readerView: true });
         return { deleted: true, subscriptionStatus: result.subscriptionStatus, timedOut: false };
       }
 

@@ -121,6 +121,10 @@ export const CONCEPTS = {
   staffCosts: { prefix: "core", name: "StaffCostsEmployeeBenefitsExpense" },
   depreciationWrittenOff: { prefix: "core", name: "DepreciationAmortisationImpairmentExpense" },
   otherOperatingExpenses: { prefix: "core", name: "OtherOperatingExpensesFormat2" },
+  increaseDecreaseInStocks: { prefix: "core", name: "IncreaseDecreaseInStocksInventoriesFinishedGoodsWorkInProgress" },
+  ownWorkCapitalised: { prefix: "core", name: "OwnWorkCapitalised" },
+  otherExternalCharges: { prefix: "core", name: "OtherExternalCharges" },
+  interestPayable: { prefix: "core", name: "InterestPayableSimilarChargesFinanceCosts" },
 
   fixedAssets: { prefix: "core", name: "FixedAssets" },
   currentAssets: { prefix: "core", name: "CurrentAssets" },

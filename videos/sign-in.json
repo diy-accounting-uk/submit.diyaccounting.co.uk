@@ -32,7 +32,7 @@
   },
 
   "consentAnswer": "declined",
-  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+  "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
 
   "finalHoldMs": 3500,
 

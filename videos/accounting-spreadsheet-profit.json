@@ -6,8 +6,8 @@
   "auth": "none",
   "pages": ["scripts/collabora-sheet-host.js", "scripts/lib/video/collabora.js"],
   "viewport": {
-    "width": 1920,
-    "height": 1080
+    "width": 1280,
+    "height": 640
   },
   "deviceScaleFactor": 2,
   "fps": 30,
