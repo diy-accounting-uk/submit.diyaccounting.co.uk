@@ -58,7 +58,7 @@ one, judged against what the repository already says the site should do:
 | The journeys | `web/public/guide.page.js` (the sections and their `journeys`), `videos/publish.json` and each video's walkthrough | which steps a journey has, what each step shows, where it ends (the submission record) |
 | The catalogue | `web/public/submit.catalogue.toml` | which activities exist, in which environment, behind which bundle; a page that offers what the catalogue withholds, or hides what it offers, is a defect |
 | The design plan | `PLAN_SITE_DESIGN.md` (the shared layer, the per-page findings, the light-pinned list) | layout, tokens, the field pattern, the signed-out panel, dark mode |
-| The reader-view criteria | `PLAN_READER_VIEW_TESTS.md` and `assertReaderView` in `behaviour-tests/helpers/behaviour-helpers.js` | nothing cut at a box edge, nothing overlapping, progress messages cleared, dates and money formatted |
+| The reader-view criteria | `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_READER_VIEW_TESTS.md` and `assertReaderView` in `behaviour-tests/helpers/behaviour-helpers.js` | nothing cut at a box edge, nothing overlapping, progress messages cleared, dates and money formatted |
 | The look criteria | `.claude/skills/visual-review/SKILL.md` (ten criteria) | realistic data, not a bug, clean edges, space used, readable, current, nothing in the way, safe, alt text, consistent |
 | The behaviour suites | `behaviour-tests/*.behaviour.test.js` and their steps | what each page does on a valid, an empty and a failing submit |
 | The availability table | `web/public/mtd-calendar.html` | which filings the site says it can make, and from when |
