@@ -175,20 +175,29 @@ Steps 1 to 6 are Claude Code's. Run every command from this repository's root.
    echo "$ZIP"
    ```
 4. Run the review. It posts each document to the Companies House test validator, which takes one
-   to three minutes per case, so run it in the background:
+   to three minutes per case, so run it in the background. Name the `companies-house-test-service`
+   run that filed each case with `--run <fixture case name>=<run id>`; the fixture notes name older
+   runs, so the script does not read them. The run's evidence log gives the submission number, the
+   submit exchange and the last poll, and `gh` downloads the artifact (`--runs-dir <dir>` reads
+   `<dir>/<run id>/` instead):
    ```bash
-   node scripts/companies-house-review.mjs --adp-zip "target/companies-house-review/adp/$ZIP" --date "$(date +%F)" 2>&1 | tee target/companies-house-review/run.log
+   node scripts/companies-house-review.mjs --adp-zip "target/companies-house-review/adp/$ZIP" --date "$(date +%F)" \
+     --run micro-entity-accounts=<run id> --run micro-entity-accounts-dormant=<run id> \
+     --run small-company-accounts-full=<run id> --run small-company-accounts-filleted=<run id> 2>&1 | tee target/companies-house-review/run.log
    ```
-   Add `--skip-validator` to judge without the network. If Chromium is missing, run
+   One run writes everything the judge reads: `source/`, `reference/`, `reconciliation.md`, the
+   walkthrough lines and `index.html` (with the verdicts from `judge.json` when it is there). A
+   case with `"fictional": true` in the fixture is shown as a company not on any register; every
+   other case links its find-and-update entry. Add `--skip-validator` to judge without the network. If Chromium is missing, run
    `npx playwright install chromium` first.
-5. Look. For each case directory, open `rendered.png` and `example.png` with the Read tool. Judge
+5. Look. For each case directory, open `rendered.png` and `reference/example.png` with the Read tool. Judge
    whether ours reads as printed accounts beside the example: a title page, a balance sheet with a
    label and both years on every line, the statements under it, the approval line, numbered notes,
    and nothing else. Replace `pending` in that case's "Look" row in `findings.md` with `pass` or
    `fail` and one line of what you saw.
-6. Judge. Invoke `/companies-house-judge` on the folder. It moves our data into `source/` and the
-   example into `reference/`, reconciles our input against our output, writes `index.html`, judges
-   each case as the XML team would (`judge.json`) and boards a NEXT.md row per fix. A review is not
+6. Judge. Invoke `/companies-house-judge` on the folder. It reads `index.html` and the screenshots,
+   judges each case as the XML team would (`judge.json`), has the script render the page again and
+   boards a NEXT.md row per fix. A review is not
    finished, and no email to the XML team cites it, until the judge has run.
 7. Report the judge's verdict per case and the path of `index.html`. A walk-through for the
    operator opens `index.html` first, then `walkthrough.md` step by step.
@@ -210,7 +219,17 @@ The script judges each case on these rows. Each row in `findings.md` names its e
 | iXBRL structure | `ixbrlStructureProblems` returns nothing |
 | The statements for the type | The tagged statement contains the accounts TIS phrases; 444(5) and 444(5A) are found in the visible text |
 | The directors' approval line | An "approved by the board" sentence, the visible date, `DirectorSigningFinancialStatements` on an officer member, and that officer's name visible |
+| The company's category allows the regime claimed | A public company (name or text) fails: it is outside the small companies and micro-entity regimes (s384(1)(a), s478(a)) |
+| The s396(A1) company information statement is visible | The legal form, the part of the UK of registration, the company number and the registered office are in the visible text |
+| The period has ended and the approval date is past | The period end is before the review date; the approval date is between the period end and the review date |
+| No narrative fact sits only in `ix:hidden` | Every hidden statement or description of four words or more is also in the visible text |
+| The dormant accounts show the never-traded sentence | A visible sentence says the company has not traded (dormant case only) |
+| No placeholder text in names, officers or addresses | The company name, number, director and registered office have no "Test", "Fictional", "Example" or 00000000 |
+| One company's cases agree on one balance sheet date | Every case of one company number tags the same balance sheet date |
 | Look | The reviewer's judgement of the screenshots (step 5) |
+
+Share capital against the register's statement of capital is checked by the judge by hand until the
+script reads the register.
 
 A fail on "Every fact the example carries is in ours" needs judgement. A fact the example carries for
 its own company (investments, a second director, an accountant's name) does not apply to our case.
@@ -226,7 +245,10 @@ Say which missing facts apply and which do not.
 | `<n>-<case>/rendered.png` | Our document in headless Chromium, full page, 900 pixels wide |
 | `<n>-<case>/visible-text.txt` | What a reader sees, as text |
 | `<n>-<case>/facts.json` | Every tagged fact: concept, context, dimension members, value, hidden or visible |
-| `<n>-<case>/example.xhtml`, `example.png`, `example-source.txt` | The Companies House example and where it came from |
+| `<n>-<case>/source/` | Our data: `case-input.json` and, from the filing run, `submit-request.xml`, `submit-response.xml`, `last-poll-response.xml` |
+| `<n>-<case>/reference/` | The Companies House example (`Prod…html`), `example.png` and `example-source.txt`: a different company, for layout only |
+| `<n>-<case>/reconciliation.md` | Every input field against its tagged value and visible text; every total recomputed |
+| `index.html` | One page per review: per case the reconciliation, the rule rows, the judge's added checks, the gateway answer, ours beside the example, the judge's reasoning |
 | `<n>-<case>/fact-comparison.md` | Each example concept, present or missing in ours |
 | `<n>-<case>/validator.txt` | The test validator's output |
 | `<n>-<case>/submission.txt` | The submission number and poll outcome from the fixture |
