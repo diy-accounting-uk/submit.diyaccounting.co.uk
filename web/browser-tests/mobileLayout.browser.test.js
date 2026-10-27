@@ -152,7 +152,7 @@ test.describe("Mobile layout - specific findings", () => {
   });
 });
 
-test.describe("Header text is never truncated", () => {
+test.describe("Header account line truncates, the brand stays whole", () => {
   const LONG_ADDRESS = "synthetic-user@test.diyaccounting.co.uk";
 
   async function openHeader(page, width, signedIn) {
@@ -177,30 +177,33 @@ test.describe("Header text is never truncated", () => {
   for (const width of [1000, 390]) {
     for (const signedIn of [true, false]) {
       const state = signedIn ? "signed in" : "signed out";
-      test(`brand and signed-in line fit whole at ${width}px, ${state}`, async ({ page }) => {
+      test(`brand stays whole and the account line is complete or ellipsised with its title at ${width}px, ${state}`, async ({ page }) => {
         await openHeader(page, width, signedIn);
 
         const status = page.locator(".login-status");
         await expect(status).toHaveText(signedIn ? `Logged in as ${LONG_ADDRESS}` : "Not logged in");
-        const fits = await page.evaluate(() =>
-          [".login-status", ".brand-name"].map((selector) => {
-            const el = document.querySelector(selector);
-            const style = getComputedStyle(el);
-            return {
-              selector,
-              hidden: style.display === "none",
-              clipped: el.scrollWidth > el.clientWidth || el.scrollHeight - el.clientHeight > 1,
-              ellipsis: style.textOverflow === "ellipsis" && style.overflow !== "visible",
-            };
-          }),
-        );
-        for (const item of fits) {
-          if (item.hidden) continue;
-          expect(item.clipped, `${item.selector} is clipped`).toBe(false);
-          expect(item.ellipsis, `${item.selector} ends in an ellipsis`).toBe(false);
+        const measured = await page.evaluate(() => {
+          const brand = document.querySelector(".brand-name");
+          const login = document.querySelector(".login-status");
+          const loginStyle = getComputedStyle(login);
+          return {
+            brandHidden: getComputedStyle(brand).display === "none",
+            brandClipped: brand.scrollWidth > brand.clientWidth || brand.scrollHeight - brand.clientHeight > 1,
+            loginClipped: login.scrollWidth > login.clientWidth || login.scrollHeight - login.clientHeight > 1,
+            loginEllipsis: loginStyle.textOverflow === "ellipsis" && loginStyle.overflow !== "visible",
+            loginTitle: login.getAttribute("title"),
+          };
+        });
+        if (!measured.brandHidden) expect(measured.brandClipped, ".brand-name is clipped").toBe(false);
+        if (signedIn) {
+          expect(measured.loginEllipsis, ".login-status ends in an ellipsis when it overflows").toBe(true);
+          expect(measured.loginTitle, ".login-status title holds the full address").toBe(`Logged in as ${LONG_ADDRESS}`);
+        } else {
+          expect(measured.loginClipped, ".login-status is clipped").toBe(false);
+          expect(measured.loginTitle).toBeNull();
         }
         if (width === 1000) await expect(page.locator(".brand-name")).toBeVisible();
-        await expect(status).toBeInViewport({ ratio: 1 });
+        await expect(status).toBeInViewport();
         await expect(page.locator(".login-link")).toBeInViewport({ ratio: 1 });
 
         await page.locator(".header-nav").screenshot({
@@ -211,7 +214,7 @@ test.describe("Header text is never truncated", () => {
   }
 
   for (const width of [390, 320]) {
-    test(`a long signed-in address leaves the icons whole at ${width}px`, async ({ page }) => {
+    test(`a long signed-in address is ellipsised with its title and leaves the icons whole at ${width}px`, async ({ page }) => {
       const longAddress = "a.very.long.customer.address@example-company-name.co.uk";
       await page.setViewportSize({ width, height: 700 });
       await serveRealSite(page);
@@ -236,7 +239,7 @@ test.describe("Header text is never truncated", () => {
           leftClient: left.clientWidth,
           header: { left: header.left, right: header.right, top: header.top, bottom: header.bottom },
           icons,
-          statusClipped: status.scrollWidth > status.clientWidth || status.scrollHeight - status.clientHeight > 1,
+          statusTitle: status.getAttribute("title"),
         };
       });
       expect(measured.leftScroll).toBeLessThanOrEqual(measured.leftClient);
@@ -247,7 +250,7 @@ test.describe("Header text is never truncated", () => {
         expect(icon.top, `${icon.selector} top`).toBeGreaterThanOrEqual(measured.header.top);
         expect(icon.bottom, `${icon.selector} bottom`).toBeLessThanOrEqual(measured.header.bottom);
       }
-      expect(measured.statusClipped, ".login-status is clipped").toBe(false);
+      expect(measured.statusTitle, ".login-status title holds the full address").toBe(`Logged in as ${longAddress}`);
       await expect(page.locator(".login-link")).toBeInViewport({ ratio: 1 });
       expect(await hasRealHorizontalScroll(page)).toBe(false);
 
