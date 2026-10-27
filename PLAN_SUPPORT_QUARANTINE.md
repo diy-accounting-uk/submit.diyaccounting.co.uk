@@ -45,7 +45,7 @@ This repository is public. Its Actions logs, step summaries and artifacts are pu
 
 - No step in this repository prints ticket text, model output or a drafted reply to the log or to `$GITHUB_STEP_SUMMARY`.
 - No job uploads an artifact that holds them.
-- Jobs pass that text to each other as job outputs, base64-encoded, written with `>> "$GITHUB_OUTPUT"` and never with `tee`.
+- Jobs pass that text to each other as job outputs, written with `>> "$GITHUB_OUTPUT"` and never with `tee`. A step that reads a job output shows its value in the log header, so every output that holds ticket-derived text is encrypted (`openssl enc -aes-256-cbc -pbkdf2`, keyed from `secrets.AGENT_APP_PRIVATE_KEY` and the run id) and then base64-encoded. A request skeleton holds no ticket text and stays plain base64.
 - The private issue is the only place a person reads that text.
 
 ## Decision: where the reader and the handler run
