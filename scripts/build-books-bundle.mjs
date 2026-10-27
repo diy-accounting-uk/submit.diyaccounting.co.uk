@@ -207,9 +207,10 @@ import bookSchema from "@diy-accounting-uk/diya-gl/dist/web/spreadsheets.diyacco
 import linesSchema from "@diy-accounting-uk/diya-gl/dist/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-lines-v2.schema.json";
 import { useSchemas } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
 useSchemas(bookSchema, linesSchema);
-import { readBookSource as readBookSourceWith } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
+import { readBookSource as readBookSourceWith, readBookSources as readBookSourcesWith } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
 import { PRODUCTS } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 export const readBookSource = (bytes, name) => readBookSourceWith(bytes, name, { products: PRODUCTS });
+export const readBookSources = (files, deps = {}) => readBookSourcesWith(files, { products: PRODUCTS, ...deps });
 export { deriveVatReturn, deriveItsaQuarterlyUpdate, deriveItsaAnnualSubmission, deriveUkPropertyPeriod, deriveUkPropertyAnnual } from "@diy-accounting-uk/diya-gl";
 import { parse as parseToml } from "smol-toml";
 import { readFileSync } from "node:fs";

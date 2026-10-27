@@ -88,6 +88,7 @@ export function requestError(response, result, fallback) {
 }
 
 function failureCause(error) {
+  if (error?.failure) return error.failure;
   const status = error?.status;
   const code = error?.code || "";
   if (status === 401)
