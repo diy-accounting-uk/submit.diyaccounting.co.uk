@@ -619,16 +619,16 @@ The driver is a script under the session scratchpad; it is not in the repository
 
 ### SQ1: every walkthrough frame, judged
 
-537 frames in 44 videos. 523 pass, 14 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
+534 frames in 44 videos. 531 pass, 3 fail. Judged by script on criteria 3 (top edge), 4 (empty frame), 7 (headline card in the frame) and 10 (width: every site frame is 1000 wide, every localApp frame 1600); by eye on criteria 1, 2, 5, 6, 8 and 9 from a contact sheet of each video's thumbnails and full-size reads of three frames. The table has one row per video; a frame that passes is counted, a frame that fails is named with its criteria (O = card in the frame, C = line cut at the top edge, E = most of the frame empty, 1 = placeholder data).
 
-Fails by cause: E 14 (11 of `accounting-spreadsheet-profit`, `mcp-hosted/connect-0..2`).
+Fails by cause: E 3 (`mcp-hosted/connect-0..2`).
 
 Not re-cut, frames unchanged: `change-registered-email` (passes).
 
 | Video | Frames | Pass | Fails (frame, criteria) |
 |---|---|---|---|
 | accounting-diya-gl-profit | 24 | 24 | none |
-| accounting-spreadsheet-profit | 13 | 2 | april-0 E; april-15 E; april-17 E; april-2 E; april-23 E; april-25 E; april-3 E; april-5 E; april-7 E; april-8 E; may E |
+| accounting-spreadsheet-profit | 13 | 13 | none |
 | bundles | 4 | 4 | none |
 | change-registered-email (not re-cut) | 7 | 7 | none |
 | change-registered-office | 7 | 7 | none |
@@ -649,11 +649,11 @@ Not re-cut, frames unchanged: `change-registered-email` (passes).
 | itsa-in-year-estimate | 10 | 10 | none |
 | itsa-loss-claims | 13 | 13 | none |
 | itsa-quarterly-from-books | 18 | 18 | none |
-| itsa-quarterly-update | 26 | 26 | none |
+| itsa-quarterly-update | 25 | 25 | none |
 | itsa-self-employment-amend | 17 | 17 | none |
 | itsa-uk-property-year | 24 | 24 | none |
-| itsa-year | 54 | 54 | none |
-| itsa-year-part | 36 | 36 | none |
+| itsa-year | 53 | 53 | none |
+| itsa-year-part | 35 | 35 | none |
 | mcp-cli | 8 | 8 | none |
 | mcp-diya-gl | 7 | 7 | none |
 | mcp-docker | 8 | 8 | none |
@@ -676,9 +676,7 @@ Remaining fails, by fix:
 
 | Fail | Frames | What a reader sees | Fix |
 |---|---|---|---|
-| E | 11 frames of `accounting-spreadsheet-profit` | The grid at the 1280 by 640 viewport is about half blank rows where it was 75 percent | Record at a viewport short enough for the filled rows (the Profit and Loss sheet needs 24 rows), or cut the sheet's blank rows from the frame |
-| E | `mcp-hosted/connect-0..2` | The Inspector's connect form fills a quarter of the frame | A prod capture (`video-capture.yml`, hosted sign-in) at a smaller viewport; not recordable on the simulator lane |
-| 2 | ITSA frames of `itsa-year`, `itsa-year-part`, `itsa-quarterly-from-books` and the other `auth: user` scripts | The synthetic-mode banner (and a "Loading ..." state where a form loads) in frames cut from the earlier recordings | Every signed-in script now suppresses `#syntheticIndicator`; only `itsa-loss-claims` is re-recorded and shows no banner. The rest need a re-recording, then `node scripts/video-walkthrough.js --id <id>` |
+| E | `mcp-hosted/connect-0..2` | The Inspector's connect form fills a quarter of the frame | `videos/mcp-hosted.json` now records at 1280 by 720; the re-recording runs in `video-capture.yml` against prod |
 
 #### ui-ux-pro-max over `guide.html` and `guide.page.js`
 

@@ -46,6 +46,7 @@ test.describe("viewVatReturn - stale status banners", () => {
         status: 200,
         contentType: "application/javascript",
         body: `
+          import "/lib/utils/dom-utils.js";
           window.authorizedFetch = (url, options) => fetch(url, options);
           window.getGovClientHeaders = async () => ({});
         `,
@@ -116,7 +117,7 @@ test.describe("viewVatReturn - stale status banners", () => {
     // endpoint 404s on this first call — the page's catch-block error banner appears.
     const errorBanner = page.locator("#statusMessagesContainer .status-message.status-error");
     await expect(errorBanner).toBeVisible({ timeout: 10_000 });
-    await expect(errorBanner).toContainText(/Failed to retrieve return/);
+    await expect(errorBanner).toContainText(/Could not retrieve the VAT return/);
     await page.screenshot({ path: "target/browser-test-results/viewVatReturn-stale-banner-01-error.png" });
 
     // Resubmit — the form is visible again because the catch block re-expands it on error.

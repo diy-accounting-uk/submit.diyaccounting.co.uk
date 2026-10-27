@@ -163,11 +163,11 @@ async function continueLiabilitiesRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcAccessToken");
         sessionStorage.removeItem("hmrcTokenScope");
-        showStatus("Access token expired. Please re-authenticate.", "error");
+        showFailure({ status: 401 }, "Could not retrieve VAT liabilities");
         showSearchCriteria(); // Show form on error
         return;
       }
-      throw new Error(hmrcErrorMessage(result, "Failed to retrieve liabilities"));
+      throw requestError(response, result, "Failed to retrieve liabilities");
     }
 
     // Display results
@@ -185,7 +185,7 @@ async function continueLiabilitiesRetrieval() {
     console.log("Liabilities retrieval completed successfully");
   } catch (error) {
     console.error("Error retrieving liabilities:", error);
-    showStatus(`Failed to retrieve liabilities: ${error.message}`, "error");
+    showFailure(error, "Could not retrieve VAT liabilities");
     showSearchCriteria(); // Show form on error
     // Clear pending request data to prevent auto-retry loop on next page load
     sessionStorage.removeItem("pendingLiabilitiesRequest");
@@ -311,10 +311,10 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcAccessToken");
           sessionStorage.removeItem("hmrcTokenScope");
-          showStatus("Access token expired. Please try again.", "error");
+          showFailure({ status: 401 }, "Could not retrieve VAT liabilities");
           return;
         }
-        throw new Error(hmrcErrorMessage(result, "Failed to retrieve liabilities"));
+        throw requestError(response, result, "Failed to retrieve liabilities");
       }
 
       // Display results
@@ -324,7 +324,7 @@ async function handleFormSubmission(event) {
       hideStatus();
     } catch (error) {
       console.error("Error retrieving liabilities:", error);
-      showStatus(`Failed to retrieve liabilities: ${error.message}`, "error");
+      showFailure(error, "Could not retrieve VAT liabilities");
     } finally {
       hideLoading();
     }
@@ -373,7 +373,7 @@ function displayLiabilities(liabilities) {
     return element(
       "tr",
       {},
-      element("td", {}, element("strong", {}, periodDisplay)),
+      element("td", {}, periodDisplay),
       element("td", {}, HmrcDisplayFormat.formatText(liability.type)),
       element("td", { class: "money-column" }, originalAmountDisplay),
       element("td", { class: "money-column" }, outstandingAmountDisplay),

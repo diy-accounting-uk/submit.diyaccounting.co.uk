@@ -411,7 +411,7 @@ export async function completeVat(page, baseUrl, testScenario = null, screenshot
       // fails within seconds - SLOW_10S is excluded above - so a bounded timeout turns a
       // genuine stall into a fast, attributable failure instead of quietly spending the
       // whole test timeout on it.
-      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 90_000 });
+      await expect(statusContainer).toContainText(/failed|error|could not/i, { timeout: 90_000 });
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png`, readerView: true });
       await expect(page.locator("#receiptDisplay")).toBeHidden();
     });
@@ -522,7 +522,7 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
       // fails within seconds - SLOW_10S is excluded above - so a bounded timeout turns a
       // genuine stall into a fast, attributable failure instead of quietly spending the
       // whole test timeout on it.
-      await expect(statusContainer).toContainText(/failed|error/i, { timeout: 90_000 });
+      await expect(statusContainer).toContainText(/failed|error|could not/i, { timeout: 90_000 });
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-verify-vat-error.png`, readerView: true });
       await expect(page.locator("#receiptDisplay")).toBeHidden();
     });
@@ -1763,10 +1763,10 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
       for (let attempt = 1; attempt <= 3; attempt++) {
         await expect(statusContainer).toBeVisible();
         statusText = (await statusContainer.innerText()).toLowerCase();
-        if (/failed|error|not found/.test(statusText)) break;
+        if (/failed|error|not found|could not/i.test(statusText)) break;
         if (attempt < 3) await page.waitForTimeout(500);
       }
-      expect(statusText).toMatch(/failed|error|not found/);
+      expect(statusText).toMatch(/failed|error|not found|could not/i);
       console.log("View VAT return expected error for the HMRC sandbox scenario successfully");
     });
   } else {

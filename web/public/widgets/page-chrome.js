@@ -159,6 +159,13 @@
     if (fallback) fallback.remove();
 
     header.insertAdjacentHTML("afterbegin", headerNavHtml + navHtml);
+
+    // On a narrow screen the row scrolls sideways; bring the current page's link into view.
+    const nav = header.querySelector(".main-nav");
+    const active = nav && nav.querySelector("a.active");
+    if (nav && active && nav.scrollWidth > nav.clientWidth) {
+      nav.scrollLeft = Math.max(0, active.offsetLeft - nav.clientWidth / 2 + active.offsetWidth / 2);
+    }
   }
 
   function renderFooter(footer, rootPrefix) {

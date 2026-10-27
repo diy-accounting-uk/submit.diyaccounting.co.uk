@@ -34,8 +34,8 @@
 
     const refreshBtn = document.createElement("button");
     refreshBtn.className = "token-refresh-btn";
-    refreshBtn.setAttribute("aria-label", "check token balance");
-    refreshBtn.setAttribute("title", "check token balance");
+    refreshBtn.setAttribute("aria-label", "Refresh token balance");
+    refreshBtn.setAttribute("title", "Refresh token balance");
     refreshBtn.type = "button";
     refreshBtn.innerHTML =
       '<svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true">' +
@@ -166,6 +166,7 @@
       prefix.className = "login-prefix";
       prefix.textContent = "Logged in as ";
       loginStatusElement.replaceChildren(prefix, userLabel);
+      loginStatusElement.title = "Logged in as " + userLabel;
       loginLinkElement.textContent = "Logout";
       loginLinkElement.href = "#";
       loginLinkElement.onclick = logout;
@@ -173,6 +174,7 @@
       fetchAndDisplayTokens();
     } else {
       loginStatusElement.textContent = "Not logged in";
+      loginStatusElement.removeAttribute("title");
       // Hide token balance when not logged in
       const tokenBalanceEl = document.querySelector(".token-balance");
       if (tokenBalanceEl) tokenBalanceEl.style.display = "none";

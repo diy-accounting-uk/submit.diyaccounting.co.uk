@@ -7,7 +7,7 @@
   "pages": ["scripts/collabora-sheet-host.js", "scripts/lib/video/collabora.js"],
   "viewport": {
     "width": 1280,
-    "height": 640
+    "height": 560
   },
   "deviceScaleFactor": 2,
   "fps": 30,
@@ -58,7 +58,7 @@
         },
         {
           "action": "sheetZoom",
-          "percent": 150
+          "percent": 200
         }
       ]
     },
@@ -354,7 +354,7 @@
         },
         {
           "action": "sheetZoom",
-          "percent": 120
+          "percent": 85
         },
         {
           "action": "sheetPoint",

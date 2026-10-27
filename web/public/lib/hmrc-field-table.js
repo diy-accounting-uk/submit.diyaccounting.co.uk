@@ -429,6 +429,7 @@
       const tr = body.insertRow();
       columns.forEach((column, index) => {
         const td = tr.insertCell();
+        td.setAttribute("data-label", column.label);
         if (column.kind === "action") {
           const button = document.createElement("button");
           button.type = "button";

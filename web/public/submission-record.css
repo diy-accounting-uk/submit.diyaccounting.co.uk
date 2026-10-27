@@ -155,6 +155,63 @@
   font-size: inherit;
 }
 
+/* The record in its frame on a site page: the page's own face and figures, on white paper, with a
+   ruled edge that holds in dark. At phone width a label sits above its value. */
+.customer-copy-sheet {
+  border: 2px solid var(--c-rule, #8a94a6);
+  border-radius: var(--radius-cell, 4px);
+}
+.customer-copy-sheet .submission-record {
+  font-family: var(--font-text, Arial, sans-serif);
+  font-size: var(--step-0, 1rem);
+  font-variant-numeric: tabular-nums lining-nums;
+  color: #0b0c0c;
+  background: #fff;
+  line-height: 1.4;
+}
+.customer-copy-sheet .submission-record .page {
+  max-width: 180mm;
+  padding: 1.5rem;
+}
+.customer-copy-sheet .submission-record table.statement td.figure,
+.customer-copy-sheet .submission-record table.statement th.figure {
+  font-family: var(--font-figures, inherit);
+  width: auto;
+  white-space: nowrap;
+}
+.customer-copy-sheet .submission-record table.statement td.label {
+  padding-right: 1rem;
+  overflow-wrap: anywhere;
+}
+.customer-copy-sheet .submission-record table.statement td.text-value {
+  font-weight: 700;
+}
+
+.customer-copy-sheet .submission-record table.statement {
+  display: table;
+  overflow: visible;
+  background: none;
+}
+
+@media (max-width: 40rem) {
+  .customer-copy-sheet .submission-record .page {
+    padding: 1rem;
+  }
+  .customer-copy-sheet .submission-record table.statement td.label:has(+ td.text-value),
+  .customer-copy-sheet .submission-record table.statement td.text-value {
+    display: block;
+    width: auto;
+    padding: 0;
+  }
+  .customer-copy-sheet .submission-record table.statement td.label:has(+ td.text-value) {
+    padding-top: 0.75rem;
+    color: #45505e;
+  }
+  .customer-copy-sheet .submission-record table.statement td.text-value {
+    overflow-wrap: anywhere;
+  }
+}
+
 /* The customer copy. */
 .customer-copy {
   font-family: var(--font-text, Arial, sans-serif);

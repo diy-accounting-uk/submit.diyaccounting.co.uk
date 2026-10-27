@@ -194,6 +194,19 @@ describe("hmrcVatObligationGet ingestHandler", () => {
     expect([400, 500]).toContain(response.statusCode);
   });
 
+  test("passes HMRC's insolvent-trader code through on a 403", async () => {
+    mockHmrcError(mockFetch, 403, { code: "RULE_INSOLVENT_TRADER", message: "The trader is insolvent" });
+
+    const event = buildHmrcEvent({
+      queryStringParameters: { vrn: "111222333" },
+      headers: { authorization: "Bearer test-token" },
+    });
+    const response = await hmrcVatObligationGetHandler(event);
+    expect(response.statusCode).toBe(403);
+    const body = parseResponseBody(response);
+    expect(body.responseBody.code).toBe("RULE_INSOLVENT_TRADER");
+  });
+
   test("returns 400 for invalid VAT registration number format", async () => {
     const event = buildHmrcEvent({
       queryStringParameters: { vrn: "12345678" }, // 8 digits instead of 9

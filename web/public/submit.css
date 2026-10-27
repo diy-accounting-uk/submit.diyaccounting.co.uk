@@ -37,8 +37,8 @@
   --c-scrim-strong: rgb(11 12 12 / 0.92);
   --c-on-scrim: #ffffff;
 
-  --font-text: "Atkinson Hyperlegible", "Atkinson Fallback", system-ui, sans-serif;
-  --font-figures: var(--font-text);
+  --font-text: "Plain Zero", "Atkinson Hyperlegible", "Atkinson Fallback", system-ui, sans-serif;
+  --font-figures: "Atkinson Hyperlegible", "Atkinson Fallback", system-ui, sans-serif;
   --font-code: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
   --step--1: 0.875rem; /* captions only, never body */
   --step-0: 1rem;
@@ -140,6 +140,34 @@
   src: url("fonts/atkinson-hyperlegible-latin-700-normal.woff2") format("woff2");
 }
 
+/* Running text draws the digit zero without the slash; ledger cells and tables keep the slashed zero. */
+@font-face {
+  font-family: "Plain Zero";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0030;
+  src: url("fonts/plain-zero-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Plain Zero";
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  unicode-range: U+0030;
+  src: url("fonts/plain-zero-400-italic.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Plain Zero";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  unicode-range: U+0030;
+  src: url("fonts/plain-zero-700-normal.woff2") format("woff2");
+}
+
 /* Arial scaled to Atkinson Hyperlegible's metrics, so the swap moves no line. */
 @font-face {
   font-family: "Atkinson Fallback";
@@ -228,6 +256,7 @@ th,
 input[type="number"],
 .input-prefix input,
 .token-balance {
+  font-family: var(--font-figures);
   font-variant-numeric: tabular-nums lining-nums;
 }
 
@@ -567,7 +596,10 @@ header:has(> .chrome-fallback) {
   font-size: var(--step--1);
   line-height: 1.2;
   text-align: right;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 0 1 auto;
   min-width: 0;
 }
 
@@ -582,6 +614,10 @@ header:has(> .chrome-fallback) {
 
 .token-count {
   white-space: nowrap;
+}
+
+.token-balance a:hover .token-count {
+  text-decoration: underline;
 }
 
 .token-refresh-btn {
@@ -745,9 +781,21 @@ dd {
     margin-bottom: var(--space-1);
   }
 
-  .brand-name,
   .login-prefix {
     display: none;
+  }
+
+  .brand-name {
+    font-size: var(--step-0);
+  }
+
+  .header-left {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .home-link {
+    min-width: 0;
   }
 
   /* Two rows: the 2.75rem icons, the 2.5rem account row, the padding and the rule.
@@ -774,7 +822,13 @@ dd {
   }
 
   .login-status {
+    flex: 1 1 0;
     line-height: 1.1;
+    text-align: left;
+  }
+
+  .auth-section {
+    justify-content: space-between;
   }
 
   header h1 {
@@ -791,10 +845,9 @@ dd {
   }
 
   .main-nav {
-    --nav-fade: var(--space-5);
+    --nav-fade: var(--space-7);
     gap: var(--space-3);
-    margin-right: calc(-1 * var(--gutter));
-    padding-right: calc(var(--gutter) + var(--nav-fade));
+    padding-right: var(--nav-fade);
     mask-image: linear-gradient(to right, #000 calc(100% - var(--nav-fade)), transparent);
     -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--nav-fade)), transparent);
   }
@@ -1498,6 +1551,11 @@ textarea.input--error {
   margin-bottom: var(--space-3);
 }
 
+.form-toggle-buttons .secondary-button,
+.form-toggle-buttons .cancel-button {
+  margin-left: 0;
+}
+
 .button-group {
   display: flex;
   flex-wrap: wrap;
@@ -1628,6 +1686,34 @@ textarea.input--error {
 .status-message-content {
   flex: 1;
   min-width: 0;
+}
+
+.status-message-content:has(> .status-message-title) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.status-message-title {
+  font-weight: var(--weight-strong);
+}
+
+.status-message-next {
+  align-self: flex-start;
+  color: var(--c-brand);
+  font-weight: var(--weight-strong);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.status-message-next:hover {
+  text-decoration-thickness: 2px;
+}
+
+.receipt-figure {
+  font-family: var(--font-figures);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
 
 .status-close-button {
@@ -1762,6 +1848,126 @@ caption {
 
 .results-table .date-column {
   white-space: nowrap;
+}
+
+/* Ledger cells: money is right-aligned figures, dates and periods are plain text. */
+.results-table th.money-column,
+.results-table td.money-column {
+  text-align: right;
+  font-family: var(--font-figures);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.results-table td.money-column {
+  white-space: nowrap;
+}
+
+.results-table td.receipt-cell .download-icon {
+  margin-left: var(--space-3);
+}
+
+.results-table td.action-column {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--c-rule-subtle);
+}
+
+.results-table .action-button {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.results-table .link-button {
+  min-height: var(--control-height);
+}
+
+/* Under 40rem a row is a block of label and value pairs, so no column sits out of sight. */
+@media (max-width: 40rem) {
+  .results-table:not(.review-table),
+  .results-table:not(.review-table) tbody {
+    display: block;
+    overflow: visible;
+    background: none;
+  }
+
+  .results-table:not(.review-table) thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .results-table:not(.review-table) tr {
+    display: block;
+    padding: var(--space-2) 0;
+    border-bottom: 2px solid var(--c-rule);
+  }
+
+  .results-table:not(.review-table) td {
+    display: grid;
+    grid-template-columns: minmax(6rem, 40%) minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-1) 0;
+    border: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .results-table:not(.review-table) td[data-label]::before {
+    content: attr(data-label);
+    font-weight: var(--weight-strong);
+    color: var(--c-ink-muted);
+  }
+
+  .results-table:not(.review-table) td.money-column {
+    white-space: normal;
+  }
+
+  .results-table:not(.review-table) td.money-column::before {
+    text-align: left;
+  }
+
+  .results-table:not(.review-table) td.action-column,
+  .results-table:not(.review-table) td.receipt-cell {
+    display: grid;
+    border: 0;
+  }
+
+  .results-table:not(.review-table) td.receipt-cell {
+    grid-template-columns: minmax(6rem, 40%) auto auto;
+    justify-content: start;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .results-table:not(.review-table) td.action-column {
+    display: flex;
+    padding-top: var(--space-2);
+  }
+
+  .results-table:not(.review-table) td.action-column::before {
+    display: none;
+  }
+
+  .results-table:not(.review-table) tbody th {
+    display: block;
+    text-align: left;
+    border: 0;
+    padding: var(--space-2) 0 0;
+    color: var(--c-ink-muted);
+  }
+
+  .results-table:not(.review-table) td.receipt-cell .download-icon {
+    margin-left: 0;
+  }
+
+  .results-table:not(.review-table) td.receipt-cell .receipt-label {
+    white-space: nowrap;
+    overflow-wrap: normal;
+  }
 }
 
 .status-open {

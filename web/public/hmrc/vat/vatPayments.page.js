@@ -163,11 +163,11 @@ async function continuePaymentsRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcAccessToken");
         sessionStorage.removeItem("hmrcTokenScope");
-        showStatus("Access token expired. Please re-authenticate.", "error");
+        showFailure({ status: 401 }, "Could not retrieve VAT payments");
         showSearchCriteria(); // Show form on error
         return;
       }
-      throw new Error(hmrcErrorMessage(result, "Failed to retrieve payments"));
+      throw requestError(response, result, "Failed to retrieve payments");
     }
 
     // Display results
@@ -185,7 +185,7 @@ async function continuePaymentsRetrieval() {
     console.log("Payments retrieval completed successfully");
   } catch (error) {
     console.error("Error retrieving payments:", error);
-    showStatus(`Failed to retrieve payments: ${error.message}`, "error");
+    showFailure(error, "Could not retrieve VAT payments");
     showSearchCriteria(); // Show form on error
     // Clear pending request data to prevent auto-retry loop on next page load
     sessionStorage.removeItem("pendingPaymentsRequest");
@@ -311,10 +311,10 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcAccessToken");
           sessionStorage.removeItem("hmrcTokenScope");
-          showStatus("Access token expired. Please try again.", "error");
+          showFailure({ status: 401 }, "Could not retrieve VAT payments");
           return;
         }
-        throw new Error(hmrcErrorMessage(result, "Failed to retrieve payments"));
+        throw requestError(response, result, "Failed to retrieve payments");
       }
 
       // Display results
@@ -324,7 +324,7 @@ async function handleFormSubmission(event) {
       hideStatus();
     } catch (error) {
       console.error("Error retrieving payments:", error);
-      showStatus(`Failed to retrieve payments: ${error.message}`, "error");
+      showFailure(error, "Could not retrieve VAT payments");
     } finally {
       hideLoading();
     }
@@ -366,10 +366,15 @@ function displayPayments(payments) {
     // A payment not yet received omits "received" - show "Pending", not a bare "-",
     // since a payment that just hasn't landed yet isn't an error state.
     const receivedDisplay = payment.received ? formatDate(payment.received) : "Pending";
-    return element("tr", {}, element("td", {}, element("strong", {}, amountDisplay)), element("td", {}, receivedDisplay));
+    return element(
+      "tr",
+      {},
+      element("td", { class: "money-column" }, amountDisplay),
+      element("td", { class: "date-column" }, receivedDisplay),
+    );
   });
 
-  tableContainer.replaceChildren(resultsTable([["Amount"], ["Received"]], rows));
+  tableContainer.replaceChildren(resultsTable([["Amount", "money-column"], ["Received"]], rows));
 }
 
 const formatDate = HmrcDisplayFormat.formatDate;

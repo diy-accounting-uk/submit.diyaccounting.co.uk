@@ -189,10 +189,10 @@ async function continueReturnRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcAccessToken");
         sessionStorage.removeItem("hmrcTokenScope");
-        showStatus("Access token expired. Please re-authenticate.", "error");
+        showFailure({ status: 401 }, "Could not retrieve the VAT return");
         return;
       }
-      throw new Error(hmrcErrorMessage(result, "Failed to retrieve VAT return"));
+      throw requestError(response, result, "Failed to retrieve VAT return");
     }
 
     // Display results - add period dates for display
@@ -213,7 +213,7 @@ async function continueReturnRetrieval() {
     console.log("Return retrieval completed successfully");
   } catch (error) {
     console.error("Error retrieving VAT return:", error);
-    showStatus(`Failed to retrieve return: ${error.message}`, "error");
+    showFailure(error, "Could not retrieve the VAT return");
     // Auto-expand form on error so user can retry
     showForm();
     // Clear pending request data to prevent auto-retry loop on next page load
@@ -341,10 +341,10 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcAccessToken");
           sessionStorage.removeItem("hmrcTokenScope");
-          showStatus("Access token expired. Please try again.", "error");
+          showFailure({ status: 401 }, "Could not retrieve the VAT return");
           return;
         }
-        throw new Error(hmrcErrorMessage(result, "Failed to retrieve VAT return"));
+        throw requestError(response, result, "Failed to retrieve VAT return");
       }
 
       // Display results - add period dates for display
@@ -357,7 +357,7 @@ async function handleFormSubmission(event) {
       hideStatus();
     } catch (error) {
       console.error("Error retrieving VAT return:", error);
-      showStatus(`Failed to retrieve return: ${error.message}`, "error");
+      showFailure(error, "Could not retrieve the VAT return");
     } finally {
       hideLoading();
     }

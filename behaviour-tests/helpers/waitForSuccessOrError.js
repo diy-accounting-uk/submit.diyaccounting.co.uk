@@ -15,7 +15,7 @@ function defaultErrorConditions() {
   return [
     {
       selector: "#statusMessagesContainer .status-message.status-error",
-      textPattern: /failed|error|expired|forbidden|no tokens/i,
+      textPattern: /failed|error|could not|expired|forbidden|no tokens/i,
     },
   ];
 }

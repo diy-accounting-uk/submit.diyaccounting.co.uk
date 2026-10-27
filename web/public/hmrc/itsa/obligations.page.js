@@ -130,9 +130,7 @@ async function retrieveObligations(nino, filters, testScenario, runFraudPreventi
 
   const result = await response.json();
   if (!response.ok) {
-    const error = new Error(hmrcErrorMessage(result, "Failed to retrieve obligations"));
-    error.status = response.status;
-    throw error;
+    throw requestError(response, result, "Failed to retrieve obligations");
   }
   return result;
 }
@@ -183,9 +181,9 @@ async function continueObligationsRetrieval() {
     if (error.status === 401) {
       sessionStorage.removeItem("hmrcAccessToken");
       sessionStorage.removeItem("hmrcTokenScope");
-      showStatus("Access token expired. Please re-authenticate.", "error");
+      showFailure({ status: 401 }, "Could not retrieve obligations");
     } else {
-      showStatus(`Failed to retrieve obligations: ${error.message}`, "error");
+      showFailure(error, "Could not retrieve obligations");
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingObligationsRequest");
@@ -271,9 +269,9 @@ async function handleFormSubmission(event) {
       if (error.status === 401) {
         sessionStorage.removeItem("hmrcAccessToken");
         sessionStorage.removeItem("hmrcTokenScope");
-        showStatus("Access token expired. Please try again.", "error");
+        showFailure({ status: 401 }, "Could not retrieve obligations");
       } else {
-        showStatus(`Failed to retrieve obligations: ${error.message}`, "error");
+        showFailure(error, "Could not retrieve obligations");
       }
     } finally {
       hideLoading();
@@ -304,14 +302,15 @@ function displayObligations(obligations) {
     const tbody = document.createElement("tbody");
     business.obligationDetails.forEach((detail) => {
       const statusCell = document.createElement("td");
+      statusCell.setAttribute("data-label", "Status");
       statusCell.append(el("span", detail.status === "fulfilled" ? "status-fulfilled" : "status-open", detail.status || ""));
       const row = document.createElement("tr");
       row.append(
-        el("td", "date-column", detail.periodStartDate || ""),
-        el("td", "date-column", detail.periodEndDate || ""),
-        el("td", "date-column", detail.dueDate || ""),
+        labelled(el("td", "date-column", detail.periodStartDate || ""), "Period start"),
+        labelled(el("td", "date-column", detail.periodEndDate || ""), "Period end"),
+        labelled(el("td", "date-column", detail.dueDate || ""), "Due date"),
         statusCell,
-        el("td", "date-column", detail.receivedDate || "-"),
+        labelled(el("td", "date-column", detail.receivedDate || "-"), "Received"),
       );
       tbody.append(row);
     });
@@ -321,6 +320,11 @@ function displayObligations(obligations) {
     return [el("h4", "", `${business.typeOfBusiness || ""} (${business.businessId || ""})`), table];
   });
   tableContainer.replaceChildren(...nodes);
+}
+
+function labelled(cell, label) {
+  cell.setAttribute("data-label", label);
+  return cell;
 }
 
 function el(tag, className, text) {

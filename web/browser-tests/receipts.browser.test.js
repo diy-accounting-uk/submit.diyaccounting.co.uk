@@ -67,7 +67,7 @@ test.describe("Receipts page - receipt details", () => {
     );
   }
 
-  test("lists each receipt with its size in bytes, and a dash only when the list gives none", async ({ page }) => {
+  test("lists each receipt by date and receipt number, with no size column", async ({ page }) => {
     await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
     await page.evaluate(async () => {
       localStorage.setItem("cognitoIdToken", "token");
@@ -85,9 +85,11 @@ test.describe("Receipts page - receipt details", () => {
       await window.fetchReceipts();
     });
 
-    await expect(page.locator("#receiptsTable thead th").nth(2)).toHaveText("Size (bytes)");
-    await expect(page.locator("#receiptsTable tbody tr").nth(0).locator("td").nth(2)).toHaveText("32,749");
-    await expect(page.locator("#receiptsTable tbody tr").nth(1).locator("td").nth(2)).toHaveText("—");
+    await expect(page.locator("#receiptsTable thead th")).toHaveText(["Date", "Receipt"]);
+    await expect(page.locator("#receiptsTable tbody tr")).toHaveCount(2);
+    await expect(page.locator("#receiptsTable tbody tr").nth(0).locator("td")).toHaveCount(2);
+    await expect(page.locator("#receiptsTable tbody tr").nth(0).locator("td").nth(1)).toContainText("AAA");
+    await expect(page.locator("#receiptsTable tbody tr").nth(1).locator("td").nth(1)).toContainText("BBB");
   });
 
   test("shows a VAT receipt as a record inside the customer copy", async ({ page }) => {

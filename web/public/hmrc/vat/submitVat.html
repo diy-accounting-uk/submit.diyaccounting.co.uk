@@ -410,7 +410,18 @@
             <span id="chargeRefNumber"></span>
           </div>
         </div>
-        <p class="hint">Your VAT return has been submitted to HMRC. Keep this receipt for your records.</p>
+        <div id="filedReturn" class="receipt-details" style="display: none">
+          <div class="receipt-item">
+            <span><strong>VAT registration number</strong></span>
+            <span id="filedVrn"></span>
+          </div>
+          <div class="receipt-item" id="filedPeriodItem">
+            <span><strong>Period</strong></span>
+            <span id="filedPeriod"></span>
+          </div>
+          <div id="filedFigures"></div>
+        </div>
+        <p class="hint">Keep this receipt for your records.</p>
         <nav class="next-steps" aria-label="What to do next">
           <a href="../receipt/receipts.html">See your receipts</a>
           <a href="vatObligations.html">See your VAT obligations</a>
