@@ -26,3 +26,7 @@ web/public/docs/api/
 web/public/docs/hmrc-form-field-standards/
 web/public/lib/diya-gl/
 web/public/lib/books-bundle.js
+
+# iXBRL documents copied byte for byte from the spreadsheets fixtures; the reader parses them as filed.
+web/browser-tests/fixtures/ixds-two-file/
+web/browser-tests/fixtures/ixds-two-file-disagree/
