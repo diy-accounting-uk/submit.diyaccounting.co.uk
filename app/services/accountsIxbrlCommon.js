@@ -160,6 +160,10 @@ export const CONCEPTS = {
   parValueShare: { prefix: "core", name: "ParValueShare" },
   descriptionShareType: { prefix: "bus", name: "DescriptionShareType" },
   taxPolicy: { prefix: "core", name: "TaxPolicy" },
+  currentIncomeTaxPolicy: { prefix: "core", name: "CurrentIncomeTaxPolicy" },
+  dividendPolicy: { prefix: "core", name: "DividendPolicy" },
+  accruedLiabilities: { prefix: "core", name: "AccruedLiabilities" },
+  currentTaxForPeriod: { prefix: "core", name: "CurrentTaxForPeriod" },
   bankBorrowingsOverdrafts: { prefix: "core", name: "BankBorrowingsOverdrafts" },
   taxationSocialSecurityPayable: { prefix: "core", name: "TaxationSocialSecurityPayable" },
   descriptionGoingConcernStatus: { prefix: "core", name: "DescriptionGoing-concernStatus" },
@@ -193,6 +197,8 @@ export const DIMENSIONS = {
   accountsType: { prefix: "bus", name: "AccountsTypeDimension" },
   equityClasses: { prefix: "core", name: "EquityClassesDimension" },
   maturities: { prefix: "core", name: "MaturitiesOrExpirationPeriodsDimension" },
+  financialInstrumentCurrentNonCurrent: { prefix: "core", name: "FinancialInstrumentCurrentNon-currentDimension" },
+  taxJurisdiction: { prefix: "core", name: "TaxJurisdictionDimension" },
   propertyPlantEquipmentClasses: { prefix: "core", name: "PropertyPlantEquipmentClassesDimension" },
   entityContactType: { prefix: "bus", name: "EntityContactTypeDimension" },
   currencies: { prefix: "curr", name: "CurrenciesDimension" },
@@ -226,6 +232,8 @@ export const MEMBERS = {
   retainedEarningsAccumulatedLosses: { prefix: "core", name: "RetainedEarningsAccumulatedLosses" },
   withinOneYear: { prefix: "core", name: "WithinOneYear" },
   afterOneYear: { prefix: "core", name: "AfterOneYear" },
+  currentFinancialInstruments: { prefix: "core", name: "CurrentFinancialInstruments" },
+  ukTax: { prefix: "core", name: "UKTax" },
   landBuildings: { prefix: "core", name: "LandBuildings" },
   plantMachinery: { prefix: "core", name: "PlantMachinery" },
   furnitureFittings: { prefix: "core", name: "FurnitureFittings" },
@@ -281,10 +289,15 @@ function sameDayOneYearEarlier(isoDate) {
  * @param {object} [options]
  * @param {boolean} [options.includePriorInstant] - defaults to whether input.balanceSheet.prior is present
  * @param {boolean} [options.includePriorPeriod] - add the prior-year duration context (profit and loss comparatives)
+ * @param {boolean} [options.priorPeriodFactsAreDimensioned] - the prior-year duration is only the base of dimensioned contexts: its period is returned in periodXml and its plain context is not written
  * @returns {{xml: string, refs: object, entityIdentifierXml: string, periodXml: Record<string,string>}}
  */
 export function buildContexts(input, options = {}) {
-  const { includePriorInstant = Boolean(input.balanceSheet?.prior), includePriorPeriod = false } = options;
+  const {
+    includePriorInstant = Boolean(input.balanceSheet?.prior),
+    includePriorPeriod = false,
+    priorPeriodFactsAreDimensioned = false,
+  } = options;
   const currentYear = input.periodEnd.slice(0, 4);
   const refs = {
     current: `y${currentYear}`,
@@ -317,6 +330,7 @@ export function buildContexts(input, options = {}) {
   }
 
   const contextsXml = Object.entries(periodXml)
+    .filter(([id]) => !(priorPeriodFactsAreDimensioned && id === refs.prior))
     .map(([id, period]) => `<xbrli:context id="${id}"><xbrli:entity>${entityIdentifierXml}</xbrli:entity>${period}</xbrli:context>`)
     .join("");
 
@@ -776,6 +790,18 @@ export function balanceSheetFacts({ contextRef, entityIdentifierXml, periodXml, 
       id: `${contextRef}-${suffix}`,
     });
   const fact = (conceptKey, factContextRef, value) => ({ xml: renderMonetaryFact(conceptKey, factContextRef, unitRef, value), value });
+  // Accruals sit on the within one year context of a current financial instrument, as Companies House's example tags them.
+  if ((figures.accruals ?? 0) !== 0) {
+    buildDimensionedContext({
+      additionalContexts,
+      entityIdentifierXml,
+      periodXml,
+      dimensionXml:
+        dimensionMemberXml(DIMENSIONS.financialInstrumentCurrentNonCurrent, MEMBERS.currentFinancialInstruments) +
+        dimensionMemberXml(DIMENSIONS.maturities, MEMBERS.withinOneYear),
+      id: `${contextRef}-accruals`,
+    });
+  }
 
   return {
     fixedAssets: fact("fixedAssets", contextRef, figures.fixedAssets),

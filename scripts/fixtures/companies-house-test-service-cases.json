@@ -451,6 +451,8 @@
         }
       },
       "taxPolicy": "The tax expense for the year comprises current tax, recognised in profit or loss.",
+      "currentIncomeTaxPolicy": "The current income tax charge is calculated on the tax rates and laws enacted or substantively enacted by the reporting date.",
+      "dividendPolicy": "Dividends are recognised as a liability in the period in which they are declared.",
       "shareCapital": {
         "shareClass": "ordinaryShares",
         "nominalValue": 1
@@ -558,6 +560,8 @@
         }
       },
       "taxPolicy": "The tax expense for the year comprises current tax, recognised in profit or loss.",
+      "currentIncomeTaxPolicy": "The current income tax charge is calculated on the tax rates and laws enacted or substantively enacted by the reporting date.",
+      "dividendPolicy": "Dividends are recognised as a liability in the period in which they are declared.",
       "shareCapital": {
         "shareClass": "ordinaryShares",
         "nominalValue": 1

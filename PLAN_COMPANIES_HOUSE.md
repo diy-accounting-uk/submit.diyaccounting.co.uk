@@ -1735,6 +1735,53 @@ the visual definition of done in `CLAUDE.md`.
 CHG1-4 and CHG1-5's spreadsheets part go through a `claude/*` branch and PR in
 `../spreadsheets.diyaccounting.co.uk/` under its `CLAUDE.md`.
 
+#### CHG1-6: the filleted example's values
+
+RJB Electrical (Southwold) Ltd's filleted accounts carry four values the small cases lacked. The
+example tags each as follows, and the builder copies it.
+
+| Value | Example tagging | Input | Builder |
+|---|---|---|---|
+| Accruals | `core:AccruedLiabilities` on an instant context at the balance sheet date with `core:FinancialInstrumentCurrentNon-currentDimension` = `core:CurrentFinancialInstruments` and `core:MaturitiesOrExpirationPeriodsDimension` = `core:WithinOneYear`; its own creditors line "Accruals and deferred income" | `balanceSheet.<year>.accruals`, optional whole pounds, absent is 0 | tagged and shown only when a year is not 0; context id `e<year>-accruals`; added to `creditorsWithinOneYear` |
+| Current tax | `core:CurrentTaxForPeriod` on the period context with `core:TaxJurisdictionDimension` = `core:UKTax`, both years, in the tax note | none new: `profitAndLoss.<year>.tax` | numbered note "Tax on profit", context ids `y<year>-uk-tax`, shown when either year's tax is not 0 |
+| Tax policy | `core:TaxPolicy` ("The tax expense ... comprises current tax ...") and, separately, `core:CurrentIncomeTaxPolicy` ("The current income tax charge is calculated on ...") | `taxPolicy` stays; `currentIncomeTaxPolicy` is new | both under the one "Taxation" subheading |
+| Dividend policy | `core:DividendPolicy` on the period context under a "Dividends" subheading | `dividendPolicy`, optional text | entry in `SMALL_COMPANY_POLICY_FIELDS` after the tax policies |
+
+**Where the current tax figure comes from.** The request has no deferred tax, so the profit and
+loss tax charge (`profitAndLoss.<year>.tax`, tagged `TaxTaxCreditOnProfitOrLossOnOrdinaryActivities`
+on a full set) is the current tax of the period. No new input. A filleted set omits the profit and
+loss page, so the note is the only place its charge shows. The filleted prior-year duration is
+written only as the base of the `UKTax` context (`priorPeriodFactsAreDimensioned`), so no plain
+`y<prior>` context is left without a fact. A request with deferred tax needs a new input.
+
+**The tax policy tag.** The example carries `TaxPolicy` and `CurrentIncomeTaxPolicy` as two
+sentences of different content: the first says the charge comprises current tax recognised in profit
+or loss, the second how current tax is calculated. Our `taxPolicy` input is the first sentence, so it
+keeps `TaxPolicy` and the second is a new box; retagging would leave `TaxPolicy` missing in the
+comparison.
+
+**The accruals context.** The example puts the three-part context on this concept, unlike
+`BankBorrowingsOverdrafts` (maturity member alone, question 3). The builder copies the example for
+`AccruedLiabilities`.
+
+| File | Change |
+|---|---|
+| `app/services/accountsIxbrlCommon.js` | `CONCEPTS` `accruedLiabilities`, `currentTaxForPeriod`, `currentIncomeTaxPolicy`, `dividendPolicy`; `DIMENSIONS` `financialInstrumentCurrentNonCurrent`, `taxJurisdiction`; `MEMBERS` `currentFinancialInstruments`, `ukTax`; `balanceSheetFacts` builds the accruals context; `buildContexts` option `priorPeriodFactsAreDimensioned` |
+| `app/services/smallCompanyAccountsIxbrl.js` | `accruals` in the optional lines, the totals and `CREDITOR_SUB_LINES`; two policy fields; the tax note |
+| `app/services/smallCompanyAccountsRequest.js` | none: the optional lines and policies are read from the lists |
+| `scripts/lib/companiesHouseReviewReconcile.js` | `accruals` line, creditors total, `CurrentTaxForPeriod` per year, the two policies |
+| `scripts/fixtures/companies-house-test-service-cases.json` | the two small cases gain `currentIncomeTaxPolicy` and `dividendPolicy`; figures unchanged |
+
+Tests: `smallCompanyAccountsIxbrl.test.js` (accruals context, totals and absence; the tax note on a
+full and a filleted set and its absence at 0; the policy order and one "Taxation" heading),
+`smallCompanyAccountsRequest.test.js` (accruals refused when negative or fractional; the two new
+texts trimmed), `companiesHouseReview.test.js` (accruals, current tax and both policies reconcile
+and mismatch when untagged).
+
+**Page inputs for the page step.** `web/public/companies-house/fileSmallCompanyAccounts.html`, full and filleted: an "Accruals" line within creditors due in one year, per year, in the totals;
+a "Tax: how current tax is calculated" text box (`currentIncomeTaxPolicy`); a "Dividends" policy
+text box (`dividendPolicy`); a "Tax on profit" note preview. The browser tests send and total them.
+
 ## Fill from your books: the audit
 
 The 35 pages under `web/public/hmrc/` (26) and `web/public/companies-house/` (9), checked for figures a set of accounts holds. 14 pages take such figures. 6 fill from a book today: four have the card, and BK1 adds the micro-entity page (with its dormant case) and the small company page. 4 wait on a derivation or a page change. 4 take adjustments or losses that no book holds. The other 21 take identifiers, dates, codes or declarations, or show figures HMRC returns.

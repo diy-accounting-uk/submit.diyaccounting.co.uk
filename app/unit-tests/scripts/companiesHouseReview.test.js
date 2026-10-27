@@ -110,6 +110,39 @@ describe("reconcile", () => {
     expect(reconcile(c.input, { ...c.ours, facts }).mismatches).toBe(1);
   });
 
+  it("reconciles accruals, the current tax note, the current income tax policy and the dividend policy, and flags each when untagged", () => {
+    const base = caseNamed("small-company-accounts-filleted").input;
+    const { name, type, govTestScenario, expectedOutcome, fictional, ...requestBody } = base;
+    const sheet = base.smallCompany.balanceSheet;
+    const withAccruals = (year) => ({ ...year, accruals: 100, otherCreditors: year.otherCreditors - 100 });
+    const smallCompany = {
+      ...base.smallCompany,
+      balanceSheet: { currentYear: withAccruals(sheet.currentYear), priorYear: withAccruals(sheet.priorYear) },
+    };
+    const input = { ...base, smallCompany };
+    const errors = [];
+    const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify({ ...requestBody, smallCompany }) }, errors);
+    expect(errors).toEqual([]);
+    const ours = oursFrom(buildAccountsIxbrl(accounts));
+    const result = reconcile(input, ours);
+    expect(result.mismatches).toBe(0);
+    const fields = result.rows.map((row) => row.field);
+    for (const field of [
+      "balanceSheet.currentYear.accruals",
+      "balanceSheet.priorYear.accruals",
+      "smallCompany.currentTax.currentYear",
+      "smallCompany.currentTax.priorYear",
+      "smallCompany.currentIncomeTaxPolicy",
+      "smallCompany.dividendPolicy",
+    ]) {
+      expect(fields).toContain(field);
+    }
+    for (const concept of ["AccruedLiabilities", "CurrentTaxForPeriod", "CurrentIncomeTaxPolicy", "DividendPolicy"]) {
+      const without = ours.facts.filter((fact) => fact.concept !== concept);
+      expect(reconcile(input, { ...ours, facts: without }).mismatches).toBeGreaterThan(0);
+    }
+  });
+
   it("reconciles a case with an overdraft and a taxation line, recomputing the creditors total with them", () => {
     const base = caseNamed("small-company-accounts-full").input;
     const { name, type, govTestScenario, expectedOutcome, fictional, ...requestBody } = base;

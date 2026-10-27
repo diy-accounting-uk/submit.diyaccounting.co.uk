@@ -25,10 +25,11 @@ const BALANCE_SHEET = {
   otherCreditors: ["OtherCreditors", "-within-one-year"],
   bankLoansOverdrafts: ["BankBorrowingsOverdrafts", "-within-one-year"],
   taxationSocialSecurity: ["TaxationSocialSecurityPayable", "-within-one-year"],
+  accruals: ["AccruedLiabilities", "-accruals"],
   bankLoansAfterOneYear: ["BankBorrowingsOverdrafts", "-after-one-year"],
 };
 // Lines checked only when the input carries a figure for them.
-const OPTIONAL_BALANCE_SHEET_LINES = new Set(["bankLoansOverdrafts", "taxationSocialSecurity", "bankLoansAfterOneYear"]);
+const OPTIONAL_BALANCE_SHEET_LINES = new Set(["bankLoansOverdrafts", "taxationSocialSecurity", "accruals", "bankLoansAfterOneYear"]);
 // Policy input field -> concept, all on the current period context.
 const POLICIES = {
   goingConcernStatement: "DescriptionGoing-concernStatus",
@@ -37,6 +38,8 @@ const POLICIES = {
   impairmentPolicy: "ImpairmentNon-financialAssetsPolicy",
   financialInstrumentsPolicy: "FinancialInstrumentsRecognitionMeasurementPolicy",
   taxPolicy: "TaxPolicy",
+  currentIncomeTaxPolicy: "CurrentIncomeTaxPolicy",
+  dividendPolicy: "DividendPolicy",
 };
 const PROFIT_AND_LOSS = {
   turnover: "TurnoverRevenue",
@@ -179,6 +182,13 @@ export function reconcile(input, ours) {
     if (small.principalActivity) {
       check("smallCompany.principalActivity", small.principalActivity, "DescriptionPrincipalActivities", `y${current}`, false);
     }
+    for (const [yearKey, y] of [
+      ["currentYear", current],
+      ["priorYear", prior],
+    ]) {
+      const tax = small.profitAndLoss[yearKey]?.tax;
+      if (tax) check(`smallCompany.currentTax.${yearKey}`, tax, "CurrentTaxForPeriod", `y${y}-uk-tax`);
+    }
     if (!small.filleted) {
       for (const [yearKey, y] of [
         ["currentYear", current],
@@ -220,7 +230,7 @@ export function reconcile(input, ours) {
       );
       add(
         `Creditors within one year ${y}`,
-        "bank loans and overdrafts + trade + corporation tax + taxation and social security + other",
+        "bank loans and overdrafts + trade + corporation tax + taxation and social security + other + accruals",
         valueOf("Creditors", `e${y}-within-one-year`),
         sum(
           valueOf("BankBorrowingsOverdrafts", `e${y}-within-one-year`),
@@ -228,6 +238,7 @@ export function reconcile(input, ours) {
           valueOf("CorporationTaxPayable", `e${y}-within-one-year`),
           valueOf("TaxationSocialSecurityPayable", `e${y}-within-one-year`),
           valueOf("OtherCreditors", `e${y}-within-one-year`),
+          valueOf("AccruedLiabilities", `e${y}-accruals`),
         ),
       );
     }

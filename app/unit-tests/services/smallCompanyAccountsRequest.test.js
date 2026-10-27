@@ -85,7 +85,12 @@ describe("services/smallCompanyAccountsRequest optional lines, policies and cont
   test("an absent bank or taxation line reads as 0", () => {
     const { result, errors } = validate(sectionFrom(SMALL_COMPANY_CASE_INPUT));
     expect(errors).toEqual([]);
-    expect(result.balanceSheet.current).toMatchObject({ bankLoansOverdrafts: 0, taxationSocialSecurity: 0, bankLoansAfterOneYear: 0 });
+    expect(result.balanceSheet.current).toMatchObject({
+      bankLoansOverdrafts: 0,
+      taxationSocialSecurity: 0,
+      accruals: 0,
+      bankLoansAfterOneYear: 0,
+    });
   });
 
   test("a negative or fractional line is refused", () => {
@@ -98,6 +103,15 @@ describe("services/smallCompanyAccountsRequest optional lines, policies and cont
     expect(errors).toContain("smallCompany.balanceSheet.currentYear.bankLoansAfterOneYear must not be more than creditorsAfterOneYear");
   });
 
+  test("a negative or fractional accruals line is refused and a figure is kept", () => {
+    expect(validate(withYear({ accruals: -5 })).errors.join(" ")).toContain("accruals");
+    expect(validate(withYear({ accruals: 2.5 })).errors.join(" ")).toContain("accruals");
+    const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
+    const { result, errors } = validate(withYear({ accruals: 100, otherCreditors: base.otherCreditors - 100 }));
+    expect(errors).toEqual([]);
+    expect(result.balanceSheet.current.accruals).toBe(100);
+  });
+
   test("the net assets check includes the new lines", () => {
     const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
     const { errors } = validate(withYear({ taxationSocialSecurity: 100 }));
@@ -106,14 +120,22 @@ describe("services/smallCompanyAccountsRequest optional lines, policies and cont
     );
   });
 
-  test("keeps the five policies as trimmed text and drops empty ones", () => {
+  test("keeps the policies as trimmed text and drops empty ones", () => {
     const { result, errors } = validate(
-      sectionFrom(SMALL_COMPANY_CASE_INPUT, { goingConcernStatement: " Going on. ", impairmentPolicy: "  ", taxPolicy: "Tax." }),
+      sectionFrom(SMALL_COMPANY_CASE_INPUT, {
+        goingConcernStatement: " Going on. ",
+        impairmentPolicy: "  ",
+        taxPolicy: "Tax.",
+        currentIncomeTaxPolicy: " Current. ",
+        dividendPolicy: " Dividends. ",
+      }),
     );
     expect(errors).toEqual([]);
     expect(result.goingConcernStatement).toBe("Going on.");
     expect(result).not.toHaveProperty("impairmentPolicy");
     expect(result.taxPolicy).toBe("Tax.");
+    expect(result.currentIncomeTaxPolicy).toBe("Current.");
+    expect(result.dividendPolicy).toBe("Dividends.");
     expect(validate(sectionFrom(SMALL_COMPANY_CASE_INPUT, { revenueRecognitionPolicy: 5 })).errors).toContain(
       "Invalid smallCompany.revenueRecognitionPolicy - must be text",
     );

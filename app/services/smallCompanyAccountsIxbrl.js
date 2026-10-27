@@ -68,7 +68,12 @@ export const SMALL_COMPANY_BALANCE_SHEET_LINES = [
 ];
 
 // Lines a balance sheet may leave out; an absent line is 0.
-export const SMALL_COMPANY_OPTIONAL_BALANCE_SHEET_LINES = ["bankLoansOverdrafts", "taxationSocialSecurity", "bankLoansAfterOneYear"];
+export const SMALL_COMPANY_OPTIONAL_BALANCE_SHEET_LINES = [
+  "bankLoansOverdrafts",
+  "taxationSocialSecurity",
+  "accruals",
+  "bankLoansAfterOneYear",
+];
 
 // The optional policy texts of the accounting policies note, in the order the note prints them.
 export const SMALL_COMPANY_POLICY_FIELDS = [
@@ -77,6 +82,9 @@ export const SMALL_COMPANY_POLICY_FIELDS = [
   { field: "tangibleFixedAssetsPolicy", heading: "Tangible fixed assets", conceptKey: "propertyPlantEquipmentMeasurementBasis" },
   { field: "impairmentPolicy", heading: "Impairment", conceptKey: "impairmentPolicy" },
   { field: "financialInstrumentsPolicy", heading: "Financial instruments", conceptKey: "financialInstrumentsPolicy" },
+  { field: "taxPolicy", heading: "Taxation", conceptKey: "taxPolicy" },
+  { field: "currentIncomeTaxPolicy", heading: "Taxation", conceptKey: "currentIncomeTaxPolicy" },
+  { field: "dividendPolicy", heading: "Dividends", conceptKey: "dividendPolicy" },
 ];
 
 export const SMALL_COMPANY_PROFIT_AND_LOSS_LINES = [
@@ -236,7 +244,8 @@ export function withBalanceSheetTotals(figures) {
       figures.tradeCreditors +
       figures.corporationTax +
       (figures.taxationSocialSecurity ?? 0) +
-      figures.otherCreditors,
+      figures.otherCreditors +
+      (figures.accruals ?? 0),
   };
 }
 
@@ -389,14 +398,18 @@ const CREDITOR_SUB_LINES = [
   ["Corporation tax", "corporationTaxPayable", "corporationTax"],
   ["Taxation and social security", "taxationSocialSecurityPayable", "taxationSocialSecurity", true],
   ["Other creditors", "otherCreditors", "otherCreditors"],
+  ["Accruals", "accruedLiabilities", "accruals", true, "-accruals"],
 ];
 
 function subLineRows(lines, yearFigures, contextRefs, contextSuffix) {
   const shown = lines.filter(([, , field, optional]) => !optional || yearFigures.some((figures) => (figures[field] ?? 0) !== 0));
-  return shown.map(([label, conceptKey, field]) => ({
+  return shown.map(([label, conceptKey, field, , ownContextSuffix]) => ({
     label,
     cells: yearFigures.map((figures, index) =>
-      recordFigure(money(conceptKey, `${contextRefs[index]}${contextSuffix}`, figures[field] ?? 0), figures[field] ?? 0),
+      recordFigure(
+        money(conceptKey, `${contextRefs[index]}${ownContextSuffix ?? contextSuffix}`, figures[field] ?? 0),
+        figures[field] ?? 0,
+      ),
     ),
   }));
 }
@@ -501,11 +514,11 @@ function accountingPoliciesNote({ input, refs }) {
     `<p>${renderTextFact("statementComplianceWithReportingFramework", refs.current, SMALL_COMPANY_FRAMEWORK_COMPLIANCE)}</p>`,
     `${subheading("Basis of preparation")}\n<p>${renderTextFact("generalDescriptionBasisMeasurement", refs.current, input.accountingPolicies)}</p>`,
   ];
+  let previousHeading;
   for (const { field, heading, conceptKey } of policies) {
-    parts.push(`${subheading(heading)}\n<p>${renderTextFact(conceptKey, refs.current, input[field])}</p>`);
-  }
-  if (input.taxPolicy) {
-    parts.push(`${subheading("Taxation")}\n<p>${renderTextFact("taxPolicy", refs.current, input.taxPolicy)}</p>`);
+    const fact = `<p>${renderTextFact(conceptKey, refs.current, input[field])}</p>`;
+    parts.push(heading === previousHeading ? `\n${fact}` : `${subheading(heading)}\n${fact}`);
+    previousHeading = heading;
   }
   return { title: "Accounting policies", html: parts.join("").replace(/^\n/, "") };
 }
@@ -563,8 +576,7 @@ ${principalActivitySentence(input.principalActivity, refs)}
  * @param {1|2} [input.profitAndLossFormat] - 1 (by function, the default) or 2 (by nature)
  * @param {{current: object, prior?: object}} input.profitAndLoss - the lines of the format: SMALL_COMPANY_PROFIT_AND_LOSS_LINES or SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES
  * @param {Record<string, object>} [input.fixedAssetNote] - FIXED_ASSET_CLASSES to FIXED_ASSET_CLASS_FIELDS
- * @param {string} [input.taxPolicy] - plain text for the tax policy, tagged in the accounting policies note
- * @param {string} [input.goingConcernStatement] - SMALL_COMPANY_POLICY_FIELDS texts, each tagged in the accounting policies note under its subheading
+ * @param {string} [input.goingConcernStatement] - SMALL_COMPANY_POLICY_FIELDS texts (going concern, turnover, tangible fixed assets, impairment, financial instruments, tax, current income tax, dividends), each tagged in the accounting policies note under its subheading
  * @param {{accountantsName: string, statement: string}} [input.accountantsReport] - adds the accountants' report page and the audit exempt with accountants' report status
  * @param {{ultimate: boolean, name?: string}} [input.controllingParty] - adds the controlling party note; an ultimate party needs a name; without a name the note states that the company has no ultimate controlling party
  * @param {{shareClass: string, nominalValue: number}} [input.shareCapital] - adds a share capital note; the shares issued are the called up share capital over the nominal value
@@ -586,6 +598,8 @@ export function buildSmallCompanyAccounts(input) {
     throw new Error("controllingParty.name is required when the controlling party is ultimate");
   }
   const priorProfitAndLoss = input.profitAndLoss.prior;
+  // The request carries no deferred tax, so the profit and loss tax charge is the current tax of the period.
+  const showsTaxNote = [input.profitAndLoss.current, priorProfitAndLoss].some((figures) => (figures?.tax ?? 0) !== 0);
   const hasFixedAssetNote = Boolean(input.fixedAssetNote) && Object.keys(input.fixedAssetNote).length > 0;
   const {
     xml: contextsXml,
@@ -595,7 +609,9 @@ export function buildSmallCompanyAccounts(input) {
   } = buildContexts(input, {
     // The fixed asset note's opening balances sit at the prior balance sheet date.
     includePriorInstant: Boolean(priorBalanceSheet) || hasFixedAssetNote,
-    includePriorPeriod: Boolean(priorProfitAndLoss) && !input.filleted,
+    includePriorPeriod: Boolean(priorProfitAndLoss) && (!input.filleted || showsTaxNote),
+    // A filleted set has no profit and loss account, so its prior year duration carries only the tax note's dimensioned fact.
+    priorPeriodFactsAreDimensioned: Boolean(input.filleted),
   });
   const additionalContexts = [];
   const hiddenFacts = [];
@@ -754,6 +770,30 @@ export function buildSmallCompanyAccounts(input) {
             html: `<p>Operating profit is stated after charging depreciation of tangible assets of £${depreciationFact}.</p>`,
           },
     );
+  }
+
+  if (showsTaxNote) {
+    const taxYears = [
+      { figures: input.profitAndLoss.current, periodRef: refs.current },
+      ...(priorProfitAndLoss ? [{ figures: priorProfitAndLoss, periodRef: refs.prior }] : []),
+    ];
+    const cells = taxYears.map(({ figures, periodRef }) => {
+      const contextRef = buildDimensionedContext({
+        additionalContexts,
+        entityIdentifierXml,
+        periodXml: periodXml[periodRef],
+        dimensionXml: dimensionMemberXml(DIMENSIONS.taxJurisdiction, MEMBERS.ukTax),
+        id: `${periodRef}-uk-tax`,
+      });
+      return recordFigure(money("currentTaxForPeriod", contextRef, figures.tax), figures.tax, { deduction: true });
+    });
+    notes.push({
+      title: "Tax on profit",
+      html: recordTable({
+        columns: columns.slice(0, taxYears.length),
+        rows: [{ label: "UK corporation tax: current tax on profit for the year", cells }],
+      }),
+    });
   }
 
   const period = escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd));

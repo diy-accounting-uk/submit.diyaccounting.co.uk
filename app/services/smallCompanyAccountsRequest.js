@@ -202,7 +202,6 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
   const fixedAssetNote = readFixedAssetNote(section.fixedAssetNote, currentBalanceSheet.fixedAssets, errorMessages);
 
   const shareCapital = readShareCapital(section.shareCapital, currentBalanceSheet.calledUpShareCapital, errorMessages);
-  const taxPolicy = readOptionalText(section.taxPolicy, "smallCompany.taxPolicy", errorMessages);
   const policies = {};
   for (const { field } of SMALL_COMPANY_POLICY_FIELDS) {
     const text = readOptionalText(section[field], `smallCompany.${field}`, errorMessages);
@@ -226,7 +225,6 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
     profitAndLoss: { current: currentProfitAndLoss, ...(priorProfitAndLoss ? { prior: priorProfitAndLoss } : {}) },
     ...(fixedAssetNote ? { fixedAssetNote } : {}),
     ...(shareCapital ? { shareCapital } : {}),
-    ...(taxPolicy ? { taxPolicy } : {}),
     ...policies,
     ...(controllingParty ? { controllingParty } : {}),
     statementsAccepted: statements,
