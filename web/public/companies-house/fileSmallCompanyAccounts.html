@@ -628,6 +628,25 @@
                   </td>
                 </tr>
                 <tr>
+                  <th scope="row">Accruals and deferred income (due within one year)</th>
+                  <td class="ledger__figure">
+                    <label for="currentAccruals" class="visually-hidden"
+                      >Accruals and deferred income (due within one year), this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentAccruals"
+                        name="currentAccruals"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
                   <th scope="row">Other creditors (due within one year)</th>
                   <td class="ledger__figure">
                     <label for="currentOtherCreditors" class="visually-hidden">Other creditors (due within one year), this year</label>
@@ -1182,6 +1201,25 @@
                           type="text"
                           id="priorTaxationSocialSecurity"
                           name="priorTaxationSocialSecurity"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Accruals and deferred income (due within one year)</th>
+                    <td class="ledger__figure">
+                      <label for="priorAccruals" class="visually-hidden"
+                        >Accruals and deferred income (due within one year), last year</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorAccruals"
+                          name="priorAccruals"
                           inputmode="decimal"
                           data-money="whole-pounds"
                         />
@@ -1986,6 +2024,14 @@
               <div class="form-group">
                 <label for="taxPolicy">Taxation</label>
                 <textarea id="taxPolicy" name="taxPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="currentIncomeTaxPolicy">How current tax is calculated</label>
+                <textarea id="currentIncomeTaxPolicy" name="currentIncomeTaxPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="dividendPolicy">Dividends</label>
+                <textarea id="dividendPolicy" name="dividendPolicy" rows="3"></textarea>
               </div>
             </details>
             <div class="form-group">

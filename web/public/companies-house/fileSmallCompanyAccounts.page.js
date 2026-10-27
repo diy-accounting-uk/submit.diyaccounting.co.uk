@@ -31,6 +31,7 @@ const BALANCE_SHEET_INPUT_FIELDS = [
   "tradeCreditors",
   "corporationTax",
   "taxationSocialSecurity",
+  "accruals",
   "otherCreditors",
   "creditorsAfterOneYear",
   "bankLoansAfterOneYear",
@@ -44,6 +45,8 @@ const POLICY_BOXES = [
   "impairmentPolicy",
   "financialInstrumentsPolicy",
   "taxPolicy",
+  "currentIncomeTaxPolicy",
+  "dividendPolicy",
 ];
 const FIXED_ASSET_CLASSES = ["landBuildings", "plantMachinery", "furnitureFittings", "computerEquipment", "motorVehicles"];
 const FIXED_ASSET_FIELDS = [
@@ -129,6 +132,7 @@ function readBalanceSheet(prefix) {
     figures[field] = readPounds(prefix + upperFirst(field));
   });
   figures.capitalAndReserves = figures.calledUpShareCapital + figures.profitAndLossAccount;
+  if (figures.accruals === 0) delete figures.accruals;
   return figures;
 }
 
@@ -142,6 +146,7 @@ function netAssetsOf(figures) {
     figures.tradeCreditors -
     figures.corporationTax -
     figures.taxationSocialSecurity -
+    (figures.accruals ?? 0) -
     figures.otherCreditors -
     figures.creditorsAfterOneYear
   );

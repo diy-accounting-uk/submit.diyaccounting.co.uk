@@ -121,6 +121,7 @@ const smallCompanyBalanceSheetYearSchema = z.object({
     .number()
     .optional()
     .describe("Whole pounds of PAYE, National Insurance and VAT owed within one year; 0 when left out"),
+  accruals: z.number().optional().describe("Whole pounds of accruals and deferred income due within one year; 0 when left out"),
   bankLoansAfterOneYear: z.number().optional().describe("The part of creditorsAfterOneYear owed to a bank; 0 when left out"),
   calledUpShareCapital: z.number(),
   profitAndLossAccount: z.number(),
@@ -173,6 +174,8 @@ const smallCompanyFilingInputSchema = {
       principalActivity: z.string(),
       accountingPolicies: z.string(),
       taxPolicy: z.string().optional(),
+      currentIncomeTaxPolicy: z.string().optional().describe("How current tax is calculated"),
+      dividendPolicy: z.string().optional(),
       goingConcernStatement: z.string().optional(),
       revenueRecognitionPolicy: z.string().optional(),
       tangibleFixedAssetsPolicy: z.string().optional(),

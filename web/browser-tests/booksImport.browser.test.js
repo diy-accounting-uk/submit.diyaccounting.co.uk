@@ -926,6 +926,9 @@ test.describe("books import on the small company accounts page", () => {
     await expect(page.locator("#currentProfitAndLossTotals")).toContainText("Profit for the year: 142226.");
     await expect(page.locator("#currentFixedAssets")).toHaveValue("208990");
     await expect(page.locator("#currentCashAtBank")).toHaveValue("192995");
+    await expect(page.locator("#currentBankLoansOverdrafts")).toHaveValue("0");
+    await expect(page.locator("#currentTaxationSocialSecurity")).toHaveValue("8957");
+    await expect(page.locator("#currentAccruals")).toHaveValue("");
     await expect(page.locator("#currentProfitAndLossAccount")).toHaveValue("307928");
     await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Matches share capital plus the profit and loss reserve.");
     await expect(page.locator("#includeFixedAssetNote")).toBeChecked();
