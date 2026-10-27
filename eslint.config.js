@@ -116,6 +116,8 @@ export default [
         HmrcFieldTable: "readonly",
         HmrcDisplayFormat: "readonly",
         hmrcErrorMessage: "readonly",
+        showFailure: "readonly",
+        requestError: "readonly",
         getObligations: "readonly",
         triggerBsas: "readonly",
         getLossesAndClaims: "readonly",

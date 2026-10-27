@@ -170,7 +170,7 @@ describe("hmrc-service submitVat error handling", () => {
     });
 
     const error = await submitVat("111222333", vatData, "test-token").catch((caught) => caught);
-    expect(error.message).toBe("Failed to submit VAT (HTTP 500). An unexpected error occurred");
+    expect(error.message).toBe("Failed to submit VAT. An unexpected error occurred");
   });
 });
 

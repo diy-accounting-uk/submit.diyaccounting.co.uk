@@ -159,11 +159,11 @@ async function continuePenaltiesRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcAccessToken");
         sessionStorage.removeItem("hmrcTokenScope");
-        showStatus("Access token expired. Please re-authenticate.", "error");
+        showFailure({ status: 401 }, "Could not retrieve VAT penalties");
         showSearchCriteria(); // Show form on error
         return;
       }
-      throw new Error(hmrcErrorMessage(result, "Failed to retrieve penalties"));
+      throw requestError(response, result, "Failed to retrieve penalties");
     }
 
     // Display results
@@ -181,7 +181,7 @@ async function continuePenaltiesRetrieval() {
     console.log("Penalties retrieval completed successfully");
   } catch (error) {
     console.error("Error retrieving penalties:", error);
-    showStatus(`Failed to retrieve penalties: ${error.message}`, "error");
+    showFailure(error, "Could not retrieve VAT penalties");
     showSearchCriteria(); // Show form on error
     // Clear pending request data to prevent auto-retry loop on next page load
     sessionStorage.removeItem("pendingPenaltiesRequest");
@@ -301,10 +301,10 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcAccessToken");
           sessionStorage.removeItem("hmrcTokenScope");
-          showStatus("Access token expired. Please try again.", "error");
+          showFailure({ status: 401 }, "Could not retrieve VAT penalties");
           return;
         }
-        throw new Error(hmrcErrorMessage(result, "Failed to retrieve penalties"));
+        throw requestError(response, result, "Failed to retrieve penalties");
       }
 
       // Display results
@@ -314,7 +314,7 @@ async function handleFormSubmission(event) {
       hideStatus();
     } catch (error) {
       console.error("Error retrieving penalties:", error);
-      showStatus(`Failed to retrieve penalties: ${error.message}`, "error");
+      showFailure(error, "Could not retrieve VAT penalties");
     } finally {
       hideLoading();
     }

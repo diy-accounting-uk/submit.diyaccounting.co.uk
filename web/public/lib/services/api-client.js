@@ -16,22 +16,9 @@ export async function handle403Error(response) {
     const message = errorBody.message || "Access forbidden. You may need to add a bundle to access this feature.";
     console.warn("403 Forbidden:", message);
 
-    // Show user-friendly error and guide to bundles page
-    if (typeof window !== "undefined" && window.showStatus) {
-      window.showStatus(`${message} Click here to add bundles.`, "error");
-      // Add a link to bundles page in the error message
-      setTimeout(() => {
-        const statusContainer = document.getElementById("statusMessagesContainer");
-        if (statusContainer) {
-          const lastMessage = statusContainer.lastElementChild;
-          if (lastMessage && lastMessage.classList.contains("status-error")) {
-            lastMessage.style.cursor = "pointer";
-            lastMessage.onclick = () => {
-              window.location.href = "/bundles.html";
-            };
-          }
-        }
-      }, 100);
+    // One message: what failed, the cause, and a link to the bundles page
+    if (typeof window !== "undefined" && window.showFailure) {
+      window.showFailure({ status: 403, code: errorBody.code, message }, "You cannot use this yet");
     }
   } catch (e) {
     console.warn("Failed to handle 403 error:", e);

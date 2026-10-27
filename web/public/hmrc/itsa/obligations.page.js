@@ -130,9 +130,7 @@ async function retrieveObligations(nino, filters, testScenario, runFraudPreventi
 
   const result = await response.json();
   if (!response.ok) {
-    const error = new Error(hmrcErrorMessage(result, "Failed to retrieve obligations"));
-    error.status = response.status;
-    throw error;
+    throw requestError(response, result, "Failed to retrieve obligations");
   }
   return result;
 }
@@ -183,9 +181,9 @@ async function continueObligationsRetrieval() {
     if (error.status === 401) {
       sessionStorage.removeItem("hmrcAccessToken");
       sessionStorage.removeItem("hmrcTokenScope");
-      showStatus("Access token expired. Please re-authenticate.", "error");
+      showFailure({ status: 401 }, "Could not retrieve obligations");
     } else {
-      showStatus(`Failed to retrieve obligations: ${error.message}`, "error");
+      showFailure(error, "Could not retrieve obligations");
     }
     showSearchCriteria();
     sessionStorage.removeItem("pendingObligationsRequest");
@@ -271,9 +269,9 @@ async function handleFormSubmission(event) {
       if (error.status === 401) {
         sessionStorage.removeItem("hmrcAccessToken");
         sessionStorage.removeItem("hmrcTokenScope");
-        showStatus("Access token expired. Please try again.", "error");
+        showFailure({ status: 401 }, "Could not retrieve obligations");
       } else {
-        showStatus(`Failed to retrieve obligations: ${error.message}`, "error");
+        showFailure(error, "Could not retrieve obligations");
       }
     } finally {
       hideLoading();

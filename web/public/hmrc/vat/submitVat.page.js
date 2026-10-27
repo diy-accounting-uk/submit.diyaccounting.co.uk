@@ -432,8 +432,7 @@ async function continueVatSubmission() {
 
     // Display success: the earlier "Submitting" and "Still processing" messages are finished, so only the outcome stays
     hideStatus();
-    showStatus("VAT return processed", "success");
-    displayReceipt(submitResponse);
+    displayReceipt(submitResponse, submissionData);
     // Refresh token display after consumption
     updateTokenInfo();
     // hideStatus(); // Don't hide success status immediately
@@ -450,9 +449,11 @@ async function continueVatSubmission() {
     console.log("Continue submission handler (success, session storage cleared)");
   } catch (error) {
     console.error("Submission error:", error);
-    showStatus(`Submission failed: ${error.message}`, "error");
-    // Auto-expand form on error so user can retry
+    showFailure(error, "Could not submit the VAT return");
+    // Auto-expand form on error so user can retry. A submission only starts once the
+    // declaration is ticked, so the box stays ticked after the page reload of the HMRC sign-in.
     showForm();
+    document.getElementById("declaration").checked = true;
     // Clear submission data to prevent auto-retry loop on next page load
     // User will need to manually retry by filling the form again
     sessionStorage.removeItem("submission_data");
@@ -492,7 +493,56 @@ function setReceiptReference(elementId, value) {
   reference.closest(".receipt-item").style.display = hasValue ? "" : "none";
 }
 
-function displayReceipt(response) {
+const RECEIPT_FIGURES = [
+  ["vatDueSales", "Box 1: VAT due on sales", true],
+  ["vatDueAcquisitions", "Box 2: VAT due on acquisitions", true],
+  ["totalVatDue", "Box 3: Total VAT due", true],
+  ["vatReclaimedCurrPeriod", "Box 4: VAT reclaimed", true],
+  ["netVatDue", "Box 5: Net VAT to pay or reclaim", true],
+  ["totalValueSalesExVAT", "Box 6: Total sales excluding VAT", false],
+  ["totalValuePurchasesExVAT", "Box 7: Total purchases excluding VAT", false],
+  ["totalValueGoodsSuppliedExVAT", "Box 8: Goods supplied to the EU", false],
+  ["totalAcquisitionsExVAT", "Box 9: Acquisitions from the EU", false],
+];
+
+function formatReceiptDate(isoDate) {
+  const parsed = new Date(`${isoDate}T00:00:00Z`);
+  if (!isoDate || Number.isNaN(parsed.getTime())) return isoDate || "";
+  return parsed.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
+
+// The period and the figures filed, from what the customer submitted, so the receipt answers
+// "which return did I just file" without opening the form again.
+function showFiledReturn(filed) {
+  const filedSection = document.getElementById("filedReturn");
+  if (!filedSection || !filed) return;
+  const period =
+    filed.periodStart && filed.periodEnd ? `${formatReceiptDate(filed.periodStart)} to ${formatReceiptDate(filed.periodEnd)}` : "";
+  document.getElementById("filedPeriod").textContent = period;
+  document.getElementById("filedPeriodItem").style.display = period ? "" : "none";
+  document.getElementById("filedVrn").textContent = filed.vatNumber || "";
+  const rows = document.getElementById("filedFigures");
+  rows.replaceChildren();
+  for (const [key, label, isMoney] of RECEIPT_FIGURES) {
+    const raw = filed[key];
+    if (raw === undefined || raw === null || raw === "") continue;
+    const amount = Number(raw);
+    const row = document.createElement("div");
+    row.className = "receipt-item";
+    const name = document.createElement("span");
+    name.textContent = label;
+    const value = document.createElement("span");
+    value.className = "receipt-figure";
+    value.textContent = isMoney
+      ? `£${amount.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+      : `£${amount.toLocaleString("en-GB")}`;
+    row.append(name, value);
+    rows.appendChild(row);
+  }
+  filedSection.style.display = "";
+}
+
+function displayReceipt(response, filed) {
   console.log("Page display transition: Displaying receipt and hiding form", response);
   // Hide the form
   vatFormContainer.style.display = "none";
@@ -523,8 +573,12 @@ function displayReceipt(response) {
   setReceiptReference("formBundleNumber", receipt.formBundleNumber);
   setReceiptReference("chargeRefNumber", receipt.chargeRefNumber);
 
-  // Show the receipt
+  showFiledReturn(filed);
+
+  // Show the receipt, with the way back to the form below it
   receiptDisplay.style.display = "block";
+  const toggleButtons = document.querySelector(".form-toggle-buttons");
+  if (toggleButtons) receiptDisplay.after(toggleButtons);
   document.getElementById("cancelRequestBtn").style.display = "none";
 }
 

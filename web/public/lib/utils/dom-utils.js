@@ -74,6 +74,99 @@ export function removeStatusMessage(msgDiv) {
 }
 
 /**
+ * An Error that carries what the reader-facing failure message needs: the HTTP status and the
+ * HMRC or bundle code from the response body. The status is for choosing the cause line and is
+ * never shown.
+ */
+export function requestError(response, result, fallback) {
+  const reason = (result && (result.message || result.userMessage)) || fallback;
+  const hmrcReason = result?.responseBody?.message || result?.responseBody?.errors?.[0]?.message;
+  const error = new Error(hmrcReason || reason);
+  error.status = response?.status;
+  error.code = result?.responseBody?.code || result?.code || "";
+  return error;
+}
+
+function failureCause(error) {
+  const status = error?.status;
+  const code = error?.code || "";
+  if (status === 401)
+    return { cause: "Your HMRC connection has expired.", next: { label: "Connect to HMRC again", href: window.location.pathname } };
+  if (code.endsWith("INSOLVENT_TRADER")) {
+    return { cause: "HMRC will not release records for a trader it lists as insolvent.", next: { label: "Back to activities", href: "/" } };
+  }
+  if (code === "BUNDLE_ENTITLEMENT_REQUIRED" || (status === 403 && /bundle/i.test(error.message))) {
+    return { cause: "Your account has no bundle that allows this.", next: { label: "Add a bundle", href: "/bundles.html" } };
+  }
+  if (status === 403) {
+    return {
+      cause: "HMRC did not allow access to these records.",
+      next: { label: "Connect to HMRC again", href: window.location.pathname },
+    };
+  }
+  if (status === 404) {
+    return {
+      cause: "HMRC holds nothing for these details.",
+      next: { label: "Check the details and try again", href: window.location.pathname },
+    };
+  }
+  if (status >= 500 || status === undefined) {
+    return { cause: "HMRC could not complete the request.", next: { label: "Try again", href: window.location.pathname } };
+  }
+  const detail = String(error?.message || "")
+    .replace(/ ?\(HTTP \d{3}\)\.?/g, "")
+    .replace(/^Failed to [^.:]*[.:]\s*/, "")
+    .trim();
+  return {
+    cause: detail || "HMRC refused the request.",
+    next: { label: "Check the details and try again", href: window.location.pathname },
+  };
+}
+
+/**
+ * Show one message for a failed request: a title naming what failed, one line of cause and one
+ * next step as a link. It replaces every earlier error message so one failure reads once.
+ * @param {Error} error - from requestError, or any Error
+ * @param {string} title - what failed, e.g. "Could not retrieve VAT obligations"
+ */
+export function showFailure(error, title) {
+  console.log("Status failure:", title, error?.status, error?.code, error?.message);
+  const container = document.getElementById("statusMessagesContainer");
+  if (!container) return;
+  for (const existing of Array.from(container.querySelectorAll(".status-message"))) {
+    if (existing.classList.contains("status-error") || existing.classList.contains("status-info")) removeStatusMessage(existing);
+  }
+  const { cause, next } = failureCause(error);
+
+  const msgDiv = document.createElement("div");
+  msgDiv.className = "status-message status-error";
+  msgDiv.setAttribute("role", "alert");
+
+  const content = document.createElement("div");
+  content.className = "status-message-content";
+  const heading = document.createElement("strong");
+  heading.className = "status-message-title";
+  heading.textContent = title;
+  const causeLine = document.createElement("span");
+  causeLine.className = "status-message-cause";
+  causeLine.textContent = cause;
+  const nextLink = document.createElement("a");
+  nextLink.className = "status-message-next";
+  nextLink.href = next.href;
+  nextLink.textContent = next.label;
+  content.append(heading, causeLine, nextLink);
+
+  const closeButton = document.createElement("button");
+  closeButton.textContent = "\u00d7";
+  closeButton.className = "status-close-button";
+  closeButton.setAttribute("aria-label", "Close message");
+  closeButton.addEventListener("click", () => removeStatusMessage(msgDiv));
+
+  msgDiv.append(content, closeButton);
+  container.appendChild(msgDiv);
+}
+
+/**
  * Hide all status messages
  */
 export function hideStatus() {
@@ -110,6 +203,8 @@ export function readMeta(name) {
 if (typeof window !== "undefined") {
   window.showStatus = showStatus;
   window.hideStatus = hideStatus;
+  window.showFailure = showFailure;
+  window.requestError = requestError;
   window.removeStatusMessage = removeStatusMessage;
   window.onDomReady = onDomReady;
   window.readMeta = readMeta;

@@ -165,12 +165,12 @@ async function continueObligationsRetrieval() {
       if (response.status === 401) {
         sessionStorage.removeItem("hmrcAccessToken");
         sessionStorage.removeItem("hmrcTokenScope");
-        showStatus("Access token expired. Please re-authenticate.", "error");
+        showFailure({ status: 401 }, "Could not retrieve VAT obligations");
         showSearchCriteria(); // Show form on error
         // Could trigger re-auth here if desired
         return;
       }
-      throw new Error(hmrcErrorMessage(result, "Failed to retrieve obligations"));
+      throw requestError(response, result, "Failed to retrieve obligations");
     }
 
     // Display results
@@ -188,7 +188,7 @@ async function continueObligationsRetrieval() {
     console.log("Obligations retrieval completed successfully");
   } catch (error) {
     console.error("Error retrieving obligations:", error);
-    showStatus(`Failed to retrieve obligations: ${error.message}`, "error");
+    showFailure(error, "Could not retrieve VAT obligations");
     showSearchCriteria(); // Show form on error
     // Clear pending request data to prevent auto-retry loop on next page load
     sessionStorage.removeItem("pendingObligationsRequest");
@@ -318,10 +318,10 @@ async function handleFormSubmission(event) {
         if (response.status === 401) {
           sessionStorage.removeItem("hmrcAccessToken");
           sessionStorage.removeItem("hmrcTokenScope");
-          showStatus("Access token expired. Please try again.", "error");
+          showFailure({ status: 401 }, "Could not retrieve VAT obligations");
           return;
         }
-        throw new Error(hmrcErrorMessage(result, "Failed to retrieve obligations"));
+        throw requestError(response, result, "Failed to retrieve obligations");
       }
 
       // Display results
@@ -331,7 +331,7 @@ async function handleFormSubmission(event) {
       hideStatus();
     } catch (error) {
       console.error("Error retrieving obligations:", error);
-      showStatus(`Failed to retrieve obligations: ${error.message}`, "error");
+      showFailure(error, "Could not retrieve VAT obligations");
     } finally {
       hideLoading();
     }
