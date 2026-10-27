@@ -68,7 +68,7 @@ Steps 1 to 6 are Claude Code's. Run every command from this repository's root.
    the fixture is shown as a company not on any register; every other case links its register entry.
    It also writes `<case>/reconciliation.md` (every input field against its tagged value and
    visible text; every total recomputed), the Proven / Not proven / Source / Judge lines and step 0
-   in `walkthrough.md`, and `index.html`. Run it again after step 4: it renders `judge.json`.
+   in `walkthrough.md`, and `index.html`. After step 4, `--render-only` (below) renders `judge.json`.
 2. **Read everything.** For each case: `reconciliation.md` (any mismatch is a builder bug),
    `findings.md`'s rows, `visible-text.txt`, `validator.txt`, `fact-comparison.md`, the gateway files
    in `source/`, and the two screenshots with the Read tool (`rendered.png`, `reference/example.png`).
@@ -99,7 +99,11 @@ Steps 1 to 6 are Claude Code's. Run every command from this repository's root.
      "added": [{"check": "", "why": "the rule or request, with its section or email", "result": "pass | fail | question", "found": "", "data": "file in the case folder, or ../ path; a path that starts with a case folder (3-small-full/visible-text.txt) is read from the review folder"}],
      "reasoning": ["paragraphs: evidence first, then the conclusion, then the fix"]}}
    ```
-   Then run step 1 again with the same arguments (the validator runs again); the page shows the verdict, the added checks and the reasoning.
+   Then render the page without a new review (it builds nothing, posts nothing to the validator and calls no `gh`):
+   ```bash
+   node scripts/companies-house-review.mjs --render-only --out-dir target/companies-house-review/<date>
+   ```
+   The page shows the verdict, the added checks and the reasoning.
 5. **Triage.** For each cause (not each symptom), write one NEXT.md row in the board's row shape
    (`- [ ] **<label>. <title>.** … **Source** … **Owner** … **Model** … **Size** …`): the finding,
    its basis, the files that change (fixture, builder, review script), the proof (reconciliation,

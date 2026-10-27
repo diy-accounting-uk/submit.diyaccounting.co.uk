@@ -2,7 +2,8 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "../../functions/companies-house/companiesHouseAccountsPost.js";
 import { parseFigure, longDate, reconcile, reconciliationMarkdown } from "../../../scripts/lib/companiesHouseReviewReconcile.js";
@@ -16,6 +17,7 @@ import {
   sameBalanceSheetDateCriterion,
   substanceCriteria,
 } from "../../../scripts/lib/companiesHouseReviewCriteria.js";
+import { parseFindings, readReviewFolder } from "../../../scripts/lib/companiesHouseReviewFolder.js";
 import {
   companySource,
   dataHref,
@@ -308,5 +310,61 @@ describe("review page", () => {
     const bare = renderIndex("2026-10-27", [review(c)], {});
     expect(bare).not.toContain("2b. Checks the judge added");
     expect(bare).toContain("pending");
+  });
+});
+
+describe("render-only", () => {
+  const folder = () => {
+    const c = caseNamed("micro-entity-accounts");
+    const root = mkdtempSync(join(tmpdir(), "ch-render-"));
+    mkdirSync(join(root, "1-micro", "source"), { recursive: true });
+    mkdirSync(join(root, "1-micro", "reference"), { recursive: true });
+    writeFileSync(join(root, "1-micro", "source", "case-input.json"), JSON.stringify(c.input));
+    writeFileSync(join(root, "1-micro", "facts.json"), JSON.stringify(c.ours.facts));
+    writeFileSync(join(root, "1-micro", "visible-text.txt"), c.ours.visibleText);
+    writeFileSync(join(root, "1-micro", "validator.txt"), "RESULT: valid\n");
+    writeFileSync(join(root, "1-micro", "submission.txt"), "Submission number: 00005D (run 1)\n");
+    writeFileSync(join(root, "1-micro", "reference", "Prod223_4336_16606594_20260731.html"), "<html/>");
+    writeFileSync(
+      join(root, "findings.md"),
+      [
+        "# Companies House review, 2026-10-27",
+        "",
+        "## 1-micro: Micro-entity accounts (FRS 105)",
+        "",
+        "Fixture case `micro-entity-accounts`. Submission 00005D, outcome POLL_TIMEOUT.",
+        "",
+        "| Criterion | Result | Evidence | File |",
+        "|---|---|---|---|",
+        "| Nothing of the iXBRL header is visible | pass | no header text | 1-micro/visible-text.txt |",
+        "| Look: the screenshot reads as printed accounts, beside the example | pass | read by a person | 1-micro/rendered.png |",
+        "",
+      ].join("\n"),
+    );
+    return root;
+  };
+
+  it("reads the findings rows as written, keeping a Look row a person filled in", () => {
+    const [section] = parseFindings(readFileSync(join(folder(), "findings.md"), "utf8"));
+    expect(section).toMatchObject({ directory: "1-micro", caseName: "micro-entity-accounts" });
+    expect(section.rows.map((row) => [row.result, row.file])).toEqual([
+      ["pass", "visible-text.txt"],
+      ["pass", "rendered.png"],
+    ]);
+  });
+
+  it("renders the page from the files in the folder without the criteria it lacks", () => {
+    const root = folder();
+    const reviews = readReviewFolder(
+      root,
+      readFileSync(join(import.meta.dirname, "../../../scripts/fixtures/companies-house-test-service-cases.json"), "utf8"),
+    );
+    expect(reviews[0]).toMatchObject({ submissionNumber: "00005D", exampleCompany: "16606594", validator: { verdict: "valid" } });
+    expect(reviews[0].reconciliation.mismatches).toBe(0);
+    expect(reviews[0].gateway.known).toBe(false);
+    const page = renderIndex("2026-10-27", reviews, { "1-micro": { verdict: "pass", summary: "Fine." } });
+    expect(page).toContain("read by a person");
+    expect(page).not.toContain("s396(A1)");
+    expect(page).toContain("Fine.");
   });
 });

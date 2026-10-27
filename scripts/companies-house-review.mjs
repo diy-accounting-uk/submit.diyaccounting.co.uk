@@ -25,6 +25,9 @@
  *     [--date YYYY-MM-DD] [--out-dir <dir>] [--skip-validator] [--example <case>=<file>]...
  *     [--run <case>=<run id>]... [--runs-dir <dir>]
  *
+ * --render-only --out-dir <folder> writes only index.html and walkthrough.md from the files already in
+ * the folder and its judge.json: no build, no validator, no gh. Use it after the judge writes judge.json.
+ *
  * --out-dir defaults to target/companies-house-review/<date>/. --example replaces the example
  * the script would pick from the zip for one case. --run names the companies-house-test-service
  * run that filed the case; its evidence log gives the submission number, the submit exchange and
@@ -41,6 +44,7 @@ import { fileURLToPath } from "node:url";
 import { chromium } from "@playwright/test";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "../app/functions/companies-house/companiesHouseAccountsPost.js";
 import { ixbrlStructureProblems } from "../app/lib/ixbrlStructure.js";
+import { readReviewFolder } from "./lib/companiesHouseReviewFolder.js";
 import { reconcile, reconciliationMarkdown } from "./lib/companiesHouseReviewReconcile.js";
 import { isoToday, sameBalanceSheetDateCriterion, substanceCriteria } from "./lib/companiesHouseReviewCriteria.js";
 import {
@@ -225,6 +229,7 @@ function parseArgs(argv) {
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     if (flag === "--skip-validator") args.skipValidator = true;
+    else if (flag === "--render-only") args.renderOnly = true;
     else if (flag === "--adp-zip") args.adpZip = argv[(index += 1)];
     else if (flag === "--date") args.date = argv[(index += 1)];
     else if (flag === "--out-dir") args.outDir = argv[(index += 1)];
@@ -643,8 +648,20 @@ function exampleSourceText(rawName, origin) {
   ].join("\n");
 }
 
+// Writes index.html and walkthrough.md from the files already in the folder and judge.json. It builds
+// no document, posts nothing to the validator and calls no gh.
+function renderOnly(args) {
+  const reviews = readReviewFolder(args.outDir, readFileSync(FIXTURE_PATH, "utf8"));
+  const judgePath = join(args.outDir, "judge.json");
+  const judgeJson = existsSync(judgePath) ? JSON.parse(readFileSync(judgePath, "utf8")) : {};
+  writeFileSync(join(args.outDir, "walkthrough.md"), walkthroughMarkdown(args.date, reviews, judgeJson));
+  writeFileSync(join(args.outDir, "index.html"), renderIndex(args.date, reviews, judgeJson));
+  console.log(`Rendered ${reviews.length} cases: ${relative(REPOSITORY_ROOT, args.outDir)}/index.html`);
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
+  if (args.renderOnly) return renderOnly(args);
   mkdirSync(args.outDir, { recursive: true });
   const cases = JSON.parse(readFileSync(FIXTURE_PATH, "utf8")).filter((testCase) => testCase.type === "accounts");
   const fixtureText = readFileSync(FIXTURE_PATH, "utf8");

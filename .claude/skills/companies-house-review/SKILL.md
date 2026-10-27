@@ -188,7 +188,9 @@ Steps 1 to 6 are Claude Code's. Run every command from this repository's root.
    One run writes everything the judge reads: `source/`, `reference/`, `reconciliation.md`, the
    walkthrough lines and `index.html` (with the verdicts from `judge.json` when it is there). A
    case with `"fictional": true` in the fixture is shown as a company not on any register; every
-   other case links its find-and-update entry. Add `--skip-validator` to judge without the network. If Chromium is missing, run
+   other case links its find-and-update entry. Add `--skip-validator` to judge without the network.
+   `--render-only --out-dir <folder>` writes only `index.html` and `walkthrough.md` from the files already in
+   the folder and `judge.json`: no build, no validator, no `gh`. Look rows filled in `findings.md` stay. If Chromium is missing, run
    `npx playwright install chromium` first.
 5. Look. For each case directory, open `rendered.png` and `reference/example.png` with the Read tool. Judge
    whether ours reads as printed accounts beside the example: a title page, a balance sheet with a
