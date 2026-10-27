@@ -96,6 +96,45 @@ describe("planWalkthrough", () => {
   });
 });
 
+describe("a fast-forward step inside a scene", () => {
+  it("gets no frame of its own", () => {
+    const scene = {
+      id: "picker",
+      steps: [
+        { action: "click", caption: "One.", headline: "One" },
+        { action: "click", caption: "Two.", headline: "Two" },
+        { action: "hmrcAuthorise", caption: "Grant access.", headline: "Grant", fastForward: true },
+        { action: "await", caption: "Three.", headline: "Three" },
+        { action: "point", caption: "Four.", headline: "Four" },
+      ],
+    };
+    const timed = { steps: scene.steps.map((_, i) => step("picker", i, i * 1000, i * 1000 + 900)) };
+    const plan = planWalkthrough({ script: { scenes: [scene] }, timeline: timed });
+    expect(plan.map((p) => p.caption)).toEqual(["One.", "Two.", "Three.", "Four."]);
+  });
+});
+
+describe("a captioned step followed by an await", () => {
+  it("is framed where the await ends, once the page has loaded", () => {
+    const scene = {
+      id: "picker",
+      steps: [
+        { action: "click", caption: "One.", headline: "One" },
+        { action: "click", caption: "Two.", headline: "Two" },
+        { action: "click", caption: "Trigger.", headline: "Trigger" },
+        { action: "await", caption: "Loaded.", headline: "Loaded" },
+        { action: "point", caption: "Four.", headline: "Four" },
+      ],
+    };
+    const timed = { steps: scene.steps.map((_, i) => step("picker", i, i * 1000, i * 1000 + 900)) };
+    const plan = planWalkthrough({ script: { scenes: [scene] }, timeline: timed });
+    const trigger = plan.find((p) => p.caption === "Trigger.");
+    expect(trigger.settleStep).toBe(3);
+    expect(trigger.frameMs).toBe(3900 - SETTLE_BACK_MS);
+    expect(plan.find((p) => p.caption === "Two.").settleStep).toBeUndefined();
+  });
+});
+
 describe("a scene with more than three captioned steps", () => {
   const longScript = {
     scenes: [

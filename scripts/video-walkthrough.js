@@ -19,7 +19,7 @@
 //
 // Scenes shown: a scene with at least one captioned step, unless the scene is flagged
 // fastForward (those compress a step every video repeats, such as sign-in, into seconds).
-// A scene with more than three captioned steps gets one frame per captioned step.
+// A scene with more than three captioned steps gets one frame per captioned step, leaving out a step flagged fastForward.
 //
 // The frame is cut from the card-free still the recorder wrote for the step (stills/step-*.png,
 // stepStill.js) when the recording has one. Otherwise it is cut from a moment of the recording
@@ -94,7 +94,10 @@ export function planWalkthrough({ script, timeline, videoDurationMs = Infinity }
   const plan = [];
   for (const scene of script.scenes) {
     if (scene.fastForward) continue;
-    const captioned = scene.steps.map((step, index) => ({ step, index })).filter(({ step }) => captionTextForStep(step));
+    // A fast-forward step shows the page mid-transition (a redirect, a spinner), so it gets no frame of its own.
+    const captioned = scene.steps
+      .map((step, index) => ({ step, index }))
+      .filter(({ step }) => captionTextForStep(step) && step.fastForward !== true);
     if (captioned.length === 0) continue;
     const timed = timeline.steps.filter((step) => step.sceneId === scene.id);
     if (timed.length !== scene.steps.length) {
@@ -108,14 +111,18 @@ export function planWalkthrough({ script, timeline, videoDurationMs = Infinity }
         previousCaption = caption;
         const timing = timed.find((t) => t.stepIndex === index);
         if (!timing) throw new Error(`scene "${scene.id}" has no timeline entry for step ${index}`);
-        plan.push({
+        // A step followed by an await ends before the page has loaded what it asked for, so its frame is cut where the await ends.
+        const awaited = scene.steps[index + 1]?.action === "await" ? timed.find((t) => t.stepIndex === index + 1) : null;
+        const item = {
           scene: scene.id,
           step: index,
           headline: step.headline || scene.chapter || caption,
           caption,
           startSeconds: Math.floor(timing.startMs / 1000),
-          frameMs: frameAt(timing.startMs, timing.endMs),
-        });
+          frameMs: frameAt(timing.startMs, (awaited ?? timing).endMs),
+        };
+        if (awaited) item.settleStep = index + 1;
+        plan.push(item);
       }
       continue;
     }
@@ -321,11 +328,14 @@ export function buildForEntry(entry, { ffmpeg = resolveFfmpegBinary(), outRoot =
   let samples = null;
   const sampleCards = () => (samples ??= sampleRecording(ffmpeg, mp4Path, script));
   for (const item of plan) {
+    const settleStill =
+      item.settleStep === undefined ? null : findStepStill(path.join(dir, "stills"), { ...item, step: item.settleStep }, Infinity);
+    const frameStep = settleStill ? item.settleStep : item.step;
     const timing = timeline.steps.filter(
-      (step) => step.sceneId === item.scene && (item.step === undefined || step.stepIndex === item.step),
+      (step) => step.sceneId === item.scene && (frameStep === undefined || step.stepIndex === frameStep),
     );
     const sceneSteps = script.scenes.find((scene) => scene.id === item.scene).steps.length;
-    const still = findStepStill(path.join(dir, "stills"), item, sceneSteps);
+    const still = findStepStill(path.join(dir, "stills"), { ...item, step: frameStep }, sceneSteps);
     let source = still;
     let frameMs = null;
     if (!still) {
