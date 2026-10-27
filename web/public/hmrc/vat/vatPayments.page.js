@@ -366,10 +366,15 @@ function displayPayments(payments) {
     // A payment not yet received omits "received" - show "Pending", not a bare "-",
     // since a payment that just hasn't landed yet isn't an error state.
     const receivedDisplay = payment.received ? formatDate(payment.received) : "Pending";
-    return element("tr", {}, element("td", {}, element("strong", {}, amountDisplay)), element("td", {}, receivedDisplay));
+    return element(
+      "tr",
+      {},
+      element("td", { class: "money-column" }, amountDisplay),
+      element("td", { class: "date-column" }, receivedDisplay),
+    );
   });
 
-  tableContainer.replaceChildren(resultsTable([["Amount"], ["Received"]], rows));
+  tableContainer.replaceChildren(resultsTable([["Amount", "money-column"], ["Received"]], rows));
 }
 
 const formatDate = HmrcDisplayFormat.formatDate;

@@ -373,7 +373,7 @@ function displayLiabilities(liabilities) {
     return element(
       "tr",
       {},
-      element("td", {}, element("strong", {}, periodDisplay)),
+      element("td", {}, periodDisplay),
       element("td", {}, HmrcDisplayFormat.formatText(liability.type)),
       element("td", { class: "money-column" }, originalAmountDisplay),
       element("td", { class: "money-column" }, outstandingAmountDisplay),

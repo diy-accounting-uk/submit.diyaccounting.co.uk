@@ -72,12 +72,27 @@
     return text === ABSENT ? text : text.charAt(0).toUpperCase() + text.slice(1);
   }
 
+  // Names every body cell after its column heading, so a narrow screen can show each row as label and value pairs.
+  function labelCells(table) {
+    const headCells = [...table.querySelectorAll("thead th")];
+    const headings = headCells.map((heading) => heading.textContent);
+    if (headings.length === 0) return table;
+    table.querySelectorAll("tbody tr").forEach((row) => {
+      [...row.children].forEach((cell, index) => {
+        if (cell.tagName !== "TD" || !headings[index]) return;
+        cell.setAttribute("data-label", headings[index]);
+        if (headCells[index].classList.contains("money-column")) cell.classList.add("money-column");
+      });
+    });
+    return table;
+  }
+
   // Wraps a table so that a table wider than its card scrolls inside itself, not the page.
   function scrollable(table) {
     const wrapper = document.createElement("div");
     wrapper.className = "table-scroll";
     wrapper.setAttribute("style", "overflow-x: auto; max-width: 100%");
-    wrapper.appendChild(table);
+    wrapper.appendChild(labelCells(table));
     return wrapper;
   }
 
@@ -90,6 +105,7 @@
     formatWholeAmount,
     formatText,
     sentenceCase,
+    labelCells,
     scrollable,
   };
 })();

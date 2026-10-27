@@ -302,14 +302,15 @@ function displayObligations(obligations) {
     const tbody = document.createElement("tbody");
     business.obligationDetails.forEach((detail) => {
       const statusCell = document.createElement("td");
+      statusCell.setAttribute("data-label", "Status");
       statusCell.append(el("span", detail.status === "fulfilled" ? "status-fulfilled" : "status-open", detail.status || ""));
       const row = document.createElement("tr");
       row.append(
-        el("td", "date-column", detail.periodStartDate || ""),
-        el("td", "date-column", detail.periodEndDate || ""),
-        el("td", "date-column", detail.dueDate || ""),
+        labelled(el("td", "date-column", detail.periodStartDate || ""), "Period start"),
+        labelled(el("td", "date-column", detail.periodEndDate || ""), "Period end"),
+        labelled(el("td", "date-column", detail.dueDate || ""), "Due date"),
         statusCell,
-        el("td", "date-column", detail.receivedDate || "-"),
+        labelled(el("td", "date-column", detail.receivedDate || "-"), "Received"),
       );
       tbody.append(row);
     });
@@ -319,6 +320,11 @@ function displayObligations(obligations) {
     return [el("h4", "", `${business.typeOfBusiness || ""} (${business.businessId || ""})`), table];
   });
   tableContainer.replaceChildren(...nodes);
+}
+
+function labelled(cell, label) {
+  cell.setAttribute("data-label", label);
+  return cell;
 }
 
 function el(tag, className, text) {

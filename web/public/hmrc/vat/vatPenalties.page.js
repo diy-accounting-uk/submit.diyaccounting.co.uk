@@ -337,7 +337,14 @@ function dataRow(...cellTexts) {
 }
 
 function resultsTable(headings, rows) {
-  const headerRow = element("tr", {}, ...headings.map((heading) => element("th", {}, heading)));
+  const headerRow = element(
+    "tr",
+    {},
+    ...headings.map((heading) => {
+      const [text, className] = Array.isArray(heading) ? heading : [heading];
+      return element("th", className ? { class: className } : {}, text);
+    }),
+  );
   return HmrcDisplayFormat.scrollable(
     element("table", { class: "results-table" }, element("thead", {}, headerRow), element("tbody", {}, ...rows)),
   );
@@ -405,7 +412,7 @@ function displayPenalties(penalties) {
     });
     lateSubmissionContainer.replaceChildren(
       element("h4", {}, "Late submission penalties"),
-      resultsTable(["Category", "Status", "Created", "Expires", "Charge Amount"], rows),
+      resultsTable(["Category", "Status", "Created", "Expires", ["Charge Amount", "money-column"]], rows),
     );
   }
 
@@ -428,7 +435,7 @@ function displayPenalties(penalties) {
     });
     latePaymentContainer.replaceChildren(
       element("h4", {}, "Late payment penalties"),
-      resultsTable(["Charge Reference", "Category", "Status", "Period", "Penalty Amount", "Due Date"], rows),
+      resultsTable(["Charge Reference", "Category", "Status", "Period", ["Penalty Amount", "money-column"], "Due Date"], rows),
     );
   }
 }

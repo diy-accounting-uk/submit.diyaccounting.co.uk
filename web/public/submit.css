@@ -1845,6 +1845,96 @@ caption {
   white-space: nowrap;
 }
 
+/* Ledger cells: money is right-aligned figures, dates and periods are plain text. */
+.results-table th.money-column,
+.results-table td.money-column {
+  text-align: right;
+  font-family: var(--font-figures);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.results-table td.money-column {
+  white-space: nowrap;
+}
+
+.results-table td.action-column {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--c-rule-subtle);
+}
+
+.results-table .action-button {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.results-table .link-button {
+  min-height: var(--control-height);
+}
+
+/* Under 40rem a row is a block of label and value pairs, so no column sits out of sight. */
+@media (max-width: 40rem) {
+  .results-table:not(.review-table),
+  .results-table:not(.review-table) tbody {
+    display: block;
+    overflow: visible;
+    background: none;
+  }
+
+  .results-table:not(.review-table) thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .results-table:not(.review-table) tr {
+    display: block;
+    padding: var(--space-2) 0;
+    border-bottom: 2px solid var(--c-rule);
+  }
+
+  .results-table:not(.review-table) td {
+    display: grid;
+    grid-template-columns: minmax(6rem, 40%) minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-1) 0;
+    border: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .results-table:not(.review-table) td[data-label]::before {
+    content: attr(data-label);
+    font-weight: var(--weight-strong);
+    color: var(--c-ink-muted);
+  }
+
+  .results-table:not(.review-table) td.money-column {
+    white-space: normal;
+  }
+
+  .results-table:not(.review-table) td.action-column {
+    display: flex;
+    padding-top: var(--space-2);
+    border: 0;
+  }
+
+  .results-table:not(.review-table) td.action-column::before {
+    display: none;
+  }
+
+  .results-table:not(.review-table) th[scope="row"] {
+    display: block;
+    text-align: left;
+    border: 0;
+    padding: var(--space-1) 0 0;
+  }
+}
+
 .status-open {
   color: var(--c-error);
   font-weight: var(--weight-strong);
