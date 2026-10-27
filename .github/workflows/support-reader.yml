@@ -1,0 +1,390 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: support-reader
+run-name: support reader
+
+# The quarantine reader for support tickets. A ticket from the public form lands as an issue in
+# private.diyaccounting.co.uk. This workflow reads it with a model that has no tools and no
+# GitHub write access, checks the model's answer against a schema in code, and posts the checked
+# summary as a comment on the private issue. The operator then reads the ticket and the summary
+# and removes the `maintainer-review` label to approve it for support-triage.yml, or closes the
+# issue to reject it.
+#
+# This repository is public, so its logs, step summaries and artifacts are public. No step here
+# prints ticket text or model output, and no job uploads an artifact. Jobs pass ticket-derived
+# text to each other only as job outputs encrypted with a key from a secret: a step that reads
+# an output shows the value in its own log header, so the value must be useless to a reader of
+# the log. The private issue is the only place a person reads the text.
+#
+# Three jobs hold different powers. `select` and `post` hold a GitHub App token for the private
+# repository and no AWS credentials. `read` holds AWS credentials for the quarantine reader role
+# (Bedrock invoke on one model, the guardrail and three SSM parameters) and a token that can only
+# read issues. A poll every ten minutes starts it, so no public endpoint and no cross-repository
+# write credential exist.
+
+on:
+  schedule:
+    - cron: '4-59/10 * * * *'
+  workflow_dispatch:
+    inputs:
+      issue-number:
+        description: the private support issue to read; empty reads the oldest unread one
+        required: false
+        type: string
+
+permissions: {}
+
+concurrency:
+  group: support-reader
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+  READER_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+  PRIVATE_REPO: diy-accounting-uk/private.diyaccounting.co.uk
+  # The one place this number is written. The budget guard and its step name read it.
+  SUPPORT_READER_BUDGET_PER_DAY: '20'
+
+jobs:
+  select:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: prod
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      issue-number: ${{ steps.pick.outputs.issue-number }}
+      proceed: ${{ steps.pick.outputs.issue-number != '' && steps.budget-guard.outputs.over-budget == 'false' }}
+      request: ${{ steps.skeleton.outputs.request }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+
+      - name: Generate a token that reads issues in the private repository
+        id: private-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: read
+
+      - name: Pick the oldest unread support issue
+        id: pick
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+          ISSUE_INPUT: ${{ inputs.issue-number }}
+        run: |
+          set -euo pipefail
+          ARGS=()
+          if [ -n "${ISSUE_INPUT}" ]; then ARGS+=(--issue "${ISSUE_INPUT}"); fi
+          node scripts/support-reader-select.mjs "${ARGS[@]}"
+
+      # Counting reads the job history of every run in the last day, so it runs only when there
+      # is an issue to read; most polls find none.
+      - name: Stop once ${{ env.SUPPORT_READER_BUDGET_PER_DAY }} reader comments have already been posted today
+        if: steps.pick.outputs.issue-number != ''
+        id: budget-guard
+        uses: ./.github/actions/agent-run-budget
+        with:
+          workflow-file: support-reader.yml
+          job-name: post
+          step-name: Post the reader comment
+          budget: ${{ env.SUPPORT_READER_BUDGET_PER_DAY }}
+
+      - name: Build the request skeleton
+        if: steps.pick.outputs.issue-number != '' && steps.budget-guard.outputs.over-budget == 'false'
+        id: skeleton
+        run: node scripts/quarantine-reader-request.mjs support
+
+  # No checkout and no write permission on anything. The only credentials are the OIDC token for
+  # the quarantine reader role and a token that reads issues in the private repository.
+  read:
+    needs: select
+    if: needs.select.outputs.proceed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: prod
+    permissions:
+      id-token: write
+    env:
+      ISSUE_NUMBER: ${{ needs.select.outputs.issue-number }}
+    outputs:
+      answer: ${{ steps.reply.outputs.answer }}
+      guardrail-action: ${{ steps.reply.outputs.guardrail-action }}
+    steps:
+      - name: Generate a token that reads issues in the private repository
+        id: private-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: read
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume the quarantine reader role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: arn:aws:iam::${{ vars.SUBMIT_ACCOUNT_ID }}:role/prod-env-quarantine-reader-role
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Stop when the agent kill switch is on
+        run: |
+          set -uo pipefail
+          if STATE=$(aws ssm get-parameter --name /submit/prod/agents/kill-switch --query 'Parameter.Value' --output text 2>/tmp/kill-switch.err); then
+            :
+          elif grep -q ParameterNotFound /tmp/kill-switch.err; then
+            STATE=off
+          else
+            echo "::error::the kill switch could not be read"
+            exit 1
+          fi
+          if [ "$STATE" != "off" ]; then
+            echo "::error::the kill switch is not off, so the reader stops"
+            exit 1
+          fi
+
+      - name: Read the ticket into a file
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          gh api "repos/${PRIVATE_REPO}/issues/${ISSUE_NUMBER}" --jq '{title, body}' > /tmp/ticket.json
+
+      # jq puts the ticket into a JSON string value, so nothing in it can change the request's
+      # shape. The request has no `tools` key.
+      - name: Build the request
+        env:
+          REQUEST_SKELETON: ${{ needs.select.outputs.request }}
+        run: |
+          set -euo pipefail
+          printf '%s' "$REQUEST_SKELETON" | base64 -d > /tmp/skeleton.json
+          jq -n --slurpfile skeleton /tmp/skeleton.json --slurpfile ticket /tmp/ticket.json '
+            $skeleton[0] as $s | $ticket[0] as $t
+            | $s
+            | .messages = [
+                { role: "user", content: ("<" + $s.tag + ">\n" + ($t.title // "") + "\n\n" + ($t.body // "") + "\n</" + $s.tag + ">") },
+                { role: "assistant", content: $s.prefill }
+              ]
+            | del(.prefill, .tag)' > /tmp/request.json
+          rm -f /tmp/ticket.json
+
+      - name: Ask the model
+        run: |
+          set -uo pipefail
+          if ! aws bedrock-runtime invoke-model --model-id "$READER_MODEL_ID" --body fileb:///tmp/request.json /tmp/response.json > /dev/null 2>/tmp/invoke.err; then
+            echo "::error::invoke-model failed: $(grep -oE '[A-Za-z]+Exception' /tmp/invoke.err | head -1)"
+            exit 1
+          fi
+          { printf '{'; jq -j '.content[0].text // ""' /tmp/response.json; } > /tmp/answer.txt
+          rm -f /tmp/request.json /tmp/response.json
+
+      - name: Apply the guardrail to the answer
+        run: |
+          set -uo pipefail
+          GUARDRAIL_ID=$(aws ssm get-parameter --name /submit/prod/alarm-triage/guardrail-id --query 'Parameter.Value' --output text)
+          GUARDRAIL_VERSION=$(aws ssm get-parameter --name /submit/prod/alarm-triage/guardrail-version --query 'Parameter.Value' --output text)
+          jq -Rs '[{ text: { text: . } }]' /tmp/answer.txt > /tmp/guardrail-input.json
+          if ! aws bedrock-runtime apply-guardrail --guardrail-identifier "$GUARDRAIL_ID" --guardrail-version "$GUARDRAIL_VERSION" \
+            --source OUTPUT --content file:///tmp/guardrail-input.json > /tmp/guardrail-result.json 2>/tmp/guardrail.err; then
+            echo "::error::apply-guardrail failed: $(grep -oE '[A-Za-z]+Exception' /tmp/guardrail.err | head -1)"
+            exit 1
+          fi
+          jq -r '.action' /tmp/guardrail-result.json > /tmp/guardrail-action.txt
+          if [ "$(cat /tmp/guardrail-action.txt)" = "NONE" ]; then
+            cp /tmp/answer.txt /tmp/answer-final.txt
+          else
+            jq -j '.outputs[0].text // ""' /tmp/guardrail-result.json > /tmp/answer-final.txt
+          fi
+
+      # The answer leaves this job encrypted. A step that reads a job output shows the value in
+      # its log header, and this repository's logs are public.
+      - name: Hand the answer on, encrypted
+        id: reply
+        env:
+          TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          TRANSIT_PASS=$(printf '%s' "${TRANSIT_KEY}${GITHUB_RUN_ID}" | sha256sum | cut -d' ' -f1)
+          export TRANSIT_PASS
+          echo "answer=$(openssl enc -aes-256-cbc -pbkdf2 -salt -a -A -pass env:TRANSIT_PASS < /tmp/answer-final.txt)" >> "$GITHUB_OUTPUT"
+          echo "guardrail-action=$(cat /tmp/guardrail-action.txt)" >> "$GITHUB_OUTPUT"
+
+  # Checks the answer in code and writes the comment. It holds a token that can write to the
+  # private repository's issues and no AWS credentials.
+  post:
+    needs: [select, read]
+    if: needs.read.result == 'success'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: prod
+    permissions:
+      contents: read
+    env:
+      GUARDRAIL_ACTION: ${{ needs.read.outputs.guardrail-action }}
+      ISSUE_NUMBER: ${{ needs.select.outputs.issue-number }}
+      RUN_NUMBER: ${{ github.run_number }}
+      RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    outputs:
+      outcome: ${{ steps.check.outputs.outcome }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+
+      - name: Generate a token that writes issues in the private repository
+        id: private-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: write
+
+      - name: Check the answer against the schema
+        id: check
+        env:
+          TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          ANSWER_ENCRYPTED: ${{ needs.read.outputs.answer }}
+          MODEL_ID: ${{ env.READER_MODEL_ID }}
+        run: |
+          set -euo pipefail
+          TRANSIT_PASS=$(printf '%s' "${TRANSIT_KEY}${GITHUB_RUN_ID}" | sha256sum | cut -d' ' -f1)
+          export TRANSIT_PASS
+          printf '%s' "$ANSWER_ENCRYPTED" | openssl enc -d -aes-256-cbc -pbkdf2 -a -A -pass env:TRANSIT_PASS > /tmp/answer.txt
+          ANSWER_B64=$(base64 -w0 < /tmp/answer.txt)
+          rm -f /tmp/answer.txt
+          export ANSWER_B64
+          node scripts/quarantine-reader-check.mjs --kind support --faqs web/public/faqs.toml --out /tmp/reader-comment.md
+
+      - name: Post the reader comment
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+        run: node scripts/github-issue-comment.mjs --repo "$PRIVATE_REPO" --issue "$ISSUE_NUMBER" --body-file /tmp/reader-comment.md
+
+  ledger:
+    needs: [select, read, post]
+    if: always() && !cancelled() && needs.select.outputs.proceed == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+    steps:
+      - name: Checkout the ledger action
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/actions/dora-row
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume the read-only alarm triage role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      # The row holds the outcome, the run and the issue number. It holds no ticket or model text.
+      - name: Build the agent-run row
+        id: agent-run-row
+        env:
+          GH_TOKEN: ${{ github.token }}
+          POST_RESULT: ${{ needs.post.result }}
+          POST_OUTCOME: ${{ needs.post.outputs.outcome }}
+          READ_RESULT: ${{ needs.read.result }}
+          ISSUE_NUMBER: ${{ needs.select.outputs.issue-number }}
+        run: |
+          set -euo pipefail
+          if [ "$POST_RESULT" = "success" ]; then OUTCOME="$POST_OUTCOME"
+          elif [ "$READ_RESULT" = "failure" ]; then OUTCOME=read-failed
+          elif [ "$POST_RESULT" = "failure" ]; then OUTCOME=post-failed
+          else OUTCOME=no-action
+          fi
+          STARTED_AT=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}" --jq .run_started_at)
+          FINISHED_AT=$(date -u +%FT%TZ)
+          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
+          ROW=$(jq -nc \
+            --arg run_id "${{ github.run_id }}" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg trigger "${{ github.event_name }}" \
+            --arg issue_number "$ISSUE_NUMBER" \
+            --arg model_id "$READER_MODEL_ID" \
+            --arg outcome "$OUTCOME" \
+            --argjson duration_seconds "$DURATION_SECONDS" \
+            --arg finished_at "$FINISHED_AT" \
+            '{
+              workflow: "support-reader", run_id: $run_id, run_url: $run_url, trigger: $trigger,
+              environment: "prod",
+              issue_number: (if $issue_number == "" then null else ($issue_number | tonumber) end),
+              model_id: $model_id, outcome: $outcome, escalated: false,
+              redactions: null, guardrail_action: null, pr_number: null,
+              duration_seconds: $duration_seconds, finished_at: $finished_at
+            }')
+          echo "row=$ROW" >> "$GITHUB_OUTPUT"
+          echo "key=curated/agent-runs/dt=$(date -u +%F)/${{ github.run_id }}-${{ github.run_attempt }}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Write the agent-run row to the lake
+        uses: ./.github/actions/dora-row
+        with:
+          bucket: 'prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: ${{ steps.agent-run-row.outputs.key }}
+          row: ${{ steps.agent-run-row.outputs.row }}
