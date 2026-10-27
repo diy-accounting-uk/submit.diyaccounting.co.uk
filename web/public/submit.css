@@ -1368,6 +1368,23 @@ textarea.input--error {
   cursor: default;
 }
 
+/* An optional group of boxes inside a form section, closed until the customer opens it. */
+.form-section details {
+  margin: var(--space-3) 0 var(--space-4);
+}
+
+.form-section summary {
+  cursor: pointer;
+  color: var(--c-brand);
+  font-weight: var(--weight-strong);
+  padding: var(--space-2) 0;
+}
+
+.form-section details[open] {
+  border-left: 3px solid var(--c-rule-subtle);
+  padding-left: var(--space-3);
+}
+
 /* ============================================
    Buttons
 
