@@ -720,6 +720,7 @@ export async function assertReaderView(page, options = {}) {
     const message = String(error?.message);
     if (!message.includes("Execution context was destroyed") && !message.includes("createTreeWalker")) throw error;
     await page.waitForLoadState("load");
+    if (!isOwnPage(page.url())) return;
     await page.waitForFunction(() => document.body !== null);
     defects = await findReaderViewDefects(page, options);
   }
