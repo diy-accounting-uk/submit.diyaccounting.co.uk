@@ -3220,6 +3220,10 @@ input.hmrc-assist-highlight {
     border-bottom: 1px solid var(--c-rule-subtle);
   }
 
+  .ledger tr[hidden] {
+    display: none;
+  }
+
   .ledger tbody th,
   .ledger td {
     display: block;

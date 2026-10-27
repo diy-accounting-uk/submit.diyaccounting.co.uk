@@ -75,6 +75,15 @@ test.describe("File small company accounts page", () => {
     await expect(page.locator("#comparativeFields")).toBeHidden();
   });
 
+  test("on a phone the format 2 lines stay out of sight in format 1", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await openFormView(page);
+    await page.addStyleTag({ path: "web/public/submit.css" });
+    await expect(page.locator("#currentTurnover")).toBeVisible();
+    await expect(page.locator("#currentChangeInStocks")).toBeHidden();
+    await expect(page.locator("#currentInterestPayable")).toBeHidden();
+  });
+
   test("the profit and loss subtotals and the balance sheet check follow what is typed", async ({ page }) => {
     await openFormView(page);
     await fillCurrentYear(page);
