@@ -58,11 +58,6 @@ git worktree add --detach "$work" "$sha" >"$logdir/setup.log" 2>&1 || {
   echo "FAIL setup (0s) log=$logdir/setup.log"
   exit 1
 }
-ln -sfn "$main_checkout/node_modules" "$work/node_modules"
-if [ -d "$main_checkout/mcp/node_modules" ]; then
-  ln -sfn "$main_checkout/mcp/node_modules" "$work/mcp/node_modules"
-fi
-
 echo "ref=$ref sha=$sha"
 echo "worktree=$work"
 echo "logs=$logdir"
@@ -86,6 +81,26 @@ run_gate() {
 
 skip_gate() {
   echo "SKIP $1 ($2)"
+}
+
+lock_differs() {
+  ! git -C "$work" diff --quiet origin/main HEAD -- "$1"
+}
+
+install_node_modules() {
+  install_dir=$1
+  install_log=$2
+  install_start=$(date +%s)
+  if [ "$install_dir" = "." ]; then
+    echo "INSTALL npm ci (package-lock.json differs from origin/main)"
+  else
+    echo "INSTALL npm ci in $install_dir (package-lock.json differs from origin/main)"
+  fi
+  if (cd "$work/$install_dir" && npm ci --no-audit --no-fund) >"$install_log" 2>&1; then
+    return 0
+  fi
+  echo "FAIL npm-ci $install_dir ($(($(date +%s) - install_start))s) log=$install_log"
+  failed=1
 }
 
 gate_eslint_repo_ratchet() {
@@ -160,6 +175,17 @@ docker_trigger() {
   done
   return 1
 }
+
+if lock_differs package-lock.json; then
+  install_node_modules . "$logdir/npm-ci.log"
+else
+  ln -sfn "$main_checkout/node_modules" "$work/node_modules"
+fi
+if lock_differs mcp/package-lock.json; then
+  install_node_modules mcp "$logdir/npm-ci-mcp.log"
+elif [ -d "$main_checkout/mcp/node_modules" ]; then
+  ln -sfn "$main_checkout/mcp/node_modules" "$work/mcp/node_modules"
+fi
 
 run_gate bundle npm run bundle
 run_gate maven-verify ./mvnw clean verify
