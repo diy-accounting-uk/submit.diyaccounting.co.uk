@@ -38,6 +38,10 @@ inputs:
   run-url:
     description: "URL of the calling workflow run, linked from the closing byline"
     required: true
+  echo-output:
+    description: "'false' keeps the redacted text and the guardrail result out of the job log (a public repository's logs are public); the files are written either way"
+    required: false
+    default: "true"
 
 outputs:
   output-file:
@@ -73,14 +77,22 @@ runs:
       env:
         INPUT_FILE: ${{ inputs.input-file }}
         FORMAT: ${{ inputs.format }}
+        ECHO_OUTPUT: ${{ inputs.echo-output }}
       run: |
         set -o pipefail
         FLAG=""
         if [ "${FORMAT}" = "markdown" ]; then FLAG="--markdown"; fi
-        node scripts/redact-triage-output.mjs ${FLAG} "${INPUT_FILE}" 2>&1 | tee /tmp/publish-filter-redacted.md || {
-          echo "redaction failed, see the log above" >&2
-          exit 1
-        }
+        if [ "${ECHO_OUTPUT}" = "false" ]; then
+          node scripts/redact-triage-output.mjs ${FLAG} "${INPUT_FILE}" > /tmp/publish-filter-redacted.md 2>&1 || {
+            echo "redaction failed; the output is withheld from the log" >&2
+            exit 1
+          }
+        else
+          node scripts/redact-triage-output.mjs ${FLAG} "${INPUT_FILE}" 2>&1 | tee /tmp/publish-filter-redacted.md || {
+            echo "redaction failed, see the log above" >&2
+            exit 1
+          }
+        fi
         echo "redactions=$(wc -l < /tmp/redactions.txt)" | tee -a "$GITHUB_OUTPUT"
 
     - name: Apply the Bedrock guardrail
@@ -89,15 +101,25 @@ runs:
       env:
         GUARDRAIL_ID: ${{ steps.guardrail-ids.outputs.id }}
         GUARDRAIL_VERSION: ${{ steps.guardrail-ids.outputs.version }}
+        ECHO_OUTPUT: ${{ inputs.echo-output }}
       run: |
         set -euo pipefail
         jq -Rs '[{ text: { text: . } }]' /tmp/publish-filter-redacted.md > /tmp/publish-filter-guardrail-input.json
-        aws bedrock-runtime apply-guardrail \
-          --guardrail-identifier "${GUARDRAIL_ID}" \
-          --guardrail-version "${GUARDRAIL_VERSION}" \
-          --source OUTPUT \
-          --content file:///tmp/publish-filter-guardrail-input.json \
-          2>&1 | tee /tmp/publish-filter-guardrail-result.json
+        if [ "${ECHO_OUTPUT}" = "false" ]; then
+          aws bedrock-runtime apply-guardrail \
+            --guardrail-identifier "${GUARDRAIL_ID}" \
+            --guardrail-version "${GUARDRAIL_VERSION}" \
+            --source OUTPUT \
+            --content file:///tmp/publish-filter-guardrail-input.json \
+            > /tmp/publish-filter-guardrail-result.json 2>&1
+        else
+          aws bedrock-runtime apply-guardrail \
+            --guardrail-identifier "${GUARDRAIL_ID}" \
+            --guardrail-version "${GUARDRAIL_VERSION}" \
+            --source OUTPUT \
+            --content file:///tmp/publish-filter-guardrail-input.json \
+            2>&1 | tee /tmp/publish-filter-guardrail-result.json
+        fi
         echo "action=$(jq -r '.action' /tmp/publish-filter-guardrail-result.json)" | tee -a "$GITHUB_OUTPUT"
 
     # The guardrail's entities and regexes are all ANONYMIZE (see ObservabilityStack.java), so
