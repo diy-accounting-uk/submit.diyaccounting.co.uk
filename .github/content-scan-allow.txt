@@ -96,3 +96,12 @@ eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9
 # The simulator lane's VAT registration number in the MCP harness's scripted conversation
 # (web/public/mcp-harness/*.json); the simulator answers it with fixture obligations.
 111222333
+
+# Vendor notification senders the support mail intake skips (scripts/support-mail-intake.mjs):
+# role addresses of GitHub, Stripe, PayPal and Google, not personal data.
+notifications@stripe.com
+support@stripe.com
+service@paypal.co.uk
+service@paypal.com
+noreply@google.com
+notifications@github.com
