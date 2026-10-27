@@ -89,6 +89,38 @@
             </div>
           </section>
           <section class="form-section">
+            <h3>Registered office</h3>
+            <p id="officeHint" class="hint">Filled in from the company's record at Companies House. Change a part to correct it.</p>
+            <div class="form-group">
+              <label for="officeAddressLine1">Address line 1</label>
+              <input type="text" id="officeAddressLine1" name="officeAddressLine1" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeAddressLine2">Address line 2 (optional)</label>
+              <input type="text" id="officeAddressLine2" name="officeAddressLine2" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeAddressLine3">Address line 3 (optional)</label>
+              <input type="text" id="officeAddressLine3" name="officeAddressLine3" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeCityOrTown">Town or city</label>
+              <input type="text" id="officeCityOrTown" name="officeCityOrTown" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeCountyRegion">County or region (optional)</label>
+              <input type="text" id="officeCountyRegion" name="officeCountyRegion" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officePostalCode">Postcode</label>
+              <input type="text" id="officePostalCode" name="officePostalCode" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeCountry">Country (optional)</label>
+              <input type="text" id="officeCountry" name="officeCountry" autocomplete="off" />
+            </div>
+          </section>
+          <section class="form-section">
             <h3>What Companies House receives</h3>
             <div class="form-group">
               <div class="choice">
@@ -520,6 +552,25 @@
                   </td>
                 </tr>
                 <tr>
+                  <th scope="row">Bank loans and overdrafts (due within one year)</th>
+                  <td class="ledger__figure">
+                    <label for="currentBankLoansOverdrafts" class="visually-hidden"
+                      >Bank loans and overdrafts (due within one year), this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentBankLoansOverdrafts"
+                        name="currentBankLoansOverdrafts"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
                   <th scope="row">Trade creditors (due within one year)</th>
                   <td class="ledger__figure">
                     <label for="currentTradeCreditors" class="visually-hidden">Trade creditors (due within one year), this year</label>
@@ -553,6 +604,25 @@
                         inputmode="decimal"
                         data-money="whole-pounds"
                         data-required-message="Enter corporation tax (due within one year) this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Taxation and social security (due within one year)</th>
+                  <td class="ledger__figure">
+                    <label for="currentTaxationSocialSecurity" class="visually-hidden"
+                      >Taxation and social security (due within one year), this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentTaxationSocialSecurity"
+                        name="currentTaxationSocialSecurity"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
                       />
                     </div>
                   </td>
@@ -594,6 +664,23 @@
                         inputmode="decimal"
                         data-money="whole-pounds"
                         data-required-message="Enter creditors: amounts falling due after more than one year this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Of which, bank loans</th>
+                  <td class="ledger__figure">
+                    <label for="currentBankLoansAfterOneYear" class="visually-hidden">Of which, bank loans, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentBankLoansAfterOneYear"
+                        name="currentBankLoansAfterOneYear"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
                       />
                     </div>
                   </td>
@@ -1028,6 +1115,25 @@
                     </td>
                   </tr>
                   <tr>
+                    <th scope="row">Bank loans and overdrafts (due within one year)</th>
+                    <td class="ledger__figure">
+                      <label for="priorBankLoansOverdrafts" class="visually-hidden"
+                        >Bank loans and overdrafts (due within one year), last year</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorBankLoansOverdrafts"
+                          name="priorBankLoansOverdrafts"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
                     <th scope="row">Trade creditors (due within one year)</th>
                     <td class="ledger__figure">
                       <label for="priorTradeCreditors" class="visually-hidden">Trade creditors (due within one year), last year</label>
@@ -1059,6 +1165,25 @@
                           inputmode="decimal"
                           data-money="whole-pounds"
                           data-required-message="Enter corporation tax (due within one year) last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Taxation and social security (due within one year)</th>
+                    <td class="ledger__figure">
+                      <label for="priorTaxationSocialSecurity" class="visually-hidden"
+                        >Taxation and social security (due within one year), last year</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorTaxationSocialSecurity"
+                          name="priorTaxationSocialSecurity"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
                         />
                       </div>
                     </td>
@@ -1098,6 +1223,23 @@
                           inputmode="decimal"
                           data-money="whole-pounds"
                           data-required-message="Enter creditors: amounts falling due after more than one year last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Of which, bank loans</th>
+                    <td class="ledger__figure">
+                      <label for="priorBankLoansAfterOneYear" class="visually-hidden">Of which, bank loans, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorBankLoansAfterOneYear"
+                          name="priorBankLoansAfterOneYear"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
                         />
                       </div>
                     </td>
@@ -1816,6 +1958,36 @@
               <label for="accountingPolicies">Accounting policies</label>
               <textarea id="accountingPolicies" name="accountingPolicies" rows="4" required></textarea>
             </div>
+            <details id="morePolicies">
+              <summary>More accounting policies (optional)</summary>
+              <p class="hint">
+                Each text appears in the accounting policies note under its own heading. Leave a box empty to leave it out.
+              </p>
+              <div class="form-group">
+                <label for="goingConcernStatement">Going concern</label>
+                <textarea id="goingConcernStatement" name="goingConcernStatement" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="revenueRecognitionPolicy">Turnover</label>
+                <textarea id="revenueRecognitionPolicy" name="revenueRecognitionPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="tangibleFixedAssetsPolicy">Tangible fixed assets</label>
+                <textarea id="tangibleFixedAssetsPolicy" name="tangibleFixedAssetsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="impairmentPolicy">Impairment</label>
+                <textarea id="impairmentPolicy" name="impairmentPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="financialInstrumentsPolicy">Financial instruments</label>
+                <textarea id="financialInstrumentsPolicy" name="financialInstrumentsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="taxPolicy">Taxation</label>
+                <textarea id="taxPolicy" name="taxPolicy" rows="3"></textarea>
+              </div>
+            </details>
             <div class="form-group">
               <label for="averageEmployees">Average number of employees during the period</label>
               <input type="number" id="averageEmployees" name="averageEmployees" required step="1" min="0" />
@@ -1832,6 +2004,74 @@
             <div class="form-group">
               <label for="directorDateApproved">Date approved</label>
               <input type="date" id="directorDateApproved" name="directorDateApproved" required />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Accountants' report</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="checkbox"
+                  id="includeAccountantsReport"
+                  name="includeAccountantsReport"
+                  aria-describedby="includeAccountantsReport-hint"
+                /><label for="includeAccountantsReport">An accountant compiled these accounts</label>
+              </div>
+              <p id="includeAccountantsReport-hint" class="hint">
+                The accounts gain a page for the accountants' report, and Companies House sees them as exempt from audit with an
+                accountants' report.
+              </p>
+            </div>
+            <div id="accountantsReportFields" style="display: none">
+              <div class="form-group">
+                <label for="accountantsName">Name of the accountancy firm</label>
+                <input type="text" id="accountantsName" name="accountantsName" />
+              </div>
+              <div class="form-group">
+                <label for="accountantsStatement">Statement of the scope of the report</label>
+                <textarea id="accountantsStatement" name="accountantsStatement" rows="4">
+In accordance with your instructions, we have compiled these unaudited financial statements from the accounting records and from information and explanations you have given us.</textarea>
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Controlling party</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="controllingPartyNone" name="controllingParty" value="none" checked /><label
+                  for="controllingPartyNone"
+                  >Say nothing about a controlling party</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="controllingPartyNoUltimate" name="controllingParty" value="noUltimate" /><label
+                  for="controllingPartyNoUltimate"
+                  >Say the company has no ultimate controlling party</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="controllingPartyNamed" name="controllingParty" value="named" /><label for="controllingPartyNamed"
+                  >Name the controlling party</label
+                >
+              </div>
+            </div>
+            <div id="controllingPartyFields" style="display: none">
+              <div class="form-group">
+                <label for="controllingPartyName">Name of the controlling party</label>
+                <input type="text" id="controllingPartyName" name="controllingPartyName" />
+              </div>
+              <div class="form-group">
+                <div class="choice">
+                  <input type="checkbox" id="controllingPartyUltimate" name="controllingPartyUltimate" checked /><label
+                    for="controllingPartyUltimate"
+                    >This party is the ultimate controlling party</label
+                  >
+                </div>
+              </div>
             </div>
           </section>
           <section class="form-section">
@@ -1870,6 +2110,20 @@
                   companies regime.</label
                 >
               </div>
+            </div>
+            <div class="form-group">
+              <label for="directorsReportConsistent">Directors' report consistent with the accounts</label>
+              <input
+                type="text"
+                id="directorsReportConsistent"
+                name="directorsReportConsistent"
+                value=""
+                readonly
+                aria-describedby="directorsReportConsistent-hint"
+              />
+              <p id="directorsReportConsistent-hint" class="hint">
+                These accounts are unaudited, so this statement does not apply. Nothing is sent.
+              </p>
             </div>
           </section>
 
@@ -1945,6 +2199,7 @@
     <script src="../lib/form-errors.js"></script>
     <script src="../widgets/status-messages.js"></script>
     <script src="../widgets/signed-out-panel.js"></script>
+    <script src="../lib/accounts-form-sections.js"></script>
     <script src="../widgets/books-import.js"></script>
     <script src="fileSmallCompanyAccounts.page.js"></script>
   </body>

@@ -650,10 +650,13 @@ export const BALANCE_SHEET_FIELDS = [
   ["stocks", "Stocks"],
   ["debtors", "Debtors"],
   ["cashAtBank", "Cash at bank and in hand"],
+  ["bankLoansOverdrafts", "Bank loans and overdrafts (due within one year)"],
   ["tradeCreditors", "Trade creditors (due within one year)"],
   ["corporationTax", "Corporation tax (due within one year)"],
+  ["taxationSocialSecurity", "Taxation and social security (due within one year)"],
   ["otherCreditors", "Other creditors (due within one year)"],
   ["creditorsAfterOneYear", "Creditors: amounts falling due after more than one year"],
+  ["bankLoansAfterOneYear", "Of which, bank loans"],
   ["calledUpShareCapital", "Called up share capital"],
   ["profitAndLossAccount", "Profit and loss account reserve"],
 ];
@@ -843,8 +846,10 @@ export function netAssetsOf(sheet) {
     sheet.stocks +
     sheet.debtors +
     sheet.cashAtBank -
+    sheet.bankLoansOverdrafts -
     sheet.tradeCreditors -
     sheet.corporationTax -
+    sheet.taxationSocialSecurity -
     sheet.otherCreditors -
     sheet.creditorsAfterOneYear
   );

@@ -72,7 +72,8 @@ async function handleCompanySubmit(event) {
   hideStatus();
   try {
     const profile = await window.getCompanyProfile(companyNumber);
-    company = { companyNumber: profile.companyNumber, companyName: profile.companyName, registeredOffice: profile.registeredOffice };
+    company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+    window.accountsFormSections.fillRegisteredOffice(profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showView("formView");
@@ -107,11 +108,14 @@ function dormantPayload() {
 }
 
 function buildAccountsPayload() {
+  const registeredOffice = window.accountsFormSections.readRegisteredOffice();
+  const accountantsReport = window.accountsFormSections.readAccountantsReport();
   return {
     ...dormantPayload(),
     companyNumber: company.companyNumber,
     companyName: company.companyName,
-    registeredOffice: company.registeredOffice,
+    ...(registeredOffice ? { registeredOffice } : {}),
+    ...(accountantsReport ? { accountantsReport } : {}),
     periodStart: document.getElementById("periodStart").value,
     periodEnd: document.getElementById("periodEnd").value,
     balanceSheet: {
@@ -291,6 +295,7 @@ function startAgain() {
   document.getElementById("companyForm").reset();
   document.getElementById("accountsForm").reset();
   toggleDormantFields();
+  window.accountsFormSections.showAccountantsReportFields();
   document.getElementById("rejections").style.display = "none";
   document.getElementById("startAgainBtn").style.display = "none";
   hideStatus();
@@ -301,6 +306,7 @@ document.getElementById("companyForm").addEventListener("submit", handleCompanyS
 document.getElementById("accountsForm").addEventListener("submit", handleAccountsFormSubmit);
 document.getElementById("accountsForm").addEventListener("input", refreshYearTotals);
 document.getElementById("dormant").addEventListener("change", toggleDormantFields);
+document.getElementById("includeAccountantsReport").addEventListener("change", window.accountsFormSections.showAccountantsReportFields);
 document.getElementById("backToFormBtn").addEventListener("click", () => showView("formView"));
 document.getElementById("submitFilingBtn").addEventListener("click", handleSubmitFiling);
 document.getElementById("startAgainBtn").addEventListener("click", startAgain);

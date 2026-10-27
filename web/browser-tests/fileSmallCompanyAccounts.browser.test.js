@@ -149,4 +149,107 @@ test.describe("File small company accounts page", () => {
       expect(entry.hint, entry.id).toContain("For example");
     }
   });
+
+  test("bank loans, taxation and social security and bank loans after one year change the totals and the request", async ({ page }) => {
+    await openFormView(page);
+    await fillCurrentYear(page);
+    await page.fill("#currentCreditorsAfterOneYear", "800");
+    await page.fill("#currentBankLoansAfterOneYear", "500");
+    await page.fill("#currentBankLoansOverdrafts", "200");
+    await page.fill("#currentTaxationSocialSecurity", "150");
+    await page.fill("#currentProfitAndLossAccount", "2750");
+    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: 2850. Matches");
+    const year = await page.evaluate(() => buildAccountsPayload().smallCompany.balanceSheet.currentYear);
+    expect(year).toMatchObject({ bankLoansOverdrafts: 200, taxationSocialSecurity: 150, bankLoansAfterOneYear: 500 });
+    await page.fill("#currentBankLoansAfterOneYear", "900");
+    expect(await page.evaluate(() => formProblem())).toContain("Bank loans due after one year");
+  });
+
+  test("the new creditor lines sit in the balance sheet table in both years, next to the lines they split", async ({ page }) => {
+    await openFormView(page);
+    await page.check("#includeComparatives");
+    for (const prefix of ["current", "prior"]) {
+      const labels = await page
+        .locator(`#${prefix}BankLoansOverdrafts, #${prefix}TaxationSocialSecurity, #${prefix}BankLoansAfterOneYear`)
+        .evaluateAll((inputs) => inputs.map((input) => input.closest("tr").querySelector("th").textContent.trim()));
+      expect(labels).toEqual([
+        "Bank loans and overdrafts (due within one year)",
+        "Taxation and social security (due within one year)",
+        "Of which, bank loans",
+      ]);
+    }
+  });
+
+  test("the registered office parts fill from the company record, can be edited and reach the request", async ({ page }) => {
+    await openFormView(page);
+    await page.evaluate(() =>
+      window.accountsFormSections.fillRegisteredOffice({
+        addressLine1: "Unit 4 Morgan Court",
+        cityOrTown: "Cardiff",
+        postalCode: "CF10 1AA",
+      }),
+    );
+    await expect(page.locator("#officeAddressLine1")).toHaveValue("Unit 4 Morgan Court");
+    await page.fill("#officeCountry", "Wales");
+    const office = await page.evaluate(() => buildAccountsPayload().registeredOffice);
+    expect(office).toEqual({ addressLine1: "Unit 4 Morgan Court", cityOrTown: "Cardiff", postalCode: "CF10 1AA", country: "Wales" });
+  });
+
+  test("the accountants' report fields show only when ticked", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("#accountantsReportFields")).toBeHidden();
+    expect(await page.evaluate(() => buildAccountsPayload().accountantsReport)).toBeUndefined();
+    await page.check("#includeAccountantsReport");
+    await expect(page.locator("#accountantsReportFields")).toBeVisible();
+    await page.fill("#accountantsName", "Calder Brook Accountants LLP");
+    const report = await page.evaluate(() => buildAccountsPayload().accountantsReport);
+    expect(report.accountantsName).toBe("Calder Brook Accountants LLP");
+    expect(report.statement).toContain("compiled these unaudited financial statements");
+  });
+
+  test("the policy boxes sit under a closed disclosure and only the filled ones reach the request", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("#morePolicies")).not.toHaveAttribute("open", "");
+    await expect(page.locator("#morePolicies summary")).toHaveText("More accounting policies (optional)");
+    expect(
+      await page.evaluate(() => Object.keys(buildAccountsPayload().smallCompany).filter((key) => /Policy|Statement/.test(key))),
+    ).toEqual([]);
+    await page.locator("#morePolicies summary").click();
+    await page.fill("#goingConcernStatement", "  The company is a going concern.  ");
+    await page.fill("#impairmentPolicy", "Assets are reviewed for impairment each year.");
+    const smallCompany = await page.evaluate(() => buildAccountsPayload().smallCompany);
+    expect(smallCompany.goingConcernStatement).toBe("The company is a going concern.");
+    expect(smallCompany.impairmentPolicy).toBe("Assets are reviewed for impairment each year.");
+    expect(smallCompany.revenueRecognitionPolicy).toBeUndefined();
+  });
+
+  test("the controlling party is none by default, can state there is no ultimate party, or can name one", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("#controllingPartyFields")).toBeHidden();
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.controllingParty)).toBeUndefined();
+    await page.check("#controllingPartyNoUltimate");
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.controllingParty)).toEqual({ ultimate: false });
+    await page.check("#controllingPartyNamed");
+    await expect(page.locator("#controllingPartyFields")).toBeVisible();
+    await page.fill("#controllingPartyName", "Jo Director");
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.controllingParty)).toEqual({
+      name: "Jo Director",
+      ultimate: true,
+    });
+    await page.uncheck("#controllingPartyUltimate");
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.controllingParty)).toEqual({
+      name: "Jo Director",
+      ultimate: false,
+    });
+  });
+
+  test("the directors' report consistency flag is empty, read only, explained and sent nowhere", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("#directorsReportConsistent")).toHaveValue("");
+    await expect(page.locator("#directorsReportConsistent")).toHaveJSProperty("readOnly", true);
+    await expect(page.locator("#directorsReportConsistent-hint")).toContainText(
+      "These accounts are unaudited, so this statement does not apply",
+    );
+    expect(JSON.stringify(await page.evaluate(() => buildAccountsPayload()))).not.toContain("onsistent");
+  });
 });

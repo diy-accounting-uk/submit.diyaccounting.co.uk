@@ -27,12 +27,23 @@ const BALANCE_SHEET_INPUT_FIELDS = [
   "stocks",
   "debtors",
   "cashAtBank",
+  "bankLoansOverdrafts",
   "tradeCreditors",
   "corporationTax",
+  "taxationSocialSecurity",
   "otherCreditors",
   "creditorsAfterOneYear",
+  "bankLoansAfterOneYear",
   "calledUpShareCapital",
   "profitAndLossAccount",
+];
+const POLICY_BOXES = [
+  "goingConcernStatement",
+  "revenueRecognitionPolicy",
+  "tangibleFixedAssetsPolicy",
+  "impairmentPolicy",
+  "financialInstrumentsPolicy",
+  "taxPolicy",
 ];
 const FIXED_ASSET_CLASSES = ["landBuildings", "plantMachinery", "furnitureFittings", "computerEquipment", "motorVehicles"];
 const FIXED_ASSET_FIELDS = [
@@ -127,8 +138,10 @@ function netAssetsOf(figures) {
     figures.stocks +
     figures.debtors +
     figures.cashAtBank -
+    figures.bankLoansOverdrafts -
     figures.tradeCreditors -
     figures.corporationTax -
+    figures.taxationSocialSecurity -
     figures.otherCreditors -
     figures.creditorsAfterOneYear
   );
@@ -195,6 +208,8 @@ function toggleSections() {
   document.getElementById("fixedAssetNoteFields").style.display = document.getElementById("includeFixedAssetNote").checked
     ? "block"
     : "none";
+  window.accountsFormSections.showAccountantsReportFields();
+  window.accountsFormSections.showControllingPartyFields();
   renderTotals();
 }
 
@@ -207,7 +222,8 @@ async function handleCompanySubmit(event) {
   hideStatus();
   try {
     const profile = await window.getCompanyProfile(companyNumber);
-    company = { companyNumber: profile.companyNumber, companyName: profile.companyName, registeredOffice: profile.registeredOffice };
+    company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+    window.accountsFormSections.fillRegisteredOffice(profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showView("formView");
@@ -219,13 +235,26 @@ async function handleCompanySubmit(event) {
   }
 }
 
+function readPolicies() {
+  const policies = {};
+  POLICY_BOXES.forEach((box) => {
+    const text = document.getElementById(box).value.trim();
+    if (text) policies[box] = text;
+  });
+  return policies;
+}
+
 function buildAccountsPayload() {
   const includeComparatives = comparativesIncluded();
   const fixedAssetNote = readFixedAssetNote();
+  const registeredOffice = window.accountsFormSections.readRegisteredOffice();
+  const accountantsReport = window.accountsFormSections.readAccountantsReport();
+  const controllingParty = window.accountsFormSections.readControllingParty();
   return {
     companyNumber: company.companyNumber,
     companyName: company.companyName,
-    registeredOffice: company.registeredOffice,
+    ...(registeredOffice ? { registeredOffice } : {}),
+    ...(accountantsReport ? { accountantsReport } : {}),
     periodStart: document.getElementById("periodStart").value,
     periodEnd: document.getElementById("periodEnd").value,
     averageEmployees: Number(document.getElementById("averageEmployees").value),
@@ -258,6 +287,8 @@ function buildAccountsPayload() {
         ...(includeComparatives ? { priorYear: readProfitAndLoss("prior") } : {}),
       },
       ...(fixedAssetNote ? { fixedAssetNote } : {}),
+      ...readPolicies(),
+      ...(controllingParty ? { controllingParty } : {}),
     },
   };
 }
@@ -270,6 +301,9 @@ function formProblem() {
     const balanceSheet = readBalanceSheet(prefix);
     if (netAssetsOf(balanceSheet) !== balanceSheet.capitalAndReserves) {
       return "Net assets must equal share capital plus the profit and loss reserve for every year before previewing.";
+    }
+    if (balanceSheet.bankLoansAfterOneYear > balanceSheet.creditorsAfterOneYear) {
+      return "Bank loans due after one year cannot be more than the creditors due after one year.";
     }
   }
   const note = readFixedAssetNote();
@@ -434,6 +468,8 @@ document.getElementById("accountsForm").addEventListener("submit", handleAccount
 document.getElementById("accountsForm").addEventListener("input", renderTotals);
 document.getElementById("includeComparatives").addEventListener("change", toggleSections);
 document.getElementById("includeFixedAssetNote").addEventListener("change", toggleSections);
+document.getElementById("includeAccountantsReport").addEventListener("change", toggleSections);
+document.querySelectorAll('input[name="controllingParty"]').forEach((radio) => radio.addEventListener("change", toggleSections));
 document.querySelectorAll('input[name="profitAndLossFormat"]').forEach((radio) => radio.addEventListener("change", toggleSections));
 document.getElementById("backToFormBtn").addEventListener("click", () => showView("formView"));
 document.getElementById("submitFilingBtn").addEventListener("click", handleSubmitFiling);
