@@ -879,8 +879,8 @@
       "Drop your DIYA-GL book, spreadsheets workbook or package zip here, or choose a file. It is read in this browser and never uploaded; " +
         "only the figures you file are sent." +
         (takesIxbrl(kind)
-        ? " An iXBRL accounts document (.xhtml) fills the same form. A set of iXBRL documents fills it too: choose all its files together, or one zip."
-        : ""),
+          ? " An iXBRL accounts document (.xhtml) fills the same form. A set of iXBRL documents fills it too: choose all its files together, or one zip."
+          : ""),
     );
     const dropZone = element("div", { "id": "booksImportDrop", "class": "books-import-drop", "aria-describedby": "booksImportHint" });
     const chooseButton = element("button", { type: "button", id: "booksImportChoose", class: "secondary-button" }, "Choose a file");
@@ -933,7 +933,9 @@
     // Several files, or one zip, of iXBRL documents are one set. The reader refuses a set that mixes
     // companies, periods or facts, and the refusal shows as one failure message.
     async function readSet(bundle, files) {
-      const documents = await Promise.all(files.map(async (file) => ({ name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) })));
+      const documents = await Promise.all(
+        files.map(async (file) => ({ name: file.name, bytes: new Uint8Array(await file.arrayBuffer()) })),
+      );
       let read;
       try {
         read = await bundle.readBookSources(documents);
