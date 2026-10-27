@@ -273,6 +273,8 @@ export async function ingestHandler(event) {
           ok: hmrcResponse.ok,
           status: hmrcResponse.status,
           statusText: hmrcResponse.statusText,
+          // The body must survive the queue round-trip so http400/403/404FromHmrcResponse can report it.
+          data: hmrcResponse.data,
           headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
         };
         return { obligations, hmrcResponse: serializableHmrcResponse };
@@ -360,6 +362,7 @@ export async function workerHandler(event) {
         ok: hmrcResponse.ok,
         status: hmrcResponse.status,
         statusText: hmrcResponse.statusText,
+        data: hmrcResponse.data,
         headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
       };
 
