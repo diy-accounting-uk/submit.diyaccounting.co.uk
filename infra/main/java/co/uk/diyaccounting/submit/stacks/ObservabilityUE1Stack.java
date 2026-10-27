@@ -223,7 +223,9 @@ public class ObservabilityUE1Stack extends Stack {
                 .definition(CfnBudgetsAction.DefinitionProperty.builder()
                         .iamActionDefinition(CfnBudgetsAction.IamActionDefinitionProperty.builder()
                                 .policyArn(bedrockDenyPolicy.getManagedPolicyArn())
-                                .roles(List.of(props.sharedNames().alarmTriageRoleName))
+                                .roles(List.of(
+                                        props.sharedNames().alarmTriageRoleName,
+                                        props.sharedNames().quarantineReaderRoleName))
                                 .build())
                         .build())
                 .subscribers(List.of(CfnBudgetsAction.SubscriberProperty.builder()

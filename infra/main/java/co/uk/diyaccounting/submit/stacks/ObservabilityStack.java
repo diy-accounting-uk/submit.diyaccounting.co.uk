@@ -1180,12 +1180,14 @@ public class ObservabilityStack extends Stack {
                 .guardrailIdentifier(alarmTriageGuardrail.getAttrGuardrailId())
                 .build();
 
-        StringParameter.Builder.create(this, props.resourceNamePrefix() + "-AlarmTriageGuardrailIdParameter")
+        StringParameter guardrailIdParameter = StringParameter.Builder.create(
+                        this, props.resourceNamePrefix() + "-AlarmTriageGuardrailIdParameter")
                 .parameterName(props.sharedNames().alarmTriageGuardrailIdParameterName)
                 .stringValue(alarmTriageGuardrail.getAttrGuardrailId())
                 .build();
 
-        StringParameter.Builder.create(this, props.resourceNamePrefix() + "-AlarmTriageGuardrailVersionParameter")
+        StringParameter guardrailVersionParameter = StringParameter.Builder.create(
+                        this, props.resourceNamePrefix() + "-AlarmTriageGuardrailVersionParameter")
                 .parameterName(props.sharedNames().alarmTriageGuardrailVersionParameterName)
                 .stringValue(alarmTriageGuardrailVersion.getAttrVersion())
                 .build();
@@ -1199,10 +1201,49 @@ public class ObservabilityStack extends Stack {
         // CloudFormation only rewrites the value when this resource itself changes, so a flag
         // set to `on` survives an ordinary environment deploy and is turned off by the same
         // dispatch.
-        StringParameter.Builder.create(this, props.resourceNamePrefix() + "-AgentKillSwitchParameter")
+        StringParameter killSwitchParameter = StringParameter.Builder.create(
+                        this, props.resourceNamePrefix() + "-AgentKillSwitchParameter")
                 .parameterName(props.sharedNames().agentKillSwitchParameterName)
                 .stringValue("off")
                 .description("Set to on to stop every unattended agent workflow before it acts")
                 .build();
+
+        // The quarantine reader role reads untrusted text, so it can do three things and no more:
+        // invoke the one Haiku model (through its EU inference profile and the foundation model the
+        // profile routes to), screen the answer with the guardrail, and read the three parameters
+        // the reader job needs. It has no telemetry, S3, DynamoDB or Marketplace grant.
+        Role quarantineReaderRole = Role.Builder.create(this, props.resourceNamePrefix() + "-QuarantineReaderRole")
+                .roleName(props.sharedNames().quarantineReaderRoleName)
+                .maxSessionDuration(Duration.hours(1))
+                .description("Role the quarantine reader workflows chain into to summarise untrusted text"
+                        + " with Haiku and screen the answer with the guardrail")
+                .assumedBy(new ArnPrincipal(githubActionsRoleArn))
+                .build();
+
+        quarantineReaderRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("InvokeReaderModel")
+                .actions(List.of("bedrock:InvokeModel"))
+                .resources(List.of(
+                        "arn:aws:bedrock:eu-west-2:%s:inference-profile/eu.anthropic.claude-haiku-4-5-20251001-v1:0"
+                                .formatted(this.getAccount()),
+                        "arn:aws:bedrock:*::foundation-model/anthropic.claude-haiku-4-5-20251001-v1:0"))
+                .build());
+
+        quarantineReaderRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ApplyReaderGuardrail")
+                .actions(List.of("bedrock:ApplyGuardrail"))
+                .resources(List.of(alarmTriageGuardrail.getAttrGuardrailArn()))
+                .build());
+
+        quarantineReaderRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ReadReaderParameters")
+                .actions(List.of("ssm:GetParameter"))
+                .resources(List.of(
+                        guardrailIdParameter.getParameterArn(),
+                        guardrailVersionParameter.getParameterArn(),
+                        killSwitchParameter.getParameterArn()))
+                .build());
+
+        cfnOutput(this, "QuarantineReaderRoleArn", quarantineReaderRole.getRoleArn());
     }
 }
