@@ -15,7 +15,9 @@ run-name: support triage
 # operator's later comments from one file, and it has Read, Grep and Glob only. It chains into
 # the same read-only role alarm-triage.yml uses (see ObservabilityStack.java's alarmTriageRole)
 # for the Bedrock model invocation and the guardrail's SSM parameters that the shared
-# publish-filter action needs. No job in this workflow edits a label or closes an issue.
+# publish-filter action needs. No job in this workflow edits a label on the private repository or
+# closes an issue. When the agent judges that a ticket needs a change, the fix-pr job opens a draft
+# pull request in this repository from the checked fields alone.
 #
 # This repository is public, so its logs, step summaries and artifacts are public. No step prints
 # ticket-derived text, the drafted reply or the model's result, and no job uploads an artifact.
@@ -156,6 +158,7 @@ jobs:
       comment: ${{ steps.build.outputs.comment }}
       reply: ${{ steps.build.outputs.reply }}
       stopped: ${{ steps.triage-run.outputs.stopped }}
+      resolution: ${{ steps.build.outputs.resolution }}
       redactions: ${{ steps.publish-filter.outputs.redactions }}
       guardrail-action: ${{ steps.publish-filter.outputs.guardrail-action }}
     steps:
@@ -268,14 +271,21 @@ jobs:
             connection|submission|bundles|receipts|other) ;;
             *) echo "::error::the handling input holds no valid category"; exit 1 ;;
           esac
-          awk '/^## Drafted reply$/{exit} {print}' "$FINAL" > /tmp/support-matched.md
+          # The resolution is the word fix or the word answer and nothing else. Any other text,
+          # or no section, counts as answer, so a malformed section never opens a pull request.
+          RESOLUTION=$(awk '/^## Drafted reply$/{exit} /^## Resolution$/{flag=1; next} /^## /{flag=0} flag && NF {print; exit}' "$FINAL" | tr -d '`*_ .' | tr '[:upper:]' '[:lower:]')
+          case "$RESOLUTION" in
+            fix) ;;
+            *) RESOLUTION=answer ;;
+          esac
+          awk '/^## Drafted reply$/{exit} /^## Resolution$/{skip=1; next} /^## /{skip=0} !skip {print}' "$FINAL" > /tmp/support-matched.md
           node scripts/support-triage-public-half.mjs web/public/faqs.toml /tmp/support-matched.md
           awk '/^## Drafted reply$/{flag=1; next} flag' "$FINAL" | grep -v '^_Written by ' > /tmp/support-reply-body.md || true
           node scripts/support-triage-public-half.mjs web/public/faqs.toml /tmp/support-reply-body.md
           {
             echo "<!-- support-handled:v1 run=${GITHUB_RUN_ID} -->"
             cat /tmp/support-matched.md
-            printf '## Category\n\n%s\n\n## Drafted reply\n\n' "$CATEGORY"
+            printf '## Resolution\n\n%s\n\n## Category\n\n%s\n\n## Drafted reply\n\n' "$RESOLUTION" "$CATEGORY"
             cat /tmp/support-reply-body.md
             echo
             grep '^_Written by ' "$FINAL" | tail -1
@@ -287,6 +297,7 @@ jobs:
           } > /tmp/support-reply.md
           TRANSIT_PASS=$(printf '%s' "${TRANSIT_KEY}${GITHUB_RUN_ID}" | sha256sum | cut -d' ' -f1)
           export TRANSIT_PASS
+          echo "resolution=${RESOLUTION}" >> "$GITHUB_OUTPUT"
           echo "comment=$(openssl enc -aes-256-cbc -pbkdf2 -salt -a -A -pass env:TRANSIT_PASS < /tmp/support-comment.md)" >> "$GITHUB_OUTPUT"
           echo "reply=$(openssl enc -aes-256-cbc -pbkdf2 -salt -a -A -pass env:TRANSIT_PASS < /tmp/support-reply.md)" >> "$GITHUB_OUTPUT"
 
@@ -351,6 +362,113 @@ jobs:
         run: |
           echo "failing the run: triage stopped after using its 60-turn budget"
           exit 1
+
+  # Opens a draft pull request in this repository when the handling agent judged that the ticket
+  # needs a change. Code builds the branch name, the one file under support/ and the body from the
+  # reader's checked fields and the operator's comments; no text the agent wrote reaches them. The
+  # job holds no AWS credentials. It holds two tokens: contents and pull-requests write on this
+  # repository only, and issues write on the private repository, for the one comment that links the
+  # pull request. Merging the pull request is the job of /auto-merge. Closing the private issue
+  # once the fix is live would be a later workflow that reads the issue number from the merged
+  # pull request's file name, support/<issue>-<category>.md; nothing here closes an issue.
+  fix-pr:
+    needs: [select, handle, post]
+    if: needs.post.result == 'success' && needs.handle.outputs.resolution == 'fix' && needs.handle.outputs.stopped == 'false'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: prod
+    permissions:
+      contents: read
+    env:
+      ISSUE_NUMBER: ${{ needs.select.outputs.issue-number }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+
+      - name: Generate a token that writes issues in the private repository
+        id: private-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: write
+
+      - name: Generate a token that opens a pull request in this repository
+        id: repo-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: submit.diyaccounting.co.uk
+          permission-contents: write
+          permission-pull-requests: write
+
+      - name: Check the maintainer-review gate again
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+        run: node scripts/maintainer-review-gate.mjs --repo "$PRIVATE_REPO" --issue "$ISSUE_NUMBER"
+
+      - name: Decrypt the handling input
+        env:
+          TRANSIT_KEY: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          HANDLING_INPUT_ENCRYPTED: ${{ needs.select.outputs.handling-input }}
+        run: |
+          set -euo pipefail
+          TRANSIT_PASS=$(printf '%s' "${TRANSIT_KEY}${GITHUB_RUN_ID}" | sha256sum | cut -d' ' -f1)
+          export TRANSIT_PASS
+          printf '%s' "$HANDLING_INPUT_ENCRYPTED" | openssl enc -d -aes-256-cbc -pbkdf2 -a -A -pass env:TRANSIT_PASS > /tmp/support-handling-input.json
+
+      - name: Build the row file and the pull request body
+        id: build-row
+        run: node scripts/support-fix-pr.mjs --input /tmp/support-handling-input.json --body-file /tmp/support-fix-body.md
+
+      - name: Commit the row on a new branch
+        env:
+          GH_TOKEN: ${{ steps.repo-token.outputs.token }}
+          BRANCH: ${{ steps.build-row.outputs.branch }}
+          MODEL_ID_FOR_TRAILER: ${{ env.MODEL_ID }}
+        run: |
+          set -euo pipefail
+          printf 'Support fix row for private issue #%s\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nClaude-Model: %s\nClaude-Run: %s' \
+            "$ISSUE_NUMBER" "$MODEL_ID_FOR_TRAILER" "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > /tmp/support-fix-commit.txt
+          scripts/github-api-commit.sh --repo "${{ github.repository }}" --branch "$BRANCH" \
+            --base-sha "$(git rev-parse HEAD)" --message-file /tmp/support-fix-commit.txt
+
+      # The label is created on first use. Its repository is always this one.
+      - name: Open the draft pull request
+        id: open-pr
+        env:
+          GH_TOKEN: ${{ steps.repo-token.outputs.token }}
+          BRANCH: ${{ steps.build-row.outputs.branch }}
+          PR_TITLE: ${{ steps.build-row.outputs.title }}
+        run: |
+          set -euo pipefail
+          gh label create "origin:support" --color 5319e7 --description "Opened from a support ticket the operator approved" --repo "${{ github.repository }}" 2>/dev/null || true
+          PR_URL=$(gh pr create --draft --base main --head "$BRANCH" --repo "${{ github.repository }}" \
+            --title "$PR_TITLE" --body-file /tmp/support-fix-body.md --label "origin:support")
+          echo "url=${PR_URL}" >> "$GITHUB_OUTPUT"
+
+      - name: Comment the pull request link on the private issue
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+          PR_URL: ${{ steps.open-pr.outputs.url }}
+        run: |
+          set -euo pipefail
+          printf '<!-- support-fix-pr:v1 run=%s -->\nDraft pull request for this ticket: %s\n' "$GITHUB_RUN_ID" "$PR_URL" > /tmp/support-fix-comment.md
+          node scripts/github-issue-comment.mjs --repo "$PRIVATE_REPO" --issue "$ISSUE_NUMBER" --body-file /tmp/support-fix-comment.md
 
   # The draft goes into the support mailbox unsent; this workflow has no send step and the key's
   # only scope is gmail.compose. The thread comes from the dispatch inputs and never from a
