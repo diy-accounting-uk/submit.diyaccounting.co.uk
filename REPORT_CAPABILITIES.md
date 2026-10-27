@@ -349,6 +349,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow: use when a new ingestion job must join the nightly chain, or the chain's failure behaviour must be checked.
     - [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch: use when a night of the analytics nightly did not run or failed, and it must run again for an explicit date.
   - [Site-side analytics and RUM](#site-side-analytics-and-rum-data)
+    - [DATA-61](#data-61-intake-support-email-as-private-issues) Intake support email as private issues: use when a customer email to support@ must become a `support` and `maintainer-review` issue in the private repository, or the mailbox read scope is in question.
     - [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic: use when a Lambda, RUM script or GA4 tag must agree on human, bot or synthetic.
     - [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages: use when a site page must load gtag.js with the correct measurement id, consent state and cross-domain linking.
     - [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM: use when a page's RUM telemetry must read its app monitor config and respect consent.
@@ -2407,10 +2408,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-18 Run alarm and support triage
 
 - **Use when:** an [ALARM] or support issue needs an automated first-pass triage.
-- **Does:** run-triage-agent executes claude -p against Bedrock, Haiku with Sonnet escalation for complex cases. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue. support-triage.yml polls the private repository every 10 minutes and handles a support issue only after the operator approves it: scripts/maintainer-review-gate.mjs requires that the operator, and no bot, removed the `maintainer-review` label last. The handling agent reads scripts/support-handling-input.mjs's output (the reader's checked fields and the operator's comments, never the ticket) and the job posts the drafted reply on the private issue. When a dispatch names a Gmail thread and SUPPORT_GMAIL_DRAFT_KEY is set, it also puts the drafted reply into the support mailbox as an unsent draft with scripts/support-gmail-draft.mjs. Neither support workflow prints ticket or reply text to the public log. For alarm issues, a gate job runs scripts/issue-agent-allowlist.mjs first, so an issue event starts an agent only when the issue's author and the event's sender are on its allow list. alarm-triage.yml posts its reasoning on a mirror issue in private.diyaccounting.co.uk and one status line with the link on the public issue. When the Haiku first pass is unusable or unsure, the run holds instead of calling Sonnet: the quarantine reader summarises the first-pass result, the checked summary goes on the mirror issue, and `maintainer-review` is added to the alarm issue. The operator removes the label to run Sonnet on scripts/alarm-escalation-input.mjs's output.
+- **Does:** run-triage-agent executes claude -p against Bedrock, Haiku with Sonnet escalation for complex cases. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue. support-triage.yml polls the private repository every 10 minutes and handles a support issue only after the operator approves it: scripts/maintainer-review-gate.mjs requires that the operator, and no bot, removed the `maintainer-review` label last. The handling agent reads scripts/support-handling-input.mjs's output (the reader's checked fields and the operator's comments, never the ticket) and the job posts the drafted reply on the private issue. When a dispatch names a Gmail thread and SUPPORT_GMAIL_DRAFT_KEY is set, it also puts the drafted reply into the support mailbox as an unsent draft with scripts/support-gmail-draft.mjs. Neither support workflow prints ticket or reply text to the public log. For alarm issues, a gate job runs scripts/issue-agent-allowlist.mjs first, so an issue event starts an agent only when the issue's author and the event's sender are on its allow list. alarm-triage.yml posts its reasoning on a mirror issue in private.diyaccounting.co.uk and one status line with the link on the public issue. When the Haiku first pass is unusable or unsure, the run holds instead of calling Sonnet: the quarantine reader summarises the first-pass result, the checked summary goes on the mirror issue, and `maintainer-review` is added to the alarm issue. The operator removes the label to run Sonnet on scripts/alarm-escalation-input.mjs's output. When the handling agent's `## Resolution` line reads `fix`, the `fix-pr` job opens a draft PR labelled `origin:support` with one `support/<n>-<category>.md` row built by scripts/support-fix-pr.mjs from the reader's checked fields and the operator's comments only, and comments the link on the private issue.
 - **Run:** `gh workflow run alarm-triage.yml`; `gh workflow run support-triage.yml`; security-review.yml runs it too (OPS-31)
 - **Entry:** `.github/actions/run-triage-agent/action.yml`
-- **Files:** .github/actions/run-triage-agent/action.yml, .github/workflows/alarm-triage.yml, .github/workflows/support-triage.yml, app/unit-tests/supportTriageWorkflow.test.js, scripts/support-gmail-draft.mjs, app/unit-tests/scripts/supportGmailDraft.test.js, scripts/issue-agent-allowlist.mjs, app/unit-tests/scripts/issueAgentAllowlist.test.js, scripts/maintainer-review-gate.mjs, app/unit-tests/scripts/maintainerReviewGate.test.js, scripts/support-handling-input.mjs, app/unit-tests/scripts/supportHandlingInput.test.js, prompts/support-triage.md, prompts/alarm-triage.md, prompts/alarm-reader.md, scripts/alarm-escalation-input.mjs, app/unit-tests/scripts/alarmEscalationInput.test.js, app/unit-tests/alarmTriageWorkflow.test.js
+- **Files:** .github/actions/run-triage-agent/action.yml, .github/workflows/alarm-triage.yml, .github/workflows/support-triage.yml, app/unit-tests/supportTriageWorkflow.test.js, scripts/support-gmail-draft.mjs, app/unit-tests/scripts/supportGmailDraft.test.js, scripts/issue-agent-allowlist.mjs, app/unit-tests/scripts/issueAgentAllowlist.test.js, scripts/maintainer-review-gate.mjs, app/unit-tests/scripts/maintainerReviewGate.test.js, scripts/support-handling-input.mjs, app/unit-tests/scripts/supportHandlingInput.test.js, prompts/support-triage.md, prompts/alarm-triage.md, prompts/alarm-reader.md, scripts/alarm-escalation-input.mjs, app/unit-tests/scripts/alarmEscalationInput.test.js, app/unit-tests/alarmTriageWorkflow.test.js, scripts/support-fix-pr.mjs
 - **Keywords:** triage agent, alarm triage, support triage, claude -p, bedrock, haiku, sonnet escalation
 - **Related:** OPS-17, OPS-19, OPS-20, OPS-23, OPS-142
 
@@ -3617,7 +3618,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake · [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake
 - [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
 - [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow · [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch
-- [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
+- [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-61](#data-61-intake-support-email-as-private-issues) Intake support email as private issues · [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
 - [Google Ads data and paid landing tracking](#google-ads-data-and-paid-landing-tracking-data): [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs) Count paid landings from CloudFront access logs · [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake) Pull Google Ads daily cost into the lake
@@ -3927,12 +3928,23 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ### Site-side analytics and RUM (DATA)
 
 <!-- generated:group site-side-analytics-and-rum-data -->
+- [DATA-61](#data-61-intake-support-email-as-private-issues) Intake support email as private issues
 - [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic
 - [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages
 - [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM
 - [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 <!-- /generated:group site-side-analytics-and-rum-data -->
 
+
+#### DATA-61 Intake support email as private issues
+
+- **Use when:** a customer email to support@ must become a `support` and `maintainer-review` issue in the private repository, or the mailbox read scope is in question.
+- **Does:** support-mail-intake.yml (every 10 minutes and on dispatch) runs support-mail-intake.mjs, which reads the support inbox through the `gmail.readonly` service account `support-gmail-read` (identity.toml), skips our own and automated senders and threads already filed, and opens one issue per new customer thread with the thread id, sender and Message-ID and the text fenced as data. It prints counts only, and exits 0 while SUPPORT_GMAIL_READ_KEY is unset.
+- **Run:** `gh workflow run support-mail-intake.yml -f dry-run=true`
+- **Entry:** `scripts/support-mail-intake.mjs:`
+- **Files:** scripts/support-mail-intake.mjs, .github/workflows/support-mail-intake.yml, app/unit-tests/scripts/supportMailIntake.test.js, app/unit-tests/fixtures/supportMailIntake/, infra/google/gcp/identity.toml
+- **Keywords:** support mail intake, gmail readonly, domain-wide delegation, support issues, maintainer-review, private repository
+- **Related:** OPS-56, DATA-42
 #### DATA-23 Classify visitor kind as human, bot or synthetic
 
 - **Use when:** a Lambda, RUM script or GA4 tag must agree on human, bot or synthetic.
@@ -6539,6 +6551,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - domain cutover: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - domain url: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - domain-scoped agent: [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas)
+- domain-wide delegation: [DATA-61](#data-61-intake-support-email-as-private-issues)
 - donate: [SS-22](#ss-22-take-stripe-and-paypal-donations)
 - donate button: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
 - donate event: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
@@ -6798,6 +6811,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - glue data quality: [DATA-11](#data-11-run-glue-data-quality-checks)
 - glue database: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
 - glue table: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
+- gmail readonly: [DATA-61](#data-61-intake-support-email-as-private-issues)
 - google ads conversion upload: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - google ads cost: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - google ads forecast: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
@@ -7104,7 +7118,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mail index search: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - mail-antony: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - main deploy in progress: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
-- maintainer-review: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine)
+- maintainer-review: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine), [DATA-61](#data-61-intake-support-email-as-private-issues)
 - maintenance page: [SS-30](#ss-30-serve-the-holding-page-and-failover)
 - making tax digital: [HMRC-11](#hmrc-11-retrieve-itsa-status), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
 - manage subscription: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal)
@@ -7426,7 +7440,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - privacy banner: [SITE-15](#site-15-show-and-persist-cookie-consent)
 - private issue: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine)
 - private report: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
-- private repository: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
+- private repository: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DATA-61](#data-61-intake-support-email-as-private-issues)
 - probe failure: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - probe issue: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - probe metrics: [OPS-25](#ops-25-record-dora-and-probe-metrics)
@@ -7881,6 +7895,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - supplier invoices: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - supply chain: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - support alarms: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
+- support issues: [DATA-61](#data-61-intake-support-email-as-private-issues)
+- support mail intake: [DATA-61](#data-61-intake-support-email-as-private-issues)
 - support reader: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine)
 - support ticket: [SITE-05](#site-05-submit-support-tickets)
 - support ticket lookup: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)

@@ -27,7 +27,7 @@ in that file and in this repository.
 There is no name and no email address for this customer. Never invent one, and never open the
 reply with "Dear ..." or "Hi ...".
 
-Your job is to answer two questions and stop:
+Your job is to answer three questions and stop:
 
 1. Which published article answers this ticket, if any? Match the summary against
    web/public/faqs.toml, web/public/help.html and web/public/guide.html. Read faqs.toml's
@@ -36,7 +36,14 @@ Your job is to answer two questions and stop:
    FAQ entry in web/public/faqs.toml, copied exactly, or the word "none" if no FAQ entry answers
    it. Write only the id or "none" under the heading. Do not write a URL: the workflow builds the
    link from the id.
-2. Draft a reply a person could send as it stands. Plain sentences, no invented facts about this
+2. Does this ticket need a change to the product or its published pages, rather than an answer?
+   Write only `fix` or `answer` under the heading. Write `fix` when the summary describes a
+   defect, a wrong or missing page, or a missing feature that a code or content change would
+   resolve, and no help-page entry already answers it. Write `answer` when a reply can resolve the
+   ticket, including when it needs a person to look at one account. `fix` opens a draft pull
+   request that carries the reader's checked summary and the operator's comments, never your text,
+   so write the reply as if no change were coming.
+3. Draft a reply a person could send as it stands. Plain sentences, no invented facts about this
    customer's account, and no name or greeting - there is none to use. If question 1 found a
    match, the reply should say which help-page question answers it. If not, say plainly that a
    person will look into it.
@@ -49,12 +56,16 @@ number, a postcode, a VAT registration number, a UTR, a NINO, an EORI, a PAYE re
 64-character hex string, or any token, key, cookie or authorization header. Refer to the
 submitter as "the customer".
 
-Write your answer as GitHub-flavoured Markdown, under 400 words, in exactly these two sections
+Write your answer as GitHub-flavoured Markdown, under 400 words, in exactly these three sections
 and no others, each heading on its own line:
 
 ## Matched article
 
 <the FAQ id, or "none">
+
+## Resolution
+
+<fix or answer>
 
 ## Drafted reply
 

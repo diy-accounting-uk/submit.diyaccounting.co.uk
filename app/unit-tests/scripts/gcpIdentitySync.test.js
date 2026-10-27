@@ -453,7 +453,7 @@ mailbox = "support@diyaccounting.co.uk"
 scopes = ["https://www.googleapis.com/auth/gmail.compose"]
 `;
 
-  it("the committed file declares the support draft account with the compose scope only", () => {
+  it("the committed file declares one delegated account per Gmail scope", () => {
     const config = loadConfigFromRoot();
     expect(config.delegatedAccounts).toEqual([
       {
@@ -461,6 +461,12 @@ scopes = ["https://www.googleapis.com/auth/gmail.compose"]
         displayName: "Support reply drafts",
         mailbox: "support@diyaccounting.co.uk",
         scopes: ["https://www.googleapis.com/auth/gmail.compose"],
+      },
+      {
+        accountId: "support-gmail-read",
+        displayName: "Support mail intake",
+        mailbox: "support@diyaccounting.co.uk",
+        scopes: ["https://www.googleapis.com/auth/gmail.readonly"],
       },
     ]);
   });

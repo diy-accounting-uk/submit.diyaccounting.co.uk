@@ -1,0 +1,34 @@
+{
+  "id": "18f0a1b2c3d4e5f7",
+  "messages": [
+    {
+      "id": "18f0a1b2c3d4e5f7",
+      "internalDate": "1792000100000",
+      "payload": {
+        "mimeType": "multipart/alternative",
+        "headers": [
+          {
+            "name": "From",
+            "value": "DIY Accounting <support@diyaccounting.co.uk>"
+          },
+          {
+            "name": "Subject",
+            "value": "Re: earlier"
+          },
+          {
+            "name": "Message-ID",
+            "value": "<own1@diyaccounting.co.uk>"
+          }
+        ],
+        "parts": [
+          {
+            "mimeType": "text/plain",
+            "body": {
+              "data": "T3VyIG93biBmaXJzdCBtZXNzYWdl"
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
