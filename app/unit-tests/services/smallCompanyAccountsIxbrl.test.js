@@ -98,7 +98,7 @@ const FIXED_ASSET_NOTE = {
 const SAMPLE_INPUT = {
   companyNumber: "02706061",
   companyName: "TEST SMALL LIMITED",
-  registeredOffice: "1 Test Street, London, EC1A 1AA",
+  registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
   periodStart: "2025-07-01",
   periodEnd: "2026-06-30",
   averageNumberOfEmployees: 4,
@@ -372,11 +372,23 @@ describe("services/smallCompanyAccountsIxbrl", () => {
 
     test("states the legal form, country, number and registered office in the notes", () => {
       expect(xhtml).toContain("is a private company limited by shares, registered in England and Wales, registered number");
-      expect(xhtml).toContain("Its registered office is 1 Test Street, London, EC1A 1AA.");
+      expect(xhtml).toContain(
+        'Its registered office is <ix:nonNumeric name="bus:AddressLine1" contextRef="y2026-registered-office">1 Test Street</ix:nonNumeric>, <ix:nonNumeric name="bus:PrincipalLocation-CityOrTown" contextRef="y2026-registered-office">London</ix:nonNumeric>, <ix:nonNumeric name="bus:PostalCodeZip" contextRef="y2026-registered-office">EC1A 1AA</ix:nonNumeric>.',
+      );
     });
 
     test("refuses an input without a registered office", () => {
-      expect(() => buildSmallCompanyAccounts({ ...WITH_COMPARATIVES, registeredOffice: " " })).toThrow(/registeredOffice/);
+      expect(() => buildSmallCompanyAccounts({ ...WITH_COMPARATIVES, registeredOffice: {} })).toThrow(/registeredOffice/);
+    });
+
+    test("states the report period, language and sterling currency", () => {
+      const xhtml = buildSmallCompanyAccounts(WITH_COMPARATIVES);
+      expect(xhtml).toContain('<ix:nonNumeric name="bus:ReportPeriod" contextRef="y2026"></ix:nonNumeric>');
+      expect(xhtml).toContain('<ix:nonNumeric name="bus:ReportPrincipalLanguage" contextRef="y2026"></ix:nonNumeric>');
+      expect(xhtml).toContain(
+        '<ix:nonNumeric name="bus:PrincipalCurrencyUsedInBusinessReport" contextRef="y2026-currency"></ix:nonNumeric>',
+      );
+      expect(xhtml).toMatch(/<xbrli:context id="y2026-currency">.*curr:CurrenciesDimension">curr:PoundSterling</);
     });
   });
 

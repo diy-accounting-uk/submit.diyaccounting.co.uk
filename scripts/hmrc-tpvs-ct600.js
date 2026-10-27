@@ -45,7 +45,11 @@ const outputDirectory = argument("--out", "target/hmrc-tpvs");
 const utr = argument("--utr", "8596148860");
 const micro = process.argv.includes("--micro");
 // The book holds no registered office; the TPVS fixture company takes a labelled test address unless one is given.
-const registeredOffice = argument("--registered-office", "1 Test Street (TPVS test address), London, EC1A 1AA");
+const registeredOffice = {
+  addressLine1: argument("--registered-office-line1", "1 Test Street (TPVS test address)"),
+  cityOrTown: argument("--registered-office-town", "London"),
+  postalCode: argument("--registered-office-postcode", "EC1A 1AA"),
+};
 const priorFile = argument("--prior", undefined);
 const priorYearProfitAndLoss = priorFile ? JSON.parse(readFileSync(priorFile, "utf8")) : undefined;
 

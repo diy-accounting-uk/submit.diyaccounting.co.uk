@@ -77,11 +77,13 @@ import { ingestHandler as companiesHouseAccountsRenderPostHandler } from "@app/f
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
+const REGISTER_OFFICE = { addressLine1: "9 Register Road", cityOrTown: "Cardiff", postalCode: "CF10 1AA" };
+
 function buildAccountsBody(overrides = {}) {
   return {
     companyNumber: "00000001",
     companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
-    registeredOffice: "1 Test Street, London, EC1A 1AA",
+    registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
     periodStart: "2025-01-01",
     periodEnd: "2025-12-31",
     balanceSheet: {
@@ -227,13 +229,13 @@ describe("companiesHouseAccountsRenderPost ingestHandler", () => {
   });
 
   test("takes the registered office from the company profile when the request omits it", async () => {
-    mockGetCompanyProfile.mockResolvedValue({ profile: { registeredOffice: "9 Register Road, Cardiff, CF10 1AA" } });
+    mockGetCompanyProfile.mockResolvedValue({ profile: { registeredOffice: REGISTER_OFFICE } });
     const response = await companiesHouseAccountsRenderPostHandler(
       buildEvent({ body: buildAccountsBody({ registeredOffice: undefined }) }),
     );
     expect(response.statusCode).toBe(200);
     expect(mockGetCompanyProfile).toHaveBeenCalledWith("00000001");
-    expect(mockBuildMicroEntityAccounts.mock.calls[0][0].registeredOffice).toBe("9 Register Road, Cardiff, CF10 1AA");
+    expect(mockBuildMicroEntityAccounts.mock.calls[0][0].registeredOffice).toEqual(REGISTER_OFFICE);
   });
 
   test("keeps the registered office the request carries without a profile lookup", async () => {
@@ -242,7 +244,7 @@ describe("companiesHouseAccountsRenderPost ingestHandler", () => {
   });
 
   test("answers 400 Missing registeredOffice when the request and the profile hold none", async () => {
-    mockGetCompanyProfile.mockResolvedValue({ profile: { registeredOffice: "" } });
+    mockGetCompanyProfile.mockResolvedValue({ profile: { registeredOffice: {} } });
     const response = await companiesHouseAccountsRenderPostHandler(
       buildEvent({ body: buildAccountsBody({ registeredOffice: undefined }) }),
     );

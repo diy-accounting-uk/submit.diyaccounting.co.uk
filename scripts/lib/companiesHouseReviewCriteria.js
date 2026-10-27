@@ -10,6 +10,7 @@
 // read of the register, which a script tier here does not make yet.
 
 import { longDate } from "./companiesHouseReviewReconcile.js";
+import { registeredOfficeLine } from "../../app/services/accountsIxbrlCommon.js";
 
 const PUBLIC_COMPANY_NAME = /\b(plc|public limited company)\b/i;
 const PUBLIC_COMPANY_TEXT = /\bpublic (limited )?company\b/i;
@@ -62,7 +63,12 @@ export function companyInformationCriterion(input, ours) {
   if (!LEGAL_FORM_TEXT.test(text)) missing.push("legal form");
   if (!JURISDICTION_TEXT.test(text)) missing.push("part of the UK of registration");
   if (!text.includes(input.companyNumber)) missing.push("company number");
-  if (!/registered office/i.test(text) || (input.registeredOffice && !text.includes(input.registeredOffice)))
+  if (
+    !/registered office/i.test(text) ||
+    !squash(text)
+      .replace(/ ([,.])/g, "$1")
+      .includes(registeredOfficeLine(input.registeredOffice))
+  )
     missing.push("registered office");
   return row(
     "The s396(A1) company information statement is visible",
@@ -124,7 +130,7 @@ export function placeholderCriterion(input, ours) {
     ["company name", input.companyName],
     ["company number", input.companyNumber],
     ["director", input.director.name],
-    ["registered office", input.registeredOffice ?? ""],
+    ["registered office", registeredOfficeLine(input.registeredOffice)],
     ...ours.facts.filter((fact) => fact.concept === "NameEntityOfficer").map((fact) => ["officer", fact.text]),
   ];
   const hits = named.filter(([, value]) => PLACEHOLDER_WORD.test(value) || ZEROS.test(value));

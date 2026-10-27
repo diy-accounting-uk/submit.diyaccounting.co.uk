@@ -186,7 +186,6 @@ const NOT_CARRIED_REASONS = {
     "FinancialStatementsArePreparedOnGoing-concernBasisTruefalse",
     "EntityHasClaimedExemptionFromReportingDisclosureRelatedPartyTransactionsForWholly-ownedEntitiesTruefalse",
   ],
-  "registered office address, which the filing does not hold": ["AddressLine1", "PostalCodeZip", "PrincipalLocation-CityOrTown"],
   "directors' report date, and a filleted set has no directors' report": ["DateSigningDirectorsReport"],
 };
 const NOT_CARRIED = new Map(

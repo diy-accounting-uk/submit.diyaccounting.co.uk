@@ -29,6 +29,7 @@ import {
   approvalHtml,
   renderAccountsDocument,
   renderProductionSoftwareFacts,
+  renderReportHeaderFacts,
   renderTextFact,
   renderMonetaryFact,
   renderSigningDirectorFact,
@@ -166,7 +167,7 @@ export function sharesIssuedFor(calledUpShareCapital, nominalValue) {
  * @param {object} input
  * @param {string} input.companyNumber
  * @param {string} input.companyName
- * @param {string} input.registeredOffice - the registered office address on one line
+ * @param {object} input.registeredOffice - addressLine1, and optionally addressLine2, addressLine3, cityOrTown, countyRegion, postalCode and country
  * @param {string} input.periodStart - ISO date
  * @param {string} input.periodEnd - ISO date
  * @param {string} [input.priorBalanceSheetDate] - ISO date; defaults to the day before periodStart
@@ -217,6 +218,7 @@ export function buildMicroEntityAccounts(input) {
   });
   hiddenFacts.push(signingDirectorFact);
   hiddenFacts.push(...renderProductionSoftwareFacts(refs.current));
+  hiddenFacts.push(...renderReportHeaderFacts({ refs, entityIdentifierXml, periodXml, additionalContexts }));
   hiddenFacts.push(
     ...renderCompanyDescriptionFacts({ companyNumber: input.companyNumber, refs, entityIdentifierXml, periodXml, additionalContexts }),
   );
@@ -291,7 +293,7 @@ export function buildMicroEntityAccounts(input) {
   }
 
   const notes = [
-    companyInformationNote(input, refs),
+    companyInformationNote(input, refs, { entityIdentifierXml, periodXml, additionalContexts }),
     {
       title: "Accounting policies",
       html: `<p>${renderTextFact("statementComplianceWithReportingFramework", refs.current, "These financial statements have been prepared in accordance with FRS 105 The Financial Reporting Standard applicable to the Micro-entities Regime.")}</p>`,

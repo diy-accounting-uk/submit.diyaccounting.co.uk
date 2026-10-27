@@ -96,6 +96,20 @@ describe("reconcile", () => {
     expect(result.mismatches).toBe(0);
   });
 
+  it("checks each registered office part against its tag", () => {
+    const c = caseNamed("micro-entity-accounts-dormant");
+    const result = reconcile(c.input, c.ours);
+    const fields = result.rows.filter((row) => row.field.startsWith("registeredOffice.")).map((row) => row.field);
+    expect(fields).toEqual([
+      "registeredOffice.addressLine1",
+      "registeredOffice.cityOrTown",
+      "registeredOffice.countyRegion",
+      "registeredOffice.postalCode",
+    ]);
+    const facts = c.ours.facts.filter((fact) => fact.concept !== "PostalCodeZip");
+    expect(reconcile(c.input, { ...c.ours, facts }).mismatches).toBe(1);
+  });
+
   it("counts a changed tagged figure as a mismatch", () => {
     const c = caseNamed("micro-entity-accounts");
     const facts = c.ours.facts.map((fact) =>
@@ -192,7 +206,9 @@ describe("substance criteria", () => {
     const c = caseNamed("micro-entity-accounts");
     expect(placeholderCriterion({ ...c.input, companyName: "TEST COMPANY LIMITED" }, c.ours).result).toBe("fail");
     expect(placeholderCriterion({ ...c.input, director: { ...c.input.director, name: "Fictional Director" } }, c.ours).result).toBe("fail");
-    expect(placeholderCriterion({ ...c.input, registeredOffice: "Example Street, 00000000" }, c.ours).result).toBe("fail");
+    expect(
+      placeholderCriterion({ ...c.input, registeredOffice: { addressLine1: "Example Street", postalCode: "00000000" } }, c.ours).result,
+    ).toBe("fail");
     expect(placeholderCriterion({ ...c.input, companyNumber: "00000000" }, c.ours).result).toBe("fail");
     expect(placeholderCriterion(c.input, c.ours).result).toBe("pass");
   });

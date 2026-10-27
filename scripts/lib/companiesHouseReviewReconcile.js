@@ -65,6 +65,15 @@ export function formatFigure(value) {
   return typeof value === "number" && Number.isInteger(value) ? value.toLocaleString("en-GB") : String(value);
 }
 
+const REGISTERED_OFFICE_TAGS = [
+  ["addressLine1", "AddressLine1"],
+  ["addressLine2", "AddressLine2"],
+  ["addressLine3", "AddressLine3"],
+  ["cityOrTown", "PrincipalLocation-CityOrTown"],
+  ["countyRegion", "CountyRegion"],
+  ["postalCode", "PostalCodeZip"],
+];
+
 export function reconcile(input, ours) {
   const { facts, visibleText: visible } = ours;
   const year = Number(input.periodEnd.slice(0, 4));
@@ -112,6 +121,11 @@ export function reconcile(input, ours) {
     `e${current}`,
     false,
   );
+
+  for (const [field, concept] of REGISTERED_OFFICE_TAGS) {
+    if (input.registeredOffice?.[field])
+      check(`registeredOffice.${field}`, input.registeredOffice[field], concept, `y${current}-registered-office`, false);
+  }
 
   const small = input.smallCompany;
   const balanceSheet = small ? small.balanceSheet : input.balanceSheet;

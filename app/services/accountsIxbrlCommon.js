@@ -28,6 +28,8 @@ export const NAMESPACES = {
   direp: "http://xbrl.frc.org.uk/reports/2026-01-01/direp",
   // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
   countries: "http://xbrl.frc.org.uk/cd/2026-01-01/countries",
+  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
+  curr: "http://xbrl.frc.org.uk/cd/2026-01-01/currencies",
 };
 
 // Resolved from the FRS 102 entry point by scripts/generate-frc-taxonomy-concepts.js (see
@@ -64,6 +66,15 @@ export const CONCEPTS = {
   countryFormationOrIncorporation: { prefix: "bus", name: "CountryFormationOrIncorporation" },
   scopeAccounts: { prefix: "bus", name: "ScopeAccounts" },
   reportAmendedRevisedVersion: { prefix: "bus", name: "ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse" },
+  addressLine1: { prefix: "bus", name: "AddressLine1" },
+  addressLine2: { prefix: "bus", name: "AddressLine2" },
+  addressLine3: { prefix: "bus", name: "AddressLine3" },
+  principalLocationCityOrTown: { prefix: "bus", name: "PrincipalLocation-CityOrTown" },
+  countyRegion: { prefix: "bus", name: "CountyRegion" },
+  postalCodeZip: { prefix: "bus", name: "PostalCodeZip" },
+  reportPeriod: { prefix: "bus", name: "ReportPeriod" },
+  reportPrincipalLanguage: { prefix: "bus", name: "ReportPrincipalLanguage" },
+  principalCurrencyUsedInBusinessReport: { prefix: "bus", name: "PrincipalCurrencyUsedInBusinessReport" },
   accountingStandardsAppliedMatchesEntryPoint: { prefix: "bus", name: "AccountingStandardsAppliedMatchesTaxonomyEntry-pointTruefalse" },
 
   statementAuditExemptionSection477: {
@@ -169,6 +180,8 @@ export const DIMENSIONS = {
   equityClasses: { prefix: "core", name: "EquityClassesDimension" },
   maturities: { prefix: "core", name: "MaturitiesOrExpirationPeriodsDimension" },
   propertyPlantEquipmentClasses: { prefix: "core", name: "PropertyPlantEquipmentClassesDimension" },
+  entityContactType: { prefix: "bus", name: "EntityContactTypeDimension" },
+  currencies: { prefix: "curr", name: "CurrenciesDimension" },
 };
 
 export const MEMBERS = {
@@ -197,6 +210,8 @@ export const MEMBERS = {
   furnitureFittings: { prefix: "core", name: "FurnitureFittings" },
   computerEquipment: { prefix: "core", name: "ComputerEquipment" },
   motorVehicles: { prefix: "core", name: "MotorVehicles" },
+  registeredOffice: { prefix: "bus", name: "RegisteredOffice" },
+  poundSterling: { prefix: "curr", name: "PoundSterling" },
 };
 
 export const STATEMENT_TEXT = {
@@ -390,6 +405,27 @@ export function renderProductionSoftwareFacts(contextRef) {
   ];
 }
 
+/**
+ * The hidden facts that state the report's period, language and currency. Each sits on the
+ * context where its dimension takes a non-default member: the plain current period for the report
+ * period and language, and a sterling context for the currency.
+ * @returns {string[]}
+ */
+export function renderReportHeaderFacts({ refs, entityIdentifierXml, periodXml, additionalContexts }) {
+  const sterlingContextRef = buildDimensionedContext({
+    additionalContexts,
+    entityIdentifierXml,
+    periodXml: periodXml[refs.current],
+    dimensionXml: dimensionMemberXml(DIMENSIONS.currencies, MEMBERS.poundSterling),
+    id: `${refs.current}-currency`,
+  });
+  return [
+    renderFixedFact("reportPeriod", refs.current),
+    renderFixedFact("reportPrincipalLanguage", refs.current),
+    renderFixedFact("principalCurrencyUsedInBusinessReport", sterlingContextRef),
+  ];
+}
+
 export function renderDateFact(conceptKey, contextRef, isoDate) {
   return `<ix:nonNumeric name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}" format="${DATE_FORMAT}">${displayDate(isoDate)}</ix:nonNumeric>`;
 }
@@ -525,6 +561,29 @@ export function renderCompanyDescriptionFacts({ companyNumber, refs, entityIdent
   ];
 }
 
+// In the order the register prints an address. The country is shown and not tagged.
+const REGISTERED_OFFICE_PARTS = [
+  { field: "addressLine1", conceptKey: "addressLine1" },
+  { field: "addressLine2", conceptKey: "addressLine2" },
+  { field: "addressLine3", conceptKey: "addressLine3" },
+  { field: "cityOrTown", conceptKey: "principalLocationCityOrTown" },
+  { field: "countyRegion", conceptKey: "countyRegion" },
+  { field: "country", conceptKey: null },
+  { field: "postalCode", conceptKey: "postalCodeZip" },
+];
+export const REGISTERED_OFFICE_FIELDS = REGISTERED_OFFICE_PARTS.map(({ field }) => field);
+
+/**
+ * The registered office on one line, as the accounts print it.
+ * @param {Record<string, string>} office
+ * @returns {string}
+ */
+export function registeredOfficeLine(office) {
+  return REGISTERED_OFFICE_PARTS.map(({ field }) => office?.[field])
+    .filter(Boolean)
+    .join(", ");
+}
+
 const COUNTRY_PHRASE = {
   [MEMBERS.englandWales.name]: "England and Wales",
   [MEMBERS.scotland.name]: "Scotland",
@@ -558,21 +617,38 @@ export function shareNoun(count) {
  * @param {object} input
  * @param {string} input.companyName
  * @param {string} input.companyNumber
- * @param {string} input.registeredOffice - the registered office address on one line
+ * @param {object} input.registeredOffice - the address parts; see registeredOfficeLine
  * @param {string} [input.principalActivityShown] - the principal activity, stated in the note when no directors' report shows it
  * @param {{current: string}} refs
+ * @param {object} contexts - entityIdentifierXml, periodXml and additionalContexts, for the registered office context
  * @returns {{title: string, html: string}} the note
  */
-export function companyInformationNote({ companyName, companyNumber, registeredOffice, principalActivityShown }, refs) {
-  const office = typeof registeredOffice === "string" ? registeredOffice.trim() : "";
-  if (!office) throw new Error("registeredOffice is required: the accounts state the registered office address");
+export function companyInformationNote(
+  { companyName, companyNumber, registeredOffice, principalActivityShown },
+  refs,
+  { entityIdentifierXml, periodXml, additionalContexts },
+) {
+  if (!registeredOffice?.addressLine1)
+    throw new Error("registeredOffice.addressLine1 is required: the accounts state the registered office address");
+  const officeContextRef = buildDimensionedContext({
+    additionalContexts,
+    entityIdentifierXml,
+    periodXml: periodXml[refs.current],
+    dimensionXml: dimensionMemberXml(DIMENSIONS.entityContactType, MEMBERS.registeredOffice),
+    id: `${refs.current}-registered-office`,
+  });
+  const officeHtml = REGISTERED_OFFICE_PARTS.filter(({ field }) => registeredOffice[field])
+    .map(({ field, conceptKey }) =>
+      conceptKey ? renderTextFact(conceptKey, officeContextRef, registeredOffice[field]) : escapeXmlText(registeredOffice[field]),
+    )
+    .join(", ");
   const country = COUNTRY_PHRASE[countryMemberForCompanyNumber(companyNumber).name];
   const activity = principalActivityShown ? `\n${principalActivitySentence(principalActivityShown, refs)}` : "";
   const name = renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName);
   const number = renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber);
   return {
     title: "General information",
-    html: `<p>${name} is a private company limited by shares, registered in ${country}, registered number ${number}. Its registered office is ${escapeXmlText(office)}.</p>${activity}`,
+    html: `<p>${name} is a private company limited by shares, registered in ${country}, registered number ${number}. Its registered office is ${officeHtml}.</p>${activity}`,
   };
 }
 

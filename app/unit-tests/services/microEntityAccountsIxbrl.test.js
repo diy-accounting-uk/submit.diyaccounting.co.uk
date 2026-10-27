@@ -25,7 +25,7 @@ import { parseXmlDocument } from "@app/lib/xmlDom.js";
 const SAMPLE_INPUT = {
   companyNumber: "02706061",
   companyName: "TEST MICRO LIMITED",
-  registeredOffice: "1 Test Street, London, EC1A 1AA",
+  registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
   periodStart: "2025-07-01",
   periodEnd: "2026-06-30",
   averageNumberOfEmployees: 2,
@@ -267,9 +267,49 @@ describe("services/microEntityAccountsIxbrl", () => {
     test("states the company information in the first note", () => {
       for (const document of [xhtml, dormantXhtml]) {
         expect(document).toContain("is a private company limited by shares, registered in England and Wales, registered number");
-        expect(document).toContain("Its registered office is 1 Test Street, London, EC1A 1AA.");
+        expect(document).toContain(
+          'Its registered office is <ix:nonNumeric name="bus:AddressLine1" contextRef="y2026-registered-office">1 Test Street</ix:nonNumeric>, <ix:nonNumeric name="bus:PrincipalLocation-CityOrTown" contextRef="y2026-registered-office">London</ix:nonNumeric>, <ix:nonNumeric name="bus:PostalCodeZip" contextRef="y2026-registered-office">EC1A 1AA</ix:nonNumeric>.',
+        );
       }
-      expect(() => buildMicroEntityAccounts({ ...SAMPLE_INPUT, registeredOffice: "" })).toThrow(/registeredOffice/);
+      expect(() => buildMicroEntityAccounts({ ...SAMPLE_INPUT, registeredOffice: {} })).toThrow(/registeredOffice/);
+    });
+
+    test("tags every registered office part on the registered office context and omits an absent part", () => {
+      const document = buildMicroEntityAccounts({
+        ...SAMPLE_INPUT,
+        registeredOffice: {
+          addressLine1: "Unit 1",
+          addressLine2: "High Street",
+          cityOrTown: "Leeds",
+          countyRegion: "West Yorkshire",
+          postalCode: "LS1 1AA",
+          country: "England",
+        },
+      });
+      expect(document).toMatch(/<xbrli:context id="y2026-registered-office">.*bus:EntityContactTypeDimension">bus:RegisteredOffice</);
+      for (const [concept, value] of [
+        ["AddressLine1", "Unit 1"],
+        ["AddressLine2", "High Street"],
+        ["PrincipalLocation-CityOrTown", "Leeds"],
+        ["CountyRegion", "West Yorkshire"],
+        ["PostalCodeZip", "LS1 1AA"],
+      ]) {
+        expect(document).toContain(`name="bus:${concept}" contextRef="y2026-registered-office">${value}<`);
+      }
+      expect(document).toContain("</ix:nonNumeric>, England, <ix:nonNumeric");
+      expect(document).not.toContain("bus:AddressLine3");
+    });
+
+    test("states the report period, language and sterling currency on the contexts where they are not defaults", () => {
+      for (const document of [xhtml, dormantXhtml]) {
+        expect(document).toContain('<ix:nonNumeric name="bus:ReportPeriod" contextRef="y2026"></ix:nonNumeric>');
+        expect(document).toContain('<ix:nonNumeric name="bus:ReportPrincipalLanguage" contextRef="y2026"></ix:nonNumeric>');
+        expect(document).toContain(
+          '<ix:nonNumeric name="bus:PrincipalCurrencyUsedInBusinessReport" contextRef="y2026-currency"></ix:nonNumeric>',
+        );
+        expect(document).toMatch(/<xbrli:context id="y2026-currency">.*curr:CurrenciesDimension">curr:PoundSterling</);
+        expect(document).toContain('xmlns:curr="http://xbrl.frc.org.uk/cd/2026-01-01/currencies"');
+      }
     });
 
     test("prints the never-traded sentence only for a company that has never traded", () => {

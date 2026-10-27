@@ -35,6 +35,7 @@ import {
   approvalHtml,
   renderAccountsDocument,
   renderProductionSoftwareFacts,
+  renderReportHeaderFacts,
   buildOfficerContext,
   renderSigningDirectorFact,
   renderCompanyDescriptionFacts,
@@ -488,7 +489,7 @@ ${principalActivitySentence(input.principalActivity, refs)}
  * @param {object} input
  * @param {string} input.companyNumber
  * @param {string} input.companyName
- * @param {string} input.registeredOffice - the registered office address on one line
+ * @param {object} input.registeredOffice - addressLine1, and optionally addressLine2, addressLine3, cityOrTown, countyRegion, postalCode and country
  * @param {string} input.periodStart - ISO date
  * @param {string} input.periodEnd - ISO date
  * @param {string} [input.priorBalanceSheetDate] - ISO date; defaults to the day before periodStart
@@ -552,6 +553,7 @@ export function buildSmallCompanyAccounts(input) {
   });
   hiddenFacts.push(
     ...renderProductionSoftwareFacts(refs.current),
+    ...renderReportHeaderFacts({ refs, entityIdentifierXml, periodXml, additionalContexts }),
     ...renderCompanyDescriptionFacts({ companyNumber: input.companyNumber, refs, entityIdentifierXml, periodXml, additionalContexts }),
     signingDirectorFact,
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
@@ -614,6 +616,7 @@ export function buildSmallCompanyAccounts(input) {
         principalActivityShown: input.filleted ? input.principalActivity : undefined,
       },
       refs,
+      { entityIdentifierXml, periodXml, additionalContexts },
     ),
     {
       title: "Accounting policies",
