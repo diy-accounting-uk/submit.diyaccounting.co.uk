@@ -247,7 +247,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
       testScenario: "SUBMIT_API_HTTP_500",
     });
     // TODO: Fix, fails like this:
-    // Expected pattern: /failed|error|not found/
+    // Expected pattern: /failed|error|not found|could not/i
     // Received string:  "retrieving vat return...
     // ×
     // still processing...
