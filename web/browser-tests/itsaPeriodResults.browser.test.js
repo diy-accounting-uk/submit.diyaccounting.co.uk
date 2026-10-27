@@ -8,7 +8,13 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveHmrcFieldTableAssets, expectCleanFigures, serveItsaPageScripts, serveCarriedIdentifiers } from "./hmrcFieldTableAssets.js";
+import {
+  serveHmrcFieldTableAssets,
+  serveSiteStyles,
+  expectCleanFigures,
+  serveItsaPageScripts,
+  serveCarriedIdentifiers,
+} from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -24,6 +30,7 @@ async function loadPage(page, fileName) {
   await serveItsaPageScripts(page);
   await serveCarriedIdentifiers(page);
   await serveHmrcFieldTableAssets(page);
+  await serveSiteStyles(page);
   const stubs = `<body><script>
 window.showStatus = function(){}; window.hideStatus = function(){}; window.showLoading = function(){}; window.hideLoading = function(){};
 window.generateRandomState = function(){ return "s"; }; window.getGovClientHeaders = function(){ return Promise.resolve({}); };
