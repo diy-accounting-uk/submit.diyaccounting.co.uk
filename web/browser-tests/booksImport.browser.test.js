@@ -959,9 +959,9 @@ test.describe("books import of an iXBRL accounts document", () => {
       { timeout: 60_000 },
     );
     await expect(page.locator("#periodStart")).toHaveValue("2025-04-01");
-    await expect(page.locator("#currentFixedAssets")).toHaveValue("0");
-    await expect(page.locator("#currentCurrentAssets")).toHaveValue("8300");
-    await expect(page.locator("#currentCreditorsWithinOneYear")).toHaveValue("3468");
+    await expect(page.locator("#currentFixedAssets")).toHaveValue("800");
+    await expect(page.locator("#currentCurrentAssets")).toHaveValue("6000");
+    await expect(page.locator("#currentCreditorsWithinOneYear")).toHaveValue("1968");
     await expect(page.locator("#currentProfitAndLossAccount")).toHaveValue("4732");
     await expect(page.locator("#currentCapitalAndReserves")).toHaveValue("4832");
     await expect(page.locator("#priorFixedAssets")).toHaveValue("0");
@@ -973,7 +973,7 @@ test.describe("books import of an iXBRL accounts document", () => {
   });
 
   test("a dormant document ticks the dormant box and fills its trading history and shares", async ({ page }) => {
-    await openAccountsPage(page, MICRO_URL, "00000000");
+    await openAccountsPage(page, MICRO_URL, "09991482");
     await chooseFile(page, "dormant.xhtml", builtAccountsDocument("micro-entity-accounts-dormant"), "application/xhtml+xml");
 
     await expect(page.locator("#booksImportStatus")).toContainText("so the dormant box is ticked", { timeout: 60_000 });
@@ -1002,7 +1002,7 @@ test.describe("books import of an iXBRL accounts document", () => {
     await expect(page.locator("#noteComputerEquipmentAdditions")).toHaveValue("1200");
     await expect(page.locator("#noteComputerEquipmentDepreciationCharge")).toHaveValue("400");
     await expect(page.locator("#averageEmployees")).toHaveValue("0");
-    await expect(page.locator("#principalActivity")).toHaveValue("Retailer of accounting software");
+    await expect(page.locator("#principalActivity")).toHaveValue("the retail of accounting software");
     await expect(page.locator("#directors")).toHaveValue(
       "Antony Christopher Cartwright\nSamantha Ashley Cartwright\nJane Elizabeth Grundy",
     );

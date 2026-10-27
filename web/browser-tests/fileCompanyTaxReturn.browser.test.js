@@ -597,7 +597,7 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#priorTurnover")).toHaveValue("7639");
     await expect(page.locator("#includeFixedAssetNote")).toBeChecked();
     await expect(page.locator("#depreciation")).toHaveValue("400");
-    await expect(page.locator("#principalActivity")).toHaveValue("Retailer of accounting software");
+    await expect(page.locator("#principalActivity")).toHaveValue("the retail of accounting software");
     await expect(page.locator("#directorName")).toHaveValue("Antony Christopher Cartwright");
   });
 
@@ -606,7 +606,7 @@ test.describe("File Company Tax Return entry form", () => {
     await page.locator("#booksImportFile").setInputFiles(ixbrlAccountsFile("micro-entity-accounts"));
     await expect(page.locator("#booksImportStatus")).toContainText("Filled", { timeout: 60_000 });
     await expect(page.locator("#regimeMicro")).toBeChecked();
-    await expect(page.locator("#microCurrentFixedAssets")).toHaveValue("0");
+    await expect(page.locator("#microCurrentFixedAssets")).toHaveValue("800");
     await expect(page.locator("#microPriorFixedAssets")).toHaveValue("0");
   });
 

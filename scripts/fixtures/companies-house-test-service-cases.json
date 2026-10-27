@@ -268,9 +268,9 @@
     "periodEnd": "2026-03-31",
     "balanceSheet": {
       "currentYear": {
-        "fixedAssets": 0,
-        "currentAssets": 8300,
-        "creditorsWithinOneYear": 3468,
+        "fixedAssets": 800,
+        "currentAssets": 6000,
+        "creditorsWithinOneYear": 1968,
         "creditorsAfterOneYear": 0,
         "calledUpShareCapital": 100,
         "profitAndLossAccount": 4732,
@@ -306,9 +306,9 @@
   {
     "name": "micro-entity-accounts-dormant",
     "type": "accounts",
-    "companyNumber": "00000000",
-    "companyName": "DORMANT TEST COMPANY LIMITED",
-    "registeredOffice": "1 Fictional Lane, Testville, TS1 1ZZ",
+    "companyNumber": "09991482",
+    "companyName": "HARTLEY AND WREN SUPPLIES LIMITED",
+    "registeredOffice": "14 Marsh Lane, Stockport, Cheshire, SK4 1PX",
     "companyAuthCode": "AUTH09",
     "periodStart": "2025-04-01",
     "periodEnd": "2026-03-31",
@@ -334,7 +334,7 @@
     },
     "averageEmployees": 0,
     "director": {
-      "name": "Dormant Test Director",
+      "name": "Helen Margaret Ashworth",
       "dateApproved": "2026-09-15"
     },
     "statementsAccepted": {
@@ -346,7 +346,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": true,
-      "note": "Not yet filed with this data. A fictional private company: DIY Accounting Limited has traded, so the never-traded case cannot describe it. The authentication code is a placeholder."
+      "note": "Not yet filed with this data. A fictional private company that has never traded, with a made-up company number. The authentication code is a placeholder."
     },
     "dormant": true,
     "dormantTradingStatus": "neverTraded",
@@ -375,7 +375,7 @@
     },
     "smallCompany": {
       "filleted": false,
-      "principalActivity": "Retailer of accounting software",
+      "principalActivity": "the retail of accounting software",
       "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
       "directors": ["Antony Christopher Cartwright", "Samantha Ashley Cartwright", "Jane Elizabeth Grundy"],
       "balanceSheet": {
@@ -439,6 +439,11 @@
           "depreciationCharge": 400,
           "depreciationOnDisposals": 0
         }
+      },
+      "taxPolicy": "The tax expense for the year comprises current tax, recognised in profit or loss.",
+      "shareCapital": {
+        "shareClass": "ordinaryShares",
+        "nominalValue": 1
       }
     },
     "expectedOutcome": {
@@ -469,7 +474,7 @@
     },
     "smallCompany": {
       "filleted": true,
-      "principalActivity": "Retailer of accounting software",
+      "principalActivity": "the retail of accounting software",
       "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
       "directors": ["Antony Christopher Cartwright", "Samantha Ashley Cartwright", "Jane Elizabeth Grundy"],
       "balanceSheet": {
@@ -533,6 +538,11 @@
           "depreciationCharge": 400,
           "depreciationOnDisposals": 0
         }
+      },
+      "taxPolicy": "The tax expense for the year comprises current tax, recognised in profit or loss.",
+      "shareCapital": {
+        "shareClass": "ordinaryShares",
+        "nominalValue": 1
       }
     },
     "expectedOutcome": {

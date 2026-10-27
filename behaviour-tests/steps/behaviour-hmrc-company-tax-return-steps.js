@@ -82,7 +82,7 @@ export async function fillInCompanyTaxReturnFormFromIxbrl(
     await page.locator("#booksImportFile").setInputFiles(ixbrlFile);
     await expect(page.locator("#booksImportStatus")).toContainText(expectedStatus, { timeout: 60000 });
     await expect(page.locator("#regimeMicro")).toBeChecked();
-    await expect(page.locator("#microCurrentFixedAssets")).toHaveValue("0");
+    await expect(page.locator("#microCurrentFixedAssets")).toHaveValue("800");
     await expect(page.locator("#declarantName")).toHaveValue(declarantName);
     for (const [id, value] of Object.entries(MICRO_PROFIT_AND_LOSS_ANSWERS)) {
       await loggedFill(page, `#${id}`, value, id);

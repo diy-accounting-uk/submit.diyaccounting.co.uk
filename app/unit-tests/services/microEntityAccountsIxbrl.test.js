@@ -426,6 +426,11 @@ describe("services/microEntityAccountsIxbrl", () => {
       expect(dormantXhtml).toMatch(/>200<\/ix:nonFraction> ordinary shares of £<ix:nonFraction[^>]*>0.5<\/ix:nonFraction> each/);
     });
 
+    test("the share note uses the singular for one share", () => {
+      const single = buildMicroEntityAccounts({ ...DORMANT_INPUT, nominalValue: 100 });
+      expect(single).toMatch(/>1<\/ix:nonFraction> ordinary share of £<ix:nonFraction[^>]*>100<\/ix:nonFraction> each/);
+    });
+
     test("every concept it uses is in the FRS 102 taxonomy", () => {
       const known = new Set(loadFrcTaxonomyConcepts());
       for (const name of [

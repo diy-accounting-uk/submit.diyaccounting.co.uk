@@ -138,6 +138,10 @@ export const CONCEPTS = {
   averageNumberEmployeesDuringPeriod: { prefix: "core", name: "AverageNumberEmployeesDuringPeriod" },
   numberSharesIssuedFullyPaid: { prefix: "core", name: "NumberSharesIssuedFullyPaid" },
   nominalValueAllottedShareCapital: { prefix: "core", name: "NominalValueAllottedShareCapital" },
+  parValueShare: { prefix: "core", name: "ParValueShare" },
+  descriptionShareType: { prefix: "bus", name: "DescriptionShareType" },
+  taxPolicy: { prefix: "core", name: "TaxPolicy" },
+  depreciationExpensePropertyPlantEquipment: { prefix: "core", name: "DepreciationExpensePropertyPlantEquipment" },
 
   propertyPlantEquipment: { prefix: "core", name: "PropertyPlantEquipment" },
   propertyPlantEquipmentGrossCost: { prefix: "core", name: "PropertyPlantEquipmentGrossCost" },
@@ -524,6 +528,26 @@ const COUNTRY_PHRASE = {
 };
 
 /**
+ * The sentence that states the principal activity, with the activity tagged. The activity reads as
+ * a noun phrase, such as "the retail of accounting software".
+ * @param {string} activity
+ * @param {{current: string}} refs
+ * @returns {string} one paragraph
+ */
+export function principalActivitySentence(activity, refs) {
+  return `<p>The company's principal activity is ${renderTextFact("descriptionPrincipalActivities", refs.current, activity)}.</p>`;
+}
+
+/**
+ * "share" for a count of one, "shares" otherwise.
+ * @param {number} count
+ * @returns {string}
+ */
+export function shareNoun(count) {
+  return count === 1 ? "share" : "shares";
+}
+
+/**
  * The company information a set of accounts states under section 396(A1) of the Companies Act
  * 2006, as the first note: the legal form, where the company is registered, its number and its
  * registered office. The name and number are tagged where they appear.
@@ -539,9 +563,7 @@ export function companyInformationNote({ companyName, companyNumber, registeredO
   const office = typeof registeredOffice === "string" ? registeredOffice.trim() : "";
   if (!office) throw new Error("registeredOffice is required: the accounts state the registered office address");
   const country = COUNTRY_PHRASE[countryMemberForCompanyNumber(companyNumber).name];
-  const activity = principalActivityShown
-    ? `\n<p>The principal activity of the company is ${renderTextFact("descriptionPrincipalActivities", refs.current, principalActivityShown)}.</p>`
-    : "";
+  const activity = principalActivityShown ? `\n${principalActivitySentence(principalActivityShown, refs)}` : "";
   const name = renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName);
   const number = renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber);
   return {
