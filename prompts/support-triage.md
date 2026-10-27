@@ -22,17 +22,15 @@ Your job is to answer three questions and stop:
 1. Which published article answers this ticket, if any? Match the ticket against
    web/public/faqs.toml, web/public/help.html and web/public/guide.html. Read faqs.toml's
    `question`, `answer` and `keywords` fields for the closest match, and help.html and guide.html
-   for a section this ticket's wording lines up with. Answer with the article's title and its
-   full URL on submit.diyaccounting.co.uk, for example
-   `https://submit.diyaccounting.co.uk/help.html#<faq-id>` for an FAQ entry or
-   `https://submit.diyaccounting.co.uk/guide.html` for a guide section - or the words "no match"
-   if nothing in those three files answers it.
+   for a section this ticket's wording lines up with. Answer with the `id` field of the closest FAQ entry in web/public/faqs.toml, copied exactly, or
+   the word "none" if no FAQ entry answers it. Write only the id or "none" under the heading. Do
+   not write a URL: the workflow builds the link from the id.
 2. Which one label from connection, submission, bundles, receipts, other best fits this ticket?
    Name the ticket's existing category label again if it is still the best fit, or name the one
    to use instead.
 3. Draft a reply a person could send as it stands. Plain sentences, no invented facts about this
    customer's account, and no name or greeting - there is none to use. If question 1 found a
-   match, the reply should point to that article. If not, say plainly that a person will look
+   match, the reply should say which help-page question answers it. If not, say plainly that a person will look
    into it.
 
 Never write that this ticket should be closed, and never suggest closing it. Only a person closes
@@ -48,7 +46,7 @@ and no others, each heading on its own line:
 
 ## Matched article
 
-<the article's title and URL, or "no match">
+<the FAQ id, or "none">
 
 ## Label
 

@@ -142,6 +142,10 @@ export const CONCEPTS = {
   averageNumberEmployeesDuringPeriod: { prefix: "core", name: "AverageNumberEmployeesDuringPeriod" },
   numberSharesIssuedFullyPaid: { prefix: "core", name: "NumberSharesIssuedFullyPaid" },
   nominalValueAllottedShareCapital: { prefix: "core", name: "NominalValueAllottedShareCapital" },
+  parValueShare: { prefix: "core", name: "ParValueShare" },
+  descriptionShareType: { prefix: "bus", name: "DescriptionShareType" },
+  taxPolicy: { prefix: "core", name: "TaxPolicy" },
+  depreciationExpensePropertyPlantEquipment: { prefix: "core", name: "DepreciationExpensePropertyPlantEquipment" },
 
   propertyPlantEquipment: { prefix: "core", name: "PropertyPlantEquipment" },
   propertyPlantEquipmentGrossCost: { prefix: "core", name: "PropertyPlantEquipmentGrossCost" },
@@ -519,6 +523,57 @@ export function renderCompanyDescriptionFacts({ companyNumber, refs, entityIdent
     renderTextFact("reportAmendedRevisedVersion", refs.current, "false"),
     renderTextFact("accountingStandardsAppliedMatchesEntryPoint", refs.current, "true"),
   ];
+}
+
+const COUNTRY_PHRASE = {
+  [MEMBERS.englandWales.name]: "England and Wales",
+  [MEMBERS.scotland.name]: "Scotland",
+  [MEMBERS.northernIreland.name]: "Northern Ireland",
+};
+
+/**
+ * The sentence that states the principal activity, with the activity tagged. The activity reads as
+ * a noun phrase, such as "the retail of accounting software".
+ * @param {string} activity
+ * @param {{current: string}} refs
+ * @returns {string} one paragraph
+ */
+export function principalActivitySentence(activity, refs) {
+  return `<p>The company's principal activity is ${renderTextFact("descriptionPrincipalActivities", refs.current, activity)}.</p>`;
+}
+
+/**
+ * "share" for a count of one, "shares" otherwise.
+ * @param {number} count
+ * @returns {string}
+ */
+export function shareNoun(count) {
+  return count === 1 ? "share" : "shares";
+}
+
+/**
+ * The company information a set of accounts states under section 396(A1) of the Companies Act
+ * 2006, as the first note: the legal form, where the company is registered, its number and its
+ * registered office. The name and number are tagged where they appear.
+ * @param {object} input
+ * @param {string} input.companyName
+ * @param {string} input.companyNumber
+ * @param {string} input.registeredOffice - the registered office address on one line
+ * @param {string} [input.principalActivityShown] - the principal activity, stated in the note when no directors' report shows it
+ * @param {{current: string}} refs
+ * @returns {{title: string, html: string}} the note
+ */
+export function companyInformationNote({ companyName, companyNumber, registeredOffice, principalActivityShown }, refs) {
+  const office = typeof registeredOffice === "string" ? registeredOffice.trim() : "";
+  if (!office) throw new Error("registeredOffice is required: the accounts state the registered office address");
+  const country = COUNTRY_PHRASE[countryMemberForCompanyNumber(companyNumber).name];
+  const activity = principalActivityShown ? `\n${principalActivitySentence(principalActivityShown, refs)}` : "";
+  const name = renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName);
+  const number = renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber);
+  return {
+    title: "General information",
+    html: `<p>${name} is a private company limited by shares, registered in ${country}, registered number ${number}. Its registered office is ${escapeXmlText(office)}.</p>${activity}`,
+  };
 }
 
 function netLabel(base, values) {

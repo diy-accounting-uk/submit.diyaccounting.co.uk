@@ -33,6 +33,8 @@ import {
   renderMonetaryFact,
   renderSigningDirectorFact,
   renderCompanyDescriptionFacts,
+  companyInformationNote,
+  shareNoun,
 } from "./accountsIxbrlCommon.js";
 import { recordFigure, recordTable } from "../lib/submissionRecord.js";
 
@@ -132,10 +134,13 @@ const DORMANT_STATEMENT_KEYS = STATEMENT_KEYS.map((key) =>
 // A micro-entity need not describe its principal activity; Companies House's own examples carry this text.
 const NO_PRINCIPAL_ACTIVITY_DESCRIPTION = "No description of principal activity";
 
+const DORMANT_NEVER_TRADED_SENTENCE =
+  "The company has not traded during the year or the preceding financial period. During this time the company received no income and incurred no expenditure and therefore no profit and loss account is presented.";
+
 export const DORMANT_TRADING_STATUSES = ["neverTraded", "noLongerTrading"];
 export const SHARE_CLASSES = ["ordinaryShares", "preferenceShares", "deferredShares", "otherShares"];
 
-const SHARE_CLASS_LABEL = {
+export const SHARE_CLASS_LABEL = {
   ordinaryShares: "ordinary",
   preferenceShares: "preference",
   deferredShares: "deferred",
@@ -161,6 +166,7 @@ export function sharesIssuedFor(calledUpShareCapital, nominalValue) {
  * @param {object} input
  * @param {string} input.companyNumber
  * @param {string} input.companyName
+ * @param {string} input.registeredOffice - the registered office address on one line
  * @param {string} input.periodStart - ISO date
  * @param {string} input.periodEnd - ISO date
  * @param {string} [input.priorBalanceSheetDate] - ISO date; defaults to the day before periodStart
@@ -285,6 +291,7 @@ export function buildMicroEntityAccounts(input) {
   }
 
   const notes = [
+    companyInformationNote(input, refs),
     {
       title: "Accounting policies",
       html: `<p>${renderTextFact("statementComplianceWithReportingFramework", refs.current, "These financial statements have been prepared in accordance with FRS 105 The Financial Reporting Standard applicable to the Micro-entities Regime.")}</p>`,
@@ -317,7 +324,7 @@ export function buildMicroEntityAccounts(input) {
     });
     notes.push({
       title: "Called up share capital",
-      html: `<p>Allotted, called up and fully paid: <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} shares of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction> each.</p>`,
+      html: `<p>Allotted, called up and fully paid: <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesIssued)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction> each.</p>`,
     });
     shareCapitalNote = notes.length;
   }
@@ -341,6 +348,7 @@ ${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.curr
     rows: balanceSheetRows({ years, notes: { calledUpShareCapital: shareCapitalNote } }),
   })}
 ${statementKeys.map((key) => `<p>${renderStatement(key, refs.current)}</p>`).join("\n")}
+${input.dormant && input.dormantTradingStatus === "neverTraded" ? `<p>${escapeXmlText(DORMANT_NEVER_TRADED_SENTENCE)}</p>` : ""}
 ${approvalHtml({ refs, dateOfApproval: input.dateOfApproval, directorName: input.directorName, officerContextRef })}
 </div>
 ${

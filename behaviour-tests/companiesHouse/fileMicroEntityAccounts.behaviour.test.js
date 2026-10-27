@@ -450,24 +450,24 @@ test("Click through: file micro-entity accounts from an iXBRL accounts document 
   await fillAccountsFormFromBook(
     page,
     ixbrlFile,
-    "(FRS 102 2026 taxonomy) for the period 2025-01-01 to 2025-12-31.",
+    "(FRS 102 2026 taxonomy) for the period 2025-04-01 to 2026-03-31.",
     {
-      periodStart: "2025-01-01",
-      periodEnd: "2025-12-31",
-      currentFixedAssets: "1000",
-      currentCurrentAssets: "5000",
-      currentCreditorsWithinOneYear: "2000",
+      periodStart: "2025-04-01",
+      periodEnd: "2026-03-31",
+      currentFixedAssets: "800",
+      currentCurrentAssets: "6000",
+      currentCreditorsWithinOneYear: "1968",
       currentCalledUpShareCapital: "100",
-      currentProfitAndLossAccount: "3900",
-      currentCapitalAndReserves: "4000",
-      priorFixedAssets: "900",
-      priorCapitalAndReserves: "2900",
-      averageEmployees: "2",
-      directorName: "Maldwyn Beynon",
+      currentProfitAndLossAccount: "4732",
+      currentCapitalAndReserves: "4832",
+      priorFixedAssets: "0",
+      priorCapitalAndReserves: "134",
+      averageEmployees: "0",
+      directorName: "Antony Christopher Cartwright",
     },
     screenshotPath,
   );
-  await completeMicroEntityAnswersTheBookLeaves(page, "2026-01-15", screenshotPath);
+  await completeMicroEntityAnswersTheBookLeaves(page, "2026-09-15", screenshotPath);
   await previewAccounts(page, screenshotPath);
   await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
   await verifyFilingAccepted(page, screenshotPath);

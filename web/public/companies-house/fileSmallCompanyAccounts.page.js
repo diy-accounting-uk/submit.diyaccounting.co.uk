@@ -207,7 +207,7 @@ async function handleCompanySubmit(event) {
   hideStatus();
   try {
     const profile = await window.getCompanyProfile(companyNumber);
-    company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+    company = { companyNumber: profile.companyNumber, companyName: profile.companyName, registeredOffice: profile.registeredOffice };
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showView("formView");
@@ -225,6 +225,7 @@ function buildAccountsPayload() {
   return {
     companyNumber: company.companyNumber,
     companyName: company.companyName,
+    registeredOffice: company.registeredOffice,
     periodStart: document.getElementById("periodStart").value,
     periodEnd: document.getElementById("periodEnd").value,
     averageEmployees: Number(document.getElementById("averageEmployees").value),

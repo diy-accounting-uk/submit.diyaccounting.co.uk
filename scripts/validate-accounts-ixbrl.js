@@ -28,6 +28,7 @@ const VALIDATOR_BASE_URI = "https://test-validator.companieshouse.gov.uk";
 const SAMPLE_INPUT = {
   companyNumber: "02706061",
   companyName: "TEST MICRO LIMITED",
+  registeredOffice: "1 Test Street, London, EC1A 1AA",
   periodStart: "2025-07-01",
   periodEnd: "2026-06-30",
   averageNumberOfEmployees: 2,
@@ -58,6 +59,7 @@ const SAMPLE_INPUT = {
 const SMALL_COMPANY_SAMPLE_INPUT = {
   companyNumber: "02706061",
   companyName: "TEST SMALL LIMITED",
+  registeredOffice: "1 Test Street, London, EC1A 1AA",
   periodStart: "2025-07-01",
   periodEnd: "2026-06-30",
   averageNumberOfEmployees: 4,

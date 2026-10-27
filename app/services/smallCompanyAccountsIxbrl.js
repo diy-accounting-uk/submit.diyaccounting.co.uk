@@ -38,8 +38,12 @@ import {
   buildOfficerContext,
   renderSigningDirectorFact,
   renderCompanyDescriptionFacts,
+  companyInformationNote,
+  principalActivitySentence,
+  shareNoun,
 } from "./accountsIxbrlCommon.js";
 import { recordFigure, recordTable } from "../lib/submissionRecord.js";
+import { SHARE_CLASS_LABEL, sharesIssuedFor } from "./microEntityAccountsIxbrl.js";
 
 const SMALL_COMPANY_FRAMEWORK_COMPLIANCE =
   "These financial statements have been prepared in accordance with Section 1A Small Entities of FRS 102 The Financial Reporting Standard applicable to the UK and Republic of Ireland.";
@@ -447,6 +451,19 @@ function fixedAssetNoteTable({ refs, fixedAssetNote, entityIdentifierXml, period
   });
 }
 
+function shareCapitalNoteHtml({ shareCapital, calledUpShareCapital, refs, entityIdentifierXml, periodXml, additionalContexts }) {
+  const sharesIssued = sharesIssuedFor(calledUpShareCapital, shareCapital.nominalValue);
+  const dimensionXml = dimensionMemberXml(DIMENSIONS.entityShareClasses, MEMBERS[shareCapital.shareClass]);
+  const classContext = (periodKey, id) =>
+    buildDimensionedContext({ additionalContexts, entityIdentifierXml, periodXml: periodXml[periodKey], dimensionXml, id });
+  const durationContext = classContext(refs.current, `${refs.current}-share-class`);
+  const instantContext = classContext(refs.currentInstant, `${refs.currentInstant}-share-class`);
+  const description = `<ix:nonNumeric name="${qname(CONCEPTS.descriptionShareType)}" contextRef="${durationContext}">${escapeXmlText(SHARE_CLASS_LABEL[shareCapital.shareClass])}</ix:nonNumeric>`;
+  const count = `<ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${instantContext}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction>`;
+  const parValue = `<ix:nonFraction name="${qname(CONCEPTS.parValueShare)}" contextRef="${durationContext}" unitRef="pure" decimals="INF">${shareCapital.nominalValue}</ix:nonFraction>`;
+  return `<p>Allotted, called up and fully paid: ${count} ${description} ${shareNoun(sharesIssued)} of £${parValue} each.</p>`;
+}
+
 function directorsReportPage({ heading, input, refs, additionalContexts, entityIdentifierXml, periodXml }) {
   const directorFacts = input.directors.map((name, index) => {
     const contextRef = buildOfficerContext({ additionalContexts, entityIdentifierXml, periodXml, refs, position: index + 1 });
@@ -455,7 +472,7 @@ function directorsReportPage({ heading, input, refs, additionalContexts, entityI
   return `<div class="page">
 ${heading}<p>The directors present their report and the financial statements for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}.</p>
 <h3>Principal activity</h3>
-<p>${renderTextFact("descriptionPrincipalActivities", refs.current, input.principalActivity)}</p>
+${principalActivitySentence(input.principalActivity, refs)}
 <h3>Directors</h3>
 <p>The directors who held office during the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd).split(" ")[0])} were:</p>
 <p>${directorFacts.join("<br/>")}</p>
@@ -471,6 +488,7 @@ ${heading}<p>The directors present their report and the financial statements for
  * @param {object} input
  * @param {string} input.companyNumber
  * @param {string} input.companyName
+ * @param {string} input.registeredOffice - the registered office address on one line
  * @param {string} input.periodStart - ISO date
  * @param {string} input.periodEnd - ISO date
  * @param {string} [input.priorBalanceSheetDate] - ISO date; defaults to the day before periodStart
@@ -486,6 +504,8 @@ ${heading}<p>The directors present their report and the financial statements for
  * @param {1|2} [input.profitAndLossFormat] - 1 (by function, the default) or 2 (by nature)
  * @param {{current: object, prior?: object}} input.profitAndLoss - the lines of the format: SMALL_COMPANY_PROFIT_AND_LOSS_LINES or SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES
  * @param {Record<string, object>} [input.fixedAssetNote] - FIXED_ASSET_CLASSES to FIXED_ASSET_CLASS_FIELDS
+ * @param {string} [input.taxPolicy] - plain text for the tax policy, tagged in the accounting policies note
+ * @param {{shareClass: string, nominalValue: number}} [input.shareCapital] - adds a share capital note; the shares issued are the called up share capital over the nominal value
  * @returns {string} the XHTML document
  */
 export function buildSmallCompanyAccounts(input) {
@@ -541,10 +561,12 @@ export function buildSmallCompanyAccounts(input) {
     hiddenFacts.push(
       `<ix:nonNumeric name="${qname(CONCEPTS.reportIncludesDetailedProfitLossStatement)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
       `<ix:nonNumeric name="${qname(CONCEPTS.exemptionNotPublishingOwnProfitLossAccount)}" contextRef="${refs.current}">true</ix:nonNumeric>`,
-      renderTextFact("descriptionPrincipalActivities", refs.current, input.principalActivity),
     );
   } else {
-    hiddenFacts.push(renderFixedFact("directorSigningDirectorsReport", refs.current));
+    hiddenFacts.push(
+      `<ix:nonNumeric name="${qname(CONCEPTS.reportIncludesDetailedProfitLossStatement)}" contextRef="${refs.current}">true</ix:nonNumeric>`,
+      renderFixedFact("directorSigningDirectorsReport", refs.current),
+    );
   }
 
   for (const [conceptKey, dimension, member, id] of [
@@ -586,16 +608,38 @@ export function buildSmallCompanyAccounts(input) {
     : SMALL_COMPANY_STATEMENT_KEYS;
 
   const notes = [
+    companyInformationNote(
+      {
+        ...input,
+        principalActivityShown: input.filleted ? input.principalActivity : undefined,
+      },
+      refs,
+    ),
     {
       title: "Accounting policies",
       html: `<p>${renderTextFact("statementComplianceWithReportingFramework", refs.current, SMALL_COMPANY_FRAMEWORK_COMPLIANCE)}</p>
-<p>${renderTextFact("generalDescriptionBasisMeasurement", refs.current, input.accountingPolicies)}</p>`,
+<p>${renderTextFact("generalDescriptionBasisMeasurement", refs.current, input.accountingPolicies)}</p>${
+        input.taxPolicy ? `\n<p>${renderTextFact("taxPolicy", refs.current, input.taxPolicy)}</p>` : ""
+      }`,
     },
     {
       title: "Employees",
       html: `<p>The average number of employees during the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd).split(" ")[0])} was <ix:nonFraction name="${qname(CONCEPTS.averageNumberEmployeesDuringPeriod)}" contextRef="${refs.current}" unitRef="pure" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(input.averageNumberOfEmployees)}</ix:nonFraction>.</p>`,
     },
   ];
+  if (input.shareCapital) {
+    notes.push({
+      title: "Called up share capital",
+      html: shareCapitalNoteHtml({
+        shareCapital: input.shareCapital,
+        calledUpShareCapital: input.balanceSheet.current.calledUpShareCapital,
+        refs,
+        entityIdentifierXml,
+        periodXml,
+        additionalContexts,
+      }),
+    });
+  }
   let fixedAssetNoteNumber;
   if (hasFixedAssetNote) {
     notes.push({
@@ -609,6 +653,19 @@ export function buildSmallCompanyAccounts(input) {
       }),
     });
     fixedAssetNoteNumber = notes.length;
+    const depreciationCharge = Object.values(input.fixedAssetNote).reduce(
+      (total, classFigures) => total + classFigures.depreciationCharge,
+      0,
+    );
+    const depreciationFact = money("depreciationExpensePropertyPlantEquipment", refs.current, depreciationCharge);
+    notes.push(
+      input.filleted
+        ? { title: "Depreciation", html: `<p>Depreciation of tangible assets charged in the year was £${depreciationFact}.</p>` }
+        : {
+            title: "Operating profit",
+            html: `<p>Operating profit is stated after charging depreciation of tangible assets of £${depreciationFact}.</p>`,
+          },
+    );
   }
 
   const period = escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd));

@@ -833,7 +833,7 @@ async function handleCompanySubmit(event) {
   window.hideStatus();
   try {
     const profile = await window.getCompanyProfile(companyNumber);
-    company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+    company = { companyNumber: profile.companyNumber, companyName: profile.companyName, registeredOffice: profile.registeredOffice };
     element("formCompanyName").textContent = company.companyName;
     element("formCompanyNumber").textContent = company.companyNumber;
     showView("formView");

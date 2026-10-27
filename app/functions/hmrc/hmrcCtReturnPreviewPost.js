@@ -11,6 +11,7 @@ import { extractRequest, buildValidationError, http200OkResponse } from "../../l
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
+import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateCtReturnParameters, buildCtReturnDocuments } from "../../services/hmrcCtReturnRequest.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
@@ -48,6 +49,7 @@ export async function ingestHandler(event) {
     requireGatewayCredentials: false,
     requireReviewedBoxes: false,
   });
+  if (errorMessages.length === 0) await fillRegisteredOffice(returnRequest.accounts, errorMessages);
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }

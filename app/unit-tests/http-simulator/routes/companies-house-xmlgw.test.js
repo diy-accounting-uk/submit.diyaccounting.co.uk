@@ -328,6 +328,7 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
     const dormantDocument = buildMicroEntityAccounts({
       companyNumber: "02706061",
       companyName: "TEST DORMANT LIMITED",
+      registeredOffice: "1 Test Street, London, EC1A 1AA",
       periodStart: "2025-07-01",
       periodEnd: "2026-06-30",
       dormant: true,

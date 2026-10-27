@@ -55,7 +55,7 @@ describe("ixbrlStructureProblems", () => {
   });
 
   test("reports a figure its transform cannot read and duplicate facts that disagree", () => {
-    const problems = ixbrlStructureProblems(micro.replace(">1,000</ix:nonFraction>", ">1.000,00</ix:nonFraction>"));
+    const problems = ixbrlStructureProblems(micro.replace(">6,000</ix:nonFraction>", ">1.000,00</ix:nonFraction>"));
     expect(problems.some((problem) => problem.includes("which ixt2:numdotdecimal cannot read"))).toBe(true);
     const duplicated = micro.replace(
       "</body>",

@@ -16,6 +16,7 @@ import {
   profitAndLossProblemsOf,
   fixedAssetNoteNetBookValue,
 } from "./smallCompanyAccountsIxbrl.js";
+import { SHARE_CLASSES, sharesIssuedFor } from "./microEntityAccountsIxbrl.js";
 
 export const SMALL_COMPANY_STATEMENT_FIELDS = [
   "section477Exemption",
@@ -94,6 +95,21 @@ function requiredText(value, label, errorMessages) {
   return text;
 }
 
+function readShareCapital(values, calledUpShareCapital, errorMessages) {
+  if (values === undefined || values === null) return undefined;
+  const { shareClass } = values;
+  const nominalValue = Number(values.nominalValue);
+  if (!SHARE_CLASSES.includes(shareClass)) {
+    errorMessages.push(`Invalid smallCompany.shareCapital.shareClass - must be one of ${SHARE_CLASSES.join(", ")}`);
+  }
+  if (!Number.isFinite(nominalValue) || nominalValue <= 0) {
+    errorMessages.push("Invalid smallCompany.shareCapital.nominalValue - must be a positive number of pounds per share");
+  } else if (Number.isFinite(calledUpShareCapital) && sharesIssuedFor(calledUpShareCapital, nominalValue) === null) {
+    errorMessages.push("smallCompany.shareCapital.nominalValue must divide calledUpShareCapital into a whole number of shares");
+  }
+  return { shareClass, nominalValue };
+}
+
 /**
  * Validate the small-company section of a request body.
  * @param {object} smallCompany - the body's smallCompany object
@@ -139,6 +155,12 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
     : undefined;
   const fixedAssetNote = readFixedAssetNote(section.fixedAssetNote, currentBalanceSheet.fixedAssets, errorMessages);
 
+  const shareCapital = readShareCapital(section.shareCapital, currentBalanceSheet.calledUpShareCapital, errorMessages);
+  if (section.taxPolicy !== undefined && typeof section.taxPolicy !== "string") {
+    errorMessages.push("Invalid smallCompany.taxPolicy - must be text");
+  }
+  const taxPolicy = typeof section.taxPolicy === "string" ? section.taxPolicy.trim() : "";
+
   const statements = {};
   for (const field of SMALL_COMPANY_STATEMENT_FIELDS) {
     statements[field] = statementsAccepted?.[field] === true;
@@ -154,6 +176,8 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
     balanceSheet: { current: currentBalanceSheet, ...(priorBalanceSheet ? { prior: priorBalanceSheet } : {}) },
     profitAndLoss: { current: currentProfitAndLoss, ...(priorProfitAndLoss ? { prior: priorProfitAndLoss } : {}) },
     ...(fixedAssetNote ? { fixedAssetNote } : {}),
+    ...(shareCapital ? { shareCapital } : {}),
+    ...(taxPolicy ? { taxPolicy } : {}),
     statementsAccepted: statements,
   };
 }

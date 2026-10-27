@@ -12,6 +12,18 @@
     }
   },
   {
+    "name": "company-data-request-accounts-company",
+    "type": "companyDataRequest",
+    "companyNumber": "04549236",
+    "companyAuthenticationCode": "AUTH09",
+    "madeUpDate": "2026-09-21",
+    "expectedOutcome": {
+      "status": "OK",
+      "pinned": false,
+      "note": "Reads the register entry (registered office, statement of capital, officers) of the company the accounts cases file for."
+    }
+  },
+  {
     "name": "payment-periods-request",
     "type": "paymentPeriodsRequest",
     "companyNumber": "03176906",
@@ -248,35 +260,36 @@
   {
     "name": "micro-entity-accounts",
     "type": "accounts",
-    "companyNumber": "03176906",
-    "companyName": "MILLENNIUM STADIUM PLC",
-    "companyAuthCode": "AUTH11",
-    "periodStart": "2025-01-01",
-    "periodEnd": "2025-12-31",
+    "companyNumber": "06846849",
+    "companyName": "DIY ACCOUNTING LIMITED",
+    "registeredOffice": "37 Sutherland Avenue, Leeds, England, LS8 1BY",
+    "companyAuthCode": "AUTH09",
+    "periodStart": "2025-04-01",
+    "periodEnd": "2026-03-31",
     "balanceSheet": {
       "currentYear": {
-        "fixedAssets": 1000,
-        "currentAssets": 5000,
-        "creditorsWithinOneYear": 2000,
+        "fixedAssets": 800,
+        "currentAssets": 6000,
+        "creditorsWithinOneYear": 1968,
         "creditorsAfterOneYear": 0,
         "calledUpShareCapital": 100,
-        "profitAndLossAccount": 3900,
-        "capitalAndReserves": 4000
+        "profitAndLossAccount": 4732,
+        "capitalAndReserves": 4832
       },
       "priorYear": {
-        "fixedAssets": 900,
-        "currentAssets": 3500,
-        "creditorsWithinOneYear": 1500,
+        "fixedAssets": 0,
+        "currentAssets": 3353,
+        "creditorsWithinOneYear": 3219,
         "creditorsAfterOneYear": 0,
         "calledUpShareCapital": 100,
-        "profitAndLossAccount": 2800,
-        "capitalAndReserves": 2900
+        "profitAndLossAccount": 34,
+        "capitalAndReserves": 134
       }
     },
-    "averageEmployees": 2,
+    "averageEmployees": 0,
     "director": {
-      "name": "Maldwyn Beynon",
-      "dateApproved": "2026-01-15"
+      "name": "Antony Christopher Cartwright",
+      "dateApproved": "2026-09-15"
     },
     "statementsAccepted": {
       "section477Exemption": true,
@@ -287,41 +300,42 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": true,
-      "note": "Filed as 00004S on the test service, run 40160479724 (2026-10-25); PENDING at every poll (poll run 40163173205, 2026-10-25)."
+      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025)."
     }
   },
   {
     "name": "micro-entity-accounts-dormant",
     "type": "accounts",
-    "companyNumber": "03176906",
-    "companyName": "MILLENNIUM STADIUM PLC",
-    "companyAuthCode": "AUTH11",
-    "periodStart": "2026-01-01",
-    "periodEnd": "2026-12-31",
+    "companyNumber": "09991482",
+    "companyName": "HARTLEY AND WREN SUPPLIES LIMITED",
+    "registeredOffice": "14 Marsh Lane, Stockport, Cheshire, SK4 1PX",
+    "companyAuthCode": "AUTH09",
+    "periodStart": "2025-04-01",
+    "periodEnd": "2026-03-31",
     "balanceSheet": {
       "currentYear": {
         "fixedAssets": 0,
-        "currentAssets": 100,
+        "currentAssets": 1,
         "creditorsWithinOneYear": 0,
         "creditorsAfterOneYear": 0,
-        "calledUpShareCapital": 100,
+        "calledUpShareCapital": 1,
         "profitAndLossAccount": 0,
-        "capitalAndReserves": 100
+        "capitalAndReserves": 1
       },
       "priorYear": {
         "fixedAssets": 0,
-        "currentAssets": 100,
+        "currentAssets": 1,
         "creditorsWithinOneYear": 0,
         "creditorsAfterOneYear": 0,
-        "calledUpShareCapital": 100,
+        "calledUpShareCapital": 1,
         "profitAndLossAccount": 0,
-        "capitalAndReserves": 100
+        "capitalAndReserves": 1
       }
     },
     "averageEmployees": 0,
     "director": {
-      "name": "Maldwyn Beynon",
-      "dateApproved": "2027-01-15"
+      "name": "Helen Margaret Ashworth",
+      "dateApproved": "2026-09-15"
     },
     "statementsAccepted": {
       "section477Exemption": true,
@@ -332,7 +346,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": true,
-      "note": "Filed as 00004T on the test service, run 40161171287 (2026-10-25); PENDING at every poll (poll run 40163834108, 2026-10-25)."
+      "note": "Not yet filed with this data. A fictional private company that has never traded, with a made-up company number. The authentication code is a placeholder."
     },
     "dormant": true,
     "dormantTradingStatus": "neverTraded",
@@ -342,15 +356,16 @@
   {
     "name": "small-company-accounts-full",
     "type": "accounts",
-    "companyNumber": "03176906",
-    "companyName": "MILLENNIUM STADIUM PLC",
-    "companyAuthCode": "AUTH11",
-    "periodStart": "2025-01-01",
-    "periodEnd": "2025-12-31",
-    "averageEmployees": 4,
+    "companyNumber": "06846849",
+    "companyName": "DIY ACCOUNTING LIMITED",
+    "registeredOffice": "37 Sutherland Avenue, Leeds, England, LS8 1BY",
+    "companyAuthCode": "AUTH09",
+    "periodStart": "2025-04-01",
+    "periodEnd": "2026-03-31",
+    "averageEmployees": 0,
     "director": {
-      "name": "Maldwyn Beynon",
-      "dateApproved": "2026-01-15"
+      "name": "Antony Christopher Cartwright",
+      "dateApproved": "2026-09-15"
     },
     "statementsAccepted": {
       "section477Exemption": true,
@@ -360,98 +375,96 @@
     },
     "smallCompany": {
       "filleted": false,
-      "principalActivity": "Stadium operation and events",
-      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for events and services provided in the year, excluding VAT.",
-      "directors": ["Maldwyn Beynon"],
+      "principalActivity": "the retail of accounting software",
+      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "directors": ["Antony Christopher Cartwright", "Samantha Ashley Cartwright", "Jane Elizabeth Grundy"],
       "balanceSheet": {
         "currentYear": {
-          "fixedAssets": 1000,
-          "stocks": 500,
-          "debtors": 2500,
-          "cashAtBank": 2000,
-          "tradeCreditors": 1000,
-          "corporationTax": 700,
-          "otherCreditors": 300,
+          "fixedAssets": 800,
+          "stocks": 0,
+          "debtors": 800,
+          "cashAtBank": 5200,
+          "tradeCreditors": 500,
+          "corporationTax": 1102,
+          "otherCreditors": 366,
           "creditorsAfterOneYear": 0,
           "calledUpShareCapital": 100,
-          "profitAndLossAccount": 3900,
-          "capitalAndReserves": 4000
+          "profitAndLossAccount": 4732,
+          "capitalAndReserves": 4832
         },
         "priorYear": {
-          "fixedAssets": 800,
-          "stocks": 300,
-          "debtors": 1500,
-          "cashAtBank": 1000,
-          "tradeCreditors": 900,
-          "corporationTax": 400,
-          "otherCreditors": 100,
-          "creditorsAfterOneYear": 600,
+          "fixedAssets": 0,
+          "stocks": 0,
+          "debtors": 1200,
+          "cashAtBank": 2153,
+          "tradeCreditors": 500,
+          "corporationTax": 984,
+          "otherCreditors": 1735,
+          "creditorsAfterOneYear": 0,
           "calledUpShareCapital": 100,
-          "profitAndLossAccount": 1500,
-          "capitalAndReserves": 1600
+          "profitAndLossAccount": 34,
+          "capitalAndReserves": 134
         }
       },
       "profitAndLoss": {
         "currentYear": {
-          "turnover": 20000,
-          "costOfSales": 5000,
-          "grossProfit": 15000,
-          "administrativeExpenses": 12000,
-          "operatingProfit": 3000,
+          "turnover": 8500,
+          "costOfSales": 0,
+          "grossProfit": 8500,
+          "administrativeExpenses": 2700,
+          "operatingProfit": 5800,
           "interestReceivable": 0,
-          "profitBeforeTax": 3000,
-          "tax": 600,
-          "profit": 2400
+          "profitBeforeTax": 5800,
+          "tax": 1102,
+          "profit": 4698
         },
         "priorYear": {
-          "turnover": 18000,
-          "costOfSales": 4500,
-          "grossProfit": 13500,
-          "administrativeExpenses": 10800,
-          "operatingProfit": 2700,
-          "interestReceivable": 0,
-          "profitBeforeTax": 2700,
-          "tax": 540,
-          "profit": 2160
+          "turnover": 7639,
+          "costOfSales": 0,
+          "grossProfit": 7639,
+          "administrativeExpenses": 2482,
+          "operatingProfit": 5157,
+          "interestReceivable": 22,
+          "profitBeforeTax": 5179,
+          "tax": 984,
+          "profit": 4195
         }
       },
       "fixedAssetNote": {
-        "plantMachinery": {
-          "costAtStart": 1500,
-          "additions": 400,
-          "disposals": 100,
-          "depreciationAtStart": 1000,
-          "depreciationCharge": 150,
-          "depreciationOnDisposals": 80
-        },
         "computerEquipment": {
-          "costAtStart": 800,
-          "additions": 200,
+          "costAtStart": 0,
+          "additions": 1200,
           "disposals": 0,
-          "depreciationAtStart": 500,
-          "depreciationCharge": 230,
+          "depreciationAtStart": 0,
+          "depreciationCharge": 400,
           "depreciationOnDisposals": 0
         }
+      },
+      "taxPolicy": "The tax expense for the year comprises current tax, recognised in profit or loss.",
+      "shareCapital": {
+        "shareClass": "ordinaryShares",
+        "nominalValue": 1
       }
     },
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Filed as 00004U on the test service, run 40161838474 (2026-10-25); PENDING at every poll (poll run 40164507609, 2026-10-25)."
+      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025). The prior-year profit and loss is the filed 2025 one, with its 22 of other income shown as interest receivable because the builder has no other operating income line."
     }
   },
   {
     "name": "small-company-accounts-filleted",
     "type": "accounts",
-    "companyNumber": "03176906",
-    "companyName": "MILLENNIUM STADIUM PLC",
-    "companyAuthCode": "AUTH11",
-    "periodStart": "2025-01-01",
-    "periodEnd": "2025-12-31",
-    "averageEmployees": 4,
+    "companyNumber": "06846849",
+    "companyName": "DIY ACCOUNTING LIMITED",
+    "registeredOffice": "37 Sutherland Avenue, Leeds, England, LS8 1BY",
+    "companyAuthCode": "AUTH09",
+    "periodStart": "2025-04-01",
+    "periodEnd": "2026-03-31",
+    "averageEmployees": 0,
     "director": {
-      "name": "Maldwyn Beynon",
-      "dateApproved": "2026-01-15"
+      "name": "Antony Christopher Cartwright",
+      "dateApproved": "2026-09-15"
     },
     "statementsAccepted": {
       "section477Exemption": true,
@@ -461,84 +474,81 @@
     },
     "smallCompany": {
       "filleted": true,
-      "principalActivity": "Stadium operation and events",
-      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for events and services provided in the year, excluding VAT.",
-      "directors": ["Maldwyn Beynon"],
+      "principalActivity": "the retail of accounting software",
+      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "directors": ["Antony Christopher Cartwright", "Samantha Ashley Cartwright", "Jane Elizabeth Grundy"],
       "balanceSheet": {
         "currentYear": {
-          "fixedAssets": 1000,
-          "stocks": 500,
-          "debtors": 2500,
-          "cashAtBank": 2000,
-          "tradeCreditors": 1000,
-          "corporationTax": 700,
-          "otherCreditors": 300,
+          "fixedAssets": 800,
+          "stocks": 0,
+          "debtors": 800,
+          "cashAtBank": 5200,
+          "tradeCreditors": 500,
+          "corporationTax": 1102,
+          "otherCreditors": 366,
           "creditorsAfterOneYear": 0,
           "calledUpShareCapital": 100,
-          "profitAndLossAccount": 3900,
-          "capitalAndReserves": 4000
+          "profitAndLossAccount": 4732,
+          "capitalAndReserves": 4832
         },
         "priorYear": {
-          "fixedAssets": 800,
-          "stocks": 300,
-          "debtors": 1500,
-          "cashAtBank": 1000,
-          "tradeCreditors": 900,
-          "corporationTax": 400,
-          "otherCreditors": 100,
-          "creditorsAfterOneYear": 600,
+          "fixedAssets": 0,
+          "stocks": 0,
+          "debtors": 1200,
+          "cashAtBank": 2153,
+          "tradeCreditors": 500,
+          "corporationTax": 984,
+          "otherCreditors": 1735,
+          "creditorsAfterOneYear": 0,
           "calledUpShareCapital": 100,
-          "profitAndLossAccount": 1500,
-          "capitalAndReserves": 1600
+          "profitAndLossAccount": 34,
+          "capitalAndReserves": 134
         }
       },
       "profitAndLoss": {
         "currentYear": {
-          "turnover": 20000,
-          "costOfSales": 5000,
-          "grossProfit": 15000,
-          "administrativeExpenses": 12000,
-          "operatingProfit": 3000,
+          "turnover": 8500,
+          "costOfSales": 0,
+          "grossProfit": 8500,
+          "administrativeExpenses": 2700,
+          "operatingProfit": 5800,
           "interestReceivable": 0,
-          "profitBeforeTax": 3000,
-          "tax": 600,
-          "profit": 2400
+          "profitBeforeTax": 5800,
+          "tax": 1102,
+          "profit": 4698
         },
         "priorYear": {
-          "turnover": 18000,
-          "costOfSales": 4500,
-          "grossProfit": 13500,
-          "administrativeExpenses": 10800,
-          "operatingProfit": 2700,
-          "interestReceivable": 0,
-          "profitBeforeTax": 2700,
-          "tax": 540,
-          "profit": 2160
+          "turnover": 7639,
+          "costOfSales": 0,
+          "grossProfit": 7639,
+          "administrativeExpenses": 2482,
+          "operatingProfit": 5157,
+          "interestReceivable": 22,
+          "profitBeforeTax": 5179,
+          "tax": 984,
+          "profit": 4195
         }
       },
       "fixedAssetNote": {
-        "plantMachinery": {
-          "costAtStart": 1500,
-          "additions": 400,
-          "disposals": 100,
-          "depreciationAtStart": 1000,
-          "depreciationCharge": 150,
-          "depreciationOnDisposals": 80
-        },
         "computerEquipment": {
-          "costAtStart": 800,
-          "additions": 200,
+          "costAtStart": 0,
+          "additions": 1200,
           "disposals": 0,
-          "depreciationAtStart": 500,
-          "depreciationCharge": 230,
+          "depreciationAtStart": 0,
+          "depreciationCharge": 400,
           "depreciationOnDisposals": 0
         }
+      },
+      "taxPolicy": "The tax expense for the year comprises current tax, recognised in profit or loss.",
+      "shareCapital": {
+        "shareClass": "ordinaryShares",
+        "nominalValue": 1
       }
     },
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Filed as 00004V on the test service, run 40162511263 (2026-10-25); PENDING at every poll (poll run 40165181383, 2026-10-25)."
+      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025). The prior-year profit and loss is the filed 2025 one, with its 22 of other income shown as interest receivable because the builder has no other operating income line."
     }
   }
 ]

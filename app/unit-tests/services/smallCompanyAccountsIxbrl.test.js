@@ -98,6 +98,7 @@ const FIXED_ASSET_NOTE = {
 const SAMPLE_INPUT = {
   companyNumber: "02706061",
   companyName: "TEST SMALL LIMITED",
+  registeredOffice: "1 Test Street, London, EC1A 1AA",
   periodStart: "2025-07-01",
   periodEnd: "2026-06-30",
   averageNumberOfEmployees: 4,
@@ -169,7 +170,7 @@ describe("services/smallCompanyAccountsIxbrl", () => {
       expect(xhtml).toMatch(/name="core:DescriptionBodyAuthorisingFinancialStatements" contextRef="y2026">the board of directors</);
       expect(xhtml).toMatch(/name="direp:DateSigningDirectorsReport" contextRef="e2026"[^>]*>1 September 2026</);
       expect(xhtml).toMatch(/name="core:GeneralDescriptionBasisMeasurementUsedInPreparingFinancialStatements" contextRef="y2026">/);
-      expect(hiddenText(xhtml, "bus:ReportIncludesDetailedProfitLossStatementTruefalse")).toBeUndefined();
+      expect(hiddenText(xhtml, "bus:ReportIncludesDetailedProfitLossStatementTruefalse")).toBe("true");
     });
 
     test("names each director once as an officer, and the signing line is plain text", () => {
@@ -351,7 +352,7 @@ describe("services/smallCompanyAccountsIxbrl", () => {
       const stocks = labels.indexOf("Stocks");
       expect(labels[stocks - 1]).toBe("Current assets");
       expect(rows[stocks + 3]).toEqual(["", "", "5,000", "4,000"]);
-      expect(rows).toContainEqual(["Fixed assets", "3", "10,000", "8,000"]);
+      expect(rows).toContainEqual(["Fixed assets", "4", "10,000", "8,000"]);
     });
 
     test("the fixed asset note has a column per class and a total", () => {
@@ -366,6 +367,19 @@ describe("services/smallCompanyAccountsIxbrl", () => {
     });
   });
 
+  describe("company information", () => {
+    const xhtml = buildSmallCompanyAccounts(WITH_COMPARATIVES);
+
+    test("states the legal form, country, number and registered office in the notes", () => {
+      expect(xhtml).toContain("is a private company limited by shares, registered in England and Wales, registered number");
+      expect(xhtml).toContain("Its registered office is 1 Test Street, London, EC1A 1AA.");
+    });
+
+    test("refuses an input without a registered office", () => {
+      expect(() => buildSmallCompanyAccounts({ ...WITH_COMPARATIVES, registeredOffice: " " })).toThrow(/registeredOffice/);
+    });
+  });
+
   describe("buildSmallCompanyAccounts, filleted", () => {
     const xhtml = buildSmallCompanyAccounts({ ...WITH_COMPARATIVES, filleted: true });
 
@@ -374,9 +388,12 @@ describe("services/smallCompanyAccountsIxbrl", () => {
       expect(xhtml).toContain("section 444(5A) of the Companies Act 2006");
     });
 
-    test("reports filleted accounts, with the principal activity and the signing director named", () => {
+    test("reports filleted accounts with the signing director named and the principal activity shown in the notes", () => {
       expect(dimensionNames(xhtml)).toContainEqual({ dimension: "bus:AccountsTypeDimension", member: "bus:FilletedAccounts" });
-      expect(hiddenText(xhtml, "bus:DescriptionPrincipalActivities")).toBe(SAMPLE_INPUT.principalActivity);
+      expect(hiddenText(xhtml, "bus:DescriptionPrincipalActivities")).toBeUndefined();
+      expect(parseXmlDocument(xhtml).getElementsByTagName("body")[0].textContent).toContain(
+        `The company's principal activity is ${SAMPLE_INPUT.principalActivity}.`,
+      );
       expect(xhtml).toMatch(/name="bus:NameEntityOfficer" contextRef="y2026-director-1">Jo Smith</);
     });
 
@@ -563,5 +580,85 @@ describe("services/smallCompanyAccountsIxbrl", () => {
     test("Format 1 output is unchanged when the format is named", () => {
       expect(buildSmallCompanyAccounts({ ...SAMPLE_INPUT, profitAndLossFormat: 1 })).toBe(buildSmallCompanyAccounts(SAMPLE_INPUT));
     });
+  });
+});
+
+describe("the principal activity sentence", () => {
+  const activity = "the retail of accounting software";
+  const full = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, principalActivity: activity });
+  const filleted = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, principalActivity: activity, filleted: true });
+  const bodyText = (xhtml) => parseXmlDocument(xhtml).getElementsByTagName("body")[0].textContent;
+
+  test("reads as one sentence in the directors' report of a full set", () => {
+    expect(bodyText(full)).toContain("The company's principal activity is the retail of accounting software.");
+  });
+
+  test("reads as one sentence in the general information note of a filleted set", () => {
+    expect(bodyText(filleted)).toContain("The company's principal activity is the retail of accounting software.");
+  });
+
+  test("tags the activity text alone", () => {
+    expect(full).toMatch(/name="bus:DescriptionPrincipalActivities"[^>]*>the retail of accounting software</);
+  });
+});
+
+describe("the share capital note and the tax policy of a small company", () => {
+  const input = {
+    ...WITH_COMPARATIVES,
+    taxPolicy: "The tax expense for the year comprises current tax, recognised in profit or loss.",
+    shareCapital: { shareClass: "ordinaryShares", nominalValue: 1 },
+  };
+  const xhtml = buildSmallCompanyAccounts(input);
+
+  test("tags the share type, the shares issued and the par value against the share class", () => {
+    expect(xhtml).toMatch(/name="bus:DescriptionShareType" contextRef="y\d{4}-share-class">ordinary</);
+    expect(xhtml).toMatch(/name="core:NumberSharesIssuedFullyPaid"[^>]*contextRef="e\d{4}-share-class"[^>]*unitRef="shares"[^>]*>100</);
+    expect(xhtml).toMatch(/name="core:ParValueShare"[^>]*contextRef="y\d{4}-share-class"[^>]*unitRef="pure"[^>]*>1</);
+    expect(dimensionNames(xhtml)).toContainEqual({ dimension: "bus:EntityShareClassesDimension", member: "bus:OrdinaryShareClass1" });
+  });
+
+  test("states the shares in the plural for a count above one and the singular for one", () => {
+    expect(xhtml).toMatch(/>100<\/ix:nonFraction> <ix:nonNumeric[^>]*>ordinary<\/ix:nonNumeric> shares of £/);
+    const single = buildSmallCompanyAccounts({
+      ...input,
+      balanceSheet: {
+        current: { ...CURRENT_BALANCE_SHEET, calledUpShareCapital: 1, profitAndLossAccount: 9999, capitalAndReserves: 10000 },
+      },
+    });
+    expect(single).toMatch(/>1<\/ix:nonFraction> <ix:nonNumeric[^>]*>ordinary<\/ix:nonNumeric> share of £/);
+  });
+
+  test("tags the tax policy in the accounting policies note", () => {
+    expect(xhtml).toMatch(/name="core:TaxPolicy" contextRef="y\d{4}">The tax expense for the year comprises current tax/);
+  });
+
+  test("leaves both out when the input carries neither", () => {
+    const plain = buildSmallCompanyAccounts(WITH_COMPARATIVES);
+    expect(factNames(plain)).not.toContain("core:TaxPolicy");
+    expect(factNames(plain)).not.toContain("core:ParValueShare");
+  });
+
+  test("every concept it adds is in the FRS 102 taxonomy", () => {
+    const known = new Set(loadFrcTaxonomyConcepts());
+    for (const name of [
+      "bus:DescriptionShareType",
+      "core:ParValueShare",
+      "core:TaxPolicy",
+      "core:DepreciationExpensePropertyPlantEquipment",
+    ]) {
+      expect(known.has(name)).toBe(true);
+      expect(factNames(xhtml)).toContain(name);
+    }
+  });
+
+  test("tags the year's depreciation charge as an expense in the notes", () => {
+    expect(xhtml).toMatch(/name="core:DepreciationExpensePropertyPlantEquipment"[^>]*unitRef="GBP"[^>]*>500</);
+  });
+
+  test("tags the detailed profit and loss flag true on a full set and false on a filleted one", () => {
+    expect(hiddenText(xhtml, "bus:ReportIncludesDetailedProfitLossStatementTruefalse")).toBe("true");
+    expect(
+      hiddenText(buildSmallCompanyAccounts({ ...input, filleted: true }), "bus:ReportIncludesDetailedProfitLossStatementTruefalse"),
+    ).toBe("false");
   });
 });

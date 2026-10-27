@@ -168,9 +168,9 @@ test("Click through: file a micro-entity's Company Tax Return from an iXBRL acco
     page,
     {
       ixbrlFile,
-      expectedStatus: "(FRS 102 2026 taxonomy) for the period 2025-01-01 to 2025-12-31.",
+      expectedStatus: "(FRS 102 2026 taxonomy) for the period 2025-04-01 to 2026-03-31.",
       utr: FIXTURE_UTR,
-      declarantName: "Maldwyn Beynon",
+      declarantName: "Antony Christopher Cartwright",
     },
     screenshotPath,
   );

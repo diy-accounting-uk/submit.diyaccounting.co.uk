@@ -186,8 +186,12 @@ Steps 1 to 6 are Claude Code's. Run every command from this repository's root.
    label and both years on every line, the statements under it, the approval line, numbered notes,
    and nothing else. Replace `pending` in that case's "Look" row in `findings.md` with `pass` or
    `fail` and one line of what you saw.
-6. Report the findings tables and the path of `walkthrough.md`. A walk-through for the operator
-   follows `walkthrough.md` step by step, one file at a time.
+6. Judge. Invoke `/companies-house-judge` on the folder. It moves our data into `source/` and the
+   example into `reference/`, reconciles our input against our output, writes `index.html`, judges
+   each case as the XML team would (`judge.json`) and boards a NEXT.md row per fix. A review is not
+   finished, and no email to the XML team cites it, until the judge has run.
+7. Report the judge's verdict per case and the path of `index.html`. A walk-through for the
+   operator opens `index.html` first, then `walkthrough.md` step by step.
 
 ## Criteria
 

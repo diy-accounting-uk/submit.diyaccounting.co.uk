@@ -39,7 +39,7 @@ const IX_NS = "http://www.xbrl.org/2013/inlineXBRL";
 // Text a header leaks when it is not hidden: taxonomy prefixes, URIs, ISO dates, unit names.
 // The same pattern as web/browser-tests/accountsDocumentRendering.browser.test.js.
 const HEADER_TEXT =
-  /xbrli|xbrldi|iso4217|xbrl\.org|companieshouse\.gov\.uk|\b(core|bus|direp|ct-comp):|https?:\/\/|\d{4}-\d{2}-\d{2}|\bpure\b|\bshares\b(?! of)/;
+  /xbrli|xbrldi|iso4217|xbrl\.org|companieshouse\.gov\.uk|\b(core|bus|direp|ct-comp):|https?:\/\/|\d{4}-\d{2}-\d{2}|\bpure\b|(?<!by )\bshares\b(?! of)/;
 
 // What each accounts type should declare. Sources are in the companies-house-review skill.
 const KINDS = {

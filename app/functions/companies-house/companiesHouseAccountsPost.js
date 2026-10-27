@@ -29,6 +29,7 @@ import {
   sharesIssuedFor,
 } from "../../services/microEntityAccountsIxbrl.js";
 import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
+import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateSmallCompany } from "../../services/smallCompanyAccountsRequest.js";
 import {
   buildAccountsSubmission,
@@ -84,6 +85,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   const {
     companyNumber,
     companyName,
+    registeredOffice,
     companyAuthCode,
     periodStart,
     periodEnd,
@@ -113,6 +115,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   if (!trimmedCompanyName) {
     errorMessages.push("Missing companyName");
   }
+  const trimmedRegisteredOffice = typeof registeredOffice === "string" ? registeredOffice.trim() : "";
 
   let trimmedCompanyAuthCode;
   if (requireCompanyAuthCode) {
@@ -169,6 +172,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
       regime: "small-company",
       companyNumber: normalisedCompanyNumber,
       companyName: trimmedCompanyName,
+      registeredOffice: trimmedRegisteredOffice,
       ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
       periodStart,
       periodEnd,
@@ -201,6 +205,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     regime: "micro-entity",
     companyNumber: normalisedCompanyNumber,
     companyName: trimmedCompanyName,
+    registeredOffice: trimmedRegisteredOffice,
     ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
     periodStart,
     periodEnd,
@@ -349,6 +354,10 @@ export async function ingestHandler(event) {
   // body: buildMicroEntityAccounts and buildAccountsSubmission below both read it off `accounts`.
   if (clientId) {
     accounts.companyNumber = client.identifiers?.companyNumber;
+  }
+  await fillRegisteredOffice(accounts, errorMessages);
+  if (errorMessages.length > 0) {
+    return buildValidationError(request, errorMessages, responseHeaders);
   }
 
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
