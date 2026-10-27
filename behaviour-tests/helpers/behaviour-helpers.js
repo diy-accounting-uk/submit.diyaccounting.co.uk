@@ -610,6 +610,10 @@ export function isOwnPage(url) {
 export async function findReaderViewDefects(page, options = {}) {
   const ignoreSelectors = options.ignoreSelectors || [];
   return page.evaluate((ignored) => {
+    // A redirect can land between the caller's URL check and this evaluation; the hosts are isOwnPage's.
+    const host = location.hostname;
+    if (!(host === "localhost" || host === "127.0.0.1" || host === "diyaccounting.co.uk" || host.endsWith(".diyaccounting.co.uk")))
+      return [];
     const defects = [];
     const describe = (el) => {
       const id = el.id ? `#${el.id}` : "";
