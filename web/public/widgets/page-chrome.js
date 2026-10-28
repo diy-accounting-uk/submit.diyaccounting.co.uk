@@ -34,6 +34,79 @@
   const HOME_ICON_PATH = "M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z";
   const INFO_ICON_PATH = "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z";
 
+  // The colour scheme choice: "device" (no attribute), "light" or "dark".
+  // A page that pins data-theme="light" in its markup keeps the pin and gets no switch.
+  const THEME_STORAGE_KEY = "colourScheme";
+  const THEME_MODES = ["device", "light", "dark"];
+  const THEME_ICON_PATHS = {
+    device: "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18V4c4.41 0 8 3.59 8 8s-3.59 8-8 8z",
+    light:
+      "M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2v-2H2v2zm18 0h2v-2h-2v2zM11 2v2h2V2h-2zm0 18v2h2v-2h-2zM5.99 4.58L4.58 5.99l1.41 1.41 1.41-1.41-1.41-1.41zm12.37 12.37l-1.41 1.41 1.41 1.41 1.41-1.41-1.41-1.41zm1.41-11.31l-1.41-1.41-1.41 1.41 1.41 1.41 1.41-1.41zM7.4 18.36l-1.41-1.41-1.41 1.41 1.41 1.41 1.41-1.41z",
+    dark: "M12 3a9 9 0 1 0 9 9c0-.46-.04-.92-.1-1.36a5.389 5.389 0 0 1-4.4 2.26 5.403 5.403 0 0 1-3.14-9.8c-.44-.06-.9-.1-1.36-.1z",
+  };
+  const THEME_LABELS = { device: "device setting", light: "light", dark: "dark" };
+
+  const themePinnedLight = document.documentElement.getAttribute("data-theme") === "light";
+
+  function readStoredTheme() {
+    try {
+      const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+      return THEME_MODES.indexOf(stored) === -1 ? "device" : stored;
+    } catch {
+      return "device";
+    }
+  }
+
+  function storeTheme(mode) {
+    try {
+      window.localStorage.setItem(THEME_STORAGE_KEY, mode);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function applyTheme(mode) {
+    if (mode === "device") document.documentElement.removeAttribute("data-theme");
+    else document.documentElement.setAttribute("data-theme", mode);
+  }
+
+  // Runs as the script loads, before the header is built, so a stored dark choice paints dark.
+  if (!themePinnedLight) applyTheme(readStoredTheme());
+
+  function themeButtonLabel(mode) {
+    const next = THEME_MODES[(THEME_MODES.indexOf(mode) + 1) % THEME_MODES.length];
+    return "Colour scheme: " + THEME_LABELS[mode] + ". Switch to " + THEME_LABELS[next] + ".";
+  }
+
+  function renderThemeButton(button, mode) {
+    button.setAttribute("aria-label", themeButtonLabel(mode));
+    button.setAttribute("title", themeButtonLabel(mode));
+    button.setAttribute("data-theme-mode", mode);
+    button.querySelector("path").setAttribute("d", THEME_ICON_PATHS[mode]);
+  }
+
+  function buildThemeButtonHtml() {
+    return (
+      '<button type="button" class="theme-toggle">' +
+      '<svg class="theme-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="" /></svg>' +
+      "</button>"
+    );
+  }
+
+  function wireThemeButton(header) {
+    const button = header.querySelector(".theme-toggle");
+    if (!button) return;
+    let mode = readStoredTheme();
+    renderThemeButton(button, mode);
+    button.addEventListener("click", function () {
+      mode = THEME_MODES[(THEME_MODES.indexOf(mode) + 1) % THEME_MODES.length];
+      applyTheme(mode);
+      storeTheme(mode);
+      renderThemeButton(button, mode);
+    });
+  }
+
   const NAV_LINKS = [
     { label: "Activities", target: "" },
     { label: "Receipts", target: "hmrc/receipt/receipts.html" },
@@ -88,6 +161,7 @@
       INFO_ICON_PATH +
       '" /></svg>' +
       "</a>" +
+      (themePinnedLight ? "" : buildThemeButtonHtml()) +
       "</div>" +
       '<div class="auth-section">' +
       '<span class="entitlement-status">Activity: unrestricted</span>' +
@@ -159,6 +233,7 @@
     if (fallback) fallback.remove();
 
     header.insertAdjacentHTML("afterbegin", headerNavHtml + navHtml);
+    wireThemeButton(header);
 
     // On a narrow screen the row scrolls sideways; bring the current page's link into view.
     const nav = header.querySelector(".main-nav");

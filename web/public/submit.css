@@ -79,7 +79,8 @@
   --focus-ring: 0 0 0 3px var(--c-focus), 0 0 0 5px var(--c-focus-ink);
 }
 
-/* A page that must keep the light scheme pins it with <html data-theme="light">. */
+/* A page that must keep the light scheme pins it with <html data-theme="light">.
+   The header switch sets data-theme to "light" or "dark"; with no attribute the device decides. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
@@ -106,6 +107,32 @@
     --c-scrim: rgb(0 0 0 / 0.72);
     --shadow-card: none;
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --c-canvas: #10161f;
+  --c-paper: #17202b;
+  --c-ink: #e6ebf2; /* 13.7:1 */
+  --c-ink-muted: #a9b4c4; /* 7.8:1 */
+  --c-rule: #6b778a; /* 3.6:1 */
+  --c-rule-subtle: #263241;
+  --c-brand: #8fb4ec; /* 7.8:1 */
+  --c-brand-strong: #b5cdf3;
+  --c-brand-tint: #1e2c40;
+  --c-on-brand: #10161f;
+  --c-visited: #c3a8ef;
+  --c-ok: #6fcf8f;
+  --c-ok-tint: #15291d;
+  --c-error: #ff8a7a;
+  --c-error-tint: #331a17;
+  --c-warn: #f2c14e;
+  --c-warn-tint: #2e2510;
+  --c-info: #8fb4ec;
+  --c-info-tint: #1e2c40;
+  --c-scrim: rgb(0 0 0 / 0.72);
+  --shadow-card: none;
 }
 
 @media (max-width: 600px) {
@@ -489,7 +516,8 @@ header:has(> .chrome-fallback) {
 }
 
 .home-link,
-.info-link {
+.info-link,
+.theme-toggle {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -512,21 +540,32 @@ header:has(> .chrome-fallback) {
 }
 
 .home-link:hover,
-.info-link:hover {
+.info-link:hover,
+.theme-toggle:hover {
   background-color: var(--c-brand-tint);
   color: var(--c-ink);
 }
 
 .home-link .home-icon,
-.info-link .info-icon {
+.info-link .info-icon,
+.theme-toggle .theme-icon {
   width: 24px;
   height: 24px;
   fill: currentColor;
   flex-shrink: 0;
 }
 
-.info-link .info-icon {
+.info-link .info-icon,
+.theme-toggle .theme-icon {
   fill: var(--c-brand);
+}
+
+.theme-toggle {
+  appearance: none;
+  background: none;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
 }
 
 .brand-name {
