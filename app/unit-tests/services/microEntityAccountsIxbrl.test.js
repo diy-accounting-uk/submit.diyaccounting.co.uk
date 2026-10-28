@@ -457,13 +457,13 @@ describe("services/microEntityAccountsIxbrl", () => {
         /name="core:NumberSharesIssuedFullyPaid"[^>]*contextRef="e\d{4}-share-class"[^>]*unitRef="shares"[^>]*>200</,
       );
       expect(dormantXhtml).toMatch(
-        /name="core:NominalValueAllottedShareCapital"[^>]*contextRef="y\d{4}-share-class"[^>]*unitRef="GBP"[^>]*>0.5</,
+        /name="core:NominalValueAllottedShareCapital"[^>]*contextRef="y\d{4}-share-class"[^>]*unitRef="GBP"[^>]*>0.50</,
       );
       expect(dimensionNames(dormantXhtml)).toContainEqual({
         dimension: "bus:EntityShareClassesDimension",
         member: "bus:OrdinaryShareClass1",
       });
-      expect(dormantXhtml).toMatch(/>200<\/ix:nonFraction> ordinary shares of £<ix:nonFraction[^>]*>0.5<\/ix:nonFraction> each/);
+      expect(dormantXhtml).toMatch(/>200<\/ix:nonFraction> ordinary shares of £<ix:nonFraction[^>]*>0.50<\/ix:nonFraction> each/);
     });
 
     test("the share note uses the singular for one share", () => {

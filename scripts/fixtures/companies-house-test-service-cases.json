@@ -300,7 +300,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": true,
-      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025)."
+      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 500 ordinary shares of £0.20 each (share capital £100) follow the register entry. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025)."
     }
   },
   {
@@ -455,7 +455,7 @@
       "dividendPolicy": "Dividends are recognised as a liability in the period in which they are declared.",
       "shareCapital": {
         "shareClass": "ordinaryShares",
-        "nominalValue": 1
+        "nominalValue": 0.2
       },
       "controllingParty": {
         "ultimate": false
@@ -464,7 +464,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025). The prior-year profit and loss is the filed 2025 one, with its 22 of other income shown as interest receivable because the builder has no other operating income line."
+      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 500 ordinary shares of £0.20 each (share capital £100) follow the register entry. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025). The prior-year profit and loss is the filed 2025 one, with its 22 of other income shown as interest receivable because the builder has no other operating income line."
     }
   },
   {
@@ -564,7 +564,7 @@
       "dividendPolicy": "Dividends are recognised as a liability in the period in which they are declared.",
       "shareCapital": {
         "shareClass": "ordinaryShares",
-        "nominalValue": 1
+        "nominalValue": 0.2
       },
       "controllingParty": {
         "ultimate": false
@@ -573,7 +573,7 @@
     "expectedOutcome": {
       "status": "POLL_TIMEOUT",
       "pinned": false,
-      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 100 ordinary shares of £1 follow the company book and the class and nominal value are to be confirmed against the register of members. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025). The prior-year profit and loss is the filed 2025 one, with its 22 of other income shown as interest receivable because the builder has no other operating income line."
+      "note": "Not yet filed with this data. The authentication code is a placeholder, never the real code. Company facts from the Companies House register entry for 06846849, read 2026-10-26; the 500 ordinary shares of £0.20 each (share capital £100) follow the register entry. Prior year equals the filed 2025 accounts; current year figures are synthetic, with the reserve moving from 34 by the year's profit of 4,698 and no 2026 dividend assumed (the 2025 profit of 4,195 against a reserve of 34 implies dividends in 2025). The prior-year profit and loss is the filed 2025 one, with its 22 of other income shown as interest receivable because the builder has no other operating income line."
     }
   }
 ]
