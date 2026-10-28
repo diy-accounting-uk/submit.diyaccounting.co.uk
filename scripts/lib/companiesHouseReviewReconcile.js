@@ -27,9 +27,26 @@ const BALANCE_SHEET = {
   taxationSocialSecurity: ["TaxationSocialSecurityPayable", "-within-one-year"],
   accruals: ["AccruedLiabilities", "-accruals"],
   bankLoansAfterOneYear: ["BankBorrowingsOverdrafts", "-after-one-year"],
+  calledUpShareCapitalNotPaid: ["CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset", ""],
+  prepaymentsAccruedIncome: ["PrepaymentsAccruedIncomeNotExpressedWithinCurrentAssetSubtotal", ""],
+  provisionsForLiabilities: ["ProvisionsForLiabilitiesBalanceSheetSubtotal", ""],
+  accrualsDeferredIncome: ["AccruedLiabilitiesNotExpressedWithinCreditorsSubtotal", ""],
 };
+const NOT_PAID = BALANCE_SHEET.calledUpShareCapitalNotPaid[0];
+const PREPAYMENTS = BALANCE_SHEET.prepaymentsAccruedIncome[0];
+const PROVISIONS = BALANCE_SHEET.provisionsForLiabilities[0];
+const ACCRUALS_DEFERRED = BALANCE_SHEET.accrualsDeferredIncome[0];
 // Lines checked only when the input carries a figure for them.
-const OPTIONAL_BALANCE_SHEET_LINES = new Set(["bankLoansOverdrafts", "taxationSocialSecurity", "accruals", "bankLoansAfterOneYear"]);
+const OPTIONAL_BALANCE_SHEET_LINES = new Set([
+  "bankLoansOverdrafts",
+  "taxationSocialSecurity",
+  "accruals",
+  "bankLoansAfterOneYear",
+  "calledUpShareCapitalNotPaid",
+  "prepaymentsAccruedIncome",
+  "provisionsForLiabilities",
+  "accrualsDeferredIncome",
+]);
 // Policy input field -> concept, all on the current period context.
 const POLICIES = {
   goingConcernStatement: "DescriptionGoing-concernStatus",
@@ -245,21 +262,24 @@ export function reconcile(input, ours) {
     const within = valueOf("Creditors", `e${y}-within-one-year`) || 0;
     add(
       `Net current assets ${y}`,
-      "current assets − creditors within one year",
+      "current assets + prepayments and accrued income − creditors within one year",
       valueOf("NetCurrentAssetsLiabilities", `e${y}`),
-      (currentAssets || 0) - within,
+      (currentAssets || 0) + (valueOf(PREPAYMENTS, `e${y}`) || 0) - within,
     );
     add(
       `Total assets less current liabilities ${y}`,
-      "fixed assets + net current assets",
+      "called up share capital not paid + fixed assets + net current assets",
       valueOf("TotalAssetsLessCurrentLiabilities", `e${y}`),
-      sum(valueOf("FixedAssets", `e${y}`), valueOf("NetCurrentAssetsLiabilities", `e${y}`)),
+      sum(valueOf(NOT_PAID, `e${y}`), valueOf("FixedAssets", `e${y}`), valueOf("NetCurrentAssetsLiabilities", `e${y}`)),
     );
     add(
       `Net assets ${y}`,
-      "total assets less current liabilities − creditors after one year",
+      "total assets less current liabilities − creditors after one year − provisions − accruals and deferred income",
       valueOf("NetAssetsLiabilities", `e${y}`),
-      (valueOf("TotalAssetsLessCurrentLiabilities", `e${y}`) || 0) - (valueOf("Creditors", `e${y}-after-one-year`) || 0),
+      (valueOf("TotalAssetsLessCurrentLiabilities", `e${y}`) || 0) -
+        (valueOf("Creditors", `e${y}-after-one-year`) || 0) -
+        (valueOf(PROVISIONS, `e${y}`) || 0) -
+        (valueOf(ACCRUALS_DEFERRED, `e${y}`) || 0),
     );
     add(
       `Capital and reserves ${y}`,

@@ -163,6 +163,11 @@ export const CONCEPTS = {
   currentIncomeTaxPolicy: { prefix: "core", name: "CurrentIncomeTaxPolicy" },
   dividendPolicy: { prefix: "core", name: "DividendPolicy" },
   accruedLiabilities: { prefix: "core", name: "AccruedLiabilities" },
+  calledUpShareCapitalNotPaid: { prefix: "core", name: "CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset" },
+  prepaymentsAccruedIncome: { prefix: "core", name: "PrepaymentsAccruedIncomeNotExpressedWithinCurrentAssetSubtotal" },
+  accrualsDeferredIncome: { prefix: "core", name: "AccruedLiabilitiesNotExpressedWithinCreditorsSubtotal" },
+  provisionsForLiabilities: { prefix: "core", name: "ProvisionsForLiabilitiesBalanceSheetSubtotal" },
+  companyHasActedAsAnAgent: { prefix: "direp", name: "CompanyHasActedAsAnAgentDuringPeriodTruefalse" },
   currentTaxForPeriod: { prefix: "core", name: "CurrentTaxForPeriod" },
   bankBorrowingsOverdrafts: { prefix: "core", name: "BankBorrowingsOverdrafts" },
   taxationSocialSecurityPayable: { prefix: "core", name: "TaxationSocialSecurityPayable" },
@@ -779,9 +784,13 @@ export function balanceSheetFacts({
   figures,
   withAccrualsContext = false,
 }) {
-  const netCurrentAssets = figures.currentAssets - figures.creditorsWithinOneYear;
-  const totalAssetsLessCurrentLiabilities = figures.fixedAssets + netCurrentAssets;
-  const netAssets = totalAssetsLessCurrentLiabilities - figures.creditorsAfterOneYear;
+  const netCurrentAssets = figures.currentAssets + (figures.prepaymentsAccruedIncome ?? 0) - figures.creditorsWithinOneYear;
+  const totalAssetsLessCurrentLiabilities = (figures.calledUpShareCapitalNotPaid ?? 0) + figures.fixedAssets + netCurrentAssets;
+  const netAssets =
+    totalAssetsLessCurrentLiabilities -
+    figures.creditorsAfterOneYear -
+    (figures.provisionsForLiabilities ?? 0) -
+    (figures.accrualsDeferredIncome ?? 0);
 
   if (Math.round(netAssets) !== Math.round(figures.capitalAndReserves)) {
     throw new Error(
@@ -839,8 +848,23 @@ export function balanceSheetFacts({
       figures.profitAndLossAccount,
     ),
     capitalAndReserves: fact("equity", contextRef, figures.capitalAndReserves),
+    ...Object.fromEntries(
+      OPTIONAL_BALANCE_SHEET_HEADINGS.filter(({ key }) => figures[key] !== undefined).map(({ key }) => [
+        key,
+        fact(key, contextRef, figures[key]),
+      ]),
+    ),
   };
 }
+
+// Statutory headings of the micro-entity format 1 balance sheet that a year shows only when it
+// carries the figure; each is one undimensioned fact and enters the balance sheet totals.
+export const OPTIONAL_BALANCE_SHEET_HEADINGS = [
+  { key: "calledUpShareCapitalNotPaid", label: "Called up share capital not paid" },
+  { key: "prepaymentsAccruedIncome", label: "Prepayments and accrued income" },
+  { key: "provisionsForLiabilities", label: "Provisions for liabilities" },
+  { key: "accrualsDeferredIncome", label: "Accruals and deferred income" },
+];
 
 /**
  * The balance sheet rows in the Companies Act format 1 order, one figure column per year. The
@@ -857,13 +881,21 @@ export function balanceSheetFacts({
 export function balanceSheetRows({ years, currentAssetLines, creditorLines, creditorAfterOneYearLines, notes = {} }) {
   const cells = (line, options) => years.map((year) => recordFigure(year[line].xml, year[line].value, options));
   const values = (line) => years.map((year) => year[line].value);
-  const rows = [{ label: "Fixed assets", note: notes.fixedAssets, cells: cells("fixedAssets") }];
+  const optionalRow = (key) => {
+    if (!years[0][key]) return [];
+    return [{ label: OPTIONAL_BALANCE_SHEET_HEADINGS.find((heading) => heading.key === key).label, cells: cells(key) }];
+  };
+  const rows = [
+    ...optionalRow("calledUpShareCapitalNotPaid"),
+    { label: "Fixed assets", note: notes.fixedAssets, cells: cells("fixedAssets") },
+  ];
   if (currentAssetLines) {
     rows.push({ label: "Current assets", style: "heading" }, ...currentAssetLines.map((line) => ({ ...line, indent: true })));
     rows.push({ label: "", style: "subtotal", cells: cells("currentAssets") });
   } else {
     rows.push({ label: "Current assets", cells: cells("currentAssets") });
   }
+  rows.push(...optionalRow("prepaymentsAccruedIncome"));
   if (creditorLines) {
     rows.push(
       { label: "Creditors: amounts falling due within one year", style: "heading" },
@@ -890,6 +922,8 @@ export function balanceSheetRows({ years, currentAssetLines, creditorLines, cred
     });
   }
   rows.push(
+    ...optionalRow("provisionsForLiabilities"),
+    ...optionalRow("accrualsDeferredIncome"),
     { label: netLabel("Net assets", values("netAssets")), style: "total", cells: cells("netAssets") },
     { label: "Capital and reserves", style: "heading" },
     { label: "Called up share capital", note: notes.calledUpShareCapital, indent: true, cells: cells("calledUpShareCapital") },

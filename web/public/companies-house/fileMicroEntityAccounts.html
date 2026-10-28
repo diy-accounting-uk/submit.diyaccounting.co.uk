@@ -133,6 +133,41 @@
               </thead>
               <tbody>
                 <tr>
+                  <th scope="row">Called up share capital not paid (optional)</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentCalledUpShareCapitalNotPaid" class="visually-hidden"
+                      >Called up share capital not paid, this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCalledUpShareCapitalNotPaid"
+                        name="currentCalledUpShareCapitalNotPaid"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorCalledUpShareCapitalNotPaid" class="visually-hidden"
+                      >Called up share capital not paid, last year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorCalledUpShareCapitalNotPaid"
+                        name="priorCalledUpShareCapitalNotPaid"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
                   <th scope="row">Fixed assets</th>
                   <td class="ledger__figure" data-column="This year">
                     <label for="currentFixedAssets" class="visually-hidden">Fixed assets, this year</label>
@@ -198,6 +233,37 @@
                         inputmode="decimal"
                         data-money="whole-pounds"
                         data-required-message="Enter current assets for last year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Prepayments and accrued income (optional)</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentPrepaymentsAccruedIncome" class="visually-hidden">Prepayments and accrued income, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentPrepaymentsAccruedIncome"
+                        name="currentPrepaymentsAccruedIncome"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorPrepaymentsAccruedIncome" class="visually-hidden">Prepayments and accrued income, last year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorPrepaymentsAccruedIncome"
+                        name="priorPrepaymentsAccruedIncome"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
                       />
                     </div>
                   </td>
@@ -278,6 +344,68 @@
                         inputmode="decimal"
                         data-money="whole-pounds"
                         data-required-message="Enter creditors: amounts falling due after more than one year for last year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Provisions for liabilities (optional)</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentProvisionsForLiabilities" class="visually-hidden">Provisions for liabilities, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentProvisionsForLiabilities"
+                        name="currentProvisionsForLiabilities"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorProvisionsForLiabilities" class="visually-hidden">Provisions for liabilities, last year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorProvisionsForLiabilities"
+                        name="priorProvisionsForLiabilities"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Accruals and deferred income (optional)</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentAccrualsDeferredIncome" class="visually-hidden">Accruals and deferred income, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentAccrualsDeferredIncome"
+                        name="currentAccrualsDeferredIncome"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorAccrualsDeferredIncome" class="visually-hidden">Accruals and deferred income, last year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorAccrualsDeferredIncome"
+                        name="priorAccrualsDeferredIncome"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
                       />
                     </div>
                   </td>

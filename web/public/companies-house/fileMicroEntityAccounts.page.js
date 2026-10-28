@@ -15,6 +15,14 @@ const BALANCE_SHEET_FIELDS = [
   "capitalAndReserves",
 ];
 
+// Statutory headings left blank unless the company has the figure.
+const OPTIONAL_BALANCE_SHEET_FIELDS = [
+  "calledUpShareCapitalNotPaid",
+  "prepaymentsAccruedIncome",
+  "provisionsForLiabilities",
+  "accrualsDeferredIncome",
+];
+
 let company = null;
 
 function views() {
@@ -39,13 +47,23 @@ function readYear(prefix) {
     const inputId = prefix + field.charAt(0).toUpperCase() + field.slice(1);
     year[field] = window.parseMoneyInput(document.getElementById(inputId).value, { wholePounds: true }) ?? 0;
   });
+  OPTIONAL_BALANCE_SHEET_FIELDS.forEach((field) => {
+    const inputId = prefix + field.charAt(0).toUpperCase() + field.slice(1);
+    const value = window.parseMoneyInput(document.getElementById(inputId).value, { wholePounds: true });
+    if (value !== null && value !== undefined) year[field] = value;
+  });
   return year;
 }
 
 function netAssetsOf(year) {
-  const netCurrentAssets = year.currentAssets - year.creditorsWithinOneYear;
-  const totalAssetsLessCurrentLiabilities = year.fixedAssets + netCurrentAssets;
-  return totalAssetsLessCurrentLiabilities - year.creditorsAfterOneYear;
+  const netCurrentAssets = year.currentAssets + (year.prepaymentsAccruedIncome ?? 0) - year.creditorsWithinOneYear;
+  const totalAssetsLessCurrentLiabilities = (year.calledUpShareCapitalNotPaid ?? 0) + year.fixedAssets + netCurrentAssets;
+  return (
+    totalAssetsLessCurrentLiabilities -
+    year.creditorsAfterOneYear -
+    (year.provisionsForLiabilities ?? 0) -
+    (year.accrualsDeferredIncome ?? 0)
+  );
 }
 
 function renderYearTotals(current, prior) {
