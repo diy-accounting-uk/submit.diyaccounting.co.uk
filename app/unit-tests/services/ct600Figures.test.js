@@ -77,11 +77,12 @@ describe("deriveCt600FromFigures worked from the precision-code-ltd book", () =>
     expect(boxes).toMatchObject({
       4: 0,
       145: 341283,
-      155: 123480,
-      165: 123480,
+      155: 123897,
+      165: 123897,
       170: 340,
-      235: 123820,
-      300: 123820,
+      235: 124237,
+      300: 124237,
+      305: 417,
       315: 123820,
       326: 0,
       329: "yes",
@@ -107,9 +108,10 @@ describe("deriveCt600FromFigures worked from the precision-code-ltd book", () =>
       depreciation: 13740,
       amortisation: 2500,
       entertaining: 292,
-      adjustedProfitBeforeCapitalAllowances: 187480,
+      donations: 417,
+      adjustedProfitBeforeCapitalAllowances: 187897,
       totalCapitalAllowances: 64000,
-      adjustedProfit: 123480,
+      adjustedProfit: 123897,
     });
   });
 
@@ -263,20 +265,6 @@ describe("the figures refusals", () => {
     ["a company type other than 0", { companyType: 6 }, /Company type 6/, "companyType"],
     ["a period over 12 months", { periodEnd: "2026-04-30" }, /longer than 12 months/, "period"],
     ["a period starting before 1 April 2015", { periodStart: "2015-01-01", periodEnd: "2015-12-31" }, /on or after 2015-04-01/, "period"],
-    [
-      "a trading loss",
-      {
-        profitAndLoss: { current: { ...PROFIT_AND_LOSS, profitBeforeTax: -100 } },
-        depreciation: 0,
-        amortisation: 0,
-        entertaining: 0,
-        nonTradingLoanRelationshipCredits: 0,
-        annualInvestmentAllowance: 0,
-        mainPoolAllowances: 0,
-      },
-      /trading loss/,
-      "profitAndLoss",
-    ],
     ["a negative turnover", { profitAndLoss: { current: { ...PROFIT_AND_LOSS, turnover: -1 } } }, /turnover is negative/, "profitAndLoss"],
     [
       "Income Tax deducted beyond the Corporation Tax charged (box 515 over 440)",
@@ -285,12 +273,6 @@ describe("the figures refusals", () => {
       "incomeTaxDeducted",
     ],
     ["tax paid beyond the amount payable (box 595 over 525)", { taxAlreadyPaid: 50000 }, /repayment boxes/, "taxAlreadyPaid"],
-    [
-      "losses brought forward beyond the trading profit",
-      { lossesBroughtForward: 200000 },
-      /losses brought forward/,
-      "lossesBroughtForward",
-    ],
   ])("%s", (_label, changes, message, field) => {
     expect(() => derive({ ...TYPED, ...changes })).toThrow(message);
     const refusal = validateCt600Figures({ ...TYPED, ...changes }, { taxDataByYear: ltdTaxDataForPeriodEnd(TYPED.periodEnd) }).find(
@@ -393,5 +375,193 @@ describe("computationLinesFromFigures", () => {
     const lines = computationLinesFromFigures(TYPED);
     expect(lines.adjustedProfitBeforeCapitalAllowances).toBe(171288 - 340 + 13740 + 2500 + 292);
     expect(lines.adjustedProfit).toBe(lines.adjustedProfitBeforeCapitalAllowances - lines.totalCapitalAllowances);
+  });
+});
+
+// A period that makes a trading loss of 50,000 and nothing else.
+const LOSS = {
+  ...COMPANY,
+  periodStart: "2025-04-01",
+  periodEnd: "2026-03-31",
+  associatedCompanies: 0,
+  profitAndLoss: { current: { ...PROFIT_AND_LOSS, profitBeforeTax: -50000 } },
+  nonTradingLoanRelationshipCredits: 0,
+  depreciation: 0,
+  amortisation: 0,
+  entertaining: 0,
+  annualInvestmentAllowance: 0,
+  mainPoolAllowances: 0,
+};
+
+describe("a trading loss from the computation", () => {
+  test("is the loss arising in box 780 and is carried forward when no claim uses it", () => {
+    const { boxes, computationLines, losses, carryBack } = derive(LOSS);
+    expect(computationLines.adjustedProfit).toBe(-50000);
+    expect(boxes[780]).toBe(50000);
+    expect(boxes[790]).toBeUndefined();
+    expect([155, 160, 165, 235, 275, 285, 295, 300, 305, 330].map((box) => boxes[box])).toEqual(Array(10).fill(undefined));
+    expect(boxes[315]).toBe(0);
+    expect(boxes[440]).toBe(0);
+    expect(losses).toMatchObject({ arising: 50000, carriedForwardFromPeriod: 50000, totalCarriedForward: 50000 });
+    expect(carryBack).toBeUndefined();
+  });
+
+  test("goes in box 790 when the trade is wholly outside the UK", () => {
+    const { boxes } = derive({ ...LOSS, lossOutsideUk: true });
+    expect(boxes[790]).toBe(50000);
+    expect(boxes[780]).toBeUndefined();
+  });
+
+  test("is set against the same period's other profits in box 275, with the totals in 295 and 315", () => {
+    const figures = {
+      ...LOSS,
+      profitAndLoss: { current: { ...PROFIT_AND_LOSS, profitBeforeTax: -50000 } },
+      nonTradingLoanRelationshipCredits: 2000,
+    };
+    const { boxes, losses } = derive({ ...figures, lossAgainstTotalProfits: 1500 });
+    expect(boxes[780]).toBe(52000);
+    expect(boxes[170]).toBe(2000);
+    expect(boxes[235]).toBe(2000);
+    expect(boxes[275]).toBe(1500);
+    expect(boxes[295]).toBe(1500);
+    expect(boxes[300]).toBe(500);
+    expect(boxes[315]).toBe(500);
+    expect(losses).toMatchObject({ usedAgainstTotalProfits: 1500, carriedForwardFromPeriod: 50500 });
+  });
+
+  test.each([
+    [
+      "a claim above the loss",
+      { lossAgainstTotalProfits: 60000 },
+      /more than the trading loss of the period 50000/,
+      "lossAgainstTotalProfits",
+    ],
+    [
+      "a claim above the period's profits",
+      { lossAgainstTotalProfits: 100 },
+      /more than the profits of the period 0/,
+      "lossAgainstTotalProfits",
+    ],
+    ["a claim where the period made a profit", {}, /more than the trading loss of the period 0/, "lossAgainstTotalProfits"],
+  ])("refuses %s", (label, changes, message, field) => {
+    const figures =
+      label === "a claim where the period made a profit" ? { ...TYPED, lossAgainstTotalProfits: 10 } : { ...LOSS, ...changes };
+    expect(() => derive(figures)).toThrow(message);
+    expect(() => derive(figures)).toThrow(Ct600RefusedError);
+    const refusal = validateCt600Figures(figures, { taxDataByYear: ltdTaxDataForPeriodEnd(figures.periodEnd) }).find(
+      (entry) => entry.refusal,
+    );
+    expect(refusal?.field).toBe(field);
+  });
+
+  test("carried back is a claim against the previous period's profits with the repayment it gives", () => {
+    const { boxes, losses, carryBack } = derive({ ...LOSS, lossCarriedBack: 30000, priorPeriodChargeableProfits: 80000 });
+    expect(losses).toMatchObject({ carriedBack: 30000, carriedForwardFromPeriod: 20000 });
+    expect(carryBack).toEqual({
+      amount: 30000,
+      priorPeriodStart: "2024-04-01",
+      priorPeriodEnd: "2025-03-31",
+      boxes: { 275: 30000, 280: "yes" },
+      taxRepayable: 7950,
+    });
+    expect(boxes[275]).toBeUndefined();
+    expect(boxes[780]).toBe(50000);
+  });
+
+  test.each([
+    [
+      "more than the previous period's profits",
+      { lossCarriedBack: 30000, priorPeriodChargeableProfits: 20000 },
+      /more than the previous period's chargeable profits 20000/,
+    ],
+    ["without the previous period's profits", { lossCarriedBack: 1000 }, /previous period's chargeable profits 0/],
+    ["more than the loss left", { lossCarriedBack: 60000, priorPeriodChargeableProfits: 90000 }, /more than the trading loss left/],
+  ])("refuses a carry-back %s", (_label, changes, message) => {
+    expect(() => derive({ ...LOSS, ...changes })).toThrow(message);
+  });
+
+  test("makes no carry-back repayment when no claim is made", () => {
+    expect(derive({ ...LOSS, priorPeriodChargeableProfits: 80000 }).carryBack).toBeUndefined();
+  });
+});
+
+describe("losses brought forward", () => {
+  test("the trading profit takes what it can in box 160 and the rest is carried forward", () => {
+    const { boxes, losses } = derive({ ...TYPED, lossesBroughtForward: 200000 });
+    expect(boxes[160]).toBe(123480);
+    expect(boxes[165]).toBe(0);
+    expect(boxes[235]).toBe(340);
+    expect(boxes[285]).toBeUndefined();
+    expect(losses).toMatchObject({ broughtForward: 200000, broughtForwardUsedAgainstTrading: 123480, broughtForwardCarriedForward: 76520 });
+  });
+
+  test("a claim against total profits uses the rest in box 285", () => {
+    const { boxes, losses } = derive({ ...TYPED, lossesBroughtForward: 200000, lossesBroughtForwardAgainstTotalProfits: 340 });
+    expect(boxes[285]).toBe(340);
+    expect(boxes[295]).toBe(340);
+    expect(boxes[300]).toBe(0);
+    expect(boxes[315]).toBe(0);
+    expect(losses).toMatchObject({ broughtForwardAgainstTotalProfits: 340, broughtForwardCarriedForward: 76180 });
+  });
+
+  test("a loss period carries the whole pool forward, with the period's loss", () => {
+    const { boxes, losses } = derive({ ...LOSS, lossesBroughtForward: 1000 });
+    expect(boxes[160]).toBeUndefined();
+    expect(losses).toMatchObject({ broughtForwardCarriedForward: 1000, carriedForwardFromPeriod: 50000, totalCarriedForward: 51000 });
+  });
+
+  test.each([
+    [
+      "a claim above what the trading profit leaves",
+      { lossesBroughtForward: 123500, lossesBroughtForwardAgainstTotalProfits: 100 },
+      /more than the 20 the trading profit leaves/,
+    ],
+    [
+      "a claim above the period's profits",
+      { lossesBroughtForward: 200000, lossesBroughtForwardAgainstTotalProfits: 341 },
+      /more than the profits of the period 340/,
+    ],
+  ])("refuses %s", (_label, changes, message) => {
+    expect(() => derive({ ...TYPED, ...changes })).toThrow(message);
+  });
+});
+
+describe("donations", () => {
+  test("are added back to the trading profit and claimed in box 305, so the chargeable profits stay", () => {
+    const { boxes, computationLines, worked } = derive({ ...TYPED, donations: 1000 });
+    expect(computationLines.donations).toBe(1000);
+    expect(computationLines.adjustedProfit).toBe(124480);
+    expect(boxes[155]).toBe(124480);
+    expect(boxes[235]).toBe(124820);
+    expect(boxes[300]).toBe(124820);
+    expect(boxes[305]).toBe(1000);
+    expect(boxes[315]).toBe(123820);
+    expect(worked[305].sources).toEqual(["donations", "300"]);
+  });
+
+  test("in a period that still makes a loss are added back and not claimed", () => {
+    const { boxes, computationLines } = derive({ ...LOSS, donations: 500 });
+    expect(computationLines.adjustedProfit).toBe(-49500);
+    expect(boxes[780]).toBe(49500);
+    expect(boxes[305]).toBeUndefined();
+    expect(boxes[315]).toBe(0);
+  });
+
+  test("are claimed only as far as the profits in box 300 allow", () => {
+    const { boxes } = derive({ ...LOSS, profitAndLoss: { current: { ...PROFIT_AND_LOSS, profitBeforeTax: -300 } }, donations: 500 });
+    expect(boxes[155]).toBe(200);
+    expect(boxes[300]).toBe(200);
+    expect(boxes[305]).toBe(200);
+    expect(boxes[315]).toBe(0);
+  });
+
+  test("more than the costs of the period are a problem on the field", () => {
+    const problems = validateCt600Figures({ ...TYPED, donations: 999999 });
+    expect(problems.find((entry) => entry.field === "donations")?.message).toMatch(/more than the cost of sales/);
+  });
+
+  test("the book's donations cell is added back and agrees with the working sheet", () => {
+    expect(figuresFromBook.donations).toBe(417);
+    expect(figuresFromBook.workingSheet.tradingProfit).toBeCloseTo(123897.39, 1);
   });
 });

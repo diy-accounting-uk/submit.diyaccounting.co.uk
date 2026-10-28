@@ -39,7 +39,11 @@ export const CT600_BOX_PATHS = {
   165: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/Income/Trading/NetProfits",
   170: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/Income/NonTradingLoanProfitsAndGains",
   235: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/ProfitsBeforeOtherDeductions",
+  275: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/DeductionsAndReliefs/TradingLosses",
+  285: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/DeductionsAndReliefs/TradingLossesCarriedForward",
+  295: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/DeductionsAndReliefs/Total",
   300: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/ChargesAndReliefs/ProfitsBeforeDonationsAndGroupRelief",
+  305: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/ChargesAndReliefs/QualifyingDonations",
   315: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/ChargeableProfits",
   326: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/CorporationTaxChargeable/AssociatedCompanies/ThisPeriod",
   327: "/IRenvelope/CompanyTaxReturn/CompanyTaxCalculation/CorporationTaxChargeable/AssociatedCompanies/AssociatedCompaniesFinancialYears/FirstYear",
@@ -67,6 +71,8 @@ export const CT600_BOX_PATHS = {
   690: "/IRenvelope/CompanyTaxReturn/AllowancesAndCharges/AIACapitalAllowancesInc",
   705: "/IRenvelope/CompanyTaxReturn/AllowancesAndCharges/MachineryAndPlantMainPool/CapitalAllowances",
   710: "/IRenvelope/CompanyTaxReturn/AllowancesAndCharges/MachineryAndPlantMainPool/BalancingCharges",
+  780: "/IRenvelope/CompanyTaxReturn/LossesDeficitsAndExcess/AmountArising/LossesOfTradesUK/Arising",
+  790: "/IRenvelope/CompanyTaxReturn/LossesDeficitsAndExcess/AmountArising/LossesOfTradesOutsideUK",
   975: "/IRenvelope/CompanyTaxReturn/Declaration/Name",
   985: "/IRenvelope/CompanyTaxReturn/Declaration/Status",
 };
@@ -138,7 +144,15 @@ export function buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl }
     b[330] === undefined
       ? ""
       : `<CorporationTaxChargeable>${associatedCompanies}${financialYearXml("FinancialYearOne", b[330], b[335], b[340], b[345])}${financialYearXml("FinancialYearTwo", b[380], b[385], b[390], b[395])}</CorporationTaxChargeable>`;
-  const companyTaxCalculation = `<CompanyTaxCalculation>${income}${moneyElement("ProfitsBeforeOtherDeductions", b[235])}${wrap("ChargesAndReliefs", moneyElement("ProfitsBeforeDonationsAndGroupRelief", b[300]))}${moneyElement("ChargeableProfits", b[315])}${chargeable}${moneyElement("CorporationTax", b[430])}${moneyElement("MarginalReliefForRingFenceTrades", b[435])}${moneyElement("NetCorporationTaxChargeable", b[440])}</CompanyTaxCalculation>`;
+  const deductionsAndReliefs = wrap(
+    "DeductionsAndReliefs",
+    moneyElement("TradingLosses", b[275]) + moneyElement("TradingLossesCarriedForward", b[285]) + moneyElement("Total", b[295]),
+  );
+  const chargesAndReliefs = wrap(
+    "ChargesAndReliefs",
+    moneyElement("ProfitsBeforeDonationsAndGroupRelief", b[300]) + moneyElement("QualifyingDonations", b[305]),
+  );
+  const companyTaxCalculation = `<CompanyTaxCalculation>${income}${moneyElement("ProfitsBeforeOtherDeductions", b[235])}${deductionsAndReliefs}${chargesAndReliefs}${moneyElement("ChargeableProfits", b[315])}${chargeable}${moneyElement("CorporationTax", b[430])}${moneyElement("MarginalReliefForRingFenceTrades", b[435])}${moneyElement("NetCorporationTaxChargeable", b[440])}</CompanyTaxCalculation>`;
   const calculationOfTax = `<CalculationOfTaxOutstandingOrOverpaid>${moneyElement("NetCorporationTaxLiability", b[475])}${moneyElement("TaxChargeable", b[510])}${wrap("IncomeTax", moneyElement("DeductedIncomeTax", b[515]))}${moneyElement("TaxPayable", b[525])}${moneyElement("TaxPayableIncludingRestitutionTax", b[528])}</CalculationOfTaxOutstandingOrOverpaid>`;
   const reconciliation = wrap(
     "TaxReconciliation",
@@ -151,7 +165,12 @@ export function buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl }
       wrap("MachineryAndPlantMainPool", moneyElement("BalancingCharges", b[710]) + moneyElement("CapitalAllowances", b[705])),
   );
 
-  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd><DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>Company</Sender></IRheader><CompanyTaxReturn ReturnType="new"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary><Accounts><ThisPeriodAccounts>yes</ThisPeriodAccounts></Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations></ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration><AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
+  const losses = wrap(
+    "LossesDeficitsAndExcess",
+    wrap("AmountArising", wrap("LossesOfTradesUK", moneyElement("Arising", b[780])) + moneyElement("LossesOfTradesOutsideUK", b[790])),
+  );
+
+  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd><DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>Company</Sender></IRheader><CompanyTaxReturn ReturnType="new"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary><Accounts><ThisPeriodAccounts>yes</ThisPeriodAccounts></Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations></ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}${losses}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration><AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
 }
 
 /**

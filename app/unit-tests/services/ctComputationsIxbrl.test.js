@@ -27,9 +27,10 @@ const LINES = {
   depreciation: 13740,
   amortisation: 2500,
   entertaining: 292,
+  donations: 417,
   totalCapitalAllowances: 64000,
-  adjustedProfitBeforeCapitalAllowances: 187480,
-  adjustedProfit: 123480,
+  adjustedProfitBeforeCapitalAllowances: 187897,
+  adjustedProfit: 123897,
 };
 
 const INPUT = {
@@ -113,7 +114,7 @@ describe("buildCtComputations", () => {
     });
     expect(byName["ct-comp:AdjustmentsNon-tradingLoanRelationshipCreditsPerAccounts"].value).toBe("340");
     expect(byName["ct-comp:TotalCapitalAllowances"].value).toBe("64,000");
-    expect(byName["ct-comp:AdjustedProfitForThePeriod"]).toMatchObject({ value: "123,480", contextRef: "tradePeriod" });
+    expect(byName["ct-comp:AdjustedProfitForThePeriod"]).toMatchObject({ value: "123,897", contextRef: "tradePeriod" });
 
     const company = contextXml(xml, "companyInstant");
     expect(company).toContain('<xbrli:identifier scheme="http://www.companieshouse.gov.uk/">12345678</xbrli:identifier>');
@@ -130,12 +131,53 @@ describe("buildCtComputations", () => {
       ...LINES,
       entertaining: 0,
       profitLossPerAccounts: -500,
-      adjustedProfitBeforeCapitalAllowances: 15400,
-      adjustedProfit: -48600,
+      adjustedProfitBeforeCapitalAllowances: 15817,
+      adjustedProfit: -48183,
     };
     const byName = facts(parseXmlDocument(buildCtComputations({ ...INPUT, lines })));
     expect(byName["ct-comp:AdjustmentsEntertaining"]).toBeUndefined();
     expect(byName["ct-comp:ProfitLossPerAccounts"]).toMatchObject({ value: "500", sign: "-" });
+  });
+
+  test("tags a loss as the adjusted loss of the period, in place of the adjusted profit", () => {
+    const lines = {
+      ...LINES,
+      adjustedProfitBeforeCapitalAllowances: 15817,
+      adjustedProfit: -48183,
+      entertaining: 0,
+      profitLossPerAccounts: -500,
+    };
+    const byName = facts(parseXmlDocument(buildCtComputations({ ...INPUT, lines })));
+    expect(byName["ct-comp:AdjustedLossOfPeriod"]).toMatchObject({ value: "48,183", contextRef: "tradePeriod" });
+    expect(byName["ct-comp:AdjustedProfitForThePeriod"]).toBeUndefined();
+  });
+
+  test("shows the analysis of losses and the carry-back claim, and tags an overseas trade on the overseas territory", () => {
+    const losses = {
+      arising: 48183,
+      usedAgainstTotalProfits: 300,
+      carriedBack: 10000,
+      carriedForwardFromPeriod: 37883,
+      broughtForward: 2000,
+      broughtForwardUsedAgainstTrading: 0,
+      broughtForwardAgainstTotalProfits: 0,
+      broughtForwardCarriedForward: 2000,
+      totalCarriedForward: 39883,
+    };
+    const carryBack = { amount: 10000, priorPeriodStart: "2024-04-01", priorPeriodEnd: "2025-03-31", taxRepayable: 2500 };
+    const lines = {
+      ...LINES,
+      adjustedProfitBeforeCapitalAllowances: 15817,
+      adjustedProfit: -48183,
+      entertaining: 0,
+      profitLossPerAccounts: -500,
+    };
+    const xml = buildCtComputations({ ...INPUT, lines, losses, carryBack, tradeOutsideUk: true });
+    expect(xml).toContain("Trading loss of the period carried forward");
+    expect(xml).toContain("39,883");
+    expect(xml).toContain("Corporation Tax repayable 2,500.00");
+    expect(contextXml(xml, "tradePeriod")).toContain('dimension="ct-comp:TerritoryDimension">ct-comp:Overseas<');
+    expect(parseXmlDocument(xml)).toBeTruthy();
   });
 
   test("refuses a computation that does not add up, and missing identifiers", () => {

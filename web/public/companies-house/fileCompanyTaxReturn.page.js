@@ -58,6 +58,7 @@ const COMPUTATION_LINES = [
   { field: "depreciation", meaning: "Add: depreciation" },
   { field: "amortisation", meaning: "Add: amortisation" },
   { field: "entertaining", meaning: "Add: entertaining" },
+  { field: "donations", meaning: "Add: donations" },
   { field: "adjustedProfitBeforeCapitalAllowances", meaning: "Adjusted profit before capital allowances", style: "subtotal" },
   { field: "totalCapitalAllowances", meaning: "Less: total capital allowances", deduction: true },
   { field: "adjustedProfit", meaning: "Adjusted profit", style: "total" },
@@ -647,12 +648,12 @@ function renderWorkedTax(values) {
     create(
       "div",
       { class: "worked-tax__row" },
-      create("dt", {}, "Adjusted profit in the computation"),
+      create("dt", {}, "Adjusted profit or loss in the computation"),
       create("dd", {}, `£${formatPounds(derived.computationLines.adjustedProfit)}`),
       create(
         "dd",
         { class: "hint" },
-        "Profit per the accounts, less bank interest, plus depreciation, amortisation and entertaining, less capital allowances",
+        "Profit per the accounts, less bank interest, plus depreciation, amortisation, entertaining and donations, less capital allowances. A loss shows in brackets.",
       ),
     ),
   ];
@@ -666,6 +667,32 @@ function renderWorkedTax(values) {
         create("dt", {}, `Box ${row.box}: ${row.label}`),
         create("dd", {}, workedValue(row.box, derived.boxes[row.box])),
         create("dd", { class: "hint" }, row.rule),
+      ),
+    );
+  }
+  if (derived.losses.totalCarriedForward > 0) {
+    items.push(
+      create(
+        "div",
+        { class: "worked-tax__row", id: "workedCarriedForward" },
+        create("dt", {}, "Trading losses carried forward"),
+        create("dd", {}, `£${formatPounds(derived.losses.totalCarriedForward)}`),
+        create("dd", { class: "hint" }, "The loss of this period and the losses brought forward that no claim uses"),
+      ),
+    );
+  }
+  if (derived.carryBack) {
+    items.push(
+      create(
+        "div",
+        { class: "worked-tax__row", id: "workedCarryBack" },
+        create("dt", {}, "Corporation Tax repayable on the carry-back claim"),
+        create("dd", {}, `£${formatPounds(derived.carryBack.taxRepayable)}`),
+        create(
+          "dd",
+          { class: "hint" },
+          `Claimed against the period ${derived.carryBack.priorPeriodStart} to ${derived.carryBack.priorPeriodEnd}. That return carries the loss in box 275 with box 280 ticked.`,
+        ),
       ),
     );
   }

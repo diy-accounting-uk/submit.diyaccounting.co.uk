@@ -293,6 +293,7 @@ export function computationsDocumentCase() {
       depreciation: 500,
       amortisation: 0,
       entertaining: 0,
+      donations: 0,
       adjustedProfitBeforeCapitalAllowances: 5500,
       totalCapitalAllowances: 1000,
       adjustedProfit: 4500,

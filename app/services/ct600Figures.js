@@ -77,6 +77,7 @@ const COMPUTATION_ADJUSTMENTS = [
   ["depreciation", 1],
   ["amortisation", 1],
   ["entertaining", 1],
+  ["donations", 1],
 ];
 
 // The figures fields that hold whole pounds and no less than zero, with the label a message uses.
@@ -85,10 +86,15 @@ const WHOLE_POUND_FIELDS = [
   ["depreciation", "Depreciation added back"],
   ["amortisation", "Amortisation added back"],
   ["entertaining", "Entertaining added back"],
+  ["donations", "Donations added back"],
   ["annualInvestmentAllowance", "Annual investment allowance (box 690)"],
   ["mainPoolAllowances", "Main pool writing down allowances, without the annual investment allowance"],
   ["mainPoolBalancingCharges", "Main pool balancing charges (box 710)"],
   ["lossesBroughtForward", "Trading losses brought forward (box 160)"],
+  ["lossAgainstTotalProfits", "Trading loss of this period set against this period's total profits (box 275)"],
+  ["lossesBroughtForwardAgainstTotalProfits", "Trading losses brought forward claimed against total profits (box 285)"],
+  ["lossCarriedBack", "Trading loss carried back against the previous period's profits"],
+  ["priorPeriodChargeableProfits", "The previous period's chargeable profits (box 315 of its return)"],
   ["frankedInvestmentIncome", "Franked investment income or exempt ABGH distributions (box 620)"],
 ];
 
@@ -175,6 +181,18 @@ function figureProblems(figures, { today } = {}) {
   ) {
     problem("entertaining", "Entertaining added back is more than the cost of sales and administrative expenses");
   }
+  if (
+    Number.isFinite(numberOrZero(figures.donations)) &&
+    current &&
+    Number.isFinite(current.costOfSales) &&
+    Number.isFinite(current.administrativeExpenses) &&
+    numberOrZero(figures.donations) > current.costOfSales + current.administrativeExpenses
+  ) {
+    problem("donations", "Donations added back are more than the cost of sales and administrative expenses");
+  }
+  if (figures.lossOutsideUk !== undefined && typeof figures.lossOutsideUk !== "boolean") {
+    problem("lossOutsideUk", "Whether the trade is carried on wholly outside the UK must be yes or no");
+  }
   for (const [field, label] of PENCE_FIELDS) {
     const value = numberOrZero(figures[field]);
     if (!Number.isFinite(value) || value < 0 || Math.abs(value * 100 - Math.round(value * 100)) > 1e-6) {
@@ -223,7 +241,7 @@ export function smallCompanyProfitAndLossFromPublishedAccount(sheet) {
  * above it, so the computation adds up.
  *
  * @param {object} figures
- * @returns {{profitLossPerAccounts: number, nonTradingLoanRelationshipCredits: number, depreciation: number, amortisation: number, entertaining: number, adjustedProfitBeforeCapitalAllowances: number, totalCapitalAllowances: number, adjustedProfit: number}}
+ * @returns {{profitLossPerAccounts: number, nonTradingLoanRelationshipCredits: number, depreciation: number, amortisation: number, entertaining: number, donations: number, adjustedProfitBeforeCapitalAllowances: number, totalCapitalAllowances: number, adjustedProfit: number}} a loss is a negative adjustedProfit
  */
 export function computationLinesFromFigures(figures) {
   const lines = {
@@ -232,6 +250,7 @@ export function computationLinesFromFigures(figures) {
     depreciation: numberOrZero(figures.depreciation),
     amortisation: numberOrZero(figures.amortisation),
     entertaining: numberOrZero(figures.entertaining),
+    donations: numberOrZero(figures.donations),
   };
   lines.adjustedProfitBeforeCapitalAllowances =
     lines.profitLossPerAccounts + COMPUTATION_ADJUSTMENTS.reduce((total, [key, effect]) => total + effect * lines[key], 0);
@@ -282,18 +301,16 @@ export function ct600FiguresFromResults(results, smallCompanyAccounts) {
     depreciation: positive(workingSheet.I8),
     amortisation: positive(workingSheet.I7),
     entertaining: positive(workingSheet.I9),
+    donations: positive(results["MnthP&L"]?.B37),
     annualInvestmentAllowance: wholePounds(allowances.I15),
     mainPoolAllowances: wholePounds((allowances.I16 ?? 0) + (allowances.I17 ?? 0) + Math.max(allowances.I18 ?? 0, 0)),
     mainPoolBalancingCharges: wholePounds(Math.max(-(allowances.I18 ?? 0), 0)),
     frankedInvestmentIncome: wholePounds(workingSheet.K29),
     incomeTaxDeducted: workingSheet.K37 > 0 ? fromPence(toPence(workingSheet.K37)) : 0,
-    workingSheet: { tradingProfit: workingSheet.K22, corporationTax: workingSheet.K35 ?? 0 },
+    workingSheet: { tradingProfit: workingSheet.K22 + positive(results["MnthP&L"]?.B37), corporationTax: workingSheet.K35 ?? 0 },
   };
   const lossesBroughtForward = wholePounds(ct600.Z72);
-  if (lossesBroughtForward > 0) {
-    const tradingProfit = Math.max(computationLinesFromFigures(figures).adjustedProfit, 0);
-    figures.lossesBroughtForward = Math.min(lossesBroughtForward, tradingProfit);
-  }
+  if (lossesBroughtForward > 0) figures.lossesBroughtForward = lossesBroughtForward;
   return figures;
 }
 
@@ -323,6 +340,177 @@ function workedEntry(sources, rule) {
   return rule ? { sources, rule } : { sources };
 }
 
+function refuseLoss(message, field) {
+  throw new Ct600RefusedError(message, field);
+}
+
+/**
+ * The trading losses of the period and the pool brought forward, with each claim checked against
+ * what it draws on. A loss that no claim uses is carried forward.
+ */
+function workLosses({ figures, tradingLoss, profitsBeforeOtherDeductions, lossesBroughtForward, broughtForwardUsedAgainstTrading }) {
+  const usedAgainstTotalProfits = numberOrZero(figures.lossAgainstTotalProfits);
+  const broughtForwardAgainstTotalProfits = numberOrZero(figures.lossesBroughtForwardAgainstTotalProfits);
+  const carriedBack = numberOrZero(figures.lossCarriedBack);
+  const broughtForwardPool = lossesBroughtForward - broughtForwardUsedAgainstTrading;
+  if (usedAgainstTotalProfits > tradingLoss) {
+    refuseLoss(
+      `The loss set against this period's total profits ${usedAgainstTotalProfits} is more than the trading loss of the period ${tradingLoss}`,
+      "lossAgainstTotalProfits",
+    );
+  }
+  if (broughtForwardAgainstTotalProfits > broughtForwardPool) {
+    refuseLoss(
+      `Losses brought forward claimed against total profits ${broughtForwardAgainstTotalProfits} are more than the ${broughtForwardPool} the trading profit leaves unused`,
+      "lossesBroughtForwardAgainstTotalProfits",
+    );
+  }
+  if (usedAgainstTotalProfits + broughtForwardAgainstTotalProfits > profitsBeforeOtherDeductions) {
+    refuseLoss(
+      `Losses claimed against total profits ${usedAgainstTotalProfits + broughtForwardAgainstTotalProfits} are more than the profits of the period ${profitsBeforeOtherDeductions}`,
+      usedAgainstTotalProfits > 0 ? "lossAgainstTotalProfits" : "lossesBroughtForwardAgainstTotalProfits",
+    );
+  }
+  if (carriedBack > tradingLoss - usedAgainstTotalProfits) {
+    refuseLoss(
+      `The loss carried back ${carriedBack} is more than the trading loss left after the claim against total profits, ${tradingLoss - usedAgainstTotalProfits}`,
+      "lossCarriedBack",
+    );
+  }
+  const carriedForwardFromPeriod = tradingLoss - usedAgainstTotalProfits - carriedBack;
+  const broughtForwardCarriedForward = broughtForwardPool - broughtForwardAgainstTotalProfits;
+  return {
+    arising: tradingLoss,
+    usedAgainstTotalProfits,
+    carriedBack,
+    carriedForwardFromPeriod,
+    broughtForward: lossesBroughtForward,
+    broughtForwardUsedAgainstTrading,
+    broughtForwardAgainstTotalProfits,
+    broughtForwardCarriedForward,
+    totalCarriedForward: carriedForwardFromPeriod + broughtForwardCarriedForward,
+  };
+}
+
+function corporationTaxPenceOn(profits, years, totalDays, { taxData, fileFinancialYear, associatedCompanies }) {
+  const perYear = years.map((year) => financialYearRatesFor(taxData, year.year, fileFinancialYear, year.days));
+  const charge = apportionCorporationTax(profits, years, totalDays, { perYear, associatedCompanies });
+  const firstShare = years[1].days > 0 ? Math.round((profits * years[0].days) / totalDays) : profits;
+  const shares = [firstShare, profits - firstShare];
+  const pence = charge.rows.reduce((total, row, index) => total + (row.days > 0 ? shares[index] * row.ratePercent : 0), 0);
+  return pence - toPence(charge.marginalRelief);
+}
+
+/**
+ * The carry-back claim against the twelve months before the period: the Corporation Tax the
+ * previous period paid on its chargeable profits less what it would have paid with the claim
+ * deducted, which is the repayment, and the boxes the previous period's return then carries.
+ */
+function workCarryBack(figures, losses, taxDataByYear) {
+  if (losses.carriedBack === 0) return undefined;
+  const priorProfits = numberOrZero(figures.priorPeriodChargeableProfits);
+  if (losses.carriedBack > priorProfits) {
+    refuseLoss(
+      `The loss carried back ${losses.carriedBack} is more than the previous period's chargeable profits ${priorProfits}`,
+      priorProfits === 0 ? "priorPeriodChargeableProfits" : "lossCarriedBack",
+    );
+  }
+  const priorStart = utcDate(figures.periodStart);
+  priorStart.setUTCFullYear(priorStart.getUTCFullYear() - 1);
+  const priorEnd = new Date(utcDate(figures.periodStart).getTime() - DAY_MS);
+  const fileFinancialYear = financialYearNumber(utcDate(figures.periodEnd));
+  const taxData = taxDataByYear?.[fileFinancialYear];
+  if (!taxData) refuseLoss(`No tax data is held for the financial year ${fileFinancialYear}`, "period");
+  const { years, totalDays } = financialYearsInPeriod(priorStart, priorEnd);
+  const options = { taxData, fileFinancialYear, associatedCompanies: numberOrZero(figures.associatedCompanies) };
+  let before;
+  let after;
+  try {
+    before = corporationTaxPenceOn(priorProfits, years, totalDays, options);
+    after = corporationTaxPenceOn(priorProfits - losses.carriedBack, years, totalDays, options);
+  } catch (error) {
+    refuseLoss(`The previous period's tax cannot be worked for the claim: ${error.message}`, "lossCarriedBack");
+  }
+  return {
+    amount: losses.carriedBack,
+    priorPeriodStart: priorStart.toISOString().slice(0, 10),
+    priorPeriodEnd: priorEnd.toISOString().slice(0, 10),
+    boxes: { 275: losses.carriedBack, 280: "yes" },
+    taxRepayable: fromPence(before - after),
+  };
+}
+
+/**
+ * The boxes from the trading profit down to the chargeable profits (155 to 315): the trading
+ * profit or loss, the losses brought forward, the claims against total profits and the donations.
+ * Fills boxes and worked, and returns the losses and the chargeable profits.
+ */
+function workProfitsAndReliefs(figures, computationLines, boxes, worked) {
+  const tradingProfit = Math.max(computationLines.adjustedProfit, 0);
+  const tradingLoss = Math.max(-computationLines.adjustedProfit, 0);
+  // Losses brought forward set against the trading profit by right (box 160); what the profit
+  // does not take stays in the pool, and a claim against total profits (box 285) can use it.
+  const lossesBroughtForward = numberOrZero(figures.lossesBroughtForward);
+  const broughtForwardUsedAgainstTrading = Math.min(lossesBroughtForward, tradingProfit);
+  if (tradingProfit > 0) {
+    boxes[155] = tradingProfit;
+    worked[155] = workedEntry(
+      [
+        "profitAndLoss",
+        "nonTradingLoanRelationshipCredits",
+        "depreciation",
+        "amortisation",
+        "entertaining",
+        "donations",
+        "annualInvestmentAllowance",
+        "mainPoolAllowances",
+        "mainPoolBalancingCharges",
+      ],
+      "Box 155 equals the computation's adjusted profit",
+    );
+    if (broughtForwardUsedAgainstTrading > 0) boxes[160] = broughtForwardUsedAgainstTrading;
+    boxes[165] = tradingProfit - broughtForwardUsedAgainstTrading;
+    worked[165] = workedEntry(["155", "160"]);
+  }
+  const bankInterest = computationLines.nonTradingLoanRelationshipCredits;
+  if (bankInterest > 0) boxes[170] = bankInterest;
+  const profitsBeforeOtherDeductions = (boxes[165] ?? 0) + (boxes[170] ?? 0);
+  if (profitsBeforeOtherDeductions > 0) {
+    boxes[235] = profitsBeforeOtherDeductions;
+    worked[235] = workedEntry(["165", "170"]);
+  }
+
+  const losses = workLosses({ figures, tradingLoss, profitsBeforeOtherDeductions, lossesBroughtForward, broughtForwardUsedAgainstTrading });
+  if (tradingLoss > 0) {
+    boxes[figures.lossOutsideUk === true ? 790 : 780] = tradingLoss;
+    worked[figures.lossOutsideUk === true ? 790 : 780] = workedEntry(
+      ["profitAndLoss"],
+      "The loss arising is the computation's adjusted loss",
+    );
+  }
+  if (losses.usedAgainstTotalProfits > 0) boxes[275] = losses.usedAgainstTotalProfits;
+  if (losses.broughtForwardAgainstTotalProfits > 0) boxes[285] = losses.broughtForwardAgainstTotalProfits;
+  const deductionsAndReliefs = losses.usedAgainstTotalProfits + losses.broughtForwardAgainstTotalProfits;
+  if (deductionsAndReliefs > 0) {
+    boxes[295] = deductionsAndReliefs;
+    worked[295] = workedEntry(["lossAgainstTotalProfits", "lossesBroughtForwardAgainstTotalProfits"], "Box 295 is boxes 275 and 285");
+  }
+  const profitsBeforeDonations = profitsBeforeOtherDeductions - deductionsAndReliefs;
+  if (profitsBeforeOtherDeductions > 0) {
+    boxes[300] = profitsBeforeDonations;
+    worked[300] = workedEntry(["235", "295"], "Box 300 is box 235 less box 295");
+  }
+  const qualifyingDonations = Math.min(computationLines.donations, Math.max(profitsBeforeDonations, 0));
+  if (qualifyingDonations > 0) {
+    boxes[305] = qualifyingDonations;
+    worked[305] = workedEntry(["donations", "300"], "Donations are claimed up to the profits in box 300");
+  }
+  const chargeableProfits = profitsBeforeDonations - qualifyingDonations;
+  boxes[315] = chargeableProfits;
+  worked[315] = workedEntry(["300", "305"], "Box 315 is box 300 less box 305");
+  return { losses, chargeableProfits };
+}
+
 /**
  * Work the CT600 boxes and the computation lines for a small trading company. The tax rows follow
  * HMRC's rules from box 315: 9198 splits the profit between financial years by days, 9204 and
@@ -332,7 +520,7 @@ function workedEntry(sources, rule) {
  *
  * @param {object} figures
  * @param {Record<number, object>} taxDataByYear - parsed ltd-<FY>.toml files by financial year; the one named for the period end's financial year is required
- * @returns {{boxes: Record<number, string|number>, computationLines: object, worked: Record<number, {sources: string[], rule?: string}>, periodStart: string, periodEnd: string}}
+ * @returns {{boxes: Record<number, string|number>, computationLines: object, losses: object, carryBack: object|undefined, worked: Record<number, {sources: string[], rule?: string}>, periodStart: string, periodEnd: string}}
  */
 export function deriveCt600FromFigures(figures, taxDataByYear) {
   const problems = figureProblems(figures);
@@ -342,9 +530,6 @@ export function deriveCt600FromFigures(figures, taxDataByYear) {
 
   const { periodStart, periodEnd } = figures;
   const computationLines = computationLinesFromFigures(figures);
-  if (computationLines.adjustedProfit < 0) {
-    throw new Ct600RefusedError("The computation makes a trading loss; the loss boxes (780 onward) have no input yet", "profitAndLoss");
-  }
 
   const worked = {};
   const boxes = {
@@ -359,11 +544,10 @@ export function deriveCt600FromFigures(figures, taxDataByYear) {
     985: figures.declarantStatus.trim(),
   };
 
-  const tradingProfit = computationLines.adjustedProfit;
   const workingSheet = figures.workingSheet;
-  if (workingSheet && Math.abs(tradingProfit - workingSheet.tradingProfit) > WORKING_SHEET_TOLERANCE_POUNDS) {
+  if (workingSheet && Math.abs(computationLines.adjustedProfit - workingSheet.tradingProfit) > WORKING_SHEET_TOLERANCE_POUNDS) {
     throw new Ct600RefusedError(
-      `The computation's adjusted trading profit ${tradingProfit} disagrees with the working sheet's ${Math.round(workingSheet.tradingProfit)}`,
+      `The computation's adjusted trading profit ${computationLines.adjustedProfit} disagrees with the working sheet's ${Math.round(workingSheet.tradingProfit)}`,
       "profitAndLoss",
     );
   }
@@ -378,47 +562,7 @@ export function deriveCt600FromFigures(figures, taxDataByYear) {
     "Box 705 includes the annual investment allowance in box 690",
   );
 
-  const lossesBroughtForward = numberOrZero(figures.lossesBroughtForward);
-  if (tradingProfit > 0) {
-    boxes[155] = tradingProfit;
-    worked[155] = workedEntry(
-      [
-        "profitAndLoss",
-        "nonTradingLoanRelationshipCredits",
-        "depreciation",
-        "amortisation",
-        "entertaining",
-        "annualInvestmentAllowance",
-        "mainPoolAllowances",
-        "mainPoolBalancingCharges",
-      ],
-      "Box 155 equals the computation's adjusted profit",
-    );
-    if (lossesBroughtForward > tradingProfit) {
-      throw new Ct600RefusedError(
-        `Trading losses brought forward ${lossesBroughtForward} are more than the trading profit ${tradingProfit}`,
-        "lossesBroughtForward",
-      );
-    }
-    if (lossesBroughtForward > 0) boxes[160] = lossesBroughtForward;
-    boxes[165] = tradingProfit - (boxes[160] ?? 0);
-    worked[165] = workedEntry(["155", "160"]);
-  } else if (lossesBroughtForward > 0) {
-    throw new Ct600RefusedError(
-      `Trading losses brought forward ${lossesBroughtForward} are more than the trading profit 0`,
-      "lossesBroughtForward",
-    );
-  }
-  const bankInterest = computationLines.nonTradingLoanRelationshipCredits;
-  if (bankInterest > 0) boxes[170] = bankInterest;
-  const profitsBeforeOtherDeductions = (boxes[165] ?? 0) + (boxes[170] ?? 0);
-  if (profitsBeforeOtherDeductions > 0) {
-    boxes[235] = profitsBeforeOtherDeductions;
-    boxes[300] = profitsBeforeOtherDeductions;
-  }
-  const chargeableProfits = profitsBeforeOtherDeductions;
-  boxes[315] = chargeableProfits;
-  for (const box of [235, 300, 315]) worked[box] = workedEntry(["165", "170"]);
+  const { losses, chargeableProfits } = workProfitsAndReliefs(figures, computationLines, boxes, worked);
 
   const { years, totalDays } = financialYearsInPeriod(utcDate(periodStart), utcDate(periodEnd));
   const straddles = years[1].days > 0;
@@ -530,5 +674,6 @@ export function deriveCt600FromFigures(figures, taxDataByYear) {
   boxes[600] = fromPence(taxPayablePence - alreadyPaidPence);
   worked[600] = workedEntry(["525", "595"]);
 
-  return { boxes, computationLines, worked, periodStart, periodEnd };
+  const carryBack = workCarryBack(figures, losses, taxDataByYear);
+  return { boxes, computationLines, losses, carryBack, worked, periodStart, periodEnd };
 }

@@ -140,10 +140,9 @@ test.describe("File Company Tax Return entry form", () => {
       if (url.pathname === "/api/v1/hmrc/ct/return/preview") {
         previewRequests.push(JSON.parse(route.request().postData()));
         const computationLines = Object.fromEntries(
-          ["profitLossPerAccounts", "nonTradingLoanRelationshipCredits", "depreciation", "amortisation", "entertaining"].map((name) => [
-            name,
-            1,
-          ]),
+          ["profitLossPerAccounts", "nonTradingLoanRelationshipCredits", "depreciation", "amortisation", "entertaining", "donations"].map(
+            (name) => [name, 1],
+          ),
         );
         const body = {
           boxes: PREVIEW_BOXES,
@@ -492,6 +491,91 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#workedTaxRows")).toContainText("Box 430 is box 345 plus box 395");
     await expect(page.locator("#box440")).toHaveCount(0);
     await expect(page.locator("#workedTaxRows input")).toHaveCount(0);
+  });
+
+  async function fillALossPeriod(page) {
+    await page.locator("#regimeSmall").check();
+    const entries = {
+      periodStart: "2025-04-01",
+      periodEnd: "2026-03-31",
+      currentTurnover: "1000",
+      currentCostOfSales: "100",
+      currentAdministrativeExpenses: "51000",
+      currentInterestReceivable: "0",
+      currentTax: "0",
+    };
+    for (const [id, value] of Object.entries(entries)) {
+      await page.locator(`#${id}`).fill(value);
+      await page.locator(`#${id}`).blur();
+    }
+  }
+
+  test("a trading loss is worked into box 780 and carried forward when no claim is made", async ({ page }) => {
+    await openForm(page);
+    await fillALossPeriod(page);
+    await expect(page.locator("#workedTaxRows")).toContainText("Box 780: Losses of trades carried on wholly or partly in the UK");
+    await expect(page.locator("#workedTaxRows")).toContainText("Box 780 is the computation's adjusted loss");
+    await expect(page.locator("#workedCarriedForward")).toContainText("£50,100");
+    await expect(page.locator("#workedCarryBack")).toHaveCount(0);
+    await expect(page.locator("#workedTaxRows")).not.toContainText("Box 155:");
+  });
+
+  test("a loss in a trade wholly outside the UK goes in box 790", async ({ page }) => {
+    await openForm(page);
+    await fillALossPeriod(page);
+    await page.locator("#lossOutsideUk").check();
+    await expect(page.locator("#workedTaxRows")).toContainText("Box 790:");
+    await expect(page.locator("#workedTaxRows")).not.toContainText("Box 780:");
+  });
+
+  for (const width of [1280, 390]) {
+    test(`a carry-back claim shows the repayment and the loss left to carry forward at ${width} px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openForm(page);
+      await fillALossPeriod(page);
+      await page.locator("#lossCarriedBack").fill("30000");
+      await page.locator("#priorPeriodChargeableProfits").fill("80000");
+      await page.locator("#priorPeriodChargeableProfits").blur();
+      await expect(page.locator("#workedCarryBack")).toContainText("Corporation Tax repayable on the carry-back claim");
+      await expect(page.locator("#workedCarryBack")).toContainText("£7,950");
+      await expect(page.locator("#workedCarryBack")).toContainText("2024-04-01 to 2025-03-31");
+      await expect(page.locator("#workedCarriedForward")).toContainText("£20,100");
+      expect(await pageScrollsSideways(page)).toBe(false);
+      const cookieDecline = page.getByRole("button", { name: "Decline" });
+      if (await cookieDecline.isVisible()) await cookieDecline.click();
+      await page.locator("#workedTax").screenshot({ path: recordScreenshotPath("ct600-loss-carry-back", width) });
+    });
+  }
+
+  test("a loss claim above the loss is refused beside its field", async ({ page }) => {
+    await openForm(page);
+    await fillALossPeriod(page);
+    await page.locator("#utr").fill("8596148860");
+    await page.locator("#declarantName").fill("Carol Smith");
+    await page.locator("#lossAgainstTotalProfits").fill("60000");
+    await page.locator("#lossAgainstTotalProfits").blur();
+    await expect(page.locator("#lossAgainstTotalProfits-error")).toContainText("more than the trading loss of the period");
+  });
+
+  test("the donations field adds the donations back and claims them in box 305", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#regimeSmall").check();
+    const entries = {
+      periodStart: "2025-04-01",
+      periodEnd: "2026-03-31",
+      currentTurnover: "100000",
+      currentCostOfSales: "10000",
+      currentAdministrativeExpenses: "30000",
+      currentInterestReceivable: "0",
+      currentTax: "0",
+      donations: "1000",
+    };
+    for (const [id, value] of Object.entries(entries)) {
+      await page.locator(`#${id}`).fill(value);
+      await page.locator(`#${id}`).blur();
+    }
+    await expect(page.locator("#workedTaxRows")).toContainText("Box 305: Qualifying donations");
+    await expect(page.locator("#workedTaxRows")).toContainText("Box 155: Trading profits");
   });
 
   test("the accounts just accepted by Companies House fill the accounts section", async ({ page }) => {
