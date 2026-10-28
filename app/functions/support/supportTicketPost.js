@@ -180,7 +180,7 @@ export async function dispatchSupportReader() {
     }
     return true;
   } catch (error) {
-    logger.warn({ message: "Support reader dispatch failed", error: error.message });
+    logger.warn({ message: "Support reader dispatch failed", errorName: error.name });
     return false;
   }
 }
