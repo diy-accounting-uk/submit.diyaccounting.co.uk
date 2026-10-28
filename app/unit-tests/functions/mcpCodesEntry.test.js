@@ -16,6 +16,10 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
   executeDynamoDbCommand: (builder) => table.execute(builder),
   getResourceName: () => "test-mcp-sessions",
 }));
+const practiceClients = new Map();
+vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
+  getClient: async (sub, clientId) => practiceClients.get(`${sub}/${clientId}`) ?? null,
+}));
 vi.mock("@app/services/subHasher.js", async (importOriginal) => ({ ...(await importOriginal()), initializeSalt: async () => {} }));
 
 const { ingestHandler } = await import("@app/functions/mcp/mcpCodesEntry.js");
@@ -48,6 +52,10 @@ async function mint(body, sub) {
 describe("mcpCodesEntry", () => {
   beforeEach(() => {
     table.items.clear();
+    practiceClients.clear();
+    practiceClients.set("user-sub-1/client-a", { clientId: "client-a", displayName: "Alpha Ltd" });
+    practiceClients.set("user-sub-1/client-b", { clientId: "client-b", displayName: "Beta Ltd" });
+    practiceClients.set("other-sub/client-x", { clientId: "client-x", displayName: "Other Ltd" });
     process.env.MCP_SESSIONS_DYNAMODB_TABLE_NAME = "test-mcp-sessions";
     process.env.DIY_SUBMIT_BASE_URL = "https://submit.example/";
     process.env.MCP_OAUTH_BLOB_KEY = "test-mcp-oauth-blob-key-0123456789abcdef";
@@ -273,10 +281,34 @@ describe("mcpCodesEntry", () => {
       expect(read).toMatchObject({ state: "pending", kind: "accounts", clients: CLIENTS });
     });
 
+    test("mints for clients on the caller's practice list and stores the stored names", async () => {
+      const { response, body } = await mint({ kind: "accounts", clients: [{ clientId: "client-a", displayName: "Forged" }] });
+      expect(response.statusCode).toBe(201);
+      expect(table.items.get(`codes:${body.entryId}`).clients).toEqual([{ clientId: "client-a", displayName: "Alpha Ltd" }]);
+    });
+
+    test("refuses a client that is not on the caller's practice list, naming the id", async () => {
+      const { response, body } = await mint({ kind: "accounts", clients: [{ clientId: "client-x" }] });
+      expect(response.statusCode).toBe(400);
+      expect(body.message).toContain("client-x");
+      expect(table.items.size).toBe(0);
+    });
+
+    test("refuses a mixed list whole and names only the unlisted ids", async () => {
+      const { response, body } = await mint({
+        kind: "accounts",
+        clients: [{ clientId: "client-a" }, { clientId: "client-x" }, { clientId: "nope" }],
+      });
+      expect(response.statusCode).toBe(400);
+      expect(body.message).toContain("client-x, nope");
+      expect(body.message).not.toContain("client-a");
+      expect(table.items.size).toBe(0);
+    });
+
     test("refuses a client list that is empty, repeats a client, or is for a confirmation statement", async () => {
       expect((await mint({ kind: "accounts", clients: [] })).response.statusCode).toBe(400);
       expect((await mint({ kind: "accounts", clients: [CLIENTS[0], CLIENTS[0]] })).response.statusCode).toBe(400);
-      expect((await mint({ kind: "accounts", clients: [{ clientId: "client-a" }] })).response.statusCode).toBe(400);
+      expect((await mint({ kind: "accounts", clients: [{}] })).response.statusCode).toBe(400);
       expect((await mint({ kind: "confirmation-statement", clients: CLIENTS, directors: DIRECTORS })).response.statusCode).toBe(400);
     });
 

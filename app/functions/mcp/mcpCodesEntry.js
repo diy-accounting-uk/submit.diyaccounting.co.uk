@@ -26,6 +26,7 @@ import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { isValidCompanyNumber, isValidCompaniesHousePersonalCode } from "../../services/companiesHouseApi.js";
 import { createCodesEntry, getCodesEntry, fillCodesEntry, fillCodesEntryForClients } from "../../data/dynamoDbCodesEntryRepository.js";
 import { sealCodes } from "../../lib/codesSeal.js";
+import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 
 const logger = createLogger({ source: "app/functions/mcp/mcpCodesEntry.js" });
 
@@ -79,12 +80,22 @@ function clientsFromBody(kind, clients, errorMessages) {
   const seen = new Set();
   return clients.map((client, index) => {
     const clientId = typeof client?.clientId === "string" ? client.clientId.trim() : "";
-    const displayName = typeof client?.displayName === "string" ? client.displayName.trim() : "";
-    if (!clientId || !displayName) errorMessages.push(`clients[${index}] needs a clientId and a displayName`);
+    if (!clientId) errorMessages.push(`clients[${index}] needs a clientId`);
     if (seen.has(clientId)) errorMessages.push(`clients[${index}] repeats clientId ${clientId}`);
     seen.add(clientId);
-    return { clientId, displayName };
+    return { clientId };
   });
+}
+
+// Each client must be on the caller's own practice list; its name comes from the stored client.
+async function practiceClientsFor(sub, requested, errorMessages) {
+  const stored = await Promise.all(requested.map(({ clientId }) => getClient(sub, clientId)));
+  const unlisted = requested.filter((_, index) => !stored[index]?.displayName).map(({ clientId }) => clientId);
+  if (unlisted.length > 0) {
+    errorMessages.push(`clients names ids that are not in your practice's client list: ${unlisted.join(", ")}`);
+    return undefined;
+  }
+  return requested.map(({ clientId }, index) => ({ clientId, displayName: stored[index].displayName }));
 }
 
 async function mint(event, request, responseHeaders) {
@@ -94,9 +105,9 @@ async function mint(event, request, responseHeaders) {
   const body = parseRequestBody(event) || {};
   const errorMessages = [];
   if (!KINDS.includes(body.kind)) errorMessages.push(`kind must be one of ${KINDS.join(", ")}`);
-  const clients = clientsFromBody(body.kind, body.clients, errorMessages);
+  const requestedClients = clientsFromBody(body.kind, body.clients, errorMessages);
   const { valid, normalised } = isValidCompanyNumber(body.companyNumber);
-  if (!clients && !valid) errorMessages.push("Invalid company number - must be 8 characters");
+  if (!requestedClients && !valid) errorMessages.push("Invalid company number - must be 8 characters");
   const directors = directorsFromBody(body.kind, body.directors, errorMessages);
   if (errorMessages.length > 0) {
     return http400BadRequestResponse({
@@ -108,6 +119,15 @@ async function mint(event, request, responseHeaders) {
   }
 
   await initializeSalt();
+  const clients = requestedClients ? await practiceClientsFor(user.sub, requestedClients, errorMessages) : undefined;
+  if (errorMessages.length > 0) {
+    return http400BadRequestResponse({
+      request,
+      headers: responseHeaders,
+      message: errorMessages.join("; "),
+      error: { errors: errorMessages },
+    });
+  }
   const entry = await createCodesEntry({
     hashedSub: hashSub(user.sub),
     kind: body.kind,
