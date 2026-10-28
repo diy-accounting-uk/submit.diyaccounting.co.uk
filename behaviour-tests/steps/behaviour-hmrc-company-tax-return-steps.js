@@ -270,6 +270,7 @@ export async function submitJointExpectingGatewayError(
 
 export async function verifyAccountsLocked(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees the accounts locked and the tax answers open in the form", async () => {
+    await expect(page.locator("#accountsLockNote")).toBeAttached();
     await page.evaluate(() => document.getElementById("tryAgainBtn").click());
     await page.evaluate(() => document.getElementById("backToFormBtn").click());
     await expect(page.locator("#formView")).toBeVisible();
@@ -340,6 +341,31 @@ export async function verifyCompaniesHouseStillPending(page, screenshotPath = de
     await expect(page.locator("#sendCtNowBtn")).toBeVisible();
     await expect(page.locator("#waitForCompaniesHouseBtn")).toBeVisible();
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-companies-house-pending.png`, readerView: true });
+  });
+}
+
+export async function reloadWhileCompaniesHouseIsPending(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user reloads the page and sees the filing resume with Companies House pending and no codes or password kept", async () => {
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(page.locator("#companiesHouseOutcome")).toContainText("has not settled the accounts yet", { timeout: 60000 });
+    await expect(page.locator("#sendCtNowBtn")).toBeVisible();
+    await expect(page.locator("#waitForCompaniesHouseBtn")).toBeVisible();
+    await expect(page.locator("#companyAuthCode")).toHaveValue("");
+    await expect(page.locator("#gatewayPassword")).toHaveValue("");
+    await expect(page.locator("#sendToBoth")).toBeChecked();
+    await expect(page.locator("#declarantName")).not.toHaveValue("");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-resumed-pending.png`, readerView: true });
+  });
+}
+
+export async function sendTheTaxReturnAfterCompaniesHouseAccepts(page, { userId, password }, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user waits for Companies House, sees the accounts locked, and types the credentials again to send the Company Tax Return alone", async () => {
+    await waitForCompaniesHouse(page, screenshotPath);
+    await expect(page.locator("#previewView")).toBeVisible({ timeout: 60000 });
+    await expect(page.locator("#sendStepHeading")).toHaveText("Send to HMRC");
+    await expect(page.locator("#companyAuthCodeGroup")).toBeHidden();
+    await expect(page.locator("#gatewayPassword")).toHaveValue("");
+    await enterGatewayCredentialsAndSubmit(page, { userId, password }, screenshotPath);
   });
 }
 

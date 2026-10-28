@@ -741,6 +741,32 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#periodEnd")).toHaveValue("2024-12-31");
   });
 
+  test("the send-to question offers the full or filleted copy for a small company and the note for a micro-entity", async ({ page }) => {
+    await openForm(page);
+    await page.locator("#regimeSmall").check();
+    await expect(page.locator("#sendToHmrc")).toBeChecked();
+    await expect(page.locator("#companiesHouseCopyGroup")).toBeHidden();
+    await expect(page.locator("#companiesHouseMicroNote")).toBeHidden();
+
+    await page.locator("#sendToBoth").check();
+    await expect(page.locator("#companiesHouseCopyGroup")).toBeVisible();
+    await expect(page.locator("#copyFull")).toBeChecked();
+    await page.locator("#copyFilleted").check();
+    await expect(page.locator("#copyFilleted")).toBeChecked();
+    await expect(page.locator("#copyFull")).not.toBeChecked();
+    await expect(page.locator("#companiesHouseMicroNote")).toBeHidden();
+
+    await page.locator("#regimeMicro").check();
+    await expect(page.locator("#companiesHouseCopyGroup")).toBeHidden();
+    await expect(page.locator("#companiesHouseMicroNote")).toBeVisible();
+    await expect(page.locator("#companiesHouseMicroNote")).toContainText("The profit and loss account goes to HMRC only.");
+
+    await page.locator("#sendToHmrc").check();
+    await expect(page.locator("#companiesHouseMicroNote")).toBeHidden();
+    await page.locator("#regimeSmall").check();
+    await expect(page.locator("#companiesHouseCopyGroup")).toBeHidden();
+  });
+
   test("switching the regime keeps each regime's figures", async ({ page }) => {
     await openForm(page);
     await page.locator("#regimeMicro").check();

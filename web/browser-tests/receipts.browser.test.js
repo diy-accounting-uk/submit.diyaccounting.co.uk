@@ -92,6 +92,49 @@ test.describe("Receipts page - receipt details", () => {
     await expect(page.locator("#receiptsTable tbody tr").nth(1).locator("td").nth(1)).toContainText("BBB");
   });
 
+  test("lists the accounts and the Company Tax Return of one joint filing under one row, and a lone half with no title", async ({
+    page,
+  }) => {
+    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
+    const jointFilingId = "0b8f6f0e-6d3e-4a39-9a55-2f1f4c6d8a10";
+    await page.evaluate(async (id) => {
+      localStorage.setItem("cognitoIdToken", "token");
+      const items = [
+        {
+          name: "2026-10-02T09:05:00.000Z-CT1.json",
+          timestamp: "2026-10-02T09:05:00.000Z",
+          formBundleNumber: "CT1",
+          kind: "company-tax-return",
+          jointFilingId: id,
+        },
+        {
+          name: "2026-10-02T09:00:00.000Z-ACC1.json",
+          timestamp: "2026-10-02T09:00:00.000Z",
+          formBundleNumber: "ACC1",
+          kind: "companies-house-accounts",
+          jointFilingId: id,
+        },
+        {
+          name: "2026-10-01T09:00:00.000Z-CT2.json",
+          timestamp: "2026-10-01T09:00:00.000Z",
+          formBundleNumber: "CT2",
+          kind: "company-tax-return",
+        },
+      ];
+      window.fetchWithIdToken = async () => ({ ok: true, json: async () => ({ receipts: items }) });
+      await window.fetchReceipts();
+    }, jointFilingId);
+
+    await expect(page.locator("#receiptsTable tbody tr")).toHaveCount(2);
+    const pair = page.locator("#receiptsTable tbody tr").nth(0).locator("td.receipt-cell .receipt-entry");
+    await expect(pair).toHaveCount(2);
+    await expect(pair.nth(0)).toContainText("Company Tax Return: CT1");
+    await expect(pair.nth(1)).toContainText("Accounts: ACC1");
+    const lone = page.locator("#receiptsTable tbody tr").nth(1).locator(".receipt-entry");
+    await expect(lone).toHaveCount(1);
+    await expect(lone).not.toContainText("Company Tax Return:");
+  });
+
   test("shows a VAT receipt as a record inside the customer copy", async ({ page }) => {
     await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
 
