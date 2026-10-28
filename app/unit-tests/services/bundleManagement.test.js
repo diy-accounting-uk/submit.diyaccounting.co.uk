@@ -527,6 +527,15 @@ describe("bundleEnforcement.js", () => {
       expect(getClient).toHaveBeenCalledWith("practice-sub", "c1");
     });
 
+    test("allows a client-scoped request when the practice holds a resident-pro-comp pass", async () => {
+      getUserBundles.mockResolvedValue([{ bundleId: "resident-pro-comp" }]);
+      getClient.mockResolvedValue({ clientId: "c1", identifiers: { vrn: "111222333" }, archivedAt: null });
+
+      const result = await enforceBundles(buildClientScopedEvent(), { clientId: "c1" });
+
+      expect(result.client.clientId).toBe("c1");
+    });
+
     test("refuses a client-scoped request when the practice holds no resident-pro subscription", async () => {
       getUserBundles.mockResolvedValue([{ bundleId: "day-guest" }]);
 

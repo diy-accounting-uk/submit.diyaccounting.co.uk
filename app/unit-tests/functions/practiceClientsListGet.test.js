@@ -9,7 +9,12 @@ vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
   getPracticeArn: vi.fn(),
 }));
 
+vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
+  getUserBundles: vi.fn(),
+}));
+
 const { listClients, getPracticeArn } = await import("@app/data/dynamoDbPracticeClientRepository.js");
+const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
 const { ingestHandler } = await import("../../functions/practice/practiceClientsListGet.js");
 const { _setTestSalt } = await import("../../services/subHasher.js");
 
@@ -27,6 +32,8 @@ describe("practiceClientsListGet", () => {
     listClients.mockReset();
     getPracticeArn.mockReset();
     getPracticeArn.mockResolvedValue(null);
+    getUserBundles.mockReset();
+    getUserBundles.mockResolvedValue([]);
     _setTestSalt("test-salt");
   });
 
@@ -36,8 +43,33 @@ describe("practiceClientsListGet", () => {
     const result = await ingestHandler(buildAuthenticatedEvent({ sub: "practice-sub" }));
 
     expect(result.statusCode).toBe(200);
-    expect(JSON.parse(result.body)).toEqual({ clients: [{ clientId: "c1", displayName: "Acme Ltd" }], arnOnFile: false });
+    expect(JSON.parse(result.body)).toEqual({
+      clients: [{ clientId: "c1", displayName: "Acme Ltd" }],
+      arnOnFile: false,
+      licence: { held: false },
+    });
     expect(listClients).toHaveBeenCalledWith("practice-sub");
+  });
+
+  test.each([
+    ["an active resident-pro subscription", [{ bundleId: "resident-pro", subscriptionStatus: "active" }]],
+    ["a resident-pro-comp pass", [{ bundleId: "resident-pro-comp" }]],
+  ])("reports the licence as held for %s", async (_name, bundles) => {
+    listClients.mockResolvedValue([]);
+    getUserBundles.mockResolvedValue(bundles);
+
+    const result = await ingestHandler(buildAuthenticatedEvent({}));
+
+    expect(JSON.parse(result.body).licence).toEqual({ held: true });
+  });
+
+  test("reports the licence as not held for a lapsed resident-pro subscription", async () => {
+    listClients.mockResolvedValue([]);
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "cancelled" }]);
+
+    const result = await ingestHandler(buildAuthenticatedEvent({}));
+
+    expect(JSON.parse(result.body).licence).toEqual({ held: false });
   });
 
   test("reports that an agent reference number is on file", async () => {

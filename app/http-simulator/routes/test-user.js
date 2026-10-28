@@ -3,7 +3,7 @@
 
 // app/http-simulator/routes/test-user.js
 // HMRC Create Test User endpoint
-// Handles: POST /create-test-user/organisations
+// Handles: POST /create-test-user/organisations, POST /create-test-user/agents
 
 import { randomUUID } from "crypto";
 
@@ -91,7 +91,27 @@ function generateTestUser(serviceNames) {
   return testUser;
 }
 
+/**
+ * Generate a mock test agent: sign-in credentials and the agent services account number (ARN)
+ */
+function generateTestAgent() {
+  const arnDigits = Math.floor(1000000 + Math.random() * 9000000).toString();
+  return {
+    userId: generateUserId(),
+    password: generatePassword(),
+    userFullName: "Test Agent",
+    emailAddress: `test.agent.${Date.now()}@example.com`,
+    agentServicesAccountNumber: `TARN${arnDigits}`,
+  };
+}
+
 export function apiEndpoint(app) {
+  // POST /create-test-user/agents - Create mock HMRC test agent
+  app.post("/create-test-user/agents", (req, res) => {
+    console.log("[http-simulator:test-user] POST /create-test-user/agents");
+    res.status(201).json(generateTestAgent());
+  });
+
   // POST /create-test-user/organisations - Create mock HMRC test user
   app.post("/create-test-user/organisations", (req, res) => {
     console.log("[http-simulator:test-user] POST /create-test-user/organisations");

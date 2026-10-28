@@ -62,6 +62,15 @@
         data-sign-in-title="Log in to manage your clients"
         data-sign-in-text="Your clients and their HMRC authorisation are kept with your account. Log in to see them and add more."
       >
+        <div class="form-container" id="hmrcAgentConnection">
+          <h2>HMRC agent connection</h2>
+          <p id="hmrcConnectionLine" class="hint">Checking your HMRC connection...</p>
+          <p>
+            <button type="button" id="connectHmrcBtn" class="btn" hidden>Connect to HMRC</button>
+          </p>
+          <p id="licenceLine" class="hint" hidden></p>
+        </div>
+
         <div class="form-container">
           <h2>Clients</h2>
 
