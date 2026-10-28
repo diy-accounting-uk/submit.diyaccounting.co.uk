@@ -464,6 +464,7 @@
     "ads:report": "node infra/google/ads/ads-report.js",
     "ads:conversions-upload": "node infra/google/ads/ads-conversions-upload.js",
     "ads:forecast": "node infra/google/ads/ads-forecast.js",
+    "exploratory:diff": "node scripts/exploratory-diff.mjs",
     "capabilities:index": "node scripts/capabilities-index.mjs",
     "seo:structured-data-submit-prod": "npx sdtt --url https://submit.diyaccounting.co.uk/ --presets Google SocialMedia",
     "seo:structured-data-prod": "npm run seo:structured-data-submit-prod",
