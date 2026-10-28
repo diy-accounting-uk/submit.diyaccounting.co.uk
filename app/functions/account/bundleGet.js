@@ -154,7 +154,8 @@ export async function ingestHandler(event) {
 export async function retrieveUserBundles(userId, requestId = null, userEmail = "") {
   logger.info({ message: "retrieveUserBundles entry", userId, requestId });
   try {
-    const { loadCatalogFromRoot, getCappedBundleIds, isUnlimitedTokenGrant } = await import("../../services/productCatalog.js");
+    const { loadCatalogFromRoot, getCappedBundleIds, isUnlimitedTokenGrant, sumTokensRemaining } =
+      await import("../../services/productCatalog.js");
 
     // Load user bundles from DynamoDB
     const userBundles = await getUserBundles(userId);
@@ -252,14 +253,7 @@ export async function retrieveUserBundles(userId, requestId = null, userEmail = 
       }
     }
 
-    let totalTokensRemaining = 0;
-    for (const bundle of userBundles) {
-      if (bundle.tokensGranted !== undefined && !isUnlimitedTokenGrant(bundle.tokensGranted)) {
-        totalTokensRemaining += Math.max(0, bundle.tokensGranted - (bundle.tokensConsumed || 0));
-      }
-    }
-
-    return { bundles: result, tokensRemaining: totalTokensRemaining };
+    return { bundles: result, tokensRemaining: sumTokensRemaining(userBundles) };
   } catch (error) {
     logger.error({ message: "Error retrieving user bundles", error: error.message, userId, requestId });
     throw error;

@@ -69,6 +69,18 @@ export function isUnlimitedTokenGrant(tokensGranted) {
   return tokensGranted === UNLIMITED_TOKENS_GRANTED;
 }
 
+// The tokens a customer has left across every bundle that counts them: the sum of granted minus
+// consumed for each finite grant. An unlimited grant adds nothing to the sum.
+export function sumTokensRemaining(userBundles) {
+  let total = 0;
+  for (const bundle of userBundles) {
+    if (bundle.tokensGranted !== undefined && !isUnlimitedTokenGrant(bundle.tokensGranted)) {
+      total += Math.max(0, bundle.tokensGranted - (bundle.tokensConsumed || 0));
+    }
+  }
+  return total;
+}
+
 // Shared validation for a `[[bundles.prices]]` or `[[activities.prices]]` table: one row per
 // interval, one row carrying `default = true`. A row missing its amount, currency or interval
 // is dropped rather than surfaced as a price with a missing field.

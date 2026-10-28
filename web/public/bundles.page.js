@@ -143,7 +143,7 @@ function readStoredLandingAttribution() {
 }
 
 // --- request individual bundle
-async function requestBundle(bundleId, bundleName, qualifiers = {}, fireAndForget = true) {
+async function requestBundle(bundleId, bundleName, qualifiers = {}) {
   const idToken = getIdToken();
   if (!idToken) {
     showStatus("Please log in first to request bundles.", "warning");
@@ -160,7 +160,6 @@ async function requestBundle(bundleId, bundleName, qualifiers = {}, fireAndForge
       headers: {
         "Content-Type": "application/json",
       },
-      fireAndForget,
       body: JSON.stringify({ bundleId, qualifiers, acquisition: readStoredLandingAttribution() }),
     });
     const body = await r.json().catch(() => ({}));
@@ -400,7 +399,7 @@ document.addEventListener("click", async (e) => {
   btn.textContent = "Requesting...";
   btn.disabled = true;
 
-  const success = await requestBundle(bundleId, bundleName, qualifiers, true);
+  const success = await requestBundle(bundleId, bundleName, qualifiers);
   if (success) {
     markGranted(btn, `Added ✓ ${bundleName}`);
   } else {

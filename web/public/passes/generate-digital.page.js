@@ -160,12 +160,14 @@ document.getElementById("generatePassBtn").addEventListener("click", async () =>
       console.warn("Failed to generate QR code:", qrErr);
     }
 
-    // Update token display
-    if (body.tokensRemaining !== undefined) {
-      document.getElementById("tokensRemainingDisplay").textContent = body.tokensRemaining;
-      document.getElementById("tokensAfter").textContent =
-        `${body.tokensConsumed} tokens consumed. ${body.tokensRemaining} tokens remaining.`;
-    }
+    // The "This will use" line is about the next pass, so it goes once a pass exists.
+    document.getElementById("tokenInfo").style.display = "none";
+    const tokensAfter = document.getElementById("tokensAfter");
+    tokensAfter.textContent =
+      body.tokensRemaining !== undefined
+        ? `${body.tokensConsumed} tokens consumed. ${body.tokensRemaining} tokens remaining.`
+        : `${body.tokensConsumed} tokens consumed.`;
+    window.dispatchEvent(new CustomEvent("token-balance-changed"));
 
     document.getElementById("passResult").style.display = "block";
     btn.textContent = "Generate another";

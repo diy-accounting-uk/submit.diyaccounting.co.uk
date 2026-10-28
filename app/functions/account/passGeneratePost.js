@@ -17,8 +17,15 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { createPass } from "../../services/passService.js";
 import { consumeTokenForActivity } from "../../services/tokenEnforcement.js";
+import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
-import { loadPassTypesFromRoot, getPassTypeById, loadCatalogFromRoot } from "../../services/productCatalog.js";
+import {
+  loadPassTypesFromRoot,
+  getPassTypeById,
+  loadCatalogFromRoot,
+  isUnlimitedTokenGrant,
+  sumTokensRemaining,
+} from "../../services/productCatalog.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 
 const logger = createLogger({ source: "app/functions/account/passGeneratePost.js" });
@@ -107,6 +114,10 @@ export async function ingestHandler(event) {
       detail: { passTypeId, bundleId: pass.bundleId, issuedBy: hashedSub },
     });
 
+    // The balance across every bundle, the figure the header shows, not the one bucket that paid.
+    const userBundles = await getUserBundles(userSub);
+    const holdsUnlimitedGrant = userBundles.some((b) => isUnlimitedTokenGrant(b.tokensGranted));
+
     return http200OkResponse({
       request,
       headers: responseHeaders,
@@ -118,7 +129,7 @@ export async function ingestHandler(event) {
         validUntil: pass.validUntil || null,
         maxUses: pass.maxUses,
         tokensConsumed: tokenResult.cost,
-        tokensRemaining: tokenResult.tokensRemaining,
+        tokensRemaining: holdsUnlimitedGrant ? undefined : sumTokensRemaining(userBundles),
       },
     });
   } catch (error) {
