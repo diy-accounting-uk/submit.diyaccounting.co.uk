@@ -165,6 +165,7 @@ async function handleAccountsFormSubmit(event) {
     document.getElementById("previewIxbrl").textContent = preview.ixbrl;
     document.getElementById("previewRendered").srcdoc = preview.ixbrl;
     showView("previewView");
+    document.getElementById("previewView").scrollIntoView();
   } catch (error) {
     console.error("Failed to render the accounts preview:", error);
     showStatus(error.message || "Failed to render the accounts preview.", "error");

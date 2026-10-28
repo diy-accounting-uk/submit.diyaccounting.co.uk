@@ -277,3 +277,31 @@ test.describe("Header account line truncates, the brand stays whole", () => {
     });
   }
 });
+
+test.describe("Filing page status banners say what the reader can do", () => {
+  const BANNERS = [
+    [
+      "companies-house/fileMicroEntityAccounts.html",
+      /You can build, preview and file these accounts against Companies House's test service/,
+    ],
+    [
+      "companies-house/fileSmallCompanyAccounts.html",
+      /You can build, preview and file these accounts against Companies House's test service/,
+    ],
+    ["companies-house/fileCompanyTaxReturn.html", /You can prepare the return and preview its boxes here/],
+  ];
+
+  for (const [pagePath, wording] of BANNERS) {
+    test(`${pagePath} states what the status lets the reader do and fits at 390px`, async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 800 });
+      await serveRealSite(page);
+      await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "domcontentloaded" });
+      await delay(300);
+
+      const banner = await page.locator("[data-feature-status]").first().textContent();
+      expect(banner).toMatch(wording);
+      expect(banner).not.toMatch(/rejected|await|credentials|TPVS/i);
+      expect(await hasRealHorizontalScroll(page)).toBe(false);
+    });
+  }
+});
