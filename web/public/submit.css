@@ -2552,6 +2552,12 @@ body > footer {
   margin-top: 0;
 }
 
+/* The current bundles and the catalogue arrive at different times; the block holds the room
+   of both so the sections below do not jump when they fill in. */
+.bundles-block {
+  min-height: 54.5rem;
+}
+
 .service-item {
   background: var(--c-paper);
   border: 1px solid var(--c-rule-subtle);
