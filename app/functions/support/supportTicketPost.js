@@ -139,6 +139,52 @@ async function createGitHubIssue({ title, body, labels }) {
   return response.json();
 }
 
+// The reader workflow lives in this repository, not in the private one that holds the tickets, so
+// an issue event in the private repository cannot start it. GitHub's scheduler runs the reader's
+// ten-minute cron only a few times a day, so a filed ticket also asks for a run directly.
+export const SUPPORT_READER_REPO = "diy-accounting-uk/submit.diyaccounting.co.uk";
+export const SUPPORT_READER_WORKFLOW = "support-reader.yml";
+export const SUPPORT_READER_REF = "main";
+
+/**
+ * Asks GitHub to run the support reader now. Never throws: the reader's schedule still picks the
+ * ticket up when this fails, so a failed dispatch is logged and the ticket stays filed.
+ *
+ * @returns {Promise<boolean>} whether GitHub accepted the dispatch
+ */
+export async function dispatchSupportReader() {
+  try {
+    const token = await getInstallationAccessToken({
+      appId: process.env.GITHUB_APP_ID,
+      privateKey: await getGitHubAppPrivateKey(),
+      installationId: process.env.GITHUB_APP_INSTALLATION_ID,
+      repositories: [SUPPORT_READER_REPO.split("/")[1]],
+      permissions: { actions: "write" },
+    });
+    const response = await fetch(
+      `https://api.github.com/repos/${SUPPORT_READER_REPO}/actions/workflows/${SUPPORT_READER_WORKFLOW}/dispatches`,
+      {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Accept": "application/vnd.github+json",
+          "X-GitHub-Api-Version": "2022-11-28",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ref: SUPPORT_READER_REF }),
+      },
+    );
+    if (!response.ok) {
+      logger.warn({ message: "Support reader dispatch refused", status: response.status });
+      return false;
+    }
+    return true;
+  } catch (error) {
+    logger.warn({ message: "Support reader dispatch failed", error: error.message });
+    return false;
+  }
+}
+
 /**
  * One-way hash of the caller's IP address for use as a DynamoDB rate-limit key. Not a security
  * boundary - the item lives for a few minutes and holds no customer data - just a way to avoid
@@ -355,6 +401,7 @@ export async function ingestHandler(event) {
     });
 
     logger.info({ message: "GitHub issue created successfully", issueNumber: issue.number });
+    await dispatchSupportReader();
     await publishActivityEvent({
       event: "support-ticket",
       summary: "Support ticket created",
