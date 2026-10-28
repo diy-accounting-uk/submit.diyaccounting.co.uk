@@ -74,6 +74,7 @@ let reviewedPreview = null;
 let currentView = "companyView";
 let reviewReached = false;
 let changing = null;
+let companiesHousePollWindow = 0;
 
 // What the customer chose to send and how far each filing has got. companiesHouse holds the
 // accounts submission once it is sent; its statusCode is PENDING, PARKED, ACCEPT or REJECT.
@@ -542,8 +543,42 @@ function workedTaxPanel() {
   );
 }
 
+// The capital allowance boxes in the order of the CT600, grouped by the class of asset they claim for.
+const ALLOWANCE_CLASSES = [
+  { title: "Annual investment allowance", ids: ["annualInvestmentAllowance", "annualInvestmentAllowanceOutsideTrade"] },
+  { title: "Main pool", ids: ["mainPoolAllowances", "mainPoolBalancingCharges"] },
+  { title: "Full expensing", ids: ["fullExpensingAllowances", "fullExpensingBalancingCharges"] },
+  {
+    title: "Special rate allowance",
+    ids: ["specialRateAllowances", "specialRateBalancingCharges", "specialRateAllowanceExpenditure"],
+  },
+  {
+    title: "Special rate pool",
+    ids: ["specialRatePoolAllowances", "specialRatePoolAnnualInvestmentAllowance", "specialRatePoolBalancingCharges"],
+  },
+  { title: "First year allowance and other plant", ids: ["firstYearAllowanceExpenditure", "otherMachineryAndPlantExpenditure"] },
+];
+
+// Each class gets a heading and its boxes side by side where the width allows, so the section reads as six groups.
+function allowanceClasses(fields) {
+  const byId = new Map(
+    fields.map((group, index) => [CT600_FORM_FIELDS.filter((field) => field.section === "allowances")[index].id, group]),
+  );
+  const grouped = ALLOWANCE_CLASSES.flatMap(({ title, ids }) => [
+    create("h4", {}, title),
+    create(
+      "div",
+      { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); column-gap: 1.5rem" },
+      ...ids.map((id) => byId.get(id)),
+    ),
+  ]);
+  const ungrouped = [...byId].filter(([id]) => !ALLOWANCE_CLASSES.some(({ ids }) => ids.includes(id))).map(([, group]) => group);
+  return [...grouped, ...ungrouped];
+}
+
 function sectionBody(sectionId) {
   const fields = CT600_FORM_FIELDS.filter((field) => field.section === sectionId).map(fieldGroup);
+  if (sectionId === "allowances") return allowanceClasses(fields);
   if (sectionId === "accounts") return accountsSection();
   if (sectionId === "declaration") {
     return [
@@ -992,7 +1027,7 @@ function renderSendTo(values) {
   const rows = [
     {
       id: "sendTo",
-      label: "Where the accounts go",
+      label: "Sending the accounts to",
       value: both ? "Companies House first, then HMRC with the Company Tax Return" : "HMRC with the Company Tax Return",
     },
   ];
@@ -1142,6 +1177,16 @@ function setOutcome(kind) {
   element("returnOutcome").className = kind ? `outcome outcome--${kind}` : "outcome";
 }
 
+// The HMRC heading and its box stay out of sight until the return has something to say.
+function showHmrcOutcomeWhenFilled() {
+  const hasResult = Boolean(element("returnResult").firstChild);
+  element("returnOutcome").style.display = hasResult ? "" : "none";
+  element("hmrcHeading").style.display = hasResult ? "" : "none";
+}
+
+new MutationObserver(showHmrcOutcomeWhenFilled).observe(element("returnResult"), { childList: true });
+showHmrcOutcomeWhenFilled();
+
 function outcomeTitle(text) {
   return create("h3", { class: "outcome__title" }, text);
 }
@@ -1223,8 +1268,13 @@ function chooseSending(values) {
   sending.jointFilingId = sending.mode === "both" ? (sending.jointFilingId ?? crypto.randomUUID()) : null;
 }
 
+// The accounts still need sending when none went yet or Companies House rejected the last send.
+function accountsStillToSend() {
+  return sending.mode === "both" && (!sending.companiesHouse || sending.companiesHouse.statusCode === "REJECT");
+}
+
 function configureSendStep() {
-  const accountsFirst = sending.mode === "both" && !companiesHouseAccepted();
+  const accountsFirst = accountsStillToSend();
   element("sendStepHeading").textContent = accountsFirst ? "Send to Companies House and HMRC" : "Send to HMRC";
   const order = element("sendStepOrder");
   order.style.display = sending.mode === "both" ? "block" : "none";
@@ -1296,6 +1346,67 @@ function forgetJoint() {
     sessionStorage.removeItem(JOINT_STORAGE_KEY);
   } catch {
     // Nothing was stored.
+  }
+}
+
+function readSavedJoint() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(JOINT_STORAGE_KEY));
+    return saved?.company && saved.values && saved.sending?.companiesHouse ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function fillValues(values) {
+  for (const control of element("returnForm").querySelectorAll("input, textarea")) {
+    if (control.type === "radio") {
+      control.checked = values[control.name] === control.value;
+    } else if (control.type === "checkbox") {
+      control.checked = Boolean(values[control.id]);
+    } else if (typeof values[control.id] === "string") {
+      control.value = values[control.id];
+      state.edited.add(control.id);
+    }
+  }
+  toggleSections();
+  applyRegime();
+}
+
+// A reload mid-filing: refill the form, rebuild the review and show where the two filings stand.
+// The saved entry holds no codes and no password, so the customer types those again.
+async function resumeJoint() {
+  const saved = readSavedJoint();
+  if (!saved) return;
+  window.showLoading();
+  try {
+    company = saved.company;
+    Object.assign(sending, saved.sending);
+    element("formCompanyName").textContent = company.companyName;
+    element("formCompanyNumber").textContent = company.companyNumber;
+    fillValues(saved.values);
+    await ensureBundle();
+    refresh();
+    previewRequest = ct600RequestFromValues(saved.values, company, state.workingSheet);
+    reviewedPreview = await window.previewCtReturn(previewRequest);
+    renderReview(reviewedPreview);
+    reviewReached = true;
+    element("previewBtn").textContent = RETURN_TO_REVIEW;
+    if (companiesHouseAccepted()) lockAccounts();
+    configureSendStep();
+    if (companiesHouseAccepted()) {
+      showView("previewView", { push: false });
+      return;
+    }
+    showJointResult();
+    renderCompaniesHouse();
+    if (sending.companiesHouse.statusCode === "REJECT") element("tryAgainBtn").style.display = "inline-block";
+  } catch (error) {
+    console.error("Failed to resume the filing:", error);
+    window.showStatus(error.message || "Failed to resume the filing.", "error");
+    showView("formView", { push: false });
+  } finally {
+    window.hideLoading();
   }
 }
 
@@ -1380,12 +1491,16 @@ function showJointResult() {
 }
 
 // Poll Companies House for one window. True once it accepts; otherwise the page says where the accounts stand.
+// Only the newest poll window may write the result, so an older window cannot overwrite it or send the return twice.
 async function waitForCompaniesHouse(headers) {
-  const submission = sending.companiesHouse;
+  const pollWindow = ++companiesHousePollWindow;
+  const { submissionNumber, pollIntervalSeconds } = sending.companiesHouse;
   for (let attempt = 0; attempt < MAX_COMPANIES_HOUSE_POLLS; attempt++) {
-    await waitSeconds(submission.pollIntervalSeconds);
-    const result = await window.pollMicroEntityAccounts(submission.submissionNumber, headers);
-    sending.companiesHouse = { ...submission, ...result };
+    await waitSeconds(pollIntervalSeconds);
+    if (pollWindow !== companiesHousePollWindow) return false;
+    const result = await window.pollMicroEntityAccounts(submissionNumber, headers);
+    if (pollWindow !== companiesHousePollWindow) return false;
+    sending.companiesHouse = { ...sending.companiesHouse, ...result };
     if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") break;
   }
   const { statusCode } = sending.companiesHouse;
@@ -1476,7 +1591,7 @@ async function handleSubmitReturn() {
     window.showStatus("Enter the Government Gateway user ID and password.", "error");
     return;
   }
-  const accountsFirst = sending.mode === "both" && !companiesHouseAccepted();
+  const accountsFirst = accountsStillToSend();
   if (accountsFirst) {
     const problem = companyAuthCodeProblem();
     if (problem) {
@@ -1526,6 +1641,7 @@ function updateGovTestScenarioVisibility() {
 }
 
 function startAgain() {
+  companiesHousePollWindow++;
   company = null;
   previewRequest = null;
   reviewedPreview = null;
@@ -1584,3 +1700,5 @@ element("changeCompanyLink").addEventListener("click", (event) => {
   event.preventDefault();
   showView("companyView");
 });
+
+resumeJoint();

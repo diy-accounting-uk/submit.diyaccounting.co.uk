@@ -55,6 +55,8 @@ import {
   verifyCompaniesHouseAccepted,
   verifyCompaniesHouseStillPending,
   sendTheTaxReturnNow,
+  reloadWhileCompaniesHouseIsPending,
+  sendTheTaxReturnAfterCompaniesHouseAccepts,
   waitForCompaniesHouse,
   countRequestsTo,
   readReceiptsOfTheFilings,
@@ -330,6 +332,25 @@ test("Click through: send the Company Tax Return while Companies House is pendin
   await waitForCompaniesHouse(page, screenshotPath);
   await verifyBothAccepted(page, screenshotPath);
   await verifyAccountsLocked(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: reload while Companies House is pending, then see the filing resume, Companies House accept and the accounts lock", async ({
+  page,
+}, testInfo) => {
+  const accountsPosts = await countRequestsTo(page, "/api/v1/companies-house/accounts", "POST");
+  await reachJointReview(page, testInfo, { receives: "The full accounts" });
+
+  await setCtGovTestScenario(page, "PENDING_FOREVER", screenshotPath);
+  await enterJointCredentialsAndSubmit(page, { ...gatewayCredentials, companyAuthCode }, screenshotPath);
+  await verifyCompaniesHouseStillPending(page, screenshotPath);
+  await reloadWhileCompaniesHouseIsPending(page, screenshotPath);
+
+  await sendTheTaxReturnAfterCompaniesHouseAccepts(page, gatewayCredentials, screenshotPath);
+  await verifyBothAccepted(page, screenshotPath);
+  await verifyAccountsLocked(page, screenshotPath);
+  expect(accountsPosts.count).toBe(1);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });

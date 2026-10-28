@@ -149,8 +149,9 @@ export const AVAILABILITY = [
     cells: [["production"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
   {
-    filing: "Accounts and CT600 together (designed, not built)",
-    cells: [NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
+    filing: "Accounts at Companies House and CT600 at HMRC together",
+    web: "companies-house/fileCompanyTaxReturn.html",
+    cells: [["preview"], ["preview", "book export file"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
 ];
 
