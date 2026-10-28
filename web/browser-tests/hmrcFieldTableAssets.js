@@ -101,6 +101,12 @@ export async function serveItsaPageScripts(page) {
   await serveFile(page, "**/lib/itsa-submission-record.js", "lib/itsa-submission-record.js", "application/javascript");
   await serveSelfEmploymentExpenses(page);
   await serveUkPropertyPeriodFields(page);
+  await serveFile(
+    page,
+    "**/lib/structured-building-allowance-rows.js",
+    "lib/structured-building-allowance-rows.js",
+    "application/javascript",
+  );
   await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
   return page.route("**/hmrc/itsa/*.page.js", async (route) => {
     const fileName = path.basename(new URL(route.request().url()).pathname);
