@@ -238,3 +238,26 @@ describe("hmrcItsaForeignPropertyDetailsPost worker", () => {
     expect(await asyncRequestWrites("completed")).toHaveLength(0);
   });
 });
+
+describe("hmrcItsaForeignPropertyDetailsPost bundle enforcement", () => {
+  beforeEach(() => {
+    Object.assign(process.env, setupTestEnv());
+    mockFetch = setupFetchMock();
+    vi.resetAllMocks();
+    mockEventBridgeSend.mockResolvedValue({});
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) return { Items: [], Count: 0 };
+      return {};
+    });
+  });
+
+  test("returns 403 JSON when the authenticated user holds no bundle entitled to ITSA", async () => {
+    const event = requestEvent();
+    event.requestContext.http.path = "/api/v1/hmrc/itsa/foreign-property/details";
+    const response = await handler(event);
+    expect(response.statusCode).toBe(403);
+    expect(parseResponseBody(response).code).toBe("BUNDLE_FORBIDDEN");
+    expect(mockFetch.mock.calls.filter(([url]) => String(url).includes("/individuals/"))).toHaveLength(0);
+  });
+});

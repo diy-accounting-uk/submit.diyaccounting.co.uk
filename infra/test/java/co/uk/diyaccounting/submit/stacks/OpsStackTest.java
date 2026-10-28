@@ -314,7 +314,7 @@ class OpsStackTest {
                         .filter(entry -> entry.getKey().contains("TokenChargeUnpaid"))
                         .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         assertEquals(
-                12,
+                14,
                 metricFilters.size(),
                 "expected one metric filter per HMRC submission endpoint that calls chargeTokenOnSuccess, "
                         + "on the ingest log group its worker shares");

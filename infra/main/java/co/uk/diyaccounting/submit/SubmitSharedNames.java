@@ -104,6 +104,9 @@ public class SubmitSharedNames {
     public String hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName;
     public String hmrcItsaUkPropertyAnnualGetAsyncRequestsTableName;
     public String hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName;
+    public String hmrcItsaForeignPropertyPeriodPostAsyncRequestsTableName;
+    public String hmrcItsaForeignPropertyPeriodGetAsyncRequestsTableName;
+    public String hmrcItsaForeignPropertyPeriodPutAsyncRequestsTableName;
     public String hmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName;
     public String hmrcItsaForeignPropertyDetailsPostAsyncRequestsTableName;
     public String hmrcItsaForeignPropertyDetailsPutAsyncRequestsTableName;
@@ -634,6 +637,51 @@ public class SubmitSharedNames {
     public String hmrcItsaUkPropertyAnnualPutLambdaUrlPath;
     public boolean hmrcItsaUkPropertyAnnualPutLambdaJwtAuthorizer;
     public boolean hmrcItsaUkPropertyAnnualPutLambdaCustomAuthorizer;
+
+    public String hmrcItsaForeignPropertyPeriodPostIngestLambdaHandler;
+    public String hmrcItsaForeignPropertyPeriodPostIngestLambdaFunctionName;
+    public String hmrcItsaForeignPropertyPeriodPostIngestLambdaArn;
+    public String hmrcItsaForeignPropertyPeriodPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaForeignPropertyPeriodPostWorkerLambdaHandler;
+    public String hmrcItsaForeignPropertyPeriodPostWorkerLambdaFunctionName;
+    public String hmrcItsaForeignPropertyPeriodPostWorkerLambdaArn;
+    public String hmrcItsaForeignPropertyPeriodPostWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaForeignPropertyPeriodPostLambdaQueueName;
+    public String hmrcItsaForeignPropertyPeriodPostLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaForeignPropertyPeriodPostLambdaHttpMethod;
+    public String hmrcItsaForeignPropertyPeriodPostLambdaUrlPath;
+    public boolean hmrcItsaForeignPropertyPeriodPostLambdaJwtAuthorizer;
+    public boolean hmrcItsaForeignPropertyPeriodPostLambdaCustomAuthorizer;
+
+    public String hmrcItsaForeignPropertyPeriodGetIngestLambdaHandler;
+    public String hmrcItsaForeignPropertyPeriodGetIngestLambdaFunctionName;
+    public String hmrcItsaForeignPropertyPeriodGetIngestLambdaArn;
+    public String hmrcItsaForeignPropertyPeriodGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaForeignPropertyPeriodGetWorkerLambdaHandler;
+    public String hmrcItsaForeignPropertyPeriodGetWorkerLambdaFunctionName;
+    public String hmrcItsaForeignPropertyPeriodGetWorkerLambdaArn;
+    public String hmrcItsaForeignPropertyPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaForeignPropertyPeriodGetLambdaQueueName;
+    public String hmrcItsaForeignPropertyPeriodGetLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaForeignPropertyPeriodGetLambdaHttpMethod;
+    public String hmrcItsaForeignPropertyPeriodGetLambdaUrlPath;
+    public boolean hmrcItsaForeignPropertyPeriodGetLambdaJwtAuthorizer;
+    public boolean hmrcItsaForeignPropertyPeriodGetLambdaCustomAuthorizer;
+
+    public String hmrcItsaForeignPropertyPeriodPutIngestLambdaHandler;
+    public String hmrcItsaForeignPropertyPeriodPutIngestLambdaFunctionName;
+    public String hmrcItsaForeignPropertyPeriodPutIngestLambdaArn;
+    public String hmrcItsaForeignPropertyPeriodPutIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaForeignPropertyPeriodPutWorkerLambdaHandler;
+    public String hmrcItsaForeignPropertyPeriodPutWorkerLambdaFunctionName;
+    public String hmrcItsaForeignPropertyPeriodPutWorkerLambdaArn;
+    public String hmrcItsaForeignPropertyPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaForeignPropertyPeriodPutLambdaQueueName;
+    public String hmrcItsaForeignPropertyPeriodPutLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaForeignPropertyPeriodPutLambdaHttpMethod;
+    public String hmrcItsaForeignPropertyPeriodPutLambdaUrlPath;
+    public boolean hmrcItsaForeignPropertyPeriodPutLambdaJwtAuthorizer;
+    public boolean hmrcItsaForeignPropertyPeriodPutLambdaCustomAuthorizer;
 
     public String hmrcItsaForeignPropertyDetailsGetIngestLambdaHandler;
     public String hmrcItsaForeignPropertyDetailsGetIngestLambdaFunctionName;
@@ -1708,6 +1756,12 @@ public class SubmitSharedNames {
                 "%s-hmrc-itsa-uk-property-annual-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName =
                 "%s-hmrc-itsa-uk-property-annual-put-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaForeignPropertyPeriodPostAsyncRequestsTableName =
+                "%s-hmrc-itsa-foreign-property-period-post-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaForeignPropertyPeriodGetAsyncRequestsTableName =
+                "%s-hmrc-itsa-foreign-property-period-get-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaForeignPropertyPeriodPutAsyncRequestsTableName =
+                "%s-hmrc-itsa-foreign-property-period-put-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName =
                 "%s-hmrc-itsa-foreign-property-details-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaForeignPropertyDetailsPostAsyncRequestsTableName =
@@ -3055,6 +3109,185 @@ public class SubmitSharedNames {
                         new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
                         new ApiParameter("adjustments", "body", false, "Annual adjustments"),
                         new ApiParameter("allowances", "body", false, "Annual allowances"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaForeignPropertyPeriodPostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcItsaForeignPropertyPeriodPostLambdaUrlPath = "/api/v1/hmrc/itsa/foreign-property/period";
+        this.hmrcItsaForeignPropertyPeriodPostLambdaJwtAuthorizer = false;
+        this.hmrcItsaForeignPropertyPeriodPostLambdaCustomAuthorizer = true;
+        var hmrcItsaForeignPropertyPeriodPostLambdaHandlerName = "hmrcItsaForeignPropertyPeriodPost.ingestHandler";
+        var hmrcItsaForeignPropertyPeriodPostLambdaWorkerHandlerName =
+                "hmrcItsaForeignPropertyPeriodPost.workerHandler";
+        var hmrcItsaForeignPropertyPeriodPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaForeignPropertyPeriodPostLambdaHandlerName);
+        this.hmrcItsaForeignPropertyPeriodPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaForeignPropertyPeriodPostLambdaHandlerDashed);
+        this.hmrcItsaForeignPropertyPeriodPostIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaForeignPropertyPeriodPostLambdaHandlerName);
+        this.hmrcItsaForeignPropertyPeriodPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaForeignPropertyPeriodPostLambdaHandlerDashed);
+        this.hmrcItsaForeignPropertyPeriodPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaForeignPropertyPeriodPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaForeignPropertyPeriodPostWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaForeignPropertyPeriodPostIngestLambdaFunctionName);
+        this.hmrcItsaForeignPropertyPeriodPostWorkerLambdaHandler = "%s/hmrc/%s"
+                .formatted(appLambdaHandlerPrefix, hmrcItsaForeignPropertyPeriodPostLambdaWorkerHandlerName);
+        this.hmrcItsaForeignPropertyPeriodPostWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaForeignPropertyPeriodPostIngestLambdaArn);
+        this.hmrcItsaForeignPropertyPeriodPostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaForeignPropertyPeriodPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaForeignPropertyPeriodPostLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaForeignPropertyPeriodPostIngestLambdaFunctionName);
+        this.hmrcItsaForeignPropertyPeriodPostLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaForeignPropertyPeriodPostIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaForeignPropertyPeriodPostLambdaHttpMethod,
+                this.hmrcItsaForeignPropertyPeriodPostLambdaUrlPath,
+                "File an ITSA foreign property quarterly update",
+                "Creates a foreign property period summary, or sends the running total from 2025-26, for the given business and tax year",
+                "postItsaForeignPropertyPeriod",
+                List.of(
+                        new ApiParameter("nino", "body", true, "National Insurance number"),
+                        new ApiParameter("businessId", "body", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter(
+                                "fromDate",
+                                "body",
+                                true,
+                                "Start of the period, format YYYY-MM-DD, optional from 2025-26"),
+                        new ApiParameter(
+                                "toDate", "body", true, "End of the period, format YYYY-MM-DD, optional from 2025-26"),
+                        new ApiParameter(
+                                "foreignFhlEea", "body", false, "FHL in the EEA income and expenses, up to 2024-25"),
+                        new ApiParameter(
+                                "foreignNonFhlProperty",
+                                "body",
+                                false,
+                                "List of country entries with income and expenses, up to 2024-25"),
+                        new ApiParameter(
+                                "foreignProperty",
+                                "body",
+                                false,
+                                "List of entries with income and expenses, keyed by countryCode in 2025-26 and propertyId from 2026-27"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaForeignPropertyPeriodGetLambdaHttpMethod = HttpMethod.GET;
+        this.hmrcItsaForeignPropertyPeriodGetLambdaUrlPath = "/api/v1/hmrc/itsa/foreign-property/period";
+        this.hmrcItsaForeignPropertyPeriodGetLambdaJwtAuthorizer = false;
+        this.hmrcItsaForeignPropertyPeriodGetLambdaCustomAuthorizer = true;
+        var hmrcItsaForeignPropertyPeriodGetLambdaHandlerName = "hmrcItsaForeignPropertyPeriodGet.ingestHandler";
+        var hmrcItsaForeignPropertyPeriodGetLambdaWorkerHandlerName = "hmrcItsaForeignPropertyPeriodGet.workerHandler";
+        var hmrcItsaForeignPropertyPeriodGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaForeignPropertyPeriodGetLambdaHandlerName);
+        this.hmrcItsaForeignPropertyPeriodGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaForeignPropertyPeriodGetLambdaHandlerDashed);
+        this.hmrcItsaForeignPropertyPeriodGetIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaForeignPropertyPeriodGetLambdaHandlerName);
+        this.hmrcItsaForeignPropertyPeriodGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaForeignPropertyPeriodGetLambdaHandlerDashed);
+        this.hmrcItsaForeignPropertyPeriodGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaForeignPropertyPeriodGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaForeignPropertyPeriodGetWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaForeignPropertyPeriodGetIngestLambdaFunctionName);
+        this.hmrcItsaForeignPropertyPeriodGetWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaForeignPropertyPeriodGetLambdaWorkerHandlerName);
+        this.hmrcItsaForeignPropertyPeriodGetWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaForeignPropertyPeriodGetIngestLambdaArn);
+        this.hmrcItsaForeignPropertyPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaForeignPropertyPeriodGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaForeignPropertyPeriodGetLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaForeignPropertyPeriodGetIngestLambdaFunctionName);
+        this.hmrcItsaForeignPropertyPeriodGetLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaForeignPropertyPeriodGetIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaForeignPropertyPeriodGetLambdaHttpMethod,
+                this.hmrcItsaForeignPropertyPeriodGetLambdaUrlPath,
+                "Retrieve an ITSA foreign property period summary",
+                "Retrieves one foreign property period summary by tax year and submission id",
+                "getItsaForeignPropertyPeriod",
+                List.of(
+                        new ApiParameter("nino", "query", true, "National Insurance number"),
+                        new ApiParameter("businessId", "query", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter(
+                                "submissionId",
+                                "query",
+                                false,
+                                "The submission id from a listed period summary, needed up to 2024-25"),
+                        new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
+                        new ApiParameter(
+                                "runFraudPreventionHeaderValidation",
+                                "query",
+                                false,
+                                "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcItsaForeignPropertyPeriodPutLambdaHttpMethod = HttpMethod.PUT;
+        this.hmrcItsaForeignPropertyPeriodPutLambdaUrlPath = "/api/v1/hmrc/itsa/foreign-property/period";
+        this.hmrcItsaForeignPropertyPeriodPutLambdaJwtAuthorizer = false;
+        this.hmrcItsaForeignPropertyPeriodPutLambdaCustomAuthorizer = true;
+        var hmrcItsaForeignPropertyPeriodPutLambdaHandlerName = "hmrcItsaForeignPropertyPeriodPut.ingestHandler";
+        var hmrcItsaForeignPropertyPeriodPutLambdaWorkerHandlerName = "hmrcItsaForeignPropertyPeriodPut.workerHandler";
+        var hmrcItsaForeignPropertyPeriodPutLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaForeignPropertyPeriodPutLambdaHandlerName);
+        this.hmrcItsaForeignPropertyPeriodPutIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaForeignPropertyPeriodPutLambdaHandlerDashed);
+        this.hmrcItsaForeignPropertyPeriodPutIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaForeignPropertyPeriodPutLambdaHandlerName);
+        this.hmrcItsaForeignPropertyPeriodPutIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaForeignPropertyPeriodPutLambdaHandlerDashed);
+        this.hmrcItsaForeignPropertyPeriodPutIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaForeignPropertyPeriodPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaForeignPropertyPeriodPutWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaForeignPropertyPeriodPutIngestLambdaFunctionName);
+        this.hmrcItsaForeignPropertyPeriodPutWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaForeignPropertyPeriodPutLambdaWorkerHandlerName);
+        this.hmrcItsaForeignPropertyPeriodPutWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaForeignPropertyPeriodPutIngestLambdaArn);
+        this.hmrcItsaForeignPropertyPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaForeignPropertyPeriodPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaForeignPropertyPeriodPutLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaForeignPropertyPeriodPutIngestLambdaFunctionName);
+        this.hmrcItsaForeignPropertyPeriodPutLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaForeignPropertyPeriodPutIngestLambdaFunctionName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.hmrcItsaForeignPropertyPeriodPutLambdaHttpMethod,
+                this.hmrcItsaForeignPropertyPeriodPutLambdaUrlPath,
+                "Amend an ITSA foreign property period summary",
+                "Amends a foreign property period summary, or sends a corrected running total from 2025-26",
+                "putItsaForeignPropertyPeriod",
+                List.of(
+                        new ApiParameter("nino", "body", true, "National Insurance number"),
+                        new ApiParameter("businessId", "body", true, "The business id from Business Details"),
+                        new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
+                        new ApiParameter(
+                                "submissionId",
+                                "body",
+                                false,
+                                "The submission id from a listed period summary, needed up to 2024-25"),
+                        new ApiParameter("fromDate", "body", false, "Start of the period, from 2025-26"),
+                        new ApiParameter("toDate", "body", false, "End of the period, from 2025-26"),
+                        new ApiParameter(
+                                "foreignFhlEea", "body", false, "FHL in the EEA income and expenses, up to 2024-25"),
+                        new ApiParameter(
+                                "foreignNonFhlProperty",
+                                "body",
+                                false,
+                                "List of country entries with income and expenses, up to 2024-25"),
+                        new ApiParameter(
+                                "foreignProperty",
+                                "body",
+                                false,
+                                "List of entries with income and expenses, keyed by countryCode in 2025-26 and propertyId from 2026-27"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",

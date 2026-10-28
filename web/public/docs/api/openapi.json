@@ -883,6 +883,272 @@
         }
       }
     },
+    "/hmrc/itsa/foreign-property/period" : {
+      "post" : {
+        "summary" : "File an ITSA foreign property quarterly update",
+        "description" : "Creates a foreign property period summary, or sends the running total from 2025-26, for the given business and tax year",
+        "operationId" : "postItsaForeignPropertyPeriod",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "fromDate",
+          "in" : "body",
+          "required" : true,
+          "description" : "Start of the period, format YYYY-MM-DD, optional from 2025-26",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "toDate",
+          "in" : "body",
+          "required" : true,
+          "description" : "End of the period, format YYYY-MM-DD, optional from 2025-26",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignFhlEea",
+          "in" : "body",
+          "required" : false,
+          "description" : "FHL in the EEA income and expenses, up to 2024-25",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignNonFhlProperty",
+          "in" : "body",
+          "required" : false,
+          "description" : "List of country entries with income and expenses, up to 2024-25",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignProperty",
+          "in" : "body",
+          "required" : false,
+          "description" : "List of entries with income and expenses, keyed by countryCode in 2025-26 and propertyId from 2026-27",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      },
+      "get" : {
+        "summary" : "Retrieve an ITSA foreign property period summary",
+        "description" : "Retrieves one foreign property period summary by tax year and submission id",
+        "operationId" : "getItsaForeignPropertyPeriod",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "submissionId",
+          "in" : "query",
+          "required" : false,
+          "description" : "The submission id from a listed period summary, needed up to 2024-25",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      },
+      "put" : {
+        "summary" : "Amend an ITSA foreign property period summary",
+        "description" : "Amends a foreign property period summary, or sends a corrected running total from 2025-26",
+        "operationId" : "putItsaForeignPropertyPeriod",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "submissionId",
+          "in" : "body",
+          "required" : false,
+          "description" : "The submission id from a listed period summary, needed up to 2024-25",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "fromDate",
+          "in" : "body",
+          "required" : false,
+          "description" : "Start of the period, from 2025-26",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "toDate",
+          "in" : "body",
+          "required" : false,
+          "description" : "End of the period, from 2025-26",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignFhlEea",
+          "in" : "body",
+          "required" : false,
+          "description" : "FHL in the EEA income and expenses, up to 2024-25",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignNonFhlProperty",
+          "in" : "body",
+          "required" : false,
+          "description" : "List of country entries with income and expenses, up to 2024-25",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignProperty",
+          "in" : "body",
+          "required" : false,
+          "description" : "List of entries with income and expenses, keyed by countryCode in 2025-26 and propertyId from 2026-27",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
     "/companies-house/accounts/{submissionNumber}" : {
       "get" : {
         "summary" : "Poll a micro-entity accounts filing",

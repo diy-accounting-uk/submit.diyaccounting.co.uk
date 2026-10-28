@@ -120,10 +120,35 @@ export function buildForeignPropertyEntries(taxYear, entries) {
 }
 
 /**
+ * Build the foreignFhlEea section of a dated period or annual request (2024-25 and before).
+ * Empty parts are dropped, numbers are rounded to two places, and itemised and consolidated
+ * expenses together are refused before HMRC sees them.
+ * @param {Object|undefined} section - The caller's foreignFhlEea object
+ * @returns {Object|undefined} the section to send, or undefined when it has nothing in it
+ * @throws {ForeignPropertyValidationError}
+ */
+export function buildForeignFhlEeaSection(section) {
+  if (section === undefined || section === null) return undefined;
+  if (typeof section !== "object" || Array.isArray(section)) {
+    throw new ForeignPropertyValidationError("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED", "foreignFhlEea must be an object");
+  }
+  const cleaned = clean(section);
+  if (!cleaned) return undefined;
+  const expenses = cleaned.expenses;
+  if (expenses && expenses.consolidatedExpenses !== undefined && Object.keys(expenses).length > 1) {
+    throw new ForeignPropertyValidationError(
+      "RULE_BOTH_EXPENSES_SUPPLIED",
+      "foreignFhlEea has both itemised expenses and consolidated expenses",
+    );
+  }
+  return cleaned;
+}
+
+/**
  * Build the body of Create or Update Foreign Property Details.
  *
- * The name is 1 to 105 characters. An end reason needs an end date. Create needs the country
- * code; Update does not send it.
+ * The name is required and is 1 to 105 characters. An end reason needs an end date. Create needs
+ * the country code; Update does not send it.
  * @param {Object} details
  * @param {string} [details.propertyName]
  * @param {string} [details.countryCode]
@@ -142,7 +167,7 @@ export function buildForeignPropertyDetailsBody({ propertyName, countryCode, end
       throw new ForeignPropertyValidationError("FORMAT_PROPERTY_NAME", `propertyName must be 1 to ${PROPERTY_NAME_MAX_LENGTH} characters`);
     }
     body.propertyName = propertyName;
-  } else if (create) {
+  } else {
     throw new ForeignPropertyValidationError("RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED", "Missing propertyName");
   }
 

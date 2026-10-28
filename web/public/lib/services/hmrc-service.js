@@ -981,7 +981,7 @@ async function foreignPropertyRequest(action, method, url, body, accessToken, go
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a query parameter
- * @returns {Promise<object>} Response containing propertyDetails
+ * @returns {Promise<object>} Response containing foreignPropertyDetails
  */
 export async function getForeignPropertyDetails(
   nino,

@@ -7,7 +7,7 @@ window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId
 window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
 
 const PENDING_KEY = "pendingForeignPropertyDetailsRequest";
-const END_REASON_TEXT = { "disposal": "Sold or given away", "no-longer-letting": "No longer let" };
+const END_REASON_TEXT = { "disposal": "Sold or given away", "no-longer-renting-property-out": "No longer let" };
 const PROPERTY_NAME_MAX_LENGTH = 105;
 
 let loaded = { nino: "", businessId: "", taxYear: "" };
@@ -151,7 +151,7 @@ async function loadProperties(criteria, accessToken) {
     criteria.testScenario,
   );
   loaded = { nino: criteria.nino, businessId: criteria.businessId, taxYear: criteria.taxYear };
-  properties = result?.propertyDetails || [];
+  properties = result?.foreignPropertyDetails || [];
   showPropertyList();
   closePropertyForm();
 }
