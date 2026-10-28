@@ -17,6 +17,8 @@ import { PRODUCTS } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 import { savePackageZip } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import { deriveItsaQuarterlyUpdate, deriveVatReturn } from "@diy-accounting-uk/diya-gl";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { SMALL_COMPANY_FORMAT_2_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
+import { buildSmallCompanyAccounts } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -1011,6 +1013,40 @@ test.describe("books import of an iXBRL accounts document", () => {
       "Antony Christopher Cartwright\nSamantha Ashley Cartwright\nJane Elizabeth Grundy",
     );
     await expect(page.locator("#directorName")).toHaveValue("Antony Christopher Cartwright");
+  });
+
+  test("a Format 2 small company document selects Format 2 and fills every Format 2 line for both years", async ({ page }) => {
+    const { profitAndLoss } = SMALL_COMPANY_FORMAT_2_CASE_INPUT;
+    const lines = [
+      "turnover",
+      "changeInStocks",
+      "ownWorkCapitalised",
+      "otherOperatingIncome",
+      "rawMaterialsConsumables",
+      "otherExternalCharges",
+      "staffCosts",
+      "depreciation",
+      "otherOperatingExpenses",
+      "interestReceivable",
+      "interestPayable",
+      "tax",
+    ];
+    await openAccountsPage(page, SMALL_URL, SMALL_COMPANY_FORMAT_2_CASE_INPUT.companyNumber);
+    await chooseFile(
+      page,
+      "format2.xhtml",
+      Buffer.from(buildSmallCompanyAccounts(SMALL_COMPANY_FORMAT_2_CASE_INPUT), "utf8"),
+      "application/xhtml+xml",
+    );
+
+    await expect(page.locator("#booksImportStatus")).toContainText("from format2.xhtml", { timeout: 60_000 });
+    await expect(page.locator("#profitAndLossFormat2")).toBeChecked();
+    await expect(page.locator("#includeComparatives")).toBeChecked();
+    for (const line of lines) {
+      const suffix = line[0].toUpperCase() + line.slice(1);
+      await expect(page.locator("#current" + suffix), `current ${line}`).toHaveValue(String(profitAndLoss.current[line]));
+      await expect(page.locator("#prior" + suffix), `prior ${line}`).toHaveValue(String(profitAndLoss.prior[line]));
+    }
   });
 
   test("a filleted small company document selects the filleted copy and leaves the profit and loss account empty", async ({ page }) => {

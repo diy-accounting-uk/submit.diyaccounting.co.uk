@@ -124,4 +124,22 @@ describe("the builders' accounts read back through the diya-gl reader", () => {
       }
     }
   });
+
+  test("a Format 2 small company document maps to the Format 2 line set for both years", () => {
+    const mapped = mapIxbrlAccounts(buildSmallCompanyAccounts(SMALL_COMPANY_FORMAT_2_CASE_INPUT), {
+      regime: "small",
+      companyNumber: SMALL_COMPANY_FORMAT_2_CASE_INPUT.companyNumber,
+    });
+
+    expect(mapped.profitAndLoss.format).toBe(2);
+    for (const [year, builtYear] of [
+      ["currentYear", "current"],
+      ["priorYear", "prior"],
+    ]) {
+      const built = SMALL_COMPANY_FORMAT_2_CASE_INPUT.profitAndLoss[builtYear];
+      expect(figuresOf(mapped.profitAndLoss[year], SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES), year).toEqual(
+        Object.fromEntries(SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES.map((line) => [line, built[line]])),
+      );
+    }
+  });
 });
