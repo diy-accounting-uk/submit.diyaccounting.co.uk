@@ -63,7 +63,7 @@ test.describe("Home page activities for a Resident account", () => {
     const count = await buttons.count();
     expect(count).toBeGreaterThan(0);
     await expect(page.locator("#dynamicActivities")).not.toContainText("PSC");
-    await expect(page.locator("#dynamicActivities")).not.toContainText("Save DIYA-GL books");
+    await expect(page.locator("#dynamicActivities")).not.toContainText(/Save diya-gl books/i);
 
     if (SCREENSHOT_DIR) {
       const size = page.viewportSize().width;
