@@ -689,7 +689,8 @@ export async function findReaderViewDefects(page, options = {}) {
       const type = input.tagName === "INPUT" ? (input.getAttribute("type") || "text").toLowerCase() : input.tagName.toLowerCase();
       if (input.tagName === "INPUT" && !textInputTypes.has(type)) continue;
       if (isIgnored(input) || !isVisible(input)) continue;
-      const group = input.closest("form") || document.body;
+      // A control in a table is sized to its column, so it is measured against its own table.
+      const group = input.closest("table") || input.closest("form") || document.body;
       if (!groups.has(group)) groups.set(group, []);
       groups.get(group).push(input);
     }
