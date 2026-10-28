@@ -13,7 +13,7 @@ import { deriveCompanyTaxReturn } from "../services/ct600Xml.js";
 
 export const FIXTURE_BOOK_DIRECTORY = "fixtures/diya-gl/precision-code-ltd";
 export const FIXTURE_UTR = "8596148860";
-const FIXTURE_REGISTERED_OFFICE = "1 Test Street, London, EC1A 1AA";
+const FIXTURE_REGISTERED_OFFICE = { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" };
 
 /**
  * The figures a book export supplies: the accounts and the CT600 figures.

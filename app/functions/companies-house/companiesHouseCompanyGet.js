@@ -36,16 +36,42 @@ export function extractAndValidateParameters(event, errorMessages) {
   return { companyNumber: normalised };
 }
 
-// HTTP request/response, aware Lambda ingestHandler function
-// The registered office on one line, as the register shows it.
-export function registeredOfficeLine(address) {
-  if (!address || typeof address !== "object") return "";
-  return ["address_line_1", "address_line_2", "locality", "region", "postal_code"]
-    .map((key) => (typeof address[key] === "string" ? address[key].trim() : ""))
-    .filter(Boolean)
-    .join(", ");
+const trimmed = (value) => (typeof value === "string" ? value.trim() : "");
+
+/**
+ * The registered office as the parts the accounts tag, from the Companies House address object.
+ * The address lines are, in order and without empties: care of, PO box, premises with line 1
+ * (the premises are left out when line 1 already starts with them), and line 2. The first three
+ * are addressLine1 to addressLine3 and a fourth joins addressLine3.
+ * @param {object} address - the registered_office_address object
+ * @returns {{addressLine1?: string, addressLine2?: string, addressLine3?: string, cityOrTown?: string, countyRegion?: string, postalCode?: string, country?: string}}
+ */
+export function registeredOfficeFromAddress(address) {
+  if (!address || typeof address !== "object") return {};
+  const premises = trimmed(address.premises);
+  const line1 = trimmed(address.address_line_1);
+  const careOf = trimmed(address.care_of);
+  const poBox = trimmed(address.po_box);
+  const lines = [
+    careOf && `c/o ${careOf}`,
+    poBox && `PO Box ${poBox}`,
+    premises && !line1.startsWith(premises) ? `${premises} ${line1}`.trim() : line1,
+    trimmed(address.address_line_2),
+  ].filter(Boolean);
+  const [addressLine1, addressLine2, ...rest] = lines;
+  const office = {
+    addressLine1,
+    addressLine2,
+    addressLine3: rest.length > 0 ? rest.join(", ") : undefined,
+    cityOrTown: trimmed(address.locality),
+    countyRegion: trimmed(address.region),
+    postalCode: trimmed(address.postal_code),
+    country: trimmed(address.country),
+  };
+  return Object.fromEntries(Object.entries(office).filter(([, value]) => value));
 }
 
+// HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
   await initializeSalt();
   validateEnv(["COMPANIES_HOUSE_BASE_URI"]);
@@ -112,7 +138,7 @@ export async function getCompanyProfile(companyNumber) {
     dateOfCreation: data.date_of_creation,
     jurisdiction: data.jurisdiction,
     registeredOfficeAddress: data.registered_office_address,
-    registeredOffice: registeredOfficeLine(data.registered_office_address),
+    registeredOffice: registeredOfficeFromAddress(data.registered_office_address),
     sicCodes: data.sic_codes,
     accountsNextDue: data.accounts?.next_accounts?.due_on,
     accountsNextPeriodEnd: data.accounts?.next_accounts?.period_end_on,

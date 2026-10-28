@@ -23,6 +23,23 @@ const BALANCE_SHEET = {
   tradeCreditors: ["TradeCreditorsTradePayables", "-within-one-year"],
   corporationTax: ["CorporationTaxPayable", "-within-one-year"],
   otherCreditors: ["OtherCreditors", "-within-one-year"],
+  bankLoansOverdrafts: ["BankBorrowingsOverdrafts", "-within-one-year"],
+  taxationSocialSecurity: ["TaxationSocialSecurityPayable", "-within-one-year"],
+  accruals: ["AccruedLiabilities", "-accruals"],
+  bankLoansAfterOneYear: ["BankBorrowingsOverdrafts", "-after-one-year"],
+};
+// Lines checked only when the input carries a figure for them.
+const OPTIONAL_BALANCE_SHEET_LINES = new Set(["bankLoansOverdrafts", "taxationSocialSecurity", "accruals", "bankLoansAfterOneYear"]);
+// Policy input field -> concept, all on the current period context.
+const POLICIES = {
+  goingConcernStatement: "DescriptionGoing-concernStatus",
+  revenueRecognitionPolicy: "RevenueRecognitionPolicy",
+  tangibleFixedAssetsPolicy: "DescriptionMeasurementBasisForPropertyPlantEquipment",
+  impairmentPolicy: "ImpairmentNon-financialAssetsPolicy",
+  financialInstrumentsPolicy: "FinancialInstrumentsRecognitionMeasurementPolicy",
+  taxPolicy: "TaxPolicy",
+  currentIncomeTaxPolicy: "CurrentIncomeTaxPolicy",
+  dividendPolicy: "DividendPolicy",
 };
 const PROFIT_AND_LOSS = {
   turnover: "TurnoverRevenue",
@@ -65,6 +82,15 @@ export function formatFigure(value) {
   return typeof value === "number" && Number.isInteger(value) ? value.toLocaleString("en-GB") : String(value);
 }
 
+const REGISTERED_OFFICE_TAGS = [
+  ["addressLine1", "AddressLine1"],
+  ["addressLine2", "AddressLine2"],
+  ["addressLine3", "AddressLine3"],
+  ["cityOrTown", "PrincipalLocation-CityOrTown"],
+  ["countyRegion", "CountyRegion"],
+  ["postalCode", "PostalCodeZip"],
+];
+
 export function reconcile(input, ours) {
   const { facts, visibleText: visible } = ours;
   const year = Number(input.periodEnd.slice(0, 4));
@@ -77,7 +103,7 @@ export function reconcile(input, ours) {
   };
 
   const rows = [];
-  const check = (field, value, concept, context, isNumber = true) => {
+  const check = (field, value, concept, context, isNumber = true, hidden = false) => {
     const fact = find(concept, context);
     const tagged = fact ? fact.text : null;
     let ok;
@@ -87,7 +113,7 @@ export function reconcile(input, ours) {
       shown = value !== 0 ? visible.includes(formatFigure(value)) : true;
     } else {
       ok = fact !== null && tagged.trim() === String(value).trim();
-      shown = visible.includes(String(value));
+      shown = hidden || visible.includes(String(value));
     }
     rows.push({
       field,
@@ -113,6 +139,16 @@ export function reconcile(input, ours) {
     false,
   );
 
+  for (const [field, concept] of REGISTERED_OFFICE_TAGS) {
+    if (input.registeredOffice?.[field])
+      check(`registeredOffice.${field}`, input.registeredOffice[field], concept, `y${current}-registered-office`, false);
+  }
+
+  if (input.accountantsReport) {
+    check("accountantsReport.accountantsName", input.accountantsReport.accountantsName, "NameEntityAccountants", `y${current}`, false);
+    check("accountantsReport.statement", input.accountantsReport.statement, "StatementOnScopeAccountantsReport", `y${current}`, false);
+  }
+
   const small = input.smallCompany;
   const balanceSheet = small ? small.balanceSheet : input.balanceSheet;
   for (const [yearKey, y] of [
@@ -120,15 +156,38 @@ export function reconcile(input, ours) {
     ["priorYear", prior],
   ]) {
     for (const [key, value] of Object.entries(balanceSheet[yearKey])) {
-      if (key in BALANCE_SHEET) {
+      if (key in BALANCE_SHEET && (value !== 0 || !OPTIONAL_BALANCE_SHEET_LINES.has(key))) {
         const [concept, suffix] = BALANCE_SHEET[key];
         check(`balanceSheet.${yearKey}.${key}`, value, concept, `e${y}${suffix}`);
       }
     }
   }
   if (small) {
+    for (const [field, concept] of Object.entries(POLICIES)) {
+      if (small[field]) check(`smallCompany.${field}`, small[field], concept, `y${current}`, false);
+    }
+    if (small.controllingParty) {
+      const context = `y${current}-controlling-party-1`;
+      check(
+        "smallCompany.controllingParty.ultimate",
+        String(small.controllingParty.ultimate),
+        "ControllingPartyUltimateControllingPartyTruefalse",
+        context,
+        false,
+        true,
+      );
+      if (small.controllingParty.name)
+        check("smallCompany.controllingParty.name", small.controllingParty.name, "NameControllingParty", context, false);
+    }
     if (small.principalActivity) {
       check("smallCompany.principalActivity", small.principalActivity, "DescriptionPrincipalActivities", `y${current}`, false);
+    }
+    for (const [yearKey, y] of [
+      ["currentYear", current],
+      ["priorYear", prior],
+    ]) {
+      const tax = small.profitAndLoss[yearKey]?.tax;
+      if (tax) check(`smallCompany.currentTax.${yearKey}`, tax, "CurrentTaxForPeriod", `y${y}-uk-tax`);
     }
     if (!small.filleted) {
       for (const [yearKey, y] of [
@@ -171,12 +230,15 @@ export function reconcile(input, ours) {
       );
       add(
         `Creditors within one year ${y}`,
-        "trade + corporation tax + other",
+        "bank loans and overdrafts + trade + corporation tax + taxation and social security + other + accruals",
         valueOf("Creditors", `e${y}-within-one-year`),
         sum(
+          valueOf("BankBorrowingsOverdrafts", `e${y}-within-one-year`),
           valueOf("TradeCreditorsTradePayables", `e${y}-within-one-year`),
           valueOf("CorporationTaxPayable", `e${y}-within-one-year`),
+          valueOf("TaxationSocialSecurityPayable", `e${y}-within-one-year`),
           valueOf("OtherCreditors", `e${y}-within-one-year`),
+          valueOf("AccruedLiabilities", `e${y}-accruals`),
         ),
       );
     }

@@ -136,7 +136,7 @@ describe("derive_micro_entity_accounts", () => {
     const xhtml = buildMicroEntityAccounts({
       companyNumber: answer.companyNumber,
       companyName: answer.companyName,
-      registeredOffice: "1 Test Street, London, EC1A 1AA",
+      registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
       periodStart: answer.periodStart,
       periodEnd: answer.periodEnd,
       priorBalanceSheetDate: answer.priorBalanceSheetDate,

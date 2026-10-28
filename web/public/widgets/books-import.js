@@ -602,10 +602,13 @@
     "stocks",
     "debtors",
     "cashAtBank",
+    "bankLoansOverdrafts",
     "tradeCreditors",
     "corporationTax",
+    "taxationSocialSecurity",
     "otherCreditors",
     "creditorsAfterOneYear",
+    "bankLoansAfterOneYear",
     "calledUpShareCapital",
     "profitAndLossAccount",
   ];

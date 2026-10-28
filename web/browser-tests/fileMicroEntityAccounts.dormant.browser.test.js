@@ -83,4 +83,49 @@ test.describe("File micro-entity accounts page - dormant company", () => {
       nominalValue: 0.01,
     });
   });
+
+  test("the registered office parts fill from the company record, can be edited and reach the request", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("#officeAddressLine1")).toBeVisible();
+    expect(await page.evaluate(() => buildAccountsPayload().registeredOffice)).toBeUndefined();
+    await page.evaluate(() =>
+      window.accountsFormSections.fillRegisteredOffice({
+        addressLine1: "14 Marsh Lane",
+        cityOrTown: "Stockport",
+        countyRegion: "Cheshire",
+        postalCode: "SK4 1PX",
+      }),
+    );
+    await expect(page.locator("#officeCityOrTown")).toHaveValue("Stockport");
+    await page.fill("#officePostalCode", "SK4 1PY");
+    const office = await page.evaluate(() => buildAccountsPayload().registeredOffice);
+    expect(office).toEqual({ addressLine1: "14 Marsh Lane", cityOrTown: "Stockport", countyRegion: "Cheshire", postalCode: "SK4 1PY" });
+  });
+
+  test("the accountants' report fields show only when ticked and the statement is prefilled", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("#accountantsReportFields")).toBeHidden();
+    expect(await page.evaluate(() => buildAccountsPayload().accountantsReport)).toBeUndefined();
+    await page.check("#includeAccountantsReport");
+    await expect(page.locator("#accountantsReportFields")).toBeVisible();
+    await expect(page.locator("#accountantsStatement")).toHaveValue(/In accordance with your instructions, we have compiled/);
+    await page.fill("#accountantsName", "Calder Brook Accountants LLP");
+    const report = await page.evaluate(() => buildAccountsPayload().accountantsReport);
+    expect(report.accountantsName).toBe("Calder Brook Accountants LLP");
+    expect(report.statement).toContain("unaudited financial statements");
+    await page.uncheck("#includeAccountantsReport");
+    await expect(page.locator("#accountantsReportFields")).toBeHidden();
+    expect(await page.evaluate(() => buildAccountsPayload().accountantsReport)).toBeUndefined();
+  });
+
+  test("the directors' report consistency flag says not applicable, read only, explained and sent nowhere", async ({ page }) => {
+    await openFormView(page);
+    const flag = page.locator("#directorsReportConsistent");
+    await expect(flag).toHaveValue("Not applicable");
+    await expect(flag).toHaveJSProperty("readOnly", true);
+    await expect(page.locator("#directorsReportConsistent-hint")).toHaveText(
+      "These accounts are unaudited, so this statement does not apply. Nothing is sent.",
+    );
+    expect(JSON.stringify(await page.evaluate(() => buildAccountsPayload()))).not.toContain("onsistent");
+  });
 });

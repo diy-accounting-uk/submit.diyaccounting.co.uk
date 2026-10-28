@@ -1488,8 +1488,29 @@ textarea.input--error {
 .calculated-field input[readonly] {
   background-color: var(--c-canvas);
   color: var(--c-ink);
-  border-style: dashed;
+  border: 1px dashed var(--c-rule);
   cursor: default;
+}
+
+.calculated-field input[readonly] + .hint {
+  margin-top: var(--space-2);
+}
+
+/* An optional group of boxes inside a form section, closed until the customer opens it. */
+.form-section details {
+  margin: var(--space-3) 0 var(--space-4);
+}
+
+.form-section summary {
+  cursor: pointer;
+  color: var(--c-brand);
+  font-weight: var(--weight-strong);
+  padding: var(--space-2) 0;
+}
+
+.form-section details[open] {
+  border-left: 3px solid var(--c-rule);
+  padding-left: var(--space-3);
 }
 
 /* ============================================
@@ -3321,6 +3342,10 @@ input.hmrc-assist-highlight {
     display: block;
     padding: var(--space-3) 0;
     border-bottom: 1px solid var(--c-rule-subtle);
+  }
+
+  .ledger tr[hidden] {
+    display: none;
   }
 
   .ledger tbody th,

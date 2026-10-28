@@ -262,7 +262,7 @@
     "type": "accounts",
     "companyNumber": "06846849",
     "companyName": "DIY ACCOUNTING LIMITED",
-    "registeredOffice": "37 Sutherland Avenue, Leeds, England, LS8 1BY",
+    "registeredOffice": { "addressLine1": "37 Sutherland Avenue", "cityOrTown": "Leeds", "postalCode": "LS8 1BY", "country": "England" },
     "companyAuthCode": "AUTH09",
     "periodStart": "2025-04-01",
     "periodEnd": "2026-03-31",
@@ -309,7 +309,7 @@
     "companyNumber": "09991482",
     "companyName": "HARTLEY AND WREN SUPPLIES LIMITED",
     "fictional": true,
-    "registeredOffice": "14 Marsh Lane, Stockport, Cheshire, SK4 1PX",
+    "registeredOffice": { "addressLine1": "14 Marsh Lane", "cityOrTown": "Stockport", "countyRegion": "Cheshire", "postalCode": "SK4 1PX" },
     "companyAuthCode": "AUTH09",
     "periodStart": "2025-04-01",
     "periodEnd": "2026-03-31",
@@ -352,14 +352,18 @@
     "dormant": true,
     "dormantTradingStatus": "neverTraded",
     "shareClass": "ordinaryShares",
-    "nominalValue": 1
+    "nominalValue": 1,
+    "accountantsReport": {
+      "accountantsName": "Calder Brook Accountants LLP",
+      "statement": "In accordance with your instructions, we have compiled these unaudited financial statements from the accounting records and from information and explanations you have given us."
+    }
   },
   {
     "name": "small-company-accounts-full",
     "type": "accounts",
     "companyNumber": "06846849",
     "companyName": "DIY ACCOUNTING LIMITED",
-    "registeredOffice": "37 Sutherland Avenue, Leeds, England, LS8 1BY",
+    "registeredOffice": { "addressLine1": "37 Sutherland Avenue", "cityOrTown": "Leeds", "postalCode": "LS8 1BY", "country": "England" },
     "companyAuthCode": "AUTH09",
     "periodStart": "2025-04-01",
     "periodEnd": "2026-03-31",
@@ -377,7 +381,12 @@
     "smallCompany": {
       "filleted": false,
       "principalActivity": "the retail of accounting software",
-      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "accountingPolicies": "The financial statements have been prepared under the historical cost convention.",
+      "goingConcernStatement": "The directors expect the company to have enough resources to continue in operation for the foreseeable future, so the financial statements are prepared on a going concern basis.",
+      "revenueRecognitionPolicy": "Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "tangibleFixedAssetsPolicy": "Tangible fixed assets are measured at cost less accumulated depreciation. Computer equipment is depreciated at 33% a year on cost.",
+      "impairmentPolicy": "At each reporting date the company reviews its assets for signs of impairment. An asset whose carrying value is more than its recoverable amount is written down to that amount.",
+      "financialInstrumentsPolicy": "The company has only basic financial instruments. Debtors, cash and creditors are measured at the undiscounted amount of cash the company expects to receive or pay.",
       "directors": ["Antony Christopher Cartwright", "Samantha Ashley Cartwright", "Jane Elizabeth Grundy"],
       "balanceSheet": {
         "currentYear": {
@@ -442,9 +451,14 @@
         }
       },
       "taxPolicy": "The tax expense for the year comprises current tax, recognised in profit or loss.",
+      "currentIncomeTaxPolicy": "The current income tax charge is calculated on the tax rates and laws enacted or substantively enacted by the reporting date.",
+      "dividendPolicy": "Dividends are recognised as a liability in the period in which they are declared.",
       "shareCapital": {
         "shareClass": "ordinaryShares",
         "nominalValue": 1
+      },
+      "controllingParty": {
+        "ultimate": false
       }
     },
     "expectedOutcome": {
@@ -458,7 +472,7 @@
     "type": "accounts",
     "companyNumber": "06846849",
     "companyName": "DIY ACCOUNTING LIMITED",
-    "registeredOffice": "37 Sutherland Avenue, Leeds, England, LS8 1BY",
+    "registeredOffice": { "addressLine1": "37 Sutherland Avenue", "cityOrTown": "Leeds", "postalCode": "LS8 1BY", "country": "England" },
     "companyAuthCode": "AUTH09",
     "periodStart": "2025-04-01",
     "periodEnd": "2026-03-31",
@@ -476,7 +490,12 @@
     "smallCompany": {
       "filleted": true,
       "principalActivity": "the retail of accounting software",
-      "accountingPolicies": "The financial statements have been prepared under the historical cost convention. Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "accountingPolicies": "The financial statements have been prepared under the historical cost convention.",
+      "goingConcernStatement": "The directors expect the company to have enough resources to continue in operation for the foreseeable future, so the financial statements are prepared on a going concern basis.",
+      "revenueRecognitionPolicy": "Turnover is the amount receivable for software and services provided in the year, excluding VAT.",
+      "tangibleFixedAssetsPolicy": "Tangible fixed assets are measured at cost less accumulated depreciation. Computer equipment is depreciated at 33% a year on cost.",
+      "impairmentPolicy": "At each reporting date the company reviews its assets for signs of impairment. An asset whose carrying value is more than its recoverable amount is written down to that amount.",
+      "financialInstrumentsPolicy": "The company has only basic financial instruments. Debtors, cash and creditors are measured at the undiscounted amount of cash the company expects to receive or pay.",
       "directors": ["Antony Christopher Cartwright", "Samantha Ashley Cartwright", "Jane Elizabeth Grundy"],
       "balanceSheet": {
         "currentYear": {
@@ -541,9 +560,14 @@
         }
       },
       "taxPolicy": "The tax expense for the year comprises current tax, recognised in profit or loss.",
+      "currentIncomeTaxPolicy": "The current income tax charge is calculated on the tax rates and laws enacted or substantively enacted by the reporting date.",
+      "dividendPolicy": "Dividends are recognised as a liability in the period in which they are declared.",
       "shareCapital": {
         "shareClass": "ordinaryShares",
         "nominalValue": 1
+      },
+      "controllingParty": {
+        "ultimate": false
       }
     },
     "expectedOutcome": {

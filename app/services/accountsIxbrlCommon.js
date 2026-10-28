@@ -28,6 +28,10 @@ export const NAMESPACES = {
   direp: "http://xbrl.frc.org.uk/reports/2026-01-01/direp",
   // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
   countries: "http://xbrl.frc.org.uk/cd/2026-01-01/countries",
+  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
+  curr: "http://xbrl.frc.org.uk/cd/2026-01-01/currencies",
+  // eslint-disable-next-line sonarjs/no-clear-text-protocols -- taxonomy namespace, not a fetch; see comment above
+  accrep: "http://xbrl.frc.org.uk/reports/2026-01-01/accrep",
 };
 
 // Resolved from the FRS 102 entry point by scripts/generate-frc-taxonomy-concepts.js (see
@@ -64,6 +68,17 @@ export const CONCEPTS = {
   countryFormationOrIncorporation: { prefix: "bus", name: "CountryFormationOrIncorporation" },
   scopeAccounts: { prefix: "bus", name: "ScopeAccounts" },
   reportAmendedRevisedVersion: { prefix: "bus", name: "ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse" },
+  addressLine1: { prefix: "bus", name: "AddressLine1" },
+  addressLine2: { prefix: "bus", name: "AddressLine2" },
+  addressLine3: { prefix: "bus", name: "AddressLine3" },
+  principalLocationCityOrTown: { prefix: "bus", name: "PrincipalLocation-CityOrTown" },
+  countyRegion: { prefix: "bus", name: "CountyRegion" },
+  postalCodeZip: { prefix: "bus", name: "PostalCodeZip" },
+  reportPeriod: { prefix: "bus", name: "ReportPeriod" },
+  reportPrincipalLanguage: { prefix: "bus", name: "ReportPrincipalLanguage" },
+  principalCurrencyUsedInBusinessReport: { prefix: "bus", name: "PrincipalCurrencyUsedInBusinessReport" },
+  nameEntityAccountants: { prefix: "bus", name: "NameEntityAccountants" },
+  statementOnScopeAccountantsReport: { prefix: "accrep", name: "StatementOnScopeAccountantsReport" },
   accountingStandardsAppliedMatchesEntryPoint: { prefix: "bus", name: "AccountingStandardsAppliedMatchesTaxonomyEntry-pointTruefalse" },
 
   statementAuditExemptionSection477: {
@@ -145,6 +160,20 @@ export const CONCEPTS = {
   parValueShare: { prefix: "core", name: "ParValueShare" },
   descriptionShareType: { prefix: "bus", name: "DescriptionShareType" },
   taxPolicy: { prefix: "core", name: "TaxPolicy" },
+  currentIncomeTaxPolicy: { prefix: "core", name: "CurrentIncomeTaxPolicy" },
+  dividendPolicy: { prefix: "core", name: "DividendPolicy" },
+  accruedLiabilities: { prefix: "core", name: "AccruedLiabilities" },
+  currentTaxForPeriod: { prefix: "core", name: "CurrentTaxForPeriod" },
+  bankBorrowingsOverdrafts: { prefix: "core", name: "BankBorrowingsOverdrafts" },
+  taxationSocialSecurityPayable: { prefix: "core", name: "TaxationSocialSecurityPayable" },
+  descriptionGoingConcernStatus: { prefix: "core", name: "DescriptionGoing-concernStatus" },
+  preparedOnGoingConcernBasis: { prefix: "core", name: "FinancialStatementsArePreparedOnGoing-concernBasisTruefalse" },
+  revenueRecognitionPolicy: { prefix: "core", name: "RevenueRecognitionPolicy" },
+  propertyPlantEquipmentMeasurementBasis: { prefix: "core", name: "DescriptionMeasurementBasisForPropertyPlantEquipment" },
+  impairmentPolicy: { prefix: "core", name: "ImpairmentNon-financialAssetsPolicy" },
+  financialInstrumentsPolicy: { prefix: "core", name: "FinancialInstrumentsRecognitionMeasurementPolicy" },
+  nameControllingParty: { prefix: "core", name: "NameControllingParty" },
+  controllingPartyIsUltimate: { prefix: "core", name: "ControllingPartyUltimateControllingPartyTruefalse" },
   depreciationExpensePropertyPlantEquipment: { prefix: "core", name: "DepreciationExpensePropertyPlantEquipment" },
 
   propertyPlantEquipment: { prefix: "core", name: "PropertyPlantEquipment" },
@@ -168,7 +197,17 @@ export const DIMENSIONS = {
   accountsType: { prefix: "bus", name: "AccountsTypeDimension" },
   equityClasses: { prefix: "core", name: "EquityClassesDimension" },
   maturities: { prefix: "core", name: "MaturitiesOrExpirationPeriodsDimension" },
+  financialInstrumentCurrentNonCurrent: { prefix: "core", name: "FinancialInstrumentCurrentNon-currentDimension" },
+  taxJurisdiction: { prefix: "core", name: "TaxJurisdictionDimension" },
   propertyPlantEquipmentClasses: { prefix: "core", name: "PropertyPlantEquipmentClassesDimension" },
+  entityContactType: { prefix: "bus", name: "EntityContactTypeDimension" },
+  currencies: { prefix: "curr", name: "CurrenciesDimension" },
+  controllingPartyGrouping: { prefix: "core", name: "X-ParentEntityOrControllingPartyUltimateControllingPartyGroupingDimension" },
+};
+
+const CONTROLLING_PARTY_DOMAIN = {
+  prefix: "core",
+  name: "ParentEntityOrControllingPartyAndUltimateControllingPartyGroupingDimension.domain",
 };
 
 export const MEMBERS = {
@@ -180,6 +219,7 @@ export const MEMBERS = {
   northernIreland: { prefix: "countries", name: "NorthernIreland" },
   smallCompaniesRegimeForAccounts: { prefix: "bus", name: "SmallCompaniesRegimeForAccounts" },
   auditExemptNoAccountantsReport: { prefix: "bus", name: "AuditExempt-NoAccountantsReport" },
+  auditExemptWithAccountantsReport: { prefix: "bus", name: "AuditExemptWithAccountantsReport" },
   fullAccounts: { prefix: "bus", name: "FullAccounts" },
   filletedAccounts: { prefix: "bus", name: "FilletedAccounts" },
   shareCapital: { prefix: "core", name: "ShareCapital" },
@@ -192,11 +232,15 @@ export const MEMBERS = {
   retainedEarningsAccumulatedLosses: { prefix: "core", name: "RetainedEarningsAccumulatedLosses" },
   withinOneYear: { prefix: "core", name: "WithinOneYear" },
   afterOneYear: { prefix: "core", name: "AfterOneYear" },
+  currentFinancialInstruments: { prefix: "core", name: "CurrentFinancialInstruments" },
+  ukTax: { prefix: "core", name: "UKTax" },
   landBuildings: { prefix: "core", name: "LandBuildings" },
   plantMachinery: { prefix: "core", name: "PlantMachinery" },
   furnitureFittings: { prefix: "core", name: "FurnitureFittings" },
   computerEquipment: { prefix: "core", name: "ComputerEquipment" },
   motorVehicles: { prefix: "core", name: "MotorVehicles" },
+  registeredOffice: { prefix: "bus", name: "RegisteredOffice" },
+  poundSterling: { prefix: "curr", name: "PoundSterling" },
 };
 
 export const STATEMENT_TEXT = {
@@ -245,10 +289,15 @@ function sameDayOneYearEarlier(isoDate) {
  * @param {object} [options]
  * @param {boolean} [options.includePriorInstant] - defaults to whether input.balanceSheet.prior is present
  * @param {boolean} [options.includePriorPeriod] - add the prior-year duration context (profit and loss comparatives)
+ * @param {boolean} [options.priorPeriodFactsAreDimensioned] - the prior-year duration is only the base of dimensioned contexts: its period is returned in periodXml and its plain context is not written
  * @returns {{xml: string, refs: object, entityIdentifierXml: string, periodXml: Record<string,string>}}
  */
 export function buildContexts(input, options = {}) {
-  const { includePriorInstant = Boolean(input.balanceSheet?.prior), includePriorPeriod = false } = options;
+  const {
+    includePriorInstant = Boolean(input.balanceSheet?.prior),
+    includePriorPeriod = false,
+    priorPeriodFactsAreDimensioned = false,
+  } = options;
   const currentYear = input.periodEnd.slice(0, 4);
   const refs = {
     current: `y${currentYear}`,
@@ -281,6 +330,7 @@ export function buildContexts(input, options = {}) {
   }
 
   const contextsXml = Object.entries(periodXml)
+    .filter(([id]) => !(priorPeriodFactsAreDimensioned && id === refs.prior))
     .map(([id, period]) => `<xbrli:context id="${id}"><xbrli:entity>${entityIdentifierXml}</xbrli:entity>${period}</xbrli:context>`)
     .join("");
 
@@ -390,6 +440,27 @@ export function renderProductionSoftwareFacts(contextRef) {
   ];
 }
 
+/**
+ * The hidden facts that state the report's period, language and currency. Each sits on the
+ * context where its dimension takes a non-default member: the plain current period for the report
+ * period and language, and a sterling context for the currency.
+ * @returns {string[]}
+ */
+export function renderReportHeaderFacts({ refs, entityIdentifierXml, periodXml, additionalContexts }) {
+  const sterlingContextRef = buildDimensionedContext({
+    additionalContexts,
+    entityIdentifierXml,
+    periodXml: periodXml[refs.current],
+    dimensionXml: dimensionMemberXml(DIMENSIONS.currencies, MEMBERS.poundSterling),
+    id: `${refs.current}-currency`,
+  });
+  return [
+    renderFixedFact("reportPeriod", refs.current),
+    renderFixedFact("reportPrincipalLanguage", refs.current),
+    renderFixedFact("principalCurrencyUsedInBusinessReport", sterlingContextRef),
+  ];
+}
+
 export function renderDateFact(conceptKey, contextRef, isoDate) {
   return `<ix:nonNumeric name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}" format="${DATE_FORMAT}">${displayDate(isoDate)}</ix:nonNumeric>`;
 }
@@ -397,6 +468,77 @@ export function renderDateFact(conceptKey, contextRef, isoDate) {
 export function renderMonetaryFact(conceptKey, contextRef, unitRef, value) {
   const signAttribute = value < 0 ? ' sign="-"' : "";
   return `<ix:nonFraction name="${qname(CONCEPTS[conceptKey])}" contextRef="${contextRef}" unitRef="${unitRef}" decimals="0" format="${NUMBER_FORMAT}"${signAttribute}>${formatMonetary(value)}</ix:nonFraction>`;
+}
+
+/**
+ * The member of AccountsStatusDimension: audit exempt with an accountants' report when the request
+ * carries one, without otherwise.
+ * @param {{accountantsReport?: object}} input
+ */
+export function accountsStatusMember(input) {
+  return input.accountantsReport ? MEMBERS.auditExemptWithAccountantsReport : MEMBERS.auditExemptNoAccountantsReport;
+}
+
+/**
+ * A typed dimension member, as the controlling party dimension takes.
+ * @param {{prefix: string, name: string}} dimension
+ * @param {{prefix: string, name: string}} domainElement
+ * @param {string|number} value
+ */
+export function typedMemberXml(dimension, domainElement, value) {
+  return `<xbrldi:typedMember dimension="${qname(dimension)}"><${qname(domainElement)}>${escapeXmlText(String(value))}</${qname(domainElement)}></xbrldi:typedMember>`;
+}
+
+/**
+ * The controlling party context and its hidden facts: whether the party is the ultimate controlling
+ * party and, when the party is named, its name. A named party is shown by controllingPartyNote.
+ * @returns {{facts: string[], contextRef: string}}
+ */
+export function renderControllingPartyFacts({ controllingParty, refs, entityIdentifierXml, periodXml, additionalContexts }) {
+  const contextRef = buildDimensionedContext({
+    additionalContexts,
+    entityIdentifierXml,
+    periodXml: periodXml[refs.current],
+    dimensionXml: typedMemberXml(DIMENSIONS.controllingPartyGrouping, CONTROLLING_PARTY_DOMAIN, 1),
+    id: `${refs.current}-controlling-party-1`,
+  });
+  return {
+    contextRef,
+    facts: [renderTextFact("controllingPartyIsUltimate", contextRef, controllingParty.ultimate ? "true" : "false")],
+  };
+}
+
+/**
+ * The note on the controlling party. A named party is tagged in the sentence.
+ * @returns {{title: string, html: string}}
+ */
+export function controllingPartyNote({ controllingParty, contextRef }) {
+  if (!controllingParty.name) {
+    return {
+      title: "Controlling party",
+      html: "<p>The company has no ultimate controlling party. It is owned by its directors, and there is no single controlling party.</p>",
+    };
+  }
+  const kind = controllingParty.ultimate ? "ultimate controlling party" : "controlling party";
+  return {
+    title: "Controlling party",
+    html: `<p>The company's ${kind} is ${renderTextFact("nameControllingParty", contextRef, controllingParty.name)}.</p>`,
+  };
+}
+
+/**
+ * The accountants' report page: the tagged statement of scope and the tagged name of the firm.
+ * @param {object} page
+ * @param {string} page.heading - the page heading, already built
+ * @param {{accountantsName: string, statement: string}} page.accountantsReport
+ * @param {{current: string}} page.refs
+ * @returns {string}
+ */
+export function accountantsReportPage({ heading, accountantsReport, refs }) {
+  return `<div class="page">
+${heading}<p>${renderTextFact("statementOnScopeAccountantsReport", refs.current, accountantsReport.statement)}</p>
+<p class="signature">${renderTextFact("nameEntityAccountants", refs.current, accountantsReport.accountantsName)}</p>
+</div>`;
 }
 
 export function dimensionMemberXml(dimension, member) {
@@ -525,6 +667,29 @@ export function renderCompanyDescriptionFacts({ companyNumber, refs, entityIdent
   ];
 }
 
+// In the order the register prints an address. The country is shown and not tagged.
+const REGISTERED_OFFICE_PARTS = [
+  { field: "addressLine1", conceptKey: "addressLine1" },
+  { field: "addressLine2", conceptKey: "addressLine2" },
+  { field: "addressLine3", conceptKey: "addressLine3" },
+  { field: "cityOrTown", conceptKey: "principalLocationCityOrTown" },
+  { field: "countyRegion", conceptKey: "countyRegion" },
+  { field: "country", conceptKey: null },
+  { field: "postalCode", conceptKey: "postalCodeZip" },
+];
+export const REGISTERED_OFFICE_FIELDS = REGISTERED_OFFICE_PARTS.map(({ field }) => field);
+
+/**
+ * The registered office on one line, as the accounts print it.
+ * @param {Record<string, string>} office
+ * @returns {string}
+ */
+export function registeredOfficeLine(office) {
+  return REGISTERED_OFFICE_PARTS.map(({ field }) => office?.[field])
+    .filter(Boolean)
+    .join(", ");
+}
+
 const COUNTRY_PHRASE = {
   [MEMBERS.englandWales.name]: "England and Wales",
   [MEMBERS.scotland.name]: "Scotland",
@@ -558,21 +723,38 @@ export function shareNoun(count) {
  * @param {object} input
  * @param {string} input.companyName
  * @param {string} input.companyNumber
- * @param {string} input.registeredOffice - the registered office address on one line
+ * @param {object} input.registeredOffice - the address parts; see registeredOfficeLine
  * @param {string} [input.principalActivityShown] - the principal activity, stated in the note when no directors' report shows it
  * @param {{current: string}} refs
+ * @param {object} contexts - entityIdentifierXml, periodXml and additionalContexts, for the registered office context
  * @returns {{title: string, html: string}} the note
  */
-export function companyInformationNote({ companyName, companyNumber, registeredOffice, principalActivityShown }, refs) {
-  const office = typeof registeredOffice === "string" ? registeredOffice.trim() : "";
-  if (!office) throw new Error("registeredOffice is required: the accounts state the registered office address");
+export function companyInformationNote(
+  { companyName, companyNumber, registeredOffice, principalActivityShown },
+  refs,
+  { entityIdentifierXml, periodXml, additionalContexts },
+) {
+  if (!registeredOffice?.addressLine1)
+    throw new Error("registeredOffice.addressLine1 is required: the accounts state the registered office address");
+  const officeContextRef = buildDimensionedContext({
+    additionalContexts,
+    entityIdentifierXml,
+    periodXml: periodXml[refs.current],
+    dimensionXml: dimensionMemberXml(DIMENSIONS.entityContactType, MEMBERS.registeredOffice),
+    id: `${refs.current}-registered-office`,
+  });
+  const officeHtml = REGISTERED_OFFICE_PARTS.filter(({ field }) => registeredOffice[field])
+    .map(({ field, conceptKey }) =>
+      conceptKey ? renderTextFact(conceptKey, officeContextRef, registeredOffice[field]) : escapeXmlText(registeredOffice[field]),
+    )
+    .join(", ");
   const country = COUNTRY_PHRASE[countryMemberForCompanyNumber(companyNumber).name];
   const activity = principalActivityShown ? `\n${principalActivitySentence(principalActivityShown, refs)}` : "";
   const name = renderTextFact("entityCurrentLegalOrRegisteredName", refs.current, companyName);
   const number = renderTextFact("companiesHouseRegisteredNumber", refs.current, companyNumber);
   return {
     title: "General information",
-    html: `<p>${name} is a private company limited by shares, registered in ${country}, registered number ${number}. Its registered office is ${escapeXmlText(office)}.</p>${activity}`,
+    html: `<p>${name} is a private company limited by shares, registered in ${country}, registered number ${number}. Its registered office is ${officeHtml}.</p>${activity}`,
   };
 }
 
@@ -608,6 +790,18 @@ export function balanceSheetFacts({ contextRef, entityIdentifierXml, periodXml, 
       id: `${contextRef}-${suffix}`,
     });
   const fact = (conceptKey, factContextRef, value) => ({ xml: renderMonetaryFact(conceptKey, factContextRef, unitRef, value), value });
+  // Accruals sit on the within one year context of a current financial instrument, as Companies House's example tags them.
+  if ((figures.accruals ?? 0) !== 0) {
+    buildDimensionedContext({
+      additionalContexts,
+      entityIdentifierXml,
+      periodXml,
+      dimensionXml:
+        dimensionMemberXml(DIMENSIONS.financialInstrumentCurrentNonCurrent, MEMBERS.currentFinancialInstruments) +
+        dimensionMemberXml(DIMENSIONS.maturities, MEMBERS.withinOneYear),
+      id: `${contextRef}-accruals`,
+    });
+  }
 
   return {
     fixedAssets: fact("fixedAssets", contextRef, figures.fixedAssets),
@@ -647,10 +841,11 @@ export function balanceSheetFacts({ contextRef, entityIdentifierXml, periodXml, 
  * @param {Array<Record<string, {xml: string, value: number}>>} rowsInput.years - balanceSheetFacts per column
  * @param {object[]} [rowsInput.currentAssetLines] - {label, cells} rows shown under "Current assets"
  * @param {object[]} [rowsInput.creditorLines] - {label, cells} rows shown under the creditors heading
+ * @param {object[]} [rowsInput.creditorAfterOneYearLines] - {label, cells} rows shown under the after one year heading
  * @param {object} [rowsInput.notes] - note numbers keyed by line (fixedAssets, calledUpShareCapital)
  * @returns {object[]} recordTable rows
  */
-export function balanceSheetRows({ years, currentAssetLines, creditorLines, notes = {} }) {
+export function balanceSheetRows({ years, currentAssetLines, creditorLines, creditorAfterOneYearLines, notes = {} }) {
   const cells = (line, options) => years.map((year) => recordFigure(year[line].xml, year[line].value, options));
   const values = (line) => years.map((year) => year[line].value);
   const rows = [{ label: "Fixed assets", note: notes.fixedAssets, cells: cells("fixedAssets") }];
@@ -672,10 +867,20 @@ export function balanceSheetRows({ years, currentAssetLines, creditorLines, note
   rows.push(
     { label: netLabel("Net current assets", values("netCurrentAssets")), style: "subtotal", cells: cells("netCurrentAssets") },
     { label: "Total assets less current liabilities", cells: cells("totalAssetsLessCurrentLiabilities") },
-    {
+  );
+  if (creditorAfterOneYearLines) {
+    rows.push(
+      { label: "Creditors: amounts falling due after more than one year", style: "heading" },
+      ...creditorAfterOneYearLines.map((line) => ({ ...line, indent: true })),
+      { label: "", style: "subtotal", cells: cells("creditorsAfterOneYear", { deduction: true }) },
+    );
+  } else {
+    rows.push({
       label: "Creditors: amounts falling due after more than one year",
       cells: cells("creditorsAfterOneYear", { deduction: true }),
-    },
+    });
+  }
+  rows.push(
     { label: netLabel("Net assets", values("netAssets")), style: "total", cells: cells("netAssets") },
     { label: "Capital and reserves", style: "heading" },
     { label: "Called up share capital", note: notes.calledUpShareCapital, indent: true, cells: cells("calledUpShareCapital") },

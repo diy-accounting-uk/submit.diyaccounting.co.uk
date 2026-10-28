@@ -29,6 +29,7 @@ import {
   sharesIssuedFor,
 } from "../../services/microEntityAccountsIxbrl.js";
 import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
+import { REGISTERED_OFFICE_FIELDS } from "../../services/accountsIxbrlCommon.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateSmallCompany } from "../../services/smallCompanyAccountsRequest.js";
 import {
@@ -78,6 +79,43 @@ export function buildAccountsIxbrl(accounts) {
   return accounts.regime === "small-company" ? buildSmallCompanyAccounts(accounts) : buildMicroEntityAccounts(accounts);
 }
 
+// The registered office is an object of address parts. Absent is allowed: the profile fills it.
+export function readRegisteredOffice(value, errorMessages) {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "object" || Array.isArray(value)) {
+    errorMessages.push("Invalid registeredOffice - must be an object of address parts");
+    return undefined;
+  }
+  const office = {};
+  for (const [field, raw] of Object.entries(value)) {
+    if (!REGISTERED_OFFICE_FIELDS.includes(field) || typeof raw !== "string") {
+      errorMessages.push(`Invalid registeredOffice.${field}`);
+    } else if (raw.trim()) {
+      office[field] = raw.trim();
+    }
+  }
+  if (!office.addressLine1 && Object.keys(office).length > 0) {
+    errorMessages.push("Missing registeredOffice.addressLine1");
+  }
+  return Object.keys(office).length > 0 ? office : undefined;
+}
+
+// The accountants' report is optional; when present it needs the firm's name and the statement.
+export function readAccountantsReport(value, errorMessages) {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "object" || Array.isArray(value)) {
+    errorMessages.push("Invalid accountantsReport - must be an object");
+    return undefined;
+  }
+  const report = {};
+  for (const field of ["accountantsName", "statement"]) {
+    const text = typeof value[field] === "string" ? value[field].trim() : "";
+    if (!text) errorMessages.push(`Missing accountantsReport.${field}`);
+    report[field] = text;
+  }
+  return report;
+}
+
 // Extracts and validates the accounts filing request. Shared with the render Lambda, which
 // never needs the company authentication code because it never reaches the gateway.
 export function extractAndValidateAccountsParameters(event, errorMessages, { requireCompanyAuthCode = true, clientId } = {}) {
@@ -86,6 +124,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     companyNumber,
     companyName,
     registeredOffice,
+    accountantsReport,
     companyAuthCode,
     periodStart,
     periodEnd,
@@ -115,7 +154,8 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   if (!trimmedCompanyName) {
     errorMessages.push("Missing companyName");
   }
-  const trimmedRegisteredOffice = typeof registeredOffice === "string" ? registeredOffice.trim() : "";
+  const validRegisteredOffice = readRegisteredOffice(registeredOffice, errorMessages);
+  const validAccountantsReport = readAccountantsReport(accountantsReport, errorMessages);
 
   let trimmedCompanyAuthCode;
   if (requireCompanyAuthCode) {
@@ -172,7 +212,8 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
       regime: "small-company",
       companyNumber: normalisedCompanyNumber,
       companyName: trimmedCompanyName,
-      registeredOffice: trimmedRegisteredOffice,
+      registeredOffice: validRegisteredOffice,
+      ...(validAccountantsReport ? { accountantsReport: validAccountantsReport } : {}),
       ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
       periodStart,
       periodEnd,
@@ -205,7 +246,8 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     regime: "micro-entity",
     companyNumber: normalisedCompanyNumber,
     companyName: trimmedCompanyName,
-    registeredOffice: trimmedRegisteredOffice,
+    registeredOffice: validRegisteredOffice,
+    ...(validAccountantsReport ? { accountantsReport: validAccountantsReport } : {}),
     ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
     periodStart,
     periodEnd,

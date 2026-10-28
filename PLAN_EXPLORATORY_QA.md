@@ -255,3 +255,166 @@ Lessons the first site paid for, applied here from the start:
 
 All four follow DS4 and DS5 and the fix rows they raise, so the first pass reads the site the
 design pass left. After the first pass, what it taught goes into the skill before the second.
+
+### Design: a practice connects to HMRC as an agent (XQ5d)
+
+The practice page reads `sessionStorage.hmrcAccessToken`. Only the customer VAT callback writes
+that key, so Invite, Check status and Cancel invitation stay disabled. The page also shows no
+licence state.
+
+#### What HMRC asks for
+
+The Agent Authorisation API is user-restricted. The agent signs in with the agent's own
+Government Gateway user, and the application gets the token through the OAuth 2.0
+authorisation-code grant. The scopes per endpoint come from HMRC's v1.0 OpenAPI file
+(https://developer.service.hmrc.gov.uk/api-documentation/docs/api/download/agent-authorisation-api/1.0/application.yaml,
+product page https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/agent-authorisation-api/1.0):
+
+| Endpoint | Our route | Scope |
+| --- | --- | --- |
+| `POST /agents/{arn}/invitations` | Invite | `write:sent-invitations` |
+| `GET /agents/{arn}/invitations/{id}` | Check status | `read:sent-invitations` |
+| `DELETE /agents/{arn}/invitations/{id}` | Cancel invitation | `write:cancel-invitations` |
+| `POST /agents/{arn}/relationships` | Check status (no invitation) | `read:check-relationship` |
+
+The agent grant asks for all four scopes. `SCOPES_BY_SERVICE.agent` in
+`app/functions/mcp/mcpHmrcGrant.js` asks for the first two only, so a real HMRC token from the MCP
+grant cannot cancel an invitation or check a relationship. The simulator does not check scopes,
+so no test shows this today. Every alternative below adds the two scopes.
+
+`getRelationship` in `app/lib/hmrcAgentAuthorisation.js` sends `GET /agents/{arn}/relationships`
+with a query string, and the simulator answers that `GET`. HMRC's v1.0 file defines only `POST`,
+with a JSON body that requires `service`, `clientIdType`, `clientId` and `knownFact`. So Check
+status for a client with no invitation fails on HMRC sandbox. Step 2 below fixes it.
+
+The sandbox agent is a test user from `POST /create-test-user/agents` with the service
+`agent-services`, which gives the ARN. `createHmrcTestUser` in
+`behaviour-tests/helpers/behaviour-helpers.js` makes only organisation users, so the
+practice test on HMRC sandbox needs an agent user (step 8). HMRC's sandbox guide
+(https://github.com/hmrc/vat-api/wiki/Creating-Test-Agents-in-the-Sandbox) shows one agent token
+with `read:vat write:vat write:sent-invitations` that both invites and files for the client.
+Our routes take the HMRC token from the page on each call.
+Invite sends it in the body; Check status and Cancel send it in `Authorization`, with Cognito in
+`X-Authorization` (custom authoriser).
+
+#### Alternatives
+
+| | A. Reuse the MCP grant | B. Web agent grant | C. Grant held per practice |
+| --- | --- | --- | --- |
+| Start | `POST /api/v1/mcp/hmrc-grants` | `buildHmrcAuthUrl` in the page | new `POST /api/v1/practice/hmrc-grant` |
+| Callback | existing `mcp.` branch | `/api/v1/hmrc/token` | new branch, new route |
+| Token lives | sealed in the grant table | browser `sessionStorage` | sealed on the practice row |
+| Browser holds | grant id; token in memory | access token | nothing |
+| Refresh | yes, server side | no (4 hours) | yes, server side |
+| Files | ~5 | ~4 | ~9 plus CDK |
+
+**A. Reuse the MCP's HMRC grant on the web.**
+
+1. The practice clicks "Connect to HMRC". `practice.js` posts
+   `{ services: ["agent"], hmrcAccount }` to `/api/v1/mcp/hmrc-grants` with the Cognito ID token
+   in `Authorization`. That route uses the main JWT authoriser, whose audience holds the web
+   client, so no infrastructure changes.
+2. The page writes the `grantId` to `sessionStorage.practiceHmrcGrantId` and goes to the `url`
+   from the reply.
+3. The agent signs in on HMRC and grants access. HMRC returns to
+   `activities/submitVatCallback.html` with the state `mcp.<grantId>.<secret>`.
+4. `handleMcpGrantCallback` posts the code and state to the callback route, as now. When the
+   grant id in the state equals `practiceHmrcGrantId`, the page shows "Connected to HMRC as an
+   agent." and goes to `practice.html`. Otherwise it keeps the chat message.
+5. On load and before each action, `practice.js` reads
+   `GET /api/v1/mcp/hmrc-grants/{grantId}`. The route refreshes the token near expiry and
+   answers only to the owner. The page keeps the token in a closure variable and never stores it.
+6. A 404 clears `practiceHmrcGrantId` and shows the page as not connected.
+
+Token: the refresh token and the sealed access token stay in the grant table. The grant id alone
+gives nothing, because the read route checks the owner's Cognito sub. The access token is in page
+memory only while the tab is open. Risk: the grant lives 24 hours (`GRANTED_LIFETIME`), so the
+practice connects again each day. The route path carries the name `mcp`, which the web now also
+uses.
+
+**B. A separate web agent grant.** The pattern the VAT pages use.
+
+1. "Connect to HMRC" makes a random state, writes it to `sessionStorage.oauth_state`, writes
+   `currentActivity = practice.html` and an `hmrcGrantPurpose = agent` marker, and calls
+   `buildHmrcAuthUrl(state, "<four agent scopes>", hmrcAccount)`.
+2. The callback exchanges the code at `/api/v1/hmrc/token`.
+3. With the agent marker, the callback writes `sessionStorage.hmrcAgentAccessToken`, not
+   `hmrcAccessToken`, so a practice that also files its own VAT keeps both tokens.
+4. `practice.js` reads `hmrcAgentAccessToken`.
+
+Token: `sessionStorage`, as the VAT pages do now. Any script on the origin can read it, and it
+lasts until HMRC expires it at 4 hours. The route drops the refresh token, so the practice
+connects again after 4 hours. Risk: a third token key in `sessionStorage`, and a second grant
+code path beside the MCP grant for the same HMRC application.
+
+**C. A grant held per practice.** A server-side agent grant keyed by the practice's sub. The
+practice routes read the token from it, so the browser and the request body never carry a
+token. The practice connects once per refresh-token lifetime (18 months at HMRC). Risk: new
+sealed storage on the practice table, a new route and grant code, and changes to three practice
+Lambdas, their environment and their IAM in CDK. This is the larger change. A can move to C
+later without a change to the page's connect control.
+
+#### Proof for each alternative
+
+- Simulator: `web/browser-tests/practice.browser.test.js` routes the grant and token calls and
+  asserts the connected line and enabled Invite. `behaviour-tests/practiceLicence.behaviour.test.js`
+  adds a web leg: sign in, open `practice.html`, click "Connect to HMRC", consent on the
+  simulator, land back on `practice.html`, invite the bootstrap client from the page and see
+  "Pending".
+- HMRC sandbox: the same web leg with `HMRC_ACCOUNT=synthetic` and an agent test user, run by
+  the operator (step 9).
+
+#### Recommendation: A
+
+A reuses a route, a table and a callback branch that are live and tested. The refresh token stays
+on the server, and no new token goes into `sessionStorage`. The behaviour test already drives this
+grant. B adds a second grant path and keeps the token where any script on the page can read it,
+for 4 hours with no refresh. C keeps the most out of the browser but is about twice the size; it
+is the next step if the daily reconnect is a burden.
+
+#### The licence line
+
+`GET /api/v1/practice/clients` (`app/functions/practice/practiceClientsListGet.js`) adds
+`licence: { held }` to its reply. `held` is `hasActiveResidentProBundle(await getUserBundles(sub))`,
+the rule that `enforceBundles` applies to client-scoped requests, so the page and the server
+agree. The page needs no second call. A `resident-pro-comp` holder shows "not held", because
+that rule counts only `resident-pro`.
+
+- Held: "Your practice holds the Resident Pro licence."
+- Not held: "Your practice does not hold the Resident Pro licence. You need it to file for
+  clients." followed by the link "Get Resident Pro" to `bundles.html`.
+
+#### Build steps for A
+
+1. `app/functions/mcp/mcpHmrcGrant.js`: add `write:cancel-invitations` and
+   `read:check-relationship` to `SCOPES_BY_SERVICE.agent`. Proof: `npx vitest run
+   app/unit-tests/functions/mcpHmrcGrant.test.js` with a case that asserts the four scopes.
+2. `app/lib/hmrcAgentAuthorisation.js` `getRelationship`: send `POST` with the JSON body HMRC
+   defines. The known fact comes from the client row: `practiceClientAuthorisationInvitePost.js`
+   stores it with the invitation, and `practiceClientAuthorisationGet.js` reads it from there.
+   `app/http-simulator/routes/agent-authorisation.js` answers `POST`. Proof: the unit tests of
+   `hmrcAgentAuthorisation.js` and of the two practice routes, and
+   `npm run test:practiceLicenceBehaviour-proxy`.
+3. `app/functions/practice/practiceClientsListGet.js`: add `licence: { held }`. Proof:
+   `app/unit-tests/functions/practiceClientsListGet.test.js` with a held case and a not-held case.
+4. `web/public/practice.html`: add a section "HMRC agent connection" above "Clients", with the
+   connection line, the "Connect to HMRC" button and the licence line. Colours come from the
+   `submit.css` tokens.
+5. `web/public/practice.js`: the connect flow (A steps 1, 2, 5, 6) and the licence line. Remove
+   `getHmrcAccessToken` and its `sessionStorage` read. Proof: `practice.browser.test.js` cases
+   for not connected, connected, grant expired (404), licence held and licence not held.
+6. `web/public/activities/submitVatCallback.page.js`: the practice return in
+   `handleMcpGrantCallback`. Proof: a `submitVatCallback.browser.test.js` case for each of the
+   two messages.
+7. `behaviour-tests/practiceLicence.behaviour.test.js`: the web leg on the simulator. Proof:
+   `npm run test:practiceLicenceBehaviour-proxy` passes.
+8. `behaviour-tests/helpers/behaviour-helpers.js`: an agent test user (`/create-test-user/agents`,
+   `agent-services`) whose ARN replaces `TEST_HMRC_AGENT_ARN` when the account is synthetic.
+   Proof: the helper's unit test.
+9. The operator runs the web leg on HMRC sandbox with
+   `npm run test:practiceLicenceBehaviour-proxy-synthetic` and signs in as the agent.
+10. After the change, the `visual-review` skill judges the `practice.html` screenshots at phone
+   and desktop width in light and dark mode.
+
+**Decision for the operator:** A (reuse the MCP grant on the web), B (a separate web agent grant
+in `sessionStorage`) or C (a grant held per practice on the server).

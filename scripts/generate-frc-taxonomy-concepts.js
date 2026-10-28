@@ -29,6 +29,8 @@ const MODULE_URLS = {
   bus: "https://xbrl.frc.org.uk/cd/2026-01-01/business/bus-2026-01-01.xsd",
   core: "https://xbrl.frc.org.uk/fr/2026-01-01/core/frc-core-2026-01-01.xsd",
   direp: "https://xbrl.frc.org.uk/reports/2026-01-01/direp/direp-2026-01-01.xsd",
+  accrep: "https://xbrl.frc.org.uk/reports/2026-01-01/accrep/accrep-2026-01-01.xsd",
+  curr: "https://xbrl.frc.org.uk/cd/2026-01-01/currencies/currencies-2026-01-01.xsd",
 };
 
 const OUTPUT_PATH = join(dirname(fileURLToPath(import.meta.url)), "..", "fixtures", "frc-taxonomy", "frs-102-2026-concepts.json");

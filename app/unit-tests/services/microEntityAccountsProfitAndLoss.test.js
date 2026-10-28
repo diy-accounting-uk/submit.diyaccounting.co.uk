@@ -27,7 +27,7 @@ const PRIOR = { ...CURRENT, turnover: 40000, profitBeforeTax: 9500, tax: 1500, p
 const INPUT = {
   companyNumber: "02706061",
   companyName: "TEST MICRO LIMITED",
-  registeredOffice: "1 Test Street, London, EC1A 1AA",
+  registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
   periodStart: "2025-07-01",
   periodEnd: "2026-06-30",
   averageNumberOfEmployees: 2,

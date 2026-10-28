@@ -45,6 +45,8 @@ const ACCEPTED_RETURN = {
   receiptId: "2026-10-24T11:30:00.000Z-ABCDEF0123456789",
 };
 
+const OPTIONAL_CREDITOR_LINES = ["BankLoansOverdrafts", "TaxationSocialSecurity", "BankLoansAfterOneYear"];
+
 test.describe("File Company Tax Return page", () => {
   let pageHtml;
 
@@ -234,7 +236,7 @@ test.describe("File Company Tax Return entry form", () => {
       "declarantName",
       "declarantStatus",
       ...CT600_FORM_FIELDS.filter((field) => ["whole-pounds", "pounds-and-pence"].includes(field.type) && !field.optional).map((f) => f.id),
-      ...accountAmountIds().filter((id) => id.startsWith("current")),
+      ...accountAmountIds().filter((id) => id.startsWith("current") && !OPTIONAL_CREDITOR_LINES.some((line) => id.endsWith(line))),
       ...FIXED_ASSET_CLASSES.flatMap(([className]) => FIXED_ASSET_FIELDS.map(([field]) => noteId(className, field))),
       ...ACCOUNTS_TEXT_FIELDS.map((field) => field.id),
     ];

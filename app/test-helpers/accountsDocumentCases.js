@@ -52,7 +52,7 @@ const SMALL_BALANCE_SHEET_LABELS = [
 export const SMALL_COMPANY_CASE_INPUT = {
   companyNumber: "04549236",
   companyName: "MORGAN TECHNICAL LIMITED",
-  registeredOffice: "Unit 4 Morgan Court, Cardiff, CF10 1AA",
+  registeredOffice: { addressLine1: "Unit 4 Morgan Court", cityOrTown: "Cardiff", postalCode: "CF10 1AA" },
   periodStart: "2025-04-01",
   periodEnd: "2026-03-31",
   averageNumberOfEmployees: 4,

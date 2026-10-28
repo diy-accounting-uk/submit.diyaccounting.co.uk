@@ -62,7 +62,30 @@ const balanceSheetYearSchema = z.object({
   capitalAndReserves: z.number(),
 });
 
+const registeredOfficeSchema = z
+  .object({
+    addressLine1: z.string(),
+    addressLine2: z.string().optional(),
+    addressLine3: z.string().optional(),
+    cityOrTown: z.string().optional(),
+    countyRegion: z.string().optional(),
+    postalCode: z.string().optional(),
+    country: z.string().optional(),
+  })
+  .optional()
+  .describe("The registered office as address parts; taken from the company's Companies House record when left out");
+
+const accountantsReportSchema = z
+  .object({
+    accountantsName: z.string().describe("The accountancy firm's name"),
+    statement: z.string().describe("The statement of the scope of the accountants' report"),
+  })
+  .optional()
+  .describe("Adds the accountants' report page and files the accounts as exempt from audit with an accountants' report");
+
 const accountsFilingInputSchema = {
+  registeredOffice: registeredOfficeSchema,
+  accountantsReport: accountantsReportSchema,
   companyNumber: z.string().describe("The 8-character Companies House company number"),
   companyName: z.string().describe("The registered company name"),
   periodStart: z.string().describe("The accounting period's start date, YYYY-MM-DD"),
@@ -93,6 +116,13 @@ const smallCompanyBalanceSheetYearSchema = z.object({
   corporationTax: z.number(),
   otherCreditors: z.number(),
   creditorsAfterOneYear: z.number(),
+  bankLoansOverdrafts: z.number().optional().describe("Whole pounds owed to a bank within one year; 0 when left out"),
+  taxationSocialSecurity: z
+    .number()
+    .optional()
+    .describe("Whole pounds of PAYE, National Insurance and VAT owed within one year; 0 when left out"),
+  accruals: z.number().optional().describe("Whole pounds of accruals and deferred income due within one year; 0 when left out"),
+  bankLoansAfterOneYear: z.number().optional().describe("The part of creditorsAfterOneYear owed to a bank; 0 when left out"),
   calledUpShareCapital: z.number(),
   profitAndLossAccount: z.number(),
   capitalAndReserves: z.number(),
@@ -120,6 +150,8 @@ const fixedAssetClassSchema = z.object({
 });
 
 const smallCompanyFilingInputSchema = {
+  registeredOffice: registeredOfficeSchema,
+  accountantsReport: accountantsReportSchema,
   companyNumber: z.string().describe("The 8-character Companies House company number"),
   companyName: z.string().describe("The registered company name"),
   periodStart: z.string().describe("The accounting period's start date, YYYY-MM-DD"),
@@ -141,6 +173,18 @@ const smallCompanyFilingInputSchema = {
       filleted: z.boolean().optional().describe("True to file the filleted copy, without the profit and loss account"),
       principalActivity: z.string(),
       accountingPolicies: z.string(),
+      taxPolicy: z.string().optional(),
+      currentIncomeTaxPolicy: z.string().optional().describe("How current tax is calculated"),
+      dividendPolicy: z.string().optional(),
+      goingConcernStatement: z.string().optional(),
+      revenueRecognitionPolicy: z.string().optional(),
+      tangibleFixedAssetsPolicy: z.string().optional(),
+      impairmentPolicy: z.string().optional(),
+      financialInstrumentsPolicy: z.string().optional(),
+      controllingParty: z
+        .object({ ultimate: z.boolean(), name: z.string().optional().describe("Required when the party is ultimate") })
+        .optional()
+        .describe("Without a name, states that the company has no ultimate controlling party"),
       directors: z.array(z.string()).describe("Every director's name, at least one"),
       balanceSheet: z.object({
         currentYear: smallCompanyBalanceSheetYearSchema,
