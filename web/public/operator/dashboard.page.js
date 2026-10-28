@@ -48,6 +48,8 @@ const COMPANY_BALANCE_SHEET_ROWS = [
   ["company-capital-and-reserves", "Capital and reserves"],
 ];
 
+const RESERVE_FLOOR_GBP = 2000;
+
 const NOT_MEASURED = "not measured";
 const NONE = "none";
 const NO_BASE = "no base";
@@ -313,6 +315,51 @@ function renderCompanyAccounts(snapshot) {
   COMPANY_BALANCE_SHEET_ROWS.forEach(([id, label]) => bsBody.appendChild(renderCompanyAccountsRow(observationsById, id, label)));
 }
 
+function appendReserveRow(body, id, label, text) {
+  const row = document.createElement("tr");
+  row.dataset.figureId = id;
+  const labelCell = document.createElement("td");
+  labelCell.textContent = label;
+  const valueCell = document.createElement("td");
+  valueCell.textContent = text;
+  row.appendChild(labelCell);
+  row.appendChild(valueCell);
+  body.appendChild(row);
+}
+
+// The bank balance from the company book against the reserve floor. A null cash value (no
+// book snapshot yet) shows the empty state; a balance under the floor is marked.
+function renderReserve(snapshot) {
+  const panel = document.getElementById("reservePanel");
+  const objective = (snapshot.objectives || []).find((candidate) => candidate.id === "company-accounts");
+  const observation = objective && objective.observations.find((candidate) => candidate.id === "company-cash-at-bank");
+  const cash = observation && observation.last30 ? observation.last30.value : null;
+  const hasCash = cash !== null && cash !== undefined;
+
+  const body = document.getElementById("reserveBody");
+  const state = document.getElementById("reserveState");
+  body.innerHTML = "";
+  panel.hidden = false;
+
+  if (!hasCash) {
+    document.getElementById("reserveTable").hidden = true;
+    state.textContent = "No book snapshot exists yet.";
+    state.className = "status-message status-info";
+    state.dataset.state = "empty";
+    return;
+  }
+
+  document.getElementById("reserveTable").hidden = false;
+  const headroom = cash - RESERVE_FLOOR_GBP;
+  appendReserveRow(body, "reserve-cash-at-bank", "Cash at bank", formatValue("gbp", cash));
+  appendReserveRow(body, "reserve-floor", "Reserve floor", formatValue("gbp", RESERVE_FLOOR_GBP));
+  appendReserveRow(body, "reserve-headroom", "Headroom", formatValue("gbp", headroom));
+  const below = cash < RESERVE_FLOOR_GBP;
+  state.textContent = below ? "Below the reserve floor." : "At or above the reserve floor.";
+  state.className = below ? "status-message status-error" : "status-message status-success";
+  state.dataset.state = below ? "below-floor" : "above-floor";
+}
+
 function renderReinvestment(snapshot) {
   const panel = document.getElementById("reinvestmentPanel");
   const reinvestment = snapshot.reinvestment;
@@ -574,6 +621,7 @@ async function initPage() {
     const snapshot = await fetchJson("/api/v1/operator/snapshot");
     renderSnapshot(snapshot);
     renderReinvestment(snapshot);
+    renderReserve(snapshot);
     renderCompanyAccounts(snapshot);
     renderActivities(snapshot);
     window.renderDailyCharts(snapshot);

@@ -611,6 +611,16 @@ export const OBJECTIVE_DEFINITIONS = [
     name: "Company accounts",
     observations: [
       {
+        id: "company-cash-at-bank",
+        label: "Cash at bank",
+        unit: "gbp",
+        view: "company_accounts",
+        dayColumn: "dt",
+        valueExpr: "cashatbank",
+        aggregation: "latest",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
         id: "company-turnover",
         label: "Turnover",
         unit: "gbp",
@@ -786,6 +796,7 @@ export function measureDescription(observation) {
   if (observation.aggregation === "sum") return `total of the ${periods}`;
   if (observation.aggregation === "avg") return `average of the ${periods}`;
   if (observation.aggregation === "max") return "highest in the window";
+  if (observation.aggregation === "latest") return "latest day in the window";
   return "count of rows";
 }
 
@@ -978,8 +989,12 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
   const columns = observations.flatMap(({ valueExpr, aggregation, where, reportDataSince }, index) => {
     const prefix = observationColumnPrefix(index);
     const filter = caseFilter(where);
-    const windowColumns = WINDOWED_COLUMNS.map(
-      ([alias, condition]) => `${aggregation}(CASE WHEN ${condition(dayColumn)}${filter} THEN ${valueExpr} END) AS ${prefix}${alias}`,
+    // "latest" reads the value on the newest day inside the window, for a balance that a
+    // sum, average or highest-day figure would misstate.
+    const windowColumns = WINDOWED_COLUMNS.map(([alias, condition]) =>
+      aggregation === "latest"
+        ? `max_by(${valueExpr}, ${dayColumn}) FILTER (WHERE ${condition(dayColumn)}${filter}) AS ${prefix}${alias}`
+        : `${aggregation}(CASE WHEN ${condition(dayColumn)}${filter} THEN ${valueExpr} END) AS ${prefix}${alias}`,
     );
     if (reportDataSince) {
       const earliest = where ? `min(CASE WHEN ${where} THEN ${dayColumn} END)` : `min(${dayColumn})`;

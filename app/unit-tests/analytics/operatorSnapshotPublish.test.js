@@ -216,6 +216,19 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).toContain("cast(min(CASE WHEN kind = 'a' THEN day END) AS varchar) AS o2_data_since");
     });
 
+    test("reads the value on the newest day in each window for a latest aggregation", () => {
+      const sql = buildWindowedBatchSql({
+        view: "company_accounts",
+        dayColumn: "dt",
+        observations: [{ valueExpr: "cashatbank", aggregation: "latest" }],
+      });
+      expect(sql).toContain("max_by(cashatbank, dt) FILTER (WHERE dt > date_add('day', -30, current_date)) AS o0_last_30");
+      expect(sql).toContain(
+        "max_by(cashatbank, dt) FILTER (WHERE dt > date_add('day', -180, current_date) AND dt <= date_add('day', -90, current_date)) AS o0_prev_90",
+      );
+      expect(sql).toContain("FROM   company_accounts");
+    });
+
     test("builds the four conditional aggregates without a filter", () => {
       const sql = buildWindowedBatchSql({
         view: "v_availability_sli_daily",
@@ -801,6 +814,7 @@ describe("operatorSnapshotPublish", () => {
     test("the company-accounts observation set reads turnover, profit and the balance sheet lines", async () => {
       mockQueriesWithRowsByFragment(
         {
+          cashatbank: ["3500.5", "3000", "3500.5", "3000"],
           "accounts.profitandloss.turnover": ["120000", "100000", "120000", "100000"],
           "accounts.profitandloss.profit": ["15000", "12000", "15000", "12000"],
           "accounts.balancesheet.currentyear.fixedassets": ["5000", "5000", "5000", "5000"],
@@ -819,9 +833,10 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const companyAccounts = snapshot.objectives.find((o) => o.id === "company-accounts");
-      expect(companyAccounts.observations).toHaveLength(10);
+      expect(companyAccounts.observations).toHaveLength(11);
 
       const byId = Object.fromEntries(companyAccounts.observations.map((o) => [o.id, o]));
+      expect(byId["company-cash-at-bank"].last30.value).toBe(3500.5);
       expect(byId["company-turnover"].last30.value).toBe(120000);
       expect(byId["company-profit"].last30.value).toBe(15000);
       expect(byId["company-fixed-assets"].last30.value).toBe(5000);
@@ -847,7 +862,7 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const companyAccounts = snapshot.objectives.find((o) => o.id === "company-accounts");
-      expect(companyAccounts.observations).toHaveLength(10);
+      expect(companyAccounts.observations).toHaveLength(11);
       for (const observation of companyAccounts.observations) {
         expect(observation.last30).toEqual({ value: null, trend: null });
         expect(observation.last90).toEqual({ value: null, trend: null });
