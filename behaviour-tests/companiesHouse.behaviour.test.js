@@ -50,7 +50,7 @@ const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HM
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 
 const { searchTerm, companyName: expectedCompanyName, companyNumber: expectedCompanyNumber } = companiesHouseLookupFixture(envFilePath);
-const expectedCompanyStatus = "active";
+const expectedCompanyStatus = "Active";
 
 let mockOAuth2Process;
 let serverProcess;
