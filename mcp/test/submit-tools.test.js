@@ -919,7 +919,7 @@ describe("submit-tools", () => {
       );
     });
 
-    it("names the practice clients for a batch entry and needs no company number", async () => {
+    it("sends the practice client ids for a batch entry and needs no company number", async () => {
       const mockFetch = vi
         .fn()
         .mockResolvedValueOnce(
@@ -939,10 +939,7 @@ describe("submit-tools", () => {
       expect(mockFetch.mock.calls[0][0]).toBe("https://submit.diyaccounting.co.uk/api/v1/practice/clients");
       expect(JSON.parse(mockFetch.mock.calls[1][1].body)).toEqual({
         kind: "accounts",
-        clients: [
-          { clientId: "c2", displayName: "Beta Ltd" },
-          { clientId: "c1", displayName: "Alpha Ltd" },
-        ],
+        clients: [{ clientId: "c2" }, { clientId: "c1" }],
       });
     });
 

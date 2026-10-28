@@ -5550,10 +5550,7 @@ table.observations th {
   .data-table:not(.observations:not(.activities-table)) thead,
   .rates-table thead {
     position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
+    left: -9999px;
   }
 
   .data-table:not(.observations:not(.activities-table)) tr,
