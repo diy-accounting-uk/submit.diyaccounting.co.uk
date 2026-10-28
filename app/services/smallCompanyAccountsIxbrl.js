@@ -681,8 +681,10 @@ export function buildSmallCompanyAccounts(input) {
     balanceSheetYears.push(withBalanceSheetTotals(priorBalanceSheet));
     balanceSheetRefs.push(refs.priorInstant);
   }
+  const anyYearHasAccruals = balanceSheetYears.some((figures) => (figures.accruals ?? 0) !== 0);
   const years = balanceSheetYears.map((figures, index) =>
     balanceSheetFacts({
+      withAccrualsContext: anyYearHasAccruals,
       contextRef: balanceSheetRefs[index],
       entityIdentifierXml,
       periodXml: periodXml[balanceSheetRefs[index]],

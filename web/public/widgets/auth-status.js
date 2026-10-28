@@ -71,9 +71,7 @@
 
     const idToken = localStorage.getItem("cognitoIdToken");
     if (!idToken) {
-      const tokenCountEl2 = tokenBalanceEl.querySelector(".token-count");
-      if (tokenCountEl2) tokenCountEl2.textContent = "0 tokens";
-      tokenBalanceEl.style.display = "inline-flex";
+      tokenBalanceEl.style.display = "none";
       return;
     }
 
@@ -104,7 +102,9 @@
         } else if (hasTokenBundles && typeof data.tokensRemaining === "number") {
           tokenCountEl.textContent = data.tokensRemaining + " token" + (data.tokensRemaining !== 1 ? "s" : "");
         } else {
-          tokenCountEl.textContent = "0 tokens";
+          // No token bundle held (an operator, for one): there is no balance to show.
+          tokenBalanceEl.style.display = "none";
+          return;
         }
       } else {
         tokenCountEl.textContent = "0 tokens";
@@ -146,6 +146,10 @@
     }
     fetchAndDisplayTokens();
   }
+
+  // A page that changes the balance (a bundle request, a generated pass) announces it here.
+  window.addEventListener("bundle-changed", onRefreshTokenBalance);
+  window.addEventListener("token-balance-changed", onRefreshTokenBalance);
 
   // Update login status display
   function updateLoginStatus() {

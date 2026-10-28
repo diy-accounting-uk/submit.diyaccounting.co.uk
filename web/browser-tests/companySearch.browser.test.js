@@ -117,6 +117,24 @@ test.describe("Company Lookup page", () => {
     await expect(page.locator("#searchResultsContainer")).toBeVisible();
     await expect(page.locator("#searchResults")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
     await expect(page.locator("#searchResults")).toContainText("00000001");
+    await expect(page.locator("#searchResults")).toContainText("Active");
+    await expect(page.locator("#searchResults")).toContainText("16 April 2009");
+  });
+
+  test("stacks the result table into labelled rows without sideways scroll at 390px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+
+    await page.fill("#companyQuery", "Simulator Example");
+    await page.click("#searchBtn");
+    await delay(300);
+
+    const labels = await page.locator("#searchResults tbody td").evaluateAll((cells) => cells.map((cell) => cell.dataset.label));
+    expect(labels).toEqual(["Company", "Number", "Status", "Incorporated", "Address"]);
+    const scrollsSideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    expect(scrollsSideways).toBe(false);
   });
 
   test("shows a message when no companies match", async ({ page }) => {
@@ -145,7 +163,12 @@ test.describe("Company Lookup page", () => {
 
     await expect(page.locator("#profileView")).toBeVisible();
     await expect(page.locator("#companyProfile")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
-    await expect(page.locator("#companyProfile")).toContainText("active");
+    await expect(page.locator("#companyProfile")).toContainText("Active");
+    await expect(page.locator("#companyProfile")).toContainText("Private limited company");
+    await expect(page.locator("#companyProfile")).toContainText("England and Wales");
+    await expect(page.locator("#companyProfile")).toContainText("16 April 2009");
+    await expect(page.locator("#companyProfile")).toContainText("62012 - Business and domestic software development");
+    await expect(page.locator("#companyProfile")).not.toContainText("2009-04-16");
   });
 
   test("puts the company number in the URL when a result is selected", async ({ page }) => {

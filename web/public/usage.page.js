@@ -13,10 +13,7 @@ const __rc = typeof window !== "undefined" && window.requestCache ? window.reque
 
 async function fetchBundleData() {
   const idToken = getIdToken();
-  if (!idToken) {
-    renderNoAuth();
-    return null;
-  }
+  if (!idToken) return null;
 
   try {
     let data;
@@ -59,12 +56,7 @@ function messageRow(columns, text) {
   return row;
 }
 
-function renderNoAuth() {
-  document.getElementById("tokenSourcesBody").replaceChildren(messageRow(4, "Please log in to view token usage."));
-  document.getElementById("tokenConsumptionBody").replaceChildren(messageRow(3, "Please log in to view token usage."));
-}
-
-function renderTokenSources(bundles) {
+function renderTokenSources(bundles, catalogue) {
   const body = document.getElementById("tokenSourcesBody");
   const tokenBundles = (bundles || []).filter(function (b) {
     return b.allocated && b.tokensGranted !== undefined;
@@ -88,12 +80,17 @@ function renderTokenSources(bundles) {
       if (!isNaN(expiryDate.getTime()))
         expiryInfo = "Expires " + expiryDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     }
-    return tableRow([b.bundleId || "Unknown", b.tokensGranted || 0, remaining, expiryInfo || "-"]);
+    return tableRow([
+      window.catalogueNames.bundleName(catalogue, b.bundleId) || "Unknown",
+      b.tokensGranted || 0,
+      remaining,
+      expiryInfo || "-",
+    ]);
   });
   body.replaceChildren(...rows);
 }
 
-function renderTokenConsumption(bundles) {
+function renderTokenConsumption(bundles, catalogue) {
   const body = document.getElementById("tokenConsumptionBody");
   const allEvents = [];
 
@@ -125,16 +122,16 @@ function renderTokenConsumption(bundles) {
           minute: "2-digit",
         })
       : "-";
-    return tableRow([evt.activity || "Unknown", dateStr, evt.tokensUsed || 1]);
+    return tableRow([window.catalogueNames.activityName(catalogue, evt.activity) || "Unknown", dateStr, evt.tokensUsed || 1]);
   });
   body.replaceChildren(...rows);
 }
 
 async function loadUsage() {
-  const data = await fetchBundleData();
+  const [data, catalogue] = await Promise.all([fetchBundleData(), window.catalogueNames.loadCatalogue()]);
   if (!data) return;
-  renderTokenSources(data.bundles || []);
-  renderTokenConsumption(data.bundles || []);
+  renderTokenSources(data.bundles || [], catalogue);
+  renderTokenConsumption(data.bundles || [], catalogue);
   renderSubscriptionManagement(data.bundles || []);
 }
 
@@ -177,15 +174,6 @@ document.getElementById("refreshUsageBtn").addEventListener("click", function ()
   loadUsage();
   renderBrowserStorage();
 });
-
-// Replaces the global checkAuthStatus on purpose: sign-in changes re-render this page.
-// eslint-disable-next-line no-redeclare
-function checkAuthStatus() {
-  const userInfo = localStorage.getItem("userInfo");
-  if (!userInfo) {
-    renderNoAuth();
-  }
-}
 
 // Allowlist: only these keys have their values displayed.
 // Everything else is redacted by default to avoid leaking internal state.

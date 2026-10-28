@@ -687,6 +687,20 @@ async function loadOpenObligations() {
   }
 }
 
+// A synthetic account sends nothing to HMRC's live records, so the status line says sandbox in place of production.
+function showSandboxStatus() {
+  const banner = document.querySelector("p.hint[data-feature-status]");
+  if (!banner) return;
+  banner.setAttribute("data-feature-status", "sandbox");
+  banner.replaceChildren();
+  const strong = document.createElement("strong");
+  strong.textContent = "Status: sandbox.";
+  banner.append(
+    strong,
+    " Returns you submit here go to HMRC's test service and reach no real record. The HMRC Assist check on this page is preview: it runs on our simulator only.",
+  );
+}
+
 async function connectHmrc() {
   try {
     const hmrcAccount = sessionStorage.getItem("hmrcAccount");
@@ -739,6 +753,7 @@ async function initializePage() {
 
   // Show synthetic indicator if in synthetic mode (determined by bundle qualifiers via sessionStorage)
   if (hmrcAccount === "synthetic") {
+    showSandboxStatus();
     const syntheticIndicator = document.getElementById("syntheticIndicator");
     if (syntheticIndicator) {
       syntheticIndicator.classList.add("visible");

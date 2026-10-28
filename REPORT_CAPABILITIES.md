@@ -826,9 +826,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** a growth experiment needs recording so the operator dashboard can annotate its metrics.
 - **Does:** experiments.toml is a log of growth experiments. Each entry has an id, objective, hypothesis, lever, metric, start and end dates, and a result. It carries no API credentials or sync configuration.
-- **Run:** no command; see Does and Entry
+- **Run:** `node scripts/publish-experiments.mjs web/public` (the deploy workflow and `scripts/deploy-app.js` run it to serve the file at `/experiments.toml`)
 - **Entry:** `experiments.toml`
-- **Files:** experiments.toml
+- **Files:** experiments.toml, scripts/publish-experiments.mjs
 - **Keywords:** growth experiments, experiment log, operator dashboard annotations, ab test log, hypothesis lever metric
 - **Related:** SITE-20
 

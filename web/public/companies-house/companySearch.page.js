@@ -30,10 +30,10 @@ function renderSearchResults(results) {
     numberCell.textContent = item.companyNumber;
 
     const statusCell = document.createElement("td");
-    statusCell.textContent = item.companyStatus;
+    statusCell.textContent = window.companiesHouseLabels.companyStatusLabel(item.companyStatus);
 
     const incorporatedCell = document.createElement("td");
-    incorporatedCell.textContent = item.dateOfCreation || "";
+    incorporatedCell.textContent = window.companiesHouseLabels.formatCompanyDate(item.dateOfCreation);
 
     const addressCell = document.createElement("td");
     addressCell.textContent = item.addressSnippet || "";
@@ -85,17 +85,18 @@ function renderCompanyProfile(profile) {
   const address = profile.registeredOfficeAddress || {};
   const addressParts = [address.address_line_1, address.locality, address.postal_code, address.country].filter(Boolean);
 
+  const labels = window.companiesHouseLabels;
   const fields = [
     ["Name", profile.companyName],
     ["Number", profile.companyNumber],
-    ["Status", profile.companyStatus],
-    ["Type", profile.companyType],
-    ["Incorporated", profile.dateOfCreation],
-    ["Jurisdiction", profile.jurisdiction],
+    ["Status", labels.companyStatusLabel(profile.companyStatus)],
+    ["Type", labels.companyTypeLabel(profile.companyType)],
+    ["Incorporated", labels.formatCompanyDate(profile.dateOfCreation)],
+    ["Jurisdiction", labels.jurisdictionLabel(profile.jurisdiction)],
     ["Registered office", addressParts.join(", ")],
-    ["SIC codes", (profile.sicCodes || []).join(", ")],
-    ["Next accounts due", profile.accountsNextDue],
-    ["Next confirmation statement due", profile.confirmationStatementNextDue],
+    ["SIC codes", labels.formatSicCodes(profile.sicCodes)],
+    ["Next accounts due", labels.formatCompanyDate(profile.accountsNextDue)],
+    ["Next confirmation statement due", labels.formatCompanyDate(profile.confirmationStatementNextDue)],
   ];
 
   fields.forEach(([label, value]) => {

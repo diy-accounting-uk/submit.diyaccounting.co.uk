@@ -118,8 +118,10 @@ describe("mcpHmrcGrant", () => {
 
     test("asks for the agent authorisation scopes for agent", async () => {
       const { body } = await requestGrant({ services: ["agent"] });
-      expect(new URL(body.url).searchParams.get("scope")).toBe("read:sent-invitations write:sent-invitations");
-      expect(body.scope).toBe("read:sent-invitations write:sent-invitations");
+      expect(new URL(body.url).searchParams.get("scope")).toBe(
+        "read:sent-invitations write:sent-invitations write:cancel-invitations read:check-relationship",
+      );
+      expect(body.scope).toBe("read:sent-invitations write:sent-invitations write:cancel-invitations read:check-relationship");
     });
 
     test("needs a signed-in user and refuses an unknown service or account", async () => {

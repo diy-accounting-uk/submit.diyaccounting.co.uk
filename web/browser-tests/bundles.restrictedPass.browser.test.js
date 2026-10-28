@@ -104,10 +104,8 @@ test.describe("bundles.html with an email-restricted pass", () => {
     await expect(status).toBeVisible();
     await expect(status).toHaveText(`Pass valid! Log in with the invited email to add the "${BUNDLE_NAME}" bundle.`);
 
-    const requestButton = page.locator(`#catalogBundles button[data-bundle-id="${BUNDLE_ID}"]`);
-    await expect(requestButton).toBeVisible();
-    await expect(requestButton).toBeDisabled();
-    await expect(requestButton).toHaveText(new RegExp(`^Log in to add`));
+    await expect(page.locator("#signedOutPanel")).toBeVisible();
+    await expect(page.locator("button[data-bundle-id][disabled]")).toHaveCount(0);
 
     const pendingPass = await page.evaluate(() => sessionStorage.getItem("pendingPass"));
     expect(pendingPass).toBe(PASS_CODE);

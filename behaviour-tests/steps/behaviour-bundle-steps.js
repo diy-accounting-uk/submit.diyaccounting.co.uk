@@ -21,6 +21,16 @@ function resolveBundleId(bundleName) {
   return catalogBundle ? catalogBundle.id : bundleName.toLowerCase().replace(/\s+/g, "-");
 }
 
+// The name the usage page prints for a bundle id; an id the catalogue does not hold stays as the id.
+function bundleDisplayName(bundleId) {
+  return catalogue.bundles?.find((b) => b.id === bundleId)?.name || bundleId;
+}
+
+// The name the usage page prints for an activity id; an id the catalogue does not hold stays as the id.
+function activityDisplayName(activityId) {
+  return catalogue.activities?.find((a) => a.id === activityId)?.name || activityId;
+}
+
 export async function goToBundlesPage(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user navigates to Bundles via main navigation", async () => {
     // Go to bundles via main navigation
@@ -822,20 +832,19 @@ export async function verifyTokenSources(page, expectedBundles, screenshotPath =
     console.log(`Token Sources table has ${rowCount} row(s).`);
 
     for (const expected of expectedBundles) {
-      console.log(`  Checking for bundle: ${expected.bundleId}`);
+      const expectedName = bundleDisplayName(expected.bundleId);
+      console.log(`  Checking for bundle: ${expected.bundleId} (shown as "${expectedName}")`);
 
       // Find the row containing the bundle ID text
-      const bundleRow = sourcesBody.locator(`tr:has(td:text-is("${expected.bundleId}"))`);
+      const bundleRow = sourcesBody.locator(`tr:has(td:text-is("${expectedName}"))`);
       const bundleRowCount = await bundleRow.count();
-      console.log(`  Found ${bundleRowCount} row(s) matching bundleId "${expected.bundleId}".`);
-      expect(bundleRowCount, `Expected at least one row for bundle "${expected.bundleId}" in Token Sources table`).toBeGreaterThanOrEqual(
-        1,
-      );
+      console.log(`  Found ${bundleRowCount} row(s) matching "${expectedName}".`);
+      expect(bundleRowCount, `Expected at least one row for bundle "${expectedName}" in Token Sources table`).toBeGreaterThanOrEqual(1);
 
       // Get the cells from the first matching row
       const cells = bundleRow.first().locator("td");
       const cellCount = await cells.count();
-      expect(cellCount, `Expected 4 cells in Token Sources row for "${expected.bundleId}"`).toBe(4);
+      expect(cellCount, `Expected 4 cells in Token Sources row for "${expectedName}"`).toBe(4);
 
       const bundleName = (await cells.nth(0).textContent()).trim();
       const tokensGranted = parseInt((await cells.nth(1).textContent()).trim(), 10);
@@ -844,7 +853,7 @@ export async function verifyTokenSources(page, expectedBundles, screenshotPath =
 
       console.log(`  Bundle: ${bundleName}, Granted: ${tokensGranted}, Remaining: ${tokensRemaining}, Expiry: ${expiryInfo}`);
 
-      expect(bundleName).toBe(expected.bundleId);
+      expect(bundleName).toBe(expectedName);
 
       if (expected.tokensGranted !== undefined) {
         expect(tokensGranted, `Expected tokensGranted=${expected.tokensGranted} for "${expected.bundleId}"`).toBe(expected.tokensGranted);
@@ -906,10 +915,11 @@ export async function verifyTokenConsumption(page, expectedActivities, screensho
 
     for (const expected of expectedActivities) {
       const minCount = expected.minCount !== undefined ? expected.minCount : 1;
-      console.log(`  Checking for activity: "${expected.activity}" (minCount=${minCount})`);
+      const activityLabel = activityDisplayName(expected.activity);
+      console.log(`  Checking for activity: "${expected.activity}" shown as "${activityLabel}" (minCount=${minCount})`);
 
       // Find rows where the first cell (Activity column) contains the expected activity text
-      const activityRows = consumptionBody.locator(`tr:has(td:nth-child(1):text-is("${expected.activity}"))`);
+      const activityRows = consumptionBody.locator(`tr:has(td:nth-child(1):text-is("${activityLabel}"))`);
       const matchCount = await activityRows.count();
       console.log(`  Found ${matchCount} row(s) matching activity "${expected.activity}".`);
       expect(matchCount, `Expected at least ${minCount} "${expected.activity}" entries in Token Consumption table`).toBeGreaterThanOrEqual(

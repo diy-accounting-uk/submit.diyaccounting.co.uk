@@ -636,7 +636,7 @@ export async function requestCompaniesHouseCodes(session, params = {}) {
     const clients = params.clientIds.map((clientId) => {
       const found = practiceClients.find((client) => client.clientId === clientId);
       if (!found) throw new Error(`request_companies_house_codes clientIds names ${clientId}, which is not in the practice's client list`);
-      return { clientId, displayName: found.displayName };
+      return { clientId };
     });
     return callSubmitApi(session, "/api/v1/mcp/codes-entries", { method: "POST", body: { kind, clients } });
   }

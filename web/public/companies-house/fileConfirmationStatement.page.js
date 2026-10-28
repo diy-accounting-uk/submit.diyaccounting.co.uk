@@ -107,7 +107,7 @@ function renderPublicOfficers(officers) {
         tableRow(
           officerDisplayName(officer),
           slugOrDash(officer.officerRole),
-          textOrDash(officer.appointedOn),
+          textOrDash(window.companiesHouseLabels.formatCompanyDate(officer.appointedOn)),
           officer.identityVerificationDetails ? "Verified" : "Not verified",
         ),
       ),
@@ -120,7 +120,11 @@ function renderPublicPscs(pscs) {
     ...(pscs || [])
       .filter((psc) => !psc.ceasedOn)
       .map((psc) =>
-        tableRow(textOrDash(psc.name), textOrDash((psc.naturesOfControl || []).map(slugLabel).join(", ")), textOrDash(psc.notifiedOn)),
+        tableRow(
+          textOrDash(psc.name),
+          textOrDash((psc.naturesOfControl || []).map(slugLabel).join(", ")),
+          textOrDash(window.companiesHouseLabels.formatCompanyDate(psc.notifiedOn)),
+        ),
       ),
   );
 }
@@ -151,8 +155,12 @@ async function lookUpCompany(companyNumber) {
     currentPscs = (pscsResult.pscs || []).filter((psc) => !psc.ceasedOn);
     document.getElementById("authCompanyName").textContent = company.companyName;
     document.getElementById("authCompanyNumber").textContent = company.companyNumber;
-    document.getElementById("authNextDue").textContent = textOrDash(company.confirmationStatementNextDue);
-    document.getElementById("authNextMadeUpTo").textContent = textOrDash(company.confirmationStatementNextMadeUpTo);
+    document.getElementById("authNextDue").textContent = textOrDash(
+      window.companiesHouseLabels.formatCompanyDate(company.confirmationStatementNextDue),
+    );
+    document.getElementById("authNextMadeUpTo").textContent = textOrDash(
+      window.companiesHouseLabels.formatCompanyDate(company.confirmationStatementNextMadeUpTo),
+    );
     renderPublicOfficers(officersResult.officers);
     renderPublicPscs(pscsResult.pscs);
     showView("authView");
@@ -792,7 +800,7 @@ function confirmedPscs() {
   return currentPscs.map((psc) => ({
     name: textOrDash(psc.name),
     control: textOrDash((psc.naturesOfControl || []).map(slugLabel).join(", ")),
-    notifiedOn: textOrDash(psc.notifiedOn),
+    notifiedOn: textOrDash(window.companiesHouseLabels.formatCompanyDate(psc.notifiedOn)),
   }));
 }
 

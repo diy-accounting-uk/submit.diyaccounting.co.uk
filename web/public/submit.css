@@ -37,6 +37,16 @@
   --c-scrim-strong: rgb(11 12 12 / 0.92);
   --c-on-scrim: #ffffff;
 
+  /* chart lines: eight colours that stay apart for colour-blind readers, 3:1 or better on paper */
+  --chart-1: #0072b2;
+  --chart-2: #d55e00;
+  --chart-3: #007a5a;
+  --chart-4: #7b4fa3;
+  --chart-5: #a86a00;
+  --chart-6: #2a8ac4;
+  --chart-7: #b5487f;
+  --chart-8: #5f6b7d;
+
   --font-text: "Plain Zero", "Atkinson Hyperlegible", "Atkinson Fallback", system-ui, sans-serif;
   --font-figures: "Atkinson Hyperlegible", "Atkinson Fallback", system-ui, sans-serif;
   --font-code: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
@@ -79,7 +89,8 @@
   --focus-ring: 0 0 0 3px var(--c-focus), 0 0 0 5px var(--c-focus-ink);
 }
 
-/* A page that must keep the light scheme pins it with <html data-theme="light">. */
+/* A page that must keep the light scheme pins it with <html data-theme="light">.
+   The header switch sets data-theme to "light" or "dark"; with no attribute the device decides. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
@@ -105,7 +116,42 @@
     --c-info-tint: #1e2c40;
     --c-scrim: rgb(0 0 0 / 0.72);
     --shadow-card: none;
+
+    --chart-1: #56b4e9;
+    --chart-2: #ff8a4c;
+    --chart-3: #3ed6a3;
+    --chart-4: #d2a6ff;
+    --chart-5: #f2c14e;
+    --chart-6: #8fd3ff;
+    --chart-7: #f0a6ca;
+    --chart-8: #b8bec9;
   }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+
+  --c-canvas: #10161f;
+  --c-paper: #17202b;
+  --c-ink: #e6ebf2; /* 13.7:1 */
+  --c-ink-muted: #a9b4c4; /* 7.8:1 */
+  --c-rule: #6b778a; /* 3.6:1 */
+  --c-rule-subtle: #263241;
+  --c-brand: #8fb4ec; /* 7.8:1 */
+  --c-brand-strong: #b5cdf3;
+  --c-brand-tint: #1e2c40;
+  --c-on-brand: #10161f;
+  --c-visited: #c3a8ef;
+  --c-ok: #6fcf8f;
+  --c-ok-tint: #15291d;
+  --c-error: #ff8a7a;
+  --c-error-tint: #331a17;
+  --c-warn: #f2c14e;
+  --c-warn-tint: #2e2510;
+  --c-info: #8fb4ec;
+  --c-info-tint: #1e2c40;
+  --c-scrim: rgb(0 0 0 / 0.72);
+  --shadow-card: none;
 }
 
 @media (max-width: 600px) {
@@ -456,6 +502,84 @@ header:has(> .chrome-fallback) {
   padding-top: calc(var(--nav-height) + var(--space-1));
 }
 
+/* A spreadsheet grid receding behind the header into the horizon: ruled rows
+   and columns, a tinted top row like a sheet's column header, and two shaded
+   cells, tilted back and faded out. It sits behind the band and the nav. */
+header {
+  --grid-line: 11%;
+  --grid-column: 7%;
+  --grid-tint: 7%;
+  --grid-cell-a: 11%;
+  --grid-cell-b: 8%;
+}
+
+header::after {
+  content: "";
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  top: 2em;
+  height: 20em;
+  background:
+    linear-gradient(
+        color-mix(in srgb, var(--c-brand) var(--grid-cell-a), transparent),
+        color-mix(in srgb, var(--c-brand) var(--grid-cell-a), transparent)
+      )
+      2em 1.8em / 5em 1.5em no-repeat,
+    linear-gradient(
+        color-mix(in srgb, var(--c-brand) var(--grid-cell-b), transparent),
+        color-mix(in srgb, var(--c-brand) var(--grid-cell-b), transparent)
+      )
+      14em 3.3em / 5em 1.5em no-repeat,
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--c-brand) var(--grid-tint), transparent) 0,
+      color-mix(in srgb, var(--c-brand) var(--grid-tint), transparent) 1.5em,
+      transparent 1.5em
+    ),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--c-brand) var(--grid-column), transparent) 0 3px, transparent 3px 5em),
+    repeating-linear-gradient(180deg, color-mix(in srgb, var(--c-brand) var(--grid-line), transparent) 0 1px, transparent 1px 1.5em);
+  transform: perspective(600px) rotateX(50deg);
+  transform-origin: top center;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95) 0%, transparent 90%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95) 0%, transparent 90%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* The tilt fans the grid out towards the bottom. Where the margins beside the
+   content column are narrower than the fan, the header clips it so the page does not scroll sideways. */
+@media (max-width: 1100px) {
+  header {
+    overflow-x: clip;
+  }
+}
+
+@media (max-width: 600px) {
+  header::after {
+    height: 12em;
+  }
+}
+
+/* On the dark canvas the light brand blue is brighter, so the same low contrast needs less of it. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) header {
+    --grid-line: 11%;
+    --grid-column: 7%;
+    --grid-tint: 7%;
+    --grid-cell-a: 10%;
+    --grid-cell-b: 7%;
+  }
+}
+
+:root[data-theme="dark"] header {
+  --grid-line: 11%;
+  --grid-column: 7%;
+  --grid-tint: 7%;
+  --grid-cell-a: 10%;
+  --grid-cell-b: 7%;
+}
+
 .chrome-fallback {
   display: flex;
   align-items: center;
@@ -489,7 +613,8 @@ header:has(> .chrome-fallback) {
 }
 
 .home-link,
-.info-link {
+.info-link,
+.theme-toggle {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
@@ -512,27 +637,49 @@ header:has(> .chrome-fallback) {
 }
 
 .home-link:hover,
-.info-link:hover {
+.info-link:hover,
+.theme-toggle:hover {
   background-color: var(--c-brand-tint);
   color: var(--c-ink);
 }
 
 .home-link .home-icon,
-.info-link .info-icon {
+.info-link .info-icon,
+.theme-toggle .theme-icon {
   width: 24px;
   height: 24px;
   fill: currentColor;
   flex-shrink: 0;
 }
 
-.info-link .info-icon {
+.info-link .info-icon,
+.theme-toggle .theme-icon {
   fill: var(--c-brand);
+}
+
+.theme-toggle {
+  appearance: none;
+  background: none;
+  border: 0;
+  font: inherit;
+  cursor: pointer;
 }
 
 .brand-name {
   font-weight: var(--weight-strong);
   font-size: var(--step-1);
   white-space: nowrap;
+}
+
+/* Three controls share the left of the band; the name steps down to fit the narrowest phones. */
+@media (max-width: 360px) {
+  .header-left .brand-name {
+    font-size: 0.8rem;
+  }
+
+  .header-left .home-link {
+    gap: var(--space-1);
+  }
 }
 
 /* Home icon used outside the band */
@@ -2398,11 +2545,17 @@ body > footer {
   flex-direction: column;
   gap: var(--space-4);
   margin: var(--space-5) 0;
-  min-height: min(40vh, 22rem);
+  min-height: 30rem;
 }
 
 .form-container > .bundles-section[hidden] + .bundles-list {
   margin-top: 0;
+}
+
+/* The current bundles and the catalogue arrive at different times; the block holds the room
+   of both so the sections below do not jump when they fill in. */
+.bundles-block {
+  min-height: 54.5rem;
 }
 
 .service-item {
@@ -4148,15 +4301,20 @@ body.page-wide {
   background: var(--c-paper);
 }
 
-.harness-config code,
-.harness-config pre {
-  overflow-wrap: anywhere;
-}
-
 .harness-config pre {
   background: var(--c-canvas);
   padding: var(--space-2);
   border-radius: var(--radius-control);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.harness-copy {
+  margin-bottom: var(--space-3);
+}
+
+.harness-script-choice {
+  margin-bottom: var(--space-2);
 }
 
 /* PolicyBee */
@@ -4323,9 +4481,6 @@ main ul.check-list {
 }
 
 .feedback-banner {
-  position: sticky;
-  top: 0;
-  z-index: 100;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -4340,6 +4495,15 @@ main ul.check-list {
 
 .feedback-banner[hidden] {
   display: none;
+}
+
+/* On a phone the banner is tall, so it scrolls away instead of covering the buttons under it. */
+@media (min-width: 601px) {
+  .feedback-banner {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
 }
 
 .proof-note {
@@ -4450,7 +4614,7 @@ main ul.check-list {
 }
 
 .bundle-note--info {
-  color: var(--c-info);
+  color: var(--c-ink);
 }
 
 .bundle-row {
@@ -5087,12 +5251,74 @@ table.observations th {
   white-space: nowrap;
 }
 
-.trend-up {
+.trend-good {
   color: var(--c-ok);
 }
 
-.trend-down {
+.trend-bad {
   color: var(--c-error);
+}
+
+.observation-source {
+  display: block;
+  color: var(--c-ink-muted);
+  font-size: var(--step--1);
+}
+
+.objective-guidance {
+  margin: 0 0 var(--space-4) 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-4);
+  font-size: var(--step--1);
+}
+
+.objective-guidance dt {
+  color: var(--c-ink-muted);
+}
+
+.objective-guidance dd {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .objective-guidance {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* The eight objectives share one column grid so figures line up from panel to panel. */
+#objectivesContainer table.observations {
+  table-layout: fixed;
+  width: 100%;
+}
+
+#objectivesContainer table.observations th:nth-child(1) {
+  width: 34%;
+}
+
+#objectivesContainer table.observations th:nth-child(2),
+#objectivesContainer table.observations th:nth-child(4) {
+  width: 14%;
+}
+
+#objectivesContainer table.observations th:nth-child(3) {
+  width: 15%;
+}
+
+#objectivesContainer table.observations th:nth-child(5) {
+  width: 23%;
+}
+
+#objectivesContainer table.observations th:nth-child(3),
+#objectivesContainer table.observations td:nth-child(3) {
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  #objectivesContainer table.observations {
+    min-width: 36rem;
+  }
 }
 
 .trend-flat,
@@ -5110,25 +5336,19 @@ table.observations th {
 }
 
 /* Activity column: wide enough that a long catalogue name sits on one or two lines. */
-#activitiesTable th:first-child,
-#activitiesTable td:first-child {
+.activities-table th:first-child,
+.activities-table td:first-child {
   min-width: 18em;
 }
 
-#activitiesTable thead tr:first-child th:not(:first-child) {
-  text-align: center;
-}
-
-#activitiesTable thead tr:last-child th,
-#activitiesTable tbody td:not(:first-child) {
+.activities-table thead th,
+.activities-table tbody td:not(:first-child) {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#activitiesTable thead tr:first-child th:nth-child(3),
-#activitiesTable thead tr:last-child th:nth-child(7),
-#activitiesTable tbody td:nth-child(8) {
-  border-left: 2px solid var(--c-brand);
+.activities-table thead th:first-child {
+  text-align: left;
 }
 
 #reinvestmentTable th:nth-child(2),
@@ -5157,7 +5377,7 @@ table.observations th {
    measured on a full snapshot so the fill does not push what sits below; a failed load
    releases the reservation. */
 #objectivesContainer {
-  min-height: 2900px;
+  min-height: 4400px;
 }
 
 #objectivesContainer.objectives-failed {
@@ -5174,7 +5394,7 @@ table.observations th {
 
 @media (max-width: 900px) {
   #objectivesContainer {
-    min-height: 3600px;
+    min-height: 6600px;
   }
 
   #visitorsPanel {
@@ -5188,7 +5408,7 @@ table.observations th {
 
 @media (max-width: 600px) {
   #objectivesContainer {
-    min-height: 4600px;
+    min-height: 6950px;
   }
 
   #objectivesContainer.objectives-failed {
@@ -5201,5 +5421,206 @@ table.observations th {
 
   #experimentsPanel {
     min-height: 300px;
+  }
+}
+
+/* Operator dashboard daily charts. */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 900px) {
+  .charts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.chart-card {
+  min-width: 0;
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+}
+
+.chart-card h3 {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--step-0);
+}
+
+.chart-svg {
+  display: block;
+  max-width: 100%;
+  touch-action: pan-y;
+}
+
+.chart-grid {
+  stroke: var(--c-rule-subtle);
+  stroke-width: 1;
+}
+
+.chart-axis {
+  fill: var(--c-ink-muted);
+  font-size: 11px;
+  font-family: var(--font-figures);
+}
+
+.chart-guide {
+  stroke: var(--c-ink-muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.chart-readout {
+  margin: var(--space-2) 0;
+  min-height: 2.8em;
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-empty,
+.chart-note {
+  margin: var(--space-2) 0;
+  color: var(--c-ink-muted);
+  font-size: var(--step--1);
+}
+
+.chart-modes {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.chart-mode,
+.chart-legend-item {
+  font: inherit;
+  font-size: var(--step--1);
+  color: var(--c-ink);
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--radius-card);
+  padding: 0.25em 0.6em;
+  cursor: pointer;
+}
+
+.chart-mode[aria-pressed="true"],
+.chart-legend-item[aria-pressed="true"] {
+  background: var(--c-brand-tint);
+  border-color: var(--c-brand);
+}
+
+.chart-legend-item[aria-pressed="false"] {
+  color: var(--c-ink-muted);
+  text-decoration: line-through;
+}
+
+.chart-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+}
+
+.chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.chart-swatch {
+  display: inline-block;
+  width: 1.4em;
+  border-top: 2px solid;
+}
+
+/* Data tables under 40rem: each row is a block of label and value pairs, so no column sits out
+   of sight. lib/stacked-table.js copies the column headings onto the cells as data-label. The
+   operator dashboard's other observation tables keep scrolling inside their cards. */
+@media (max-width: 40rem) {
+  .data-table:not(.observations:not(.activities-table)),
+  .data-table:not(.observations:not(.activities-table)) tbody,
+  .rates-table,
+  .rates-table tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+    background: none;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) caption,
+  .rates-table caption,
+  .stacked-table caption {
+    display: block;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) thead,
+  .rates-table thead {
+    position: absolute;
+    left: -9999px;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) tr,
+  .rates-table tr {
+    display: block;
+    padding: var(--space-2) 0;
+    border-bottom: 2px solid var(--c-rule);
+  }
+
+  .data-table:not(.observations:not(.activities-table)) td,
+  .rates-table td {
+    display: grid;
+    grid-template-columns: minmax(6rem, 40%) minmax(0, 1fr);
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-1) 0;
+    border: 0;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) td[data-label]::before,
+  .rates-table td[data-label]::before {
+    content: attr(data-label);
+    font-weight: var(--weight-strong);
+    color: var(--c-ink-muted);
+  }
+
+  .data-table:not(.observations:not(.activities-table)) td[colspan],
+  .rates-table td[colspan] {
+    display: block;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) tbody th,
+  .rates-table tbody th {
+    display: block;
+    text-align: left;
+    border: 0;
+    padding: var(--space-2) 0 0;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) .receipt-nowrap {
+    white-space: normal;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) td .link-button {
+    text-align: left;
+  }
+
+  .activities-table th:first-child,
+  .activities-table td:first-child {
+    min-width: 0;
+  }
+}
+
+/* Above 1100px the tilted header grid still fans past the content column far enough to make the
+   page scroll sideways, so the header clips it there too. */
+@media (min-width: 1101px) {
+  header {
+    overflow-x: clip;
   }
 }

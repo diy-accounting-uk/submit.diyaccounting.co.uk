@@ -1110,8 +1110,8 @@ function answerProblems(values, problem) {
     problem("directorDateApproved", "Enter the date the accounts were approved");
   }
   const unaccepted = statementFieldsFor(values).find(({ id }) => values[id] !== true);
-  if (unaccepted) problem(unaccepted.id, "Accept all four statements before reviewing");
-  if (values.declarationAccepted !== true) problem("declarationAccepted", "Accept the declaration before reviewing");
+  if (unaccepted) problem(unaccepted.id, "Accept all four statements before you preview the return");
+  if (values.declarationAccepted !== true) problem("declarationAccepted", "Accept the declaration before you preview the return");
 }
 
 /**

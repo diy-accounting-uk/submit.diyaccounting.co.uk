@@ -5,7 +5,12 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
-import { isActivityListedInEnvironment, fetchCurrentEnvironmentName } from "../public/lib/services/catalog-service.js";
+import {
+  isActivityListedInEnvironment,
+  fetchCurrentEnvironmentName,
+  activityPagePath,
+  activityArea,
+} from "../public/lib/services/catalog-service.js";
 
 describe("isActivityListedInEnvironment", () => {
   it("lists an activity in a named environment", () => {
@@ -59,5 +64,26 @@ describe("fetchCurrentEnvironmentName", () => {
     global.fetch.mockRejectedValue(new Error("network error"));
 
     expect(await fetchCurrentEnvironmentName()).toBeNull();
+  });
+});
+
+describe("home page activity buttons", () => {
+  it("opens the first page in the activity's paths", () => {
+    expect(activityPagePath({ paths: ["hmrc/vat/submitVat.html", "^/api/v1/hmrc/vat.*"] })).toBe("hmrc/vat/submitVat.html");
+  });
+
+  it("gives an activity with no page no button path", () => {
+    expect(
+      activityPagePath({ id: "file-psc-verification-statement", paths: ["^/api/v1/companies-house/psc-verification-statement.*"] }),
+    ).toBeNull();
+    expect(activityPagePath({ id: "no-paths" })).toBeNull();
+  });
+
+  it("files a page under the group of its directory", () => {
+    expect(activityArea("hmrc/vat/vatObligations.html")).toBe("VAT");
+    expect(activityArea("hmrc/itsa/itsaObligations.html")).toBe("Income Tax");
+    expect(activityArea("companies-house/filePscVerification.html")).toBe("Companies House");
+    expect(activityArea("passes/redeem.html")).toBe("Passes");
+    expect(activityArea("mcp-harness.html")).toBe("More");
   });
 });

@@ -6,9 +6,10 @@ import { buildJwtAuthorizerContext, buildLambdaEvent } from "../../test-helpers/
 
 vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
   listClients: vi.fn(),
+  getPracticeArn: vi.fn(),
 }));
 
-const { listClients } = await import("@app/data/dynamoDbPracticeClientRepository.js");
+const { listClients, getPracticeArn } = await import("@app/data/dynamoDbPracticeClientRepository.js");
 const { ingestHandler } = await import("../../functions/practice/practiceClientsListGet.js");
 const { _setTestSalt } = await import("../../services/subHasher.js");
 
@@ -24,6 +25,8 @@ describe("practiceClientsListGet", () => {
   beforeEach(() => {
     process.env.PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME = "test-practice-clients-table";
     listClients.mockReset();
+    getPracticeArn.mockReset();
+    getPracticeArn.mockResolvedValue(null);
     _setTestSalt("test-salt");
   });
 
@@ -33,8 +36,30 @@ describe("practiceClientsListGet", () => {
     const result = await ingestHandler(buildAuthenticatedEvent({ sub: "practice-sub" }));
 
     expect(result.statusCode).toBe(200);
-    expect(JSON.parse(result.body)).toEqual({ clients: [{ clientId: "c1", displayName: "Acme Ltd" }] });
+    expect(JSON.parse(result.body)).toEqual({ clients: [{ clientId: "c1", displayName: "Acme Ltd" }], arnOnFile: false });
     expect(listClients).toHaveBeenCalledWith("practice-sub");
+  });
+
+  test("reports that an agent reference number is on file", async () => {
+    listClients.mockResolvedValue([]);
+    getPracticeArn.mockResolvedValue("AARN1234567");
+
+    const result = await ingestHandler(buildAuthenticatedEvent({}));
+
+    expect(JSON.parse(result.body).arnOnFile).toBe(true);
+  });
+
+  test("lists only archived clients when asked", async () => {
+    listClients.mockResolvedValue([
+      { clientId: "c1", displayName: "Live Ltd", archivedAt: null },
+      { clientId: "c2", displayName: "Old Ltd", archivedAt: "2026-01-01T00:00:00.000Z" },
+    ]);
+    const event = { ...buildAuthenticatedEvent({}), queryStringParameters: { archived: "true" } };
+
+    const result = await ingestHandler(event);
+
+    expect(JSON.parse(result.body).clients.map((c) => c.clientId)).toEqual(["c2"]);
+    expect(listClients).toHaveBeenCalledWith("practice-sub", { includeArchived: true });
   });
 
   test("rejects an unauthenticated call", async () => {

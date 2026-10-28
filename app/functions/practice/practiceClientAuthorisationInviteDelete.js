@@ -95,7 +95,11 @@ export async function ingestHandler(event) {
       return agentAuthorisationErrorResponse(request, result, responseHeaders);
     }
 
-    const updated = await setClientAuthorisation(user.sub, clientId, service, { status: "cancelled", invitationId: null });
+    const updated = await setClientAuthorisation(user.sub, clientId, service, {
+      status: "cancelled",
+      invitationId: null,
+      knownFact: client.authorisations?.[service]?.knownFact,
+    });
 
     return http200OkResponse({
       request,

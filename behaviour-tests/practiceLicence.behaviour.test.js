@@ -38,7 +38,7 @@ import { grantMcpHmrcAccessInBrowser } from "./steps/behaviour-mcp-hmrc-grant-st
 import { callHarnessTool } from "../mcp/lib/harness.js";
 import { addClient, clientAuthorisationStatus, inviteClient } from "../mcp/lib/practice-tools.js";
 import { runForClients } from "../mcp/lib/batch-tools.js";
-import { callSubmitApi } from "../mcp/lib/submit-tools.js";
+import { callSubmitApi, hmrcAccessTokenFor } from "../mcp/lib/submit-tools.js";
 import { createSession } from "../mcp/lib/book-tools.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
@@ -207,8 +207,21 @@ test("A practice adds two clients and submits a VAT return for each through run_
   });
   await callSubmitApi(session, `/api/v1/practice/clients/${encodeURIComponent(bootstrapClient.client.clientId)}`, { method: "DELETE" });
 
-  const clientA = await addClient(session, { displayName: "Practice Client A", vrn: PRE_AUTHORISED_VRN });
-  const clientB = await addClient(session, { displayName: "Practice Client B", vrn: PRE_AUTHORISED_VRN });
+  // HMRC's relationship check needs the known fact given with an invitation, so each client is
+  // invited and the invitation cancelled; the stored known fact then lets the check run.
+  async function addClientWithRelationshipCheckable(displayName) {
+    const added = await addClient(session, { displayName, vrn: PRE_AUTHORISED_VRN });
+    await inviteClient(session, { clientId: added.client.clientId, service: "MTD-VAT", knownFact: "2015-01-01" });
+    const { accessToken } = await hmrcAccessTokenFor(session, "cancel_invitation");
+    await callSubmitApi(
+      session,
+      `/api/v1/practice/clients/${encodeURIComponent(added.client.clientId)}/authorisation/invitations?service=MTD-VAT`,
+      { method: "DELETE", customAuthorizer: true, headers: { Authorization: `Bearer ${accessToken}` } },
+    );
+    return added;
+  }
+  const clientA = await addClientWithRelationshipCheckable("Practice Client A");
+  const clientB = await addClientWithRelationshipCheckable("Practice Client B");
 
   const statusA = await clientAuthorisationStatus(session, { clientId: clientA.client.clientId, service: "MTD-VAT" });
   const statusB = await clientAuthorisationStatus(session, { clientId: clientB.client.clientId, service: "MTD-VAT" });

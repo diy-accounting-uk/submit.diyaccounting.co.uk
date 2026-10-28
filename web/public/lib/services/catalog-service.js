@@ -62,6 +62,29 @@ export function isActivityListedInEnvironment(activity, environmentName) {
 }
 
 /**
+ * The page an activity's home button opens: the first `.html` entry in its catalogue `paths`.
+ * An activity with no page has no button on the home page.
+ * @param {object} activity - An activity entry from the parsed catalog
+ * @returns {string|null} The page path, or null when the activity has no page
+ */
+export function activityPagePath(activity) {
+  return activity?.paths?.find((entry) => entry.includes(".html")) ?? null;
+}
+
+/**
+ * The home page group of an activity, taken from the directory of its page path.
+ * @param {string} pagePath - The path from activityPagePath
+ * @returns {"VAT"|"Income Tax"|"Companies House"|"Passes"|"More"}
+ */
+export function activityArea(pagePath) {
+  if (pagePath.startsWith("hmrc/vat")) return "VAT";
+  if (pagePath.startsWith("hmrc/itsa")) return "Income Tax";
+  if (pagePath.startsWith("companies-house")) return "Companies House";
+  if (pagePath.startsWith("passes")) return "Passes";
+  return "More";
+}
+
+/**
  * Fetch the current environment's name as recorded at deploy time.
  * @param {string} url - URL to fetch (default "/submit.environment-name.txt")
  * @returns {Promise<string|null>} The environment name, or null if it could not be read
@@ -84,5 +107,7 @@ if (typeof window !== "undefined") {
   window.isActivityAvailable = isActivityAvailable;
   window.fetchCatalogText = fetchCatalogText;
   window.isActivityListedInEnvironment = isActivityListedInEnvironment;
+  window.activityPagePath = activityPagePath;
+  window.activityArea = activityArea;
   window.fetchCurrentEnvironmentName = fetchCurrentEnvironmentName;
 }

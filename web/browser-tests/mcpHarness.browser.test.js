@@ -13,10 +13,13 @@ const readPublic = (relativePath) => fs.readFileSync(path.join(PUBLIC_DIR, relat
 
 const OBLIGATIONS = { obligations: [{ start: "2017-01-01", end: "2017-03-31", status: "O", periodKey: "#001" }] };
 
-async function setupRoutes(page, toolAnswer) {
+async function setupRoutes(page, toolAnswer, { callStatus = 200 } = {}) {
   const calls = [];
   await page.route("**/*.js", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+  });
+  await page.route("**/submit.css", async (route) => {
+    await route.fulfill({ status: 200, contentType: "text/css", body: readPublic("submit.css") });
   });
   await page.route("**/mcp-harness.page.js*", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/javascript", body: readPublic("mcp-harness.page.js") });
@@ -36,6 +39,7 @@ async function setupRoutes(page, toolAnswer) {
   });
   await page.route("**/api/v1/dev/mcp-harness/call", async (route) => {
     calls.push(route.request().postDataJSON());
+    if (callStatus !== 200) return route.fulfill({ status: callStatus, contentType: "text/html", body: "Not found" });
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ok: true, result: toolAnswer }) });
   });
   await page.route("**/browser-step.html", async (route) => {
@@ -45,6 +49,42 @@ async function setupRoutes(page, toolAnswer) {
 }
 
 test.describe("MCP chat harness", () => {
+  test("loads the widgets that show the signed-in state in the header", async ({ page }) => {
+    const requested = [];
+    page.on("request", (request) => requested.push(new URL(request.url()).pathname));
+    await setupRoutes(page, OBLIGATIONS);
+    await page.goto("http://localhost:3000/mcp-harness.html", { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("#toolList")).toContainText("list_vat_obligations");
+    for (const widget of ["auth-status.js", "entitlement-status.js", "status-messages.js"]) {
+      expect(requested).toContain(`/widgets/${widget}`);
+    }
+  });
+
+  test("stops the script at a 404 and says the endpoint is local only", async ({ page }) => {
+    await setupRoutes(page, OBLIGATIONS, { callStatus: 404 });
+    await page.goto("http://localhost:3000/mcp-harness.html", { waitUntil: "domcontentloaded" });
+
+    await page.locator("#playAll").click();
+
+    const toolCard = page.locator('.harness-turn[data-role="tool"]').first();
+    await expect(toolCard).toHaveAttribute("data-outcome", "error");
+    await expect(toolCard).toContainText("local only");
+    await expect(page.locator(".harness-turn")).toHaveCount(3);
+    await expect(page.locator("#nextTurn")).toBeDisabled();
+    await expect(page.locator("#playAll")).toBeEnabled();
+  });
+
+  test("offers the scripts in a chooser and a copy button for each configuration", async ({ page }) => {
+    await setupRoutes(page, OBLIGATIONS);
+    await page.goto("http://localhost:3000/mcp-harness.html", { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("#scriptChoice")).toHaveValue("list-vat-obligations");
+    await expect(page.locator("#scriptChoice option")).toHaveCount(3);
+    await expect(page.locator(".harness-copy")).toHaveCount(3);
+    await expect(page.locator("#configHosted")).toHaveCSS("overflow-x", "auto");
+  });
+
   test("shows the configuration panel with the connector URL", async ({ page }) => {
     await setupRoutes(page, OBLIGATIONS);
     await page.goto("http://localhost:3000/mcp-harness.html", { waitUntil: "domcontentloaded" });

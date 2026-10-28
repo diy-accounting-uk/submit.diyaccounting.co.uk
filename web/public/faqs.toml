@@ -552,3 +552,83 @@ If you lose access to your Google account:
 """
 keywords = ["google account", "locked out", "can't login", "forgot", "account access", "lost access"]
 priority = 29
+
+[[faq]]
+id = "self-assessment-itsa"
+category = "submission"
+question = "Can I file Income Tax Self Assessment (ITSA)?"
+answer = """
+Not yet for real returns. Income Tax Self Assessment through Making Tax Digital is in **sandbox**: it runs against HMRC's test service and files nothing real.
+
+In the sandbox you can:
+- See your business details and obligations
+- Send quarterly updates for self-employment and UK property
+- Make annual submissions, adjustments, losses and claims
+- See a tax calculation and make the final declaration
+
+You need the **Resident** or **Resident Pro** bundle. Quarterly updates, annual submissions and the final declaration cost one token each. Reading and calculations are free.
+
+See the [availability table](mtd-calendar.html#availability) for the current status and HMRC's dates.
+"""
+keywords = ["self assessment", "itsa", "income tax", "sole trader", "landlord", "quarterly update", "final declaration", "mtd income tax"]
+priority = 30
+
+[[faq]]
+id = "companies-house-filings"
+category = "submission"
+question = "Can I file with Companies House?"
+answer = """
+Yes, with different status for each filing:
+
+- **Production:** company lookup, change of registered office address, change of registered email address
+- **Sandbox:** micro-entity accounts, small company accounts, confirmation statement, PSC verification statement. A sandbox filing goes to the Companies House test service and files nothing real.
+
+Filing accounts, a confirmation statement or a company tax return needs the **Resident** or **Resident Pro** bundle and costs one token. Confirmation statements also carry a £61.35 charge for each filing.
+
+See the [availability table](mtd-calendar.html#availability) for the current status.
+"""
+keywords = ["companies house", "accounts", "confirmation statement", "micro-entity", "small company", "registered office", "registered email", "psc", "annual accounts"]
+priority = 31
+
+[[faq]]
+id = "company-tax-return-ct600"
+category = "submission"
+question = "Can I file a Company Tax Return (CT600)?"
+answer = """
+Not yet. The Company Tax Return (CT600) is a **preview** on our simulator. It prepares the return from a diya-gl book export and sends nothing to HMRC.
+
+Filing it needs the **Resident** or **Resident Pro** bundle.
+
+See the [availability table](mtd-calendar.html#availability) for the current status.
+"""
+keywords = ["ct600", "company tax return", "corporation tax", "hmrc company tax", "tax return"]
+priority = 32
+
+[[faq]]
+id = "diya-gl-books"
+category = "bundles"
+question = "What is diya-gl and can I save my books here?"
+answer = """
+diya-gl is our bookkeeping software. It keeps a book of your sales and purchases and works out the figures for your filings.
+
+With the **Resident** bundle you can save a diya-gl book to your account and load it again later. **Resident Pro** includes the same for your own books.
+
+You can drop a diya-gl book onto the VAT, Income Tax and Company Tax Return pages to fill the figures.
+"""
+keywords = ["diya-gl", "books", "bookkeeping", "save book", "load book", "book drop", "accounting software"]
+priority = 33
+
+[[faq]]
+id = "bundle-prices"
+category = "bundles"
+question = "What do the bundles cost?"
+answer = """
+- **Day pass:** free. Three tokens, valid for one day.
+- **Resident VAT:** £0.99 a month. Submit VAT returns.
+- **Resident:** £39 a year, or £3.99 a month. VAT, Income Tax Self Assessment and micro-entity accounts, and saving diya-gl books.
+- **Resident Pro:** £199 a year, or £19.99 a month. For accountants and bookkeepers filing for clients.
+
+Cancel any time. See the [Bundles](bundles.html) page to subscribe.
+"""
+keywords = ["price", "cost", "how much", "subscription", "resident", "resident pro", "day pass", "cancel", "pay"]
+priority = 34

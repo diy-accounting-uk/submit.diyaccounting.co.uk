@@ -27,13 +27,15 @@
     <header>
       <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
       <h1>Operator Dashboard</h1>
-      <p class="subtitle">The eight objectives, from last night's snapshot</p>
+      <p class="subtitle">The eight objectives, from the latest snapshot</p>
     </header>
 
     <main id="mainContent">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
       <p id="snapshotMeta" class="snapshot-meta"></p>
+      <p id="snapshotSource" class="snapshot-meta"></p>
+      <p id="snapshotAge" class="status-message status-warning" role="status" hidden></p>
 
       <section id="reinvestmentPanel" class="objective" hidden>
         <h2>Reinvestment</h2>
@@ -76,30 +78,32 @@
         <h2>Activity started and completed</h2>
         <p class="subtitle">Each activity's primary button clicked, and how often it went on to complete</p>
         <p class="subtitle" id="activitiesDataSince" hidden></p>
-        <table class="observations data-table" id="activitiesTable">
+        <table class="observations data-table activities-table" id="activitiesStartedTable">
+          <caption title="Clicks on the activity's start button by a signed-in customer. Counting began on the day noted above the table.">
+            Started
+          </caption>
           <thead>
             <tr>
-              <th rowspan="2">Activity</th>
-              <th
-                colspan="6"
-                title="Clicks on the activity's start button by a signed-in customer. Counting began on the day noted above the table."
-              >
-                Started
-              </th>
-              <th
-                colspan="6"
-                title="Every completion event for the activity, whether or not the customer clicked its start button first: queries that run when a page loads, failed VAT submissions and bundle grants included."
-              >
-                Completed
-              </th>
-            </tr>
-            <tr>
+              <th>Activity</th>
               <th>Last 1 hour</th>
               <th>Last 1 day</th>
               <th>Last 7 days</th>
               <th>Last 30 days</th>
-              <th>Trend</th>
+              <th title="Last 30 days against the 30 days before them">vs previous 30 days</th>
               <th>Last 90 days</th>
+            </tr>
+          </thead>
+          <tbody id="activitiesStartedBody"></tbody>
+        </table>
+        <table class="observations data-table activities-table" id="activitiesCompletedTable">
+          <caption
+            title="Every completion event for the activity, whether or not the customer clicked its start button first: queries that run when a page loads, failed VAT submissions and bundle grants included."
+          >
+            Completed
+          </caption>
+          <thead>
+            <tr>
+              <th>Activity</th>
               <th>Last 1 hour</th>
               <th>Last 1 day</th>
               <th>Last 7 days</th>
@@ -108,8 +112,14 @@
               <th>Last 90 days</th>
             </tr>
           </thead>
-          <tbody id="activitiesBody"></tbody>
+          <tbody id="activitiesCompletedBody"></tbody>
         </table>
+      </section>
+
+      <section id="chartsPanel" class="objective" hidden>
+        <h2>Daily trends, last 90 days</h2>
+        <p class="subtitle">One point a day. Press a name below a chart to hide or show its line; move over a chart to read a day.</p>
+        <div id="chartsGrid" class="charts-grid"></div>
       </section>
 
       <div id="objectivesContainer"></div>
@@ -125,7 +135,7 @@
                 <th>Last 1 day</th>
                 <th>Last 7 days</th>
                 <th>Last 30 days</th>
-                <th>Trend</th>
+                <th title="Last 30 days against the 30 days before them">vs previous 30 days</th>
                 <th>Last 90 days</th>
               </tr>
             </thead>
@@ -143,6 +153,7 @@
     <footer></footer>
 
     <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/stacked-table.js"></script>
     <script src="../lib/env-loader.js"></script>
     <script type="module" src="../submit.js"></script>
     <script src="../developer-mode.js"></script>
@@ -152,6 +163,7 @@
     <script src="../widgets/auth-status.js"></script>
     <script src="../widgets/status-messages.js"></script>
     <script type="module" src="../widgets/view-source-link.js"></script>
+    <script src="dashboard.charts.js"></script>
     <script src="dashboard.page.js"></script>
   </body>
 </html>

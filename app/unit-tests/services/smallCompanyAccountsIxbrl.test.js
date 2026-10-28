@@ -725,6 +725,20 @@ describe("the creditor lines, policies, accountants' report and controlling part
     expect(plain).not.toContain("AccruedLiabilities");
   });
 
+  test("defines the context of every fact when accruals are non-zero in the current year and 0 in the prior year", () => {
+    const current = { ...CURRENT_BALANCE_SHEET, otherCreditors: CURRENT_BALANCE_SHEET.otherCreditors - 400, accruals: 400 };
+    const xhtml = buildSmallCompanyAccounts({
+      ...WITH_COMPARATIVES,
+      balanceSheet: { current, prior: { ...PRIOR_BALANCE_SHEET, accruals: 0 } },
+    });
+
+    expect(() => parseXmlDocument(xhtml)).not.toThrow();
+    const defined = new Set(Array.from(xhtml.matchAll(/<xbrli:context id="([^"]+)"/g), (match) => match[1]));
+    const referred = new Set(Array.from(xhtml.matchAll(/<ix:non(?:Fraction|Numeric)\b[^>]* contextRef="([^"]+)"/g), (match) => match[1]));
+    expect([...referred].filter((contextRef) => !defined.has(contextRef))).toEqual([]);
+    expect(nonFractionValue(xhtml, "core:AccruedLiabilities", "e2025-accruals")).toBe(0);
+  });
+
   test("tags the tax charge of both years as current tax in a numbered note, on a full and a filleted set", () => {
     const tax = { current: SAMPLE_INPUT.profitAndLoss.current.tax, prior: WITH_COMPARATIVES.profitAndLoss.prior.tax };
     for (const filleted of [false, true]) {

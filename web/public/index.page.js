@@ -260,15 +260,8 @@ async function renderDynamicActivities() {
 
     let needsLogin = false;
     const activitiesByArea = new Map();
-    const areaOf = (activityPath) => {
-      if (activityPath.startsWith("hmrc/vat")) return "VAT";
-      if (activityPath.startsWith("hmrc/itsa")) return "Income Tax";
-      if (activityPath.startsWith("companies-house")) return "Companies House";
-      if (activityPath.startsWith("passes")) return "Passes";
-      return "More";
-    };
     const addActivity = (activityPath, element) => {
-      const area = areaOf(activityPath);
+      const area = window.activityArea(activityPath);
       if (!activitiesByArea.has(area)) activitiesByArea.set(area, []);
       activitiesByArea.get(area).push(element);
     };
@@ -287,13 +280,9 @@ async function renderDynamicActivities() {
       const hasNonExpiredAccess = activity.bundles.some((bundleId) => activeBundles.includes(bundleId));
       const hasExpiredAccess = activity.bundles.some((bundleId) => expiredBundles.includes(bundleId));
 
-      // Get the activity path
-      let path = "#";
-      if (activity.paths) {
-        path = activity.paths.find((p) => p.includes(".html")) || "#";
-      } else if (activity.path) {
-        path = activity.path;
-      }
+      // An activity with no page has no button
+      const path = window.activityPagePath(activity);
+      if (!path) continue;
 
       if (hasNonExpiredAccess || displayRule === "always") {
         // User has access OR display="always" - show active button

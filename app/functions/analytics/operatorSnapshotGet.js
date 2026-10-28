@@ -53,9 +53,7 @@ export function http403ForbiddenFromBundleEnforcement(error, request) {
   logger.warn({ message: "Forbidden - bundle entitlement missing or insufficient", error: error.message, details: error.details });
   return http403ForbiddenResponse({
     request,
-    message:
-      "Not authorised to view the operator dashboard. Ask an admin to issue you the operator pass " +
-      "(generate-pass.yml, pass-type=operator) restricted to your own sign-in email.",
+    message: "Not authorised to view the operator dashboard. Ask the operator to issue you the operator pass for your sign-in email.",
     error: { code: error.details?.code || "BUNDLE_ENTITLEMENT_REQUIRED", ...error.details },
   });
 }

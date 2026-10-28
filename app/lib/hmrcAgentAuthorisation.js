@@ -125,12 +125,12 @@ export async function cancelInvitation({ arn, invitationId, accessToken, govClie
 
 /**
  * Checks for a relationship already in place, such as one carried over when the practice linked
- * its old Government Gateway to the ASA (`GET /agents/{arn}/relationships`).
+ * its old Government Gateway to the ASA (`POST /agents/{arn}/relationships`, whose JSON body requires the known fact).
  */
-export async function getRelationship({ arn, service, clientIdType, clientId, accessToken, govClientHeaders, testScenario }) {
-  const query = new URLSearchParams({ service, clientIdType, clientId }).toString();
-  const url = `${getAgentAuthorisationBaseUrl()}/agents/${encodeURIComponent(arn)}/relationships?${query}`;
-  return agentAuthorisationRequest("GET", url, { accessToken, govClientHeaders, testScenario });
+export async function getRelationship({ arn, service, clientIdType, clientId, knownFact, accessToken, govClientHeaders, testScenario }) {
+  const url = `${getAgentAuthorisationBaseUrl()}/agents/${encodeURIComponent(arn)}/relationships`;
+  const body = { service: [service], clientIdType, clientId, knownFact };
+  return agentAuthorisationRequest("POST", url, { accessToken, govClientHeaders, testScenario, body });
 }
 
 // The two stored statuses that mean HMRC has granted this practice authority over the client:
