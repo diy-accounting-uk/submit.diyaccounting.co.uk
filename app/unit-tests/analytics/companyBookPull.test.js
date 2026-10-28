@@ -90,11 +90,11 @@ describe("companyBookPull", () => {
     expect(mockGetVersion).not.toHaveBeenCalled();
   });
 
-  test("throws when the book's retention is sandbox", async () => {
+  test("reads a sandbox book the same as a resident one", async () => {
     stubBook({ retention: "sandbox" });
 
-    await expect(handler({ date: "2026-09-25" })).rejects.toThrow(/retention/);
-    expect(mockGetVersion).not.toHaveBeenCalled();
+    await handler({ date: "2026-09-25" });
+    expect(mockGetVersion).toHaveBeenCalled();
   });
 
   test("throws when COMPANY_BOOK_ID is blank", async () => {

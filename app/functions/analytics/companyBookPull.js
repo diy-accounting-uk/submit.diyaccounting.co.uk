@@ -3,14 +3,14 @@
 
 // app/functions/analytics/companyBookPull.js
 //
-// Nightly job that reads DIY Accounting Limited's own resident diya-gl book straight off S3
+// Nightly job that reads DIY Accounting Limited's own diya-gl book straight off S3
 // (COMPANY_BOOK_ID under COMPANY_BOOK_OWNER_PREFIX), derives the seven FRS 105 balance-sheet
 // lines the accounts filing takes, the published profit and loss account's turnover, costs
 // and profit, and the cash across the bank accounts, and writes one observation to the lake so the operator dashboard can show the
 // company's own P&L and balance sheet. The job's IAM role can only s3:GetObject under that one
 // book's prefix; it carries no user identity, no salt and never calls the HTTP diya-gl route.
 //
-// A missing book, a non-resident book, or a book that fails to parse throws rather than writing a
+// A missing book or a book that fails to parse throws rather than writing a
 // partial or stale observation: the Telegram alarm on this job's errors is the right outcome, not
 // a silent gap on the dashboard.
 
@@ -66,9 +66,6 @@ export async function handler(event = {}) {
     throw new Error(`No book ${bookId} found under the configured owner prefix`);
   }
   const { metadata } = metadataResult;
-  if (metadata.retention !== "resident") {
-    throw new Error(`Book ${bookId} has retention "${metadata.retention}", not "resident"`);
-  }
 
   const versionResult = await getVersion(ownerPrefix, bookId, metadata.latestVersion);
   const { book, lines } = await readBookSource(versionResult.bytes, `${bookId}-v${metadata.latestVersion}.zip`, {
