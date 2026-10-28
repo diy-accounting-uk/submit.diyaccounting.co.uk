@@ -48,7 +48,7 @@ async function serveRealSite(page) {
 
 const legalPages = [
   ["privacy.html", "5 February 2026"],
-  ["terms.html", "9 September 2026"],
+  ["terms.html", "28 October 2026"],
   ["accessibility.html", "9 September 2026"],
 ];
 
@@ -60,6 +60,10 @@ test.describe("Legal pages", () => {
       await page.goto(`http://localhost:3000/${file}`, { waitUntil: "domcontentloaded" });
       await expect(page.locator(".legal-meta")).toHaveText(`Last updated: ${date}`);
       await assertReaderView(page);
+      for (const width of [390, 1280]) {
+        await page.setViewportSize({ width, height: 900 });
+        await page.screenshot({ path: `target/screenshots/${file.replace(".html", "")}-${width}.png`, fullPage: true });
+      }
     });
   }
 });

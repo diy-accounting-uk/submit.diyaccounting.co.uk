@@ -30,14 +30,14 @@
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>Terms of use</h1>
-      <p class="legal-meta">Last updated: 9 September 2026</p>
+      <p class="legal-meta">Last updated: 28 October 2026</p>
     </header>
 
     <main id="mainContent" class="legal">
       <nav class="legal-contents" aria-label="Contents">
         <h2>Contents</h2>
         <ol>
-          <li><a href="#service-description">Service Description</a></li>
+          <li><a href="#service-description">What the Service does</a></li>
           <li><a href="#eligibility-and-account">Eligibility and Account</a></li>
           <li><a href="#hmrc-integration-and-oauth">HMRC Integration and OAuth</a></li>
           <li><a href="#acceptable-use">Acceptable Use</a></li>
@@ -46,7 +46,7 @@
           <li><a href="#fraud-prevention-headers">Fraud Prevention Headers</a></li>
           <li><a href="#hmrc-software-vendor-status">HMRC Software Vendor Status</a></li>
           <li><a href="#service-availability">Service Availability</a></li>
-          <li><a href="#fees-and-bundles">Fees and Bundles</a></li>
+          <li><a href="#fees-and-bundles">Bundles, tokens, fees and subscriptions</a></li>
           <li><a href="#intellectual-property">Intellectual Property</a></li>
           <li><a href="#limitation-of-liability">Limitation of Liability</a></li>
           <li><a href="#indemnification">Indemnification</a></li>
@@ -63,36 +63,63 @@
       <section>
         <p>
           These Terms of Use ("Terms") govern your access to and use of DIY Accounting Submit&trade; ("the Service"), provided by DIY
-          Accounting Limited. By using the Service, you agree to these Terms and our <a href="./privacy.html">Privacy Policy</a>.
+          Accounting Limited (company number 06846849). By using the Service, you agree to these Terms and our
+          <a href="./privacy.html">Privacy Policy</a>.
         </p>
       </section>
 
       <section id="service-description">
-        <h2>1. Service Description</h2>
+        <h2>1. What the Service does</h2>
         <p>
-          DIY Accounting Submit is a web application that helps UK businesses submit VAT returns to HMRC via the Making Tax Digital (MTD)
-          APIs. The Service enables you to:
+          DIY Accounting Submit is a web application that helps UK businesses and their accountants send filings to HMRC and Companies
+          House, and keep the books behind them. The Service offers:
         </p>
         <ul>
-          <li>View VAT obligations</li>
-          <li>Submit VAT returns to HMRC</li>
-          <li>View submission receipts and history</li>
-          <li>Manage feature bundles and entitlements</li>
+          <li>
+            <strong>VAT (Making Tax Digital).</strong> View VAT obligations, liabilities, payments and penalties. Submit VAT returns to
+            HMRC. View submitted returns and receipts.
+          </li>
+          <li>
+            <strong>Income Tax Self Assessment (Making Tax Digital for Income Tax).</strong> Manage business details and obligations, send
+            quarterly updates for self-employment and UK property, make annual submissions and adjustments, work with losses and claims,
+            view tax calculations and make the final declaration. This is available in HMRC's sandbox (test) environment until HMRC approves
+            the Service for production.
+          </li>
+          <li>
+            <strong>Companies House.</strong> Search for a company. Change a registered office address or registered email address. File
+            micro-entity accounts, small company accounts and confirmation statements. File a PSC verification statement. Changes of
+            registered office and registered email address go to the live register. Accounts, confirmation statements and PSC verification
+            statements are available in the Companies House sandbox (test) environment until Companies House approves the Service for live
+            filing.
+          </li>
+          <li><strong>Company Tax Return (CT600).</strong> Prepare a company tax return for HMRC. This is a preview.</li>
+          <li><strong>DIYA-GL books.</strong> Save and load DIYA-GL books in your account.</li>
+          <li>
+            <strong>MCP server.</strong> Read and edit a book, and file from it, through an AI assistant that supports the Model Context
+            Protocol.
+          </li>
+          <li><strong>Receipts and history.</strong> View receipts of earlier submissions.</li>
         </ul>
+        <p>
+          Each feature shows its status (production, sandbox or preview) on its own page. A sandbox or preview feature sends nothing to the
+          live service of HMRC or Companies House.
+        </p>
       </section>
 
       <section id="eligibility-and-account">
         <h2>2. Eligibility and Account</h2>
         <ul>
-          <li>You must be a UK business registered for VAT or an authorized agent acting on behalf of such a business</li>
+          <li>You must be a UK business, a sole trader or company, or an authorised agent or practice acting for one</li>
           <li>
             <strong>This Service is intended for business use only.</strong> If you are a sole trader, you are contracting in your business
             capacity, not as a consumer. Consumer protection laws (including the Consumer Rights Act 2015) may not apply to your use of this
             Service
           </li>
-          <li>You must have valid HMRC Government Gateway credentials</li>
+          <li>
+            You must have valid HMRC Government Gateway credentials, or the Companies House sign-in that each Companies House filing needs
+          </li>
           <li>You are responsible for maintaining the confidentiality of your login credentials</li>
-          <li>You must not share your account with others or allow unauthorized access</li>
+          <li>You must not share your account with others or allow unauthorised access</li>
         </ul>
       </section>
 
@@ -100,19 +127,28 @@
         <h2>3. HMRC Integration and OAuth</h2>
         <ul>
           <li>
-            The Service uses HMRC's OAuth 2.0 authorization flow. When you authorize the Service, you grant us permission to access HMRC
+            The Service uses HMRC's OAuth 2.0 authorisation flow. When you authorise the Service, you grant us permission to access HMRC
             APIs on your behalf
           </li>
           <li>We will never request or store your HMRC Government Gateway password</li>
           <li>
-            We store OAuth access tokens securely to enable API calls. You can revoke authorization at any time through your
+            We store OAuth access tokens securely to enable API calls. You can revoke authorisation at any time through your
             <a href="https://www.tax.service.gov.uk/applications-manage-authority" target="_blank" rel="noopener"
-              >HMRC authorized applications</a
+              >HMRC authorised applications</a
             >
             page
           </li>
           <li>You are responsible for the accuracy of data you submit to HMRC through the Service</li>
         </ul>
+        <p>
+          For a Companies House filing, you authorise the Service to file for a company with the Companies House sign-in and the company
+          authentication code that the filing needs.
+        </p>
+        <p>
+          If you file on behalf of a client as an agent, you must hold the client's authority before you file: the HMRC agent authorisation
+          for an HMRC filing, and the client's company authentication code for a Companies House filing. You are responsible for holding
+          that authority.
+        </p>
       </section>
 
       <section id="acceptable-use">
@@ -121,7 +157,7 @@
         <ul>
           <li>Use the Service for any unlawful purpose or in violation of any regulations</li>
           <li>Submit false, inaccurate, or misleading information to HMRC</li>
-          <li>Attempt to gain unauthorized access to the Service, other users' accounts, or connected systems</li>
+          <li>Attempt to gain unauthorised access to the Service, other users' accounts, or connected systems</li>
           <li>Interfere with or disrupt the Service or servers</li>
           <li>Use the Service to transmit malware, viruses, or harmful code</li>
           <li>Reverse engineer or decompile the Service beyond what the LICENSE file in our repository allows</li>
@@ -182,7 +218,7 @@
         </ul>
         <p>
           This data helps HMRC identify and prevent fraudulent VAT submissions and supports criminal prosecutions for tax fraud. You consent
-          to this collection when you authorize the Service through HMRC's OAuth flow. For full details, see the
+          to this collection when you authorise the Service through HMRC's OAuth flow. For full details, see the
           <a href="./privacy.html#hmrc-fraud-prevention">HMRC Fraud Prevention section</a> of our Privacy Policy.
         </p>
       </section>
@@ -190,17 +226,20 @@
       <section id="hmrc-software-vendor-status">
         <h2>8. HMRC Software Vendor Status</h2>
         <p>
-          DIY Accounting Submit is developed to comply with HMRC's Making Tax Digital for VAT requirements. The Service uses HMRC's official
-          APIs and implements all required fraud prevention headers.
+          DIY Accounting Submit is developed to comply with HMRC's Making Tax Digital requirements. The Service uses the official APIs of
+          HMRC and Companies House and implements all required fraud prevention headers.
         </p>
+        <ul>
+          <li><strong>VAT:</strong> production.</li>
+          <li><strong>Income Tax Self Assessment:</strong> sandbox, until HMRC approves the Service for production.</li>
+          <li><strong>Companies House accounts, confirmation statements and PSC verification statements:</strong> sandbox.</li>
+          <li><strong>Companies House registered office and registered email:</strong> production.</li>
+          <li><strong>Company Tax Return (CT600):</strong> preview.</li>
+        </ul>
         <p>
-          <strong>Current status:</strong> The Service is fully functional in our synthetic mode, where calls go to HMRC's sandbox (test)
-          environment, and has been tested against HMRC's fraud prevention header validation endpoint. Production credentials are being
-          sought from HMRC.
-        </p>
-        <p>
-          We are committed to maintaining compliance with all HMRC requirements for MTD software vendors, including ongoing fraud prevention
-          header compliance and security standards.
+          The <a href="./mtd-calendar.html#availability">availability table</a> shows the status of each filing and channel. We are
+          committed to maintaining compliance with all HMRC requirements for MTD software vendors, including ongoing fraud prevention header
+          compliance and security standards.
         </p>
       </section>
 
@@ -215,23 +254,120 @@
       </section>
 
       <section id="fees-and-bundles">
-        <h2>10. Fees and Bundles</h2>
+        <h2>10. Bundles, tokens, fees and subscriptions</h2>
+
+        <h3>Bundles</h3>
+        <p>
+          A bundle is the set of features your account can use. You can see the bundles open to you on the
+          <a href="./bundles.html">Bundles</a> page. The Service has these bundles:
+        </p>
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th scope="col">Bundle</th>
+                <th scope="col">Who it is for</th>
+                <th scope="col">Price</th>
+                <th scope="col">What it gives</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Day pass</th>
+                <td>Anyone signed in</td>
+                <td>Free</td>
+                <td>3 tokens, for 1 day. Limited to 100 active day passes across all users.</td>
+              </tr>
+              <tr>
+                <th scope="row">Invited Guest</th>
+                <td>People we invite</td>
+                <td>Free</td>
+                <td>3 tokens a month, for 1 month. Needs an invitation.</td>
+              </tr>
+              <tr>
+                <th scope="row">Resident Guest</th>
+                <td>Existing DIY Accounting customers and partners</td>
+                <td>Free</td>
+                <td>3 tokens a month, with no end date. Needs an invitation.</td>
+              </tr>
+              <tr>
+                <th scope="row">Resident VAT</th>
+                <td>Businesses that file VAT only</td>
+                <td>£0.99 a month</td>
+                <td>Submit VAT returns to HMRC. 100 tokens a month.</td>
+              </tr>
+              <tr>
+                <th scope="row">Resident</th>
+                <td>Businesses that file for themselves</td>
+                <td>£39 a year, or £3.99 a month</td>
+                <td>
+                  Save and load DIYA-GL books. File VAT, Income Tax Self Assessment and micro-entity accounts as each is recognised. 100
+                  tokens a month.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Resident Pro</th>
+                <td>Accountants and bookkeepers</td>
+                <td>£199 a year, or £19.99 a month</td>
+                <td>
+                  Manage a practice's clients and file VAT, Income Tax Self Assessment and micro-entity accounts on their behalf. Save and
+                  load your own DIYA-GL books. No token limit.
+                </td>
+              </tr>
+              <tr>
+                <th scope="row">Resident Pro (Complimentary)</th>
+                <td>Beta testers and partners</td>
+                <td>Free</td>
+                <td>The same as Resident, with 100 tokens a month, by invitation.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p>All prices are in pounds sterling.</p>
+
+        <h3>Tokens</h3>
+        <p>
+          A token pays for one filing. A VAT return, a Self Assessment quarterly update, annual submission or final declaration, a Companies
+          House filing and a company tax return each cost one token. Viewing obligations, returns, receipts and tax calculations costs no
+          token. A bundle gives you its tokens when it starts and again each month if it refreshes monthly. Unused tokens do not carry over.
+          Resident Pro has no token limit.
+        </p>
+        <p>Creating a digital or physical pass to give to someone else costs 10 tokens.</p>
+
+        <h3>Filing fee</h3>
+        <p>
+          Filing a confirmation statement with Companies House carries a charge of £61.35 for each filing, on top of the bundle and the
+          token.
+        </p>
+
+        <h3>Subscriptions</h3>
         <ul>
-          <li>The Service offers different feature bundles (e.g., guest, test, production)</li>
-          <li>Some bundles may be free; others may require payment or approval</li>
           <li>
-            <strong>Pricing changes:</strong> We will provide at least <strong>30 days' notice</strong> before any price increases for paid
-            bundles
+            You buy Resident VAT, Resident and Resident Pro as a subscription through Stripe. Stripe takes your payment details; we do not
+            store your card number
           </li>
           <li>
-            <strong>Existing entitlements:</strong> Paid bundles remain valid for their purchased duration regardless of subsequent price
-            changes
+            A subscription starts when your payment succeeds and renews automatically at the end of each period (each month or each year) at
+            the price shown when you subscribed, until you cancel
           </li>
           <li>
-            <strong>Refunds:</strong> No refunds will be provided except where required by law or in cases of Service unavailability
-            exceeding 7 consecutive days
+            You can cancel at any time. Cancellation stops the next renewal. You keep the bundle until the end of the period you have paid
+            for
           </li>
+          <li>
+            We give at least <strong>30 days' notice</strong>, by email, before a price rise. A price rise applies from your next renewal
+            after the notice period ends. Paid bundles stay valid for the period you have paid for at the price you paid
+          </li>
+          <li>If a payment fails, we may suspend the bundle until the payment succeeds</li>
         </ul>
+
+        <h3>Refunds</h3>
+        <p>
+          We do not refund a subscription or a filing fee, except where the law requires it or where the Service has been unavailable for
+          more than 7 days in a row. A filing fee for a Companies House filing that Companies House rejects, because of a fault in the
+          Service, is refunded or the filing is made again at no charge.
+        </p>
+        <p>This Service is for business use. Consumer cancellation rights, including the 14-day cooling-off period, do not apply.</p>
       </section>
 
       <section id="intellectual-property">
@@ -331,9 +467,10 @@
           <li>
             We may suspend or terminate your access if you violate these Terms, for security reasons, or if required by law or by HMRC
           </li>
+          <li>A cancelled subscription ends at the end of the period you have paid for</li>
           <li>
-            Upon termination, your user data (bundles and authentication tokens) will be deleted within 30 days. HMRC receipts will be
-            retained for 7 years per legal requirements
+            Upon termination, your user data (bundles, saved DIYA-GL books and authentication tokens) will be deleted within 30 days. HMRC
+            receipts will be retained for 7 years per legal requirements
           </li>
         </ul>
       </section>

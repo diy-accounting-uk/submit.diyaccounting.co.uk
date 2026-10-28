@@ -674,6 +674,7 @@ function renderCurrentBundles() {
   if (section) {
     section.style.display = bundles.length > 0 ? "block" : "none";
   }
+  document.querySelector(".bundles-block")?.classList.toggle("holds-no-bundles", bundles.length === 0);
 }
 
 // --- click handler for remove buttons
