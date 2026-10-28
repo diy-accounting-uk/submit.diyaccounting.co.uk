@@ -404,4 +404,48 @@ test.describe("ITSA pages - WCAG 2.1 AA (populated state)", () => {
     });
     expectNoViolations(await runAxe(page), "ukPropertyPeriodView.html");
   });
+
+  test("foreignPropertyPeriod.html: country fieldsets and the FHL section", async ({ page }) => {
+    await loadItsaPage(page, "foreignPropertyPeriod.html");
+    await page.locator("#taxYear").selectOption("2024-25");
+    await page.locator("#taxYear").dispatchEvent("input");
+    await page.locator("#fp-add").click();
+    await page.locator("#fp-add").click();
+    await page.locator("#fp-1-country").selectOption("FRA");
+    expectNoViolations(await runAxe(page), "foreignPropertyPeriod.html");
+  });
+
+  test("foreignPropertyPeriodAmend.html: a loaded cumulative total", async ({ page }) => {
+    await loadItsaPage(page, "foreignPropertyPeriodAmend.html");
+    await page.locator("#taxYear").selectOption("2025-26");
+    await page.locator("#taxYear").dispatchEvent("input");
+    await page.evaluate(() => {
+      figures.apply({ foreignProperty: [{ countryCode: "ESP", income: { rentIncome: { rentAmount: 5 } }, expenses: { other: 2 } }] });
+    });
+    expectNoViolations(await runAxe(page), "foreignPropertyPeriodAmend.html");
+  });
+
+  test("foreignPropertyPeriods.html: a cumulative total table", async ({ page }) => {
+    await loadItsaPage(page, "foreignPropertyPeriods.html");
+    await showContainer(page, "periodsResults");
+    await page.evaluate(() => {
+      window.displayCurrentTotal({
+        toDate: "2025-07-05",
+        foreignProperty: [{ countryCode: "FRA", income: { rentIncome: { rentAmount: 5 } }, expenses: { other: 2 } }],
+      });
+    });
+    expectNoViolations(await runAxe(page), "foreignPropertyPeriods.html");
+  });
+
+  test("foreignPropertyPeriodView.html: a single period's detail", async ({ page }) => {
+    await loadItsaPage(page, "foreignPropertyPeriodView.html");
+    await showContainer(page, "periodViewResults");
+    await page.evaluate(() =>
+      window.displayPeriod({
+        toDate: "2025-07-05",
+        foreignProperty: [{ countryCode: "FRA", income: { rentIncome: { rentAmount: 5 } }, expenses: { other: 2 } }],
+      }),
+    );
+    expectNoViolations(await runAxe(page), "foreignPropertyPeriodView.html");
+  });
 });

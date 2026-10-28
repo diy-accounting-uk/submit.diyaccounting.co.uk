@@ -932,8 +932,8 @@ export async function putUkPropertyAnnual(
 }
 
 /**
- * Sends one foreign property details request and returns HMRC's answer, or throws with a
- * message the page can show.
+ * Sends one foreign property request (details or period) and returns HMRC's answer, or throws
+ * with a message the page can show.
  * @param {string} action - Words for the failure message, e.g. "retrieve the property list"
  * @param {string} method - "GET", "POST" or "PUT"
  * @param {string} url - The Submit route, with its query string for a GET
@@ -943,7 +943,7 @@ export async function putUkPropertyAnnual(
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a header
  * @returns {Promise<object>} The response body
  */
-async function foreignPropertyDetailsRequest(action, method, url, body, accessToken, govClientHeaders, testScenario) {
+async function foreignPropertyRequest(action, method, url, body, accessToken, govClientHeaders, testScenario) {
   const headers = {
     "Authorization": `Bearer ${accessToken}`,
     "Content-Type": "application/json",
@@ -981,7 +981,7 @@ async function foreignPropertyDetailsRequest(action, method, url, body, accessTo
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
  * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a query parameter
- * @returns {Promise<object>} Response containing propertyDetails
+ * @returns {Promise<object>} Response containing foreignPropertyDetails
  */
 export async function getForeignPropertyDetails(
   nino,
@@ -996,7 +996,7 @@ export async function getForeignPropertyDetails(
   if (testScenario) params.append("Gov-Test-Scenario", testScenario);
   if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
   const url = `/api/v1/hmrc/itsa/foreign-property/details?${params}`;
-  return foreignPropertyDetailsRequest("retrieve the properties", "GET", url, null, accessToken, govClientHeaders, null);
+  return foreignPropertyRequest("retrieve the properties", "GET", url, null, accessToken, govClientHeaders, null);
 }
 
 /**
@@ -1025,7 +1025,7 @@ export async function postForeignPropertyDetails(
     endDate: details.endDate,
     endReason: details.endReason,
   };
-  return foreignPropertyDetailsRequest(
+  return foreignPropertyRequest(
     "add the property",
     "POST",
     "/api/v1/hmrc/itsa/foreign-property/details",
@@ -1061,7 +1061,7 @@ export async function putForeignPropertyDetails(
     endDate: details.endDate,
     endReason: details.endReason,
   };
-  return foreignPropertyDetailsRequest(
+  return foreignPropertyRequest(
     "save the property",
     "PUT",
     "/api/v1/hmrc/itsa/foreign-property/details",
@@ -1069,6 +1069,150 @@ export async function putForeignPropertyDetails(
     accessToken,
     govClientHeaders,
     testScenario,
+  );
+}
+
+/**
+ * Build the body of a foreign property period request from the figures a page read.
+ * @param {object} period - { nino, businessId, taxYear, fromDate?, toDate?, submissionId?, foreignFhlEea?, foreignNonFhlProperty?, foreignProperty? }
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @returns {object} The JSON body for the Submit route
+ */
+function foreignPropertyPeriodBody(period, runFraudPreventionHeaderValidation) {
+  return {
+    nino: period.nino,
+    businessId: period.businessId,
+    taxYear: period.taxYear,
+    runFraudPreventionHeaderValidation,
+    fromDate: period.fromDate,
+    toDate: period.toDate,
+    submissionId: period.submissionId,
+    foreignFhlEea: period.foreignFhlEea,
+    foreignNonFhlProperty: period.foreignNonFhlProperty,
+    foreignProperty: period.foreignProperty,
+  };
+}
+
+/**
+ * File a dated foreign property period summary with HMRC (2024-25 and before). From 2025-26 the
+ * cumulative summary is sent with putForeignPropertyPeriod.
+ * @param {object} period - See foreignPropertyPeriodBody
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response containing submissionId
+ */
+export async function postForeignPropertyPeriod(
+  period,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  return foreignPropertyRequest(
+    "file the quarterly update",
+    "POST",
+    "/api/v1/hmrc/itsa/foreign-property/period",
+    foreignPropertyPeriodBody(period, runFraudPreventionHeaderValidation),
+    accessToken,
+    govClientHeaders,
+    testScenario,
+  );
+}
+
+/**
+ * Send a foreign property period to HMRC as an amendment: a dated period (2024-25 and before,
+ * addressed by submissionId) or the year's cumulative summary (2025-26 on, which also creates it).
+ * @param {object} period - See foreignPropertyPeriodBody
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response, empty for the cumulative summary
+ */
+export async function putForeignPropertyPeriod(
+  period,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  return foreignPropertyRequest(
+    "save the period summary",
+    "PUT",
+    "/api/v1/hmrc/itsa/foreign-property/period",
+    foreignPropertyPeriodBody(period, runFraudPreventionHeaderValidation),
+    accessToken,
+    govClientHeaders,
+    testScenario,
+  );
+}
+
+/**
+ * Retrieve one foreign property period summary (dated, by submissionId) or the cumulative summary
+ * of a tax year (2025-26 on) from HMRC.
+ * @param {object} query - { nino, businessId, taxYear, submissionId? }
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a query parameter
+ * @returns {Promise<object>} The period summary
+ */
+export async function getForeignPropertyPeriod(
+  query,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const params = new URLSearchParams({ nino: query.nino, businessId: query.businessId, taxYear: query.taxYear });
+  if (query.submissionId) params.append("submissionId", query.submissionId);
+  if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+  if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+  return foreignPropertyRequest(
+    "retrieve the period summary",
+    "GET",
+    `/api/v1/hmrc/itsa/foreign-property/period?${params}`,
+    null,
+    accessToken,
+    govClientHeaders,
+    null,
+  );
+}
+
+/**
+ * List the period summaries of a property business for a tax year (2024-25 and before). The route
+ * serves UK and foreign property businesses: HMRC's list path has no property type.
+ * @param {string} nino - National Insurance number
+ * @param {string} businessId - HMRC business ID
+ * @param {string} taxYear - Tax year, e.g. "2024-25"
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a query parameter
+ * @returns {Promise<object>} Response containing periods
+ */
+export async function getPropertyPeriods(
+  nino,
+  businessId,
+  taxYear,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const params = new URLSearchParams({ nino, businessId, taxYear });
+  if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+  if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+  return foreignPropertyRequest(
+    "retrieve the period summaries",
+    "GET",
+    `/api/v1/hmrc/itsa/uk-property/periods?${params}`,
+    null,
+    accessToken,
+    govClientHeaders,
+    null,
   );
 }
 
@@ -1591,6 +1735,10 @@ if (typeof window !== "undefined") {
   window.getForeignPropertyDetails = getForeignPropertyDetails;
   window.postForeignPropertyDetails = postForeignPropertyDetails;
   window.putForeignPropertyDetails = putForeignPropertyDetails;
+  window.postForeignPropertyPeriod = postForeignPropertyPeriod;
+  window.putForeignPropertyPeriod = putForeignPropertyPeriod;
+  window.getForeignPropertyPeriod = getForeignPropertyPeriod;
+  window.getPropertyPeriods = getPropertyPeriods;
   window.triggerBsas = triggerBsas;
   window.getBsasSelfEmployment = getBsasSelfEmployment;
   window.adjustBsasSelfEmployment = adjustBsasSelfEmployment;
@@ -1609,6 +1757,7 @@ function requestFailure(message, response, responseJson) {
   const error = new Error(message);
   error.status = response.status;
   error.code = responseJson?.responseBody?.code || responseJson?.code || "";
+  error.reason = responseJson?.reason;
   return error;
 }
 

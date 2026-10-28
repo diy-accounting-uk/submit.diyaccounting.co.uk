@@ -67,6 +67,24 @@ const UK_SENT = {
   allowances: { annualInvestmentAllowance: 3000, zeroEmissionsCarAllowance: 750.25 },
 };
 
+const FOREIGN_PERIOD = {
+  fromDate: "2024-04-06",
+  toDate: "2024-07-05",
+  foreignFhlEea: { income: { rentAmount: 200.22 }, expenses: { consolidatedExpenses: 80 } },
+  foreignNonFhlProperty: [
+    {
+      countryCode: "FRA",
+      income: { rentIncome: { rentAmount: 440.31 }, foreignTaxCreditRelief: false, otherPropertyIncome: 12 },
+      expenses: { premisesRunningCosts: 100.25, other: 3 },
+    },
+    {
+      countryCode: "JEY",
+      income: { rentIncome: { rentAmount: 90 }, foreignTaxCreditRelief: true },
+      expenses: { consolidatedExpenses: 800 },
+    },
+  ],
+};
+
 test.describe("ITSA annual submission saved as a record", () => {
   for (const [fileName, kind, sent, expected] of [
     [
@@ -240,6 +258,38 @@ test.describe("ITSA period views shown as records", () => {
     await expect(page.locator("#period-income-otherIncome")).toHaveText("—");
     await expect(page.locator("#period-expenses-consolidatedExpenses")).toHaveText("100.00");
     expect(text).not.toMatch(/undefined|NaN|null|\[object|Invalid/);
+  });
+
+  test("foreign property period view shows one income and one expenses table for each entry", async ({ page }) => {
+    await loadPage(page, "foreignPropertyPeriodView.html");
+    for (const [width, height] of [
+      [1280, 1000],
+      [390, 900],
+    ]) {
+      await page.setViewportSize({ width, height });
+      await page.evaluate((period) => {
+        document.getElementById("periodViewResults").style.display = "block";
+        return window.displayPeriod(period, {
+          nino: "AB123456C",
+          businessId: "XFIS12345678911",
+          taxYear: "2024-25",
+          submissionId: "2024-04-06_2024-07-05",
+        });
+      }, FOREIGN_PERIOD);
+      const text = await page.locator("#periodDetails").innerText();
+      expect(text).toContain("Foreign property quarterly update");
+      expect(text).toContain("Furnished holiday lettings in the EEA: income");
+      expect(text).toContain("France: income");
+      expect(text).toContain("Jersey: expenses");
+      await expect(page.locator("#period-fhl-income-rentAmount")).toHaveText("200.22");
+      await expect(page.locator("#period-1-income-rentIncome-rentAmount")).toHaveText("440.31");
+      await expect(page.locator("#period-1-income-foreignTaxCreditRelief")).toHaveText("No");
+      await expect(page.locator("#period-1-expenses-premisesRunningCosts")).toHaveText("100.25");
+      await expect(page.locator("#period-2-expenses-consolidatedExpenses")).toHaveText("800.00");
+      expect(text).not.toMatch(/undefined|NaN|null|\[object|Invalid/);
+      await expectNoPageOverflow(page);
+      await page.screenshot({ path: recordShot("foreignPropertyPeriodView", width), fullPage: true });
+    }
   });
 
   test("UK property period view prints a dash for an income HMRC returns as text", async ({ page }) => {

@@ -69,6 +69,14 @@ export function serveUkPropertyPeriodFields(page) {
   return serveFile(page, "**/lib/uk-property-period-fields.js", "lib/uk-property-period-fields.js", "application/javascript");
 }
 
+// The real country list, foreign property entry fields, entry list and period form, for the foreign property pages.
+export async function serveForeignPropertyScripts(page) {
+  await serveFile(page, "**/lib/country-codes.js", "lib/country-codes.js", "application/javascript");
+  await serveFile(page, "**/lib/foreign-property-fields.js", "lib/foreign-property-fields.js", "application/javascript");
+  await serveFile(page, "**/widgets/foreign-property-entries.js", "widgets/foreign-property-entries.js", "application/javascript");
+  await serveFile(page, "**/lib/foreign-property-period-form.js", "lib/foreign-property-period-form.js", "application/javascript");
+}
+
 export function serveFormErrors(page) {
   return serveFile(page, "**/lib/form-errors.js", "lib/form-errors.js", "application/javascript");
 }
@@ -101,6 +109,8 @@ export async function serveItsaPageScripts(page) {
   await serveFile(page, "**/lib/itsa-submission-record.js", "lib/itsa-submission-record.js", "application/javascript");
   await serveSelfEmploymentExpenses(page);
   await serveUkPropertyPeriodFields(page);
+  await serveItsaSubmissionModel(page);
+  await serveForeignPropertyScripts(page);
   await serveFile(
     page,
     "**/lib/structured-building-allowance-rows.js",

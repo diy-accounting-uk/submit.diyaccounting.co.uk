@@ -73,6 +73,16 @@ describe("productCatalogHelper", () => {
     expect(isActivityAvailable(catalog, "self-employed", "resident-vat")).toBe(false);
   });
 
+  it("self-employed carries the foreign property quarterly update and its amendment, and not the list or the view", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "self-employed");
+    expect(activity.paths).toEqual(
+      expect.arrayContaining(["hmrc/itsa/foreignPropertyPeriod.html", "hmrc/itsa/foreignPropertyPeriodAmend.html"]),
+    );
+    expect(activity.paths).not.toContain("hmrc/itsa/foreignPropertyPeriods.html");
+    expect(activity.paths).not.toContain("hmrc/itsa/foreignPropertyPeriodView.html");
+  });
+
   it("self-employed costs a token and does not carry the read-only pages, the annual submission or the adjustable summary", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "self-employed");
@@ -97,6 +107,8 @@ describe("productCatalogHelper", () => {
       "hmrc/itsa/selfEmploymentPeriodView.html",
       "hmrc/itsa/ukPropertyPeriods.html",
       "hmrc/itsa/ukPropertyPeriodView.html",
+      "hmrc/itsa/foreignPropertyPeriods.html",
+      "hmrc/itsa/foreignPropertyPeriodView.html",
     ]);
     // Same entitlement rules as self-employed - a read is still gated on an ITSA bundle, it
     // just spends nothing from it.

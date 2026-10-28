@@ -7,6 +7,7 @@ import { describe, test, expect } from "vitest";
 import {
   buildForeignPropertyEntries,
   buildForeignPropertyDetailsBody,
+  buildForeignFhlEeaSection,
   ForeignPropertyValidationError,
 } from "@app/lib/foreignPropertyBody.js";
 
@@ -113,8 +114,11 @@ describe("buildForeignPropertyDetailsBody", () => {
 
   test("builds an update body that ends a property", () => {
     expect(
-      buildForeignPropertyDetailsBody({ endDate: "2026-12-31", endReason: "disposal", countryCode: "FRA" }, { create: false }),
-    ).toEqual({ endDate: "2026-12-31", endReason: "disposal" });
+      buildForeignPropertyDetailsBody(
+        { propertyName: "Villa", endDate: "2026-12-31", endReason: "disposal", countryCode: "FRA" },
+        { create: false },
+      ),
+    ).toEqual({ propertyName: "Villa", endDate: "2026-12-31", endReason: "disposal" });
   });
 
   test("refuses endReason without endDate", () => {
@@ -134,7 +138,31 @@ describe("buildForeignPropertyDetailsBody", () => {
   });
 
   test("refuses a bad end date and an empty update", () => {
-    expect(() => buildForeignPropertyDetailsBody({ endDate: "2026-02-30" }, { create: false })).toThrow(/YYYY-MM-DD/);
-    expect(() => buildForeignPropertyDetailsBody({}, { create: false })).toThrow(/empty body/);
+    expect(() => buildForeignPropertyDetailsBody({ propertyName: "Villa", endDate: "2026-02-30" }, { create: false })).toThrow(
+      /YYYY-MM-DD/,
+    );
+    expect(() => buildForeignPropertyDetailsBody({}, { create: false })).toThrow(/Missing propertyName/);
+  });
+});
+
+describe("buildForeignFhlEeaSection", () => {
+  test("returns undefined for nothing and for a section with no figures", () => {
+    expect(buildForeignFhlEeaSection(undefined)).toBeUndefined();
+    expect(buildForeignFhlEeaSection({ income: {}, expenses: { travelCosts: "" } })).toBeUndefined();
+  });
+
+  test("rounds amounts and keeps an answered zero", () => {
+    expect(buildForeignFhlEeaSection({ income: { rentAmount: 10.456 }, expenses: { travelCosts: 0 } })).toEqual({
+      income: { rentAmount: 10.46 },
+      expenses: { travelCosts: 0 },
+    });
+  });
+
+  test("refuses itemised and consolidated expenses together", () => {
+    expect(() => buildForeignFhlEeaSection({ expenses: { consolidatedExpenses: 5, travelCosts: 1 } })).toThrow(/both itemised/);
+  });
+
+  test("refuses a section that is not an object", () => {
+    expect(() => buildForeignFhlEeaSection([1])).toThrow(/must be an object/);
   });
 });

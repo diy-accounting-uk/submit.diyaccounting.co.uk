@@ -1,0 +1,176 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Amend a foreign property period summary - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
+      <h1>Amend a foreign property period summary</h1>
+      <p class="subtitle">Correct the income and expenses on a quarterly update already filed with HMRC</p>
+    </header>
+
+    <main id="mainContent">
+      <p class="hint" data-feature-status="sandbox">
+        <strong>Status: sandbox.</strong> This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits
+        on HMRC's recognition of our software after its 2027 update.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Amend Form -->
+      <div
+        id="periodAmendForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to amend a foreign property period summary"
+        data-sign-in-text="Log in to correct the income and expenses on a foreign property quarterly update already filed with HMRC."
+      >
+        <div class="form-toggle-buttons">
+          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show form</button>
+          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
+        </div>
+        <div id="searchCriteriaContainer">
+          <h2>Amend a period summary</h2>
+          <form id="itsaForeignPropertyPeriodAmendForm" novalidate>
+            <div class="form-group">
+              <label for="nino">National Insurance number</label>
+              <p id="nino-hint" class="hint">
+                This is two letters, six numbers and a final letter, for example QQ 12 34 56 C. You can find it on your National Insurance
+                card, payslip or P60.
+              </p>
+              <input
+                type="text"
+                id="nino"
+                name="nino"
+                required
+                value=""
+                maxlength="13"
+                spellcheck="false"
+                autocapitalize="characters"
+                aria-describedby="nino-hint"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="businessId">Business ID</label>
+              <p id="businessId-hint" class="hint">
+                Filled in when you pick a business on the Income Tax dashboard. Otherwise copy it from Business details, for example
+                XAIS12345678910.
+              </p>
+              <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
+            </div>
+
+            <div class="form-group">
+              <label for="taxYear">Tax year</label>
+              <p id="taxYear-hint" class="hint">Choose the tax year.</p>
+              <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
+            </div>
+
+            <div id="submissionIdGroup" class="form-group">
+              <label for="submissionId">Submission ID</label>
+              <p id="submissionId-hint" class="hint">
+                Filled in when you choose a period on the foreign property period summaries page. Otherwise copy the submission ID from
+                there.
+              </p>
+              <input type="text" id="submissionId" name="submissionId" required aria-describedby="submissionId-hint" />
+            </div>
+
+            <div id="loadGroup" class="form-group">
+              <button type="button" id="loadBtn" class="secondary-button">Load from HMRC</button>
+              <p id="loadHint" class="hint">Load the period HMRC holds, then change the figures below.</p>
+            </div>
+
+            <p id="cumulativeMoneyNote" class="hint" style="display: none">
+              This tax year reports a running total. Each figure below is the corrected total for the year so far, not just this quarter.
+              HMRC may drop an entry you leave out, so keep every country or property you have reported.
+            </p>
+
+            <div id="fhlFields"></div>
+
+            <div id="foreignEntries"></div>
+
+            <!-- Developer Test Scenario Section -->
+            <div id="developerSection" class="form-group" style="display: none">
+              <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+              <select id="testScenario" name="testScenario">
+                <option value="">Default (amend succeeds)</option>
+                <option value="NOT_FOUND">Not Found</option>
+                <option value="TYPE_OF_BUSINESS_INCORRECT">Type of business incorrect</option>
+                <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
+                <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
+              </select>
+              <div class="choice">
+                <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                  for="runFraudPreventionHeaderValidation"
+                  >Validate fraud prevention headers</label
+                >
+              </div>
+            </div>
+
+            <div id="submissionCost" class="submission-cost"></div>
+            <button type="submit" id="submitBtn" class="btn">Amend period summary</button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="periodAmendResults" class="results-container" style="display: none">
+        <h3>Period summary amended</h3>
+        <p>HMRC has accepted the amendment.</p>
+        <div class="button-group">
+          <button type="button" id="newSearchBtn" class="secondary-button">Amend another</button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/carried-identifiers.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/money-input.js"></script>
+    <script src="../../lib/self-employment-expenses.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script src="../../lib/itsaSubmissionModel.js"></script>
+    <script src="../../lib/country-codes.js"></script>
+    <script src="../../lib/foreign-property-fields.js"></script>
+    <script src="../../widgets/foreign-property-entries.js"></script>
+    <script src="../../lib/foreign-property-period-form.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../widgets/submission-cost.js"></script>
+    <script src="foreignPropertyPeriodAmend.page.js"></script>
+  </body>
+</html>

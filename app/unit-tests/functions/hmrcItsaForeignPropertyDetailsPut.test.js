@@ -120,8 +120,8 @@ describe("hmrcItsaForeignPropertyDetailsPut ingestHandler", () => {
   test.each([
     ["a tax year before 2026-27", { taxYear: "2025-26" }, /2026-27/],
     ["a missing property id", { propertyId: undefined }, /propertyId/],
-    ["an end reason without an end date", { propertyName: undefined, endReason: "disposal" }, /endDate/],
-    ["an empty update", { propertyName: undefined }, /empty body/],
+    ["an end reason without an end date", { endReason: "disposal" }, /endDate/],
+    ["a missing property name", { propertyName: undefined }, /propertyName/],
     ["a property name over 105 characters", { propertyName: "x".repeat(106) }, /105/],
   ])("returns 400 for %s without calling HMRC", async (_name, overrides, pattern) => {
     const response = await handler(requestEvent(overrides));
@@ -144,9 +144,9 @@ describe("hmrcItsaForeignPropertyDetailsPut ingestHandler", () => {
 
   test("ends a property with a date and a reason", async () => {
     mockHmrcSuccess(mockFetch, {});
-    const response = await handler(requestEvent({ propertyName: undefined, endDate: "2026-12-31", endReason: "disposal" }));
+    const response = await handler(requestEvent({ endDate: "2026-12-31", endReason: "disposal" }));
     expect(response.statusCode).toBe(200);
-    expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({ endDate: "2026-12-31", endReason: "disposal" });
+    expect(JSON.parse(mockFetch.mock.calls[0][1].body)).toEqual({ propertyName: "Villa 2", endDate: "2026-12-31", endReason: "disposal" });
   });
 
   test("returns a client error when HMRC refuses the change", async () => {
@@ -238,5 +238,28 @@ describe("hmrcItsaForeignPropertyDetailsPut worker", () => {
 
     expect(await asyncRequestWrites("failed")).toHaveLength(0);
     expect(await asyncRequestWrites("completed")).toHaveLength(0);
+  });
+});
+
+describe("hmrcItsaForeignPropertyDetailsPut bundle enforcement", () => {
+  beforeEach(() => {
+    Object.assign(process.env, setupTestEnv());
+    mockFetch = setupFetchMock();
+    vi.resetAllMocks();
+    mockEventBridgeSend.mockResolvedValue({});
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) return { Items: [], Count: 0 };
+      return {};
+    });
+  });
+
+  test("returns 403 JSON when the authenticated user holds no bundle entitled to ITSA", async () => {
+    const event = requestEvent();
+    event.requestContext.http.path = "/api/v1/hmrc/itsa/foreign-property/details";
+    const response = await handler(event);
+    expect(response.statusCode).toBe(403);
+    expect(parseResponseBody(response).code).toBe("BUNDLE_FORBIDDEN");
+    expect(mockFetch.mock.calls.filter(([url]) => String(url).includes("/individuals/"))).toHaveLength(0);
   });
 });

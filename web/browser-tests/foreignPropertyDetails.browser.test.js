@@ -36,7 +36,7 @@ window.generateRandomState = function(){ return "s"; };
 window.getGovClientHeaders = function(){ return Promise.resolve({}); };
 window.getForeignPropertyDetails = function(nino, businessId, taxYear){
   window.__sent.push({ call: "get", nino, businessId, taxYear });
-  return Promise.resolve({ propertyDetails: window.__properties });
+  return Promise.resolve({ foreignPropertyDetails: window.__properties });
 };
 window.postForeignPropertyDetails = function(details){
   window.__sent.push({ call: "post", details });
@@ -188,12 +188,12 @@ test.describe("foreign property details", () => {
     await expect(page.locator(".error-summary")).toContainText("Choose why you stopped letting the property");
 
     await page.locator("#propertyEndDate").fill("2026-10-31");
-    await page.locator("#propertyEndReason").selectOption("no-longer-letting");
+    await page.locator("#propertyEndReason").selectOption("no-longer-renting-property-out");
     await shoot(page, "end");
     await page.locator("#savePropertyBtn").click();
     await expect.poll(() => page.evaluate(() => window.__sent.some((sent) => sent.call === "put"))).toBe(true);
     const put = await page.evaluate(() => window.__sent.find((sent) => sent.call === "put"));
-    expect(put.details).toMatchObject({ propertyId: "FP1", endDate: "2026-10-31", endReason: "no-longer-letting" });
+    expect(put.details).toMatchObject({ propertyId: "FP1", endDate: "2026-10-31", endReason: "no-longer-renting-property-out" });
   });
 
   test("refuses a property name over 105 characters", async ({ page }) => {
