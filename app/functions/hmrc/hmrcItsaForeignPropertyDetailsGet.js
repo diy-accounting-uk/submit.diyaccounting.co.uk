@@ -1,0 +1,426 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
+// app/functions/hmrc/hmrcItsaForeignPropertyDetailsGet.js
+
+import { createLogger } from "../../lib/logger.js";
+import {
+  extractRequest,
+  buildValidationError,
+  http401UnauthorizedResponse,
+  http500ServerErrorResponse,
+  getHeader,
+  serializeResponseHeaders,
+} from "../../lib/httpResponseHelper.js";
+import { validateEnv } from "../../lib/env.js";
+import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
+import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
+import {
+  UnauthorizedTokenError,
+  validateHmrcAccessToken,
+  hmrcHttpGet,
+  extractHmrcAccessTokenFromLambdaEvent,
+  http403ForbiddenFromHmrcResponse,
+  http404NotFoundFromHmrcResponse,
+  http400BadRequestFromHmrcResponse,
+  http500ServerErrorFromHmrcResponse,
+  http403ForbiddenFromBundleEnforcement,
+  validateFraudPreventionHeaders,
+  buildHmrcHeaders,
+} from "../../services/hmrcApi.js";
+import { enforceBundles } from "../../services/bundleManagement.js";
+import { isValidNino, isValidTaxYear, resolveForeignPropertyEntryKey } from "../../lib/hmrcValidation.js";
+import * as asyncApiServices from "../../services/asyncApiServices.js";
+import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
+import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
+import { initializeSalt } from "../../services/subHasher.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
+
+const logger = createLogger({ source: "app/functions/hmrc/hmrcItsaForeignPropertyDetailsGet.js" });
+
+const MAX_WAIT_MS = 25000;
+const DEFAULT_WAIT_MS = 0;
+
+// Property Business v6.0 - the API version this endpoint requires.
+const HMRC_API_VERSION = "6.0";
+
+const BUSINESS_ID_PATTERN = /^X[A-Za-z0-9]IS\d{11}$/;
+
+// Server hook for Express app, and construction of a Lambda-like event from HTTP request)
+/* v8 ignore start */
+export function apiEndpoint(app) {
+  registerLambdaRoute(app, "get", "/api/v1/hmrc/itsa/foreign-property/details", ingestHandler);
+}
+/* v8 ignore stop */
+
+export function extractAndValidateParameters(event, errorMessages) {
+  const queryParams = event.queryStringParameters || {};
+  const { nino, businessId, taxYear, runFraudPreventionHeaderValidation } = queryParams;
+  const { "Gov-Test-Scenario": testScenario } = queryParams;
+
+  if (!nino) errorMessages.push("Missing nino parameter");
+  if (nino && !isValidNino(nino)) errorMessages.push("Invalid nino format");
+
+  if (!businessId) errorMessages.push("Missing businessId parameter");
+  if (businessId && !BUSINESS_ID_PATTERN.test(businessId)) errorMessages.push("Invalid businessId format");
+
+  if (!taxYear) errorMessages.push("Missing taxYear parameter");
+  if (taxYear && !isValidTaxYear(taxYear)) errorMessages.push("Invalid taxYear format - must be YYYY-YY");
+  if (taxYear && isValidTaxYear(taxYear) && resolveForeignPropertyEntryKey(taxYear) !== "propertyId") {
+    errorMessages.push("Foreign property details are available from tax year 2026-27");
+  }
+
+  // Extract HMRC account (synthetic/live) from header hmrcAccount
+  const hmrcAccountHeader = getHeader(event.headers, "hmrcAccount") || "";
+  const hmrcAccount = hmrcAccountHeader.toLowerCase();
+  if (hmrcAccount && hmrcAccount !== "synthetic" && hmrcAccount !== "live") {
+    errorMessages.push("Invalid hmrcAccount header. Must be either 'synthetic' or 'live' if provided.");
+  }
+
+  const runFraudPreventionHeaderValidationBool =
+    runFraudPreventionHeaderValidation === true || runFraudPreventionHeaderValidation === "true";
+
+  return {
+    nino,
+    businessId,
+    taxYear,
+    testScenario,
+    hmrcAccount,
+    runFraudPreventionHeaderValidation: runFraudPreventionHeaderValidationBool,
+  };
+}
+
+// HTTP request/response, aware Lambda ingestHandler function
+export async function ingestHandler(event) {
+  await initializeSalt();
+  await detectVendorPublicIp();
+  validateEnv([
+    "HMRC_BASE_URI",
+    "HMRC_SANDBOX_BASE_URI",
+    "BUNDLE_DYNAMODB_TABLE_NAME",
+    "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+    "HMRC_ITSA_FOREIGN_PROPERTY_DETAILS_GET_ASYNC_REQUESTS_TABLE_NAME",
+    "SQS_QUEUE_URL",
+  ]);
+
+  const { request, requestId, traceparent, correlationId } = extractRequest(event);
+
+  const asyncRequestsTableName = process.env.HMRC_ITSA_FOREIGN_PROPERTY_DETAILS_GET_ASYNC_REQUESTS_TABLE_NAME;
+  const sqsQueueUrl = process.env.SQS_QUEUE_URL;
+
+  let errorMessages = [];
+
+  // Bundle enforcement
+  let userSub;
+  let bundleIds = [];
+  try {
+    ({ userSub, bundleIds } = await enforceBundles(event));
+  } catch (error) {
+    return http403ForbiddenFromBundleEnforcement(error, request);
+  }
+
+  const { govClientHeaders, govClientErrorMessages } = buildFraudHeaders(event, { bundleIds });
+  errorMessages = errorMessages.concat(govClientErrorMessages || []);
+
+  // Extract and validate parameters
+  const { nino, businessId, taxYear, testScenario, hmrcAccount, runFraudPreventionHeaderValidation } = extractAndValidateParameters(
+    event,
+    errorMessages,
+  );
+
+  const responseHeaders = { ...govClientHeaders };
+
+  // Non-authorization validation errors
+  if (errorMessages.length > 0) {
+    const hmrcAccessTokenMaybe = extractHmrcAccessTokenFromLambdaEvent(event);
+    if (!hmrcAccessTokenMaybe) errorMessages.push("Missing Authorization Bearer token");
+    return buildValidationError(request, errorMessages, responseHeaders);
+  }
+
+  const hmrcAccessToken = extractHmrcAccessTokenFromLambdaEvent(event);
+  if (!hmrcAccessToken) {
+    return buildValidationError(request, ["Missing Authorization Bearer token"], responseHeaders);
+  }
+  try {
+    validateHmrcAccessToken(hmrcAccessToken);
+  } catch (err) {
+    if (err instanceof UnauthorizedTokenError) {
+      return http401UnauthorizedResponse({ request, headers: { ...responseHeaders }, message: err.message, error: {} });
+    }
+    return buildValidationError(request, [err.toString()], responseHeaders);
+  }
+
+  const govTestScenarioHeader = getHeader(govClientHeaders, "Gov-Test-Scenario") || testScenario;
+
+  logger.info({ "Checking for test scenario": govTestScenarioHeader });
+  if (govTestScenarioHeader === "SUBMIT_API_HTTP_500") {
+    return http500ServerErrorResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: `Simulated server error for testing scenario: ${govTestScenarioHeader}`,
+    });
+  }
+
+  const waitTimeMs = parseInt(getHeader(event.headers, "x-wait-time-ms") || DEFAULT_WAIT_MS, 10);
+
+  const payload = {
+    nino,
+    businessId,
+    taxYear,
+    hmrcAccessToken,
+    govClientHeaders,
+    testScenario: govTestScenarioHeader,
+    hmrcAccount,
+    userSub,
+    runFraudPreventionHeaderValidation,
+    requestId,
+    traceparent,
+    correlationId,
+  };
+
+  const isInitialRequest = getHeader(event.headers, "x-initial-request") === "true";
+  let persistedRequest = null;
+  if (!isInitialRequest) {
+    persistedRequest = await getAsyncRequest(userSub, requestId, asyncRequestsTableName);
+  }
+
+  logger.info({ message: "Handler entry", waitTimeMs, requestId, isInitialRequest });
+
+  let result = null;
+  try {
+    if (persistedRequest) {
+      logger.info({ message: "Found persisted request", requestId, status: persistedRequest.status });
+      if (persistedRequest.status === "completed") {
+        result = persistedRequest.data;
+      } else if (persistedRequest.status === "failed") {
+        throw new asyncApiServices.RequestFailedError(persistedRequest.data);
+      }
+      // If processing, result stays null and we skip initiation
+    } else {
+      logger.info({ message: "Initiating new processing", requestId });
+      const processor = async (payload) => {
+        const { propertyDetails, hmrcResponse } = await getItsaForeignPropertyDetails(
+          payload.nino,
+          payload.businessId,
+          payload.taxYear,
+          payload.hmrcAccessToken,
+          payload.govClientHeaders,
+          payload.testScenario,
+          payload.hmrcAccount,
+          payload.userSub,
+          payload.runFraudPreventionHeaderValidation,
+          payload.requestId,
+          payload.traceparent,
+          payload.correlationId,
+        );
+
+        const serializableHmrcResponse = {
+          ok: hmrcResponse.ok,
+          status: hmrcResponse.status,
+          statusText: hmrcResponse.statusText,
+          data: hmrcResponse.data,
+          headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
+        };
+        return { propertyDetails, hmrcResponse: serializableHmrcResponse };
+      };
+
+      result = await asyncApiServices.initiateProcessing({
+        processor,
+        userId: userSub,
+        requestId,
+        traceparent,
+        correlationId,
+        waitTimeMs,
+        payload,
+        tableName: asyncRequestsTableName,
+        queueUrl: sqsQueueUrl,
+        maxWaitMs: MAX_WAIT_MS,
+      });
+    }
+
+    // If still no result (async path) and we have a wait time, poll for completion
+    if (!result && waitTimeMs > 0) {
+      result = await asyncApiServices.wait({ userId: userSub, requestId, waitTimeMs, tableName: asyncRequestsTableName });
+    }
+
+    // One last check before deciding whether to yield or return the final result
+    if (!result) {
+      result = await asyncApiServices.check({ userId: userSub, requestId, tableName: asyncRequestsTableName });
+    }
+  } catch (error) {
+    if (error instanceof asyncApiServices.RequestFailedError) {
+      result = error.data;
+    } else {
+      logger.error({
+        message: "Unexpected error during foreign property details retrieval",
+        error: error.message,
+        stack: error.stack,
+      });
+      return http500ServerErrorResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: "Internal server error",
+        error: error.message,
+      });
+    }
+  }
+
+  // Map HMRC error responses to our HTTP responses
+  if (result && result.hmrcResponse && !result.hmrcResponse.ok) {
+    const status = result.hmrcResponse.status;
+    if (status === 403) return http403ForbiddenFromHmrcResponse(hmrcAccessToken, result.hmrcResponse, responseHeaders);
+    if (status === 404) return http404NotFoundFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
+    if (status === 400) return http400BadRequestFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
+    return http500ServerErrorFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
+  }
+
+  return asyncApiServices.respond({
+    request,
+    requestId,
+    responseHeaders,
+    data: result ? result.propertyDetails : null,
+  });
+}
+
+// SQS worker Lambda ingestHandler function
+export async function workerHandler(event) {
+  const asyncRequestsTableName = process.env.HMRC_ITSA_FOREIGN_PROPERTY_DETAILS_GET_ASYNC_REQUESTS_TABLE_NAME;
+
+  return processSqsRecords(event, {
+    requiredEnv: [
+      "HMRC_BASE_URI",
+      "HMRC_SANDBOX_BASE_URI",
+      "BUNDLE_DYNAMODB_TABLE_NAME",
+      "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+      "HMRC_ITSA_FOREIGN_PROPERTY_DETAILS_GET_ASYNC_REQUESTS_TABLE_NAME",
+    ],
+    logger,
+    errorPolicy: "classify",
+    processRecord: async (payload, { userId: userSub, requestId }) => {
+      const { propertyDetails, hmrcResponse } = await getItsaForeignPropertyDetails(
+        payload.nino,
+        payload.businessId,
+        payload.taxYear,
+        payload.hmrcAccessToken,
+        payload.govClientHeaders,
+        payload.testScenario,
+        payload.hmrcAccount,
+        payload.userSub,
+        payload.runFraudPreventionHeaderValidation,
+        payload.requestId,
+        payload.traceparent,
+        payload.correlationId,
+      );
+
+      const serializableHmrcResponse = {
+        ok: hmrcResponse.ok,
+        status: hmrcResponse.status,
+        statusText: hmrcResponse.statusText,
+        data: hmrcResponse.data,
+        headers: Object.fromEntries(serializeResponseHeaders(hmrcResponse.headers)),
+      };
+
+      const result = { propertyDetails, hmrcResponse: serializableHmrcResponse };
+
+      if (!hmrcResponse.ok) {
+        // Distinguish retryable errors (e.g. 429, 503, 504)
+        const isRetryable = [429, 503, 504].includes(hmrcResponse.status);
+        if (isRetryable) {
+          throw new Error(`HMRC temporary error ${hmrcResponse.status}`);
+        }
+
+        await asyncApiServices.complete({
+          asyncRequestsTableName,
+          requestId,
+          userSub,
+          result,
+        });
+        return;
+      }
+
+      await asyncApiServices.complete({
+        asyncRequestsTableName,
+        requestId,
+        userSub,
+        result,
+      });
+
+      logger.info({ message: "Successfully processed SQS message", requestId });
+    },
+    onTerminalError: async (error, { userId: userSub, requestId }) => {
+      await asyncApiServices.error({
+        asyncRequestsTableName,
+        requestId,
+        userSub,
+        error,
+      });
+    },
+  });
+}
+
+// Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
+export async function getItsaForeignPropertyDetails(
+  nino,
+  businessId,
+  taxYear,
+  hmrcAccessToken,
+  govClientHeaders,
+  testScenario,
+  hmrcAccount,
+  auditForUserSub,
+  runFraudPreventionHeaderValidation = false,
+  requestId = undefined,
+  traceparent = undefined,
+  correlationId = undefined,
+) {
+  // Validate fraud prevention headers for synthetic accounts
+  if (hmrcAccount === "synthetic" && runFraudPreventionHeaderValidation) {
+    logger.info("Validating fraud prevention headers for HMRC API request", hmrcAccount, runFraudPreventionHeaderValidation);
+    try {
+      await validateFraudPreventionHeaders(hmrcAccessToken, govClientHeaders, auditForUserSub, requestId, traceparent, correlationId);
+    } catch (error) {
+      logger.error({ message: `Error validating fraud prevention headers: ${error.message}` });
+    }
+  } else {
+    logger.info({
+      message: "Skipping fraud prevention header validation for HMRC API request",
+      hmrcAccount,
+      runFraudPreventionHeaderValidation,
+    });
+  }
+
+  const hmrcRequestUrl = `/individuals/business/property/foreign/${nino}/${businessId}/details/${taxYear}`;
+  let hmrcResponse = {};
+  /* v8 ignore start */
+  if (testScenario === "SUBMIT_HMRC_API_HTTP_500") {
+    logger.error({ message: `Simulated server error for testing scenario: ${testScenario}` });
+    hmrcResponse.ok = false;
+    hmrcResponse.status = 500;
+  } else if (testScenario === "SUBMIT_HMRC_API_HTTP_503") {
+    logger.error({ message: `Simulated server unavailable for testing scenario: ${testScenario}` });
+    hmrcResponse.ok = false;
+    hmrcResponse.status = 503;
+  } else {
+    const hmrcRequestHeaders = buildHmrcHeaders(
+      hmrcAccessToken,
+      govClientHeaders,
+      testScenario,
+      requestId,
+      traceparent,
+      correlationId,
+      HMRC_API_VERSION,
+    );
+    /* v8 ignore stop */
+    hmrcResponse = await hmrcHttpGet(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, testScenario, hmrcAccount, {}, auditForUserSub);
+  }
+
+  if (!hmrcResponse.ok) {
+    return { hmrcResponse, propertyDetails: null };
+  }
+  await publishActivityEvent({
+    event: "itsa-foreign-property-details-queried",
+    summary: "ITSA foreign property details retrieved",
+    userSub: auditForUserSub,
+  });
+  return { hmrcResponse, propertyDetails: hmrcResponse.data, hmrcRequestUrl };
+}
