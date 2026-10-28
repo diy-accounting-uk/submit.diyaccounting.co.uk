@@ -877,13 +877,15 @@ public class HmrcItsaStack extends Stack {
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().hmrcItsaForeignPropertyDetailsGetIngestLambdaFunctionName)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsGetIngestLambdaFunctionName)
                         .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaForeignPropertyDetailsGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaForeignPropertyDetailsGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
                                 .hmrcItsaForeignPropertyDetailsGetIngestProvisionedConcurrencyLambdaAliasArn)
-                        .workerFunctionName(props.sharedNames().hmrcItsaForeignPropertyDetailsGetWorkerLambdaFunctionName)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaForeignPropertyDetailsGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaForeignPropertyDetailsGetWorkerLambdaArn)
                         .workerProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -908,7 +910,8 @@ public class HmrcItsaStack extends Stack {
 
         this.hmrcItsaForeignPropertyDetailsGetLambdaProps = hmrcItsaForeignPropertyDetailsGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaForeignPropertyDetailsGetLambda = hmrcItsaForeignPropertyDetailsGetLambdaUrlOrigin.ingestLambda;
-        this.hmrcItsaForeignPropertyDetailsGetLambdaLogGroup = hmrcItsaForeignPropertyDetailsGetLambdaUrlOrigin.logGroup;
+        this.hmrcItsaForeignPropertyDetailsGetLambdaLogGroup =
+                hmrcItsaForeignPropertyDetailsGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaForeignPropertyDetailsGetLambdaProps);
         infof(
                 "Created Async API Lambda %s for ITSA foreign property details retrieval with ingestHandler %s and worker %s",
@@ -918,11 +921,14 @@ public class HmrcItsaStack extends Stack {
 
         // Grant the ITSA foreign property details retrieval Lambda and its worker permission to access DynamoDB Bundles
         // Table
-        List.of(this.hmrcItsaForeignPropertyDetailsGetLambda, hmrcItsaForeignPropertyDetailsGetLambdaUrlOrigin.workerLambda)
+        List.of(
+                        this.hmrcItsaForeignPropertyDetailsGetLambda,
+                        hmrcItsaForeignPropertyDetailsGetLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -963,13 +969,15 @@ public class HmrcItsaStack extends Stack {
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().hmrcItsaForeignPropertyDetailsPostIngestLambdaFunctionName)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsPostIngestLambdaFunctionName)
                         .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaForeignPropertyDetailsPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaForeignPropertyDetailsPostIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
                                 .hmrcItsaForeignPropertyDetailsPostIngestProvisionedConcurrencyLambdaAliasArn)
-                        .workerFunctionName(props.sharedNames().hmrcItsaForeignPropertyDetailsPostWorkerLambdaFunctionName)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsPostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaForeignPropertyDetailsPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaForeignPropertyDetailsPostWorkerLambdaArn)
                         .workerProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -994,7 +1002,8 @@ public class HmrcItsaStack extends Stack {
 
         this.hmrcItsaForeignPropertyDetailsPostLambdaProps = hmrcItsaForeignPropertyDetailsPostLambdaUrlOrigin.apiProps;
         this.hmrcItsaForeignPropertyDetailsPostLambda = hmrcItsaForeignPropertyDetailsPostLambdaUrlOrigin.ingestLambda;
-        this.hmrcItsaForeignPropertyDetailsPostLambdaLogGroup = hmrcItsaForeignPropertyDetailsPostLambdaUrlOrigin.logGroup;
+        this.hmrcItsaForeignPropertyDetailsPostLambdaLogGroup =
+                hmrcItsaForeignPropertyDetailsPostLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaForeignPropertyDetailsPostLambdaProps);
         infof(
                 "Created Async API Lambda %s for ITSA foreign property details creation with ingestHandler %s and worker %s",
@@ -1004,11 +1013,14 @@ public class HmrcItsaStack extends Stack {
 
         // Grant the ITSA foreign property details creation Lambda and its worker permission to access DynamoDB Bundles
         // Table
-        List.of(this.hmrcItsaForeignPropertyDetailsPostLambda, hmrcItsaForeignPropertyDetailsPostLambdaUrlOrigin.workerLambda)
+        List.of(
+                        this.hmrcItsaForeignPropertyDetailsPostLambda,
+                        hmrcItsaForeignPropertyDetailsPostLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaForeignPropertyDetailsPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaForeignPropertyDetailsPostAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -1049,13 +1061,15 @@ public class HmrcItsaStack extends Stack {
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().hmrcItsaForeignPropertyDetailsPutIngestLambdaFunctionName)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsPutIngestLambdaFunctionName)
                         .callsExternalApi(true)
                         .ingestHandler(props.sharedNames().hmrcItsaForeignPropertyDetailsPutIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaForeignPropertyDetailsPutIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
                                 .hmrcItsaForeignPropertyDetailsPutIngestProvisionedConcurrencyLambdaAliasArn)
-                        .workerFunctionName(props.sharedNames().hmrcItsaForeignPropertyDetailsPutWorkerLambdaFunctionName)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsPutWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaForeignPropertyDetailsPutWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaForeignPropertyDetailsPutWorkerLambdaArn)
                         .workerProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1080,7 +1094,8 @@ public class HmrcItsaStack extends Stack {
 
         this.hmrcItsaForeignPropertyDetailsPutLambdaProps = hmrcItsaForeignPropertyDetailsPutLambdaUrlOrigin.apiProps;
         this.hmrcItsaForeignPropertyDetailsPutLambda = hmrcItsaForeignPropertyDetailsPutLambdaUrlOrigin.ingestLambda;
-        this.hmrcItsaForeignPropertyDetailsPutLambdaLogGroup = hmrcItsaForeignPropertyDetailsPutLambdaUrlOrigin.logGroup;
+        this.hmrcItsaForeignPropertyDetailsPutLambdaLogGroup =
+                hmrcItsaForeignPropertyDetailsPutLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaForeignPropertyDetailsPutLambdaProps);
         infof(
                 "Created Async API Lambda %s for ITSA foreign property details update with ingestHandler %s and worker %s",
@@ -1090,11 +1105,14 @@ public class HmrcItsaStack extends Stack {
 
         // Grant the ITSA foreign property details update Lambda and its worker permission to access DynamoDB Bundles
         // Table
-        List.of(this.hmrcItsaForeignPropertyDetailsPutLambda, hmrcItsaForeignPropertyDetailsPutLambdaUrlOrigin.workerLambda)
+        List.of(
+                        this.hmrcItsaForeignPropertyDetailsPutLambda,
+                        hmrcItsaForeignPropertyDetailsPutLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaForeignPropertyDetailsPutAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaForeignPropertyDetailsPutAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());

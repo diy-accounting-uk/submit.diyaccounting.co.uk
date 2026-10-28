@@ -3067,7 +3067,8 @@ public class SubmitSharedNames {
         this.hmrcItsaForeignPropertyDetailsGetLambdaJwtAuthorizer = false;
         this.hmrcItsaForeignPropertyDetailsGetLambdaCustomAuthorizer = true;
         var hmrcItsaForeignPropertyDetailsGetLambdaHandlerName = "hmrcItsaForeignPropertyDetailsGet.ingestHandler";
-        var hmrcItsaForeignPropertyDetailsGetLambdaWorkerHandlerName = "hmrcItsaForeignPropertyDetailsGet.workerHandler";
+        var hmrcItsaForeignPropertyDetailsGetLambdaWorkerHandlerName =
+                "hmrcItsaForeignPropertyDetailsGet.workerHandler";
         var hmrcItsaForeignPropertyDetailsGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaForeignPropertyDetailsGetLambdaHandlerName);
         this.hmrcItsaForeignPropertyDetailsGetIngestLambdaFunctionName =
@@ -3080,8 +3081,8 @@ public class SubmitSharedNames {
                 .formatted(this.hmrcItsaForeignPropertyDetailsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaForeignPropertyDetailsGetWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaForeignPropertyDetailsGetIngestLambdaFunctionName);
-        this.hmrcItsaForeignPropertyDetailsGetWorkerLambdaHandler =
-                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaForeignPropertyDetailsGetLambdaWorkerHandlerName);
+        this.hmrcItsaForeignPropertyDetailsGetWorkerLambdaHandler = "%s/hmrc/%s"
+                .formatted(appLambdaHandlerPrefix, hmrcItsaForeignPropertyDetailsGetLambdaWorkerHandlerName);
         this.hmrcItsaForeignPropertyDetailsGetWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaForeignPropertyDetailsGetIngestLambdaArn);
         this.hmrcItsaForeignPropertyDetailsGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
@@ -3112,7 +3113,8 @@ public class SubmitSharedNames {
         this.hmrcItsaForeignPropertyDetailsPostLambdaJwtAuthorizer = false;
         this.hmrcItsaForeignPropertyDetailsPostLambdaCustomAuthorizer = true;
         var hmrcItsaForeignPropertyDetailsPostLambdaHandlerName = "hmrcItsaForeignPropertyDetailsPost.ingestHandler";
-        var hmrcItsaForeignPropertyDetailsPostLambdaWorkerHandlerName = "hmrcItsaForeignPropertyDetailsPost.workerHandler";
+        var hmrcItsaForeignPropertyDetailsPostLambdaWorkerHandlerName =
+                "hmrcItsaForeignPropertyDetailsPost.workerHandler";
         var hmrcItsaForeignPropertyDetailsPostLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaForeignPropertyDetailsPostLambdaHandlerName);
         this.hmrcItsaForeignPropertyDetailsPostIngestLambdaFunctionName =
@@ -3122,15 +3124,17 @@ public class SubmitSharedNames {
         this.hmrcItsaForeignPropertyDetailsPostIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaForeignPropertyDetailsPostLambdaHandlerDashed);
         this.hmrcItsaForeignPropertyDetailsPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcItsaForeignPropertyDetailsPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(
+                        this.hmrcItsaForeignPropertyDetailsPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaForeignPropertyDetailsPostWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaForeignPropertyDetailsPostIngestLambdaFunctionName);
-        this.hmrcItsaForeignPropertyDetailsPostWorkerLambdaHandler =
-                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaForeignPropertyDetailsPostLambdaWorkerHandlerName);
+        this.hmrcItsaForeignPropertyDetailsPostWorkerLambdaHandler = "%s/hmrc/%s"
+                .formatted(appLambdaHandlerPrefix, hmrcItsaForeignPropertyDetailsPostLambdaWorkerHandlerName);
         this.hmrcItsaForeignPropertyDetailsPostWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaForeignPropertyDetailsPostIngestLambdaArn);
         this.hmrcItsaForeignPropertyDetailsPostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcItsaForeignPropertyDetailsPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+                .formatted(
+                        this.hmrcItsaForeignPropertyDetailsPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaForeignPropertyDetailsPostLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaForeignPropertyDetailsPostIngestLambdaFunctionName);
         this.hmrcItsaForeignPropertyDetailsPostLambdaDeadLetterQueueName =
@@ -3145,10 +3149,15 @@ public class SubmitSharedNames {
                         new ApiParameter("nino", "body", true, "National Insurance number"),
                         new ApiParameter("businessId", "body", true, "The business id from Business Details"),
                         new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
-                        new ApiParameter("propertyName", "body", true, "Property name, 1 to 105 characters, unique in a country"),
+                        new ApiParameter(
+                                "propertyName",
+                                "body",
+                                true,
+                                "Property name, 1 to 105 characters, unique in a country"),
                         new ApiParameter("countryCode", "body", true, "ISO 3166-1 alpha-3 country code"),
                         new ApiParameter("endDate", "body", false, "Date the property stopped being let, YYYY-MM-DD"),
-                        new ApiParameter("endReason", "body", false, "Reason the property stopped being let, needs endDate"),
+                        new ApiParameter(
+                                "endReason", "body", false, "Reason the property stopped being let, needs endDate"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",
@@ -3161,7 +3170,8 @@ public class SubmitSharedNames {
         this.hmrcItsaForeignPropertyDetailsPutLambdaJwtAuthorizer = false;
         this.hmrcItsaForeignPropertyDetailsPutLambdaCustomAuthorizer = true;
         var hmrcItsaForeignPropertyDetailsPutLambdaHandlerName = "hmrcItsaForeignPropertyDetailsPut.ingestHandler";
-        var hmrcItsaForeignPropertyDetailsPutLambdaWorkerHandlerName = "hmrcItsaForeignPropertyDetailsPut.workerHandler";
+        var hmrcItsaForeignPropertyDetailsPutLambdaWorkerHandlerName =
+                "hmrcItsaForeignPropertyDetailsPut.workerHandler";
         var hmrcItsaForeignPropertyDetailsPutLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaForeignPropertyDetailsPutLambdaHandlerName);
         this.hmrcItsaForeignPropertyDetailsPutIngestLambdaFunctionName =
@@ -3174,8 +3184,8 @@ public class SubmitSharedNames {
                 .formatted(this.hmrcItsaForeignPropertyDetailsPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaForeignPropertyDetailsPutWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaForeignPropertyDetailsPutIngestLambdaFunctionName);
-        this.hmrcItsaForeignPropertyDetailsPutWorkerLambdaHandler =
-                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaForeignPropertyDetailsPutLambdaWorkerHandlerName);
+        this.hmrcItsaForeignPropertyDetailsPutWorkerLambdaHandler = "%s/hmrc/%s"
+                .formatted(appLambdaHandlerPrefix, hmrcItsaForeignPropertyDetailsPutLambdaWorkerHandlerName);
         this.hmrcItsaForeignPropertyDetailsPutWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaForeignPropertyDetailsPutIngestLambdaArn);
         this.hmrcItsaForeignPropertyDetailsPutWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
@@ -3192,11 +3202,20 @@ public class SubmitSharedNames {
                 "putItsaForeignPropertyDetails",
                 List.of(
                         new ApiParameter("nino", "body", true, "National Insurance number"),
-                        new ApiParameter("propertyId", "body", true, "The property id from Create or Retrieve Foreign Property Details"),
+                        new ApiParameter(
+                                "propertyId",
+                                "body",
+                                true,
+                                "The property id from Create or Retrieve Foreign Property Details"),
                         new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
-                        new ApiParameter("propertyName", "body", false, "Property name, 1 to 105 characters, unique in a country"),
+                        new ApiParameter(
+                                "propertyName",
+                                "body",
+                                false,
+                                "Property name, 1 to 105 characters, unique in a country"),
                         new ApiParameter("endDate", "body", false, "Date the property stopped being let, YYYY-MM-DD"),
-                        new ApiParameter("endReason", "body", false, "Reason the property stopped being let, needs endDate"),
+                        new ApiParameter(
+                                "endReason", "body", false, "Reason the property stopped being let, needs endDate"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",
