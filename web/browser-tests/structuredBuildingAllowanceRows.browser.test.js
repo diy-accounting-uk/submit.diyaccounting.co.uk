@@ -195,3 +195,74 @@ test.describe("self-employment annual: Structures and Buildings Allowance claims
     await expect(page.locator("#esba-1-postcode")).toHaveValue("EF3 4GH");
   });
 });
+
+test.describe("UK property annual: Structures and Buildings Allowance claims", () => {
+  test.beforeEach(async ({ page }) => {
+    await openAnnualPage(
+      page,
+      "ukPropertyAnnualSubmission.html",
+      `window.putUkPropertyAnnual = function(details){ window.__sent.push(details); return Promise.resolve({}); };
+window.showSavedRecord = function(){ return Promise.resolve(); };`,
+    );
+    await showEditForm(page);
+  });
+
+  test("sends each claim under the itemised allowances", async ({ page }) => {
+    await page.locator("#allowanceTypeItemised").check();
+    await page.locator("#sba-add").click();
+    await page.locator("#sba-1-amount").fill("300");
+    await page.locator("#sba-1-qualifyingDate").fill("2023-04-06");
+    await page.locator("#sba-1-qualifyingAmountExpenditure").fill("7500");
+    await page.locator("#sba-1-buildingNumber").fill("4");
+    await page.locator("#sba-1-postcode").fill("M1 1AA");
+    await page.locator("#esba-add").click();
+    await page.locator("#esba-1-amount").fill("90");
+    await page.locator("#esba-1-buildingName").fill("Zone block");
+    await page.locator("#esba-1-postcode").fill("LS1 1AA");
+    await shoot(page, "uk-property-annual-claims");
+    await page.locator("#saveBtn").click();
+
+    await expect.poll(() => page.evaluate(() => window.__sent.length)).toBe(1);
+    const { allowances } = await page.evaluate(() => window.__sent[0]);
+    expect(allowances.structuredBuildingAllowance).toEqual([
+      {
+        amount: 300,
+        firstYear: { qualifyingDate: "2023-04-06", qualifyingAmountExpenditure: 7500 },
+        building: { number: "4", postcode: "M1 1AA" },
+      },
+    ]);
+    expect(allowances.enhancedStructuredBuildingAllowance).toEqual([{ amount: 90, building: { name: "Zone block", postcode: "LS1 1AA" } }]);
+    expect(allowances).not.toHaveProperty("propertyIncomeAllowance");
+  });
+
+  test("the claims are disabled with the property income allowance", async ({ page }) => {
+    await page.locator("#allowanceTypeItemised").check();
+    await page.locator("#sba-add").click();
+    await page.locator("#allowanceTypePropertyIncome").check();
+    await expect(page.locator("#sba-1-amount")).toBeDisabled();
+    await expect(page.locator("#esba-add")).toBeDisabled();
+    await page.locator("#propertyIncomeAllowance").fill("1000");
+    await page.locator("#saveBtn").click();
+
+    await expect.poll(() => page.evaluate(() => window.__sent.length)).toBe(1);
+    const { allowances } = await page.evaluate(() => window.__sent[0]);
+    expect(allowances).toEqual({ propertyIncomeAllowance: 1000 });
+  });
+
+  test("loads the claims HMRC holds and selects the itemised allowances", async ({ page }) => {
+    await page.evaluate(() =>
+      populateEditForm({
+        ukProperty: {
+          allowances: {
+            structuredBuildingAllowance: [{ amount: 20, building: { name: "Flat block", postcode: "AB1 2CD" } }],
+          },
+        },
+      }),
+    );
+
+    await expect(page.locator("#allowanceTypeItemised")).toBeChecked();
+    await expect(page.locator("#sba-1-amount")).toHaveValue("20");
+    await expect(page.locator("#sba-1-buildingName")).toHaveValue("Flat block");
+    await expect(page.locator("#sba-1-amount")).toBeEnabled();
+  });
+});

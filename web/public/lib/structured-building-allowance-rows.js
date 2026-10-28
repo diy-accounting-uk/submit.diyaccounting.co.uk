@@ -33,6 +33,20 @@
     return String(text ?? "").trim() === "";
   }
 
+  // The problems of one claim. inputOf(name) gives the claim's input for a field name.
+  function claimProblems(claim, inputOf) {
+    const filled = (name) => !blank(inputOf(name).value);
+    const problems = [];
+    const add = (name, message) => problems.push({ input: inputOf(name), message: `${claim}: ${message}` });
+    if (!filled("amount")) add("amount", "enter the allowance claimed");
+    if (filled("qualifyingDate") && !filled("qualifyingAmountExpenditure"))
+      add("qualifyingAmountExpenditure", "enter the qualifying expenditure");
+    if (filled("qualifyingAmountExpenditure") && !filled("qualifyingDate"))
+      add("qualifyingDate", "enter the date the building first qualified");
+    if (!filled("postcode")) add("postcode", "enter the building postcode");
+    return problems;
+  }
+
   // Creates the list inside container and returns its controller.
   function create(container, { idPrefix, title, intro }) {
     let nextRow = 1;
@@ -109,21 +123,12 @@
 
     // One error per claim problem: { input, message }.
     function validate() {
-      const errors = [];
-      claimRows().forEach((fieldset, index) => {
-        const row = fieldset.dataset.row;
-        const claim = `Claim ${index + 1}`;
-        const input = (name) => document.getElementById(idOf(row, name));
-        if (blank(value(row, "amount"))) errors.push({ input: input("amount"), message: `${claim}: enter the allowance claimed` });
-        const hasDate = !blank(value(row, "qualifyingDate"));
-        const hasExpenditure = !blank(value(row, "qualifyingAmountExpenditure"));
-        if (hasDate && !hasExpenditure)
-          errors.push({ input: input("qualifyingAmountExpenditure"), message: `${claim}: enter the qualifying expenditure` });
-        if (hasExpenditure && !hasDate)
-          errors.push({ input: input("qualifyingDate"), message: `${claim}: enter the date the building first qualified` });
-        if (blank(value(row, "postcode"))) errors.push({ input: input("postcode"), message: `${claim}: enter the building postcode` });
-      });
-      return errors;
+      const problems = [];
+      for (const [index, fieldset] of claimRows().entries()) {
+        const inputOf = (name) => document.getElementById(idOf(fieldset.dataset.row, name));
+        problems.push(...claimProblems(`Claim ${index + 1}`, inputOf));
+      }
+      return problems;
     }
 
     // The claims in HMRC's shape. Blank optional parts are left out.
