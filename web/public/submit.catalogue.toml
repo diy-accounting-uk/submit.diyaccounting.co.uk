@@ -385,6 +385,21 @@ paths = ["hmrc/itsa/businessDetails.html", "hmrc/itsa/obligations.html", "hmrc/i
 hmrcScopesRequired = ["read:self-assessment"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
+# self-employed-property-details: adding, renaming and ending a foreign property (2026-27 on).
+# The write sends a property name, a country and an end date, and no figures, so it costs nothing,
+# the same as reading business details. It needs write:self-assessment, which self-employed-read
+# does not carry.
+[[activities]]
+id = "self-employed-property-details"
+name = "Self Assessment property details (HMRC, sandbox)"
+display = "never"
+bundles = ["resident", "resident-pro"]
+tokenCost = 0
+metered = true
+paths = ["hmrc/itsa/foreignPropertyDetails.html"]
+hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
 # self-employed-calculation: the tax calculation page. It triggers a calculation at HMRC, which
 # needs write:self-assessment, and files nothing, so it costs nothing.
 [[activities]]

@@ -143,6 +143,36 @@ export function resolveItsaSubmissionModel(taxYear) {
   return startYear >= boundaryStartYear ? "cumulative" : "dated";
 }
 
+// The first tax year in which a foreign property is keyed by the propertyId that "Create Foreign
+// Property Details" returns. Below it, an entry is keyed by its three-letter country code.
+const FOREIGN_PROPERTY_ID_START_TAX_YEAR = "2026-27";
+
+/**
+ * Validates an ISO 3166-1 alpha-3 country code in the form HMRC takes: three upper-case letters.
+ * HMRC checks the code against its own list.
+ * @param {string} countryCode - The code to validate
+ * @returns {boolean} True if the code is three upper-case letters
+ */
+export function isValidCountryCode(countryCode) {
+  return typeof countryCode === "string" && /^[A-Z]{3}$/.test(countryCode);
+}
+
+/**
+ * Resolves the key that identifies a foreign property entry in a tax year: "countryCode" up to
+ * 2025-26, "propertyId" from 2026-27.
+ * @param {string} taxYear - The tax year to resolve, in `YYYY-YY` form
+ * @returns {"countryCode"|"propertyId"}
+ * @throws {Error} If taxYear is not a valid tax year in `YYYY-YY` form
+ */
+export function resolveForeignPropertyEntryKey(taxYear) {
+  if (typeof taxYear !== "string" || !isValidTaxYear(taxYear)) {
+    throw new Error(`Invalid taxYear format - must be YYYY-YY, got: ${taxYear}`);
+  }
+  const startYear = Number(taxYear.slice(0, 4));
+  const boundaryStartYear = Number(FOREIGN_PROPERTY_ID_START_TAX_YEAR.slice(0, 4));
+  return startYear >= boundaryStartYear ? "propertyId" : "countryCode";
+}
+
 /**
  * Validates that fromDate is not after toDate.
  * Both dates must be valid ISO dates.

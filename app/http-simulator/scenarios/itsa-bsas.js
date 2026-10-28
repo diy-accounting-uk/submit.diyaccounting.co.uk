@@ -378,6 +378,172 @@ export function getBsasUkPropertyAdjustErrorForScenario(scenario) {
   return ukPropertyAdjustExtraErrorScenarios[scenarioUpper] || adjustErrorScenarios[scenarioUpper] || null;
 }
 
+const EXAMPLE_FOREIGN_PROPERTY_ID = "8e8b8450-dc1b-4360-8109-7067337b42cb";
+
+/**
+ * Build the foreign property adjustable summary the FOREIGN_PROPERTY_PROFIT scenario returns. The
+ * country level carries every figure and, from 2026-27, a property level inside it, as HMRC's
+ * examples do. The field names are the adjustable summary's own labels, the same as the UK ones.
+ */
+function foreignPropertyProfitSummary(nino, calculationId, taxYear, propertyId) {
+  const startYear = Number(String(taxYear).slice(0, 4));
+  const income = { totalRentsReceived: 9000, premiumsOfLeaseGrant: 0, otherPropertyIncome: 1000 };
+  const expenses = { premisesRunningCosts: 500, repairsAndMaintenance: 500 };
+  const deductions = { costOfReplacingDomesticItems: 1000, otherCapitalAllowance: 3000 };
+  const figures = {
+    totalIncome: 10000,
+    income,
+    totalExpenses: 1000,
+    expenses,
+    netProfit: 9000,
+    totalDeductions: 4000,
+    deductions,
+    taxableProfit: 5000,
+  };
+  const countryLevel = { countryCode: "FRA", ...figures };
+  if (startYear >= 2026) {
+    countryLevel.propertyLevelDetail = [{ propertyId: propertyId || EXAMPLE_FOREIGN_PROPERTY_ID, ...figures }];
+  }
+  return {
+    metadata: {
+      calculationId,
+      requestedDateTime: "2024-04-10T09:30:00.000Z",
+      nino,
+      taxYear,
+      summaryStatus: "valid",
+    },
+    inputs: {
+      businessId: "XAIS12345678910",
+      businessName: "My foreign property business",
+      accountingPeriodStartDate: `${startYear}-04-06`,
+      accountingPeriodEndDate: `${startYear + 1}-04-05`,
+      source: "MTD-SA",
+      submissionPeriod: {
+        submissionId: "617f3a7a-db8e-11e9-8a34-2a2ae2dbeed4",
+        startDate: `${startYear}-04-06`,
+        endDate: `${startYear + 1}-04-05`,
+        receivedDateTime: "2024-02-15T09:35:04.843Z",
+      },
+    },
+    adjustableSummaryCalculation: { ...figures, countryLevelDetail: [countryLevel] },
+  };
+}
+
+/** Build the FOREIGN_PROPERTY_LOSS scenario's summary: the same shape as profit, ending in a net loss. */
+function foreignPropertyLossSummary(...args) {
+  const summary = foreignPropertyProfitSummary(...args);
+  const calculation = summary.adjustableSummaryCalculation;
+  delete calculation.netProfit;
+  delete calculation.taxableProfit;
+  calculation.netLoss = 6000;
+  return summary;
+}
+
+/** Build the FOREIGN_PROPERTY_CONSOLIDATED scenario's summary: consolidated expenses. */
+function foreignPropertyConsolidatedSummary(...args) {
+  const summary = foreignPropertyProfitSummary(...args);
+  summary.adjustableSummaryCalculation.expenses = { consolidatedExpenses: 1000 };
+  return summary;
+}
+
+/** Build the FOREIGN_PROPERTY_ALLOWANCE scenario's summary: the property income allowance applied. */
+function foreignPropertyAllowanceSummary(...args) {
+  const summary = foreignPropertyProfitSummary(...args);
+  summary.adjustableSummaryCalculation.deductions = { propertyAllowance: 1000 };
+  summary.adjustableSummaryCalculation.totalDeductions = 1000;
+  return summary;
+}
+
+function withSummaryStatus(summaryStatus) {
+  return (...args) => {
+    const summary = foreignPropertyProfitSummary(...args);
+    summary.metadata.summaryStatus = summaryStatus;
+    return summary;
+  };
+}
+
+const foreignPropertyRetrieveScenarioBuilders = {
+  FOREIGN_PROPERTY_PROFIT: foreignPropertyProfitSummary,
+  FOREIGN_PROPERTY_LOSS: foreignPropertyLossSummary,
+  FOREIGN_PROPERTY_CONSOLIDATED: foreignPropertyConsolidatedSummary,
+  FOREIGN_PROPERTY_ALLOWANCE: foreignPropertyAllowanceSummary,
+  FOREIGN_PROPERTY_ZERO_ADJUSTMENTS: withSummaryStatus("valid"),
+  FOREIGN_PROPERTY_STATUS_INVALID: withSummaryStatus("invalid"),
+  FOREIGN_PROPERTY_STATUS_SUPERSEDED: withSummaryStatus("superseded"),
+};
+
+const foreignPropertyRetrieveErrorScenarios = {
+  NOT_FOREIGN_PROPERTY: {
+    status: 400,
+    body: { code: "RULE_TYPE_OF_BUSINESS_INCORRECT", message: "The calculation ID supplied relates to a different type of business" },
+  },
+  TAX_YEAR_NOT_SUPPORTED: ukPropertyRetrieveErrorScenarios.TAX_YEAR_NOT_SUPPORTED,
+  REQUEST_CANNOT_BE_FULFILLED: ukPropertyRetrieveErrorScenarios.REQUEST_CANNOT_BE_FULFILLED,
+};
+
+/**
+ * Get the retrieve-a-foreign-property-BSAS response for a Gov-Test-Scenario header. No header
+ * answers "no data found", exactly as the UK property retrieve's default does.
+ * @param {string|undefined} scenario - Gov-Test-Scenario header value
+ * @param {string} nino
+ * @param {string} calculationId
+ * @param {string} taxYear
+ * @param {string|undefined} propertyId - a propertyId the simulator holds, used in the 2026-27 property level
+ * @returns {{bsas: object}|{status: number, body: object}}
+ */
+export function getBsasForeignPropertyForScenario(scenario, nino, calculationId, taxYear, propertyId) {
+  if (!scenario) return NOT_FOUND_RESPONSE;
+
+  const scenarioUpper = scenario.toUpperCase();
+  if (scenarioUpper === "STATEFUL") return { bsas: foreignPropertyProfitSummary(nino, calculationId, taxYear, propertyId) };
+
+  const isDynamic = scenarioUpper.startsWith("DYNAMIC_");
+  const baseScenario = isDynamic ? scenarioUpper.slice("DYNAMIC_".length) : scenarioUpper;
+
+  const builder = foreignPropertyRetrieveScenarioBuilders[baseScenario];
+  if (builder) return { bsas: builder(nino, calculationId, taxYear, propertyId) };
+
+  if (foreignPropertyRetrieveErrorScenarios[scenarioUpper]) return foreignPropertyRetrieveErrorScenarios[scenarioUpper];
+
+  return NOT_FOUND_RESPONSE;
+}
+
+const foreignPropertyAdjustExtraErrorScenarios = {
+  FOREIGN_PROPERTY_OVER_CONSOLIDATED_EXPENSES_THRESHOLD: {
+    status: 400,
+    body: {
+      code: "RULE_OVER_CONSOLIDATED_EXPENSES_THRESHOLD",
+      message: "Cumulative turnover amount exceeds the consolidated expenses threshold",
+    },
+  },
+  FOREIGN_PROPERTY_INCOME_ALLOWANCE_CLAIMED: {
+    status: 400,
+    body: {
+      code: "RULE_PROPERTY_INCOME_ALLOWANCE_CLAIMED",
+      message: "A property income allowance has already been claimed for this business",
+    },
+  },
+  PROPERTY_ID_MISMATCH: {
+    status: 400,
+    body: { code: "RULE_PROPERTY_ID_MISMATCH", message: "The supplied property ID is not valid for this income source" },
+  },
+  TAX_YEAR_NOT_SUPPORTED: ukPropertyRetrieveErrorScenarios.TAX_YEAR_NOT_SUPPORTED,
+  REQUEST_CANNOT_BE_FULFILLED: ukPropertyRetrieveErrorScenarios.REQUEST_CANNOT_BE_FULFILLED,
+};
+
+/**
+ * Get the submit-foreign-property-adjustments error response for a Gov-Test-Scenario header.
+ * Adds the foreign-property-only scenarios to the self-employment adjust error set.
+ * @param {string|undefined} scenario - Gov-Test-Scenario header value
+ * @returns {null|{status: number, body: object}}
+ */
+export function getBsasForeignPropertyAdjustErrorForScenario(scenario) {
+  if (!scenario) return null;
+  const scenarioUpper = scenario.toUpperCase();
+  if (scenarioUpper === "STATEFUL") return null;
+  return foreignPropertyAdjustExtraErrorScenarios[scenarioUpper] || adjustErrorScenarios[scenarioUpper] || null;
+}
+
 const adjustErrorScenarios = {
   TYPE_OF_BUSINESS_INCORRECT: {
     status: 400,

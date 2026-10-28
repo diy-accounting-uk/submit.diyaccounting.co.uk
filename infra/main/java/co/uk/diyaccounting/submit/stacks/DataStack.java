@@ -54,6 +54,9 @@ public class DataStack extends Stack {
     public ITable hmrcItsaUkPropertyPeriodPutAsyncRequestsTable;
     public ITable hmrcItsaUkPropertyAnnualGetAsyncRequestsTable;
     public ITable hmrcItsaUkPropertyAnnualPutAsyncRequestsTable;
+    public ITable hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable;
+    public ITable hmrcItsaForeignPropertyDetailsPostAsyncRequestsTable;
+    public ITable hmrcItsaForeignPropertyDetailsPutAsyncRequestsTable;
     public ITable hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTable;
     public ITable hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable;
     public ITable hmrcItsaCrystallisationObligationsGetAsyncRequestsTable;
@@ -507,6 +510,54 @@ public class DataStack extends Stack {
         infof(
                 "Ensured HMRC ITSA UK Property Annual PUT async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName);
+
+        // HMRC ITSA Foreign Property Details GET async request storage
+        this.hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyDetailsGetAsyncRequestsTable",
+                props.sharedNames().hmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyDetailsGetAsyncTTL",
+                props.sharedNames().hmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA Foreign Property Details GET async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName);
+
+        // HMRC ITSA Foreign Property Details POST async request storage
+        this.hmrcItsaForeignPropertyDetailsPostAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyDetailsPostAsyncRequestsTable",
+                props.sharedNames().hmrcItsaForeignPropertyDetailsPostAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyDetailsPostAsyncTTL",
+                props.sharedNames().hmrcItsaForeignPropertyDetailsPostAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA Foreign Property Details POST async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaForeignPropertyDetailsPostAsyncRequestsTableName);
+
+        // HMRC ITSA Foreign Property Details PUT async request storage
+        this.hmrcItsaForeignPropertyDetailsPutAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyDetailsPutAsyncRequestsTable",
+                props.sharedNames().hmrcItsaForeignPropertyDetailsPutAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyDetailsPutAsyncTTL",
+                props.sharedNames().hmrcItsaForeignPropertyDetailsPutAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA Foreign Property Details PUT async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaForeignPropertyDetailsPutAsyncRequestsTableName);
 
         // HMRC ITSA Self-Employment Annual GET (retrieve) async request storage
         this.hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTable = ensureTable(
@@ -1189,6 +1240,30 @@ public class DataStack extends Stack {
                 this,
                 "HmrcItsaUkPropertyAnnualPutAsyncRequestsTableArn",
                 this.hmrcItsaUkPropertyAnnualPutAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName",
+                this.hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaForeignPropertyDetailsGetAsyncRequestsTableArn",
+                this.hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaForeignPropertyDetailsPostAsyncRequestsTableName",
+                this.hmrcItsaForeignPropertyDetailsPostAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaForeignPropertyDetailsPostAsyncRequestsTableArn",
+                this.hmrcItsaForeignPropertyDetailsPostAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaForeignPropertyDetailsPutAsyncRequestsTableName",
+                this.hmrcItsaForeignPropertyDetailsPutAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaForeignPropertyDetailsPutAsyncRequestsTableArn",
+                this.hmrcItsaForeignPropertyDetailsPutAsyncRequestsTable.getTableArn());
         cfnOutput(
                 this,
                 "HmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName",

@@ -29,6 +29,11 @@ import { apiEndpoint as itsaUkPropertyPeriodDetailEndpoint } from "./routes/itsa
 import { apiEndpoint as itsaUkPropertyCumulativeEndpoint } from "./routes/itsa-uk-property-cumulative.js";
 import { apiEndpoint as itsaUkPropertyPeriodsEndpoint } from "./routes/itsa-uk-property-periods.js";
 import { apiEndpoint as itsaUkPropertyAnnualEndpoint } from "./routes/itsa-uk-property-annual.js";
+import { apiEndpoint as itsaForeignPropertyDetailsEndpoint } from "./routes/itsa-foreign-property-details.js";
+import { apiEndpoint as itsaForeignPropertyPeriodEndpoint } from "./routes/itsa-foreign-property-period.js";
+import { apiEndpoint as itsaForeignPropertyPeriodDetailEndpoint } from "./routes/itsa-foreign-property-period-detail.js";
+import { apiEndpoint as itsaForeignPropertyCumulativeEndpoint } from "./routes/itsa-foreign-property-cumulative.js";
+import { apiEndpoint as itsaForeignPropertyAnnualEndpoint } from "./routes/itsa-foreign-property-annual.js";
 import { apiEndpoint as itsaCrystallisationObligationsEndpoint } from "./routes/itsa-crystallisation-obligations.js";
 import { apiEndpoint as itsaStatusEndpoint } from "./routes/itsa-status.js";
 import { apiEndpoint as itsaBsasEndpoint } from "./routes/itsa-bsas.js";
@@ -103,6 +108,11 @@ export function createApp() {
   itsaUkPropertyCumulativeEndpoint(app);
   itsaUkPropertyPeriodsEndpoint(app);
   itsaUkPropertyAnnualEndpoint(app);
+  itsaForeignPropertyDetailsEndpoint(app);
+  itsaForeignPropertyPeriodEndpoint(app);
+  itsaForeignPropertyPeriodDetailEndpoint(app);
+  itsaForeignPropertyCumulativeEndpoint(app);
+  itsaForeignPropertyAnnualEndpoint(app);
   itsaCrystallisationObligationsEndpoint(app);
   itsaStatusEndpoint(app);
   itsaBsasEndpoint(app);
