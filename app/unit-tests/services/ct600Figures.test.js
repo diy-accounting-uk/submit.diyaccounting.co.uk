@@ -110,6 +110,12 @@ describe("deriveCt600FromFigures worked from the precision-code-ltd book", () =>
       entertaining: 292,
       donations: 417,
       adjustedProfitBeforeCapitalAllowances: 187897,
+      fullExpensingAllowances: 0,
+      fullExpensingBalancingCharges: 0,
+      specialRateAllowances: 0,
+      specialRateBalancingCharges: 0,
+      specialRatePoolAllowances: 0,
+      specialRatePoolBalancingCharges: 0,
       totalCapitalAllowances: 64000,
       adjustedProfit: 123897,
     });
@@ -121,7 +127,7 @@ describe("deriveCt600FromFigures worked from the precision-code-ltd book", () =>
     expect(worked[335].rule).toMatch(/^9198/);
     expect(worked[345].rule).toMatch(/^9204 and 9213/);
     expect(worked[440].sources).toEqual(["430", "435"]);
-    expect(worked[705].sources).toEqual(["annualInvestmentAllowance", "mainPoolAllowances"]);
+    expect(worked[705].sources).toEqual(["annualInvestmentAllowance", "mainPoolAllowances", "specialRatePoolAnnualInvestmentAllowance"]);
   });
 
   test("agrees with the working sheet to within five pounds", () => {
@@ -613,5 +619,92 @@ describe("an overdrawn director's loan account", () => {
     expect(validateCt600Figures({ ...TYPED, directorsLoanOverdrawn: -1 }).some((entry) => entry.field === "directorsLoanOverdrawn")).toBe(
       true,
     );
+  });
+});
+
+describe("the capital allowance classes", () => {
+  test("full expensing is its own pair of boxes and its own computation lines, not part of box 705", () => {
+    const { boxes, computationLines } = derive({
+      ...TYPED,
+      annualInvestmentAllowance: 0,
+      mainPoolAllowances: 1000,
+      fullExpensingAllowances: 20000,
+      fullExpensingBalancingCharges: 500,
+    });
+    expect(boxes[688]).toBe(20000);
+    expect(boxes[689]).toBe(500);
+    expect(boxes[705]).toBe(1000);
+    expect(boxes[690]).toBeUndefined();
+    expect(computationLines).toMatchObject({
+      fullExpensingAllowances: 20000,
+      fullExpensingBalancingCharges: 500,
+      totalCapitalAllowances: 20500,
+    });
+    expect(boxes[155]).toBe(computationLines.adjustedProfit);
+  });
+
+  test("the special rate allowance and the special rate pool take boxes 693 and 694, and 695 and 700", () => {
+    const { boxes, computationLines } = derive({
+      ...TYPED,
+      annualInvestmentAllowance: 5000,
+      mainPoolAllowances: 1000,
+      specialRateAllowances: 3000,
+      specialRateAllowanceExpenditure: 6000,
+      specialRateBalancingCharges: 100,
+      specialRatePoolAllowances: 800,
+      specialRatePoolAnnualInvestmentAllowance: 2000,
+      specialRatePoolBalancingCharges: 50,
+    });
+    expect(boxes).toMatchObject({ 690: 5000, 693: 3000, 694: 100, 695: 2800, 700: 50, 705: 4000 });
+    expect(computationLines).toMatchObject({
+      specialRateAllowances: 3000,
+      specialRatePoolAllowances: 800,
+      totalCapitalAllowances: 5000 + 1000 + 3000 - 100 + 800 - 50,
+    });
+  });
+
+  test("the information boxes 735, 760 and 775 are emitted and do not change the tax", () => {
+    const plain = derive(TYPED);
+    const { boxes, computationLines } = derive({
+      ...TYPED,
+      annualInvestmentAllowanceOutsideTrade: 4000,
+      firstYearAllowanceExpenditure: 9000,
+      otherMachineryAndPlantExpenditure: 12000,
+    });
+    expect(boxes).toMatchObject({ 735: 4000, 760: 9000, 775: 12000 });
+    expect(computationLines.totalCapitalAllowances).toBe(plain.computationLines.totalCapitalAllowances);
+    expect(boxes[440]).toBe(plain.boxes[440]);
+  });
+
+  test("leaves every class box out when it is zero", () => {
+    const { boxes } = derive(TYPED);
+    for (const box of [688, 689, 693, 694, 695, 700, 710, 735, 760, 775]) expect(boxes[box], `box ${box}`).toBeUndefined();
+  });
+
+  test("a special rate allowance needs its qualifying expenditure in box 773", () => {
+    const problems = validateCt600Figures({ ...TYPED, specialRateAllowances: 3000 });
+    expect(problems.find((entry) => entry.field === "specialRateAllowanceExpenditure")?.message).toMatch(/box 773/);
+    expect(derive({ ...TYPED, specialRateAllowances: 3000, specialRateAllowanceExpenditure: 6000 }).boxes[773]).toBe(6000);
+  });
+
+  test("the annual investment allowance on the special rate pool is no more than the annual investment allowance", () => {
+    const problems = validateCt600Figures({ ...TYPED, annualInvestmentAllowance: 100, specialRatePoolAnnualInvestmentAllowance: 200 });
+    expect(problems.map((entry) => entry.field)).toContain("specialRatePoolAnnualInvestmentAllowance");
+  });
+
+  test.each([
+    "fullExpensingAllowances",
+    "fullExpensingBalancingCharges",
+    "specialRateAllowances",
+    "specialRateBalancingCharges",
+    "specialRatePoolAllowances",
+    "specialRatePoolBalancingCharges",
+    "annualInvestmentAllowanceOutsideTrade",
+    "firstYearAllowanceExpenditure",
+    "specialRateAllowanceExpenditure",
+    "otherMachineryAndPlantExpenditure",
+  ])("%s must be whole pounds, 0 or more", (field) => {
+    expect(validateCt600Figures({ ...TYPED, [field]: -1 }).map((entry) => entry.field)).toContain(field);
+    expect(validateCt600Figures({ ...TYPED, [field]: 1.5 }).map((entry) => entry.field)).toContain(field);
   });
 });

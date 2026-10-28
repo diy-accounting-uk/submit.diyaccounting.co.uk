@@ -91,6 +91,17 @@ const WHOLE_POUND_FIELDS = [
   ["annualInvestmentAllowance", "Annual investment allowance (box 690)"],
   ["mainPoolAllowances", "Main pool writing down allowances, without the annual investment allowance"],
   ["mainPoolBalancingCharges", "Main pool balancing charges (box 710)"],
+  ["fullExpensingAllowances", "Full expensing allowances (box 688)"],
+  ["fullExpensingBalancingCharges", "Full expensing balancing charges (box 689)"],
+  ["specialRateAllowances", "Special rate allowances (box 693)"],
+  ["specialRateBalancingCharges", "Special rate allowance balancing charges (box 694)"],
+  ["specialRatePoolAllowances", "Special rate pool writing down allowances, without the annual investment allowance (box 695)"],
+  ["specialRatePoolAnnualInvestmentAllowance", "Annual investment allowance claimed on the special rate pool"],
+  ["specialRatePoolBalancingCharges", "Special rate pool balancing charges (box 700)"],
+  ["annualInvestmentAllowanceOutsideTrade", "Annual investment allowance outside the calculation of trading profits (box 735)"],
+  ["firstYearAllowanceExpenditure", "Machinery and plant on which first year allowance is claimed (box 760)"],
+  ["specialRateAllowanceExpenditure", "Machinery and plant - special rate allowance, qualifying expenditure (box 773)"],
+  ["otherMachineryAndPlantExpenditure", "Other machinery and plant (box 775)"],
   ["lossesBroughtForward", "Trading losses brought forward (box 160)"],
   ["lossAgainstTotalProfits", "Trading loss of this period set against this period's total profits (box 275)"],
   ["lossesBroughtForwardAgainstTotalProfits", "Trading losses brought forward claimed against total profits (box 285)"],
@@ -191,6 +202,15 @@ function figureProblems(figures, { today } = {}) {
   ) {
     problem("donations", "Donations added back are more than the cost of sales and administrative expenses");
   }
+  if (numberOrZero(figures.specialRatePoolAnnualInvestmentAllowance) > numberOrZero(figures.annualInvestmentAllowance)) {
+    problem(
+      "specialRatePoolAnnualInvestmentAllowance",
+      "The annual investment allowance claimed on the special rate pool is more than the annual investment allowance in box 690",
+    );
+  }
+  if (numberOrZero(figures.specialRateAllowances) > 0 && numberOrZero(figures.specialRateAllowanceExpenditure) === 0) {
+    problem("specialRateAllowanceExpenditure", "Enter the qualifying expenditure in box 773: HMRC needs it when box 693 is completed");
+  }
   if (figures.lossOutsideUk !== undefined && typeof figures.lossOutsideUk !== "boolean") {
     problem("lossOutsideUk", "Whether the trade is carried on wholly outside the UK must be yes or no");
   }
@@ -238,6 +258,22 @@ export function smallCompanyProfitAndLossFromPublishedAccount(sheet) {
 }
 
 /**
+ * The capital allowance classes the computation lists beside the annual investment allowance and
+ * the main pool: full expensing, the special rate allowance and the special rate pool. The annual
+ * investment allowance claimed on the special rate pool counts with that pool's allowances.
+ */
+function capitalAllowanceClassLines(figures) {
+  return {
+    fullExpensingAllowances: numberOrZero(figures.fullExpensingAllowances),
+    fullExpensingBalancingCharges: numberOrZero(figures.fullExpensingBalancingCharges),
+    specialRateAllowances: numberOrZero(figures.specialRateAllowances),
+    specialRateBalancingCharges: numberOrZero(figures.specialRateBalancingCharges),
+    specialRatePoolAllowances: numberOrZero(figures.specialRatePoolAllowances),
+    specialRatePoolBalancingCharges: numberOrZero(figures.specialRatePoolBalancingCharges),
+  };
+}
+
+/**
  * The computation lines, in whole pounds, from the figures. Each total is summed from the lines
  * above it, so the computation adds up.
  *
@@ -255,10 +291,17 @@ export function computationLinesFromFigures(figures) {
   };
   lines.adjustedProfitBeforeCapitalAllowances =
     lines.profitLossPerAccounts + COMPUTATION_ADJUSTMENTS.reduce((total, [key, effect]) => total + effect * lines[key], 0);
+  Object.assign(lines, capitalAllowanceClassLines(figures));
   lines.totalCapitalAllowances =
     numberOrZero(figures.annualInvestmentAllowance) +
     numberOrZero(figures.mainPoolAllowances) -
-    numberOrZero(figures.mainPoolBalancingCharges);
+    numberOrZero(figures.mainPoolBalancingCharges) +
+    lines.fullExpensingAllowances -
+    lines.fullExpensingBalancingCharges +
+    lines.specialRateAllowances -
+    lines.specialRateBalancingCharges +
+    lines.specialRatePoolAllowances -
+    lines.specialRatePoolBalancingCharges;
   lines.adjustedProfit = lines.adjustedProfitBeforeCapitalAllowances - lines.totalCapitalAllowances;
   return lines;
 }
@@ -468,6 +511,41 @@ function refuseOverdrawnDirectorsLoan(figures, taxDataByYear) {
 }
 
 /**
+ * The capital allowance boxes: the annual investment allowance (690), the pools (688/689, 693/694,
+ * 695/700, 705/710) and the information boxes that carry no tax (735, 760, 775). Box 705 and box
+ * 695 each include the annual investment allowance claimed on that pool.
+ */
+function workCapitalAllowanceBoxes(figures, boxes, worked) {
+  const annualInvestmentAllowance = numberOrZero(figures.annualInvestmentAllowance);
+  const onSpecialRatePool = numberOrZero(figures.specialRatePoolAnnualInvestmentAllowance);
+  const classes = capitalAllowanceClassLines(figures);
+  const amounts = {
+    688: classes.fullExpensingAllowances,
+    689: classes.fullExpensingBalancingCharges,
+    690: annualInvestmentAllowance,
+    693: classes.specialRateAllowances,
+    694: classes.specialRateBalancingCharges,
+    695: classes.specialRatePoolAllowances + onSpecialRatePool,
+    700: classes.specialRatePoolBalancingCharges,
+    705: annualInvestmentAllowance - onSpecialRatePool + numberOrZero(figures.mainPoolAllowances),
+    710: numberOrZero(figures.mainPoolBalancingCharges),
+    735: numberOrZero(figures.annualInvestmentAllowanceOutsideTrade),
+    760: numberOrZero(figures.firstYearAllowanceExpenditure),
+    773: numberOrZero(figures.specialRateAllowanceExpenditure),
+    775: numberOrZero(figures.otherMachineryAndPlantExpenditure),
+  };
+  for (const [box, amount] of Object.entries(amounts)) if (amount > 0) boxes[box] = amount;
+  worked[705] = workedEntry(
+    ["annualInvestmentAllowance", "mainPoolAllowances", "specialRatePoolAnnualInvestmentAllowance"],
+    "Box 705 includes the annual investment allowance in box 690, less the part claimed on the special rate pool",
+  );
+  worked[695] = workedEntry(
+    ["specialRatePoolAllowances", "specialRatePoolAnnualInvestmentAllowance"],
+    "Box 695 includes the annual investment allowance claimed on the special rate pool",
+  );
+}
+
+/**
  * The boxes from the trading profit down to the chargeable profits (155 to 315): the trading
  * profit or loss, the losses brought forward, the claims against total profits and the donations.
  * Fills boxes and worked, and returns the losses and the chargeable profits.
@@ -492,6 +570,12 @@ function workProfitsAndReliefs(figures, computationLines, boxes, worked) {
         "annualInvestmentAllowance",
         "mainPoolAllowances",
         "mainPoolBalancingCharges",
+        "fullExpensingAllowances",
+        "fullExpensingBalancingCharges",
+        "specialRateAllowances",
+        "specialRateBalancingCharges",
+        "specialRatePoolAllowances",
+        "specialRatePoolBalancingCharges",
       ],
       "Box 155 equals the computation's adjusted profit",
     );
@@ -579,15 +663,7 @@ export function deriveCt600FromFigures(figures, taxDataByYear) {
     );
   }
 
-  const capitalAllowances705 = numberOrZero(figures.annualInvestmentAllowance) + numberOrZero(figures.mainPoolAllowances);
-  const balancingCharges = numberOrZero(figures.mainPoolBalancingCharges);
-  if (numberOrZero(figures.annualInvestmentAllowance) > 0) boxes[690] = figures.annualInvestmentAllowance;
-  if (capitalAllowances705 > 0) boxes[705] = capitalAllowances705;
-  if (balancingCharges > 0) boxes[710] = balancingCharges;
-  worked[705] = workedEntry(
-    ["annualInvestmentAllowance", "mainPoolAllowances"],
-    "Box 705 includes the annual investment allowance in box 690",
-  );
+  workCapitalAllowanceBoxes(figures, boxes, worked);
 
   const { losses, chargeableProfits } = workProfitsAndReliefs(figures, computationLines, boxes, worked);
 

@@ -68,9 +68,19 @@ export const CT600_BOX_PATHS = {
   595: "/IRenvelope/CompanyTaxReturn/TaxReconciliation/TaxAlreadyPaid",
   600: "/IRenvelope/CompanyTaxReturn/TaxReconciliation/TaxOutstandingOrOverpaid/TaxOutstanding",
   620: "/IRenvelope/CompanyTaxReturn/IndicatorsAndInformation/FrankedInvestmentIncome",
+  688: "/IRenvelope/CompanyTaxReturn/AllowancesAndCharges/FullExpensing/CapitalAllowances",
+  689: "/IRenvelope/CompanyTaxReturn/AllowancesAndCharges/FullExpensing/BalancingCharges",
   690: "/IRenvelope/CompanyTaxReturn/AllowancesAndCharges/AIACapitalAllowancesInc",
+  693: "/IRenvelope/CompanyTaxReturn/AllowancesAndCharges/MachineryAndPlantSpecialRateAllowance/CapitalAllowances",
+  694: "/IRenvelope/CompanyTaxReturn/AllowancesAndCharges/MachineryAndPlantSpecialRateAllowance/BalancingCharges",
+  695: "/IRenvelope/CompanyTaxReturn/AllowancesAndCharges/MachineryAndPlantSpecialRatePool/CapitalAllowances",
+  700: "/IRenvelope/CompanyTaxReturn/AllowancesAndCharges/MachineryAndPlantSpecialRatePool/BalancingCharges",
   705: "/IRenvelope/CompanyTaxReturn/AllowancesAndCharges/MachineryAndPlantMainPool/CapitalAllowances",
   710: "/IRenvelope/CompanyTaxReturn/AllowancesAndCharges/MachineryAndPlantMainPool/BalancingCharges",
+  735: "/IRenvelope/CompanyTaxReturn/NotIncluded/AIACapitalAllowancesNotInc",
+  760: "/IRenvelope/CompanyTaxReturn/QualifyingExpenditure/MachineryAndPlantExpenditure",
+  773: "/IRenvelope/CompanyTaxReturn/QualifyingExpenditure/MachineryAndPlantSpecialRateAllowance",
+  775: "/IRenvelope/CompanyTaxReturn/QualifyingExpenditure/OtherMachineryAndPlant",
   780: "/IRenvelope/CompanyTaxReturn/LossesDeficitsAndExcess/AmountArising/LossesOfTradesUK/Arising",
   790: "/IRenvelope/CompanyTaxReturn/LossesDeficitsAndExcess/AmountArising/LossesOfTradesOutsideUK",
   975: "/IRenvelope/CompanyTaxReturn/Declaration/Name",
@@ -159,18 +169,29 @@ export function buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl }
     moneyElement("TaxAlreadyPaid", b[595]) + wrap("TaxOutstandingOrOverpaid", moneyElement("TaxOutstanding", b[600])),
   );
   const indicators = wrap("IndicatorsAndInformation", moneyElement("FrankedInvestmentIncome", b[620]));
+  const pool = (name, charges, allowances) =>
+    wrap(name, moneyElement("BalancingCharges", charges) + moneyElement("CapitalAllowances", allowances));
   const allowances = wrap(
     "AllowancesAndCharges",
-    moneyElement("AIACapitalAllowancesInc", b[690]) +
-      wrap("MachineryAndPlantMainPool", moneyElement("BalancingCharges", b[710]) + moneyElement("CapitalAllowances", b[705])),
+    pool("FullExpensing", b[689], b[688]) +
+      moneyElement("AIACapitalAllowancesInc", b[690]) +
+      pool("MachineryAndPlantSpecialRateAllowance", b[694], b[693]) +
+      pool("MachineryAndPlantSpecialRatePool", b[700], b[695]) +
+      pool("MachineryAndPlantMainPool", b[710], b[705]),
   );
-
+  const notIncluded = wrap("NotIncluded", moneyElement("AIACapitalAllowancesNotInc", b[735]));
+  const qualifyingExpenditure = wrap(
+    "QualifyingExpenditure",
+    moneyElement("MachineryAndPlantExpenditure", b[760]) +
+      moneyElement("MachineryAndPlantSpecialRateAllowance", b[773]) +
+      moneyElement("OtherMachineryAndPlant", b[775]),
+  );
   const losses = wrap(
     "LossesDeficitsAndExcess",
     wrap("AmountArising", wrap("LossesOfTradesUK", moneyElement("Arising", b[780])) + moneyElement("LossesOfTradesOutsideUK", b[790])),
   );
 
-  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd><DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>Company</Sender></IRheader><CompanyTaxReturn ReturnType="new"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary><Accounts><ThisPeriodAccounts>yes</ThisPeriodAccounts></Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations></ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}${losses}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration><AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
+  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd><DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>Company</Sender></IRheader><CompanyTaxReturn ReturnType="new"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary><Accounts><ThisPeriodAccounts>yes</ThisPeriodAccounts></Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations></ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}${notIncluded}${qualifyingExpenditure}${losses}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration><AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
 }
 
 /**

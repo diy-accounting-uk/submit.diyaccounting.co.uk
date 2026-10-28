@@ -50,6 +50,25 @@ export const TRADING_LINES = [
   { key: "donations", concept: "AdjustmentsDonations", effect: 1, label: "Add: donations" },
 ];
 
+// The capital allowance classes shown beside the totals, from section 2 of the computations
+// format: full expensing, the special rate allowance and the special rate pool.
+export const CAPITAL_ALLOWANCE_CLASS_LINES = [
+  { key: "fullExpensingAllowances", concept: "MainPoolTotalFullExpensingAllowance", label: "Full expensing: allowances" },
+  {
+    key: "fullExpensingBalancingCharges",
+    concept: "MainPoolBalancingChargesInRespectOfFullExpensing",
+    label: "Full expensing: balancing charges",
+  },
+  { key: "specialRateAllowances", concept: "SpecialRatePoolTotalSRAllowance", label: "Special rate allowance: allowances" },
+  {
+    key: "specialRateBalancingCharges",
+    concept: "SpecialRatePoolBalancingChargeInRespectOfSRAllowance",
+    label: "Special rate allowance: balancing charges",
+  },
+  { key: "specialRatePoolAllowances", concept: "SpecialRatePoolTotalAllowances", label: "Special rate pool: allowances" },
+  { key: "specialRatePoolBalancingCharges", concept: "SpecialRatePoolBalancingCharge", label: "Special rate pool: balancing charges" },
+];
+
 export const COMPUTATIONS_CONCEPTS = [
   "CompanyName",
   "TaxReference",
@@ -62,6 +81,7 @@ export const COMPUTATIONS_CONCEPTS = [
   ...TRADING_LINES.map((line) => line.concept),
   "AdjustedProfitOrLossBeforeAccountingPeriodAdjustments",
   "TotalCapitalAllowances",
+  ...CAPITAL_ALLOWANCE_CLASS_LINES.map((line) => line.concept),
   "AdjustedProfitForThePeriod",
   "AdjustedLossOfPeriod",
 ];
@@ -248,6 +268,14 @@ export function buildCtComputations({
     ],
   });
   const lossesHtml = losses ? lossesSection(losses, carryBack) : "";
+  const classRows = CAPITAL_ALLOWANCE_CLASS_LINES.filter((line) => lines[line.key] > 0).map((line) => ({
+    label: line.label,
+    cells: [monetaryCell(line.concept, "tradePeriod", lines[line.key])],
+  }));
+  const capitalAllowancesHtml =
+    classRows.length > 0
+      ? `<h3>Capital allowances by class</h3>\n${recordTable({ columns: [periodEnd.slice(0, 4)], rows: classRows })}`
+      : "";
 
   const bodyHtml = `<div class="page">
 ${recordHeading({
@@ -262,6 +290,7 @@ ${recordHeading({
 <p>Period of account: ${dateFact("PeriodOfAccountStartDate", "companyInstant", periodStart)} to ${dateFact("PeriodOfAccountEndDate", "companyInstant", periodEnd)}</p>
 <h3>Trading profits: ${escapeXmlText(tradeName)}</h3>
 ${computationTable}
+${capitalAllowancesHtml}
 ${lossesHtml}
 </div>`;
 

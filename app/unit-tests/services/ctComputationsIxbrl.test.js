@@ -180,6 +180,26 @@ describe("buildCtComputations", () => {
     expect(parseXmlDocument(xml)).toBeTruthy();
   });
 
+  test("tags the capital allowance classes on the trade context and leaves out the classes at zero", () => {
+    const lines = {
+      ...LINES,
+      fullExpensingAllowances: 20000,
+      fullExpensingBalancingCharges: 500,
+      specialRateAllowances: 0,
+      specialRatePoolAllowances: 800,
+      totalCapitalAllowances: 64000 + 20000 - 500 + 800,
+      adjustedProfit: 123897 - 20300,
+    };
+    const xml = buildCtComputations({ ...INPUT, lines });
+    const byName = facts(parseXmlDocument(xml));
+    expect(byName["ct-comp:MainPoolTotalFullExpensingAllowance"]).toMatchObject({ value: "20,000", contextRef: "tradePeriod" });
+    expect(byName["ct-comp:MainPoolBalancingChargesInRespectOfFullExpensing"]).toMatchObject({ value: "500", contextRef: "tradePeriod" });
+    expect(byName["ct-comp:SpecialRatePoolTotalAllowances"]).toMatchObject({ value: "800", contextRef: "tradePeriod" });
+    expect(byName["ct-comp:SpecialRatePoolTotalSRAllowance"]).toBeUndefined();
+    expect(xml).toContain("Capital allowances by class");
+    expect(buildCtComputations(INPUT)).not.toContain("Capital allowances by class");
+  });
+
   test("refuses a computation that does not add up, and missing identifiers", () => {
     expect(() => buildCtComputations({ ...INPUT, lines: { ...LINES, adjustedProfit: 1 } })).toThrow(/does not add up/);
     expect(() => buildCtComputations({ ...INPUT, utr: "12345" })).toThrow(/UTR/);

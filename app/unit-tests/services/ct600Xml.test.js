@@ -284,6 +284,70 @@ describe("buildCt600IrEnvelope", () => {
     }
   });
 
+  test("writes the capital allowance classes and the qualifying expenditure at the elements the toml names", () => {
+    const toml = TOML.parse(readFileSync(CT600_TOML, "utf8"));
+    const tomlPaths = Object.fromEntries(toml.box.map((box) => [box.number, box.xmlPath]));
+    const { boxes } = deriveCt600FromFigures(
+      {
+        ...COMPANY,
+        periodStart: "2025-04-01",
+        periodEnd: "2026-03-31",
+        associatedCompanies: 0,
+        profitAndLoss: {
+          current: {
+            turnover: 100000,
+            costOfSales: 10000,
+            grossProfit: 90000,
+            administrativeExpenses: 30000,
+            operatingProfit: 60000,
+            interestReceivable: 0,
+            profitBeforeTax: 60000,
+            tax: 0,
+            profit: 60000,
+          },
+        },
+        annualInvestmentAllowance: 5000,
+        mainPoolAllowances: 1000,
+        mainPoolBalancingCharges: 10,
+        fullExpensingAllowances: 20000,
+        fullExpensingBalancingCharges: 500,
+        specialRateAllowances: 3000,
+        specialRateAllowanceExpenditure: 6000,
+        specialRateBalancingCharges: 100,
+        specialRatePoolAllowances: 800,
+        specialRatePoolAnnualInvestmentAllowance: 2000,
+        specialRatePoolBalancingCharges: 50,
+        annualInvestmentAllowanceOutsideTrade: 4000,
+        firstYearAllowanceExpenditure: 9000,
+        otherMachineryAndPlantExpenditure: 12000,
+      },
+      ltdTaxDataForPeriodEnd("2026-03-31"),
+    );
+    expect(boxes).toMatchObject({
+      688: 20000,
+      689: 500,
+      693: 3000,
+      694: 100,
+      695: 2800,
+      700: 50,
+      705: 4000,
+      710: 10,
+      735: 4000,
+      760: 9000,
+      773: 6000,
+      775: 12000,
+    });
+    const document = buildDocument(boxes);
+    for (const [box, value] of Object.entries(boxes)) {
+      const path = CT600_BOX_PATHS[box];
+      expect(path, `box ${box} has a path`).toBeDefined();
+      expect([path, path.slice(0, path.lastIndexOf("/"))], `box ${box} matches the toml`).toContain(tomlPaths[box]);
+      expect(valueAt(document, path), `box ${box}`).toBe(
+        typeof value === "number" && ![4, 326, 327, 328, 330, 380].includes(Number(box)) ? value.toFixed(2) : String(value),
+      );
+    }
+  });
+
   test("writes the header, the attachments and an empty IRmark", () => {
     const { boxes } = boxesFor({ results, company: COMPANY });
     const xml = buildCt600IrEnvelope({ boxes, accountsIxbrl: "<html>accounts</html>", computationsIxbrl: "<html>computations</html>" });
