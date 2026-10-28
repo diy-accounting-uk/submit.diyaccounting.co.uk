@@ -259,6 +259,48 @@ describe("deriveCt600FromFigures on a period that straddles 1 April", () => {
   });
 });
 
+describe("a trading loss from the book", () => {
+  let lossFigures;
+  let lossResults;
+
+  beforeAll(async () => {
+    const { book, lines } = loadDiyaGlData(BOOK_DIRECTORY);
+    const lossLines = lines.map((line) => (/^400\d$/.test(line.accountMainID) ? { ...line, amount: line.amount * 0.2 } : line));
+    lossResults = calculatedResultsFor(book, lossLines, await loadTaxDataForBook(book));
+    const accounts = await deriveSmallCompanyAccounts({ book, lines: lossLines });
+    lossFigures = { ...ct600FiguresFromResults(lossResults, accounts), ...COMPANY, incomeTaxDeducted: 0 };
+  });
+
+  test("carries the book's trading loss arising and files it in box 780", () => {
+    expect(lossFigures.workingSheet.tradingLoss).toBeGreaterThan(0);
+    const { boxes, losses } = derive(lossFigures);
+    expect(boxes[780]).toBeCloseTo(lossFigures.workingSheet.tradingLoss, 0);
+    expect(boxes).not.toHaveProperty("155");
+    expect(losses.arising).toBeCloseTo(lossFigures.workingSheet.tradingLoss, 0);
+    expect(losses.carriedForwardFromPeriod).toBe(losses.arising);
+  });
+
+  test("lets a claim against total profits run", () => {
+    const { boxes, losses } = derive({ ...lossFigures, lossAgainstTotalProfits: 100 });
+    expect(boxes[275]).toBe(100);
+    expect(losses.usedAgainstTotalProfits).toBe(100);
+  });
+
+  test("refuses a claim above the book's loss", () => {
+    expect(() => derive({ ...lossFigures, lossAgainstTotalProfits: 1e9 })).toThrow(/more than the trading loss of the period/);
+  });
+
+  test("refuses when the computation's loss disagrees with the book's", () => {
+    const figures = { ...lossFigures, workingSheet: { ...lossFigures.workingSheet, tradingLoss: 1 } };
+    expect(() => derive(figures)).toThrow(/disagrees with the book's trading loss arising/);
+  });
+
+  test("a book with a profit carries no trading loss", () => {
+    expect(figuresFromBook.workingSheet.tradingLoss).toBe(0);
+    expect(derive(figuresFromBook).boxes).not.toHaveProperty("780");
+  });
+});
+
 describe("the marginal relief band", () => {
   test("gives box 435 as (upper limit - profit) x 3/200 on a profit between the limits", () => {
     const { boxes } = derive(TYPED);

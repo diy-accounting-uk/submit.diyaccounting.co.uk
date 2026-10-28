@@ -192,7 +192,6 @@ describe("boxesFor for other shapes of book", () => {
 describe("boxesFor refuses a book outside a small trading company's return", () => {
   test.each([
     ["a book with no CT600 sheet", () => ({ ...results, CT600: undefined }), /only a Company \(ltd\) book/],
-    ["a trading loss", () => withResults({ CorporationTax: { K22: -100 } }), /trading loss/],
     ["net non-trading loan debits", () => withResults({ CorporationTax: { K24: -5 } }), /non-trading loan relationship debits/],
     ["a period over 12 months", () => withResults({ CT600: { M33: serial("2026-04-30") } }), /longer than 12 months/],
     [
