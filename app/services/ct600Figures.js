@@ -323,9 +323,6 @@ export function ct600FiguresFromResults(results, smallCompanyAccounts) {
   if (!ct600 || !workingSheet || !admin) {
     throw new Ct600RefusedError("The book carries no CT600 sheet; only a Company (ltd) book files a Company Tax Return");
   }
-  if (workingSheet.K22 < 0) {
-    throw new Ct600RefusedError("The book makes a trading loss; the loss boxes (780 onward) have no diya-gl cell yet", "profitAndLoss");
-  }
   if (workingSheet.K24 < 0) {
     throw new Ct600RefusedError(
       "The book has net non-trading loan relationship debits; those boxes have no diya-gl cell yet",
@@ -352,7 +349,11 @@ export function ct600FiguresFromResults(results, smallCompanyAccounts) {
     mainPoolBalancingCharges: wholePounds(Math.max(-(allowances.I18 ?? 0), 0)),
     frankedInvestmentIncome: wholePounds(workingSheet.K29),
     incomeTaxDeducted: workingSheet.K37 > 0 ? fromPence(toPence(workingSheet.K37)) : 0,
-    workingSheet: { tradingProfit: workingSheet.K22 + positive(results["MnthP&L"]?.B37), corporationTax: workingSheet.K35 ?? 0 },
+    workingSheet: {
+      tradingProfit: workingSheet.K22 + positive(results["MnthP&L"]?.B37),
+      tradingLoss: Math.max((ct600.Q206 ?? 0) - positive(results["MnthP&L"]?.B37), 0),
+      corporationTax: workingSheet.K35 ?? 0,
+    },
   };
   const lossesBroughtForward = wholePounds(ct600.Z72);
   if (lossesBroughtForward > 0) figures.lossesBroughtForward = lossesBroughtForward;
@@ -659,6 +660,14 @@ export function deriveCt600FromFigures(figures, taxDataByYear) {
   if (workingSheet && Math.abs(computationLines.adjustedProfit - workingSheet.tradingProfit) > WORKING_SHEET_TOLERANCE_POUNDS) {
     throw new Ct600RefusedError(
       `The computation's adjusted trading profit ${computationLines.adjustedProfit} disagrees with the working sheet's ${Math.round(workingSheet.tradingProfit)}`,
+      "profitAndLoss",
+    );
+  }
+
+  const computedLoss = Math.max(-computationLines.adjustedProfit, 0);
+  if (workingSheet?.tradingLoss !== undefined && Math.abs(computedLoss - workingSheet.tradingLoss) > WORKING_SHEET_TOLERANCE_POUNDS) {
+    throw new Ct600RefusedError(
+      `The computation's trading loss ${computedLoss} disagrees with the book's trading loss arising ${Math.round(workingSheet.tradingLoss)}`,
       "profitAndLoss",
     );
   }

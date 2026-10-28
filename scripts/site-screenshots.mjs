@@ -10,7 +10,9 @@
 // target/site-screenshots/<page>/<width>-<theme>[-<state>].png with an index.json that lists
 // every file and any console error the page logged.
 //
-// Usage: node scripts/site-screenshots.mjs [--base-url <url>] [--out <dir>] [--only <substring>]
+// --signed-in captures every selected page after the mock sign-in, not only the ones that redirect.
+//
+// Usage: node scripts/site-screenshots.mjs [--base-url <url>] [--out <dir>] [--only <substring>[,<substring>]] [--signed-in]
 
 import { chromium } from "playwright";
 import { spawn } from "node:child_process";
@@ -46,11 +48,12 @@ export function screenshotName(width, theme, state) {
 }
 
 function parseArgs(argv) {
-  const args = { baseUrl: process.env.SITE_SCREENSHOTS_BASE_URL || null, out: "target/site-screenshots", only: null };
+  const args = { baseUrl: process.env.SITE_SCREENSHOTS_BASE_URL || null, out: "target/site-screenshots", only: null, signedIn: false };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--base-url") args.baseUrl = argv[++i];
     else if (argv[i] === "--out") args.out = argv[++i];
     else if (argv[i] === "--only") args.only = argv[++i];
+    else if (argv[i] === "--signed-in") args.signedIn = true;
   }
   return args;
 }
@@ -138,6 +141,14 @@ async function capturePage(browser, { pageOrigin, outDir, page: pagePath, storag
     colorScheme: theme,
     ...(storageState ? { storageState } : {}),
   });
+  await context.addInitScript(() => {
+    try {
+      localStorage.setItem("consent.rum", "declined");
+      localStorage.setItem("consent.analytics", "declined");
+    } catch {
+      // storage is blocked: the banner shows and the capture goes on
+    }
+  });
   const page = await context.newPage();
   await page.emulateMedia({ colorScheme: theme });
   let errors = [];
@@ -191,7 +202,7 @@ async function main() {
   const args = parseArgs(process.argv.slice(2));
   const outDir = path.resolve(args.out);
   let pages = discoverPages();
-  if (args.only) pages = pages.filter((p) => p.includes(args.only));
+  if (args.only) pages = pages.filter((p) => args.only.split(",").some((part) => p.includes(part)));
 
   let simulator = null;
   let browser = null;
@@ -218,6 +229,7 @@ async function main() {
       }
     }
 
+    if (args.signedIn) for (const page of pages) redirected.add(page);
     if (redirected.size > 0) {
       for (const width of WIDTHS) {
         for (const theme of THEMES) {

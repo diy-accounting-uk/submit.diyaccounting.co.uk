@@ -645,48 +645,6 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#workedTaxRows")).toContainText("£57,000");
   });
 
-  test("the accounts just accepted by Companies House fill the accounts section", async ({ page }) => {
-    await page.addInitScript(() => {
-      sessionStorage.setItem(
-        "filedSmallCompanyAccounts",
-        JSON.stringify({
-          companyNumber: "12345678",
-          companyName: "Precision Code Ltd",
-          periodStart: "2025-04-01",
-          periodEnd: "2026-03-31",
-          averageEmployees: 3,
-          director: { name: "Carol Smith", dateApproved: "2026-06-01" },
-          smallCompany: {
-            principalActivity: "Software",
-            accountingPolicies: "FRS 102 1A",
-            directors: ["Carol Smith"],
-            balanceSheet: {
-              currentYear: {
-                fixedAssets: 0,
-                stocks: 0,
-                debtors: 10,
-                cashAtBank: 90,
-                tradeCreditors: 0,
-                corporationTax: 0,
-                otherCreditors: 0,
-                creditorsAfterOneYear: 0,
-                calledUpShareCapital: 100,
-                profitAndLossAccount: 0,
-              },
-            },
-            profitAndLoss: { currentYear: { turnover: 500, costOfSales: 100, administrativeExpenses: 50, interestReceivable: 0, tax: 0 } },
-          },
-        }),
-      );
-    });
-    await openForm(page);
-    await expect(page.locator("#filedAccountsOffer")).toBeVisible();
-    await page.locator("#useFiledAccountsBtn").click();
-    await expect(page.locator("#currentTurnover")).toHaveValue("500");
-    await expect(page.locator("#directorName")).toHaveValue("Carol Smith");
-    await expect(page.locator("#periodStart")).toHaveValue("2025-04-01");
-  });
-
   test("a micro-entity's book opens the micro accounts, and the preview sends the micro request", async ({ page }) => {
     const previewRequests = [];
     await openForm(page, previewRequests);

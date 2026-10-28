@@ -114,6 +114,13 @@ const FIXTURE_SNAPSHOT = {
       name: "Company accounts",
       observations: [
         {
+          id: "company-cash-at-bank",
+          label: "Cash at bank",
+          unit: "gbp",
+          last30: { value: 3500.5, trend: 0 },
+          last90: { value: 3500.5, trend: 0 },
+        },
+        {
           id: "company-turnover",
           label: "Turnover",
           unit: "gbp",
@@ -645,6 +652,51 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     await expect(page.locator("#reinvestmentPanel")).toBeHidden();
+  });
+
+  test("shows cash at bank against the reserve floor with the headroom", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const panel = page.locator("#reservePanel");
+    await expect(panel).toBeVisible();
+    await expect(panel.locator('tr[data-figure-id="reserve-cash-at-bank"] td').nth(1)).toHaveText("£3,500.50");
+    await expect(panel.locator('tr[data-figure-id="reserve-floor"] td').nth(1)).toHaveText("£2,000.00");
+    await expect(panel.locator('tr[data-figure-id="reserve-headroom"] td').nth(1)).toHaveText("£1,500.50");
+    await expect(panel.locator("#reserveState")).toHaveAttribute("data-state", "above-floor");
+  });
+
+  test("marks the reserve block when cash at bank is below the floor", async ({ page }) => {
+    const belowFloor = {
+      ...FIXTURE_SNAPSHOT,
+      objectives: FIXTURE_SNAPSHOT.objectives.map((objective) =>
+        objective.id === "company-accounts"
+          ? {
+              ...objective,
+              observations: objective.observations.map((observation) =>
+                observation.id === "company-cash-at-bank" ? { ...observation, last30: { value: 1200, trend: null } } : observation,
+              ),
+            }
+          : objective,
+      ),
+    };
+    await setupRoutes(page, { snapshotBody: belowFloor });
+    await loadDashboard(page);
+
+    const panel = page.locator("#reservePanel");
+    await expect(panel.locator("#reserveState")).toHaveAttribute("data-state", "below-floor");
+    await expect(panel.locator("#reserveState")).toHaveText("Below the reserve floor.");
+    await expect(panel.locator('tr[data-figure-id="reserve-headroom"] td').nth(1)).toHaveText("-£800.00");
+  });
+
+  test("says no book snapshot exists yet in the reserve block while the book pull job is off", async ({ page }) => {
+    await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_NO_COMPANY_BOOK });
+    await loadDashboard(page);
+
+    const panel = page.locator("#reservePanel");
+    await expect(panel).toBeVisible();
+    await expect(panel.locator("#reserveState")).toHaveText("No book snapshot exists yet.");
+    await expect(panel.locator("#reserveTable")).toBeHidden();
   });
 
   test("hides the company accounts panel while the book pull job is off", async ({ page }) => {

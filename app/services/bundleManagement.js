@@ -271,7 +271,7 @@ function matchesSimplePath(path, normalizedPath) {
   return normalizedPath === normalizedActivityPath || normalizedPath.endsWith("/" + normalizedActivityPath);
 }
 
-function findMatchingActivitiesForUrlPath(catalog, currentPath) {
+export function findMatchingActivitiesForUrlPath(catalog, currentPath) {
   if (!catalog?.activities) return [];
 
   // Keep both variants: with and without query

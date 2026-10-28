@@ -3,6 +3,7 @@
 
 // behaviour-tests/companyTaxReturn.behaviour.test.js
 
+import { expect } from "@playwright/test";
 import { test } from "./helpers/playwrightTestWithout.js";
 import fs from "node:fs";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -39,6 +40,24 @@ import {
   verifyMicroEntityReview,
   verifyReturnAccepted,
   verifyReturnRejectedAndRetryable,
+  chooseToSendToCompaniesHouseAndHmrc,
+  verifyJointReview,
+  enterJointCredentialsAndSubmit,
+  submitJointExpectingGatewayError,
+  verifyBothAccepted,
+  verifyAccountsLocked,
+  verifyCompaniesHouseRejected,
+  verifyNothingFiledAtCompaniesHouse,
+  clearGovTestScenario,
+  returnToReviewToSendAgain,
+  verifyOnlyTheTaxReturnIsLeftToSend,
+  resendTheTaxReturn,
+  verifyCompaniesHouseAccepted,
+  verifyCompaniesHouseStillPending,
+  sendTheTaxReturnNow,
+  waitForCompaniesHouse,
+  countRequestsTo,
+  readReceiptsOfTheFilings,
 } from "./steps/behaviour-hmrc-company-tax-return-steps.js";
 import { companiesHouseLookupFixture } from "./steps/behaviour-companies-house-filing-steps.js";
 import { buildCtReturnExportFromBook, FIXTURE_UTR } from "@app/test-helpers/ctReturnFixture.js";
@@ -198,6 +217,119 @@ test("Click through: file the Company Tax Return shows the error HMRC returns an
   await setCtGovTestScenario(page, "CT600_REJECT_IRMARK", screenshotPath);
   await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
   await verifyReturnRejectedAndRetryable(page, "2021", screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+const companyAuthCode = "AB12CD";
+const JOINT_FILING_ID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
+async function reachJointReview(page, testInfo, { copy = "full", receives }) {
+  await reachCompanyForm(page, testInfo);
+  await typeInCompanyTaxReturnForm(page, screenshotPath);
+  await chooseToSendToCompaniesHouseAndHmrc(page, { copy }, screenshotPath);
+  await previewCompanyTaxReturn(page, screenshotPath);
+  await verifyJointReview(page, { receives }, screenshotPath);
+}
+
+test("Click through: file the accounts at Companies House and the Company Tax Return at HMRC together, and see both receipts under one filing", async ({
+  page,
+}, testInfo) => {
+  const accountsPosts = await countRequestsTo(page, "/api/v1/companies-house/accounts", "POST");
+  const returnPosts = await countRequestsTo(page, "/api/v1/hmrc/ct/return", "POST");
+  await reachJointReview(page, testInfo, { receives: "The full accounts, including the profit and loss account" });
+  await enterJointCredentialsAndSubmit(page, { ...gatewayCredentials, companyAuthCode }, screenshotPath);
+  await verifyBothAccepted(page, screenshotPath);
+  await verifyAccountsLocked(page, screenshotPath);
+  expect([accountsPosts.count, returnPosts.count]).toEqual([1, 1]);
+
+  const receipts = await readReceiptsOfTheFilings(page);
+  const accounts = receipts.find((entry) => entry.kind === "companies-house-accounts");
+  const taxReturn = receipts.find((entry) => entry.kind === "company-tax-return");
+  expect(accounts.receipt.jointFilingId).toMatch(JOINT_FILING_ID_PATTERN);
+  expect(taxReturn.receipt.jointFilingId).toBe(accounts.receipt.jointFilingId);
+  expect(taxReturn.listedJointFilingId).toBe(accounts.receipt.jointFilingId);
+  expect(accounts.receipt.filedDocument).toContain("FullAccounts");
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: the filleted copy goes to Companies House and the full accounts go to HMRC", async ({ page }, testInfo) => {
+  await reachJointReview(page, testInfo, {
+    copy: "filleted",
+    receives: "Filleted accounts. The profit and loss account and the directors' report are left out",
+  });
+  await enterJointCredentialsAndSubmit(page, { ...gatewayCredentials, companyAuthCode }, screenshotPath);
+  await verifyBothAccepted(page, screenshotPath);
+
+  const receipts = await readReceiptsOfTheFilings(page);
+  const accounts = receipts.find((entry) => entry.kind === "companies-house-accounts");
+  const taxReturn = receipts.find((entry) => entry.kind === "company-tax-return");
+  expect(accounts.receipt.filedDocument).toContain("FilletedAccounts");
+  expect(Buffer.from(taxReturn.receipt.filed.accountsIxbrl, "utf8").toString()).toContain("FullAccounts");
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: a Companies House gateway error and a rejection send nothing to HMRC, and the fixed accounts then go to both", async ({
+  page,
+}, testInfo) => {
+  const returnPosts = await countRequestsTo(page, "/api/v1/hmrc/ct/return", "POST");
+  await reachJointReview(page, testInfo, { receives: "The full accounts" });
+
+  await setCtGovTestScenario(page, "SCHEMA_FAILURE", screenshotPath);
+  await submitJointExpectingGatewayError(page, { ...gatewayCredentials, companyAuthCode }, screenshotPath);
+  await verifyNothingFiledAtCompaniesHouse(page, screenshotPath);
+
+  await setCtGovTestScenario(page, "ACCOUNTS_REJECTED", screenshotPath);
+  await enterJointCredentialsAndSubmit(page, { ...gatewayCredentials, companyAuthCode }, screenshotPath);
+  await verifyCompaniesHouseRejected(page, screenshotPath);
+  expect(returnPosts.count).toBe(0);
+
+  await returnToReviewToSendAgain(page, screenshotPath);
+  await clearGovTestScenario(page);
+  await enterJointCredentialsAndSubmit(page, { ...gatewayCredentials, companyAuthCode }, screenshotPath);
+  await verifyBothAccepted(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: HMRC rejects the Company Tax Return after Companies House accepts the accounts, and only the return is sent again", async ({
+  page,
+}, testInfo) => {
+  const accountsPosts = await countRequestsTo(page, "/api/v1/companies-house/accounts", "POST");
+  await reachJointReview(page, testInfo, { receives: "The full accounts" });
+
+  await setCtGovTestScenario(page, "CT600_REJECT_IRMARK", screenshotPath);
+  await enterJointCredentialsAndSubmit(page, { ...gatewayCredentials, companyAuthCode }, screenshotPath);
+  await verifyCompaniesHouseAccepted(page, screenshotPath);
+  await verifyReturnRejectedAndRetryable(page, "2021", screenshotPath);
+  await verifyOnlyTheTaxReturnIsLeftToSend(page, screenshotPath);
+
+  await clearGovTestScenario(page);
+  await changeAnAnswerFromTheReview(page, { fieldId: "declarantStatus", value: "Finance Director" }, screenshotPath);
+  await resendTheTaxReturn(page, { password: gatewayCredentials.password }, screenshotPath);
+  await verifyBothAccepted(page, screenshotPath);
+  await verifyAccountsLocked(page, screenshotPath);
+  expect(accountsPosts.count).toBe(1);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: send the Company Tax Return while Companies House is pending, then see Companies House accept and lock the accounts", async ({
+  page,
+}, testInfo) => {
+  await reachJointReview(page, testInfo, { receives: "The full accounts" });
+
+  await setCtGovTestScenario(page, "PENDING_FOREVER", screenshotPath);
+  await enterJointCredentialsAndSubmit(page, { ...gatewayCredentials, companyAuthCode }, screenshotPath);
+  await verifyCompaniesHouseStillPending(page, screenshotPath);
+  await sendTheTaxReturnNow(page, screenshotPath);
+
+  await clearGovTestScenario(page);
+  await waitForCompaniesHouse(page, screenshotPath);
+  await verifyBothAccepted(page, screenshotPath);
+  await verifyAccountsLocked(page, screenshotPath);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });

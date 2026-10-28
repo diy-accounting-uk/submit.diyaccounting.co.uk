@@ -116,7 +116,14 @@ export const AVAILABILITY = [
   {
     filing: "HMRC Company Tax Return (CT600)",
     web: "companies-house/fileCompanyTaxReturn.html",
+    video: "jMIOZrQir2M",
     cells: [["preview"], ["preview", "book export file"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
+  },
+  {
+    filing: "HMRC Assist check on a VAT return",
+    web: "hmrc/vat/submitVat.html",
+    video: "cyOZsF9qe28",
+    cells: [["preview"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
   {
     filing: "Companies House accounts (micro-entity, small company, dormant)",
@@ -132,6 +139,7 @@ export const AVAILABILITY = [
   },
   {
     filing: "Companies House PSC verification statement",
+    video: "zyo32coCwso",
     cells: [["sandbox"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
   {

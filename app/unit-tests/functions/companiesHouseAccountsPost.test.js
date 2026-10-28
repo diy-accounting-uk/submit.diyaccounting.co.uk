@@ -415,6 +415,42 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  describe("a filing sent as half of a pair", () => {
+    const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
+
+    async function pendingData() {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const updates = mockSend.mock.calls.map(([cmd]) => cmd).filter((cmd) => cmd instanceof lib.UpdateCommand);
+      return updates.find((cmd) => cmd.input.ExpressionAttributeValues[":status"] === "pending").input.ExpressionAttributeValues[":data"];
+    }
+
+    test("stores the jointFilingId and the activity to charge with the pending request", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ jointFilingId: JOINT_FILING_ID }) }));
+      expect(response.statusCode).toBe(201);
+      expect(await pendingData()).toMatchObject({ jointFilingId: JOINT_FILING_ID, chargeActivityId: "file-micro-entity-accounts" });
+    });
+
+    test("charges the small company activity for a small company filing", async () => {
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildSmallCompanyBody({ jointFilingId: JOINT_FILING_ID }) }),
+      );
+      expect(response.statusCode).toBe(201);
+      expect(await pendingData()).toMatchObject({ jointFilingId: JOINT_FILING_ID, chargeActivityId: "file-small-company-accounts" });
+    });
+
+    test("stores no jointFilingId for a filing sent alone", async () => {
+      await companiesHouseAccountsPostHandler(buildEvent());
+      expect(await pendingData()).not.toHaveProperty("jointFilingId");
+    });
+
+    test("refuses a jointFilingId that is not a UUID and sends nothing", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ jointFilingId: "not-a-uuid" }) }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("Invalid jointFilingId");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+  });
+
   test("returns 200 with an empty object for a HEAD request", async () => {
     const response = await companiesHouseAccountsPostHandler(buildEvent({ method: "HEAD" }));
     expect(response.statusCode).toBe(200);

@@ -2009,6 +2009,13 @@ caption {
   border-bottom: 2px solid var(--c-rule);
 }
 
+.data-table tbody th,
+.results-table tbody th,
+.receipt-display tbody th,
+.faq-table tbody th {
+  border-bottom: 1px solid var(--c-rule-subtle);
+}
+
 .data-table tr:hover,
 .results-table tbody tr:hover {
   background-color: var(--c-canvas);

@@ -4,12 +4,16 @@
 // web/unit-tests/catalog-service.test.js
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { readFileSync } from "node:fs";
+import { parse as parseToml } from "@iarna/toml";
 
 import {
   isActivityListedInEnvironment,
   fetchCurrentEnvironmentName,
   activityPagePath,
   activityArea,
+  featureStatusSummary,
+  STATUS_FEATURES,
 } from "../public/lib/services/catalog-service.js";
 
 describe("isActivityListedInEnvironment", () => {
@@ -85,5 +89,44 @@ describe("home page activity buttons", () => {
     expect(activityArea("companies-house/filePscVerification.html")).toBe("Companies House");
     expect(activityArea("passes/redeem.html")).toBe("Passes");
     expect(activityArea("mcp-harness.html")).toBe("More");
+  });
+});
+
+describe("featureStatusSummary", () => {
+  const catalog = {
+    activities: [
+      { id: "submit-vat", name: "Submit VAT (HMRC)" },
+      { id: "vat-assist-check", name: "HMRC Assist check (VAT, preview)", environments: ["ci", "simulator"] },
+      { id: "self-employed", name: "Self Assessment (HMRC, sandbox)", environments: ["ci"] },
+      { id: "company-lookup", name: "Company Lookup (Companies House)", environments: ["ci", "prod"] },
+    ],
+  };
+
+  it("lists only the features the catalogue lists for the environment, under their status", () => {
+    expect(featureStatusSummary(catalog, "prod")).toEqual({
+      groups: [{ status: "production", labels: ["HMRC VAT", "company lookup"] }],
+      filings: ["VAT returns"],
+    });
+  });
+
+  it("adds sandbox and preview features where the catalogue lists them", () => {
+    expect(featureStatusSummary(catalog, "ci")).toEqual({
+      groups: [
+        { status: "production", labels: ["HMRC VAT", "company lookup"] },
+        { status: "sandbox", labels: ["HMRC Income Tax (MTD)"] },
+        { status: "preview", labels: ["HMRC Assist for VAT"] },
+      ],
+      filings: ["VAT returns", "Income Tax updates"],
+    });
+  });
+
+  it("names every feature activity that the real catalogue holds", () => {
+    const real = parseToml(readFileSync("web/public/submit.catalogue.toml", "utf8"));
+    const ids = new Set(real.activities.map((activity) => activity.id));
+    for (const feature of STATUS_FEATURES) expect(ids.has(feature.activity)).toBe(true);
+    const prod = featureStatusSummary(real, "prod");
+    expect(prod.groups.map((group) => group.status)).toEqual(["production"]);
+    expect(prod.groups[0].labels).not.toContain("HMRC Assist for VAT");
+    expect(prod.groups[0].labels).not.toContain("HMRC Company Tax Return (CT600)");
   });
 });

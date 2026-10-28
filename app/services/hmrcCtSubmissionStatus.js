@@ -19,10 +19,13 @@ import {
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { putReceipt } from "../data/dynamoDbReceiptRepository.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
+import { jointFilingFields } from "./jointFiling.js";
+import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
 
 const logger = createLogger({ source: "app/services/hmrcCtSubmissionStatus.js" });
 
 const DEFAULT_POLL_INTERVAL_SECONDS = 10;
+const CT_RETURN_ACTIVITY_ID = "file-company-tax-return";
 
 function secondsUntil(isoTime, now) {
   return Math.max(Math.ceil((Date.parse(isoTime) - now) / 1000), 0);
@@ -59,6 +62,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   }
 
   const pending = persistedRequest.data;
+  const jointFiling = jointFilingFields(pending.jointFilingId);
   const now = Date.now();
   if (pending.nextPollAt && Date.parse(pending.nextPollAt) > now) {
     return {
@@ -75,6 +79,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     const failure = {
       kind: CT_RETURN_KIND,
       statusCode: "REJECT",
+      ...jointFiling,
       correlationId,
       irmark: pending.irmark,
       errors: parsed.errors,
@@ -96,6 +101,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   const accepted = {
     kind: CT_RETURN_KIND,
     statusCode: "ACCEPT",
+    ...jointFiling,
     correlationId,
     utr: pending.utr,
     irmark: pending.irmark,
@@ -112,5 +118,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     summary: "HMRC Company Tax Return accepted",
     userSub,
   });
+  // A return sent as half of a pair costs its own token; the pair costs two.
+  if (jointFiling.jointFilingId) await chargeTokenOnSuccess(userSub, CT_RETURN_ACTIVITY_ID);
   return { data };
 }

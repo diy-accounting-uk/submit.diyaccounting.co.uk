@@ -11,6 +11,7 @@ import { createLogger } from "../../lib/logger.js";
 import { HttpTimeoutError } from "../../lib/httpFetch.js";
 import {
   extractRequest,
+  parseRequestBody,
   buildValidationError,
   http200OkResponse,
   http201CreatedResponse,
@@ -37,6 +38,7 @@ import {
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { readJointFilingId, jointFilingFields } from "../../services/jointFiling.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcCtReturnPost.js" });
 
@@ -84,6 +86,7 @@ export async function ingestHandler(event) {
 
   const errorMessages = [];
   const returnRequest = extractAndValidateCtReturnParameters(event, errorMessages);
+  const jointFilingId = readJointFilingId(parseRequestBody(event), errorMessages);
   if (errorMessages.length === 0) await fillRegisteredOffice(returnRequest.accounts, errorMessages);
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
@@ -169,6 +172,7 @@ export async function ingestHandler(event) {
         utr: returnRequest.utr,
         gatewayTest,
         messageClass: CT600_CLASS,
+        ...jointFilingFields(jointFilingId),
         filed: {
           boxes: documents.boxes,
           computationsIxbrl: documents.computationsIxbrl,

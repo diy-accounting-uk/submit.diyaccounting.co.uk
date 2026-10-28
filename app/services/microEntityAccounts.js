@@ -9,14 +9,14 @@
 import { calculatedResultsFor } from "@diy-accounting-uk/diya-gl/dist/app/bin/export.js";
 import { diyaGlToScenario } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
 import { loadTaxDataForBook, productOf } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
-import { microEntityAccountsFromResults } from "./microEntityAccountsFromResults.js";
+import { microEntityAccountsFromResults, cashAtBankFromResults } from "./microEntityAccountsFromResults.js";
 
 /**
- * derive_micro_entity_accounts: the figures the accounts filing takes, from
- * the session's loaded book.
+ * The figures the accounts filing takes and the cash held across the bank nominal accounts, from
+ * one calculation of the session's loaded book.
  * @param {Object} session
  */
-export async function deriveMicroEntityAccounts(session) {
+export async function deriveCompanyBookFigures(session) {
   if (!session.book || !session.lines) {
     throw new Error("No book is loaded. Call open_book first.");
   }
@@ -24,7 +24,19 @@ export async function deriveMicroEntityAccounts(session) {
   const taxData = await loadTaxDataForBook(book);
   const results = calculatedResultsFor(book, lines, taxData);
   const scenario = diyaGlToScenario(book, lines, productOf(book));
-  return microEntityAccountsFromResults(book, results, scenario);
+  return {
+    accounts: microEntityAccountsFromResults(book, results, scenario),
+    cashAtBank: cashAtBankFromResults(results),
+  };
+}
+
+/**
+ * derive_micro_entity_accounts: the figures the accounts filing takes, from
+ * the session's loaded book.
+ * @param {Object} session
+ */
+export async function deriveMicroEntityAccounts(session) {
+  return (await deriveCompanyBookFigures(session)).accounts;
 }
 
 /**
