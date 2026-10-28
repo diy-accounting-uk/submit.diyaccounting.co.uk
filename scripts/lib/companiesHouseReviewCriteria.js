@@ -57,6 +57,11 @@ const FACTS_THE_INPUT_FEEDS = [
   ["AddressLine2", ["addressLine2"], "an address part the registered office does not have"],
   ["AddressLine3", ["addressLine3"], "an address part the registered office does not have"],
   ["CountyRegion", ["countyRegion"], "an address part the registered office does not have"],
+  ["TradeDebtorsTradeReceivables", ["tradeDebtors"], "a debtors line the filer has no figure for"],
+  ["OtherDebtors", ["otherDebtors"], "a debtors line the filer has no figure for"],
+  ["PrepaymentsAccruedIncome", ["prepayments"], "a debtors line the filer has no figure for"],
+  ["AmountsOwedToDirectors", ["amountsOwedToDirectors"], "a creditors line the filer has no figure for"],
+  ["AmountsOwedToGroupUndertakings", ["amountsOwedToGroupUndertakings"], "a creditors line the filer has no figure for"],
   [
     "CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset",
     ["calledUpShareCapitalNotPaid", "calledUpShareCapitalUnpaid"],

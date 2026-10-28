@@ -19,6 +19,11 @@ const BALANCE_SHEET = {
   capitalAndReserves: ["Equity", ""],
   stocks: ["TotalInventories", ""],
   debtors: ["Debtors", ""],
+  tradeDebtors: ["TradeDebtorsTradeReceivables", ""],
+  otherDebtors: ["OtherDebtors", ""],
+  prepayments: ["PrepaymentsAccruedIncome", ""],
+  amountsOwedToDirectors: ["AmountsOwedToDirectors", "-after-one-year"],
+  amountsOwedToGroupUndertakings: ["AmountsOwedToGroupUndertakings", "-after-one-year"],
   cashAtBank: ["CashBankOnHand", ""],
   tradeCreditors: ["TradeCreditorsTradePayables", "-within-one-year"],
   corporationTax: ["CorporationTaxPayable", "-within-one-year"],
@@ -46,6 +51,14 @@ const OPTIONAL_BALANCE_SHEET_LINES = new Set([
   "prepaymentsAccruedIncome",
   "provisionsForLiabilities",
   "accrualsDeferredIncome",
+]);
+// Small company lines that split debtors and creditors after one year, checked only when the input carries a figure.
+const SMALL_SPLIT_LINES = new Set([
+  "tradeDebtors",
+  "otherDebtors",
+  "prepayments",
+  "amountsOwedToDirectors",
+  "amountsOwedToGroupUndertakings",
 ]);
 // Policy input field -> concept, all on the current period context.
 const POLICIES = {
@@ -173,7 +186,7 @@ export function reconcile(input, ours) {
     ["priorYear", prior],
   ]) {
     for (const [key, value] of Object.entries(balanceSheet[yearKey])) {
-      if (key in BALANCE_SHEET && (value !== 0 || !OPTIONAL_BALANCE_SHEET_LINES.has(key))) {
+      if (key in BALANCE_SHEET && (value !== 0 || !(OPTIONAL_BALANCE_SHEET_LINES.has(key) || SMALL_SPLIT_LINES.has(key)))) {
         const [concept, suffix] = BALANCE_SHEET[key];
         check(`balanceSheet.${yearKey}.${key}`, value, concept, `e${y}${suffix}`);
       }
@@ -245,6 +258,12 @@ export function reconcile(input, ours) {
         currentAssets,
         sum(valueOf("TotalInventories", `e${y}`), valueOf("Debtors", `e${y}`), valueOf("CashBankOnHand", `e${y}`)),
       );
+      const debtorsSplit = ["TradeDebtorsTradeReceivables", "OtherDebtors", "PrepaymentsAccruedIncome"].map((concept) =>
+        valueOf(concept, `e${y}`),
+      );
+      if (debtorsSplit.some((value) => value)) {
+        add(`Debtors ${y}`, "trade debtors + other debtors + prepayments", valueOf("Debtors", `e${y}`), sum(...debtorsSplit));
+      }
       add(
         `Creditors within one year ${y}`,
         "bank loans and overdrafts + trade + corporation tax + taxation and social security + other + accruals",

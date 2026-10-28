@@ -189,6 +189,57 @@ test.describe("File small company accounts page", () => {
     }
   });
 
+  test("the debtors split, the directors loan and the provisions change the totals and the request", async ({ page }) => {
+    await openFormView(page);
+    await fillCurrentYear(page);
+    await page.fill("#currentTradeDebtors", "1800");
+    await page.fill("#currentOtherDebtors", "400");
+    await page.fill("#currentPrepayments", "300");
+    await page.fill("#currentCreditorsAfterOneYear", "800");
+    await page.fill("#currentAmountsOwedToDirectors", "500");
+    await page.fill("#currentAmountsOwedToGroupUndertakings", "100");
+    await page.fill("#currentProvisionsForLiabilities", "250");
+    await page.fill("#currentProfitAndLossAccount", "2850");
+    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: 2950. Matches");
+    const year = await page.evaluate(() => buildAccountsPayload().smallCompany.balanceSheet.currentYear);
+    expect(year).toMatchObject({
+      tradeDebtors: 1800,
+      otherDebtors: 400,
+      prepayments: 300,
+      amountsOwedToDirectors: 500,
+      amountsOwedToGroupUndertakings: 100,
+      provisionsForLiabilities: 250,
+    });
+    expect(await page.evaluate(() => formProblem())).toBeNull();
+    await page.fill("#currentPrepayments", "200");
+    expect(await page.evaluate(() => formProblem())).toContain("must add up to the debtors");
+    await page.fill("#currentPrepayments", "300");
+    await page.fill("#currentAmountsOwedToGroupUndertakings", "400");
+    expect(await page.evaluate(() => formProblem())).toContain("amounts owed to group undertakings cannot be more than");
+  });
+
+  test("the debtors, creditors and provisions lines sit in the balance sheet table in both years, next to the lines they split", async ({
+    page,
+  }) => {
+    await openFormView(page);
+    await page.check("#includeComparatives");
+    for (const prefix of ["current", "prior"]) {
+      const labels = await page
+        .locator(
+          `#${prefix}TradeDebtors, #${prefix}OtherDebtors, #${prefix}Prepayments, #${prefix}AmountsOwedToDirectors, #${prefix}AmountsOwedToGroupUndertakings, #${prefix}ProvisionsForLiabilities`,
+        )
+        .evaluateAll((inputs) => inputs.map((input) => input.closest("tr").querySelector("th").textContent.trim()));
+      expect(labels).toEqual([
+        "Of which, trade debtors",
+        "Of which, other debtors",
+        "Of which, prepayments and accrued income",
+        "Of which, amounts owed to directors",
+        "Of which, amounts owed to group undertakings",
+        "Provisions for liabilities",
+      ]);
+    }
+  });
+
   test("the registered office parts fill from the company record, can be edited and reach the request", async ({ page }) => {
     await openFormView(page);
     await page.evaluate(() =>

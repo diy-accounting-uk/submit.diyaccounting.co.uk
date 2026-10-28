@@ -181,6 +181,11 @@ export const CONCEPTS = {
   nameControllingParty: { prefix: "core", name: "NameControllingParty" },
   controllingPartyIsUltimate: { prefix: "core", name: "ControllingPartyUltimateControllingPartyTruefalse" },
   depreciationExpensePropertyPlantEquipment: { prefix: "core", name: "DepreciationExpensePropertyPlantEquipment" },
+  tradeDebtors: { prefix: "core", name: "TradeDebtorsTradeReceivables" },
+  otherDebtors: { prefix: "core", name: "OtherDebtors" },
+  prepaymentsInDebtors: { prefix: "core", name: "PrepaymentsAccruedIncome" },
+  amountsOwedToDirectors: { prefix: "core", name: "AmountsOwedToDirectors" },
+  amountsOwedToGroupUndertakings: { prefix: "core", name: "AmountsOwedToGroupUndertakings" },
 
   propertyPlantEquipment: { prefix: "core", name: "PropertyPlantEquipment" },
   propertyPlantEquipmentGrossCost: { prefix: "core", name: "PropertyPlantEquipmentGrossCost" },

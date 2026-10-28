@@ -610,6 +610,12 @@
     "otherCreditors",
     "creditorsAfterOneYear",
     "bankLoansAfterOneYear",
+    "tradeDebtors",
+    "otherDebtors",
+    "prepayments",
+    "amountsOwedToDirectors",
+    "amountsOwedToGroupUndertakings",
+    "provisionsForLiabilities",
     "calledUpShareCapital",
     "profitAndLossAccount",
   ];

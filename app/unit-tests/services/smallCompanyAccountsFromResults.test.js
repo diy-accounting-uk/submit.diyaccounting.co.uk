@@ -93,6 +93,38 @@ describe("services/smallCompanyAccountsFromResults balance sheet lines", () => {
     expect(lines.profitAndLossAccount).toBe(lines.capitalAndReserves - lines.calledUpShareCapital);
   });
 
+  test("the published sheet's E11 is the trade debtors and E29 is the directors' loan within the creditors after one year", () => {
+    const withLoan = { ...sheet, E29: 1200.4, F31: 1500.2, F33: 450, F39: 450 };
+    const lines = smallCompanyLinesFromPublishedBalanceSheet(withLoan);
+    expect(lines).toMatchObject({ debtors: 2000, tradeDebtors: 2000, otherDebtors: 0, amountsOwedToDirectors: 1200.4 });
+    const rounded = roundSmallCompanyBalanceSheet(lines);
+    expect(rounded).toMatchObject({
+      debtors: 2000,
+      tradeDebtors: 2000,
+      otherDebtors: 0,
+      amountsOwedToDirectors: 1200,
+      creditorsAfterOneYear: 1500,
+    });
+  });
+
+  test("an opening balance splits the debtors and takes the directors' loan from its own line", () => {
+    const lines = smallCompanyLinesFromOpeningBalance({
+      trade_debtors: 700,
+      long_term_debtors: 300,
+      directors_loan: 400,
+      long_term_creditors: 100,
+      share_capital: 500,
+    });
+    expect(lines).toMatchObject({
+      debtors: 1000,
+      tradeDebtors: 700,
+      otherDebtors: 300,
+      amountsOwedToDirectors: 400,
+      creditorsAfterOneYear: 500,
+    });
+    expect(roundSmallCompanyBalanceSheet(lines)).toMatchObject({ tradeDebtors: 700, otherDebtors: 300, amountsOwedToDirectors: 400 });
+  });
+
   test("an opening balance with the three statement accounts overdrawn together gives an overdraft and no cash at bank", () => {
     const lines = smallCompanyLinesFromOpeningBalance({
       current_account: -800,

@@ -10,6 +10,7 @@ import {
   SMALL_COMPANY_BALANCE_SHEET_LINES,
   SMALL_COMPANY_OPTIONAL_BALANCE_SHEET_LINES,
   SMALL_COMPANY_POLICY_FIELDS,
+  balanceSheetBreakdownProblems,
   PROFIT_AND_LOSS_FORMATS,
   profitAndLossLinesOf,
   FIXED_ASSET_CLASSES,
@@ -70,8 +71,14 @@ function readBalanceSheetYear(values, label, errorMessages) {
     if (figures.bankLoansAfterOneYear > figures.creditorsAfterOneYear) {
       errorMessages.push(`${label}.bankLoansAfterOneYear must not be more than creditorsAfterOneYear`);
     }
+    for (const problem of balanceSheetBreakdownProblems(figures)) errorMessages.push(`${label}: ${problem}`);
     const totals = withBalanceSheetTotals(figures);
-    const netAssets = totals.fixedAssets + totals.currentAssets - totals.creditorsWithinOneYear - totals.creditorsAfterOneYear;
+    const netAssets =
+      totals.fixedAssets +
+      totals.currentAssets -
+      totals.creditorsWithinOneYear -
+      totals.creditorsAfterOneYear -
+      totals.provisionsForLiabilities;
     if (netAssets !== figures.capitalAndReserves) {
       errorMessages.push(`${label}.capitalAndReserves does not equal net assets (${netAssets})`);
     }

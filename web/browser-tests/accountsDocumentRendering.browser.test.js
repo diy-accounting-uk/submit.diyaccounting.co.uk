@@ -8,7 +8,8 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
-import { accountsDocumentCases, computationsDocumentCase } from "@app/test-helpers/accountsDocumentCases.js";
+import { buildSmallCompanyAccounts } from "@app/services/smallCompanyAccountsIxbrl.js";
+import { SMALL_COMPANY_CASE_INPUT, accountsDocumentCases, computationsDocumentCase } from "@app/test-helpers/accountsDocumentCases.js";
 
 const SCREENSHOT_DIRECTORY = path.join(process.cwd(), "target", "accounts-documents");
 const PAGE_CSP =
@@ -100,6 +101,47 @@ test.describe("Accounts documents as a reader sees them", () => {
       expect(ending.bodyEnd).toBe(true);
     });
   }
+
+  test("a small company balance sheet shows the debtors note, the directors loan and the provisions at phone and desktop width", async ({
+    page,
+  }) => {
+    const { current, prior } = SMALL_COMPANY_CASE_INPUT.balanceSheet;
+    const xhtml = buildSmallCompanyAccounts({
+      ...SMALL_COMPANY_CASE_INPUT,
+      balanceSheet: {
+        current: {
+          ...current,
+          tradeDebtors: 1800,
+          otherDebtors: 400,
+          prepayments: 300,
+          amountsOwedToDirectors: 1200,
+          provisionsForLiabilities: 300,
+          profitAndLossAccount: 19600,
+          capitalAndReserves: 19700,
+        },
+        prior: { ...prior, tradeDebtors: 1500, otherDebtors: 500 },
+      },
+    });
+    for (const width of [390, 1280]) {
+      await page.setViewportSize({ width, height: 1200 });
+      await openDocument(page, "small-company-breakdown", xhtml);
+      await page.screenshot({ path: path.join(SCREENSHOT_DIRECTORY, `small-company-breakdown-${width}.png`), fullPage: true });
+      const text = await visibleText(page);
+      expect(text).not.toMatch(HEADER_TEXT);
+      expectInOrder(text.slice(text.indexOf("\nBalance sheet\n")), [
+        "Debtors",
+        "Amounts owed to directors",
+        "Other creditors",
+        "Provisions for liabilities",
+        "Net assets",
+      ]);
+      const note = text.slice(text.search(/\d+\. Debtors\n/));
+      expectInOrder(note, ["Trade debtors", "Other debtors", "Prepayments and accrued income", "Total debtors"]);
+      expect(note).toContain("Total debtors\t2,500\t2,000");
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow).toBeLessThanOrEqual(0);
+    }
+  });
 
   test("the CT computations document shows the computation and nothing of its header", async ({ page }) => {
     await openDocument(page, "ct-computations", computationsDocumentCase());

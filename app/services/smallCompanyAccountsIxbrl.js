@@ -47,7 +47,7 @@ import {
   principalActivitySentence,
   shareNoun,
 } from "./accountsIxbrlCommon.js";
-import { recordFigure, recordTable } from "../lib/submissionRecord.js";
+import { recordAmount, recordFigure, recordTable } from "../lib/submissionRecord.js";
 import { SHARE_CLASS_LABEL, sharesIssuedFor } from "./microEntityAccountsIxbrl.js";
 
 const SMALL_COMPANY_FRAMEWORK_COMPLIANCE =
@@ -73,7 +73,45 @@ export const SMALL_COMPANY_OPTIONAL_BALANCE_SHEET_LINES = [
   "taxationSocialSecurity",
   "accruals",
   "bankLoansAfterOneYear",
+  "tradeDebtors",
+  "otherDebtors",
+  "prepayments",
+  "provisionsForLiabilities",
+  "amountsOwedToDirectors",
+  "amountsOwedToGroupUndertakings",
 ];
+
+// A year that shows any of these splits `debtors`: the three lines then add up to it.
+export const SMALL_COMPANY_DEBTORS_SPLIT_LINES = ["tradeDebtors", "otherDebtors", "prepayments"];
+
+// The lines that split `creditorsAfterOneYear`; the rest of the total is other creditors.
+export const SMALL_COMPANY_AFTER_ONE_YEAR_SPLIT_LINES = [
+  "bankLoansAfterOneYear",
+  "amountsOwedToDirectors",
+  "amountsOwedToGroupUndertakings",
+];
+
+/**
+ * The balance sheet breakdown rules a year's figures must hold, as messages; empty when they hold.
+ * An absent optional line is 0, so a year without these lines has no problem.
+ * @param {object} figures - the lines of SMALL_COMPANY_BALANCE_SHEET_LINES and the optional lines
+ * @returns {string[]}
+ */
+export function balanceSheetBreakdownProblems(figures) {
+  const problems = [];
+  const sum = (lines) => lines.reduce((total, line) => total + (figures[line] ?? 0), 0);
+  const debtorsSplit = sum(SMALL_COMPANY_DEBTORS_SPLIT_LINES);
+  if (debtorsSplit !== 0 && debtorsSplit !== figures.debtors) {
+    problems.push(`tradeDebtors, otherDebtors and prepayments (${debtorsSplit}) must add up to debtors (${figures.debtors})`);
+  }
+  const afterOneYearSplit = sum(SMALL_COMPANY_AFTER_ONE_YEAR_SPLIT_LINES);
+  if ((figures.bankLoansAfterOneYear ?? 0) <= figures.creditorsAfterOneYear && afterOneYearSplit > figures.creditorsAfterOneYear) {
+    problems.push(
+      `bankLoansAfterOneYear, amountsOwedToDirectors and amountsOwedToGroupUndertakings (${afterOneYearSplit}) must not be more than creditorsAfterOneYear (${figures.creditorsAfterOneYear})`,
+    );
+  }
+  return problems;
+}
 
 // The optional policy texts of the accounting policies note, in the order the note prints them.
 export const SMALL_COMPANY_POLICY_FIELDS = [
@@ -491,20 +529,70 @@ function fixedAssetNoteTable({ refs, fixedAssetNote, entityIdentifierXml, period
 }
 
 // The after one year line splits into the bank loans and the rest when any year owes a bank.
+const AFTER_ONE_YEAR_SPLIT_ROWS = [
+  ["Bank loans", "bankBorrowingsOverdrafts", "bankLoansAfterOneYear"],
+  ["Amounts owed to directors", "amountsOwedToDirectors", "amountsOwedToDirectors"],
+  ["Amounts owed to group undertakings", "amountsOwedToGroupUndertakings", "amountsOwedToGroupUndertakings"],
+];
+
 function creditorAfterOneYearLines(yearFigures, contextRefs) {
-  if (!yearFigures.some((figures) => (figures.bankLoansAfterOneYear ?? 0) !== 0)) return undefined;
+  const shownSplits = AFTER_ONE_YEAR_SPLIT_ROWS.filter(([, , field]) => yearFigures.some((figures) => (figures[field] ?? 0) !== 0));
+  if (shownSplits.length === 0) return undefined;
   const cells = (conceptKey, valueOf) =>
     yearFigures.map((figures, index) => {
       const value = valueOf(figures);
       return recordFigure(money(conceptKey, `${contextRefs[index]}-after-one-year`, value), value);
     });
+  const splitTotal = (figures) => SMALL_COMPANY_AFTER_ONE_YEAR_SPLIT_LINES.reduce((total, field) => total + (figures[field] ?? 0), 0);
   return [
-    { label: "Bank loans", cells: cells("bankBorrowingsOverdrafts", (figures) => figures.bankLoansAfterOneYear ?? 0) },
+    ...shownSplits.map(([label, conceptKey, field]) => ({ label, cells: cells(conceptKey, (figures) => figures[field] ?? 0) })),
     {
       label: "Other creditors",
-      cells: cells("otherCreditors", (figures) => figures.creditorsAfterOneYear - (figures.bankLoansAfterOneYear ?? 0)),
+      cells: cells("otherCreditors", (figures) => figures.creditorsAfterOneYear - splitTotal(figures)),
     },
   ];
+}
+
+function refuseBreakdownProblems(label, figures) {
+  if (!figures) return;
+  const problems = balanceSheetBreakdownProblems(figures);
+  if (problems.length > 0) throw new Error(`balanceSheet.${label}: ${problems.join("; ")}`);
+}
+
+// The provisions heading shows in every year once any year carries a figure; otherwise it is absent.
+function showProvisionsInEveryYearOrNone(yearFigures) {
+  const anyYearHasProvisions = yearFigures.some((figures) => (figures.provisionsForLiabilities ?? 0) !== 0);
+  for (const figures of yearFigures) {
+    if (anyYearHasProvisions) figures.provisionsForLiabilities ??= 0;
+    else delete figures.provisionsForLiabilities;
+  }
+}
+
+function hasDebtorsSplit(yearFigures) {
+  return yearFigures.some((figures) => SMALL_COMPANY_DEBTORS_SPLIT_LINES.some((field) => (figures[field] ?? 0) !== 0));
+}
+
+const DEBTORS_NOTE_ROWS = [
+  ["Trade debtors", "tradeDebtors", "tradeDebtors"],
+  ["Other debtors", "otherDebtors", "otherDebtors"],
+  ["Prepayments and accrued income", "prepaymentsInDebtors", "prepayments"],
+];
+
+// The debtors note shows the lines of the split that some year carries, above the total debtors.
+function debtorsNoteTable({ balanceSheetYears, balanceSheetRefs, columns }) {
+  const shownRows = DEBTORS_NOTE_ROWS.filter(([, , field]) => balanceSheetYears.some((figures) => (figures[field] ?? 0) !== 0));
+  const cells = (valueOf, conceptKey) =>
+    balanceSheetYears.map((figures, index) => {
+      const value = valueOf(figures);
+      return conceptKey ? recordFigure(money(conceptKey, balanceSheetRefs[index], value), value) : recordAmount(value);
+    });
+  return recordTable({
+    columns: columns.slice(0, balanceSheetYears.length),
+    rows: [
+      ...shownRows.map(([label, conceptKey, field]) => ({ label, cells: cells((figures) => figures[field] ?? 0, conceptKey) })),
+      { label: "Total debtors", style: "subtotal", cells: cells((figures) => figures.debtors) },
+    ],
+  });
 }
 
 function accountingPoliciesNote({ input, refs }) {
@@ -593,6 +681,7 @@ export function buildSmallCompanyAccounts(input) {
     if ((figures?.bankLoansAfterOneYear ?? 0) > figures?.creditorsAfterOneYear) {
       throw new Error(`balanceSheet.${label}.bankLoansAfterOneYear exceeds creditorsAfterOneYear`);
     }
+    refuseBreakdownProblems(label, figures);
   }
   if (input.controllingParty?.ultimate && !input.controllingParty.name) {
     throw new Error("controllingParty.name is required when the controlling party is ultimate");
@@ -681,6 +770,7 @@ export function buildSmallCompanyAccounts(input) {
     balanceSheetYears.push(withBalanceSheetTotals(priorBalanceSheet));
     balanceSheetRefs.push(refs.priorInstant);
   }
+  showProvisionsInEveryYearOrNone(balanceSheetYears);
   const anyYearHasAccruals = balanceSheetYears.some((figures) => (figures.accruals ?? 0) !== 0);
   const years = balanceSheetYears.map((figures, index) =>
     balanceSheetFacts({
@@ -774,6 +864,12 @@ export function buildSmallCompanyAccounts(input) {
     );
   }
 
+  let debtorsNoteNumber;
+  if (hasDebtorsSplit(balanceSheetYears)) {
+    notes.push({ title: "Debtors", html: debtorsNoteTable({ balanceSheetYears, balanceSheetRefs, columns }) });
+    debtorsNoteNumber = notes.length;
+  }
+
   if (showsTaxNote) {
     const taxYears = [
       { figures: input.profitAndLoss.current, periodRef: refs.current },
@@ -847,10 +943,12 @@ export function buildSmallCompanyAccounts(input) {
   pages.push(`<div class="page">
 ${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${recordTable({
     columns: columns.slice(0, years.length),
-    notes: Boolean(fixedAssetNoteNumber),
+    notes: Boolean(fixedAssetNoteNumber) || Boolean(debtorsNoteNumber),
     rows: balanceSheetRows({
       years,
-      currentAssetLines: subLineRows(CURRENT_ASSET_SUB_LINES, balanceSheetYears, balanceSheetRefs, ""),
+      currentAssetLines: subLineRows(CURRENT_ASSET_SUB_LINES, balanceSheetYears, balanceSheetRefs, "").map((line) =>
+        line.label === "Debtors" && debtorsNoteNumber ? { ...line, note: debtorsNoteNumber } : line,
+      ),
       creditorLines: subLineRows(CREDITOR_SUB_LINES, balanceSheetYears, balanceSheetRefs, "-within-one-year"),
       creditorAfterOneYearLines: creditorAfterOneYearLines(balanceSheetYears, balanceSheetRefs),
       notes: { fixedAssets: fixedAssetNoteNumber },

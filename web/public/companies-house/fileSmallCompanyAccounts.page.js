@@ -35,6 +35,12 @@ const BALANCE_SHEET_INPUT_FIELDS = [
   "otherCreditors",
   "creditorsAfterOneYear",
   "bankLoansAfterOneYear",
+  "tradeDebtors",
+  "otherDebtors",
+  "prepayments",
+  "amountsOwedToDirectors",
+  "amountsOwedToGroupUndertakings",
+  "provisionsForLiabilities",
   "calledUpShareCapital",
   "profitAndLossAccount",
 ];
@@ -148,7 +154,8 @@ function netAssetsOf(figures) {
     figures.taxationSocialSecurity -
     (figures.accruals ?? 0) -
     figures.otherCreditors -
-    figures.creditorsAfterOneYear
+    figures.creditorsAfterOneYear -
+    figures.provisionsForLiabilities
   );
 }
 
@@ -309,6 +316,15 @@ function formProblem() {
     }
     if (balanceSheet.bankLoansAfterOneYear > balanceSheet.creditorsAfterOneYear) {
       return "Bank loans due after one year cannot be more than the creditors due after one year.";
+    }
+    const debtorsSplit = balanceSheet.tradeDebtors + balanceSheet.otherDebtors + balanceSheet.prepayments;
+    if (debtorsSplit !== 0 && debtorsSplit !== balanceSheet.debtors) {
+      return "Trade debtors, other debtors and prepayments must add up to the debtors for every year before previewing.";
+    }
+    const afterOneYearSplit =
+      balanceSheet.bankLoansAfterOneYear + balanceSheet.amountsOwedToDirectors + balanceSheet.amountsOwedToGroupUndertakings;
+    if (afterOneYearSplit > balanceSheet.creditorsAfterOneYear) {
+      return "Bank loans, amounts owed to directors and amounts owed to group undertakings cannot be more than the creditors due after one year.";
     }
   }
   const note = readFixedAssetNote();

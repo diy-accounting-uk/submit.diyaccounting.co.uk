@@ -103,6 +103,40 @@ describe("services/smallCompanyAccountsRequest optional lines, policies and cont
     expect(errors).toContain("smallCompany.balanceSheet.currentYear.bankLoansAfterOneYear must not be more than creditorsAfterOneYear");
   });
 
+  test("a debtors split that does not add up to the debtors is refused and one that does is kept", () => {
+    const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
+    const wrong = validate(withYear({ tradeDebtors: 1 })).errors.join(" ");
+    expect(wrong).toContain(`tradeDebtors, otherDebtors and prepayments (1) must add up to debtors (${base.debtors})`);
+    const { result, errors } = validate(withYear({ tradeDebtors: base.debtors - 100, otherDebtors: 60, prepayments: 40 }));
+    expect(errors).toEqual([]);
+    expect(result.balanceSheet.current).toMatchObject({ tradeDebtors: base.debtors - 100, otherDebtors: 60, prepayments: 40 });
+  });
+
+  test("the directors loan and group balances stay within the creditors after one year", () => {
+    const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
+    const { errors } = validate(withYear({ amountsOwedToDirectors: base.creditorsAfterOneYear + 1 }));
+    expect(errors.join(" ")).toContain("must not be more than creditorsAfterOneYear");
+    const kept = validate(withYear({ amountsOwedToDirectors: 1, amountsOwedToGroupUndertakings: 2 }));
+    expect(kept.errors).toEqual([]);
+    expect(kept.result.balanceSheet.current).toMatchObject({ amountsOwedToDirectors: 1, amountsOwedToGroupUndertakings: 2 });
+  });
+
+  test("provisions for liabilities enter the net assets check", () => {
+    const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
+    const { errors } = validate(withYear({ provisionsForLiabilities: 100 }));
+    expect(errors).toContain(
+      `smallCompany.balanceSheet.currentYear.capitalAndReserves does not equal net assets (${base.capitalAndReserves - 100})`,
+    );
+    const matched = validate(
+      withYear({
+        provisionsForLiabilities: 100,
+        profitAndLossAccount: base.profitAndLossAccount - 100,
+        capitalAndReserves: base.capitalAndReserves - 100,
+      }),
+    );
+    expect(matched.errors).toEqual([]);
+  });
+
   test("a negative or fractional accruals line is refused and a figure is kept", () => {
     expect(validate(withYear({ accruals: -5 })).errors.join(" ")).toContain("accruals");
     expect(validate(withYear({ accruals: 2.5 })).errors.join(" ")).toContain("accruals");
