@@ -136,7 +136,7 @@ default = true
 [[bundles]]
 id = "resident"
 name = "Resident"
-description = "Save and load diya-gl books, and file VAT, Income Tax Self Assessment and micro-entity accounts to HMRC and Companies House as each is recognised. £39/year, or £3.99/month, cancel anytime."
+description = "Save and load diya-gl books, and file VAT, Income Tax Self Assessment, confirmation statements, PSC verification statements and accounts to HMRC and Companies House as each is recognised. £39/year, or £3.99/month, cancel anytime."
 levelName = "Resident"
 enable = "always"
 hidden = false
@@ -206,7 +206,7 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-pro"
 name = "Resident Pro"
-description = "Manage a practice's clients and file VAT, Income Tax Self Assessment and micro-entity accounts to HMRC and Companies House on their behalf, and save and load your own diya-gl books. £199/year, or £19.99/month, cancel anytime."
+description = "Manage a practice's clients and file VAT, Income Tax Self Assessment, confirmation statements, PSC verification statements and accounts to HMRC and Companies House on their behalf, and save and load your own diya-gl books. £199/year, or £19.99/month, cancel anytime."
 levelName = "Pro"
 enable = "always"
 hidden = false

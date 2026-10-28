@@ -56,7 +56,7 @@ function messageRow(columns, text) {
   return row;
 }
 
-function renderTokenSources(bundles) {
+function renderTokenSources(bundles, catalogue) {
   const body = document.getElementById("tokenSourcesBody");
   const tokenBundles = (bundles || []).filter(function (b) {
     return b.allocated && b.tokensGranted !== undefined;
@@ -80,12 +80,17 @@ function renderTokenSources(bundles) {
       if (!isNaN(expiryDate.getTime()))
         expiryInfo = "Expires " + expiryDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
     }
-    return tableRow([b.bundleId || "Unknown", b.tokensGranted || 0, remaining, expiryInfo || "-"]);
+    return tableRow([
+      window.catalogueNames.bundleName(catalogue, b.bundleId) || "Unknown",
+      b.tokensGranted || 0,
+      remaining,
+      expiryInfo || "-",
+    ]);
   });
   body.replaceChildren(...rows);
 }
 
-function renderTokenConsumption(bundles) {
+function renderTokenConsumption(bundles, catalogue) {
   const body = document.getElementById("tokenConsumptionBody");
   const allEvents = [];
 
@@ -117,16 +122,16 @@ function renderTokenConsumption(bundles) {
           minute: "2-digit",
         })
       : "-";
-    return tableRow([evt.activity || "Unknown", dateStr, evt.tokensUsed || 1]);
+    return tableRow([window.catalogueNames.activityName(catalogue, evt.activity) || "Unknown", dateStr, evt.tokensUsed || 1]);
   });
   body.replaceChildren(...rows);
 }
 
 async function loadUsage() {
-  const data = await fetchBundleData();
+  const [data, catalogue] = await Promise.all([fetchBundleData(), window.catalogueNames.loadCatalogue()]);
   if (!data) return;
-  renderTokenSources(data.bundles || []);
-  renderTokenConsumption(data.bundles || []);
+  renderTokenSources(data.bundles || [], catalogue);
+  renderTokenConsumption(data.bundles || [], catalogue);
   renderSubscriptionManagement(data.bundles || []);
 }
 

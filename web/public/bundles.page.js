@@ -512,6 +512,13 @@ function updateBundleStatus() {
 
 const messageEl = (text) => domEl("p", { class: "service-description" }, text);
 
+function isListedInCurrentEnvironment(b) {
+  const listed = b?.listedInEnvironments;
+  if (!Array.isArray(listed) || listed.length === 0) return true;
+  if (!__currentEnv) return false;
+  return listed.includes(__currentEnv);
+}
+
 // --- render catalogue bundles (reusable, reads from __catalogueData)
 function renderCatalogueBundles() {
   const container = document.getElementById("catalogBundles");
@@ -534,12 +541,7 @@ function renderCatalogueBundles() {
       } catch {}
       return false;
     })
-    .filter((b) => {
-      const listed = b?.listedInEnvironments;
-      if (!Array.isArray(listed) || listed.length === 0) return true;
-      if (!__currentEnv) return false;
-      return listed.includes(__currentEnv);
-    })
+    .filter(isListedInCurrentEnvironment)
     .map(cardEl);
   container.replaceChildren(...(cards.length > 0 ? cards : [messageEl("No bundles available.")]));
   updateBundleStatus();
@@ -563,9 +565,6 @@ const __catalogueReady = (async function () {
   const container = document.getElementById("catalogBundles");
   try {
     await fetchUserBundles();
-    try {
-      renderCurrentBundles();
-    } catch {}
 
     const idToken = getIdToken();
     const headers = idToken ? { Authorization: `Bearer ${idToken}` } : undefined;
@@ -575,20 +574,21 @@ const __catalogueReady = (async function () {
     });
     if (!__catalogueData || !__catalogueData.bundles) {
       container.replaceChildren(messageEl("Catalog unavailable."));
+      renderCurrentBundles();
       return;
     }
 
     __currentEnv = await readEnvironment();
     renderCatalogueBundles();
-    // Re-render current bundles now that catalogue names are available
-    try {
-      renderCurrentBundles();
-    } catch {}
+    // The current bundles wait for the catalogue so they show names, never ids.
+    renderCurrentBundles();
+    renderGeneratedPassesEmptyText();
   } catch (err) {
     try {
       console.error("[bundles.html] Catalog bootstrap error:", err && (err.stack || err.message || err));
     } catch {}
     container.replaceChildren(messageEl("Failed to load catalog."));
+    renderCurrentBundles();
   }
 })();
 
@@ -939,11 +939,6 @@ document.getElementById("passInput")?.addEventListener("keydown", (e) => {
   }
 });
 
-// --- initialize current bundles display
-setTimeout(() => {
-  renderCurrentBundles();
-}, 100);
-
 // Feedback engagement section logic
 async function initFeedbackEngagementSection() {
   const section = document.getElementById("feedbackEngagementSection");
@@ -1001,6 +996,31 @@ async function initFeedbackEngagementSection() {
 
 // --- My Generated Passes ---
 let __myPassesNextPageKey = null;
+let __noGeneratedPasses = false;
+
+const PASS_ACTIVITY_IDS = ["generate-pass-digital", "generate-pass-physical"];
+
+// The empty-list text says how to generate a pass when a held bundle allows it, and which
+// bundles allow it when none does. It waits for the catalogue, which holds both answers.
+function renderGeneratedPassesEmptyText() {
+  const emptyMsg = document.getElementById("generatedPassesEmpty");
+  if (!emptyMsg || !__noGeneratedPasses || !__catalogueData?.bundles) return;
+  const passActivities = (__catalogueData.activities || []).filter((a) => PASS_ACTIVITY_IDS.includes(a.id));
+  const allowedIds = new Set(passActivities.flatMap((a) => a.bundles || []));
+  const heldAllowed = parseUserBundles().some((entry) => allowedIds.has(typeof entry === "string" ? entry : entry.bundleId));
+  const prefix = "You haven't generated any passes yet. ";
+  if (heldAllowed) {
+    const names = passActivities.map((a) => a.name).join(" or ");
+    emptyMsg.textContent = `${prefix}Use ${names} in the activities list.`;
+  } else {
+    const offered = __catalogueData.bundles
+      .filter((b) => allowedIds.has(b.id) && !b.hidden && b.enable === "always")
+      .filter(isListedInCurrentEnvironment);
+    const names = offered.map((b) => b.name).join(", ");
+    emptyMsg.textContent = `${prefix}A pass is generated from a bundle that allows it: ${names}.`;
+  }
+  emptyMsg.style.display = "block";
+}
 
 async function fetchMyGeneratedPasses(append) {
   const idToken = getIdToken();
@@ -1026,11 +1046,13 @@ async function fetchMyGeneratedPasses(append) {
     if (!append) list.replaceChildren();
 
     if (data.passes.length === 0 && !append) {
-      emptyMsg.style.display = "block";
+      __noGeneratedPasses = true;
+      renderGeneratedPassesEmptyText();
       loadMore.style.display = "none";
       return;
     }
 
+    __noGeneratedPasses = false;
     emptyMsg.style.display = "none";
 
     data.passes.forEach((pass) => {
