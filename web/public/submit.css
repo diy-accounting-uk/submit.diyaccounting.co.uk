@@ -674,7 +674,11 @@ header::after {
 /* Three controls share the left of the band; the name steps down to fit the narrowest phones. */
 @media (max-width: 360px) {
   .header-left .brand-name {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+  }
+
+  .header-left .home-link {
+    gap: var(--space-1);
   }
 }
 
