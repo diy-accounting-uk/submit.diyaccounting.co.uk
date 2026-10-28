@@ -327,7 +327,11 @@ export function buildMicroEntityAccounts(input) {
 
   let shareCapitalNote;
   if (input.dormant) {
-    const sharesIssued = sharesIssuedFor(input.balanceSheet.current.calledUpShareCapital, input.nominalValue);
+    const calledUp = input.balanceSheet.current.calledUpShareCapital;
+    const unpaid = input.balanceSheet.current.calledUpShareCapitalNotPaid ?? 0;
+    const sharesIssued = sharesIssuedFor(calledUp - unpaid, input.nominalValue);
+    const sharesAllotted = unpaid > 0 ? sharesIssuedFor(calledUp, input.nominalValue) : sharesIssued;
+    const paidVerb = sharesIssued === 1 ? "is" : "are";
     const shareClassDimensionXml = dimensionMemberXml(DIMENSIONS.entityShareClasses, MEMBERS[input.shareClass]);
     // The number of shares is held at the balance sheet date (an instant); the nominal value is
     // a duration item in the FRC taxonomy, so each fact takes its own share-class context.
@@ -347,7 +351,10 @@ export function buildMicroEntityAccounts(input) {
     });
     notes.push({
       title: "Called up share capital",
-      html: `<p>Allotted, called up and fully paid: <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesIssued)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction> each.</p>`,
+      html:
+        unpaid > 0
+          ? `<p>Allotted and called up: <ix:nonFraction name="${qname(CONCEPTS.numberSharesAllotted)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesAllotted)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesAllotted)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction> each, of which <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${paidVerb} fully paid.</p>`
+          : `<p>Allotted, called up and fully paid: <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesIssued)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction> each.</p>`,
     });
     shareCapitalNote = notes.length;
   }

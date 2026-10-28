@@ -552,6 +552,34 @@ describe("services/microEntityAccountsIxbrl", () => {
       expect(buildMicroEntityAccounts(zeroed)).toBe(buildMicroEntityAccounts(SAMPLE_INPUT));
     });
 
+    test("the share capital note calls shares fully paid only when no capital is unpaid", () => {
+      const paid = buildMicroEntityAccounts(DORMANT_INPUT);
+      expect(paid).toContain("Allotted, called up and fully paid:");
+      expect(paid).not.toContain("NumberSharesAllotted");
+    });
+
+    test("the share capital note splits allotted shares from fully paid shares when capital is unpaid", () => {
+      const prior = DORMANT_INPUT.balanceSheet.prior;
+      const input = {
+        ...DORMANT_INPUT,
+        balanceSheet: {
+          current: {
+            ...DORMANT_INPUT.balanceSheet.current,
+            calledUpShareCapitalNotPaid: 40,
+            capitalAndReserves: 8000 + 40,
+            profitAndLossAccount: 7900,
+          },
+          prior,
+        },
+      };
+      const unpaidXhtml = buildMicroEntityAccounts(input);
+      expect(unpaidXhtml).not.toContain("called up and fully paid");
+      expect(unpaidXhtml).toMatch(/Allotted and called up: <ix:nonFraction name="core:NumberSharesAllotted"[^>]*>200</);
+      expect(unpaidXhtml).toMatch(
+        /of which <ix:nonFraction name="core:NumberSharesIssuedFullyPaid"[^>]*>120<\/ix:nonFraction> are fully paid/,
+      );
+    });
+
     test("a dormant set states it has not acted as an agent and a trading set does not", () => {
       expect(hiddenText(buildMicroEntityAccounts(DORMANT_INPUT), "direp:CompanyHasActedAsAnAgentDuringPeriodTruefalse")).toBe("false");
       expect(buildMicroEntityAccounts(SAMPLE_INPUT)).not.toContain("CompanyHasActedAsAnAgentDuringPeriodTruefalse");

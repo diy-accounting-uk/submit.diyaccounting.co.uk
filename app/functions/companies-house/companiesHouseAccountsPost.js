@@ -287,6 +287,17 @@ function validateDormantFiling({ currentYear, priorYear, dormantTradingStatus, s
     errorMessages.push("balanceSheet.currentYear.calledUpShareCapital is not a whole number of shares at the nominal value");
   }
   if (
+    currentYear.calledUpShareCapitalNotPaid > 0 &&
+    Number.isFinite(numericNominalValue) &&
+    numericNominalValue > 0 &&
+    (currentYear.calledUpShareCapitalNotPaid > currentYear.calledUpShareCapital ||
+      sharesIssuedFor(currentYear.calledUpShareCapital - currentYear.calledUpShareCapitalNotPaid, numericNominalValue) === null)
+  ) {
+    errorMessages.push(
+      "balanceSheet.currentYear.calledUpShareCapitalNotPaid must be a whole number of shares at the nominal value and no more than the called up share capital",
+    );
+  }
+  if (
     Number.isFinite(currentYear.profitAndLossAccount) &&
     Number.isFinite(priorYear.profitAndLossAccount) &&
     currentYear.profitAndLossAccount !== priorYear.profitAndLossAccount

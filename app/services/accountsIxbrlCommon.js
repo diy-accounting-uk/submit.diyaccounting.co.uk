@@ -156,6 +156,7 @@ export const CONCEPTS = {
   otherCreditors: { prefix: "core", name: "OtherCreditors" },
   averageNumberEmployeesDuringPeriod: { prefix: "core", name: "AverageNumberEmployeesDuringPeriod" },
   numberSharesIssuedFullyPaid: { prefix: "core", name: "NumberSharesIssuedFullyPaid" },
+  numberSharesAllotted: { prefix: "core", name: "NumberSharesAllotted" },
   nominalValueAllottedShareCapital: { prefix: "core", name: "NominalValueAllottedShareCapital" },
   parValueShare: { prefix: "core", name: "ParValueShare" },
   descriptionShareType: { prefix: "bus", name: "DescriptionShareType" },

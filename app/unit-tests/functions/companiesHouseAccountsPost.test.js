@@ -345,6 +345,15 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
   });
 
   describe("dormant filings", () => {
+    test("rejects unpaid share capital that is not a whole number of shares or exceeds the called up capital", async () => {
+      for (const unpaid of [0.5, 101]) {
+        const body = buildDormantBody();
+        body.balanceSheet.currentYear.calledUpShareCapitalNotPaid = unpaid;
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+        expect(response.statusCode).toBe(400);
+      }
+    });
+
     test("passes the dormant flag, trading status, share class and nominal value to the generator", async () => {
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildDormantBody() }));
       expect(response.statusCode).toBe(201);
