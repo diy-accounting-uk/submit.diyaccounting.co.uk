@@ -205,6 +205,53 @@ test.describe("Receipts page - receipt details", () => {
   });
 
   for (const width of [1280, 390]) {
+    for (const colorScheme of ["light", "dark"]) {
+      test(`lists a joint filing and a VAT row with nothing cut at ${width} px in ${colorScheme}`, async ({ page }) => {
+        await page.emulateMedia({ colorScheme });
+        await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT, { width, styled: true });
+        await page.evaluate(async () => {
+          localStorage.setItem("cognitoIdToken", "token");
+          const items = [
+            {
+              name: "2026-10-02T09:05:00.000Z-CT1.json",
+              timestamp: "2026-10-02T09:05:00.000Z",
+              formBundleNumber: "RB3VJQ7ATMNZ7DXZRD3GQ4KTXY2",
+              kind: "company-tax-return",
+              jointFilingId: "0b8f6f0e-6d3e-4a39-9a55-2f1f4c6d8a10",
+            },
+            {
+              name: "2026-10-02T09:00:00.000Z-CH1.json",
+              timestamp: "2026-10-02T09:00:00.000Z",
+              formBundleNumber: "2026100200012345678901",
+              kind: "companies-house-accounts",
+              jointFilingId: "0b8f6f0e-6d3e-4a39-9a55-2f1f4c6d8a10",
+            },
+            {
+              name: "2026-10-01T09:00:00.000Z-VAT.json",
+              timestamp: "2026-10-01T09:00:00.000Z",
+              formBundleNumber: "256660290587",
+              kind: null,
+            },
+          ];
+          window.fetchWithIdToken = async () => ({ ok: true, json: async () => ({ receipts: items }) });
+          await window.fetchReceipts();
+        });
+        await expect(page.locator("#receiptsTable tbody tr")).toHaveCount(2);
+
+        const cut = await page.evaluate(() => {
+          const viewport = document.documentElement.clientWidth;
+          return [...document.querySelectorAll("#receiptsTable td, #receiptsTable td a")]
+            .filter((el) => el.getBoundingClientRect().right > viewport || el.scrollWidth > el.clientWidth + 1)
+            .map((el) => el.textContent.trim());
+        });
+        expect(cut).toEqual([]);
+        expect(await pageScrollsSideways(page)).toBe(false);
+        await page.screenshot({ path: recordScreenshotPath(`receipts-list-${colorScheme}`, width) });
+      });
+    }
+  }
+
+  for (const width of [1280, 390]) {
     test(`screenshot of the VAT receipt at ${width} px`, async ({ page }) => {
       await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT, { width, styled: true });
       expect(await pageScrollsSideways(page)).toBe(false);
