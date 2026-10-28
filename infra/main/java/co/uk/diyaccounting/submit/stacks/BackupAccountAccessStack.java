@@ -107,7 +107,11 @@ public class BackupAccountAccessStack extends Stack {
                                 "StringEquals",
                                 Map.of(GITHUB_OIDC_HOST + ":aud", "sts.amazonaws.com"),
                                 "StringLike",
-                                Map.of(GITHUB_OIDC_HOST + ":sub", "repo:" + props.githubRepository() + ":*")),
+                                Map.of(
+                                        GITHUB_OIDC_HOST + ":sub",
+                                        List.of(
+                                                "repo:" + props.githubRepository() + ":ref:refs/heads/main",
+                                                "repo:" + props.githubRepository() + ":environment:ci"))),
                         "sts:AssumeRoleWithWebIdentity"))
                 .build();
 
