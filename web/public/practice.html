@@ -69,6 +69,23 @@
 
           <p id="clientsEmptyState" class="hint" hidden>No clients yet. Add your first client below.</p>
 
+          <p id="archivedToggleRow">
+            <button
+              type="button"
+              id="toggleArchivedBtn"
+              class="btn-small btn-secondary"
+              aria-expanded="false"
+              aria-controls="archivedClients"
+            >
+              Show archived clients
+            </button>
+          </p>
+          <div id="archivedClients" hidden>
+            <h3>Archived clients</h3>
+            <p id="archivedClientsEmpty" class="hint" hidden>No archived clients.</p>
+            <ul id="archivedClientsList"></ul>
+          </div>
+
           <div class="table-scroll">
             <table id="clientsTable" class="data-table" hidden>
               <thead>
@@ -91,9 +108,10 @@
             The agent reference number (ARN) from your agent services account. Set once, sent with an invitation whenever you enter a value;
             leave blank to reuse the one already on file.
           </p>
+          <p id="arnOnFile" class="hint" hidden><strong>Agent reference number on file.</strong> Leave the box blank to use it.</p>
           <div class="form-group">
             <label for="arnInput">Agent reference number</label>
-            <p id="arnInput-hint" class="hint">For an agent, usually starting with 'A'.</p>
+            <p id="arnInput-hint" class="hint">The letters ARN, then 7 characters, like AARN1234567.</p>
             <input type="text" id="arnInput" autocomplete="off" aria-describedby="arnInput-hint" />
           </div>
         </div>
@@ -103,7 +121,13 @@
           <form id="addClientForm">
             <div class="form-group">
               <label for="displayNameInput">Client name</label>
-              <input type="text" id="displayNameInput" name="displayName" autocomplete="off" />
+              <input
+                type="text"
+                id="displayNameInput"
+                name="displayName"
+                autocomplete="off"
+                data-required-message="Enter the client name"
+              />
             </div>
             <div class="form-group">
               <label for="vrnInput">VAT registration number</label>
@@ -141,6 +165,7 @@
     <footer></footer>
 
     <script src="widgets/page-chrome.js"></script>
+    <script src="lib/form-errors.js"></script>
     <script src="lib/env-loader.js"></script>
     <script type="module" src="submit.js"></script>
     <script src="developer-mode.js"></script>

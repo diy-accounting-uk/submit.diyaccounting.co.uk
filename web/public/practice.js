@@ -56,6 +56,7 @@
   }
 
   function notify(message, type) {
+    if (typeof window.hideStatus === "function") window.hideStatus();
     if (typeof window.showStatus === "function") window.showStatus(message, type);
   }
 
@@ -64,6 +65,11 @@
     const headers = new Headers(init.headers || {});
     if (idToken) headers.set("Authorization", `Bearer ${idToken}`);
     return cognitoFetcher()(url, { ...init, headers });
+  }
+
+  // Every value placed in the markup passed here goes through escapeHtml first.
+  function setHtml(element, html) {
+    element.replaceChildren(...new DOMParser().parseFromString(html, "text/html").body.childNodes);
   }
 
   function escapeHtml(str) {
@@ -118,6 +124,47 @@
     errorState.style.display = "none";
     __clients = Array.isArray(body.clients) ? body.clients : [];
     renderClientsTable();
+    renderArnOnFile(body.arnOnFile === true);
+  }
+
+  function renderArnOnFile(arnOnFile) {
+    const el = document.getElementById("arnOnFile");
+    if (el) el.hidden = !arnOnFile;
+  }
+
+  // --- archived clients ---
+
+  async function toggleArchivedClients() {
+    const section = document.getElementById("archivedClients");
+    const button = document.getElementById("toggleArchivedBtn");
+    if (!section.hidden) {
+      section.hidden = true;
+      button.textContent = "Show archived clients";
+      button.setAttribute("aria-expanded", "false");
+      return;
+    }
+    try {
+      const response = await cognitoFetch("/api/v1/practice/clients?archived=true", {});
+      const body = await readJsonSafely(response);
+      if (!response.ok) {
+        notify(body.message || `Failed to load archived clients (${response.status})`, "error");
+        return;
+      }
+      const archived = Array.isArray(body.clients) ? body.clients : [];
+      const list = document.getElementById("archivedClientsList");
+      setHtml(
+        list,
+        archived
+          .map((c) => `<li>${escapeHtml(c.displayName || c.clientId)} <span class="hint">${escapeHtml(identifiersLine(c))}</span></li>`)
+          .join(""),
+      );
+      document.getElementById("archivedClientsEmpty").hidden = archived.length > 0;
+      section.hidden = false;
+      button.textContent = "Hide archived clients";
+      button.setAttribute("aria-expanded", "true");
+    } catch (err) {
+      notify(`Failed to load archived clients: ${err?.message || err}`, "error");
+    }
   }
 
   function identifiersLine(client) {
@@ -168,13 +215,48 @@
         <div class="auth-actions">${buttons.join("")}</div>
         ${hint}
         <div class="invite-panel" hidden>
-          <input type="text" class="invite-known-fact" aria-label="Known fact (VAT registration date or postcode)" autocomplete="off" />
+          <label class="invite-known-fact-label" for="knownFact-${clientId}-${def.service}">Known fact</label>
+          <p class="hint" id="knownFactHint-${clientId}-${def.service}">The VAT registration date as DD MM YYYY, or the client's postcode.</p>
+          <input type="text" class="invite-known-fact" id="knownFact-${clientId}-${def.service}" aria-describedby="knownFactHint-${clientId}-${def.service}" autocomplete="off" />
           <div class="auth-actions">
             <button type="button" class="btn-small invite-send-btn" data-client-id="${clientId}" data-service="${def.service}">Send invite</button>
             <button type="button" class="btn-small btn-secondary invite-cancel-panel-btn">Cancel</button>
           </div>
         </div>
       </div>`;
+  }
+
+  function archiveButtonHtml(client) {
+    const label = escapeHtml(client.displayName || client.clientId);
+    return `<button type="button" class="btn-small btn-danger archive-client-btn" data-client-id="${client.clientId}" aria-label="Archive ${label}">Archive</button>`;
+  }
+
+  function archiveConfirmHtml(client) {
+    const label = escapeHtml(client.displayName || client.clientId);
+    return `
+      <div class="archive-confirm" role="group" aria-label="Confirm archive of ${label}">
+        <p class="archive-confirm-text">Archive ${label}? You can still see them under archived clients.</p>
+        <div class="auth-actions">
+          <button type="button" class="btn-small btn-danger archive-confirm-btn" data-client-id="${client.clientId}">Yes, archive</button>
+          <button type="button" class="btn-small btn-secondary archive-keep-btn" data-client-id="${client.clientId}">Keep</button>
+        </div>
+      </div>`;
+  }
+
+  function showArchiveConfirm(clientId) {
+    const client = __clients.find((c) => c.clientId === clientId);
+    const cell = document.querySelector(`.archive-cell[data-client-id="${clientId}"]`);
+    if (!client || !cell) return;
+    setHtml(cell, archiveConfirmHtml(client));
+    cell.querySelector(".archive-confirm-btn")?.focus();
+  }
+
+  function hideArchiveConfirm(clientId) {
+    const client = __clients.find((c) => c.clientId === clientId);
+    const cell = document.querySelector(`.archive-cell[data-client-id="${clientId}"]`);
+    if (!client || !cell) return;
+    setHtml(cell, archiveButtonHtml(client));
+    cell.querySelector(".archive-client-btn")?.focus();
   }
 
   function clientRowHtml(client) {
@@ -185,7 +267,7 @@
         <td>${escapeHtml(identifiersLine(client))}</td>
         <td>${authCellHtml(client, SERVICES[0])}</td>
         <td>${authCellHtml(client, SERVICES[1])}</td>
-        <td><button type="button" class="btn-small btn-danger archive-client-btn" data-client-id="${client.clientId}">Archive</button></td>
+        <td class="archive-cell" data-client-id="${client.clientId}">${archiveButtonHtml(client)}</td>
       </tr>`;
   }
 
@@ -228,18 +310,51 @@
     };
   }
 
+  const FIELD_ERRORS = [
+    { pattern: /display ?name/i, inputId: "displayNameInput", message: "Enter the client name, up to 200 characters" },
+    { pattern: /VAT registration/i, inputId: "vrnInput", message: "The VAT registration number must be 9 numbers" },
+    { pattern: /National Insurance/i, inputId: "ninoInput", message: "Enter the National Insurance number like AB123456C" },
+    { pattern: /Unique Taxpayer|UTR/i, inputId: "utrInput", message: "The UTR must be 10 or 13 numbers" },
+    { pattern: /company number/i, inputId: "companyNumberInput", message: "The company number must be 8 characters" },
+  ];
+
+  // The API answers { message, errorMessages: [...] }. Each message that names a field marks that
+  // field; the rest are shown together above the button.
+  function showAddClientFailure(body, errorsEl) {
+    const messages =
+      Array.isArray(body.errorMessages) && body.errorMessages.length > 0 ? body.errorMessages : [body.message || "Failed to add client"];
+    const fieldErrors = [];
+    const otherMessages = [];
+    for (const text of messages) {
+      const match = FIELD_ERRORS.find((entry) => entry.pattern.test(text));
+      if (match && !fieldErrors.some((e) => e.input.id === match.inputId)) {
+        fieldErrors.push({ input: document.getElementById(match.inputId), message: match.message });
+      } else if (!match) {
+        otherMessages.push(text);
+      }
+    }
+    if (fieldErrors.length > 0) window.formErrors.showFormErrors(fieldErrors);
+    if (otherMessages.length > 0) {
+      errorsEl.textContent = otherMessages.join(" ");
+      errorsEl.style.display = "block";
+    }
+  }
+
   async function handleAddClientSubmit(e) {
     e.preventDefault();
     const errorsEl = document.getElementById("addClientErrors");
     const submitBtn = document.getElementById("addClientBtn");
     errorsEl.style.display = "none";
     errorsEl.textContent = "";
+    window.formErrors?.clearFormErrors();
 
     const idToken = getIdToken();
     if (!idToken) {
       notify("Please log in first to add a client.", "warning");
       return;
     }
+
+    if (!window.formErrors.requireFields(["displayNameInput"])) return;
 
     const fields = readAddClientForm();
     submitBtn.disabled = true;
@@ -254,9 +369,7 @@
       const body = await readJsonSafely(response);
 
       if (!response.ok) {
-        const messages = Array.isArray(body.error?.errorMessages) ? body.error.errorMessages : [body.message || "Failed to add client"];
-        errorsEl.textContent = messages.join(" ");
-        errorsEl.style.display = "block";
+        showAddClientFailure(body, errorsEl);
         return;
       }
 
@@ -292,6 +405,11 @@
       }
       __clients = __clients.filter((c) => c.clientId !== clientId);
       renderClientsTable();
+      const archivedSection = document.getElementById("archivedClients");
+      if (archivedSection && !archivedSection.hidden) {
+        archivedSection.hidden = true;
+        await toggleArchivedClients();
+      }
       notify("Client archived.", "success");
     } catch (err) {
       notify(`Failed to archive client: ${err?.message || err}`, "error");
@@ -443,8 +561,23 @@
 
     const archiveBtn = e.target.closest(".archive-client-btn");
     if (archiveBtn) {
-      archiveClient(archiveBtn.getAttribute("data-client-id"));
+      showArchiveConfirm(archiveBtn.getAttribute("data-client-id"));
+      return;
     }
+
+    const archiveConfirmBtn = e.target.closest(".archive-confirm-btn");
+    if (archiveConfirmBtn) {
+      archiveClient(archiveConfirmBtn.getAttribute("data-client-id"));
+      return;
+    }
+
+    const archiveKeepBtn = e.target.closest(".archive-keep-btn");
+    if (archiveKeepBtn) {
+      hideArchiveConfirm(archiveKeepBtn.getAttribute("data-client-id"));
+      return;
+    }
+
+    if (e.target.closest("#toggleArchivedBtn")) toggleArchivedClients();
   });
 
   document.getElementById("addClientForm")?.addEventListener("submit", handleAddClientSubmit);
