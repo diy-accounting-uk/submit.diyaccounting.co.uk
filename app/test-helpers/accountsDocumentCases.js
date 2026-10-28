@@ -134,6 +134,30 @@ export const SMALL_COMPANY_CASE_INPUT = {
   },
 };
 
+export const SMALL_COMPANY_BANK_LINES_CASE_INPUT = {
+  ...SMALL_COMPANY_CASE_INPUT,
+  balanceSheet: {
+    current: {
+      ...SMALL_COMPANY_CASE_INPUT.balanceSheet.current,
+      bankLoansOverdrafts: 300,
+      taxationSocialSecurity: 200,
+      accruals: 400,
+      bankLoansAfterOneYear: 1200,
+      profitAndLossAccount: 19000,
+      capitalAndReserves: 19100,
+    },
+    prior: {
+      ...SMALL_COMPANY_CASE_INPUT.balanceSheet.prior,
+      bankLoansOverdrafts: 200,
+      taxationSocialSecurity: 150,
+      accruals: 250,
+      bankLoansAfterOneYear: 700,
+      profitAndLossAccount: 14300,
+      capitalAndReserves: 14400,
+    },
+  },
+};
+
 export const SMALL_COMPANY_FORMAT_2_CASE_INPUT = {
   ...SMALL_COMPANY_CASE_INPUT,
   profitAndLossFormat: 2,

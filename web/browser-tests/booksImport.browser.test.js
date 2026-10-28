@@ -17,7 +17,7 @@ import { PRODUCTS } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 import { savePackageZip } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import { deriveItsaQuarterlyUpdate, deriveVatReturn } from "@diy-accounting-uk/diya-gl";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { SMALL_COMPANY_FORMAT_2_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
+import { SMALL_COMPANY_BANK_LINES_CASE_INPUT, SMALL_COMPANY_FORMAT_2_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
 import { buildSmallCompanyAccounts } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 
@@ -1046,6 +1046,28 @@ test.describe("books import of an iXBRL accounts document", () => {
       const suffix = line[0].toUpperCase() + line.slice(1);
       await expect(page.locator("#current" + suffix), `current ${line}`).toHaveValue(String(profitAndLoss.current[line]));
       await expect(page.locator("#prior" + suffix), `prior ${line}`).toHaveValue(String(profitAndLoss.prior[line]));
+    }
+  });
+
+  test("a small company document fills the bank, tax and accruals lines for both years", async ({ page }) => {
+    await openAccountsPage(page, SMALL_URL, SMALL_COMPANY_BANK_LINES_CASE_INPUT.companyNumber);
+    await chooseFile(
+      page,
+      "bank-lines.xhtml",
+      Buffer.from(buildSmallCompanyAccounts(SMALL_COMPANY_BANK_LINES_CASE_INPUT), "utf8"),
+      "application/xhtml+xml",
+    );
+
+    await expect(page.locator("#booksImportStatus")).toContainText("from bank-lines.xhtml", { timeout: 60_000 });
+    await expect(page.locator("#includeComparatives")).toBeChecked();
+    for (const [line, current, prior] of [
+      ["BankLoansOverdrafts", "300", "200"],
+      ["TaxationSocialSecurity", "200", "150"],
+      ["Accruals", "400", "250"],
+      ["BankLoansAfterOneYear", "1200", "700"],
+    ]) {
+      await expect(page.locator("#current" + line), `current ${line}`).toHaveValue(current);
+      await expect(page.locator("#prior" + line), `prior ${line}`).toHaveValue(prior);
     }
   });
 

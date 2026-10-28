@@ -606,6 +606,7 @@
     "tradeCreditors",
     "corporationTax",
     "taxationSocialSecurity",
+    "accruals",
     "otherCreditors",
     "creditorsAfterOneYear",
     "bankLoansAfterOneYear",
