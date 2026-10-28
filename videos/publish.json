@@ -21,7 +21,7 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and asking HMRC which VAT periods are due on a VAT registration number. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "VAT obligations", "VAT return"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "7q3RYfGMXIQ",
       "walkthrough": [
         {
           "scene": "obligations-form",
@@ -128,7 +128,7 @@
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "HMRC authorisation", "VAT return"],
       "categoryId": "27",
       "sourceRun": 39522085258,
-      "videoId": null,
+      "videoId": "kDzLIc37HtM",
       "walkthrough": [
         {
           "scene": "authorise",
@@ -169,7 +169,7 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, checking which VAT period is open, then filling in the nine boxes and submitting the return to HMRC. It is a real recording of the live product, sending to HMRC's sandbox, so the figures and periods are examples. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:03 Sign in\n00:13 Day pass\n00:28 Ask HMRC\n01:02 Authorise with HMRC\n01:17 The periods on file\n01:42 Fill in the return\n03:35 Authorise again\n04:08 Submitted\n04:37 Your record",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "VAT submission"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "eyXASbwZQFg",
       "walkthrough": [
         {
           "scene": "obligations-form",
@@ -442,7 +442,7 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and opening a VAT return already on file with HMRC to read back all nine boxes. The return on screen was filed earlier, off camera, with Box 6 (total sales excluding VAT) at £5,000. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "VAT obligations"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "y-ZcXJ5_k0c",
       "walkthrough": [
         {
           "scene": "obligations-form",
@@ -639,7 +639,7 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and asking HMRC what VAT is still outstanding on a VAT registration number. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "VAT liabilities", "VAT return"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "hkBkeM-SGLY",
       "walkthrough": [
         {
           "scene": "liabilities-form",
@@ -746,7 +746,7 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and asking HMRC which VAT payments it has recorded against a VAT registration number. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "VAT payments", "VAT return"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "0ZRGqC4YvDQ",
       "walkthrough": [
         {
           "scene": "payments-form",
@@ -853,7 +853,7 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and asking HMRC whether a VAT registration number carries any penalty points. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "VAT penalties", "VAT return"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "Hq6vqMpNG4g",
       "walkthrough": [
         {
           "scene": "penalties-form",
@@ -947,7 +947,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video shows signing in, taking out Resident ITSA, asking HMRC which businesses and quarterly obligations sit against a National Insurance number, then opening the form a quarterly update is filed on. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Which businesses?\n01:40 What's due?\n02:49 File a quarterly update\n04:46 The record of the quarter",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "XT5KXfDZHHg",
       "walkthrough": [
         {
           "scene": "business-details",
@@ -1289,7 +1289,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video shows signing in, taking out Resident ITSA, and asking HMRC which self-employment and property businesses it holds against a National Insurance number. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "xXyQbJvy0bQ",
       "walkthrough": [
         {
           "scene": "business-details-form",
@@ -1396,7 +1396,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video walks a whole tax year: signing in, taking out Resident, picking a business, filing a quarterly update for a self-employment business and for a UK property business, then the annual submission, adjustments, losses and claims, the tax calculation and the final declaration HMRC accepts. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 The dashboard's business picker\n01:38 Both businesses\n03:03 Quarter: self-employment\n04:12 Quarter: UK property\n05:15 Year end: annual submission\n06:20 Year end: adjustable summary\n07:38 Year end: losses and claims\n08:45 Tax calculation\n10:01 Final declaration",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA", "final declaration"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "9wgo61W-6xg",
       "walkthrough": [
         {
           "scene": "business-picker",
@@ -2102,7 +2102,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video walks the first part of a tax year: signing in, taking out Resident, picking a business, filing a quarterly update for a self-employment business and for a UK property business, then the annual submission and the year-end adjustments HMRC accepts. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 The dashboard's business picker\n01:21 Both businesses\n02:43 Quarter: self-employment\n03:53 Quarter: UK property\n05:14 Year end: adjustable summary\n07:12 Year end: annual submission",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "uEQgEG3pDug",
       "walkthrough": [
         {
           "scene": "business-picker",
@@ -3070,7 +3070,7 @@
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows a confirmation statement (CS01) from start to finish: sign in, take out Resident, look up a company, read its directors and persons with significant control from Companies House's register, review and verify, then file it. It runs against Companies House's test service, so nothing reaches the live register. It's a real recording of the product, not a mockup. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:07 Resident\n00:17 Which company?\n00:39 The register\n00:56 Review the statement\n01:22 Confirm the directors\n01:49 Preview\n02:04 The filing",
       "tags": ["DIY Accounting", "Companies House", "confirmation statement", "CS01"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "GAwKKe0vP-E",
       "walkthrough": [
         {
           "scene": "company-lookup",
@@ -3249,7 +3249,7 @@
           "fullHeight": 1080
         }
       ],
-      "videoId": null
+      "videoId": "1dLr2i1tzUk"
     },
     {
       "id": "change-registered-email",
@@ -4296,7 +4296,8 @@
           "fullWidth": 1600,
           "fullHeight": 900
         }
-      ]
+      ],
+      "videoId": "_BU8kiIbk48"
     },
     {
       "id": "mcp-docker",
@@ -5198,7 +5199,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax: see what a self-employment business has filed so far this tax year, open it, and correct a figure with HMRC. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:02 Sign in\n00:08 Resident\n00:16 What's filed so far\n00:58 Open it\n01:27 Correct it\n02:22 The amended record",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "8o7J6SczyFM",
       "walkthrough": [
         {
           "scene": "list-quarters",
@@ -5435,7 +5436,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax for a UK property business: see what's filed so far, open it, correct a figure, then close the year out with the annual submission and its adjustable summary. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Resident\n00:15 What's filed so far\n00:53 Open it\n01:17 Correct it\n02:02 Year end: adjustable summary\n02:50 Year end: annual submission",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "AW-jGHg_h7E",
       "walkthrough": [
         {
           "scene": "list-quarters",
@@ -5763,7 +5764,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's annual submission: import the year's figures from a diya-gl book instead of typing them, claim the trading income allowance, and say why Class 4 National Insurance doesn't apply. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "UX85W9v7wzw",
       "walkthrough": [
         {
           "scene": "annual-submission-from-book",
@@ -5897,7 +5898,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's losses and claims for a self-employment business: sign in, take out Resident, get HMRC's access for the year, then set a loss sideways against this year's other income and back against an earlier year, and say which claim applies first. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:02 Sign in\n00:07 Resident\n00:18 The dashboard's business picker\n00:28 A self-employment loss: sideways, back and which first",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "iMTKA__3TZk",
       "walkthrough": [
         {
           "scene": "losses-and-claims",
@@ -6083,7 +6084,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's losses and claims for a foreign property business: sign in, take out Resident, get HMRC's access for the year, then set a landlord's loss to carry forward, since carry-back is not on offer for a property business. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:03 Sign in\n00:15 Resident\n00:34 The dashboard's business picker\n00:53 A foreign property loss carries forward",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "rhBMCwIdH1I",
       "walkthrough": [
         {
           "scene": "losses-and-claims",
@@ -6269,7 +6270,7 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video drops a diya-gl book on the VAT return form instead of typing the figures, checks the nine boxes it fills, submits the return to HMRC's test service and shows the receipt. This is a sandbox recording against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "diya-gl"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "zLtpkTuuyrc",
       "walkthrough": [
         {
           "scene": "vat-form",
@@ -6491,7 +6492,7 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video fills in the nine boxes of a VAT return for an open period, asks HMRC Assist to check them, reads its messages and then submits the return. HMRC Assist's reply in this video is simulated from the three illustrative messages HMRC has published, because HMRC's VAT Assist (MTD) API is not yet available, and no live filing is made. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "HMRC Assist"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "iiUaHLyfLIc",
       "walkthrough": [
         {
           "scene": "vat-form",
@@ -6712,7 +6713,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video drops a diya-gl book on the quarterly update form instead of typing the figures, checks the quarter's figures it fills, and submits the update to HMRC's test service. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA", "diya-gl"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "1-Lhk95HpfI",
       "walkthrough": [
         {
           "scene": "quarter-form",
@@ -6963,7 +6964,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's tax liability adjustments: sign in, take out Resident, get HMRC's access for the year, make a carry-back loss claim off camera, then record what that claim saves against the earlier tax year it reduces. This is a sandbox preview, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:03 Sign in\n00:14 Resident\n00:32 The dashboard's business picker\n00:54 What the claim saves",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "zVd0xf8xizs",
       "walkthrough": [
         {
           "scene": "adjustments",
@@ -7256,7 +7257,7 @@
       "description": "The first video in a how-to series on doing your own accounts. A sole trader starts a new book in diya-gl, DIY Accounting's free bookkeeping tool that runs in your browser. They enter three sales and two purchases over April and May, each with a date, a description and an amount. The book adds up as they go, and the year total and the profit and loss account both show £1,200 of profit. It's a real recording of the live tool, not a mockup or a design draft. Try it yourself at https://diya-gl.co.uk/bst.html.",
       "tags": ["DIY Accounting", "diya-gl", "bookkeeping", "sole trader", "profit and loss", "self-employed accounts"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "PyUSJVTJ6KQ",
       "pipelineVersion": 10,
       "walkthrough": [
         {
@@ -7584,7 +7585,7 @@
       "description": "The second video in a how-to series on doing your own accounts. A sole trader opens the free Basic Sole Trader Excel workbook from DIY Accounting and enters three sales and two purchases over April and May, each on its month sheet. The workbook adds up as they go, and the Profit & Loss sheet shows £1,200 of profit for the year. The workbook is the real download, opened here in Collabora Online, which runs the .xlsx as Excel or LibreOffice would. It is a real recording, not a mockup. Download the workbook free at https://spreadsheets.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Excel", "bookkeeping", "sole trader", "profit and loss", "self-employed accounts"],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "cndNnkFBCJg",
       "pipelineVersion": 10,
       "walkthrough": [
         {
@@ -8063,7 +8064,7 @@
         "sandbox"
       ],
       "categoryId": "27",
-      "videoId": null,
+      "videoId": "Zfh865rOAK8",
       "walkthrough": [
         {
           "scene": "company-lookup",
