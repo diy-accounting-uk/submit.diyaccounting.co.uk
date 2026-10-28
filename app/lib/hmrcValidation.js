@@ -165,7 +165,7 @@ export function isValidCountryCode(countryCode) {
  * @throws {Error} If taxYear is not a valid tax year in `YYYY-YY` form
  */
 export function resolveForeignPropertyEntryKey(taxYear) {
-  if (!isValidTaxYear(taxYear)) {
+  if (typeof taxYear !== "string" || !isValidTaxYear(taxYear)) {
     throw new Error(`Invalid taxYear format - must be YYYY-YY, got: ${taxYear}`);
   }
   const startYear = Number(taxYear.slice(0, 4));
