@@ -565,3 +565,53 @@ describe("donations", () => {
     expect(figuresFromBook.workingSheet.tradingProfit).toBeCloseTo(123897.39, 1);
   });
 });
+
+describe("an overdrawn director's loan account", () => {
+  function refusalOf(figures) {
+    try {
+      derive(figures);
+    } catch (error) {
+      return error;
+    }
+    throw new Error("the return was not refused");
+  }
+
+  test("ticks box 95, sets box 480 at the section 455 rate and refuses the return naming form CT600A", () => {
+    const refusal = refusalOf({ ...TYPED, directorsLoanOverdrawn: 10000 });
+    expect(refusal).toBeInstanceOf(Ct600RefusedError);
+    expect(refusal.field).toBe("directorsLoanOverdrawn");
+    expect(refusal.message).toMatch(/CT600A/);
+    expect(refusal.message).toMatch(/overdrawn by 10000/);
+    expect(refusal.boxes).toEqual({ 95: "yes", 480: 3375 });
+  });
+
+  test("is a refusal on the field when the figures are validated with the tax data", () => {
+    const refusal = validateCt600Figures(
+      { ...TYPED, directorsLoanOverdrawn: 10000 },
+      { taxDataByYear: ltdTaxDataForPeriodEnd(TYPED.periodEnd) },
+    ).find((entry) => entry.refusal);
+    expect(refusal).toMatchObject({ field: "directorsLoanOverdrawn" });
+    expect(refusal.message).toMatch(/CT600A/);
+  });
+
+  test("charges the tax to the penny", () => {
+    expect(refusalOf({ ...TYPED, directorsLoanOverdrawn: 1234 }).boxes[480]).toBe(416.48);
+  });
+
+  test("a book whose director's loan account is a debit balance carries the overdrawn amount", () => {
+    const overdrawn = { ...results, PubBalSht: { ...results.PubBalSht, E29: -5000 } };
+    const figures = ct600FiguresFromResults(overdrawn, { profitAndLoss: { currentYear: PROFIT_AND_LOSS } });
+    expect(figures.directorsLoanOverdrawn).toBe(5000);
+    expect(figuresFromBook.directorsLoanOverdrawn).toBe(0);
+  });
+
+  test("a loan that is not overdrawn changes nothing", () => {
+    expect(derive({ ...TYPED, directorsLoanOverdrawn: 0 }).boxes[95]).toBeUndefined();
+  });
+
+  test("must be whole pounds, 0 or more", () => {
+    expect(validateCt600Figures({ ...TYPED, directorsLoanOverdrawn: -1 }).some((entry) => entry.field === "directorsLoanOverdrawn")).toBe(
+      true,
+    );
+  });
+});

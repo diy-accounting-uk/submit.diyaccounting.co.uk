@@ -155,6 +155,20 @@ describe("hmrcCtReturnPreviewPost ingestHandler", () => {
     expect(JSON.stringify(parseResponseBody(response))).toMatch(/Income Tax deducted/);
   });
 
+  test("answers 400 naming form CT600A when the figures carry an overdrawn director's loan account", async () => {
+    const response = await hmrcCtReturnPreviewPostHandler(
+      buildEvent({ body: { ...baseBody, figures: { ...baseBody.figures, directorsLoanOverdrawn: 10000 } } }),
+    );
+    expect(response.statusCode).toBe(400);
+    expect(JSON.stringify(parseResponseBody(response))).toMatch(/CT600A/);
+  });
+
+  test("returns the losses and the carry-back repayment with the boxes", async () => {
+    const body = parseResponseBody(await hmrcCtReturnPreviewPostHandler(buildEvent()));
+    expect(body.losses).toMatchObject({ arising: 0, totalCarriedForward: 0 });
+    expect(body.carryBack).toBeUndefined();
+  });
+
   test("returns the computation lines and the worked boxes with the boxes", async () => {
     const body = parseResponseBody(await hmrcCtReturnPreviewPostHandler(buildEvent()));
     expect(body.computationLines.adjustedProfit).toBe(body.boxes["155"]);

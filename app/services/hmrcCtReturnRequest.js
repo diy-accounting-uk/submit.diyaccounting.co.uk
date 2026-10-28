@@ -39,6 +39,7 @@ const FIGURES_FIELDS = [
   "lossCarriedBack",
   "priorPeriodChargeableProfits",
   "donations",
+  "directorsLoanOverdrawn",
   "frankedInvestmentIncome",
   "incomeTaxDeducted",
   "taxAlreadyPaid",

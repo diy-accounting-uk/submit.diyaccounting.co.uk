@@ -87,6 +87,7 @@ const WHOLE_POUND_FIELDS = [
   ["amortisation", "Amortisation added back"],
   ["entertaining", "Entertaining added back"],
   ["donations", "Donations added back"],
+  ["directorsLoanOverdrawn", "The director's loan account overdrawn at the end of the period"],
   ["annualInvestmentAllowance", "Annual investment allowance (box 690)"],
   ["mainPoolAllowances", "Main pool writing down allowances, without the annual investment allowance"],
   ["mainPoolBalancingCharges", "Main pool balancing charges (box 710)"],
@@ -302,6 +303,7 @@ export function ct600FiguresFromResults(results, smallCompanyAccounts) {
     amortisation: positive(workingSheet.I7),
     entertaining: positive(workingSheet.I9),
     donations: positive(results["MnthP&L"]?.B37),
+    directorsLoanOverdrawn: positive(-(results.PubBalSht?.E29 ?? 0)),
     annualInvestmentAllowance: wholePounds(allowances.I15),
     mainPoolAllowances: wholePounds((allowances.I16 ?? 0) + (allowances.I17 ?? 0) + Math.max(allowances.I18 ?? 0, 0)),
     mainPoolBalancingCharges: wholePounds(Math.max(-(allowances.I18 ?? 0), 0)),
@@ -438,6 +440,31 @@ function workCarryBack(figures, losses, taxDataByYear) {
     boxes: { 275: losses.carriedBack, 280: "yes" },
     taxRepayable: fromPence(before - after),
   };
+}
+
+/**
+ * A director's loan account overdrawn at the end of the period owes tax under section 455 at the
+ * dividend upper rate, in box 480, and the return ticks box 95 for supplementary page CT600A.
+ * This service does not file CT600A, so the return is refused with the boxes it would need: the
+ * refusal carries them in its boxes property.
+ */
+function refuseOverdrawnDirectorsLoan(figures, taxDataByYear) {
+  const overdrawn = numberOrZero(figures.directorsLoanOverdrawn);
+  if (overdrawn === 0) return;
+  const rate = taxDataByYear?.[financialYearNumber(utcDate(figures.periodEnd))]?.dividend_tax?.higher_rate;
+  if (!Number.isFinite(rate)) {
+    throw new Ct600RefusedError(
+      `The director's loan account is overdrawn by ${overdrawn} and needs form CT600A, which this service does not file; no section 455 rate is held for this period`,
+      "directorsLoanOverdrawn",
+    );
+  }
+  const tax = fromPence(Math.round(toPence(overdrawn) * rate));
+  const refusal = new Ct600RefusedError(
+    `The director's loan account is overdrawn by ${overdrawn} at the end of the period, so section 455 tax of ${tax.toFixed(2)} is due (box 480) and the return needs supplementary page CT600A (box 95). Add form CT600A to the return before it is filed; this service does not file it yet`,
+    "directorsLoanOverdrawn",
+  );
+  refusal.boxes = { 95: "yes", 480: tax };
+  throw refusal;
 }
 
 /**
@@ -674,6 +701,7 @@ export function deriveCt600FromFigures(figures, taxDataByYear) {
   boxes[600] = fromPence(taxPayablePence - alreadyPaidPence);
   worked[600] = workedEntry(["525", "595"]);
 
+  refuseOverdrawnDirectorsLoan(figures, taxDataByYear);
   const carryBack = workCarryBack(figures, losses, taxDataByYear);
   return { boxes, computationLines, losses, carryBack, worked, periodStart, periodEnd };
 }
