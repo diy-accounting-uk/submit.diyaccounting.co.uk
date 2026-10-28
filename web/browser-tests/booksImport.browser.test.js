@@ -327,9 +327,7 @@ test.describe("books import on the ITSA annual submission page", () => {
 });
 
 test.describe("books import on the UK property period page", () => {
-  test("fills the rental income and expense fields for the period dates and names the figures the form has no field for", async ({
-    page,
-  }) => {
+  test("fills the rental income and expense fields for the period dates", async ({ page }) => {
     await openPage(page, UK_PROPERTY_PERIOD_URL);
     await page.locator("#fromDate").fill("2025-04-06");
     await page.locator("#toDate").fill("2025-07-05");
@@ -337,13 +335,56 @@ test.describe("books import on the UK property period page", () => {
     await chooseFile(page, "landlord.diya-gl.zip", await zippedBook("landlord-uk-property"));
 
     await expect(page.locator("#booksImportStatus")).toHaveText(
-      "Filled 4 figures from landlord.diya-gl.zip for the period 2025-04-06 to 2025-07-05. Check them, then submit. " +
-        "The form has no field for these figures from the book: income.premiumsOfLeaseGrant £500, expenses.professionalFees £120.",
+      "Filled 6 figures from landlord.diya-gl.zip for the period 2025-04-06 to 2025-07-05. Check them, then submit.",
     );
+    await expect(page.locator("#premiumsOfLeaseGrant")).toHaveValue("500");
+    await expect(page.locator("#professionalFees")).toHaveValue("120");
     await expect(page.locator("#periodAmount")).toHaveValue("2000");
     await expect(page.locator("#otherIncome")).toHaveValue("75.50");
     await expect(page.locator("#repairsAndMaintenance")).toHaveValue("450.25");
     await expect(page.locator("#otherExpenses")).toHaveValue("15");
+  });
+
+  test("fills all thirteen income and expense fields a book can supply", async ({ page }) => {
+    await openPage(page, UK_PROPERTY_PERIOD_URL);
+    await page.locator("#fromDate").fill("2025-04-06");
+    await page.locator("#toDate").fill("2025-07-05");
+
+    await chooseFile(page, "landlord.diya-gl.zip", await zippedBook("landlord-uk-property-period-all-fields"));
+
+    await expect(page.locator("#booksImportStatus")).toHaveText(
+      "Filled 13 figures from landlord.diya-gl.zip for the period 2025-04-06 to 2025-07-05. Check them, then submit.",
+    );
+    const expected = {
+      periodAmount: "100",
+      premiumsOfLeaseGrant: "200",
+      reversePremiums: "300",
+      otherIncome: "400",
+      taxDeducted: "500",
+      repairsAndMaintenance: "10",
+      otherExpenses: "20",
+      premisesRunningCosts: "30",
+      financialCosts: "40",
+      professionalFees: "50",
+      costOfServices: "60",
+      residentialFinancialCost: "70",
+      travelCosts: "80",
+    };
+    for (const [id, value] of Object.entries(expected)) await expect(page.locator(`#${id}`), id).toHaveValue(value);
+    await expect(page.locator("#expenseBasisItemised")).toBeChecked();
+    await expect(page.locator("#consolidatedExpenses")).toHaveValue("");
+  });
+
+  test("a book with one total of expenses chooses the total", async ({ page }) => {
+    await openPage(page, UK_PROPERTY_PERIOD_URL);
+    await page.locator("#fromDate").fill("2025-04-06");
+    await page.locator("#toDate").fill("2025-07-05");
+
+    await chooseFile(page, "landlord.diya-gl.zip", await zippedBook("landlord-uk-property-period-total-expenses"));
+
+    await expect(page.locator("#expenseBasisTotal")).toBeChecked();
+    await expect(page.locator("#consolidatedExpenses")).toHaveValue("10");
+    await expect(page.locator("#repairsAndMaintenance")).toBeDisabled();
   });
 
   test("a book chosen before the dates asks for them, then fills once they are entered", async ({ page }) => {

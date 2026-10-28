@@ -64,6 +64,11 @@ export function serveSelfEmploymentExpenses(page) {
   return serveFile(page, "**/lib/self-employment-expenses.js", "lib/self-employment-expenses.js", "application/javascript");
 }
 
+// The real UK property period field module, for the quarterly update and amend pages.
+export function serveUkPropertyPeriodFields(page) {
+  return serveFile(page, "**/lib/uk-property-period-fields.js", "lib/uk-property-period-fields.js", "application/javascript");
+}
+
 export function serveFormErrors(page) {
   return serveFile(page, "**/lib/form-errors.js", "lib/form-errors.js", "application/javascript");
 }
@@ -94,6 +99,8 @@ export async function serveItsaPageScripts(page) {
   await serveFile(page, "**/lib/submission-record.js", "lib/submission-record.js", "application/javascript");
   await serveFile(page, "**/lib/itsa-calculation-record.js", "lib/itsa-calculation-record.js", "application/javascript");
   await serveFile(page, "**/lib/itsa-submission-record.js", "lib/itsa-submission-record.js", "application/javascript");
+  await serveSelfEmploymentExpenses(page);
+  await serveUkPropertyPeriodFields(page);
   await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
   return page.route("**/hmrc/itsa/*.page.js", async (route) => {
     const fileName = path.basename(new URL(route.request().url()).pathname);

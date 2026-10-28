@@ -1,0 +1,6 @@
+{"entryNumber":"S-1","sourceJournalID":"sales","postingDate":"2025-05-06","accountMainID":"4000","amount":100,"documentType":"invoice","documentReference":"R-S-1","detailComment":"Fixture","taxCode":"OS","taxRate":0.0}
+{"entryNumber":"S-2","sourceJournalID":"sales","postingDate":"2025-05-06","accountMainID":"4001","amount":200,"documentType":"invoice","documentReference":"R-S-2","detailComment":"Fixture","taxCode":"OS","taxRate":0.0}
+{"entryNumber":"S-3","sourceJournalID":"sales","postingDate":"2025-05-06","accountMainID":"4002","amount":300,"documentType":"invoice","documentReference":"R-S-3","detailComment":"Fixture","taxCode":"OS","taxRate":0.0}
+{"entryNumber":"S-4","sourceJournalID":"sales","postingDate":"2025-05-06","accountMainID":"4003","amount":400,"documentType":"invoice","documentReference":"R-S-4","detailComment":"Fixture","taxCode":"OS","taxRate":0.0}
+{"entryNumber":"S-5","sourceJournalID":"sales","postingDate":"2025-05-06","accountMainID":"4006","amount":500,"documentType":"invoice","documentReference":"R-S-5","detailComment":"Fixture","taxCode":"OS","taxRate":0.0}
+{"entryNumber":"P-6","sourceJournalID":"purchases","postingDate":"2025-05-07","accountMainID":"5500","amount":10,"documentType":"invoice","documentReference":"R-P-6","detailComment":"Fixture","taxCode":"OS","taxRate":0.0}

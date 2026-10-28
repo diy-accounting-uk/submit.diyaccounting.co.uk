@@ -7,11 +7,13 @@ import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveMoneyInput, servePageScripts } from "./hmrcFieldTableAssets.js";
+import { serveMoneyInput, servePageScripts, serveSelfEmploymentExpenses, serveUkPropertyPeriodFields } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const SHARE_CURRENCY_PAGE = "companies-house/fileConfirmationStatement.html";
+
+const UK_PROPERTY_PERIOD_PAGES = ["hmrc/itsa/ukPropertyPeriod.html", "hmrc/itsa/ukPropertyPeriodAmend.html"];
 
 const PAGES = [
   "hmrc/itsa/annualSubmission.html",
@@ -39,12 +41,23 @@ async function openPage(page, relativePath) {
     }
   });
   await serveMoneyInput(page);
+  await serveSelfEmploymentExpenses(page);
+  await serveUkPropertyPeriodFields(page);
   if (relativePath === SHARE_CURRENCY_PAGE) await servePageScripts(page);
   const html = fs.readFileSync(path.join(process.cwd(), "web/public", relativePath), "utf-8");
   await page.route(url, async (route) => {
     await route.fulfill({ status: 200, contentType: "text/html", body: html });
   });
   await page.goto(url, { waitUntil: "domcontentloaded" });
+  if (UK_PROPERTY_PERIOD_PAGES.includes(relativePath)) {
+    await page.evaluate(() =>
+      window.ukPropertyPeriodFields.mount({
+        incomeContainer: document.getElementById("incomeFields"),
+        expenseContainer: document.getElementById("expenseFields"),
+        periodAmountRequired: false,
+      }),
+    );
+  }
 }
 
 for (const relativePath of PAGES) {

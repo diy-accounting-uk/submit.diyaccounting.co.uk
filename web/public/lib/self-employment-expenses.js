@@ -93,6 +93,8 @@
     input.setAttribute("aria-describedby", hintId);
     input.setAttribute("inputmode", "decimal");
     input.setAttribute("data-money", "pounds-and-pence");
+    if (field.min !== undefined) input.setAttribute("data-money-min", String(field.min));
+    if (field.required) input.required = true;
     prefixed.append(prefix, input);
     return prefixed;
   }
@@ -198,6 +200,7 @@
     DISALLOWABLE_IDS,
     buildPeriodExpenses,
     mountFields,
+    moneyGroup,
     revealFilledSections,
   };
 })();

@@ -5,6 +5,11 @@ window.CarriedIdentifiers.buildTaxYearSelect(document.getElementById("taxYear"))
 window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
 window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
+window.ukPropertyPeriodFields.mount({
+  incomeContainer: document.getElementById("incomeFields"),
+  expenseContainer: document.getElementById("expenseFields"),
+  periodAmountRequired: true,
+});
 
 // Global variables
 let searchCriteriaHidden = false;
@@ -20,7 +25,7 @@ function updateSubmissionModelUI() {
   const toDateInput = document.getElementById("toDate");
   const periodDatesHint = document.getElementById("periodDates-hint");
   const cumulativeMoneyNote = document.getElementById("cumulativeMoneyNote");
-  const periodAmountHint = document.getElementById("periodAmount-hint");
+  const periodAmountHint = document.getElementById("periodAmount-money-hint");
   const loadCurrentTotalGroup = document.getElementById("loadCurrentTotalGroup");
   const propertyTypeGroup = document.getElementById("propertyTypeGroup");
 
@@ -38,7 +43,7 @@ function updateSubmissionModelUI() {
   propertyTypeGroup.style.display = isCumulative ? "none" : "block";
 
   cumulativeMoneyNote.style.display = isCumulative ? "block" : "none";
-  ["periodAmount", "otherIncome", "repairsAndMaintenance", "otherExpenses"].forEach((fieldId) => {
+  window.ukPropertyPeriodFields.MONEY_IDS.forEach((fieldId) => {
     const label = document.querySelector(`label[for="${fieldId}"]`);
     if (!label) return;
     const baseText = label.dataset.baseLabel || label.textContent;
@@ -175,12 +180,7 @@ async function fetchCurrentTotal(nino, businessId, taxYear, accessToken) {
 
 function applyCurrentTotal(periodSummary) {
   const property = periodSummary?.ukProperty || {};
-  const income = property.income || {};
-  const expenses = property.expenses || {};
-  if (income.periodAmount !== undefined) document.getElementById("periodAmount").value = income.periodAmount;
-  if (income.otherIncome !== undefined) document.getElementById("otherIncome").value = income.otherIncome;
-  if (expenses.repairsAndMaintenance !== undefined) document.getElementById("repairsAndMaintenance").value = expenses.repairsAndMaintenance;
-  if (expenses.other !== undefined) document.getElementById("otherExpenses").value = expenses.other;
+  window.ukPropertyPeriodFields.applyLoaded(property);
   showStatus("Loaded your current year-to-date total from HMRC. Edit the figures below to the new total.", "info");
 }
 
@@ -275,14 +275,7 @@ function readPeriodData(source) {
     window.itsaSubmissionModel.isValidTaxYear(taxYear) &&
     window.itsaSubmissionModel.resolveItsaSubmissionModel(taxYear) === "cumulative";
 
-  const income = {
-    periodAmount: window.parseMoneyInput(source.periodAmount) ?? 0,
-    otherIncome: window.parseMoneyInput(source.otherIncome) ?? 0,
-  };
-  const expenses = {
-    repairsAndMaintenance: window.parseMoneyInput(source.repairsAndMaintenance) ?? 0,
-    other: window.parseMoneyInput(source.otherExpenses) ?? 0,
-  };
+  const { income, expenses } = window.ukPropertyPeriodFields.readFigures({ sendZeros: true });
 
   const periodData = {
     nino: (source.nino || "").replace(/\s+/g, "").toUpperCase(),
@@ -410,10 +403,6 @@ async function handleFormSubmission(event) {
     propertyType: formData.get("propertyType"),
     fromDate: formData.get("fromDate"),
     toDate: formData.get("toDate"),
-    periodAmount: formData.get("periodAmount"),
-    otherIncome: formData.get("otherIncome"),
-    repairsAndMaintenance: formData.get("repairsAndMaintenance"),
-    otherExpenses: formData.get("otherExpenses"),
   });
   const testScenario = formData.get("testScenario");
   const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;

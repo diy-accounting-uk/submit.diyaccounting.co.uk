@@ -6,6 +6,11 @@ window.CarriedIdentifiers.bind("nino", document.getElementById("nino"));
 window.CarriedIdentifiers.bind("businessId", document.getElementById("businessId"));
 window.CarriedIdentifiers.bind("taxYear", document.getElementById("taxYear"));
 window.CarriedIdentifiers.bind("submissionId", document.getElementById("submissionId"));
+window.ukPropertyPeriodFields.mount({
+  incomeContainer: document.getElementById("incomeFields"),
+  expenseContainer: document.getElementById("expenseFields"),
+  periodAmountRequired: false,
+});
 
 // In a cumulative year (2025-26 onwards) there is no submissionId to address - the PUT
 // amends the year's one running total - furnished holiday lettings no longer exist as a
@@ -17,7 +22,7 @@ function updateSubmissionModelUI() {
   const submissionIdInput = document.getElementById("submissionId");
   const propertyTypeGroup = document.getElementById("propertyTypeGroup");
   const cumulativeMoneyNote = document.getElementById("cumulativeMoneyNote");
-  const periodAmountHint = document.getElementById("periodAmount-hint");
+  const periodAmountHint = document.getElementById("periodAmount-money-hint");
   const loadCurrentTotalGroup = document.getElementById("loadCurrentTotalGroup");
 
   const isCumulative =
@@ -30,7 +35,7 @@ function updateSubmissionModelUI() {
   propertyTypeGroup.style.display = isCumulative ? "none" : "block";
 
   cumulativeMoneyNote.style.display = isCumulative ? "block" : "none";
-  ["periodAmount", "otherIncome", "repairsAndMaintenance", "otherExpenses"].forEach((fieldId) => {
+  window.ukPropertyPeriodFields.MONEY_IDS.forEach((fieldId) => {
     const label = document.querySelector(`label[for="${fieldId}"]`);
     if (!label) return;
     const baseText = label.dataset.baseLabel || label.textContent;
@@ -158,12 +163,7 @@ async function fetchCurrentTotal(nino, businessId, taxYear, accessToken) {
 
 function applyCurrentTotal(periodSummary) {
   const property = periodSummary?.ukProperty || {};
-  const income = property.income || {};
-  const expenses = property.expenses || {};
-  if (income.periodAmount !== undefined) document.getElementById("periodAmount").value = income.periodAmount;
-  if (income.otherIncome !== undefined) document.getElementById("otherIncome").value = income.otherIncome;
-  if (expenses.repairsAndMaintenance !== undefined) document.getElementById("repairsAndMaintenance").value = expenses.repairsAndMaintenance;
-  if (expenses.other !== undefined) document.getElementById("otherExpenses").value = expenses.other;
+  window.ukPropertyPeriodFields.applyLoaded(property);
   showStatus("Loaded the current year-to-date total from HMRC. Edit the figures below to the new total.", "info");
 }
 
@@ -258,14 +258,7 @@ function readAmendData(source) {
     window.itsaSubmissionModel.isValidTaxYear(taxYear) &&
     window.itsaSubmissionModel.resolveItsaSubmissionModel(taxYear) === "cumulative";
 
-  const income = {};
-  if (window.parseMoneyInput(source.periodAmount) !== null) income.periodAmount = window.parseMoneyInput(source.periodAmount);
-  if (window.parseMoneyInput(source.otherIncome) !== null) income.otherIncome = window.parseMoneyInput(source.otherIncome);
-
-  const expenses = {};
-  if (window.parseMoneyInput(source.repairsAndMaintenance) !== null)
-    expenses.repairsAndMaintenance = window.parseMoneyInput(source.repairsAndMaintenance);
-  if (window.parseMoneyInput(source.otherExpenses) !== null) expenses.other = window.parseMoneyInput(source.otherExpenses);
+  const { income, expenses } = window.ukPropertyPeriodFields.readFigures({ sendZeros: false });
 
   const amendData = {
     nino: (source.nino || "").replace(/\s+/g, "").toUpperCase(),
@@ -384,10 +377,6 @@ async function handleFormSubmission(event) {
     taxYear: formData.get("taxYear"),
     submissionId: formData.get("submissionId"),
     propertyType: formData.get("propertyType"),
-    periodAmount: formData.get("periodAmount"),
-    otherIncome: formData.get("otherIncome"),
-    repairsAndMaintenance: formData.get("repairsAndMaintenance"),
-    otherExpenses: formData.get("otherExpenses"),
   });
   const testScenario = formData.get("testScenario");
   const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
