@@ -92,11 +92,12 @@ describe("boxesFor for a Company book in the marginal relief band", () => {
       30: "2025-04-01",
       35: "2026-03-31",
       145: 341283,
-      155: 123480,
-      165: 123480,
+      155: 123897,
+      165: 123897,
       170: 340,
-      235: 123820,
-      300: 123820,
+      235: 124237,
+      300: 124237,
+      305: 417,
       315: 123820,
       326: 0,
       329: "yes",
@@ -174,8 +175,9 @@ describe("boxesFor for other shapes of book", () => {
 
   test("files a nil return with the mandatory boxes at zero when there is no profit", () => {
     const nil = withResults({
-      CorporationTax: { K22: 0, K24: 0, K28: 0, K35: 0, K37: 0, K20: 0, I7: 0, I8: 0, I9: 0, I15: 0, I16: 0, I17: 0, I18: 0 },
-      CT600: { Z72: 0 },
+      "CorporationTax": { K22: 0, K24: 0, K28: 0, K35: 0, K37: 0, K20: 0, I7: 0, I8: 0, I9: 0, I15: 0, I16: 0, I17: 0, I18: 0 },
+      "CT600": { Z72: 0 },
+      "MnthP&L": { B37: 0 },
     });
     nil["PubP&L"].F49 = 0;
     const { boxes } = boxesFor({ results: nil, company: COMPANY });
@@ -236,6 +238,113 @@ describe("buildCt600IrEnvelope", () => {
       const written = valueAt(document, path);
       const expected = typeof value === "number" && ![4, 326, 327, 328, 330, 380].includes(Number(box)) ? value.toFixed(2) : String(value);
       expect(written, `box ${box}`).toBe(expected);
+    }
+  });
+
+  test("writes the loss, the claims against total profits and the donations at the elements the toml names", () => {
+    const toml = TOML.parse(readFileSync(CT600_TOML, "utf8"));
+    const tomlPaths = Object.fromEntries(toml.box.map((box) => [box.number, box.xmlPath]));
+    const base = { ...COMPANY, periodStart: "2025-04-01", periodEnd: "2026-03-31", associatedCompanies: 0 };
+    const current = {
+      turnover: 1000,
+      costOfSales: 100,
+      grossProfit: 900,
+      administrativeExpenses: 52000,
+      operatingProfit: -51100,
+      interestReceivable: 2000,
+    };
+    const withLoss = deriveCt600FromFigures(
+      {
+        ...base,
+        profitAndLoss: { current: { ...current, profitBeforeTax: -49100, tax: 0, profit: -49100 } },
+        nonTradingLoanRelationshipCredits: 2000,
+        lossAgainstTotalProfits: 1500,
+        lossesBroughtForward: 700,
+        lossesBroughtForwardAgainstTotalProfits: 500,
+        donations: 300,
+      },
+      ltdTaxDataForPeriodEnd("2026-03-31"),
+    );
+    expect(withLoss.boxes).toMatchObject({ 275: 1500, 285: 500, 295: 2000, 300: 0, 780: 50800 });
+    const overseas = deriveCt600FromFigures(
+      { ...base, profitAndLoss: { current: { ...current, profitBeforeTax: -51100, tax: 0, profit: -51100 } }, lossOutsideUk: true },
+      ltdTaxDataForPeriodEnd("2026-03-31"),
+    );
+    expect(overseas.boxes[790]).toBe(51100);
+    for (const { boxes } of [withLoss, overseas]) {
+      const document = buildDocument(boxes);
+      for (const [box, value] of Object.entries(boxes)) {
+        const path = CT600_BOX_PATHS[box];
+        expect(path, `box ${box} has a path`).toBeDefined();
+        expect([path, path.slice(0, path.lastIndexOf("/"))], `box ${box} matches the toml`).toContain(tomlPaths[box]);
+        expect(valueAt(document, path), `box ${box}`).toBe(
+          typeof value === "number" && ![4, 326, 327, 328, 330, 380].includes(Number(box)) ? value.toFixed(2) : String(value),
+        );
+      }
+    }
+  });
+
+  test("writes the capital allowance classes and the qualifying expenditure at the elements the toml names", () => {
+    const toml = TOML.parse(readFileSync(CT600_TOML, "utf8"));
+    const tomlPaths = Object.fromEntries(toml.box.map((box) => [box.number, box.xmlPath]));
+    const { boxes } = deriveCt600FromFigures(
+      {
+        ...COMPANY,
+        periodStart: "2025-04-01",
+        periodEnd: "2026-03-31",
+        associatedCompanies: 0,
+        profitAndLoss: {
+          current: {
+            turnover: 100000,
+            costOfSales: 10000,
+            grossProfit: 90000,
+            administrativeExpenses: 30000,
+            operatingProfit: 60000,
+            interestReceivable: 0,
+            profitBeforeTax: 60000,
+            tax: 0,
+            profit: 60000,
+          },
+        },
+        annualInvestmentAllowance: 5000,
+        mainPoolAllowances: 1000,
+        mainPoolBalancingCharges: 10,
+        fullExpensingAllowances: 20000,
+        fullExpensingBalancingCharges: 500,
+        specialRateAllowances: 3000,
+        specialRateAllowanceExpenditure: 6000,
+        specialRateBalancingCharges: 100,
+        specialRatePoolAllowances: 800,
+        specialRatePoolAnnualInvestmentAllowance: 2000,
+        specialRatePoolBalancingCharges: 50,
+        annualInvestmentAllowanceOutsideTrade: 4000,
+        firstYearAllowanceExpenditure: 9000,
+        otherMachineryAndPlantExpenditure: 12000,
+      },
+      ltdTaxDataForPeriodEnd("2026-03-31"),
+    );
+    expect(boxes).toMatchObject({
+      688: 20000,
+      689: 500,
+      693: 3000,
+      694: 100,
+      695: 2800,
+      700: 50,
+      705: 4000,
+      710: 10,
+      735: 4000,
+      760: 9000,
+      773: 6000,
+      775: 12000,
+    });
+    const document = buildDocument(boxes);
+    for (const [box, value] of Object.entries(boxes)) {
+      const path = CT600_BOX_PATHS[box];
+      expect(path, `box ${box} has a path`).toBeDefined();
+      expect([path, path.slice(0, path.lastIndexOf("/"))], `box ${box} matches the toml`).toContain(tomlPaths[box]);
+      expect(valueAt(document, path), `box ${box}`).toBe(
+        typeof value === "number" && ![4, 326, 327, 328, 330, 380].includes(Number(box)) ? value.toFixed(2) : String(value),
+      );
     }
   });
 

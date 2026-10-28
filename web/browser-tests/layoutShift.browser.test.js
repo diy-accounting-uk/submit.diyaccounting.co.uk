@@ -31,7 +31,10 @@ const CONTENT_TYPES = {
   ".ico": "image/x-icon",
 };
 
-async function serveRealSiteWithSlowData(page) {
+async function serveRealSiteWithSlowData(
+  page,
+  { heldBundles = [{ bundleId: "resident-vat", allocated: true, tokensGranted: 100, tokensRemaining: 90 }] } = {},
+) {
   await page.addInitScript(() => {
     try {
       localStorage.setItem("cognitoIdToken", "mock-id-token");
@@ -57,7 +60,7 @@ async function serveRealSiteWithSlowData(page) {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ bundles: [{ bundleId: "resident-vat", allocated: true, tokensGranted: 100, tokensRemaining: 90 }] }),
+          body: JSON.stringify({ bundles: heldBundles }),
         });
         return;
       }
@@ -78,15 +81,40 @@ async function serveRealSiteWithSlowData(page) {
 }
 
 test.describe("Layout shift while data loads on a phone", () => {
-  for (const pagePath of ["index.html", "bundles.html"]) {
-    test(`${pagePath} stays under the CLS limit at 375px`, async ({ page }) => {
-      await page.setViewportSize({ width: 375, height: 800 });
-      await serveRealSiteWithSlowData(page);
-      await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "load" });
-      await delay(2000);
+  for (const [width, height] of [
+    [375, 800],
+    [375, 1000],
+  ]) {
+    for (const pagePath of ["index.html", "bundles.html"]) {
+      test(`${pagePath} stays under the CLS limit at ${width}x${height} with bundles held`, async ({ page }) => {
+        await page.setViewportSize({ width, height });
+        await serveRealSiteWithSlowData(page);
+        await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "load" });
+        await delay(2000);
 
-      const cls = await page.evaluate(() => window.__cumulativeLayoutShift);
-      expect(cls).toBeLessThan(CLS_LIMIT);
-    });
+        const cls = await page.evaluate(() => window.__cumulativeLayoutShift);
+        expect(cls).toBeLessThan(CLS_LIMIT);
+      });
+    }
   }
+
+  test("bundles.html leaves no gap above Redeem a pass when no bundles are held", async ({ page }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await serveRealSiteWithSlowData(page, { heldBundles: [] });
+    await page.goto("http://localhost:3000/bundles.html", { waitUntil: "load" });
+    await expect(page.locator("#catalogBundles .service-item").first()).toBeVisible();
+    await delay(500);
+
+    const gap = await page.evaluate(() => {
+      const list = document.getElementById("catalogBundles").getBoundingClientRect();
+      const pass = [...document.querySelectorAll("h2")].find((h) => h.textContent.trim() === "Have a pass?").getBoundingClientRect();
+      return pass.top - list.bottom;
+    });
+    expect(gap).toBeLessThan(80);
+
+    for (const width of [390, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.screenshot({ path: `target/screenshots/bundles-no-bundles-${width}.png`, fullPage: true });
+    }
+  });
 });

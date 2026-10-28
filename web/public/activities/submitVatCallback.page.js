@@ -8,6 +8,19 @@
 // sign-in for that branch.
 const MCP_STATE_PREFIX = "mcp.";
 
+// The practice page starts its own agent grant and keeps the grant id here. When the state's grant
+// id matches, the callback belongs to the practice page and returns there.
+const PRACTICE_RETURN_DELAY_MS = 1200;
+
+function isPracticeGrant(state) {
+  const grantId = state.split(".")[1];
+  try {
+    return Boolean(grantId) && sessionStorage.getItem("practiceHmrcGrantId") === grantId;
+  } catch {
+    return false;
+  }
+}
+
 function mcpGrantState() {
   const state = new URLSearchParams(window.location.search).get("state");
   return state && state.startsWith(MCP_STATE_PREFIX) ? state : null;
@@ -33,6 +46,11 @@ async function handleMcpGrantCallback(state) {
     if (!response.ok) {
       const reason = body.message || `HMRC access could not be saved (HTTP ${response.status})`;
       showStatus(`${reason}. Ask the chat for a new HMRC link.`, "error");
+      return;
+    }
+    if (isPracticeGrant(state)) {
+      showStatus("Connected to HMRC as an agent.", "success");
+      setTimeout(() => window.location.assign("../practice.html"), PRACTICE_RETURN_DELAY_MS);
       return;
     }
     showStatus("HMRC access granted. Go back to your chat to carry on.", "success");

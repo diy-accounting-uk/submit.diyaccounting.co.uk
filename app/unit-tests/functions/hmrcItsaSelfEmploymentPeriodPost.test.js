@@ -115,6 +115,15 @@ describe("buildSelfEmploymentPeriodRequestBody", () => {
     });
   });
 
+  test("dated year: taxTakenOffTradingIncome is kept in periodIncome and rounded to 2 decimal places", () => {
+    const body = buildSelfEmploymentPeriodRequestBody({
+      periodStartDate: "2024-04-06",
+      periodEndDate: "2024-07-05",
+      periodIncome: { turnover: 1000, other: 0, taxTakenOffTradingIncome: "120.005" },
+    });
+    expect(body.periodIncome).toEqual({ turnover: 1000, other: 0, taxTakenOffTradingIncome: 120.01 });
+  });
+
   test("omits periodDisallowableExpenses when the caller entered nothing for it", () => {
     const body = buildSelfEmploymentPeriodRequestBody({
       periodStartDate: "2024-04-06",
@@ -307,6 +316,25 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
     );
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual({ model: "cumulative" });
+  });
+
+  test("cumulative year: taxTakenOffTradingIncome is sent in periodIncome", async () => {
+    mockHmrcSuccess(mockFetch, undefined);
+
+    const event = buildHmrcEvent({
+      body: buildPeriodBody({
+        taxYear: VALID_CUMULATIVE_TAX_YEAR,
+        periodStartDate: undefined,
+        periodEndDate: undefined,
+        periodIncome: { turnover: 5000, other: 0, taxTakenOffTradingIncome: 250.5 },
+        periodExpenses: {},
+      }),
+      headers: { authorization: "Bearer test-token" },
+    });
+    await hmrcItsaSelfEmploymentPeriodPostHandler(event);
+
+    const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(sentBody.periodIncome).toEqual({ turnover: 5000, other: 0, taxTakenOffTradingIncome: 250.5 });
   });
 
   test("cumulative year: a zero the caller entered survives into the body, a field never answered is omitted", async () => {

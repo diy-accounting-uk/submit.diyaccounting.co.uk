@@ -28,7 +28,7 @@ function updateSubmissionModelUI() {
   periodIdInput.required = !isCumulative;
 
   cumulativeMoneyNote.style.display = isCumulative ? "block" : "none";
-  ["turnover", "otherIncome", "costOfGoods", "otherExpenses"].forEach((fieldId) => {
+  ["turnover", "otherIncome", "taxTakenOffTradingIncome", "costOfGoods", "otherExpenses"].forEach((fieldId) => {
     const label = document.querySelector(`label[for="${fieldId}"]`);
     if (!label) return;
     const baseText = label.dataset.baseLabel || label.textContent;
@@ -151,6 +151,9 @@ function applyCurrentTotal(periodSummary) {
   const expenses = periodSummary?.periodExpenses || {};
   if (income.turnover !== undefined) document.getElementById("turnover").value = income.turnover;
   if (income.other !== undefined) document.getElementById("otherIncome").value = income.other;
+  if (income.taxTakenOffTradingIncome !== undefined) {
+    document.getElementById("taxTakenOffTradingIncome").value = income.taxTakenOffTradingIncome;
+  }
   if (expenses.costOfGoods !== undefined) document.getElementById("costOfGoods").value = expenses.costOfGoods;
   if (expenses.otherExpenses !== undefined) document.getElementById("otherExpenses").value = expenses.otherExpenses;
   showStatus("Loaded the current year-to-date total from HMRC. Edit the figures below to the new total.", "info");
@@ -244,6 +247,9 @@ function readAmendData(source) {
   const periodIncome = {};
   if (window.parseMoneyInput(source.turnover) !== null) periodIncome.turnover = window.parseMoneyInput(source.turnover);
   if (window.parseMoneyInput(source.otherIncome) !== null) periodIncome.other = window.parseMoneyInput(source.otherIncome);
+  if (window.parseMoneyInput(source.taxTakenOffTradingIncome) !== null) {
+    periodIncome.taxTakenOffTradingIncome = window.parseMoneyInput(source.taxTakenOffTradingIncome);
+  }
 
   const periodExpenses = {};
   if (window.parseMoneyInput(source.costOfGoods) !== null) periodExpenses.costOfGoods = window.parseMoneyInput(source.costOfGoods);
@@ -358,6 +364,7 @@ async function handleFormSubmission(event) {
     periodId: formData.get("periodId"),
     turnover: formData.get("turnover"),
     otherIncome: formData.get("otherIncome"),
+    taxTakenOffTradingIncome: formData.get("taxTakenOffTradingIncome"),
     costOfGoods: formData.get("costOfGoods"),
     otherExpenses: formData.get("otherExpenses"),
   });

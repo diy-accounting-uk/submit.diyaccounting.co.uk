@@ -263,8 +263,18 @@
   const UK_PROPERTY_PERIOD_FIELDS = {
     "income.periodAmount": "periodAmount",
     "income.otherIncome": "otherIncome",
+    "income.premiumsOfLeaseGrant": "premiumsOfLeaseGrant",
+    "income.reversePremiums": "reversePremiums",
+    "income.taxDeducted": "taxDeducted",
+    "expenses.premisesRunningCosts": "premisesRunningCosts",
     "expenses.repairsAndMaintenance": "repairsAndMaintenance",
+    "expenses.financialCosts": "financialCosts",
+    "expenses.professionalFees": "professionalFees",
+    "expenses.costOfServices": "costOfServices",
     "expenses.other": "otherExpenses",
+    "expenses.residentialFinancialCost": "residentialFinancialCost",
+    "expenses.travelCosts": "travelCosts",
+    "expenses.consolidatedExpenses": "consolidatedExpenses",
   };
 
   function derivedFigureEntries(derived) {
@@ -297,6 +307,8 @@
         setField(id, "");
       }
     });
+    window.ukPropertyPeriodFields.setExpenseBasis(typeof figures.get("expenses.consolidatedExpenses") === "number" ? "total" : "itemised");
+    window.ukPropertyPeriodFields.revealFilledSections();
     const lacking = entries
       .filter(([name, value]) => !(name in UK_PROPERTY_PERIOD_FIELDS) && typeof value === "number")
       .map(([name, value]) => `${name} ${poundsText(value)}`);
@@ -610,6 +622,12 @@
     "otherCreditors",
     "creditorsAfterOneYear",
     "bankLoansAfterOneYear",
+    "tradeDebtors",
+    "otherDebtors",
+    "prepayments",
+    "amountsOwedToDirectors",
+    "amountsOwedToGroupUndertakings",
+    "provisionsForLiabilities",
     "calledUpShareCapital",
     "profitAndLossAccount",
   ];

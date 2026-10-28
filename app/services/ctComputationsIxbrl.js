@@ -22,7 +22,7 @@ import {
   packageVersion,
   periodEndedPhrase,
 } from "./accountsIxbrlCommon.js";
-import { recordFigure, recordHeading, recordTable } from "../lib/submissionRecord.js";
+import { recordAmount, recordFigure, recordHeading, recordTable } from "../lib/submissionRecord.js";
 import { RECORD_STYLE } from "../lib/submissionRecordStyle.js";
 
 // eslint-disable-next-line sonarjs/no-clear-text-protocols -- the entry point HMRC accepts is this http URI, resolved from the taxonomy package
@@ -47,6 +47,26 @@ export const TRADING_LINES = [
   { key: "depreciation", concept: "AdjustmentsDepreciation", effect: 1, label: "Add: depreciation" },
   { key: "amortisation", concept: "AdjustmentsAmortisation", effect: 1, label: "Add: goodwill amortisation" },
   { key: "entertaining", concept: "AdjustmentsEntertaining", effect: 1, label: "Add: entertaining" },
+  { key: "donations", concept: "AdjustmentsDonations", effect: 1, label: "Add: donations" },
+];
+
+// The capital allowance classes shown beside the totals, from section 2 of the computations
+// format: full expensing, the special rate allowance and the special rate pool.
+export const CAPITAL_ALLOWANCE_CLASS_LINES = [
+  { key: "fullExpensingAllowances", concept: "MainPoolTotalFullExpensingAllowance", label: "Full expensing: allowances" },
+  {
+    key: "fullExpensingBalancingCharges",
+    concept: "MainPoolBalancingChargesInRespectOfFullExpensing",
+    label: "Full expensing: balancing charges",
+  },
+  { key: "specialRateAllowances", concept: "SpecialRatePoolTotalSRAllowance", label: "Special rate allowance: allowances" },
+  {
+    key: "specialRateBalancingCharges",
+    concept: "SpecialRatePoolBalancingChargeInRespectOfSRAllowance",
+    label: "Special rate allowance: balancing charges",
+  },
+  { key: "specialRatePoolAllowances", concept: "SpecialRatePoolTotalAllowances", label: "Special rate pool: allowances" },
+  { key: "specialRatePoolBalancingCharges", concept: "SpecialRatePoolBalancingCharge", label: "Special rate pool: balancing charges" },
 ];
 
 export const COMPUTATIONS_CONCEPTS = [
@@ -61,7 +81,9 @@ export const COMPUTATIONS_CONCEPTS = [
   ...TRADING_LINES.map((line) => line.concept),
   "AdjustedProfitOrLossBeforeAccountingPeriodAdjustments",
   "TotalCapitalAllowances",
+  ...CAPITAL_ALLOWANCE_CLASS_LINES.map((line) => line.concept),
   "AdjustedProfitForThePeriod",
+  "AdjustedLossOfPeriod",
 ];
 
 function wholePounds(value) {
@@ -93,6 +115,7 @@ export function computationLinesFromResults(results) {
     depreciation: positiveWholePounds(workingSheet.I8),
     amortisation: positiveWholePounds(workingSheet.I7),
     entertaining: positiveWholePounds(workingSheet.I9),
+    donations: positiveWholePounds(results["MnthP&L"]?.B37),
     totalCapitalAllowances: wholePounds(workingSheet.K20),
   };
   lines.adjustedProfitBeforeCapitalAllowances =
@@ -108,6 +131,52 @@ function monetaryFact(concept, contextRef, value) {
 
 function monetaryCell(concept, contextRef, value, options) {
   return recordFigure(monetaryFact(concept, contextRef, value), value, options);
+}
+
+function adjustedResultRow(adjustedProfit) {
+  if (adjustedProfit >= 0) {
+    return {
+      label: "Adjusted trading profit",
+      style: "total",
+      cells: [monetaryCell("AdjustedProfitForThePeriod", "tradePeriod", adjustedProfit)],
+    };
+  }
+  return {
+    label: "Adjusted trading loss",
+    style: "total",
+    cells: [monetaryCell("AdjustedLossOfPeriod", "tradePeriod", -adjustedProfit, { deduction: true })],
+  };
+}
+
+function lossesSection(losses, carryBack) {
+  const row = (label, value, options) => ({ label, cells: [recordAmount(value, options)] });
+  const rows = [];
+  if (losses.arising > 0) {
+    rows.push(row("Trading loss of the period", losses.arising));
+    if (losses.usedAgainstTotalProfits > 0)
+      rows.push(row("Less: set against total profits of the period", losses.usedAgainstTotalProfits, { deduction: true }));
+    if (losses.carriedBack > 0) rows.push(row("Less: carried back to the previous period", losses.carriedBack, { deduction: true }));
+    rows.push({ ...row("Trading loss of the period carried forward", losses.carriedForwardFromPeriod), style: "subtotal" });
+  }
+  if (losses.broughtForward > 0) {
+    rows.push(row("Trading losses brought forward", losses.broughtForward));
+    if (losses.broughtForwardUsedAgainstTrading > 0) {
+      rows.push(row("Less: set against the trading profit", losses.broughtForwardUsedAgainstTrading, { deduction: true }));
+    }
+    if (losses.broughtForwardAgainstTotalProfits > 0) {
+      rows.push(row("Less: claimed against total profits", losses.broughtForwardAgainstTotalProfits, { deduction: true }));
+    }
+    rows.push({ ...row("Trading losses brought forward carried forward", losses.broughtForwardCarriedForward), style: "subtotal" });
+  }
+  if (rows.length === 0) return "";
+  rows.push({ ...row("Trading losses carried forward", losses.totalCarriedForward), style: "total" });
+  const table = recordTable({ columns: [""], rows });
+  const claim = carryBack
+    ? `<p>Carry-back claim: ${escapeXmlText(displayDate(carryBack.priorPeriodStart))} to ${escapeXmlText(displayDate(carryBack.priorPeriodEnd))}, loss ${carryBack.amount.toLocaleString("en-GB")}, Corporation Tax repayable ${carryBack.taxRepayable.toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>`
+    : "";
+  return `<h3>Trading losses</h3>
+${table}
+${claim}`;
 }
 
 function textFact(concept, contextRef, text) {
@@ -128,10 +197,24 @@ function dateFact(concept, contextRef, isoDate) {
  * @param {string} input.periodStart - ISO date, the return period start
  * @param {string} input.periodEnd - ISO date, equals the CT600's PeriodCovered/To (validation 1607)
  * @param {string} input.tradeName - names the trade in the BusinessNameDimension
- * @param {object} input.lines - computationLinesFromResults output
+ * @param {object} input.lines - computationLinesFromFigures output; a loss is a negative adjustedProfit
+ * @param {object} [input.losses] - deriveCt600FromFigures losses: shown as the analysis of losses
+ * @param {object} [input.carryBack] - deriveCt600FromFigures carryBack: the claim and the repayment it gives
+ * @param {boolean} [input.tradeOutsideUk] - the trade is carried on wholly outside the UK
  * @returns {string} the XHTML document
  */
-export function buildCtComputations({ companyName, companyNumber, utr, periodStart, periodEnd, tradeName, lines }) {
+export function buildCtComputations({
+  companyName,
+  companyNumber,
+  utr,
+  periodStart,
+  periodEnd,
+  tradeName,
+  lines,
+  losses,
+  carryBack,
+  tradeOutsideUk = false,
+}) {
   if (!/^\d{10}$/.test(utr)) throw new Error("The UTR must be 10 digits");
   if (!companyNumber) throw new Error("The company registration number is required for the context entity identifier");
   if (!tradeName || !tradeName.trim()) throw new Error("The trade name is required for the computation's trade context");
@@ -147,7 +230,7 @@ export function buildCtComputations({ companyName, companyNumber, utr, periodSta
 
   const identifier = `<xbrli:identifier scheme="${COMPANIES_HOUSE_SCHEME}">${escapeXmlText(companyNumber)}</xbrli:identifier>`;
   const company = `<xbrldi:explicitMember dimension="ct-comp:BusinessTypeDimension">ct-comp:Company</xbrldi:explicitMember>`;
-  const trade = `<xbrldi:typedMember dimension="ct-comp:BusinessNameDimension"><ct-comp:BusinessNameDomain>${escapeXmlText(tradeName)}</ct-comp:BusinessNameDomain></xbrldi:typedMember><xbrldi:explicitMember dimension="ct-comp:BusinessTypeDimension">ct-comp:Trade</xbrldi:explicitMember><xbrldi:explicitMember dimension="ct-comp:TerritoryDimension">ct-comp:UK</xbrldi:explicitMember>`;
+  const trade = `<xbrldi:typedMember dimension="ct-comp:BusinessNameDimension"><ct-comp:BusinessNameDomain>${escapeXmlText(tradeName)}</ct-comp:BusinessNameDomain></xbrldi:typedMember><xbrldi:explicitMember dimension="ct-comp:BusinessTypeDimension">ct-comp:Trade</xbrldi:explicitMember><xbrldi:explicitMember dimension="ct-comp:TerritoryDimension">ct-comp:${tradeOutsideUk ? "Overseas" : "UK"}</xbrldi:explicitMember>`;
   const duration = `<xbrli:period><xbrli:startDate>${periodStart}</xbrli:startDate><xbrli:endDate>${periodEnd}</xbrli:endDate></xbrli:period>`;
   const instant = `<xbrli:period><xbrli:instant>${periodEnd}</xbrli:instant></xbrli:period>`;
   const context = (id, segment, period) =>
@@ -181,13 +264,18 @@ export function buildCtComputations({ companyName, companyNumber, utr, periodSta
         label: "Less: capital allowances",
         cells: [monetaryCell("TotalCapitalAllowances", "tradePeriod", lines.totalCapitalAllowances, { deduction: true })],
       },
-      {
-        label: "Adjusted trading profit",
-        style: "total",
-        cells: [monetaryCell("AdjustedProfitForThePeriod", "tradePeriod", lines.adjustedProfit)],
-      },
+      adjustedResultRow(lines.adjustedProfit),
     ],
   });
+  const lossesHtml = losses ? lossesSection(losses, carryBack) : "";
+  const classRows = CAPITAL_ALLOWANCE_CLASS_LINES.filter((line) => lines[line.key] > 0).map((line) => ({
+    label: line.label,
+    cells: [monetaryCell(line.concept, "tradePeriod", lines[line.key])],
+  }));
+  const capitalAllowancesHtml =
+    classRows.length > 0
+      ? `<h3>Capital allowances by class</h3>\n${recordTable({ columns: [periodEnd.slice(0, 4)], rows: classRows })}`
+      : "";
 
   const bodyHtml = `<div class="page">
 ${recordHeading({
@@ -202,6 +290,8 @@ ${recordHeading({
 <p>Period of account: ${dateFact("PeriodOfAccountStartDate", "companyInstant", periodStart)} to ${dateFact("PeriodOfAccountEndDate", "companyInstant", periodEnd)}</p>
 <h3>Trading profits: ${escapeXmlText(tradeName)}</h3>
 ${computationTable}
+${capitalAllowancesHtml}
+${lossesHtml}
 </div>`;
 
   return `<?xml version="1.0" encoding="UTF-8"?>

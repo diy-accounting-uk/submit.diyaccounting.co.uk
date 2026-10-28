@@ -116,72 +116,9 @@
               This tax year reports a running total. Each figure below is the corrected total for the year so far, not just this quarter.
             </p>
 
-            <div class="form-group">
-              <label for="periodAmount">Rental income</label>
-              <p id="periodAmount-hint" class="hint">The corrected rent and other income received for this period.</p>
-              <p id="periodAmount-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix input-prefix--amount">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="periodAmount"
-                  name="periodAmount"
-                  aria-describedby="periodAmount-hint periodAmount-money-hint"
-                  inputmode="decimal"
-                  data-money="pounds-and-pence"
-                  data-money-min="0"
-                />
-              </div>
-            </div>
+            <div id="incomeFields"></div>
 
-            <div class="form-group">
-              <label for="otherIncome">Other property income</label>
-              <p id="otherIncome-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix input-prefix--amount">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="otherIncome"
-                  name="otherIncome"
-                  aria-describedby="otherIncome-money-hint"
-                  inputmode="decimal"
-                  data-money="pounds-and-pence"
-                  data-money-min="0"
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="repairsAndMaintenance">Repairs and maintenance</label>
-              <p id="repairsAndMaintenance-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix input-prefix--amount">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="repairsAndMaintenance"
-                  name="repairsAndMaintenance"
-                  aria-describedby="repairsAndMaintenance-money-hint"
-                  inputmode="decimal"
-                  data-money="pounds-and-pence"
-                />
-              </div>
-            </div>
-
-            <div class="form-group">
-              <label for="otherExpenses">Other property expenses</label>
-              <p id="otherExpenses-money-hint" class="hint">For example, £600 or £193.54</p>
-              <div class="input-prefix input-prefix--amount">
-                <span class="prefix">£</span>
-                <input
-                  type="text"
-                  id="otherExpenses"
-                  name="otherExpenses"
-                  aria-describedby="otherExpenses-money-hint"
-                  inputmode="decimal"
-                  data-money="pounds-and-pence"
-                />
-              </div>
-            </div>
+            <div id="expenseFields"></div>
 
             <!-- Developer Test Scenario Section -->
             <div id="developerSection" class="form-group" style="display: none">
@@ -228,6 +165,8 @@
     <script src="../../lib/carried-identifiers.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/money-input.js"></script>
+    <script src="../../lib/self-employment-expenses.js"></script>
+    <script src="../../lib/uk-property-period-fields.js"></script>
     <script src="../../lib/form-errors.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../lib/itsaSubmissionModel.js"></script>

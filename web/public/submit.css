@@ -2545,6 +2545,9 @@ body > footer {
   flex-direction: column;
   gap: var(--space-4);
   margin: var(--space-5) 0;
+}
+
+.bundles-block:not(.holds-no-bundles) .bundles-list {
   min-height: 30rem;
 }
 
@@ -2553,8 +2556,8 @@ body > footer {
 }
 
 /* The current bundles and the catalogue arrive at different times; the block holds the room
-   of both so the sections below do not jump when they fill in. */
-.bundles-block {
+   of both until the bundles come back empty, so the sections below do not jump when they fill in. */
+.bundles-block:not(.holds-no-bundles) {
   min-height: 54.5rem;
 }
 

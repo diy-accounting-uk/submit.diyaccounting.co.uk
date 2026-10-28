@@ -19,6 +19,7 @@ import {
 } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { CONCEPTS, loadFrcTaxonomyConcepts } from "@app/services/accountsIxbrlCommon.js";
 import { parseXmlDocument } from "@app/lib/xmlDom.js";
+import { ixbrlStructureProblems } from "@app/lib/ixbrlStructure.js";
 import {
   SMALL_COMPANY_FORMAT_2_CASE_INPUT,
   SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LABELS,
@@ -804,6 +805,112 @@ describe("the creditor lines, policies, accountants' report and controlling part
     ).toThrow(/bankLoansAfterOneYear/);
   });
 
+  test("an absent intangible assets note and policy change no output byte", () => {
+    expect(buildSmallCompanyAccounts({ ...WITH_COMPARATIVES, intangibleAssetsPolicy: undefined, intangibleAssetNote: undefined })).toBe(
+      buildSmallCompanyAccounts(WITH_COMPARATIVES),
+    );
+  });
+
+  test("tags an intangible assets note and adds its net book value to the tangible notes for the fixed assets", () => {
+    const intangibleAssetNote = {
+      costAtStart: 5000,
+      additions: 0,
+      disposals: 0,
+      amortisationAtStart: 800,
+      amortisationCharge: 200,
+      amortisationOnDisposals: 0,
+    };
+    const xhtml = buildSmallCompanyAccounts({
+      ...WITH_COMPARATIVES,
+      fixedAssetNote: { landBuildings: FIXED_ASSET_NOTE.landBuildings },
+      intangibleAssetNote,
+      intangibleAssetsPolicy: "Goodwill is amortised over five years.",
+    });
+    expect(nonFractionValue(xhtml, "core:IntangibleAssetsGrossCost", "e2025")).toBe(5000);
+    expect(nonFractionValue(xhtml, "core:IntangibleAssetsGrossCost", "e2026")).toBe(5000);
+    expect(nonFractionValue(xhtml, "core:AccumulatedAmortisationImpairmentIntangibleAssets", "e2025")).toBe(800);
+    expect(nonFractionValue(xhtml, "core:AccumulatedAmortisationImpairmentIntangibleAssets", "e2026")).toBe(1000);
+    expect(nonFractionValue(xhtml, "core:IncreaseFromAmortisationChargeForYearIntangibleAssets", "y2026")).toBe(200);
+    expect(nonFractionValue(xhtml, "core:IntangibleAssets", "e2026")).toBe(4000);
+    expect(nonFractionValue(xhtml, "core:IntangibleAssets", "e2025")).toBe(4200);
+    expect(xhtml).toContain('name="core:IntangibleAssetsPolicy"');
+    expect(xhtml).toMatch(/<h4>Intangible assets<\/h4>/);
+    expect(xhtml).toMatch(/<h3>\d+\. Intangible assets<\/h3>/);
+    const concepts = loadFrcTaxonomyConcepts();
+    for (const name of [
+      "IntangibleAssets",
+      "IntangibleAssetsGrossCost",
+      "AccumulatedAmortisationImpairmentIntangibleAssets",
+      "IntangibleAssetsPolicy",
+      "AdditionsOtherThanThroughBusinessCombinationsIntangibleAssets",
+      "DisposalsIntangibleAssets",
+      "IncreaseFromAmortisationChargeForYearIntangibleAssets",
+      "DisposalsDecreaseInAmortisationImpairmentIntangibleAssets",
+    ]) {
+      expect(concepts).toContain(`core:${name}`);
+    }
+    expect(ixbrlStructureProblems(xhtml)).toEqual([]);
+  });
+
+  test("refuses fixed asset notes whose net book value is not the fixed assets", () => {
+    const intangibleAssetNote = {
+      costAtStart: 5000,
+      additions: 0,
+      disposals: 0,
+      amortisationAtStart: 0,
+      amortisationCharge: 0,
+      amortisationOnDisposals: 0,
+    };
+    expect(() => buildSmallCompanyAccounts({ ...SAMPLE_INPUT, intangibleAssetNote })).toThrow(/does not equal fixed assets/);
+  });
+
+  test("tags the second policy set under shared subheadings in the order of the note", () => {
+    const policies = {
+      propertyPlantEquipmentPolicy: "Fixed asset policy text.",
+      depreciationMethodPolicy: "Straight line.",
+      inventoriesPolicy: "Stock policy text.",
+      cashCashEquivalentsPolicy: "Cash policy text.",
+      financialInstrumentsClassificationPolicy: "Classified as basic.",
+      employeeBenefitsPolicy: "Benefits policy text.",
+      definedContributionPensionsPolicy: "Pension policy text.",
+      foreignCurrencyTranslationPolicy: "Translation policy text.",
+      functionalPresentationCurrencyPolicy: "Pounds sterling.",
+      leasesPolicy: "Lease policy text.",
+      deferredTaxPolicy: "Deferred tax policy text.",
+    };
+    const xhtml = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, taxPolicy: "Tax policy.", ...policies });
+    const names = [
+      "PropertyPlantEquipmentPolicy",
+      "DescriptionDepreciationMethodForPropertyPlantEquipment",
+      "InventoriesPolicy",
+      "CashCashEquivalentsPolicy",
+      "FinancialInstrumentsClassificationPolicy",
+      "EmployeeBenefitsPolicy",
+      "DefinedContributionPensionsPolicy",
+      "ForeignCurrencyTranslationOperationsPolicy",
+      "FunctionalPresentationCurrencyPolicy",
+      "LeasesPolicy",
+      "TaxPolicy",
+      "DeferredTaxPolicy",
+    ];
+    const positions = names.map((name) => xhtml.indexOf(`name="core:${name}"`));
+    expect(positions.every((position, index) => position > 0 && (index === 0 || position > positions[index - 1]))).toBe(true);
+    for (const heading of [
+      "Tangible fixed assets",
+      "Stocks",
+      "Cash and cash equivalents",
+      "Employee benefits",
+      "Foreign currency",
+      "Leases",
+      "Taxation",
+    ]) {
+      expect(xhtml.split(`<h4>${heading}</h4>`), heading).toHaveLength(2);
+    }
+    const concepts = loadFrcTaxonomyConcepts();
+    for (const name of names) expect(concepts).toContain(`core:${name}`);
+    expect(ixbrlStructureProblems(xhtml)).toEqual([]);
+  });
+
   test("tags each policy under its subheading in the order of the note, and the going concern basis true", () => {
     const xhtml = buildSmallCompanyAccounts({
       ...SAMPLE_INPUT,
@@ -877,4 +984,102 @@ describe("the creditor lines, policies, accountants' report and controlling part
     expect(notUltimate).toContain("The company's controlling party is ");
     expect(() => buildSmallCompanyAccounts({ ...SAMPLE_INPUT, controllingParty: { ultimate: true } })).toThrow(/controllingParty.name/);
   });
+});
+
+describe("the debtors, directors' loan, group and provisions lines of a small company", () => {
+  const ZERO_LINES = {
+    tradeDebtors: 0,
+    otherDebtors: 0,
+    prepayments: 0,
+    provisionsForLiabilities: 0,
+    amountsOwedToDirectors: 0,
+    amountsOwedToGroupUndertakings: 0,
+  };
+  const withYears = (current, prior) => ({ ...WITH_COMPARATIVES, balanceSheet: { current, prior } });
+  const split = { ...CURRENT_BALANCE_SHEET, tradeDebtors: 1800, otherDebtors: 400, prepayments: 300 };
+
+  test("absent and zero optional lines build the same document byte for byte", () => {
+    for (const input of [SAMPLE_INPUT, WITH_COMPARATIVES, { ...WITH_COMPARATIVES, filleted: true }]) {
+      const withZeros = {
+        ...input,
+        balanceSheet: Object.fromEntries(
+          Object.entries(input.balanceSheet).map(([year, figures]) => [year, { ...figures, ...ZERO_LINES }]),
+        ),
+      };
+      expect(buildSmallCompanyAccounts(withZeros)).toBe(buildSmallCompanyAccounts(input));
+    }
+    const xhtml = buildSmallCompanyAccounts(WITH_COMPARATIVES);
+    for (const name of ["TradeDebtors", "OtherDebtors", "PrepaymentsAccruedIncome", "ProvisionsForLiabilities", "AmountsOwedTo"]) {
+      expect(xhtml).not.toContain(name);
+    }
+  });
+
+  test("tags the debtors split in a debtors note beside the debtors total and shows its note number", () => {
+    const xhtml = buildSmallCompanyAccounts(SAMPLE_INPUT_WITH_SPLIT());
+    expect(nonFractionValue(xhtml, "core:TradeDebtorsTradeReceivables", "e2026")).toBe(1800);
+    expect(nonFractionValue(xhtml, "core:OtherDebtors", "e2026")).toBe(400);
+    expect(nonFractionValue(xhtml, "core:PrepaymentsAccruedIncome", "e2026")).toBe(300);
+    expect(nonFractionValue(xhtml, "core:Debtors", "e2026")).toBe(2500);
+    expect(xhtml).toMatch(/<h3>\d+\. Debtors<\/h3>/);
+    expect(xhtml).toContain("Total debtors");
+    const concepts = loadFrcTaxonomyConcepts();
+    for (const name of ["TradeDebtorsTradeReceivables", "OtherDebtors", "PrepaymentsAccruedIncome"]) {
+      expect(concepts).toContain(`core:${name}`);
+    }
+    expect(ixbrlStructureProblems(xhtml)).toEqual([]);
+  });
+
+  test("shows only the debtors lines a year carries", () => {
+    const xhtml = buildSmallCompanyAccounts({
+      ...SAMPLE_INPUT,
+      balanceSheet: { current: { ...CURRENT_BALANCE_SHEET, tradeDebtors: 2500 } },
+    });
+    expect(nonFractionValue(xhtml, "core:TradeDebtorsTradeReceivables", "e2026")).toBe(2500);
+    expect(xhtml).not.toContain("core:OtherDebtors");
+    expect(xhtml).not.toContain("core:PrepaymentsAccruedIncome");
+  });
+
+  test("refuses a debtors split that does not add up to the debtors", () => {
+    expect(() =>
+      buildSmallCompanyAccounts({ ...SAMPLE_INPUT, balanceSheet: { current: { ...CURRENT_BALANCE_SHEET, tradeDebtors: 1000 } } }),
+    ).toThrow(/must add up to debtors/);
+  });
+
+  test("splits the creditors after one year into directors, group and the rest", () => {
+    const current = { ...CURRENT_BALANCE_SHEET, amountsOwedToDirectors: 1200, amountsOwedToGroupUndertakings: 300 };
+    const xhtml = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, balanceSheet: { current } });
+    expect(nonFractionValue(xhtml, "core:AmountsOwedToDirectors", "e2026-after-one-year")).toBe(1200);
+    expect(nonFractionValue(xhtml, "core:AmountsOwedToGroupUndertakings", "e2026-after-one-year")).toBe(300);
+    expect(nonFractionValue(xhtml, "core:OtherCreditors", "e2026-after-one-year")).toBe(500);
+    expect(nonFractionValue(xhtml, "core:Creditors", "e2026-after-one-year")).toBe(2000);
+    expect(xhtml).toContain("Amounts owed to directors");
+    expect(ixbrlStructureProblems(xhtml)).toEqual([]);
+  });
+
+  test("refuses after one year splits above the creditors after one year", () => {
+    const current = { ...CURRENT_BALANCE_SHEET, bankLoansAfterOneYear: 1500, amountsOwedToDirectors: 600 };
+    expect(() => buildSmallCompanyAccounts({ ...SAMPLE_INPUT, balanceSheet: { current } })).toThrow(
+      /must not be more than creditorsAfterOneYear/,
+    );
+  });
+
+  test("takes provisions off the net assets in both years and tags them on the instant context", () => {
+    const current = { ...CURRENT_BALANCE_SHEET, provisionsForLiabilities: 300, profitAndLossAccount: 9600, capitalAndReserves: 9700 };
+    const xhtml = buildSmallCompanyAccounts(withYears(current, PRIOR_BALANCE_SHEET));
+    expect(nonFractionValue(xhtml, "core:ProvisionsForLiabilitiesBalanceSheetSubtotal", "e2026")).toBe(300);
+    expect(nonFractionValue(xhtml, "core:ProvisionsForLiabilitiesBalanceSheetSubtotal", "e2025")).toBe(0);
+    expect(nonFractionValue(xhtml, "core:NetAssetsLiabilities", "e2026")).toBe(9700);
+    expect(xhtml).toContain("Provisions for liabilities");
+    expect(loadFrcTaxonomyConcepts()).toContain("core:ProvisionsForLiabilitiesBalanceSheetSubtotal");
+    expect(ixbrlStructureProblems(xhtml)).toEqual([]);
+  });
+
+  test("refuses provisions that leave capital and reserves unequal to the net assets", () => {
+    const current = { ...CURRENT_BALANCE_SHEET, provisionsForLiabilities: 300 };
+    expect(() => buildSmallCompanyAccounts({ ...SAMPLE_INPUT, balanceSheet: { current } })).toThrow(/Capital and reserves/);
+  });
+
+  function SAMPLE_INPUT_WITH_SPLIT() {
+    return withYears(split, { ...PRIOR_BALANCE_SHEET, tradeDebtors: 2000 });
+  }
 });

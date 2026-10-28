@@ -125,6 +125,13 @@ describe("buildAmendSelfEmploymentPeriodRequestBody", () => {
     expect(body).toEqual({ periodExpenses: { costOfGoods: 100 } });
   });
 
+  test("keeps taxTakenOffTradingIncome in periodIncome", () => {
+    const body = buildAmendSelfEmploymentPeriodRequestBody({
+      periodIncome: { turnover: 6000, taxTakenOffTradingIncome: 300 },
+    });
+    expect(body.periodIncome).toEqual({ turnover: 6000, taxTakenOffTradingIncome: 300 });
+  });
+
   test("rounds money values to 2 decimal places", () => {
     const body = buildAmendSelfEmploymentPeriodRequestBody({ periodIncome: { turnover: 100.005 } });
     expect(body.periodIncome.turnover).toBe(100.01);

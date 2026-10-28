@@ -306,6 +306,34 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  test("accepts the optional balance sheet headings when they enter the totals", async () => {
+    const body = buildAccountsBody();
+    body.balanceSheet.currentYear.prepaymentsAccruedIncome = 300;
+    body.balanceSheet.currentYear.accrualsDeferredIncome = 100;
+    body.balanceSheet.currentYear.provisionsForLiabilities = "50";
+    body.balanceSheet.currentYear.calledUpShareCapitalNotPaid = 10;
+    body.balanceSheet.currentYear.capitalAndReserves = 4160;
+    body.balanceSheet.currentYear.profitAndLossAccount = 4060;
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+    expect(response.statusCode).toBe(201);
+  });
+
+  test("rejects an optional balance sheet heading that is negative or not a number", async () => {
+    for (const value of [-5, "abc"]) {
+      const body = buildAccountsBody();
+      body.balanceSheet.currentYear.accrualsDeferredIncome = value;
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+    }
+  });
+
+  test("rejects capital and reserves that ignore an optional heading", async () => {
+    const body = buildAccountsBody();
+    body.balanceSheet.currentYear.provisionsForLiabilities = 100;
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+    expect(response.statusCode).toBe(400);
+  });
+
   test("marks the submission failed and returns 500 when the gateway rejects the envelope", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [{ raisedBy: "Gateway", number: "502", type: "fatal", text: "Authentication Failure", location: "" }],
@@ -317,6 +345,15 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
   });
 
   describe("dormant filings", () => {
+    test("rejects unpaid share capital that is not a whole number of shares or exceeds the called up capital", async () => {
+      for (const unpaid of [0.5, 101]) {
+        const body = buildDormantBody();
+        body.balanceSheet.currentYear.calledUpShareCapitalNotPaid = unpaid;
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+        expect(response.statusCode).toBe(400);
+      }
+    });
+
     test("passes the dormant flag, trading status, share class and nominal value to the generator", async () => {
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildDormantBody() }));
       expect(response.statusCode).toBe(201);

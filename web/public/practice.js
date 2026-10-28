@@ -35,12 +35,33 @@
     }
   }
 
+  // The agent's HMRC access token. It lives in this variable only: the browser keeps the id of the
+  // server-side grant, and the grant route answers the token to its owner.
+  let __hmrcAccessToken = null;
+
   function getHmrcAccessToken() {
+    return __hmrcAccessToken;
+  }
+
+  function readStored(key) {
     try {
-      return sessionStorage.getItem("hmrcAccessToken");
+      return sessionStorage.getItem(key);
     } catch {
       return null;
     }
+  }
+
+  function writeStored(key, value) {
+    try {
+      if (value == null) sessionStorage.removeItem(key);
+      else sessionStorage.setItem(key, value);
+    } catch {
+      // Storage is blocked: the connection then lasts only until the page navigates.
+    }
+  }
+
+  function hmrcAccountName() {
+    return readStored("hmrcAccount") === "synthetic" ? "synthetic" : "live";
   }
 
   // window.fetchWithIdToken and window.authorizedFetch are set by submit.js, a deferred module
@@ -86,6 +107,88 @@
     }
   }
 
+  // --- HMRC agent connection ---
+
+  function renderConnection(connected) {
+    const line = document.getElementById("hmrcConnectionLine");
+    const button = document.getElementById("connectHmrcBtn");
+    if (line) {
+      line.textContent = connected
+        ? "Connected to HMRC as an agent."
+        : "Not connected to HMRC. Connect to invite clients and check their authorisation.";
+    }
+    if (button) button.hidden = connected;
+  }
+
+  // Reads the grant the page started, which refreshes the token near expiry. A 404 means the
+  // grant expired or is gone: the page then shows as not connected and the stored id is cleared.
+  async function loadConnection() {
+    const grantId = readStored("practiceHmrcGrantId");
+    __hmrcAccessToken = null;
+    if (!grantId || !getIdToken()) {
+      renderConnection(false);
+      return false;
+    }
+    try {
+      const response = await cognitoFetch(`/api/v1/mcp/hmrc-grants/${encodeURIComponent(grantId)}`, {});
+      if (response.status === 404) {
+        writeStored("practiceHmrcGrantId", null);
+      } else if (response.ok) {
+        const body = await readJsonSafely(response);
+        if (body.status === "granted" && body.accessToken) __hmrcAccessToken = body.accessToken;
+      }
+    } catch {
+      // The connection stays shown as not connected; the practice can connect again.
+    }
+    renderConnection(Boolean(__hmrcAccessToken));
+    return Boolean(__hmrcAccessToken);
+  }
+
+  async function connectToHmrc() {
+    if (!getIdToken()) {
+      notify("Please log in first.", "warning");
+      return;
+    }
+    try {
+      const response = await cognitoFetch("/api/v1/mcp/hmrc-grants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ services: ["agent"], hmrcAccount: hmrcAccountName() }),
+      });
+      const body = await readJsonSafely(response);
+      if (!response.ok || !body.url || !body.grantId) {
+        notify(body.message || `Failed to start the HMRC connection (${response.status})`, "error");
+        return;
+      }
+      writeStored("practiceHmrcGrantId", body.grantId);
+      window.location.assign(body.url);
+    } catch (err) {
+      notify(`Failed to start the HMRC connection: ${err?.message || err}`, "error");
+    }
+  }
+
+  // Before an action, so the token is fresh and an expired grant is shown as such.
+  async function ensureConnection(message) {
+    if (await loadConnection()) return true;
+    renderClientsTable();
+    notify(message, "warning");
+    return false;
+  }
+
+  function renderLicence(licence) {
+    const el = document.getElementById("licenceLine");
+    if (!el || !licence) return;
+    if (licence.held) {
+      el.textContent = "Your practice holds the Resident Pro licence.";
+    } else {
+      setHtml(
+        el,
+        'Your practice does not hold the Resident Pro licence. You need it to file for clients. <a href="bundles.html">Get Resident Pro</a>',
+      );
+    }
+    el.hidden = false;
+  }
+
   // --- clients list ---
 
   async function fetchClients() {
@@ -125,6 +228,7 @@
     __clients = Array.isArray(body.clients) ? body.clients : [];
     renderClientsTable();
     renderArnOnFile(body.arnOnFile === true);
+    renderLicence(body.licence);
   }
 
   function renderArnOnFile(arnOnFile) {
@@ -188,16 +292,19 @@
     const status = auth?.status;
     const statusLabel = status ? STATUS_LABELS[status] || status : "Not invited";
     const hasAccessToken = !!getHmrcAccessToken();
+    // HMRC's status check needs the invitation, or the known fact given with it: a client never
+    // invited has nothing to check, so it offers Invite only.
+    const invited = Boolean(auth?.invitationId || auth?.knownFact);
 
     const buttons = [];
-    if (status === "pending") {
+    if (status === "pending" && invited) {
       buttons.push(
         `<button type="button" class="btn-small check-status-btn" data-client-id="${clientId}" data-service="${def.service}" ${hasAccessToken ? "" : "disabled"}>Check status</button>`,
       );
       buttons.push(
         `<button type="button" class="btn-small btn-danger cancel-invite-btn" data-client-id="${clientId}" data-service="${def.service}" ${hasAccessToken ? "" : "disabled"}>Cancel invitation</button>`,
       );
-    } else if (status === "authorised") {
+    } else if (status === "authorised" && invited) {
       buttons.push(
         `<button type="button" class="btn-small check-status-btn" data-client-id="${clientId}" data-service="${def.service}" ${hasAccessToken ? "" : "disabled"}>Check status</button>`,
       );
@@ -432,11 +539,8 @@
       return;
     }
 
+    if (!(await ensureConnection("Connect to HMRC before sending an invitation."))) return;
     const accessToken = getHmrcAccessToken();
-    if (!accessToken) {
-      notify("Connect to HMRC before sending an invitation.", "warning");
-      return;
-    }
 
     const cell = document.querySelector(`.auth-cell[data-client-id="${clientId}"][data-service="${service}"]`);
     const knownFact = cell?.querySelector(".invite-known-fact")?.value.trim();
@@ -469,11 +573,8 @@
   }
 
   async function checkStatus(clientId, service) {
+    if (!(await ensureConnection("Connect to HMRC before checking authorisation status."))) return;
     const accessToken = getHmrcAccessToken();
-    if (!accessToken) {
-      notify("Connect to HMRC before checking authorisation status.", "warning");
-      return;
-    }
 
     try {
       const response = await hmrcFetcher()(
@@ -496,11 +597,8 @@
   }
 
   async function cancelInvitation(clientId, service) {
+    if (!(await ensureConnection("Connect to HMRC before cancelling an invitation."))) return;
     const accessToken = getHmrcAccessToken();
-    if (!accessToken) {
-      notify("Connect to HMRC before cancelling an invitation.", "warning");
-      return;
-    }
 
     try {
       const response = await hmrcFetcher()(
@@ -525,6 +623,11 @@
   // --- event delegation ---
 
   document.addEventListener("click", (e) => {
+    if (e.target.closest("#connectHmrcBtn")) {
+      connectToHmrc();
+      return;
+    }
+
     const inviteToggle = e.target.closest(".invite-toggle-btn");
     if (inviteToggle) {
       toggleInvitePanel(inviteToggle.getAttribute("data-client-id"), inviteToggle.getAttribute("data-service"), true);
@@ -590,7 +693,9 @@
   // may load after it in a stripped-down test page.
   function initPage() {
     if (typeof window.checkAuthStatus === "function") window.checkAuthStatus();
-    fetchClients();
+    loadConnection()
+      .then(fetchClients)
+      .catch(() => {});
   }
 
   if (document.readyState === "loading") {

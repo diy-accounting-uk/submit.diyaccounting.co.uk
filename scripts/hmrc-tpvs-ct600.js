@@ -65,7 +65,7 @@ const company = {
   declarantName: directorName,
   declarantStatus: "Director",
 };
-const { boxes, computationLines, periodStart, periodEnd, figures } = await deriveCompanyTaxReturn(session, company, {
+const { boxes, computationLines, losses, carryBack, periodStart, periodEnd, figures } = await deriveCompanyTaxReturn(session, company, {
   priorYearProfitAndLoss,
 });
 
@@ -113,6 +113,9 @@ const computationsIxbrl = buildCtComputations({
   periodEnd,
   tradeName: book.entityInformation?.organizationDescription || company.companyName,
   lines: computationLines,
+  losses,
+  carryBack,
+  tradeOutsideUk: figures.lossOutsideUk === true,
 });
 const irEnvelopeXml = buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl });
 const { xml, irmark } = buildCt600SubmissionRequest({

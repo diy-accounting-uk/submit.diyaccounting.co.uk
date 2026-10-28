@@ -25,8 +25,10 @@ import { expect } from "@playwright/test";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
+  createHmrcTestAgent,
   createHmrcTestUser,
   getEnvVarAndLog,
+  isSyntheticMode,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
@@ -34,7 +36,7 @@ import {
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn, goToHomePageUsingMainNav } from "./steps/behaviour-steps.js";
 import { clickLogIn, loginWithCognitoOrMockAuth, verifyLoggedInStatus } from "./steps/behaviour-login-steps.js";
 import { ensureBundleViaCheckout, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
-import { grantMcpHmrcAccessInBrowser } from "./steps/behaviour-mcp-hmrc-grant-steps.js";
+import { connectPracticeToHmrcInBrowser, grantMcpHmrcAccessInBrowser } from "./steps/behaviour-mcp-hmrc-grant-steps.js";
 import { callHarnessTool } from "../mcp/lib/harness.js";
 import { addClient, clientAuthorisationStatus, inviteClient } from "../mcp/lib/practice-tools.js";
 import { runForClients } from "../mcp/lib/batch-tools.js";
@@ -61,9 +63,10 @@ const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
-// Any non-empty string satisfies the simulator's agent-authorisation stand-in; the real HMRC
-// sandbox needs a test agent's own ARN here instead.
-const practiceArn = getEnvVarAndLog("practiceArn", "TEST_HMRC_AGENT_ARN", "XARN0000067");
+// Any non-empty string satisfies the simulator's agent-authorisation stand-in. With
+// HMRC_ACCOUNT=synthetic the test creates a test agent and uses that agent's own ARN instead.
+let practiceArn = getEnvVarAndLog("practiceArn", "TEST_HMRC_AGENT_ARN", "XARN0000067");
+const synthetic = isSyntheticMode();
 
 // The client identifier the simulator's agent-authorisation stand-in always answers "already
 // authorised" for (app/http-simulator/routes/agent-authorisation.js's PRE_AUTHORISED_CLIENT_IDS),
@@ -125,6 +128,21 @@ test("A practice adds two clients and submits a VAT return for each through run_
     const testUser = await createHmrcTestUser(hmrcClientId, hmrcClientSecret, { serviceNames: ["mtd-vat"] });
     currentTestUsername = testUser.userId;
     currentTestPassword = testUser.password;
+  }
+
+  /* *********************************************************************** */
+  /*  HMRC TEST AGENT — the agent the practice page signs in to HMRC as; its  */
+  /*  ARN is the practice's agent reference number.                           */
+  /* *********************************************************************** */
+  let agentUsername = currentTestUsername;
+  let agentPassword = currentTestPassword;
+  if (synthetic) {
+    const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
+    const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
+    const testAgent = await createHmrcTestAgent(hmrcClientId, hmrcClientSecret);
+    practiceArn = testAgent.arn;
+    agentUsername = testAgent.userId;
+    agentPassword = testAgent.password;
   }
 
   /* ****************************************************************** */
@@ -264,4 +282,25 @@ test("A practice adds two clients and submits a VAT return for each through run_
     const receiptIds = receiptsForClient.receipts.map((receipt) => receipt.receiptId);
     expect(receiptIds).toContain(row.result.receiptId);
   }
+
+  /* ****************************************************************** */
+  /*  THE PRACTICE PAGE: the licence line, Connect to HMRC as the       */
+  /*  agent, and an invitation sent from the page.                      */
+  /* ****************************************************************** */
+  const webClient = await addClient(session, { displayName: "Practice Web Client", vrn: PRE_AUTHORISED_VRN });
+  await page.evaluate(() => sessionStorage.setItem("hmrcAccount", "synthetic"));
+  await page.goto(`${baseUrl}/practice.html`);
+  await expect(page.locator("#licenceLine")).toHaveText("Your practice holds the Resident Pro licence.");
+  await expect(page.locator("#hmrcConnectionLine")).toContainText("Not connected to HMRC");
+  await connectPracticeToHmrcInBrowser(page, agentUsername, agentPassword, screenshotPath);
+
+  const webClientRow = page.locator("#clientsTableBody tr", { hasText: "Practice Web Client" });
+  await expect(webClientRow.locator(".check-status-btn")).toHaveCount(0);
+  await page.locator("#arnInput").fill(practiceArn);
+  const vatCell = webClientRow.locator(`.auth-cell[data-client-id="${webClient.client.clientId}"][data-service="MTD-VAT"]`);
+  await vatCell.locator(".invite-toggle-btn").click();
+  await vatCell.locator(".invite-known-fact").fill("2015-01-01");
+  await vatCell.locator(".invite-send-btn").click();
+  await expect(vatCell.locator(".auth-status")).toHaveText("Pending");
+  await expect(vatCell.locator(".check-status-btn")).toBeEnabled();
 });

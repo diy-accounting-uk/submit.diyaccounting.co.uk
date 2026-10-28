@@ -492,6 +492,100 @@ describe("services/microEntityAccountsIxbrl", () => {
     });
   });
 
+  describe("buildMicroEntityAccounts balance sheet headings", () => {
+    const withHeadings = {
+      ...SAMPLE_INPUT,
+      balanceSheet: {
+        current: {
+          calledUpShareCapitalNotPaid: 100,
+          fixedAssets: 10000,
+          currentAssets: 5000,
+          prepaymentsAccruedIncome: 400,
+          creditorsWithinOneYear: 3000,
+          creditorsAfterOneYear: 2000,
+          provisionsForLiabilities: 300,
+          accrualsDeferredIncome: 200,
+          calledUpShareCapital: 100,
+          profitAndLossAccount: 9900,
+          capitalAndReserves: 10000,
+        },
+        prior: { ...SAMPLE_INPUT.balanceSheet.prior, prepaymentsAccruedIncome: 50, accrualsDeferredIncome: 50 },
+      },
+    };
+    const xhtml = buildMicroEntityAccounts(withHeadings);
+
+    test("tags each heading with a taxonomy concept on both balance sheet dates", () => {
+      const concepts = loadFrcTaxonomyConcepts();
+      for (const key of ["calledUpShareCapitalNotPaid", "prepaymentsAccruedIncome", "provisionsForLiabilities", "accrualsDeferredIncome"]) {
+        const { prefix, name } = CONCEPTS[key];
+        expect(concepts.includes(`${prefix}:${name}`)).toBe(true);
+        expect(xhtml.match(new RegExp(`name="${prefix}:${name}"`, "g"))).toHaveLength(2);
+      }
+    });
+
+    test("a heading one year carries shows as nil in the other year", () => {
+      expect(xhtml).toMatch(/name="core:CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset"[^>]*>0</);
+    });
+
+    test("the headings enter net current assets, total assets less current liabilities and net assets", () => {
+      expect(xhtml).toMatch(/name="core:NetCurrentAssetsLiabilities"[^>]*>2,400</);
+      expect(xhtml).toMatch(/name="core:TotalAssetsLessCurrentLiabilities"[^>]*>12,500</);
+      expect(xhtml).toMatch(/name="core:NetAssetsLiabilities"[^>]*>10,000</);
+    });
+
+    test("refuses capital and reserves that ignore a heading", () => {
+      const input = structuredClone(withHeadings);
+      input.balanceSheet.current.accrualsDeferredIncome = 0;
+      expect(() => buildMicroEntityAccounts(input)).toThrow(/does not equal net assets/);
+    });
+
+    test("headings of zero in every year change no output", () => {
+      const zeroed = structuredClone(SAMPLE_INPUT);
+      for (const year of [zeroed.balanceSheet.current, zeroed.balanceSheet.prior]) {
+        Object.assign(year, {
+          calledUpShareCapitalNotPaid: 0,
+          prepaymentsAccruedIncome: 0,
+          provisionsForLiabilities: 0,
+          accrualsDeferredIncome: 0,
+        });
+      }
+      expect(buildMicroEntityAccounts(zeroed)).toBe(buildMicroEntityAccounts(SAMPLE_INPUT));
+    });
+
+    test("the share capital note calls shares fully paid only when no capital is unpaid", () => {
+      const paid = buildMicroEntityAccounts(DORMANT_INPUT);
+      expect(paid).toContain("Allotted, called up and fully paid:");
+      expect(paid).not.toContain("NumberSharesAllotted");
+    });
+
+    test("the share capital note splits allotted shares from fully paid shares when capital is unpaid", () => {
+      const prior = DORMANT_INPUT.balanceSheet.prior;
+      const input = {
+        ...DORMANT_INPUT,
+        balanceSheet: {
+          current: {
+            ...DORMANT_INPUT.balanceSheet.current,
+            calledUpShareCapitalNotPaid: 40,
+            capitalAndReserves: 8000 + 40,
+            profitAndLossAccount: 7900,
+          },
+          prior,
+        },
+      };
+      const unpaidXhtml = buildMicroEntityAccounts(input);
+      expect(unpaidXhtml).not.toContain("called up and fully paid");
+      expect(unpaidXhtml).toMatch(/Allotted and called up: <ix:nonFraction name="core:NumberSharesAllotted"[^>]*>200</);
+      expect(unpaidXhtml).toMatch(
+        /of which <ix:nonFraction name="core:NumberSharesIssuedFullyPaid"[^>]*>120<\/ix:nonFraction> are fully paid/,
+      );
+    });
+
+    test("a dormant set states it has not acted as an agent and a trading set does not", () => {
+      expect(hiddenText(buildMicroEntityAccounts(DORMANT_INPUT), "direp:CompanyHasActedAsAnAgentDuringPeriodTruefalse")).toBe("false");
+      expect(buildMicroEntityAccounts(SAMPLE_INPUT)).not.toContain("CompanyHasActedAsAnAgentDuringPeriodTruefalse");
+    });
+  });
+
   describe("countryMemberForCompanyNumber", () => {
     test("reads the country of formation from the company number prefix", () => {
       expect(countryMemberForCompanyNumber("03176906").name).toBe("EnglandWales");

@@ -527,6 +527,18 @@ test.describe("File Confirmation Statement page", () => {
     await page.fill("#holderSurname-0-1", "CARTWRIGHT");
     await page.fill("#holderForename-0-1", "SAMANTHA");
 
+    await page.fill("#holderThoroughfare-0-1", "HIGH STREET");
+    await page.fill("#holderCounty-0-1", "SURREY");
+
+    await page.click('.add-transfer-row[data-holding-index="0"]');
+    await page.fill("#transferDate-0-0", "2026-03-01");
+    await page.fill("#transferShares-0-0", "5");
+    await page.click('.add-transfer-row[data-holding-index="0"]');
+    await page.fill("#transferDate-0-1", "2026-04-02");
+    await page.fill("#transferShares-0-1", "2");
+    await page.click('[data-transfer-row="0-1"] .remove-transfer-row');
+    await expect(page.locator('[data-transfer-row="0-1"]')).toBeHidden();
+
     await page.click('[data-shareholder-row="0-0"] .remove-joint-holder-row');
     await expect(page.locator('[data-shareholder-row="0-0"]')).toBeHidden();
     await expect(page.locator('[data-shareholder-row="0-1"]')).toBeVisible();
@@ -542,5 +554,16 @@ test.describe("File Confirmation Statement page", () => {
     expect(previewCalls[0].shareholdings).toHaveLength(1);
     expect(previewCalls[0].shareholdings[0].shareholders).toHaveLength(1);
     expect(previewCalls[0].shareholdings[0].shareholders[0].forename).toBe("SAMANTHA");
+    expect(previewCalls[0].shareholdings[0].shareholders[0].address.thoroughfare).toBe("HIGH STREET");
+    expect(previewCalls[0].shareholdings[0].shareholders[0].address.county).toBe("SURREY");
+    expect(previewCalls[0].shareholdings[0].transfers).toEqual([{ dateOfTransfer: "2026-03-01", numberSharesTransferred: 5 }]);
+    const previewSummary = await page.locator("#previewSummary").innerText();
+    expect(previewSummary).toContain("5 shares on 1 March 2026");
+    expect(previewSummary).toContain("HIGH STREET");
+    for (const width of [390, 1280]) {
+      await page.setViewportSize({ width, height: 900 });
+      expect(await pageScrollsSideways(page)).toBe(false);
+      await page.screenshot({ path: recordScreenshotPath("confirmation-statement-transfers-preview", width), fullPage: true });
+    }
   });
 });

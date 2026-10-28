@@ -36,15 +36,20 @@ function updateSubmissionModelUI() {
     : "HMRC identifies this quarter by its start and end date.";
 
   cumulativeMoneyNote.style.display = isCumulative ? "block" : "none";
-  ["turnover", "otherIncome", ...window.selfEmploymentExpenses.EXPENSE_IDS, ...window.selfEmploymentExpenses.DISALLOWABLE_IDS].forEach(
-    (fieldId) => {
-      const label = document.querySelector(`label[for="${fieldId}"]`);
-      if (!label) return;
-      const baseText = label.dataset.baseLabel || label.textContent;
-      label.dataset.baseLabel = baseText;
-      label.textContent = isCumulative ? `${baseText} (year to date)` : baseText;
-    },
-  );
+  const moneyFieldIds = [
+    "turnover",
+    "otherIncome",
+    "taxTakenOffTradingIncome",
+    ...window.selfEmploymentExpenses.EXPENSE_IDS,
+    ...window.selfEmploymentExpenses.DISALLOWABLE_IDS,
+  ];
+  moneyFieldIds.forEach((fieldId) => {
+    const label = document.querySelector(`label[for="${fieldId}"]`);
+    if (!label) return;
+    const baseText = label.dataset.baseLabel || label.textContent;
+    label.dataset.baseLabel = baseText;
+    label.textContent = isCumulative ? `${baseText} (year to date)` : baseText;
+  });
   turnoverHint.textContent = isCumulative
     ? "The total turnover for the tax year so far, up to the period end date above. Enter 0 if none yet."
     : "The takings, fees, sales or money earned by the business for this period. Enter 0 if none.";
@@ -179,6 +184,9 @@ function applyCurrentTotal(periodSummary) {
   const disallowable = periodSummary?.periodDisallowableExpenses || {};
   if (income.turnover !== undefined) document.getElementById("turnover").value = income.turnover;
   if (income.other !== undefined) document.getElementById("otherIncome").value = income.other;
+  if (income.taxTakenOffTradingIncome !== undefined) {
+    document.getElementById("taxTakenOffTradingIncome").value = income.taxTakenOffTradingIncome;
+  }
   window.selfEmploymentExpenses.EXPENSE_IDS.forEach((id) => {
     if (expenses[id] !== undefined) document.getElementById(id).value = expenses[id];
   });
@@ -276,6 +284,7 @@ async function handleLoadCurrentTotal() {
 function readPeriodData(source) {
   const expenses = window.selfEmploymentExpenses.buildPeriodExpenses((id) => source[id], window.parseMoneyInput);
   if (expenses.problem) throw new Error(expenses.problem);
+  const taxTakenOffTradingIncome = window.parseMoneyInput(source.taxTakenOffTradingIncome);
   return {
     nino: (source.nino || "").replace(/\s+/g, "").toUpperCase(),
     businessId: (source.businessId || "").trim(),
@@ -285,6 +294,7 @@ function readPeriodData(source) {
     periodIncome: {
       turnover: window.parseMoneyInput(source.turnover) ?? 0,
       other: window.parseMoneyInput(source.otherIncome) ?? 0,
+      ...(taxTakenOffTradingIncome === null ? {} : { taxTakenOffTradingIncome }),
     },
     periodExpenses: expenses.periodExpenses,
     periodDisallowableExpenses: expenses.periodDisallowableExpenses,
@@ -402,6 +412,7 @@ async function handleFormSubmission(event) {
       periodEndDate: formData.get("periodEndDate"),
       turnover: formData.get("turnover"),
       otherIncome: formData.get("otherIncome"),
+      taxTakenOffTradingIncome: formData.get("taxTakenOffTradingIncome"),
       ...Object.fromEntries(
         [...window.selfEmploymentExpenses.EXPENSE_IDS, ...window.selfEmploymentExpenses.DISALLOWABLE_IDS].map((id) => [
           id,

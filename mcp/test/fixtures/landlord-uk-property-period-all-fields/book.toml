@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+[documentInfo]
+entriesType = "journal"
+language = "en"
+creationDate = 2026-04-06
+periodCoveredStart = 2025-04-06
+periodCoveredEnd = 2026-04-05
+defaultCurrency = "GBP"
+entriesComment = "A landlord's book: A landlord's book: every UK property period income and itemised expense"
+
+[entityInformation]
+organizationIdentifier = "Hollis Lettings"
+organizationDescription = "Residential lettings"
+taxAuthorityIdentifier = "HMRC"
+"diya-gl:product" = "SelfEmployed"
+"diya-gl:vatRegistered" = false
+"diya-gl:basisOfAccounting" = "cash"
+"diya-gl:nino" = "EF112233B"
+
+[accounts.sales."4000"]
+accountMainDescription = "income.periodAmount"
+"diya-gl:ukPropertyField" = "income.periodAmount"
+
+[accounts.sales."4001"]
+accountMainDescription = "income.premiumsOfLeaseGrant"
+"diya-gl:ukPropertyField" = "income.premiumsOfLeaseGrant"
+
+[accounts.sales."4002"]
+accountMainDescription = "income.reversePremiums"
+"diya-gl:ukPropertyField" = "income.reversePremiums"
+
+[accounts.sales."4003"]
+accountMainDescription = "income.otherIncome"
+"diya-gl:ukPropertyField" = "income.otherIncome"
+
+[accounts.sales."4006"]
+accountMainDescription = "income.taxDeducted"
+"diya-gl:ukPropertyField" = "income.taxDeducted"
+
+[accounts.purchases."5400"]
+accountMainDescription = "expenses.repairsAndMaintenance"
+"diya-gl:ukPropertyField" = "expenses.repairsAndMaintenance"
+
+[accounts.purchases."5002"]
+accountMainDescription = "expenses.other"
+"diya-gl:ukPropertyField" = "expenses.other"
+
+[accounts.purchases."5100"]
+accountMainDescription = "expenses.premisesRunningCosts"
+"diya-gl:ukPropertyField" = "expenses.premisesRunningCosts"
+
+[accounts.purchases."5101"]
+accountMainDescription = "expenses.financialCosts"
+"diya-gl:ukPropertyField" = "expenses.financialCosts"
+
+[accounts.purchases."5800"]
+accountMainDescription = "expenses.professionalFees"
+"diya-gl:ukPropertyField" = "expenses.professionalFees"
+
+[accounts.purchases."5102"]
+accountMainDescription = "expenses.costOfServices"
+"diya-gl:ukPropertyField" = "expenses.costOfServices"
+
+[accounts.purchases."5103"]
+accountMainDescription = "expenses.residentialFinancialCost"
+"diya-gl:ukPropertyField" = "expenses.residentialFinancialCost"
+
+[accounts.purchases."5104"]
+accountMainDescription = "expenses.travelCosts"
+"diya-gl:ukPropertyField" = "expenses.travelCosts"

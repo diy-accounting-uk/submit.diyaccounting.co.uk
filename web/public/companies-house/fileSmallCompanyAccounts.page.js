@@ -35,6 +35,12 @@ const BALANCE_SHEET_INPUT_FIELDS = [
   "otherCreditors",
   "creditorsAfterOneYear",
   "bankLoansAfterOneYear",
+  "tradeDebtors",
+  "otherDebtors",
+  "prepayments",
+  "amountsOwedToDirectors",
+  "amountsOwedToGroupUndertakings",
+  "provisionsForLiabilities",
   "calledUpShareCapital",
   "profitAndLossAccount",
 ];
@@ -42,10 +48,22 @@ const POLICY_BOXES = [
   "goingConcernStatement",
   "revenueRecognitionPolicy",
   "tangibleFixedAssetsPolicy",
+  "propertyPlantEquipmentPolicy",
+  "depreciationMethodPolicy",
+  "intangibleAssetsPolicy",
   "impairmentPolicy",
+  "inventoriesPolicy",
+  "cashCashEquivalentsPolicy",
   "financialInstrumentsPolicy",
+  "financialInstrumentsClassificationPolicy",
+  "employeeBenefitsPolicy",
+  "definedContributionPensionsPolicy",
+  "foreignCurrencyTranslationPolicy",
+  "functionalPresentationCurrencyPolicy",
+  "leasesPolicy",
   "taxPolicy",
   "currentIncomeTaxPolicy",
+  "deferredTaxPolicy",
   "dividendPolicy",
 ];
 const FIXED_ASSET_CLASSES = ["landBuildings", "plantMachinery", "furnitureFittings", "computerEquipment", "motorVehicles"];
@@ -56,6 +74,15 @@ const FIXED_ASSET_FIELDS = [
   "depreciationAtStart",
   "depreciationCharge",
   "depreciationOnDisposals",
+];
+
+const INTANGIBLE_ASSET_FIELDS = [
+  "costAtStart",
+  "additions",
+  "disposals",
+  "amortisationAtStart",
+  "amortisationCharge",
+  "amortisationOnDisposals",
 ];
 
 let company = null;
@@ -148,7 +175,8 @@ function netAssetsOf(figures) {
     figures.taxationSocialSecurity -
     (figures.accruals ?? 0) -
     figures.otherCreditors -
-    figures.creditorsAfterOneYear
+    figures.creditorsAfterOneYear -
+    figures.provisionsForLiabilities
   );
 }
 
@@ -175,6 +203,24 @@ function netBookValueOf(note) {
   );
 }
 
+function readIntangibleAssetNote() {
+  if (!document.getElementById("includeIntangibleAssetNote").checked) return undefined;
+  const note = {};
+  INTANGIBLE_ASSET_FIELDS.forEach((field) => {
+    note[field] = readPounds("intangibleNote" + upperFirst(field));
+  });
+  return note;
+}
+
+function intangibleNetBookValueOf(note) {
+  return note
+    ? note.costAtStart +
+        note.additions -
+        note.disposals -
+        (note.amortisationAtStart + note.amortisationCharge - note.amortisationOnDisposals)
+    : 0;
+}
+
 function comparativesIncluded() {
   return document.getElementById("includeComparatives").checked;
 }
@@ -196,13 +242,22 @@ function renderTotals() {
     }`;
   });
   const note = readFixedAssetNote();
+  const intangibleNote = readIntangibleAssetNote();
+  const fixedAssets = readPounds("currentFixedAssets");
   if (note) {
     const netBookValue = netBookValueOf(note);
-    const fixedAssets = readPounds("currentFixedAssets");
+    const total = netBookValue + intangibleNetBookValueOf(intangibleNote);
     document.getElementById("fixedAssetNoteTotals").textContent = `Net book value: ${netBookValue}. ${
-      netBookValue === fixedAssets
-        ? "Matches fixed assets."
-        : `Does not match fixed assets (${fixedAssets}) - correct this before previewing.`
+      total === fixedAssets ? "Matches fixed assets." : `Does not match fixed assets (${fixedAssets}) - correct this before previewing.`
+    }`;
+  }
+  if (intangibleNote) {
+    const netBookValue = intangibleNetBookValueOf(intangibleNote);
+    const total = netBookValue + (note ? netBookValueOf(note) : 0);
+    document.getElementById("intangibleAssetNoteTotals").textContent = `Net book value: ${netBookValue}. ${
+      total === fixedAssets
+        ? "With the tangible fixed assets note, matches fixed assets."
+        : `With the tangible fixed assets note, does not match fixed assets (${fixedAssets}) - correct this before previewing.`
     }`;
   }
 }
@@ -211,6 +266,9 @@ function toggleSections() {
   applyProfitAndLossFormat();
   document.getElementById("comparativeFields").style.display = comparativesIncluded() ? "block" : "none";
   document.getElementById("fixedAssetNoteFields").style.display = document.getElementById("includeFixedAssetNote").checked
+    ? "block"
+    : "none";
+  document.getElementById("intangibleAssetNoteFields").style.display = document.getElementById("includeIntangibleAssetNote").checked
     ? "block"
     : "none";
   window.accountsFormSections.showAccountantsReportFields();
@@ -252,6 +310,7 @@ function readPolicies() {
 function buildAccountsPayload() {
   const includeComparatives = comparativesIncluded();
   const fixedAssetNote = readFixedAssetNote();
+  const intangibleAssetNote = readIntangibleAssetNote();
   const registeredOffice = window.accountsFormSections.readRegisteredOffice();
   const accountantsReport = window.accountsFormSections.readAccountantsReport();
   const controllingParty = window.accountsFormSections.readControllingParty();
@@ -292,6 +351,7 @@ function buildAccountsPayload() {
         ...(includeComparatives ? { priorYear: readProfitAndLoss("prior") } : {}),
       },
       ...(fixedAssetNote ? { fixedAssetNote } : {}),
+      ...(intangibleAssetNote ? { intangibleAssetNote } : {}),
       ...readPolicies(),
       ...(controllingParty ? { controllingParty } : {}),
     },
@@ -310,10 +370,23 @@ function formProblem() {
     if (balanceSheet.bankLoansAfterOneYear > balanceSheet.creditorsAfterOneYear) {
       return "Bank loans due after one year cannot be more than the creditors due after one year.";
     }
+    const debtorsSplit = balanceSheet.tradeDebtors + balanceSheet.otherDebtors + balanceSheet.prepayments;
+    if (debtorsSplit !== 0 && debtorsSplit !== balanceSheet.debtors) {
+      return "Trade debtors, other debtors and prepayments must add up to the debtors for every year before previewing.";
+    }
+    const afterOneYearSplit =
+      balanceSheet.bankLoansAfterOneYear + balanceSheet.amountsOwedToDirectors + balanceSheet.amountsOwedToGroupUndertakings;
+    if (afterOneYearSplit > balanceSheet.creditorsAfterOneYear) {
+      return "Bank loans, amounts owed to directors and amounts owed to group undertakings cannot be more than the creditors due after one year.";
+    }
   }
   const note = readFixedAssetNote();
-  if (note && netBookValueOf(note) !== readPounds("currentFixedAssets")) {
-    return "The tangible fixed assets note's net book value must equal the fixed assets before previewing.";
+  const intangibleNote = readIntangibleAssetNote();
+  if (
+    (note || intangibleNote) &&
+    (note ? netBookValueOf(note) : 0) + intangibleNetBookValueOf(intangibleNote) !== readPounds("currentFixedAssets")
+  ) {
+    return "The fixed assets notes' net book value must equal the fixed assets before previewing.";
   }
   return null;
 }
@@ -474,6 +547,7 @@ document.getElementById("accountsForm").addEventListener("submit", handleAccount
 document.getElementById("accountsForm").addEventListener("input", renderTotals);
 document.getElementById("includeComparatives").addEventListener("change", toggleSections);
 document.getElementById("includeFixedAssetNote").addEventListener("change", toggleSections);
+document.getElementById("includeIntangibleAssetNote").addEventListener("change", toggleSections);
 document.getElementById("includeAccountantsReport").addEventListener("change", toggleSections);
 document.querySelectorAll('input[name="controllingParty"]').forEach((radio) => radio.addEventListener("change", toggleSections));
 document.querySelectorAll('input[name="profitAndLossFormat"]').forEach((radio) => radio.addEventListener("change", toggleSections));

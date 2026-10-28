@@ -32,7 +32,25 @@ const FIGURES_FIELDS = [
   "annualInvestmentAllowance",
   "mainPoolAllowances",
   "mainPoolBalancingCharges",
+  "fullExpensingAllowances",
+  "fullExpensingBalancingCharges",
+  "specialRateAllowances",
+  "specialRateBalancingCharges",
+  "specialRatePoolAllowances",
+  "specialRatePoolAnnualInvestmentAllowance",
+  "specialRatePoolBalancingCharges",
+  "annualInvestmentAllowanceOutsideTrade",
+  "firstYearAllowanceExpenditure",
+  "specialRateAllowanceExpenditure",
+  "otherMachineryAndPlantExpenditure",
   "lossesBroughtForward",
+  "lossOutsideUk",
+  "lossAgainstTotalProfits",
+  "lossesBroughtForwardAgainstTotalProfits",
+  "lossCarriedBack",
+  "priorPeriodChargeableProfits",
+  "donations",
+  "directorsLoanOverdrawn",
   "frankedInvestmentIncome",
   "incomeTaxDeducted",
   "taxAlreadyPaid",
@@ -208,10 +226,10 @@ export function extractAndValidateCtReturnParameters(
  * every box and computation line from the figures, so the return, the accounts and the
  * computations name the same company, UTR and declarant.
  * @param {ReturnType<typeof extractAndValidateCtReturnParameters>} request
- * @returns {{irEnvelopeXml: string, accountsIxbrl: string, computationsIxbrl: string, boxes: object, computationLines: object, worked: object}}
+ * @returns {{irEnvelopeXml: string, accountsIxbrl: string, computationsIxbrl: string, boxes: object, computationLines: object, losses: object, carryBack: object|undefined, worked: object}}
  */
 export function buildCtReturnDocuments({ accounts, utr, tradeName, figures }) {
-  const { boxes, computationLines, worked, periodStart, periodEnd } = deriveCt600FromFigures(
+  const { boxes, computationLines, losses, carryBack, worked, periodStart, periodEnd } = deriveCt600FromFigures(
     figures,
     ltdTaxDataForPeriodEnd(figures.periodEnd),
   );
@@ -224,7 +242,10 @@ export function buildCtReturnDocuments({ accounts, utr, tradeName, figures }) {
     periodEnd,
     tradeName,
     lines: computationLines,
+    losses,
+    carryBack,
+    tradeOutsideUk: figures.lossOutsideUk === true,
   });
   const irEnvelopeXml = buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl });
-  return { irEnvelopeXml, accountsIxbrl, computationsIxbrl, boxes, computationLines, worked };
+  return { irEnvelopeXml, accountsIxbrl, computationsIxbrl, boxes, computationLines, losses, carryBack, worked };
 }

@@ -24,6 +24,7 @@ import {
   buildDimensionedContext,
   balanceSheetFacts,
   balanceSheetRows,
+  OPTIONAL_BALANCE_SHEET_HEADINGS,
   pageHeading,
   coverPage,
   approvalHtml,
@@ -163,6 +164,17 @@ export function sharesIssuedFor(calledUpShareCapital, nominalValue) {
   return Number.isInteger(shares) ? shares : null;
 }
 
+// A heading shows in every year once any year carries a figure for it, so both columns agree;
+// a heading no year carries is left out.
+function withOptionalHeadings(balanceSheetYears) {
+  const keys = OPTIONAL_BALANCE_SHEET_HEADINGS.map(({ key }) => key);
+  const shown = keys.filter((key) => balanceSheetYears.some((figures) => (figures[key] ?? 0) !== 0));
+  return balanceSheetYears.map((figures) => {
+    const kept = Object.fromEntries(Object.entries(figures).filter(([key]) => !keys.includes(key)));
+    return { ...kept, ...Object.fromEntries(shown.map((key) => [key, figures[key] ?? 0])) };
+  });
+}
+
 /**
  * Build a micro-entity's FRS 105 annual accounts as one iXBRL document.
  *
@@ -185,6 +197,8 @@ export function sharesIssuedFor(calledUpShareCapital, nominalValue) {
  * @param {object} input.balanceSheet
  * @param {object} input.balanceSheet.current - fixedAssets, currentAssets, creditorsWithinOneYear,
  *   creditorsAfterOneYear, calledUpShareCapital, profitAndLossAccount, capitalAndReserves
+ * @param {number} [input.balanceSheet.current.calledUpShareCapitalNotPaid] - and prepaymentsAccruedIncome, provisionsForLiabilities,
+ *   accrualsDeferredIncome: optional headings that enter the balance sheet totals
  * @param {object} [input.balanceSheet.prior] - the same shape as current, for the comparative year
  * @param {{current: object, prior?: object}} [input.profitAndLoss] - MICRO_PROFIT_AND_LOSS_LINES; when
  *   present the document is the full copy HMRC takes with a Company Tax Return, with the profit and
@@ -240,6 +254,9 @@ export function buildMicroEntityAccounts(input) {
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">${input.dormant ? "true" : "false"}</ix:nonNumeric>`,
   );
   if (input.dormant) {
+    hiddenFacts.push(
+      `<ix:nonNumeric name="${qname(CONCEPTS.companyHasActedAsAnAgent)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
+    );
     const tradingStatusContextId = buildDimensionedContext({
       additionalContexts,
       entityIdentifierXml,
@@ -270,6 +287,7 @@ export function buildMicroEntityAccounts(input) {
     hiddenFacts.push(renderFixedFact(conceptKey, contextRef));
   }
 
+  const balanceSheetYears = withOptionalHeadings([input.balanceSheet.current, input.balanceSheet.prior].filter(Boolean));
   const years = [
     balanceSheetFacts({
       contextRef: refs.currentInstant,
@@ -277,7 +295,7 @@ export function buildMicroEntityAccounts(input) {
       periodXml: periodXml[refs.currentInstant],
       additionalContexts,
       unitRef: "GBP",
-      figures: input.balanceSheet.current,
+      figures: balanceSheetYears[0],
     }),
   ];
   const columns = [input.periodEnd.slice(0, 4)];
@@ -289,7 +307,7 @@ export function buildMicroEntityAccounts(input) {
         periodXml: periodXml[refs.priorInstant],
         additionalContexts,
         unitRef: "GBP",
-        figures: input.balanceSheet.prior,
+        figures: balanceSheetYears[1],
       }),
     );
     columns.push(refs.priorInstant.slice(1));
@@ -309,7 +327,11 @@ export function buildMicroEntityAccounts(input) {
 
   let shareCapitalNote;
   if (input.dormant) {
-    const sharesIssued = sharesIssuedFor(input.balanceSheet.current.calledUpShareCapital, input.nominalValue);
+    const calledUp = input.balanceSheet.current.calledUpShareCapital;
+    const unpaid = input.balanceSheet.current.calledUpShareCapitalNotPaid ?? 0;
+    const sharesIssued = sharesIssuedFor(calledUp - unpaid, input.nominalValue);
+    const sharesAllotted = unpaid > 0 ? sharesIssuedFor(calledUp, input.nominalValue) : sharesIssued;
+    const paidVerb = sharesIssued === 1 ? "is" : "are";
     const shareClassDimensionXml = dimensionMemberXml(DIMENSIONS.entityShareClasses, MEMBERS[input.shareClass]);
     // The number of shares is held at the balance sheet date (an instant); the nominal value is
     // a duration item in the FRC taxonomy, so each fact takes its own share-class context.
@@ -329,7 +351,10 @@ export function buildMicroEntityAccounts(input) {
     });
     notes.push({
       title: "Called up share capital",
-      html: `<p>Allotted, called up and fully paid: <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesIssued)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction> each.</p>`,
+      html:
+        unpaid > 0
+          ? `<p>Allotted and called up: <ix:nonFraction name="${qname(CONCEPTS.numberSharesAllotted)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesAllotted)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesAllotted)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction> each, of which <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${paidVerb} fully paid.</p>`
+          : `<p>Allotted, called up and fully paid: <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesIssued)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction> each.</p>`,
     });
     shareCapitalNote = notes.length;
   }

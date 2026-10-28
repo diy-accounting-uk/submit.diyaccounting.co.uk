@@ -69,6 +69,8 @@ export function smallCompanyLinesFromPublishedBalanceSheet(sheet) {
     fixedAssets: sheet.F6 ?? 0,
     stocks: sheet.E10 ?? 0,
     debtors: sheet.E11 ?? 0,
+    tradeDebtors: sheet.E11 ?? 0,
+    otherDebtors: 0,
     cashAtBank: sheet.E12 ?? 0,
     bankLoansOverdrafts: sheet.E19 ?? 0,
     tradeCreditors: sheet.E16 ?? 0,
@@ -76,6 +78,7 @@ export function smallCompanyLinesFromPublishedBalanceSheet(sheet) {
     taxationSocialSecurity: sheet.E18 ?? 0,
     otherCreditors: 0,
     creditorsAfterOneYear: sheet.F31 ?? 0,
+    amountsOwedToDirectors: sheet.E29 ?? 0,
     calledUpShareCapital: sheet.F36 ?? 0,
     profitAndLossAccount: shareholdersFunds - (sheet.F36 ?? 0),
     capitalAndReserves: shareholdersFunds,
@@ -91,7 +94,9 @@ export function smallCompanyLinesFromOpeningBalance(opening = {}) {
   const at = (key) => opening[key] || 0;
   const fixedAssets = sumValues(opening.fixed_asset_cost) - sumValues(opening.fixed_asset_depreciation);
   const stocks = at("stock");
-  const debtors = at("trade_debtors") + at("long_term_debtors");
+  const tradeDebtors = at("trade_debtors");
+  const otherDebtors = at("long_term_debtors");
+  const debtors = tradeDebtors + otherDebtors;
   const statementAccounts = at("current_account") + at("savings_account") + at("credit_card");
   const bankLoansOverdrafts = statementAccounts < 0 ? -statementAccounts : 0;
   const cashAtBank = (statementAccounts < 0 ? 0 : statementAccounts) + at("cash");
@@ -99,7 +104,8 @@ export function smallCompanyLinesFromOpeningBalance(opening = {}) {
   const corporationTax = at("corporation_tax");
   const taxationSocialSecurity = at("paye_due") + at("vat_due") + at("cis_due");
   const otherCreditors = at("net_wages_due") + at("wage_deductions_due") + at("dividends_due");
-  const creditorsAfterOneYear = at("directors_loan") + at("long_term_creditors");
+  const amountsOwedToDirectors = at("directors_loan");
+  const creditorsAfterOneYear = amountsOwedToDirectors + at("long_term_creditors");
   const calledUpShareCapital = at("share_capital");
   const profitAndLossAccount = at("retained_earnings") + at("capital_reserves");
   const capitalAndReserves = calledUpShareCapital + profitAndLossAccount;
@@ -124,6 +130,8 @@ export function smallCompanyLinesFromOpeningBalance(opening = {}) {
     fixedAssets,
     stocks,
     debtors,
+    tradeDebtors,
+    otherDebtors,
     cashAtBank,
     bankLoansOverdrafts,
     tradeCreditors,
@@ -131,6 +139,7 @@ export function smallCompanyLinesFromOpeningBalance(opening = {}) {
     taxationSocialSecurity,
     otherCreditors,
     creditorsAfterOneYear,
+    amountsOwedToDirectors,
     calledUpShareCapital,
     profitAndLossAccount,
     capitalAndReserves,
@@ -152,6 +161,10 @@ export function roundSmallCompanyBalanceSheet(lines) {
   const taxationSocialSecurity = Math.round(lines.taxationSocialSecurity);
   const otherCreditors = Math.round(lines.otherCreditors);
   const creditorsAfterOneYear = Math.round(lines.creditorsAfterOneYear);
+  // The debtors split adds up to the rounded debtors, and the directors' loan stays within the creditors it splits.
+  const otherDebtors = Math.round(lines.otherDebtors ?? 0);
+  const tradeDebtors = debtors - otherDebtors;
+  const amountsOwedToDirectors = Math.min(Math.round(lines.amountsOwedToDirectors ?? 0), creditorsAfterOneYear);
   const calledUpShareCapital = Math.round(lines.calledUpShareCapital);
   const capitalAndReserves =
     fixedAssets +
@@ -168,6 +181,8 @@ export function roundSmallCompanyBalanceSheet(lines) {
     fixedAssets,
     stocks,
     debtors,
+    tradeDebtors,
+    otherDebtors,
     cashAtBank,
     bankLoansOverdrafts,
     tradeCreditors,
@@ -175,6 +190,7 @@ export function roundSmallCompanyBalanceSheet(lines) {
     taxationSocialSecurity,
     otherCreditors,
     creditorsAfterOneYear,
+    amountsOwedToDirectors,
     calledUpShareCapital,
     profitAndLossAccount: capitalAndReserves - calledUpShareCapital,
     capitalAndReserves,

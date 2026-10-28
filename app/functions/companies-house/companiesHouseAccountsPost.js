@@ -56,6 +56,14 @@ const AGENT_AUTHORISATION_SERVICE = "CH-ACCOUNTS";
 const MIN_COMPANY_AUTH_CODE_LENGTH = 6;
 const MAX_COMPANY_AUTH_CODE_LENGTH = 8;
 
+// Statutory micro format 1 headings a year may leave out; a figure given must be a number of pounds above zero.
+const OPTIONAL_BALANCE_SHEET_FIELDS = [
+  "calledUpShareCapitalNotPaid",
+  "prepaymentsAccruedIncome",
+  "provisionsForLiabilities",
+  "accrualsDeferredIncome",
+];
+
 const BALANCE_SHEET_FIELDS = [
   "fixedAssets",
   "currentAssets",
@@ -279,6 +287,17 @@ function validateDormantFiling({ currentYear, priorYear, dormantTradingStatus, s
     errorMessages.push("balanceSheet.currentYear.calledUpShareCapital is not a whole number of shares at the nominal value");
   }
   if (
+    currentYear.calledUpShareCapitalNotPaid > 0 &&
+    Number.isFinite(numericNominalValue) &&
+    numericNominalValue > 0 &&
+    (currentYear.calledUpShareCapitalNotPaid > currentYear.calledUpShareCapital ||
+      sharesIssuedFor(currentYear.calledUpShareCapital - currentYear.calledUpShareCapitalNotPaid, numericNominalValue) === null)
+  ) {
+    errorMessages.push(
+      "balanceSheet.currentYear.calledUpShareCapitalNotPaid must be a whole number of shares at the nominal value and no more than the called up share capital",
+    );
+  }
+  if (
     Number.isFinite(currentYear.profitAndLossAccount) &&
     Number.isFinite(priorYear.profitAndLossAccount) &&
     currentYear.profitAndLossAccount !== priorYear.profitAndLossAccount
@@ -297,6 +316,16 @@ function extractAndValidateBalanceSheetYear(yearValues, yearLabel, errorMessages
     }
     year[field] = numericValue;
   }
+  for (const field of OPTIONAL_BALANCE_SHEET_FIELDS) {
+    const rawValue = yearValues?.[field];
+    if (rawValue === undefined || rawValue === null || rawValue === "") continue;
+    const numericValue = Number(rawValue);
+    if (!Number.isFinite(numericValue) || numericValue < 0) {
+      errorMessages.push(`Invalid balanceSheet.${yearLabel}.${field} - must be a number of pounds, zero or more`);
+    } else {
+      year[field] = numericValue;
+    }
+  }
   return year;
 }
 
@@ -306,9 +335,13 @@ function validateBalanceSheetAddsUp(year, yearLabel, errorMessages) {
   if (BALANCE_SHEET_FIELDS.some((field) => !Number.isFinite(year[field]))) {
     return; // Already reported as missing/invalid above.
   }
-  const netCurrentAssets = year.currentAssets - year.creditorsWithinOneYear;
-  const totalAssetsLessCurrentLiabilities = year.fixedAssets + netCurrentAssets;
-  const netAssets = totalAssetsLessCurrentLiabilities - year.creditorsAfterOneYear;
+  const netCurrentAssets = year.currentAssets + (year.prepaymentsAccruedIncome ?? 0) - year.creditorsWithinOneYear;
+  const totalAssetsLessCurrentLiabilities = (year.calledUpShareCapitalNotPaid ?? 0) + year.fixedAssets + netCurrentAssets;
+  const netAssets =
+    totalAssetsLessCurrentLiabilities -
+    year.creditorsAfterOneYear -
+    (year.provisionsForLiabilities ?? 0) -
+    (year.accrualsDeferredIncome ?? 0);
   if (netAssets !== year.capitalAndReserves) {
     errorMessages.push(`balanceSheet.${yearLabel}.capitalAndReserves does not equal net assets (${netAssets})`);
   }

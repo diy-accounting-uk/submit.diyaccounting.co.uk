@@ -107,7 +107,7 @@ test.describe("annualSubmission.html imports a book's derived figures", () => {
     await importFile(page, "annual.json", JSON.stringify(DERIVED_2025_26));
 
     await expect(page.locator("#booksImportStatus")).toHaveText(
-      "Imported 5 figures from annual.json for 2025-26. Some fields were not on this form.",
+      "Imported 6 figures from annual.json for 2025-26. Some fields were not on this form.",
     );
     await expect(page.locator("#allowanceTypeItemised")).toBeChecked();
     await expect(page.locator("#annualInvestmentAllowance")).toHaveValue("12000");
@@ -116,6 +116,9 @@ test.describe("annualSubmission.html imports a book's derived figures", () => {
     await expect(page.locator("#capitalAllowanceMainPool")).toHaveValue("0");
     await expect(page.locator("#includedNonTaxableProfits")).toHaveValue("75.5");
     await expect(page.locator("#tradingIncomeAllowance")).toBeDisabled();
+    await expect(page.locator("#sba-1-amount")).toHaveValue("100");
+    await expect(page.locator("#sba-1-buildingName")).toHaveValue("Yard");
+    await expect(page.locator("#sba-1-amount")).toBeEnabled();
     // The file input is cleared so the same file can be picked again after an edit.
     await expect(page.locator("#booksImportFile")).toHaveValue("");
   });
