@@ -1,0 +1,162 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Foreign property annual submission - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../submission-record.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
+      <h1>Foreign property annual submission</h1>
+      <p class="subtitle">Load and save the year's foreign property adjustments and allowances</p>
+    </header>
+
+    <main id="mainContent">
+      <p class="hint" data-feature-status="sandbox">
+        <strong>Status: sandbox.</strong> This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits
+        on HMRC's recognition of our software after its 2027 update.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Load criteria -->
+      <div
+        id="loadCriteriaForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to send your foreign property annual submission"
+        data-sign-in-text="Log in to load the annual submission for a foreign property business, change the adjustments and allowances for each country or property, and save them to HMRC."
+      >
+        <h2>Load an annual submission</h2>
+        <form id="itsaForeignAnnualLoadForm" novalidate>
+          <div class="form-group">
+            <label for="nino">National Insurance number</label>
+            <p id="nino-hint" class="hint">
+              This is two letters, six numbers and a final letter, for example QQ 12 34 56 C. You can find it on your National Insurance
+              card, payslip or P60.
+            </p>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              maxlength="13"
+              spellcheck="false"
+              autocapitalize="characters"
+              aria-describedby="nino-hint"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="businessId">Business ID</label>
+            <p id="businessId-hint" class="hint">
+              Filled in when you pick a business on the Income Tax dashboard. Otherwise copy it from Business details, for example
+              XAIS12345678910.
+            </p>
+            <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
+          </div>
+
+          <div class="form-group">
+            <label for="taxYear">Tax year</label>
+            <p id="taxYear-hint" class="hint">
+              Choose the tax year. HMRC keeps one annual submission for each foreign property business and tax year.
+            </p>
+            <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+            <p id="testScenario-hint" class="hint">HMRC's retrieve defaults to not-found, so a synthetic account always sends one.</p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+              <option value="">Default (loads a foreign property submission)</option>
+              <option value="FOREIGN_ALL_OTHER_ALLOWANCES">Itemised allowances</option>
+              <option value="FOREIGN_PROPERTY_ALLOWANCE">Property income allowance</option>
+              <option value="FOREIGN_FHL_ALL_OTHER_ALLOWANCES">Furnished holiday lettings, itemised allowances</option>
+              <option value="FOREIGN_FHL_PROPERTY_ALLOWANCE">Furnished holiday lettings, property income allowance</option>
+              <option value="UK_PROPERTY">UK property (wrong business type)</option>
+              <option value="NOT_FOUND">Not Found</option>
+            </select>
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                for="runFraudPreventionHeaderValidation"
+                >Validate fraud prevention headers</label
+              >
+            </div>
+          </div>
+
+          <button type="submit" id="loadBtn" class="btn">Load annual submission</button>
+        </form>
+      </div>
+
+      <!-- Edit form, shown once a submission has been loaded (or for a first-time entry) -->
+      <div id="annualEditForm" class="form-container" style="display: none">
+        <h2>Adjustments and allowances</h2>
+        <p class="hint">Amounts are in pounds sterling; convert at the rate of the day or an average rate.</p>
+        <div id="loadNotes"></div>
+        <div id="fhlAnnual"></div>
+        <div id="annualEntries"></div>
+
+        <div id="submissionCost" class="submission-cost"></div>
+        <button type="button" id="saveBtn" class="btn">Save annual submission</button>
+      </div>
+
+      <!-- Results Display -->
+      <div id="annualSubmissionResults" class="results-container" style="display: none">
+        <div id="annualSubmissionCopy"></div>
+        <div class="button-group">
+          <button type="button" id="newSearchBtn" class="secondary-button">Load another</button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/carried-identifiers.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/money-input.js"></script>
+    <script src="../../lib/self-employment-expenses.js"></script>
+    <script src="../../lib/structured-building-allowance-rows.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script src="../../lib/itsaSubmissionModel.js"></script>
+    <script src="../../lib/country-codes.js"></script>
+    <script src="../../widgets/foreign-property-entries.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../widgets/submission-cost.js"></script>
+    <script src="foreignPropertyAnnualSubmission.page.js"></script>
+  </body>
+</html>

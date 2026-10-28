@@ -48,6 +48,13 @@ const FIELD_LABELS = {
   "zeroEmissionsCarAllowance": "Zero emissions car allowance",
   "otherCapitalAllowance": "Other capital allowance",
   "costOfReplacingDomesticItems": "Cost of replacing domestic items",
+  "zeroEmissionsGoodsVehicleAllowance": "Zero emissions goods vehicle allowance",
+  "electricChargePointAllowance": "Electric charge point allowance",
+  "periodOfGraceAdjustment": "Period of grace adjustment",
+  "structuredBuildingAllowance": "Structures and Buildings Allowance",
+  "enhancedStructuredBuildingAllowance": "Freeport Structures and Buildings Allowance",
+  "firstYear: qualifyingDate": "Date the building first qualified",
+  "firstYear: qualifyingAmountExpenditure": "Qualifying expenditure",
   // Non-financial details
   "class4NicsExemptionReason": "Class 4 National Insurance exemption reason",
   // Period income
@@ -100,6 +107,9 @@ const FIELD_LABELS = {
   "carryBackLossesDecrease: class4": "Class 4 National Insurance decreased",
   "carryBackLossesDecrease: capitalGainsTax": "Capital gains tax decreased",
 };
+
+// The building a Structures and Buildings Allowance claim names: text, not a figure.
+const BUILDING_TEXT_KEYS = ["name", "number", "postcode"];
 
 const CLAIM_ORDER_LABELS = {
   "carry-sideways": "Carry sideways first",
@@ -173,6 +183,9 @@ function collectEntries(group, path = []) {
   return Object.entries(group).flatMap(([key, value]) => {
     if (value === undefined) return [];
     if (isRecordObject(value)) return collectEntries(value, [...path, key]);
+    if (Array.isArray(value) && value.length > 0 && value.every(isRecordObject)) {
+      return value.flatMap((item, index) => collectEntries(item, [...path, key, `Claim ${index + 1}`]));
+    }
     return [{ path: [...path, key], value }];
   });
 }
@@ -191,6 +204,7 @@ function valueCell(entry) {
   }
   if (leaf === "applyFirst" && nonEmptyText(value)) return textCell(CLAIM_ORDER_LABELS[value.trim()] || humanise(value));
   if (typeof value === "string" && formatLongDate(value)) return textCell(formatLongDate(value));
+  if (BUILDING_TEXT_KEYS.includes(leaf) && nonEmptyText(value)) return textCell(value.trim());
   return textCell(ABSENT);
 }
 
@@ -219,6 +233,47 @@ function referenceLines({ nino, businessId, correlationId }) {
   return lines;
 }
 
+// One adjustments table and one allowances table for each entry of a foreign property annual
+// submission: the EEA furnished holiday lettings (2024-25 and before) and each country or property.
+function foreignAnnualSections(entries, columnHeading, recordHead) {
+  if (entries.length === 0) {
+    return [
+      {
+        heading: "Adjustments and allowances",
+        explanation: "These are the adjustments and allowances you sent.",
+        recordHtml: `${recordHead}<p class="no-data">You sent no adjustments or allowances for this year.</p>`,
+      },
+    ];
+  }
+  const table = (group, idPrefix, none) => {
+    const rows = collectEntries(group);
+    return rows.length > 0 ? entriesTable(columnHeading, rows, idPrefix) : `<p class="no-data">${escapeRecordText(none)}</p>`;
+  };
+  return entries.flatMap((entry, index) => {
+    const name = entry.name;
+    return [
+      {
+        heading: `${name}: adjustments`,
+        explanation:
+          index === 0
+            ? "These are the adjustments to the year's profit that you sent, one table for each country or property. A figure you left at 0 was not sent, so it does not appear."
+            : "",
+        recordHtml:
+          (index === 0 ? recordHead : "") +
+          table(entry.adjustments, `annual-${entry.id}-adjustments`, `You sent no adjustments for ${name}.`),
+      },
+      {
+        heading: `${name}: allowances`,
+        explanation:
+          index === 0
+            ? "These are the allowances you claimed for the year. HMRC accepts the property income allowance or the itemised allowances, but not both."
+            : "",
+        recordHtml: table(entry.allowances, `annual-${entry.id}-allowances`, `You sent no allowances for ${name}.`),
+      },
+    ];
+  });
+}
+
 /**
  * The customer copy of an annual submission as saved: the adjustments, allowances and other
  * details that were sent, the business and the date HMRC accepted them. HMRC answers a save
@@ -226,13 +281,14 @@ function referenceLines({ nino, businessId, correlationId }) {
  * when it sent one, is the second reference line.
  *
  * @param {object} input
- * @param {"self-employment"|"uk-property"} input.kind
+ * @param {"self-employment"|"uk-property"|"foreign-property"} input.kind
  * @param {string} [input.nino]
  * @param {string} [input.businessId]
  * @param {string} [input.taxYear] - e.g. "2024-25"
  * @param {string} [input.savedAt] - ISO timestamp of the save
  * @param {string|null} [input.correlationId] - HMRC's X-CorrelationId for the save
- * @param {{adjustments?: object, allowances?: object, nonFinancials?: object}} [input.sent]
+ * @param {{adjustments?: object, allowances?: object, nonFinancials?: object, entries?: {id: string, name: string, adjustments?: object, allowances?: object}[]}} [input.sent]
+ *   a foreign property submission sends entries: one for each country, property or EEA furnished holiday letting section
  * @param {{href: string, text: string}[]} [input.links]
  * @returns {string}
  */
@@ -250,18 +306,22 @@ export function annualCopyHtml({ kind, nino, businessId, taxYear, savedAt, corre
     subtitleHtml: escapeRecordText(saved ? `Saved with HMRC on ${saved}` : "Saved with HMRC"),
   });
 
-  const sections = ANNUAL_SECTIONS.map((section, index) => {
-    const entries = collectEntries(groups[section.key]);
-    const body =
-      entries.length > 0
-        ? entriesTable(columnHeading, entries, `annual-${section.key}`)
-        : `<p class="no-data">You sent no ${section.heading.toLowerCase()} for this year.</p>`;
-    return {
-      heading: section.heading,
-      explanation: section.explanation,
-      recordHtml: (index === 0 ? recordHead : "") + body,
-    };
-  });
+  const foreignEntries = Array.isArray(groups.entries) ? groups.entries : [];
+  const sections =
+    kind === "foreign-property"
+      ? foreignAnnualSections(foreignEntries, columnHeading, recordHead)
+      : ANNUAL_SECTIONS.map((section, index) => {
+          const entries = collectEntries(groups[section.key]);
+          const body =
+            entries.length > 0
+              ? entriesTable(columnHeading, entries, `annual-${section.key}`)
+              : `<p class="no-data">You sent no ${section.heading.toLowerCase()} for this year.</p>`;
+          return {
+            heading: section.heading,
+            explanation: section.explanation,
+            recordHtml: (index === 0 ? recordHead : "") + body,
+          };
+        });
 
   return customerCopyHtml({
     title: year
