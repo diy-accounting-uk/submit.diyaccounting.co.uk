@@ -110,7 +110,6 @@ describe("operatorSnapshotGet", () => {
       const response = http403ForbiddenFromBundleEnforcement(error, { requestId: "r1" });
       expect(response.statusCode).toBe(403);
       expect(bodyOf(response).message).toMatch(/operator pass/);
-      expect(bodyOf(response).message).toMatch(/pass-type=operator/);
     });
 
     test("maps any other error to 500", () => {

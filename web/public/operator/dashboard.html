@@ -27,13 +27,15 @@
     <header>
       <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
       <h1>Operator Dashboard</h1>
-      <p class="subtitle">The eight objectives, from last night's snapshot</p>
+      <p class="subtitle">The eight objectives, from the latest snapshot</p>
     </header>
 
     <main id="mainContent">
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
       <p id="snapshotMeta" class="snapshot-meta"></p>
+      <p id="snapshotSource" class="snapshot-meta"></p>
+      <p id="snapshotAge" class="status-message status-warning" role="status" hidden></p>
 
       <section id="reinvestmentPanel" class="objective" hidden>
         <h2>Reinvestment</h2>
@@ -98,13 +100,13 @@
               <th>Last 1 day</th>
               <th>Last 7 days</th>
               <th>Last 30 days</th>
-              <th>Trend</th>
+              <th title="Last 30 days against the 30 days before them">vs previous 30 days</th>
               <th>Last 90 days</th>
               <th>Last 1 hour</th>
               <th>Last 1 day</th>
               <th>Last 7 days</th>
               <th>Last 30 days</th>
-              <th>Trend</th>
+              <th title="Last 30 days against the 30 days before them">vs previous 30 days</th>
               <th>Last 90 days</th>
             </tr>
           </thead>
@@ -125,7 +127,7 @@
                 <th>Last 1 day</th>
                 <th>Last 7 days</th>
                 <th>Last 30 days</th>
-                <th>Trend</th>
+                <th title="Last 30 days against the 30 days before them">vs previous 30 days</th>
                 <th>Last 90 days</th>
               </tr>
             </thead>

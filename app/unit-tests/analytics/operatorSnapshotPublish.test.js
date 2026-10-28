@@ -51,6 +51,9 @@ import {
   buildWindowedBatchSql,
   buildFastWindowBatchSql,
   computeTrend,
+  betterDirection,
+  measureDescription,
+  OBJECTIVE_GUIDANCE,
   toObservationWindows,
   toActivityFastWindows,
   buildSnapshot,
@@ -260,6 +263,43 @@ describe("operatorSnapshotPublish", () => {
         observations: [{ valueExpr: "variance_usd", aggregation: "avg" }],
       });
       expect(sql).toContain("avg(CASE WHEN month > date_add('day', -30, current_date) THEN variance_usd END) AS o0_last_30");
+    });
+  });
+
+  describe("observation guidance", () => {
+    test("better names the good direction for a figure, and none for a neutral one", () => {
+      expect(betterDirection("alarms-fired")).toBe("down");
+      expect(betterDirection("revenue-gbp")).toBe("up");
+      expect(betterDirection("submit-vat::started")).toBe("up");
+      expect(betterDirection("sessions-bot")).toBeNull();
+    });
+
+    test("measureDescription says how a window is built from its periods", () => {
+      expect(measureDescription({ aggregation: "sum", dayColumn: "day" })).toBe("total of the days");
+      expect(measureDescription({ aggregation: "avg", dayColumn: "day" })).toBe("average of the days");
+      expect(measureDescription({ aggregation: "avg", dayColumn: "month" })).toBe("average of the months");
+      expect(measureDescription({ aggregation: "max", dayColumn: "dt" })).toBe("highest in the window");
+    });
+
+    test("every defined observation has a measure, and every dashboard objective carries what it measures", () => {
+      for (const objective of OBJECTIVE_DEFINITIONS) {
+        for (const observation of objective.observations) {
+          expect(measureDescription(observation), observation.id).toBeTruthy();
+        }
+      }
+      for (const id of [
+        "uptime",
+        "conversion-to-submission",
+        "conversion-to-paid",
+        "low-running-cost",
+        "security",
+        "retention",
+        "operator-effort",
+        "compliance",
+      ]) {
+        expect(OBJECTIVE_GUIDANCE[id].sli, id).toBeTruthy();
+        expect(OBJECTIVE_GUIDANCE[id].levers, id).toBeTruthy();
+      }
     });
   });
 

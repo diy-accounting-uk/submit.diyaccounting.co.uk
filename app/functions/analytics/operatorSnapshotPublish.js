@@ -722,6 +722,110 @@ export const OBJECTIVE_DEFINITIONS = [
   },
 ];
 
+// Which way a figure should move for the business: "up" when a rise is good, "down" when a
+// fall is good. An observation not listed has no preferred direction and its trend is not
+// coloured. Every activity's started and completed pair counts as "up".
+const BETTER_UP_IDS = [
+  "probe-pass-rate",
+  "error-budget-remaining-runs",
+  "deploy-frequency",
+  "agent-posted-rate",
+  "agent-pr-accepted-rate",
+  "login-to-submission-conversion",
+  "completions-by-activity",
+  "new-accounts",
+  "sessions-by-channel",
+  "sessions-human",
+  "revenue-gbp",
+  "revenue-donations-gbp",
+  "donations-count",
+  "revenue-paypal-donations-gbp",
+  "paypal-donations-count",
+  "revenue-subscriptions-gbp",
+  "passes-issued",
+  "passes-redeemed",
+  "paid-landings",
+  "returning-submitters",
+  "subscription-renewals",
+  "company-turnover",
+  "company-profit",
+];
+const BETTER_DOWN_IDS = [
+  "alarms-fired",
+  "deploy-failure-rate",
+  "agent-median-hours-to-close",
+  "monthly-cost-usd",
+  "cost-variance-vs-target-usd",
+  "cost-per-completion-usd",
+  "ads-cost-gbp",
+  "ads-cost-per-paid-landing-gbp",
+  "security-hub-open-findings",
+  "security-hub-critical-findings",
+  "guardduty-open-findings",
+  "github-open-alerts",
+  "subscription-cancellations",
+  "operator-interventions-total",
+  "operator-manual-dispatches",
+  "operator-authored-commits",
+  "accessibility-open-findings",
+  "fraud-header-open-findings",
+  "company-costs",
+];
+
+export function betterDirection(observationId) {
+  if (observationId.includes("::") || BETTER_UP_IDS.includes(observationId)) return "up";
+  if (BETTER_DOWN_IDS.includes(observationId)) return "down";
+  return null;
+}
+
+const PERIOD_NAME_BY_DAY_COLUMN = { month: "months", quarter: "quarters" };
+
+// How a window's figure is built from the days, months or quarters inside it.
+export function measureDescription(observation) {
+  const periods = PERIOD_NAME_BY_DAY_COLUMN[observation.dayColumn] ?? "days";
+  if (observation.aggregation === "sum") return `total of the ${periods}`;
+  if (observation.aggregation === "avg") return `average of the ${periods}`;
+  if (observation.aggregation === "max") return "highest in the window";
+  return "count of rows";
+}
+
+// What each objective measures (its SLI), the target where one is set, and what moves it.
+export const OBJECTIVE_GUIDANCE = {
+  "uptime": {
+    sli: "Share of synthetic probe runs that pass.",
+    levers: "Fix the failing probe, add capacity to the slow dependency, roll back a bad deploy.",
+  },
+  "conversion-to-submission": {
+    sli: "Share of signed-in visitors who go on to submit.",
+    levers: "Sign-in friction, the first screen after sign-in, guide and video content, search and ad landing pages.",
+  },
+  "conversion-to-paid": {
+    sli: "Revenue and paid conversions from donations, subscriptions and passes.",
+    levers: "Price, the bundle page, the donation prompt after a submission, pass campaigns.",
+  },
+  "low-running-cost": {
+    sli: "AWS spend per month and per completed submission, and paid-advertising spend per landing.",
+    target: "AWS spend of $64.77 a month.",
+    levers: "Retire idle stacks, shorten log retention, cut provisioned concurrency, set the ads daily budget.",
+  },
+  "security": {
+    sli: "Open findings in Security Hub, GuardDuty and GitHub.",
+    levers: "Patch the dependency or fix the configuration each finding names.",
+  },
+  "retention": {
+    sli: "Customers who submit again, renew, or cancel.",
+    levers: "Reminders before each deadline, renewal prompts, cancellation follow-up.",
+  },
+  "operator-effort": {
+    sli: "Hand-run workflows and operator-authored commits.",
+    levers: "Automate the repeated hand-run workflow; move the commit to a sub-agent.",
+  },
+  "compliance": {
+    sli: "Open accessibility and fraud-prevention header findings.",
+    levers: "Fix the finding the compliance workflow reports.",
+  },
+};
+
 let cachedAthenaClient = null;
 let cachedS3Client = null;
 
@@ -1091,6 +1195,9 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
         last30: windows.last30,
         last90: windows.last90,
         deepLink: observation.deepLink(context),
+        source: observation.view,
+        measure: measureDescription(observation),
+        better: betterDirection(observation.id),
         ...(fast.resultsById.get(observation.id) ?? {}),
       };
       if (windows.dataSince) {
@@ -1098,7 +1205,7 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
       }
       return observationResult;
     });
-    return { id: objective.id, name: objective.name, observations };
+    return { id: objective.id, name: objective.name, ...OBJECTIVE_GUIDANCE[objective.id], observations };
   });
 
   return {

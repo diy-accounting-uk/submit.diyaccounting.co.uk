@@ -48,21 +48,68 @@ const COMPANY_BALANCE_SHEET_ROWS = [
   ["company-capital-and-reserves", "Capital and reserves"],
 ];
 
+const NOT_MEASURED = "not measured";
+const NONE = "none";
+const NO_BASE = "no base";
+
+const numberFormat = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 });
+const percentFormat = new Intl.NumberFormat("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+const gbpFormat = new Intl.NumberFormat("en-GB", { style: "currency", currency: "GBP" });
+const usdFormat = new Intl.NumberFormat("en-GB", { style: "currency", currency: "USD" });
+const timestampFormat = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "UTC",
+});
+
+// "not measured" is a figure the pipeline could not produce; "none" is a measured count of zero.
 function formatValue(unit, value) {
-  if (value === null || value === undefined) return "—";
-  if (unit === "ratio") return (value * 100).toFixed(1) + "%";
-  if (unit === "gbp") return "£" + value.toFixed(2);
-  if (unit === "usd") return "$" + value.toFixed(2);
-  return String(Math.round(value * 100) / 100);
+  if (value === null || value === undefined) return NOT_MEASURED;
+  if (unit === "ratio") return percentFormat.format(value * 100) + "%";
+  if (unit === "gbp") return gbpFormat.format(value);
+  if (unit === "usd") return usdFormat.format(value);
+  if (unit === "hours") return numberFormat.format(value) + " h";
+  if (unit === "runs") return numberFormat.format(value) + (value === 1 ? " run" : " runs");
+  if (unit === "count" && value === 0) return NONE;
+  return numberFormat.format(value);
 }
 
-function formatTrend(trend, isNew) {
+// Whether a rise is good decides the colour; an observation with no preferred direction
+// (better is null or absent) is never coloured.
+function trendClassFor(sign, better) {
+  if (better !== "up" && better !== "down") return "trend-flat";
+  const rising = sign > 0;
+  return rising === (better === "up") ? "trend-good" : "trend-bad";
+}
+
+function formatTrend(trend, isNew, better) {
   if (isNew) return { text: "new", className: "trend-flat" };
-  if (trend === null || trend === undefined) return { text: "—", className: "trend-unknown" };
-  const pct = (trend * 100).toFixed(1) + "%";
-  if (trend > 0) return { text: "↑ " + pct, className: "trend-up" };
-  if (trend < 0) return { text: "↓ " + pct.replace("-", ""), className: "trend-down" };
+  if (trend === null || trend === undefined) return { text: NO_BASE, className: "trend-unknown" };
+  const pct = percentFormat.format(Math.abs(trend) * 100) + "%";
+  if (trend > 0) return { text: "↑ " + pct, className: trendClassFor(1, better) };
+  if (trend < 0) return { text: "↓ " + pct, className: trendClassFor(-1, better) };
   return { text: "flat", className: "trend-flat" };
+}
+
+function formatTimestamp(iso) {
+  return timestampFormat.format(new Date(iso)) + " UTC";
+}
+
+// What the link opens, read from the address so the snapshot carries no second copy of it.
+function linkLabel(observation) {
+  const url = observation.deepLink || "";
+  if (url.includes("cloudwatch/home") && url.includes("#alarmsV2")) return "CloudWatch alarms";
+  if (url.includes("cloudwatch/home")) {
+    const match = url.match(/dashboards:name=([^&]+)/);
+    return match ? "CloudWatch dashboard " + decodeURIComponent(match[1]) : "CloudWatch dashboards";
+  }
+  if (url.includes("/athena/")) return "Athena saved queries" + (observation.source ? " (" + observation.source + ")" : "");
+  if (url.includes("github.com") && url.includes("/workflows/")) return "GitHub workflow " + url.split("/workflows/")[1];
+  if (url.includes("analytics.google.com")) return "Google Analytics reports";
+  return "Source console";
 }
 
 function renderObservationRow(observation) {
@@ -72,13 +119,23 @@ function renderObservationRow(observation) {
 
   const label = document.createElement("td");
   label.textContent = observation.label;
+  if (observation.source) {
+    const source = document.createElement("small");
+    source.className = "observation-source";
+    source.textContent = "Source: " + observation.source + (observation.measure ? ", " + observation.measure : "");
+    label.appendChild(source);
+  }
   row.appendChild(label);
 
   const last30 = document.createElement("td");
   last30.textContent = formatValue(observation.unit, observation.last30 && observation.last30.value);
   row.appendChild(last30);
 
-  const trend30 = formatTrend(observation.last30 && observation.last30.trend);
+  const trend30 = formatTrend(
+    observation.last30 && observation.last30.trend,
+    observation.last30 && observation.last30.isNew,
+    observation.better,
+  );
   const trend30Cell = document.createElement("td");
   trend30Cell.textContent = trend30.text;
   trend30Cell.className = trend30.className;
@@ -95,7 +152,7 @@ function renderObservationRow(observation) {
     link.target = "_blank";
     link.rel = "noopener noreferrer";
     link.className = "deep-link";
-    link.textContent = "Open";
+    link.textContent = linkLabel(observation);
     linkCell.appendChild(link);
   }
   row.appendChild(linkCell);
@@ -112,6 +169,25 @@ function renderObjective(objective) {
   heading.textContent = objective.name;
   section.appendChild(heading);
 
+  const guidance = [
+    ["What it measures", objective.sli],
+    ["Target", objective.target],
+    ["What moves it", objective.levers],
+  ].filter(([, text]) => Boolean(text));
+  if (guidance.length > 0) {
+    const list = document.createElement("dl");
+    list.className = "objective-guidance";
+    guidance.forEach(([term, text]) => {
+      const dt = document.createElement("dt");
+      dt.textContent = term;
+      const dd = document.createElement("dd");
+      dd.textContent = text;
+      list.appendChild(dt);
+      list.appendChild(dd);
+    });
+    section.appendChild(list);
+  }
+
   if (!objective.observations || objective.observations.length === 0) {
     const empty = document.createElement("p");
     empty.className = "objective-empty";
@@ -123,7 +199,8 @@ function renderObjective(objective) {
   const table = document.createElement("table");
   table.className = "observations data-table";
   const thead = document.createElement("thead");
-  thead.innerHTML = "<tr><th>Observation</th><th>Last 30 days</th><th>Trend</th><th>Last 90 days</th><th>Link</th></tr>";
+  thead.innerHTML =
+    '<tr><th>Observation</th><th>Last 30 days</th><th title="Last 30 days against the 30 days before them">vs previous 30 days</th><th>Last 90 days</th><th>Where to look</th></tr>';
   table.appendChild(thead);
 
   const tbody = document.createElement("tbody");
@@ -265,7 +342,7 @@ function activityCountCell(observation, key, unavailableTitle) {
 
 function activityTrendCell(observation) {
   const last30 = observation && observation.last30;
-  const trend = formatTrend(last30 && last30.trend, last30 && last30.isNew);
+  const trend = formatTrend(last30 && last30.trend, last30 && last30.isNew, observation && observation.better);
   const cell = document.createElement("td");
   cell.textContent = trend.text;
   cell.className = trend.className;
@@ -368,9 +445,32 @@ function renderActivities(snapshot) {
   });
 }
 
+const STALE_SNAPSHOT_HOURS = 36;
+
+function snapshotAgeHours(generatedAt) {
+  return (Date.now() - new Date(generatedAt).getTime()) / 3600000;
+}
+
+function renderSnapshotNotices(snapshot) {
+  const age = document.getElementById("snapshotAge");
+  const ageHours = snapshotAgeHours(snapshot.generatedAt);
+  age.hidden = ageHours <= STALE_SNAPSHOT_HOURS;
+  age.textContent = age.hidden
+    ? ""
+    : "This snapshot is " + Math.floor(ageHours) + " hours old. The nightly publish should have replaced it within 36 hours.";
+
+  const source = document.getElementById("snapshotSource");
+  source.textContent =
+    "Figures come from Athena views over the " +
+    snapshot.environment +
+    " analytics lake" +
+    (snapshot.environment === "prod" ? "." : ". This is ci test data: test traffic, not customers.");
+}
+
 function renderSnapshot(snapshot) {
   const meta = document.getElementById("snapshotMeta");
-  meta.textContent = "Generated " + snapshot.generatedAt + " for " + snapshot.environment;
+  meta.textContent = "Generated " + formatTimestamp(snapshot.generatedAt) + " for " + snapshot.environment + ".";
+  renderSnapshotNotices(snapshot);
 
   const container = document.getElementById("objectivesContainer");
   container.innerHTML = "";
@@ -435,11 +535,14 @@ async function fetchToml(path) {
   return window.TOML ? window.TOML.parse(text) : JSON.parse(text);
 }
 
+// A null message leaves the explanation to the shared status message that the API client
+// already raised, so the reader sees it once.
 function showError(message) {
   const container = document.getElementById("objectivesContainer");
   container.innerHTML = "";
   container.classList.add("objectives-failed");
   document.getElementById("visitorsPanel").hidden = true;
+  if (message === null) return;
   const notice = document.createElement("p");
   notice.id = "snapshotError";
   notice.className = "status-message status-error";
@@ -458,7 +561,7 @@ async function initPage() {
     renderVisitors(snapshot);
   } catch (error) {
     if (error.status === 403) {
-      showError(error.apiMessage || "Not authorised to view the operator dashboard.");
+      showError(null);
     } else if (error.status === 404) {
       showError("No snapshot has been published yet.");
     } else {

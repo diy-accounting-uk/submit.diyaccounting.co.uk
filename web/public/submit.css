@@ -5222,12 +5222,74 @@ table.observations th {
   white-space: nowrap;
 }
 
-.trend-up {
+.trend-good {
   color: var(--c-ok);
 }
 
-.trend-down {
+.trend-bad {
   color: var(--c-error);
+}
+
+.observation-source {
+  display: block;
+  color: var(--c-ink-muted);
+  font-size: var(--step--1);
+}
+
+.objective-guidance {
+  margin: 0 0 var(--space-4) 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-4);
+  font-size: var(--step--1);
+}
+
+.objective-guidance dt {
+  color: var(--c-ink-muted);
+}
+
+.objective-guidance dd {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .objective-guidance {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* The eight objectives share one column grid so figures line up from panel to panel. */
+#objectivesContainer table.observations {
+  table-layout: fixed;
+  width: 100%;
+}
+
+#objectivesContainer table.observations th:nth-child(1) {
+  width: 34%;
+}
+
+#objectivesContainer table.observations th:nth-child(2),
+#objectivesContainer table.observations th:nth-child(4) {
+  width: 14%;
+}
+
+#objectivesContainer table.observations th:nth-child(3) {
+  width: 15%;
+}
+
+#objectivesContainer table.observations th:nth-child(5) {
+  width: 23%;
+}
+
+#objectivesContainer table.observations th:nth-child(3),
+#objectivesContainer table.observations td:nth-child(3) {
+  text-align: right;
+}
+
+@media (max-width: 600px) {
+  #objectivesContainer table.observations {
+    min-width: 36rem;
+  }
 }
 
 .trend-flat,
@@ -5292,7 +5354,7 @@ table.observations th {
    measured on a full snapshot so the fill does not push what sits below; a failed load
    releases the reservation. */
 #objectivesContainer {
-  min-height: 2900px;
+  min-height: 4400px;
 }
 
 #objectivesContainer.objectives-failed {
@@ -5309,7 +5371,7 @@ table.observations th {
 
 @media (max-width: 900px) {
   #objectivesContainer {
-    min-height: 3600px;
+    min-height: 6600px;
   }
 
   #visitorsPanel {
@@ -5323,7 +5385,7 @@ table.observations th {
 
 @media (max-width: 600px) {
   #objectivesContainer {
-    min-height: 4600px;
+    min-height: 6950px;
   }
 
   #objectivesContainer.objectives-failed {

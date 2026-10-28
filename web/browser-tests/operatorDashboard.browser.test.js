@@ -10,7 +10,12 @@ import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { servePageScripts } from "./hmrcFieldTableAssets.js";
-import { OBJECTIVE_DEFINITIONS } from "@app/functions/analytics/operatorSnapshotPublish.js";
+import {
+  OBJECTIVE_DEFINITIONS,
+  OBJECTIVE_GUIDANCE,
+  measureDescription,
+  betterDirection,
+} from "@app/functions/analytics/operatorSnapshotPublish.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -22,11 +27,16 @@ const FIXTURE_SNAPSHOT = {
     {
       id: "uptime",
       name: "Uptime",
+      sli: "Share of synthetic probe runs that pass.",
+      levers: "Fix the failing probe.",
       observations: [
         {
           id: "probe-pass-rate",
           label: "Probe pass rate",
           unit: "ratio",
+          source: "v_availability_sli_daily",
+          measure: "average of the days",
+          better: "up",
           last30: { value: 0.999, trend: 0.001 },
           last90: { value: 0.998, trend: null },
           deepLink: "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#dashboards:name=prod-env-operations",
@@ -35,6 +45,9 @@ const FIXTURE_SNAPSHOT = {
           id: "alarms-fired",
           label: "Alarms fired",
           unit: "count",
+          source: "v_alarm_state_changes_daily",
+          measure: "total of the days",
+          better: "down",
           last30: { value: 3, trend: -0.25 },
           last90: { value: 10, trend: 0.1 },
           deepLink: "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#alarmsV2:",
@@ -271,10 +284,14 @@ function fullShapeSnapshot() {
     objectives: OBJECTIVE_DEFINITIONS.map((objective) => ({
       id: objective.id,
       name: objective.name,
+      ...OBJECTIVE_GUIDANCE[objective.id],
       observations: objective.observations.map((observation) => ({
         id: observation.id,
         label: observation.label,
         unit: observation.unit,
+        source: observation.view,
+        measure: measureDescription(observation),
+        better: betterDirection(observation.id),
         ...windows(observation.unit),
         ...(observation.fastWindowView ? { last1h: { value: 12 }, last1d: { value: 123 }, last7d: { value: 1234 } } : {}),
         deepLink: observation.deepLink(context),
@@ -289,9 +306,7 @@ function fullShapeSnapshot() {
 // that handler's message so this fixture proves what the page does with the server's own words,
 // not a placeholder.
 const FORBIDDEN_BODY = {
-  message:
-    "Not authorised to view the operator dashboard. Ask an admin to issue you the operator pass " +
-    "(generate-pass.yml, pass-type=operator) restricted to your own sign-in email.",
+  message: "Not authorised to view the operator dashboard. Ask the operator to issue you the operator pass for your sign-in email.",
   code: "BUNDLE_ENTITLEMENT_REQUIRED",
 };
 
@@ -381,6 +396,82 @@ test.describe("Operator Dashboard", () => {
     );
   });
 
+  test("colours a trend by whether the rise is good, and names its base", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const alarms = page.locator('.observation[data-observation-id="alarms-fired"]');
+    await expect(alarms.locator("td").nth(2)).toHaveText("↓ 25.0%");
+    await expect(alarms.locator("td").nth(2)).toHaveClass(/trend-good/);
+
+    const passRate = page.locator('.observation[data-observation-id="probe-pass-rate"]');
+    await expect(passRate.locator("td").nth(2)).toHaveClass(/trend-good/);
+
+    const bot = page.locator('#visitorsPanel tr.visitors-kind[data-kind="bot"]');
+    await expect(bot.locator("td").nth(5)).toHaveClass(/trend-flat/);
+
+    await expect(page.locator('.objective[data-objective-id="uptime"] thead th').nth(2)).toHaveText("vs previous 30 days");
+  });
+
+  test("states the source and how each window is built under the observation", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const row = page.locator('.observation[data-observation-id="alarms-fired"]');
+    await expect(row.locator(".observation-source")).toHaveText("Source: v_alarm_state_changes_daily, total of the days");
+  });
+
+  test("names each link by what it opens", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await expect(page.locator('.observation[data-observation-id="probe-pass-rate"] a.deep-link')).toHaveText(
+      "CloudWatch dashboard prod-env-operations",
+    );
+    await expect(page.locator('.observation[data-observation-id="alarms-fired"] a.deep-link')).toHaveText("CloudWatch alarms");
+    await expect(page.locator("#visitorsPanel")).toBeVisible();
+  });
+
+  test("shows the objective's measure and levers", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const guidance = page.locator('.objective[data-objective-id="uptime"] .objective-guidance');
+    await expect(guidance).toContainText("Share of synthetic probe runs that pass.");
+    await expect(guidance).toContainText("Fix the failing probe.");
+  });
+
+  test("writes the snapshot time in en-GB, and warns when it is over 36 hours old", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await expect(page.locator("#snapshotMeta")).toHaveText("Generated 8 Sept 2026, 03:15 UTC for prod.");
+    await expect(page.locator("#snapshotAge")).toBeVisible();
+    await expect(page.locator("#snapshotAge")).toContainText("hours old");
+  });
+
+  test("does not warn about a snapshot generated an hour ago", async ({ page }) => {
+    const recent = { ...FIXTURE_SNAPSHOT, generatedAt: new Date(Date.now() - 3600000).toISOString() };
+    await setupRoutes(page, { snapshotBody: recent });
+    await loadDashboard(page);
+
+    await expect(page.locator("#snapshotAge")).toBeHidden();
+  });
+
+  test("marks ci figures as test data and prod figures as customer figures", async ({ page }) => {
+    await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, environment: "ci" } });
+    await loadDashboard(page);
+
+    await expect(page.locator("#snapshotSource")).toContainText("ci test data");
+  });
+
+  test("groups thousands and names the currency in en-GB", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await expect(page.locator('.company-accounts-row[data-observation-id="company-turnover"]')).toContainText("£120,000.00");
+  });
+
   test("renders the visitors panel as one row per kind with the activity table's windows", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
@@ -406,14 +497,22 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     const headers = page.locator("#visitorsTable thead th");
-    await expect(headers).toHaveText(["Kind", "Last 1 hour", "Last 1 day", "Last 7 days", "Last 30 days", "Trend", "Last 90 days"]);
+    await expect(headers).toHaveText([
+      "Kind",
+      "Last 1 hour",
+      "Last 1 day",
+      "Last 7 days",
+      "Last 30 days",
+      "vs previous 30 days",
+      "Last 90 days",
+    ]);
     await expect(headers.nth(1)).not.toHaveAttribute("title", /.+/);
 
     const human = page.locator('#visitorsPanel tr.visitors-kind[data-kind="human"]');
     await expect(human.locator("td").nth(1)).not.toHaveAttribute("title", /.+/);
 
     const operator = page.locator('#visitorsPanel tr.visitors-kind[data-kind="operator"]');
-    await expect(operator.locator("td").nth(1)).toHaveText("—");
+    await expect(operator.locator("td").nth(1)).toHaveText("not measured");
     await expect(operator.locator("td").nth(1)).toHaveAttribute("title", /streaming export/);
     await expect(operator.locator("td").nth(4)).not.toHaveAttribute("title", /.+/);
   });
@@ -434,13 +533,13 @@ test.describe("Operator Dashboard", () => {
     await expect(panel).toBeVisible();
 
     const turnoverRow = panel.locator('.company-accounts-row[data-observation-id="company-turnover"]');
-    await expect(turnoverRow.locator("td").nth(1)).toHaveText("£120000.00");
+    await expect(turnoverRow.locator("td").nth(1)).toHaveText("£120,000.00");
 
     const profitRow = panel.locator('.company-accounts-row[data-observation-id="company-profit"]');
-    await expect(profitRow.locator("td").nth(1)).toHaveText("£25000.00");
+    await expect(profitRow.locator("td").nth(1)).toHaveText("£25,000.00");
 
     const capitalAndReservesRow = panel.locator('.company-accounts-row[data-observation-id="company-capital-and-reserves"]');
-    await expect(capitalAndReservesRow.locator("td").nth(1)).toHaveText("£37000.00");
+    await expect(capitalAndReservesRow.locator("td").nth(1)).toHaveText("£37,000.00");
   });
 
   test("shows the reinvestment fraction, trailing 30-day income and the budget", async ({ page }) => {
@@ -484,7 +583,7 @@ test.describe("Operator Dashboard", () => {
     await expect(vatRow.locator("td").nth(4)).toHaveText("40"); // started, last 30
     await expect(vatRow.locator("td").nth(5)).toHaveText("↑ 10.0%"); // started trend
     await expect(vatRow.locator("td").nth(6)).toHaveText("110"); // started, last 90
-    await expect(vatRow.locator("td").nth(7)).toHaveText("0"); // completed, last 1 hour
+    await expect(vatRow.locator("td").nth(7)).toHaveText("none"); // completed, last 1 hour
     await expect(vatRow.locator("td").nth(8)).toHaveText("2"); // completed, last 1 day
     await expect(vatRow.locator("td").nth(9)).toHaveText("8"); // completed, last 7 days
     await expect(vatRow.locator("td").nth(10)).toHaveText("22"); // completed, last 30
@@ -525,12 +624,17 @@ test.describe("Operator Dashboard", () => {
     await expect(page.locator("#activitiesPanel")).toBeHidden();
   });
 
-  test("names the operator pass on a 403", async ({ page }) => {
+  test("leaves a 403 to the shared status message and draws no second notice", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.shownFailures = [];
+      window.showFailure = (error) => window.shownFailures.push(error);
+    });
     await setupRoutes(page, { snapshotStatus: 403, snapshotBody: FORBIDDEN_BODY });
     await loadDashboard(page);
 
-    await expect(page.locator("#snapshotError")).toHaveText(/operator pass/);
-    await expect(page.locator("#snapshotError")).toHaveText(/pass-type=operator/);
+    await expect(page.locator("#snapshotError")).toHaveCount(0);
+    await expect(page.locator("#visitorsPanel")).toBeHidden();
+    await expect(page.locator(".objective[data-objective-id]")).toHaveCount(0);
   });
 
   test("shows the no-snapshot message on a 404", async ({ page }) => {
