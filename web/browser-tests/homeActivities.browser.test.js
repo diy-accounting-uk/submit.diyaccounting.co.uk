@@ -27,7 +27,7 @@ const RESIDENT_BUNDLES = {
   tokensRemaining: 100,
 };
 
-async function serveHomeForResident(page) {
+async function serveHomeForResident(page, environmentName = "proxy") {
   await page.addInitScript(() => {
     localStorage.setItem("cognitoIdToken", "id-token");
     localStorage.setItem("userInfo", JSON.stringify({ email: "resident@test.diyaccounting.co.uk" }));
@@ -39,7 +39,8 @@ async function serveHomeForResident(page) {
       return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(RESIDENT_BUNDLES) });
     }
     if (url.pathname.startsWith("/api/")) return route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
-    if (url.pathname === "/submit.environment-name.txt") return route.fulfill({ status: 200, contentType: "text/plain", body: "proxy" });
+    if (url.pathname === "/submit.environment-name.txt")
+      return route.fulfill({ status: 200, contentType: "text/plain", body: environmentName });
     const pathname = url.pathname === "/" ? "/index.html" : decodeURIComponent(url.pathname);
     const filePath = path.join(PUBLIC_ROOT, pathname);
     if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
@@ -77,5 +78,30 @@ test.describe("Home page activities for a Resident account", () => {
       await page.waitForURL((url) => url.pathname !== "/" || url.hash !== "");
       expect(new URL(page.url()).pathname).toMatch(/\.html$/);
     }
+  });
+
+  test("the status box and subtitle list only what the catalogue lists for prod", async ({ page }) => {
+    await serveHomeForResident(page, "prod");
+    await page.goto("http://localhost:3000/", { waitUntil: "domcontentloaded" });
+
+    const box = page.locator("#featureStatusList");
+    await expect(box.locator('.status-tag[data-status="production"]')).toBeVisible();
+    await expect(box).toContainText("HMRC VAT");
+    await expect(box.locator('.status-tag[data-status="sandbox"]')).toHaveCount(0);
+    await expect(box.locator('.status-tag[data-status="preview"]')).toHaveCount(0);
+    await expect(box).not.toContainText(/Income Tax|Assist|Company Tax Return|PSC|accounts/i);
+    await expect(page.locator("#homeSubtitle")).toContainText("VAT returns");
+    await expect(page.locator("#homeSubtitle")).not.toContainText("Income Tax");
+  });
+
+  test("the status box lists sandbox and preview features where the catalogue lists them", async ({ page }) => {
+    await serveHomeForResident(page, "ci");
+    await page.goto("http://localhost:3000/", { waitUntil: "domcontentloaded" });
+
+    const box = page.locator("#featureStatusList");
+    await expect(box.locator('.status-tag[data-status="sandbox"]')).toBeVisible();
+    await expect(box.locator("li", { hasText: "Preview" })).toContainText("HMRC Assist for VAT");
+    await expect(box.locator("li", { hasText: "Sandbox" })).toContainText("HMRC Income Tax (MTD)");
+    await expect(page.locator("#homeSubtitle")).toContainText("Income Tax updates");
   });
 });
