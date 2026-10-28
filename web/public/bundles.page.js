@@ -48,6 +48,7 @@ let __userBundles = [];
 let __fullBundleData = []; // Full bundle objects from API (with token info, allocated flag, etc.)
 let __fetchBundlesController = null;
 let __catalogueData = null; // Catalogue TOML data (stored for re-renders)
+let __catalogueSettled = false; // True once the catalogue has loaded or failed to load
 let __currentEnv = null; // Current environment name
 
 const parseUserBundles = () => (Array.isArray(__userBundles) ? __userBundles : []);
@@ -564,6 +565,8 @@ const __catalogueReady = (async function () {
   const container = document.getElementById("catalogBundles");
   try {
     await fetchUserBundles();
+    // Rows take their place now with a blank name; the catalogue supplies the names.
+    renderCurrentBundles();
 
     const idToken = getIdToken();
     const headers = idToken ? { Authorization: `Bearer ${idToken}` } : undefined;
@@ -573,13 +576,14 @@ const __catalogueReady = (async function () {
     });
     if (!__catalogueData || !__catalogueData.bundles) {
       container.replaceChildren(messageEl("Catalog unavailable."));
+      __catalogueSettled = true;
       renderCurrentBundles();
       return;
     }
 
     __currentEnv = await readEnvironment();
     renderCatalogueBundles();
-    // The current bundles wait for the catalogue so they show names, never ids.
+    __catalogueSettled = true;
     renderCurrentBundles();
     renderGeneratedPassesEmptyText();
   } catch (err) {
@@ -587,6 +591,7 @@ const __catalogueReady = (async function () {
       console.error("[bundles.html] Catalog bootstrap error:", err && (err.stack || err.message || err));
     } catch {}
     container.replaceChildren(messageEl("Failed to load catalog."));
+    __catalogueSettled = true;
     renderCurrentBundles();
   }
 })();
@@ -601,7 +606,8 @@ function renderCurrentBundles() {
 
     // Look up display name from catalogue
     const catBundle = __catalogueData?.bundles?.find((cb) => cb.id === bundleId);
-    const displayName = catBundle?.name || bundleId;
+    // Until the catalogue settles the name is blank, so an id is never shown.
+    const displayName = __catalogueSettled ? catBundle?.name || bundleId : "\u00a0";
 
     // Look up full bundle data for token info
     const fullData = __fullBundleData.find((b) => b.bundleId === bundleId && b.allocated);

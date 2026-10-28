@@ -59,7 +59,7 @@ test.describe("bundles and usage names", () => {
 
     await expect(page.locator("#currentBundles .bundle-row-name")).toHaveText("Day pass");
     expect(idsSeen.length).toBeGreaterThan(0);
-    expect(idsSeen.every((text) => text === "Day pass")).toBe(true);
+    expect(idsSeen.every((text) => text === "Day pass" || text.trim() === "")).toBe(true);
 
     const empty = page.locator("#generatedPassesEmpty");
     await expect(empty).toBeVisible();
