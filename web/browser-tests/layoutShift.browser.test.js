@@ -117,4 +117,19 @@ test.describe("Layout shift while data loads on a phone", () => {
       await page.screenshot({ path: `target/screenshots/bundles-no-bundles-${width}.png`, fullPage: true });
     }
   });
+
+  test("bundles.html leaves no gap above Have a pass once a held bundle has loaded", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await serveRealSiteWithSlowData(page);
+    await page.goto("http://localhost:3000/bundles.html", { waitUntil: "load" });
+    await expect(page.locator("#currentBundles .service-item").first()).toBeVisible();
+    await expect(page.locator(".bundles-block.bundles-settled")).toBeAttached();
+
+    const gap = await page.evaluate(() => {
+      const list = document.getElementById("catalogBundles").getBoundingClientRect();
+      const pass = [...document.querySelectorAll("h2")].find((h) => h.textContent.trim() === "Have a pass?").getBoundingClientRect();
+      return pass.top - list.bottom;
+    });
+    expect(gap).toBeLessThan(80);
+  });
 });

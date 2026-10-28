@@ -241,6 +241,15 @@
     if (nav && active && nav.scrollWidth > nav.clientWidth) {
       nav.scrollLeft = Math.max(0, active.offsetLeft - nav.clientWidth / 2 + active.offsetWidth / 2);
     }
+    if (nav) {
+      const markScrollEdges = () => {
+        nav.classList.toggle("has-more-before", nav.scrollLeft > 1);
+        nav.classList.toggle("has-more-after", nav.scrollLeft + nav.clientWidth < nav.scrollWidth - 1);
+      };
+      nav.addEventListener("scroll", markScrollEdges, { passive: true });
+      window.addEventListener("resize", markScrollEdges);
+      markScrollEdges();
+    }
   }
 
   function renderFooter(footer, rootPrefix) {

@@ -559,6 +559,11 @@ async function readEnvironment() {
   return null;
 }
 
+// The block holds room for the cards while they load; once both lists have arrived it hands the room back.
+function releaseReservedHeight() {
+  document.querySelector(".bundles-block")?.classList.add("bundles-settled");
+}
+
 // --- bootstrap: fetch catalog and render. The promise lets initPage wait for the catalogue
 // before it validates a ?pass= code, so the pass status names the bundle, not its id.
 const __catalogueReady = (async function () {
@@ -578,6 +583,7 @@ const __catalogueReady = (async function () {
       container.replaceChildren(messageEl("Catalog unavailable."));
       __catalogueSettled = true;
       renderCurrentBundles();
+      releaseReservedHeight();
       return;
     }
 
@@ -586,6 +592,7 @@ const __catalogueReady = (async function () {
     __catalogueSettled = true;
     renderCurrentBundles();
     renderGeneratedPassesEmptyText();
+    releaseReservedHeight();
   } catch (err) {
     try {
       console.error("[bundles.html] Catalog bootstrap error:", err && (err.stack || err.message || err));
@@ -593,6 +600,7 @@ const __catalogueReady = (async function () {
     container.replaceChildren(messageEl("Failed to load catalog."));
     __catalogueSettled = true;
     renderCurrentBundles();
+    releaseReservedHeight();
   }
 })();
 

@@ -994,9 +994,25 @@ dd {
   .main-nav {
     --nav-fade: var(--space-7);
     gap: var(--space-3);
+    --fade-before: #000;
+    --fade-after: #000;
     padding-right: var(--nav-fade);
-    mask-image: linear-gradient(to right, #000 calc(100% - var(--nav-fade)), transparent);
-    -webkit-mask-image: linear-gradient(to right, #000 calc(100% - var(--nav-fade)), transparent);
+    mask-image: linear-gradient(to right, var(--fade-before), #000 var(--nav-fade), #000 calc(100% - var(--nav-fade)), var(--fade-after));
+    -webkit-mask-image: linear-gradient(
+      to right,
+      var(--fade-before),
+      #000 var(--nav-fade),
+      #000 calc(100% - var(--nav-fade)),
+      var(--fade-after)
+    );
+  }
+
+  .main-nav.has-more-before {
+    --fade-before: transparent;
+  }
+
+  .main-nav.has-more-after {
+    --fade-after: transparent;
   }
 }
 
@@ -1115,6 +1131,11 @@ p.hint[data-feature-status] > strong:first-child,
 
 .form-group {
   margin-bottom: var(--space-5);
+}
+
+/* In a fieldset of stacked fields, a label that follows an input starts a new field. */
+fieldset.form-group > input + label {
+  margin-top: var(--space-4);
 }
 
 /* ============================================
@@ -1617,6 +1638,12 @@ textarea.input--error {
   max-width: 100%;
   font-size: var(--step-1);
   overflow-wrap: anywhere;
+}
+
+/* A lone action in a card takes the width of its label, not the width of the card. */
+.btn.btn-fit {
+  width: auto;
+  padding-inline: var(--space-6);
 }
 
 .btn-secondary,
@@ -2554,7 +2581,7 @@ body > footer {
   margin: var(--space-5) 0;
 }
 
-.bundles-block:not(.holds-no-bundles) .bundles-list {
+.bundles-block:not(.holds-no-bundles):not(.bundles-settled) .bundles-list {
   min-height: 30rem;
 }
 
@@ -2564,7 +2591,7 @@ body > footer {
 
 /* The current bundles and the catalogue arrive at different times; the block holds the room
    of both until the bundles come back empty, so the sections below do not jump when they fill in. */
-.bundles-block:not(.holds-no-bundles) {
+.bundles-block:not(.holds-no-bundles):not(.bundles-settled) {
   min-height: 54.5rem;
 }
 
@@ -3275,6 +3302,13 @@ input.hmrc-assist-highlight {
   border-top: 1px solid var(--c-rule-subtle);
 }
 
+/* The first section under a form's heading needs no rule or extra room above it. */
+h2 + form > .form-section:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
 .form-section > h3 {
   margin-top: 0;
   margin-bottom: var(--space-4);
@@ -3347,6 +3381,12 @@ input.hmrc-assist-highlight {
   padding-right: var(--space-4);
   padding-top: calc(var(--space-2) + (var(--control-height) - 1.5em) / 2);
   font-weight: var(--weight-text);
+}
+
+/* A line that is part of the line above it reads as indented and quieter, so it is not summed twice. */
+.ledger tbody th.ledger__part {
+  padding-left: var(--space-5);
+  color: var(--c-ink-muted);
 }
 
 .ledger tbody th label {
