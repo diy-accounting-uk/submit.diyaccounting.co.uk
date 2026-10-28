@@ -785,7 +785,7 @@ export function buildSmallCompanyAccounts(input) {
         dimensionXml: dimensionMemberXml(DIMENSIONS.taxJurisdiction, MEMBERS.ukTax),
         id: `${periodRef}-uk-tax`,
       });
-      return recordFigure(money("currentTaxForPeriod", contextRef, figures.tax), figures.tax, { deduction: true });
+      return recordFigure(money("currentTaxForPeriod", contextRef, figures.tax), figures.tax);
     });
     notes.push({
       title: "Tax on profit",

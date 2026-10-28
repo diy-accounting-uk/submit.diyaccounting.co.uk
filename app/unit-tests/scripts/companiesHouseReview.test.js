@@ -12,10 +12,12 @@ import {
   companyInformationCriterion,
   hiddenNarrativeCriterion,
   neverTradedCriterion,
+  notCarriedFromInput,
   periodCriterion,
   placeholderCriterion,
   sameBalanceSheetDateCriterion,
   substanceCriteria,
+  taxNoteBracketsCriterion,
 } from "../../../scripts/lib/companiesHouseReviewCriteria.js";
 import { parseFindings, readReviewFolder } from "../../../scripts/lib/companiesHouseReviewFolder.js";
 import {
@@ -213,7 +215,29 @@ describe("substance criteria", () => {
   it.each(cases.map((c) => [c.name, c]))("passes every check for %s", (_name, c) => {
     const rows = substanceCriteria({ kind: c.kind, input: c.input, ours: c.ours, today: TODAY });
     expect(rows.filter((row) => row.result !== "pass").map((row) => `${row.criterion}: ${row.evidence}`)).toEqual([]);
-    expect(rows.length).toBe(c.kind === "dormant" ? 6 : 5);
+    expect(rows.length).toBe(c.kind === "dormant" ? 7 : 6);
+  });
+
+  it("passes the tax note's charge printed without brackets and fails it in brackets", () => {
+    const c = caseNamed("small-company-accounts-full");
+    const clean = taxNoteBracketsCriterion(c.ours);
+    expect(clean.result).toBe("pass");
+    expect(clean.evidence).toContain("without brackets");
+    const charge = c.ours.facts.find((fact) => fact.concept === "CurrentTaxForPeriod").text;
+    const noteStart = c.ours.visibleText.search(/^\s*\d+\.\s*Tax on profit\s*$/m);
+    expect(noteStart).toBeGreaterThan(0);
+    const bracketed = withText(c.ours, (t) => t.slice(0, noteStart) + t.slice(noteStart).replace(charge, `(${charge})`));
+    const failed = taxNoteBracketsCriterion(bracketed);
+    expect(failed.result).toBe("fail");
+    expect(failed.evidence).toContain(`(${charge})`);
+    // The profit and loss account's bracketed tax line is outside the note.
+    expect(
+      taxNoteBracketsCriterion(withText(c.ours, (t) => t.slice(0, noteStart).replace(charge, `(${charge})`) + t.slice(noteStart))).result,
+    ).toBe("pass");
+  });
+
+  it("passes a document with no tax note", () => {
+    expect(taxNoteBracketsCriterion(caseNamed("micro-entity-accounts").ours).evidence).toBe("no tax note");
   });
 
   it("fails a public company", () => {
@@ -314,6 +338,59 @@ describe("substance criteria", () => {
     const dormant = caseNamed("micro-entity-accounts-dormant");
     expect(sameBalanceSheetDateCriterion(cases, dormant).result).toBe("pass");
     expect(sameBalanceSheetDateCriterion(cases, dormant).evidence).toContain("only case");
+  });
+});
+
+describe("facts the case input decides", () => {
+  const small = caseNamed("small-company-accounts-full").input;
+  const withBalanceSheetLine = (line) => ({
+    ...small,
+    smallCompany: {
+      ...small.smallCompany,
+      balanceSheet: { ...small.smallCompany.balanceSheet, currentYear: { ...small.smallCompany.balanceSheet.currentYear, ...line } },
+    },
+  });
+
+  it.each(["TaxationSocialSecurityPayable", "BankBorrowingsOverdrafts", "AccruedLiabilities"])(
+    "judges %s a line the filer has no figure for, and keeps it missing when the input carries one",
+    (concept) => {
+      expect(notCarriedFromInput(concept, small)).toBe("a balance sheet line the filer has no figure for");
+      const field = {
+        TaxationSocialSecurityPayable: "taxationSocialSecurity",
+        BankBorrowingsOverdrafts: "bankLoansOverdrafts",
+        AccruedLiabilities: "accruals",
+      }[concept];
+      expect(notCarriedFromInput(concept, withBalanceSheetLine({ [field]: 250 }))).toBeNull();
+    },
+  );
+
+  it("judges AddressLine2 and CountyRegion by the registered office parts", () => {
+    expect(notCarriedFromInput("AddressLine2", small)).toContain("address part");
+    expect(notCarriedFromInput("CountyRegion", small)).toContain("address part");
+    expect(
+      notCarriedFromInput("AddressLine2", { ...small, registeredOffice: { ...small.registeredOffice, addressLine2: "Unit 4" } }),
+    ).toBeNull();
+    expect(
+      notCarriedFromInput("CountyRegion", { ...small, registeredOffice: { ...small.registeredOffice, countyRegion: "Cheshire" } }),
+    ).toBeNull();
+  });
+
+  it("judges a pension policy and unpaid share capital the example's own when the input has neither", () => {
+    expect(notCarriedFromInput("DefinedContributionPensionsPolicy", small)).toContain("no pension");
+    expect(
+      notCarriedFromInput("DefinedContributionPensionsPolicy", { ...small, accountingPolicies: "Pension costs are charged as paid." }),
+    ).toBeNull();
+    expect(notCarriedFromInput("CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset", small)).toContain("all paid");
+    expect(
+      notCarriedFromInput(
+        "CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset",
+        withBalanceSheetLine({ calledUpShareCapitalNotPaid: 40 }),
+      ),
+    ).toBeNull();
+  });
+
+  it("leaves other concepts to the standing judgements", () => {
+    expect(notCarriedFromInput("Creditors", small)).toBeNull();
   });
 });
 

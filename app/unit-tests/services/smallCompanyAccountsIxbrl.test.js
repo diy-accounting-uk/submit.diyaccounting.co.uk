@@ -736,6 +736,30 @@ describe("the creditor lines, policies, accountants' report and controlling part
     }
   });
 
+  test("prints the tax note charge without brackets, and a tax credit with them and sign minus", () => {
+    const noteOf = (xhtml) => xhtml.slice(xhtml.search(/<h3>\d+\. Tax on profit<\/h3>/));
+    for (const filleted of [false, true]) {
+      const note = noteOf(buildSmallCompanyAccounts({ ...WITH_COMPARATIVES, filleted }));
+      const start = note.indexOf("current tax on profit for the year");
+      const row = note.slice(start, note.indexOf("</tr>", start));
+      const [current, prior] = [WITH_COMPARATIVES.profitAndLoss.current.tax, WITH_COMPARATIVES.profitAndLoss.prior.tax].map((v) =>
+        v.toLocaleString("en-GB"),
+      );
+      expect(row).toContain(`>${current}</ix:nonFraction>`);
+      expect(row).toContain(`>${prior}</ix:nonFraction>`);
+      expect(row).not.toMatch(/[()]/);
+    }
+    const credit = (figures) => ({ ...figures, tax: -300, profit: figures.profitBeforeTax + 300 });
+    const creditNote = noteOf(
+      buildSmallCompanyAccounts({
+        ...WITH_COMPARATIVES,
+        profitAndLoss: { current: credit(WITH_COMPARATIVES.profitAndLoss.current), prior: credit(WITH_COMPARATIVES.profitAndLoss.prior) },
+      }),
+    );
+    expect(creditNote).toContain("(");
+    expect(creditNote).toContain('sign="-"');
+  });
+
   test("leaves the tax note out when no year has a tax charge", () => {
     const zero = (figures) => ({ ...figures, tax: 0, profit: figures.profitBeforeTax });
     const xhtml = buildSmallCompanyAccounts({

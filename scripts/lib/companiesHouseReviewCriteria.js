@@ -36,6 +36,78 @@ function squash(text) {
   return text.replace(/\s+/g, " ").trim();
 }
 
+// Values the case input carries under any of the named keys, at any depth.
+function inputValues(node, keys) {
+  if (Array.isArray(node)) return node.flatMap((item) => inputValues(item, keys));
+  if (node && typeof node === "object") {
+    return Object.entries(node).flatMap(([key, value]) => (keys.includes(key) ? [value] : inputValues(value, keys)));
+  }
+  return [];
+}
+
+const carries = (input, keys) => inputValues(input, keys).some((value) => value !== 0 && value !== "" && value != null);
+
+// Example facts that depend on a part of the company's own data. When the case input holds no value
+// for the part, the fact is the example company's own and not a miss; when it does, a fact we fail
+// to tag stays a miss. Each entry is [concept, the input keys that feed it, the reason when none do].
+const FACTS_THE_INPUT_FEEDS = [
+  ["TaxationSocialSecurityPayable", ["taxationSocialSecurity"], "a balance sheet line the filer has no figure for"],
+  ["BankBorrowingsOverdrafts", ["bankLoansOverdrafts", "bankLoansAfterOneYear"], "a balance sheet line the filer has no figure for"],
+  ["AccruedLiabilities", ["accruals"], "a balance sheet line the filer has no figure for"],
+  ["AddressLine2", ["addressLine2"], "an address part the registered office does not have"],
+  ["AddressLine3", ["addressLine3"], "an address part the registered office does not have"],
+  ["CountyRegion", ["countyRegion"], "an address part the registered office does not have"],
+  [
+    "CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset",
+    ["calledUpShareCapitalNotPaid", "calledUpShareCapitalUnpaid"],
+    "share capital that is all paid, so none is owed to the company",
+  ],
+];
+
+/**
+ * The reason an example fact is not carried because the case input has nothing to tag, or null when
+ * the input does carry a value (or the fact is not one the input decides).
+ * @param {string} concept - the example fact's concept local name
+ * @param {object} input - the fixture case
+ * @returns {string|null}
+ */
+export function notCarriedFromInput(concept, input) {
+  if (concept === "DefinedContributionPensionsPolicy") {
+    return /pension/i.test(JSON.stringify(input)) ? null : "a pension policy of the example company; the input has no pension";
+  }
+  const entry = FACTS_THE_INPUT_FEEDS.find(([name]) => name === concept);
+  return entry && !carries(input, entry[1]) ? entry[2] : null;
+}
+
+/**
+ * A tax note whose tagged charge is positive reads as a credit when printed in brackets. Fails
+ * each CurrentTaxForPeriod fact that is positive and sits in brackets in the visible page.
+ * @param {{facts: Array<{concept: string, text: string, visible?: boolean}>, visibleText: string}} ours
+ */
+export function taxNoteBracketsCriterion(ours) {
+  const criterion = "A tax note's charge is not in brackets when its tagged value is positive";
+  const taxFacts = ours.facts.filter((fact) => fact.concept === "CurrentTaxForPeriod" && fact.visible !== false);
+  if (taxFacts.length === 0) return row(criterion, "pass", "no tax note", "visible-text.txt");
+  // The profit and loss account prints the same charge in brackets by design, so read the note's own page.
+  const heading = ours.visibleText.match(/^\s*\d+\.\s*Tax on profit\s*$/m);
+  const note = heading ? ours.visibleText.slice(heading.index).split(/^\s*\d+\.\s+(?!Tax on profit\b)\S.*$/m)[0] : "";
+  if (!note) return row(criterion, "unknown", "the tax facts have no tax note page", "visible-text.txt");
+  const bracketed = taxFacts.filter((fact) => {
+    const text = fact.text.trim();
+    if (text.startsWith("-") || text.startsWith("(")) return false;
+    const figure = text.replace(/[^\d,.]/g, "");
+    return figure !== "" && note.includes(`(${figure})`);
+  });
+  return row(
+    criterion,
+    bracketed.length > 0 ? "fail" : "pass",
+    bracketed.length > 0
+      ? `${bracketed.length} of ${taxFacts.length} charges printed as (${bracketed[0].text.trim()}) in the note`
+      : `${taxFacts.length} charges printed without brackets in the note`,
+    "visible-text.txt",
+  );
+}
+
 export function categoryCriterion(input, ours) {
   const criterion = "The company's category allows the regime claimed";
   const publicName = input.companyName.match(PUBLIC_COMPANY_NAME);
@@ -178,5 +250,6 @@ export function substanceCriteria({ kind, input, ours, today }) {
     hiddenNarrativeCriterion(ours),
     ...(kind === "dormant" ? [neverTradedCriterion(ours)] : []),
     placeholderCriterion(input, ours),
+    taxNoteBracketsCriterion(ours),
   ];
 }
