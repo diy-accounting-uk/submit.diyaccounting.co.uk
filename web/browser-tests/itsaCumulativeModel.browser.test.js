@@ -63,6 +63,39 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
   await delay(200);
 }
 
+async function stubSignedInFetch(page, responseBody) {
+  await page.evaluate((body) => {
+    window.__sentRequests = [];
+    window.authorizedFetch = (url, init) => {
+      window.__sentRequests.push({ url, method: init?.method, body: init?.body ? JSON.parse(init.body) : undefined });
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(body) });
+    };
+    const store = new Map([["hmrcAccessToken", "test-token"]]);
+    Object.defineProperty(window, "sessionStorage", {
+      configurable: true,
+      value: {
+        getItem: (key) => (store.has(key) ? store.get(key) : null),
+        setItem: (key, value) => store.set(key, String(value)),
+        removeItem: (key) => store.delete(key),
+      },
+    });
+  }, responseBody);
+}
+
+async function fillIdentity(page, taxYear) {
+  await page.locator("#nino").fill("AB123456C");
+  await page.locator("#businessId").fill("XAIS12345678901");
+  await page.locator("#taxYear").selectOption(taxYear);
+  await page.locator("#taxYear").dispatchEvent("input");
+}
+
+async function captureShots(page, name) {
+  for (const width of [390, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.screenshot({ path: `target/screenshots/${name}-${width}.png`, fullPage: true });
+  }
+}
+
 test.describe("ITSA cumulative model - self-employment period", () => {
   let html;
 
@@ -92,6 +125,58 @@ test.describe("ITSA cumulative model - self-employment period", () => {
     await expect(page.locator("#cumulativeMoneyNote")).toBeVisible();
     await expect(page.locator("#loadCurrentTotalGroup")).toBeVisible();
   });
+
+  test("sends taxTakenOffTradingIncome in periodIncome for a cumulative tax year", async ({ page }) => {
+    await loadPage(page, html, "http://localhost:3000/hmrc/itsa/selfEmploymentPeriod.html");
+    await stubSignedInFetch(page, { model: "cumulative" });
+
+    await fillIdentity(page, "2025-26");
+    await page.locator("#turnover").fill("5000");
+    await page.locator("#taxTakenOffTradingIncome").fill("250.50");
+    await captureShots(page, "selfEmploymentPeriod-taxTakenOff");
+    await page.locator("#submitBtn").click();
+    await expect.poll(() => page.evaluate(() => window.__sentRequests.length)).toBe(1);
+    const cumulative = await page.evaluate(() => window.__sentRequests[0].body);
+    expect(cumulative.periodIncome).toEqual({ turnover: 5000, other: 0, taxTakenOffTradingIncome: 250.5 });
+  });
+
+  test("sends taxTakenOffTradingIncome in periodIncome for a dated tax year", async ({ page }) => {
+    await loadPage(page, html, "http://localhost:3000/hmrc/itsa/selfEmploymentPeriod.html");
+    await stubSignedInFetch(page, { periodId: "2024-04-06_2024-07-05" });
+
+    await fillIdentity(page, "2024-25");
+    await page.locator("#periodStartDate").fill("2024-04-06");
+    await page.locator("#periodEndDate").fill("2024-07-05");
+    await page.locator("#turnover").fill("1000");
+    await page.locator("#taxTakenOffTradingIncome").fill("250.50");
+    await page.locator("#submitBtn").click();
+    await expect.poll(() => page.evaluate(() => window.__sentRequests.length)).toBe(1);
+    const dated = await page.evaluate(() => window.__sentRequests[0].body);
+    expect(dated.periodIncome.taxTakenOffTradingIncome).toBe(250.5);
+  });
+
+  test("leaves taxTakenOffTradingIncome out of periodIncome when the field is blank", async ({ page }) => {
+    await loadPage(page, html, "http://localhost:3000/hmrc/itsa/selfEmploymentPeriod.html");
+    await stubSignedInFetch(page, { model: "cumulative" });
+
+    await fillIdentity(page, "2025-26");
+    await page.locator("#turnover").fill("5000");
+    await page.locator("#submitBtn").click();
+    await expect.poll(() => page.evaluate(() => window.__sentRequests.length)).toBe(1);
+    const sent = await page.evaluate(() => window.__sentRequests[0].body);
+    expect(sent.periodIncome).toEqual({ turnover: 5000, other: 0 });
+  });
+
+  test("Load current total fills the taxTakenOffTradingIncome field", async ({ page }) => {
+    await loadPage(page, html, "http://localhost:3000/hmrc/itsa/selfEmploymentPeriod.html");
+    await stubSignedInFetch(page, { periodIncome: { turnover: 7000, other: 10, taxTakenOffTradingIncome: 125 } });
+
+    await fillIdentity(page, "2025-26");
+    await page.locator("#loadCurrentTotalBtn").click();
+
+    await expect(page.locator("#taxTakenOffTradingIncome")).toHaveValue("125");
+    await expect(page.locator("#turnover")).toHaveValue("7000");
+  });
 });
 
 test.describe("ITSA cumulative model - self-employment amend", () => {
@@ -120,6 +205,22 @@ test.describe("ITSA cumulative model - self-employment amend", () => {
     await expect(page.locator("#periodIdGroup")).toBeHidden();
     await expect(page.locator("#periodId")).not.toHaveAttribute("required", "");
     await expect(page.locator("#loadCurrentTotalGroup")).toBeVisible();
+  });
+
+  test("sends taxTakenOffTradingIncome in periodIncome and reads it back with Load current total", async ({ page }) => {
+    await loadPage(page, html, "http://localhost:3000/hmrc/itsa/selfEmploymentPeriodAmend.html");
+    await stubSignedInFetch(page, { periodIncome: { turnover: 7000, taxTakenOffTradingIncome: 125 } });
+
+    await fillIdentity(page, "2025-26");
+    await page.locator("#loadCurrentTotalBtn").click();
+    await expect(page.locator("#taxTakenOffTradingIncome")).toHaveValue("125");
+    await captureShots(page, "selfEmploymentPeriodAmend-taxTakenOff");
+
+    await page.locator("#taxTakenOffTradingIncome").fill("300");
+    await page.locator("button[type=submit]").click();
+    await expect.poll(() => page.evaluate(() => window.__sentRequests.length)).toBe(2);
+    const sent = await page.evaluate(() => window.__sentRequests[1].body);
+    expect(sent.periodIncome.taxTakenOffTradingIncome).toBe(300);
   });
 });
 
