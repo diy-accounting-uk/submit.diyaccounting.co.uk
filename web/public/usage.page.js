@@ -13,10 +13,7 @@ const __rc = typeof window !== "undefined" && window.requestCache ? window.reque
 
 async function fetchBundleData() {
   const idToken = getIdToken();
-  if (!idToken) {
-    renderNoAuth();
-    return null;
-  }
+  if (!idToken) return null;
 
   try {
     let data;
@@ -57,11 +54,6 @@ function messageRow(columns, text) {
   cell.textContent = text;
   row.append(cell);
   return row;
-}
-
-function renderNoAuth() {
-  document.getElementById("tokenSourcesBody").replaceChildren(messageRow(4, "Please log in to view token usage."));
-  document.getElementById("tokenConsumptionBody").replaceChildren(messageRow(3, "Please log in to view token usage."));
 }
 
 function renderTokenSources(bundles) {
@@ -177,15 +169,6 @@ document.getElementById("refreshUsageBtn").addEventListener("click", function ()
   loadUsage();
   renderBrowserStorage();
 });
-
-// Replaces the global checkAuthStatus on purpose: sign-in changes re-render this page.
-// eslint-disable-next-line no-redeclare
-function checkAuthStatus() {
-  const userInfo = localStorage.getItem("userInfo");
-  if (!userInfo) {
-    renderNoAuth();
-  }
-}
 
 // Allowlist: only these keys have their values displayed.
 // Everything else is redacted by default to avoid leaking internal state.

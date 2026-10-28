@@ -36,47 +36,53 @@
       <div id="loadingSpinner" class="spinner" hidden></div>
 
       <div class="form-container">
-        <h2>Token sources</h2>
-        <div class="table-scroll">
-          <table id="tokenSourcesTable" class="data-table">
-            <thead>
-              <tr>
-                <th>Bundle name</th>
-                <th>Tokens granted</th>
-                <th>Tokens remaining</th>
-                <th>Expiry / refresh</th>
-              </tr>
-            </thead>
-            <tbody id="tokenSourcesBody">
-              <tr>
-                <td colspan="4" class="no-data">Loading...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <div
+          data-requires-sign-in
+          data-sign-in-title="Log in to see your token usage"
+          data-sign-in-text="Your tokens, where they came from and where you used them are kept with your account. Log in to see them."
+        >
+          <h2>Token sources</h2>
+          <div class="table-scroll">
+            <table id="tokenSourcesTable" class="data-table">
+              <thead>
+                <tr>
+                  <th>Bundle name</th>
+                  <th>Tokens granted</th>
+                  <th>Tokens remaining</th>
+                  <th>Expiry / refresh</th>
+                </tr>
+              </thead>
+              <tbody id="tokenSourcesBody">
+                <tr>
+                  <td colspan="4" class="no-data">Loading...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-        <h2>Token consumption</h2>
-        <div class="table-scroll">
-          <table id="tokenConsumptionTable" class="data-table">
-            <thead>
-              <tr>
-                <th>Activity</th>
-                <th>Date / time</th>
-                <th>Tokens used</th>
-              </tr>
-            </thead>
-            <tbody id="tokenConsumptionBody">
-              <tr>
-                <td colspan="3" class="no-data">Loading...</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+          <h2>Token consumption</h2>
+          <div class="table-scroll">
+            <table id="tokenConsumptionTable" class="data-table">
+              <thead>
+                <tr>
+                  <th>Activity</th>
+                  <th>Date / time</th>
+                  <th>Tokens used</th>
+                </tr>
+              </thead>
+              <tbody id="tokenConsumptionBody">
+                <tr>
+                  <td colspan="3" class="no-data">Loading...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
 
-        <p id="itsaYearCostSummary" class="hint" hidden></p>
+          <p id="itsaYearCostSummary" class="hint" hidden></p>
 
-        <div>
-          <button type="button" id="refreshUsageBtn" class="btn btn-secondary btn-small">Refresh</button>
+          <div>
+            <button type="button" id="refreshUsageBtn" class="btn btn-secondary btn-small">Refresh</button>
+          </div>
         </div>
 
         <div id="subscriptionManagement" hidden>
@@ -124,6 +130,7 @@
     <script src="widgets/entitlement-status.js"></script>
     <script src="widgets/auth-status.js"></script>
     <script src="widgets/status-messages.js"></script>
+    <script src="widgets/signed-out-panel.js"></script>
     <script src="widgets/loading-spinner.js"></script>
     <script type="module" src="widgets/view-source-link.js"></script>
     <script src="usage.page.js"></script>

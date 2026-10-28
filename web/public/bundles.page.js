@@ -260,11 +260,6 @@ const cardEl = (b) => {
       bundleButton("btn btn-outline service-btn", { "data-manage-subscription": "true" }, `Manage Subscription — ${name}`),
       noteEl("ok", "Active subscription"),
     );
-  const loginToSubscribeCard = (message) =>
-    serviceItemEl(
-      bundleButton("btn service-btn", { "data-disabled-reason": "login", "disabled": "" }, `Log in to subscribe — ${name}`, true),
-      noteEl("info", message),
-    );
   const hasActiveSubscription = () => __fullBundleData.some((fb) => fb.bundleId === b.id && fb.allocated && fb.stripeSubscriptionId);
 
   // on-pass without valid pass: disabled with reason on button
@@ -282,7 +277,6 @@ const cardEl = (b) => {
 
   // on-pass-on-subscription with valid pass: show Subscribe or Manage button
   if (allocation === "on-pass-on-subscription" && passCode) {
-    if (!getIdToken()) return loginToSubscribeCard("Log in to subscribe to this bundle");
     if (hasActiveSubscription()) return manageCard();
     return serviceItemEl(
       bundleButton("btn service-btn", { "data-subscribe": "true" }, `Subscribe £9.99/mo — ${name}`),
@@ -292,7 +286,6 @@ const cardEl = (b) => {
 
   // on-subscription allocation with always-visible: show Subscribe or Manage button
   if (allocation === "on-subscription" && enable === "always") {
-    if (!getIdToken()) return loginToSubscribeCard(b.description || "Log in to subscribe to this bundle");
     if (hasActiveSubscription()) return manageCard();
 
     // Two prices per bundle (annual and monthly): the annual (default) price is the
@@ -357,12 +350,6 @@ const cardEl = (b) => {
   // on-pass with valid pass: enabled, pass code attached
   if (enable === "on-pass" && passCode) {
     const passAttrs = { "data-pass-code": String(passCode) };
-    if (!getIdToken()) {
-      return serviceItemEl(
-        bundleButton("btn service-btn", { ...passAttrs, "data-disabled-reason": "login", "disabled": "" }, `Log in to add — ${name}`, true),
-        noteEl("info", "Log in to add this bundle"),
-      );
-    }
     return serviceItemEl(bundleButton("btn service-btn", passAttrs, `Request ${name}${tokenLabel}`, true));
   }
 
