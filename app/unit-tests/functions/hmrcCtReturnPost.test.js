@@ -279,6 +279,36 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
   });
 
+  describe("a return sent as half of a pair", () => {
+    const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
+
+    test("stores the jointFilingId with the pending request", async () => {
+      const response = await hmrcCtReturnPostHandler(
+        buildEvent({ body: { ...baseBody, gatewayUserId: USER_ID, gatewayPassword: PASSWORD, jointFilingId: JOINT_FILING_ID } }),
+      );
+      expect(response.statusCode).toBe(201);
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({ jointFilingId: JOINT_FILING_ID });
+    });
+
+    test("stores no jointFilingId for a return sent alone", async () => {
+      await hmrcCtReturnPostHandler(buildEvent());
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      expect(update.input.ExpressionAttributeValues[":data"]).not.toHaveProperty("jointFilingId");
+    });
+
+    test("refuses a jointFilingId that is not a UUID and sends nothing", async () => {
+      const response = await hmrcCtReturnPostHandler(
+        buildEvent({ body: { ...baseBody, gatewayUserId: USER_ID, gatewayPassword: PASSWORD, jointFilingId: "12345" } }),
+      );
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("Invalid jointFilingId");
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+  });
+
   test("returns 200 with an empty object for a HEAD request", async () => {
     const response = await hmrcCtReturnPostHandler(buildEvent({ method: "HEAD" }));
     expect(response.statusCode).toBe(200);

@@ -1489,14 +1489,6 @@ function accountsEntries(accounts) {
 }
 
 /**
- * The accounts section's values from accounts a filing took (the accounts just accepted by
- * Companies House), as [element id, value] pairs.
- */
-export function accountsFormEntries(accounts) {
-  return accountsEntries(accounts);
-}
-
-/**
  * Every form value a book supplies, as [element id, value] pairs: the figures the model reads
  * from the book, the accounts, the trade name and the signer. The company's UTR and the
  * statements and declaration stay the customer's to give.

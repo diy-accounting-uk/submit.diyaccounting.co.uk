@@ -44,6 +44,7 @@ import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } 
 import { initializeSalt } from "../../services/subHasher.js";
 import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
 import { applyCodesEntry } from "../../services/companiesHouseCodesEntry.js";
+import { readJointFilingId, jointFilingFields } from "../../services/jointFiling.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
 
@@ -420,6 +421,7 @@ export async function ingestHandler(event) {
 
   const errorMessages = [];
   const accounts = extractAndValidateAccountsParameters(filingEvent, errorMessages, { clientId });
+  const jointFilingId = readJointFilingId(parseRequestBody(filingEvent), errorMessages);
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
@@ -451,7 +453,17 @@ export async function ingestHandler(event) {
     submissionNumber = await allocateSubmissionNumber();
     const { presenterId, presenterCode } = await resolvePresenterCredentials();
 
-    await putAsyncRequest(userSub, submissionNumber, "pending", { filedDocument: ixbrl }, asyncRequestsTableName);
+    await putAsyncRequest(
+      userSub,
+      submissionNumber,
+      "pending",
+      {
+        filedDocument: ixbrl,
+        chargeActivityId: accounts.regime === "small-company" ? "file-small-company-accounts" : "file-micro-entity-accounts",
+        ...jointFilingFields(jointFilingId),
+      },
+      asyncRequestsTableName,
+    );
 
     const submissionXml = buildAccountsSubmission({
       presenterId,
@@ -470,7 +482,13 @@ export async function ingestHandler(event) {
     const parsed = parseGatewayResponse(gatewayResponse.data);
 
     if (parsed.errors?.length) {
-      await putAsyncRequest(userSub, submissionNumber, "failed", parsed, asyncRequestsTableName);
+      await putAsyncRequest(
+        userSub,
+        submissionNumber,
+        "failed",
+        { ...parsed, ...jointFilingFields(jointFilingId) },
+        asyncRequestsTableName,
+      );
       await recordSubmissionFailure({
         failure: "gateway-rejected-envelope",
         summary: "Companies House accounts submission rejected by the gateway",

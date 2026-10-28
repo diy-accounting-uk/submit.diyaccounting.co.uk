@@ -98,6 +98,12 @@ vi.mock("@app/lib/logger.js", async (importOriginal) => {
   };
 });
 
+const mockChargeTokenOnSuccess = vi.fn();
+vi.mock("@app/services/tokenEnforcement.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  chargeTokenOnSuccess: (...args) => mockChargeTokenOnSuccess(...args),
+}));
+
 import { ingestHandler as companiesHouseAccountsGetHandler } from "@app/functions/companies-house/companiesHouseAccountsGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -317,6 +323,64 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
     const response = await companiesHouseAccountsGetHandler(buildEvent());
     expect(response.statusCode).toBe(403);
     expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  describe("a filing sent as half of a pair", () => {
+    const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
+
+    function storePendingRequest(data) {
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) return { Items: [{ bundleId: "resident", subscriptionStatus: "active" }], Count: 1 };
+        if (cmd instanceof lib.GetCommand) return { Item: { requestId: cmd.input.Key.requestId, status: "pending", data } };
+        return {};
+      });
+    }
+
+    function gatewayAnswers(statusCode) {
+      mockParseGatewayResponse.mockReturnValue({
+        errors: [],
+        statuses: [{ statusCode, submissionNumber: "00001A", companyNumber: "00000001", rejections: [] }],
+      });
+    }
+
+    async function puts() {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      return mockSend.mock.calls.map(([cmd]) => cmd).filter((cmd) => cmd instanceof lib.PutCommand);
+    }
+
+    test("writes the jointFilingId into the receipt and the completed request, and charges one token", async () => {
+      storePendingRequest({ filedDocument: "<html/>", chargeActivityId: "file-small-company-accounts", jointFilingId: JOINT_FILING_ID });
+      gatewayAnswers("ACCEPT");
+      const response = await companiesHouseAccountsGetHandler(buildEvent());
+      expect(parseResponseBody(response)).toMatchObject({ statusCode: "ACCEPT", jointFilingId: JOINT_FILING_ID });
+      const [receipt] = await puts();
+      expect(receipt.input.Item.receipt).toMatchObject({ kind: "companies-house-accounts", jointFilingId: JOINT_FILING_ID });
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({ jointFilingId: JOINT_FILING_ID });
+      expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+      expect(mockChargeTokenOnSuccess).toHaveBeenCalledWith(expect.any(String), "file-small-company-accounts");
+    });
+
+    test("keeps the jointFilingId on a rejection and charges nothing", async () => {
+      storePendingRequest({ filedDocument: "<html/>", chargeActivityId: "file-small-company-accounts", jointFilingId: JOINT_FILING_ID });
+      gatewayAnswers("REJECT");
+      await companiesHouseAccountsGetHandler(buildEvent());
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({ statusCode: "REJECT", jointFilingId: JOINT_FILING_ID });
+      expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
+    });
+
+    test("a filing with no jointFilingId writes none and charges nothing", async () => {
+      storePendingRequest({ filedDocument: "<html/>", chargeActivityId: "file-small-company-accounts" });
+      gatewayAnswers("ACCEPT");
+      await companiesHouseAccountsGetHandler(buildEvent());
+      const [receipt] = await puts();
+      expect(receipt.input.Item.receipt).not.toHaveProperty("jointFilingId");
+      expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
+    });
   });
 
   test("returns 200 with an empty object for a HEAD request", async () => {

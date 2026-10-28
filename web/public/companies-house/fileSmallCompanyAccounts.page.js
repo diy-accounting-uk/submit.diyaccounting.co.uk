@@ -510,10 +510,6 @@ async function handleSubmitFiling() {
     document.getElementById("filingResult").className = outcome.statusCode === "ACCEPT" ? "outcome outcome--ok" : "outcome outcome--error";
     renderRejections(outcome.rejections);
     showFilingCopyLink(outcome);
-    if (outcome.statusCode === "ACCEPT") {
-      sessionStorage.setItem("filedSmallCompanyAccounts", JSON.stringify(filedAccounts));
-      document.getElementById("taxReturnPrompt").style.display = "block";
-    }
     document.getElementById("startAgainBtn").style.display = "inline-block";
   } catch (error) {
     console.error("Companies House accounts filing failed:", error);
@@ -536,7 +532,6 @@ function startAgain() {
   document.getElementById("accountsForm").reset();
   toggleSections();
   document.getElementById("rejections").style.display = "none";
-  document.getElementById("taxReturnPrompt").style.display = "none";
   document.getElementById("startAgainBtn").style.display = "none";
   hideStatus();
   showView("companyView");
