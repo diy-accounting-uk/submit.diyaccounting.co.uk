@@ -18,6 +18,8 @@ const state = {
   // Self-employment period summaries held for a business, keyed by `${nino}:${businessId}:${periodId}`
   // for a dated period and `${nino}:${businessId}:${taxYear}` for a cumulative tax year
   periodSummaries: new Map(),
+  // Foreign properties created through Create Foreign Property Details, keyed by `${nino}:${businessId}`
+  foreignProperties: new Map(),
 };
 
 /**
@@ -30,6 +32,7 @@ export function reset() {
   state.testSupportBusinesses.clear();
   state.assistReports.clear();
   state.periodSummaries.clear();
+  state.foreignProperties.clear();
 }
 
 /**
@@ -164,6 +167,49 @@ export function addTestSupportBusiness(nino, business) {
  */
 export function getTestSupportBusinesses(nino) {
   return state.testSupportBusinesses.get(normaliseNino(nino)) || [];
+}
+
+/**
+ * Remember a foreign property created through Create Foreign Property Details.
+ * @param {string} nino - National Insurance number
+ * @param {string} businessId - Business ID
+ * @param {Object} property - carries propertyId, propertyName, countryCode and submittedOn, and optionally endDate and endReason
+ */
+export function addForeignProperty(nino, businessId, property) {
+  const key = `${normaliseNino(nino)}:${businessId}`;
+  const properties = state.foreignProperties.get(key) || [];
+  properties.push(property);
+  state.foreignProperties.set(key, properties);
+}
+
+/**
+ * Get the foreign properties created for a NINO and business ID.
+ * @param {string} nino - National Insurance number
+ * @param {string} businessId - Business ID
+ * @returns {Object[]}
+ */
+export function getForeignProperties(nino, businessId) {
+  return state.foreignProperties.get(`${normaliseNino(nino)}:${businessId}`) || [];
+}
+
+/**
+ * Get every foreign property created for a NINO, across its businesses.
+ * @param {string} nino - National Insurance number
+ * @returns {Object[]}
+ */
+export function getForeignPropertiesForNino(nino) {
+  const prefix = `${normaliseNino(nino)}:`;
+  return [...state.foreignProperties.entries()].filter(([key]) => key.startsWith(prefix)).flatMap(([, properties]) => properties);
+}
+
+/**
+ * Find a foreign property by its propertyId across the businesses of a NINO.
+ * @param {string} nino - National Insurance number
+ * @param {string} propertyId - Property ID
+ * @returns {Object|undefined} the stored property, which a caller may change in place
+ */
+export function findForeignProperty(nino, propertyId) {
+  return getForeignPropertiesForNino(nino).find((property) => property.propertyId === propertyId);
 }
 
 export default state;

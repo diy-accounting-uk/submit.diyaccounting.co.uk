@@ -6,14 +6,22 @@
 // Handles: POST /individuals/self-assessment/adjustable-summary/{nino}/trigger
 //          GET  /individuals/self-assessment/adjustable-summary/{nino}/self-employment/{calculationId}/{taxYear}
 //          POST /individuals/self-assessment/adjustable-summary/{nino}/self-employment/{calculationId}/adjust/{taxYear}
+//          GET  /individuals/self-assessment/adjustable-summary/{nino}/uk-property/{calculationId}/{taxYear}
+//          POST /individuals/self-assessment/adjustable-summary/{nino}/uk-property/{calculationId}/adjust/{taxYear}
+//          GET  /individuals/self-assessment/adjustable-summary/{nino}/foreign-property/{calculationId}/{taxYear}
+//          POST /individuals/self-assessment/adjustable-summary/{nino}/foreign-property/{calculationId}/adjust/{taxYear}
 
 import { randomUUID } from "crypto";
+import { findEntryListError, taxYearStartYear, usesPropertyId } from "./itsa-foreign-property-period.js";
+import { getForeignPropertiesForNino } from "../state/store.js";
 import {
   getBsasTriggerErrorForScenario,
   getBsasSelfEmploymentForScenario,
   getBsasAdjustErrorForScenario,
   getBsasUkPropertyForScenario,
   getBsasUkPropertyAdjustErrorForScenario,
+  getBsasForeignPropertyForScenario,
+  getBsasForeignPropertyAdjustErrorForScenario,
 } from "../scenarios/itsa-bsas.js";
 
 /**
@@ -92,6 +100,55 @@ function isEntirelyEmptyAdjustBody(body) {
     return section && typeof section === "object" && Object.keys(section).length > 0;
   });
   return !hasZeroAdjustments && !hasFigures;
+}
+
+/** The tax year before which furnished holiday lettings in the EEA could be adjusted separately. */
+const FOREIGN_FHL_END_YEAR = 2025;
+
+/** The first tax year whose foreign property adjustments are one object, not a list of countries. */
+const FOREIGN_LEVEL_DETAIL_START_YEAR = 2024;
+
+const emptyBodyError = (paths) => ({
+  status: 400,
+  body: {
+    code: "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+    message: "An empty or non-matching body was submitted",
+    ...(paths ? { paths } : {}),
+  },
+});
+
+/**
+ * Check the body of a foreign property adjustment. The shape depends on the tax year:
+ * foreignProperty[] up to 2023-24, foreignProperty.countryLevelDetail[] for 2024-25 and 2025-26,
+ * foreignProperty.propertyLevelDetail[] from 2026-27. From 2024-25 foreignProperty.zeroAdjustments
+ * is the alternative to the list. foreignFhlEea is accepted up to 2024-25 only.
+ * @returns {null|{status: number, body: object}} the first error, or null when the body is valid
+ */
+export function findForeignPropertyAdjustBodyError(nino, taxYear, body) {
+  const startYear = taxYearStartYear(taxYear);
+  const foreignProperty = body?.foreignProperty;
+  const fhl = body?.foreignFhlEea;
+
+  if (fhl !== undefined && startYear >= FOREIGN_FHL_END_YEAR) return emptyBodyError(["/foreignFhlEea"]);
+
+  const listKey = usesPropertyId(taxYear) ? "propertyLevelDetail" : "countryLevelDetail";
+  const hasLevelDetail = startYear >= FOREIGN_LEVEL_DETAIL_START_YEAR;
+  const list = hasLevelDetail ? foreignProperty?.[listKey] : foreignProperty;
+  const listPath = hasLevelDetail ? `/foreignProperty/${listKey}` : "/foreignProperty";
+  const zeroAdjustments = hasLevelDetail && foreignProperty?.zeroAdjustments === true;
+  const hasFhl = fhl && typeof fhl === "object" && Object.keys(fhl).length > 0;
+
+  if (list === undefined && !zeroAdjustments && !hasFhl) return emptyBodyError();
+  if (zeroAdjustments && Array.isArray(list) && list.length > 0) {
+    return {
+      status: 400,
+      body: { code: "RULE_BOTH_ADJUSTMENTS_SUPPLIED", message: "Both adjustments and zero adjustments must not be present" },
+    };
+  }
+  if (list !== undefined && !(zeroAdjustments && Array.isArray(list) && list.length === 0)) {
+    return findEntryListError(nino, taxYear, list, listPath);
+  }
+  return null;
 }
 
 export function apiEndpoint(app) {
@@ -271,6 +328,68 @@ export function apiEndpoint(app) {
     }
 
     const scenarioError = getBsasUkPropertyAdjustErrorForScenario(govTestScenario);
+    if (scenarioError) {
+      return res.status(scenarioError.status).json(scenarioError.body);
+    }
+
+    // Default and STATEFUL: HMRC's submit-adjustments endpoint returns 200 with no body.
+    res.setHeader("x-correlationid", randomUUID());
+    res.status(200).send();
+  });
+
+  // GET /individuals/self-assessment/adjustable-summary/{nino}/foreign-property/{calculationId}/{taxYear}
+  app.get("/individuals/self-assessment/adjustable-summary/:nino/foreign-property/:calculationId/:taxYear", (req, res) => {
+    const { nino, calculationId, taxYear } = req.params;
+    const govTestScenario = req.headers["gov-test-scenario"];
+
+    console.log(
+      `[http-simulator:itsa-bsas] GET /individuals/self-assessment/adjustable-summary/${nino}/foreign-property/${calculationId}/${taxYear}`,
+    );
+
+    if (!isValidNino(nino)) {
+      return res.status(400).json({ code: "FORMAT_NINO", message: "The provided NINO is invalid" });
+    }
+    if (!isValidCalculationId(calculationId)) {
+      return res.status(400).json({ code: "FORMAT_CALCULATION_ID", message: "The provided calculation ID is invalid" });
+    }
+    if (!isValidTaxYear(taxYear)) {
+      return res.status(400).json({ code: "FORMAT_TAX_YEAR", message: "The provided tax year is invalid" });
+    }
+
+    const heldPropertyId = getForeignPropertiesForNino(nino)[0]?.propertyId;
+    const result = getBsasForeignPropertyForScenario(govTestScenario, nino, calculationId, taxYear, heldPropertyId);
+    if (result.status) {
+      return res.status(result.status).json(result.body);
+    }
+
+    res.setHeader("Content-Type", "application/json");
+    res.setHeader("x-correlationid", randomUUID());
+    res.json(result.bsas);
+  });
+
+  // POST /individuals/self-assessment/adjustable-summary/{nino}/foreign-property/{calculationId}/adjust/{taxYear}
+  app.post("/individuals/self-assessment/adjustable-summary/:nino/foreign-property/:calculationId/adjust/:taxYear", (req, res) => {
+    const { nino, calculationId, taxYear } = req.params;
+    const govTestScenario = req.headers["gov-test-scenario"];
+
+    console.log(
+      `[http-simulator:itsa-bsas] POST /individuals/self-assessment/adjustable-summary/${nino}/foreign-property/${calculationId}/adjust/${taxYear}`,
+    );
+
+    if (!isValidNino(nino)) {
+      return res.status(400).json({ code: "FORMAT_NINO", message: "The provided NINO is invalid" });
+    }
+    if (!isValidCalculationId(calculationId)) {
+      return res.status(400).json({ code: "FORMAT_CALCULATION_ID", message: "The provided calculation ID is invalid" });
+    }
+    if (!isValidTaxYear(taxYear)) {
+      return res.status(400).json({ code: "FORMAT_TAX_YEAR", message: "The provided tax year is invalid" });
+    }
+
+    const bodyError = findForeignPropertyAdjustBodyError(nino, taxYear, req.body);
+    if (bodyError) return res.status(bodyError.status).json(bodyError.body);
+
+    const scenarioError = getBsasForeignPropertyAdjustErrorForScenario(govTestScenario);
     if (scenarioError) {
       return res.status(scenarioError.status).json(scenarioError.body);
     }
