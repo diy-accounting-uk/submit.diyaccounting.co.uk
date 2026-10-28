@@ -152,6 +152,25 @@ test.describe("Mobile layout - specific findings", () => {
   });
 });
 
+test.describe("Feedback banner", () => {
+  for (const [width, position] of [
+    [390, "static"],
+    [1000, "sticky"],
+  ]) {
+    test(`is ${position} at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await serveRealSite(page);
+      await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+      await delay(300);
+
+      const banner = page.locator("#feedbackEngagementBanner");
+      await banner.evaluate((el) => el.removeAttribute("hidden"));
+      await expect(banner).toBeVisible();
+      expect(await banner.evaluate((el) => getComputedStyle(el).position)).toBe(position);
+    });
+  }
+});
+
 test.describe("Header account line truncates, the brand stays whole", () => {
   const LONG_ADDRESS = "synthetic-user@test.diyaccounting.co.uk";
 
