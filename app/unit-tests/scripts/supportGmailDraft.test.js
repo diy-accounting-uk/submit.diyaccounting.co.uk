@@ -11,6 +11,7 @@ import {
   buildRawMessage,
   createDraft,
   acceptanceRow,
+  bodyDigest,
   GMAIL_COMPOSE_SCOPE,
   DRAFTS_URL,
 } from "../../../scripts/support-gmail-draft.mjs";
@@ -98,8 +99,20 @@ describe("support-gmail-draft", () => {
     );
   });
 
-  test("the acceptance row carries the draft id and the issue number", () => {
-    const row = acceptanceRow({ draft: { draftId: "d1", threadId: "t1" }, issueNumber: "12", createdAt: "2026-01-01T00:00:00Z" });
-    expect(row).toEqual({ kind: "support-draft", draft_id: "d1", thread_id: "t1", issue_number: 12, created_at: "2026-01-01T00:00:00Z" });
+  test("the acceptance row carries the draft id, the issue number and the body digest", () => {
+    const row = acceptanceRow({
+      draft: { draftId: "d1", threadId: "t1" },
+      issueNumber: "12",
+      createdAt: "2026-01-01T00:00:00Z",
+      body: "Hello\r\n",
+    });
+    expect(row).toEqual({
+      kind: "support-draft",
+      draft_id: "d1",
+      thread_id: "t1",
+      issue_number: 12,
+      created_at: "2026-01-01T00:00:00Z",
+      body_sha256: bodyDigest("Hello"),
+    });
   });
 });

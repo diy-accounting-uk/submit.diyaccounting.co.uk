@@ -20,6 +20,7 @@
 // The measure compares drafts to what the mailbox later sent (see PLAN_REPOSITORY_AUTOMATION.md,
 // Phase 4).
 
+import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { JWT } from "google-auth-library";
@@ -91,13 +92,23 @@ export async function createDraft({ threadId, to, subject, inReplyTo, body, getT
   return { draftId: created.id, messageId: created.message?.id ?? "", threadId: created.message?.threadId ?? threadId };
 }
 
-export function acceptanceRow({ draft, issueNumber, createdAt }) {
+/** The body as the mailbox returns it: line ends as \n, outer whitespace removed. */
+export function normaliseBody(body) {
+  return String(body).replace(/\r\n?/g, "\n").trim();
+}
+
+export function bodyDigest(body) {
+  return createHash("sha256").update(normaliseBody(body)).digest("hex");
+}
+
+export function acceptanceRow({ draft, issueNumber, createdAt, body }) {
   return {
     kind: "support-draft",
     draft_id: draft.draftId,
     thread_id: draft.threadId,
     issue_number: issueNumber === "" ? null : Number(issueNumber),
     created_at: createdAt,
+    body_sha256: bodyDigest(body),
   };
 }
 
@@ -111,15 +122,16 @@ async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const keyJson = process.env.SUPPORT_GMAIL_DRAFT_KEY;
   if (!keyJson) throw new Error("SUPPORT_GMAIL_DRAFT_KEY is not set");
+  const body = readFileSync(opts.bodyFile, "utf8");
   const draft = await createDraft({
     threadId: opts.threadId,
     to: opts.to,
     subject: opts.subject,
     inReplyTo: opts.inReplyTo,
-    body: readFileSync(opts.bodyFile, "utf8"),
+    body,
     getToken: tokenGetterFromKey(keyJson),
   });
-  const row = acceptanceRow({ draft, issueNumber: opts.issueNumber, createdAt: new Date().toISOString() });
+  const row = acceptanceRow({ draft, issueNumber: opts.issueNumber, createdAt: new Date().toISOString(), body });
   if (opts.out) writeFileSync(opts.out, JSON.stringify(row));
   console.log(`created draft ${draft.draftId} on thread ${draft.threadId}`);
 }
