@@ -4123,15 +4123,20 @@ body.page-wide {
   background: var(--c-paper);
 }
 
-.harness-config code,
-.harness-config pre {
-  overflow-wrap: anywhere;
-}
-
 .harness-config pre {
   background: var(--c-canvas);
   padding: var(--space-2);
   border-radius: var(--radius-control);
+  white-space: pre;
+  overflow-x: auto;
+}
+
+.harness-copy {
+  margin-bottom: var(--space-3);
+}
+
+.harness-script-choice {
+  margin-bottom: var(--space-2);
 }
 
 /* PolicyBee */

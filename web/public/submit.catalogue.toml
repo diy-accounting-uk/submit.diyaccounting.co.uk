@@ -291,7 +291,7 @@ bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-g
 tokenCost = 0
 metered = false
 paths = ["mcp-harness.html", "^/api/v1/dev/mcp-harness/.*"]
-environments = ["local", "test", "simulator", "proxy", "ci"]
+environments = ["local", "test", "simulator", "proxy"]
 
 [[activities]]
 id = "vat-obligations"

@@ -16,6 +16,9 @@
   const playAllButton = document.getElementById("playAll");
   const restartButton = document.getElementById("restart");
 
+  const LOCAL_ONLY_MESSAGE =
+    "The harness endpoint is local only. Run the site with npm run start:proxy or npm run start:simulator to play this script.";
+
   let script = null;
   const answers = {};
   let nextIndex = 0;
@@ -95,14 +98,20 @@
       headers: { "Content-Type": "application/json", "x-harness-session": harnessSession },
       body: JSON.stringify({ tool: turn.tool, arguments: resolveArguments(turn.arguments || {}) }),
     });
-    if (!response.ok) throw new Error(`The harness endpoint answered HTTP ${response.status}`);
+    if (!response.ok) {
+      const failure = new Error(`The harness endpoint answered HTTP ${response.status}`);
+      failure.status = response.status;
+      throw failure;
+    }
     return response.json();
   }
 
+  // Answers false when a tool call failed: the script stops there, since the turns after it
+  // describe a result that never came.
   async function playTurn(turn) {
     if (turn.role !== "tool") {
       addTurn(turn.role, turn.text, turn.id);
-      return;
+      return true;
     }
     const card = addTurn("tool", `Calling ${turn.tool}`, turn.id);
     const output = document.createElement("pre");
@@ -115,9 +124,12 @@
       keepLatestTurnInView();
       const link = ok ? browserStepLink(result) : null;
       if (link) showBrowserStep(link);
+      return true;
     } catch (error) {
       card.dataset.outcome = "error";
-      output.textContent = error.message;
+      output.textContent = error.status === 404 ? LOCAL_ONLY_MESSAGE : error.message;
+      keepLatestTurnInView();
+      return false;
     }
   }
 
@@ -125,14 +137,15 @@
     if (busy || !script || nextIndex >= script.turns.length) return false;
     busy = true;
     nextButton.disabled = true;
+    let played = false;
     try {
-      await playTurn(script.turns[nextIndex]);
-      nextIndex += 1;
+      played = await playTurn(script.turns[nextIndex]);
+      nextIndex = played ? nextIndex + 1 : script.turns.length;
     } finally {
       busy = false;
       nextButton.disabled = nextIndex >= script.turns.length;
     }
-    return true;
+    return played;
   }
 
   async function playAll() {
@@ -173,10 +186,29 @@
     }
   }
 
+  async function copyConfig(button) {
+    const text = document.getElementById(button.dataset.copyTarget).textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      button.textContent = "Copied";
+    } catch {
+      button.textContent = "Select the text and copy it";
+    }
+    setTimeout(() => {
+      button.textContent = "Copy";
+    }, 2000);
+  }
+
   async function start() {
     const response = await fetch(`mcp-harness/${scriptName()}.json`);
     script = await response.json();
     document.getElementById("scriptTitle").textContent = script.title;
+    const choice = document.getElementById("scriptChoice");
+    choice.value = scriptName();
+    choice.addEventListener("change", () => {
+      window.location.search = `?script=${encodeURIComponent(choice.value)}`;
+    });
+    for (const button of document.querySelectorAll(".harness-copy")) button.addEventListener("click", () => copyConfig(button));
     renderConfig();
     renderToolList();
     nextButton.addEventListener("click", advance);
