@@ -770,7 +770,15 @@ function netLabel(base, values) {
  * not equal the net assets derived from the lines.
  * @returns {Record<string, {xml: string, value: number}>}
  */
-export function balanceSheetFacts({ contextRef, entityIdentifierXml, periodXml, additionalContexts, unitRef, figures }) {
+export function balanceSheetFacts({
+  contextRef,
+  entityIdentifierXml,
+  periodXml,
+  additionalContexts,
+  unitRef,
+  figures,
+  withAccrualsContext = false,
+}) {
   const netCurrentAssets = figures.currentAssets - figures.creditorsWithinOneYear;
   const totalAssetsLessCurrentLiabilities = figures.fixedAssets + netCurrentAssets;
   const netAssets = totalAssetsLessCurrentLiabilities - figures.creditorsAfterOneYear;
@@ -791,7 +799,8 @@ export function balanceSheetFacts({ contextRef, entityIdentifierXml, periodXml, 
     });
   const fact = (conceptKey, factContextRef, value) => ({ xml: renderMonetaryFact(conceptKey, factContextRef, unitRef, value), value });
   // Accruals sit on the within one year context of a current financial instrument, as Companies House's example tags them.
-  if ((figures.accruals ?? 0) !== 0) {
+  // The caller asks for the context in every year when any year shows the line, because each year's column refers to it.
+  if (withAccrualsContext) {
     buildDimensionedContext({
       additionalContexts,
       entityIdentifierXml,
