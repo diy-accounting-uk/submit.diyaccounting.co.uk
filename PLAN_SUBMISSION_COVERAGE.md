@@ -284,3 +284,166 @@ Read-only endpoints (obligations, business details, ITSA status, period lists, c
 - [ ] **GAP1-H3. Self-employment quarterly update: tax taken off trading income.** Add `periodIncome.taxTakenOffTradingIncome` (SA103F box 82) as a money field under turnover and other income on `web/public/hmrc/itsa/selfEmploymentPeriod.html` and `.page.js` and on the amend page `selfEmploymentPeriodAmend`, read it back in "Load current total", and send it in `periodIncome` for the cumulative model and the dated 2024-25 model (`periodSummary/def2/period_income.json` carries it too). `deriveItsaQuarterlyUpdate` does not supply it, so the import leaves it blank. Spec: Self Employment Business 5.0 `createAmendCumulativePeriodSummary`. **Source**: GAP1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 - [ ] **GAP1-H4. UK property annual: Structured Buildings Allowance claims.** Add the same repeatable rows as GAP1-H2 for `ukProperty.allowances.structuredBuildingAllowance[]` and `enhancedStructuredBuildingAllowance[]` to `web/public/hmrc/itsa/ukPropertyAnnualSubmission.html` and `.page.js`; the builder `buildAllowancesSection` in `hmrcItsaUkPropertyAnnualPut.js` already passes the arrays. Starts after GAP1-H2 lands the row widget. Spec: Property Business 6.0 `uk_property_annual_submission_create_and_amend`. **Source**: GAP1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 - [ ] **GAP1-H5. Foreign property journey.** Foreign property income has no page, Lambda or route in Submit. Design and build the Property Business 6.0 foreign property endpoints Submit does not call: create and update property details, the cumulative period summary (2025-26 onward), the dated period summary, the annual submission, and `typeOfBusiness: foreign-property` for the BSAS trigger and adjustments. Needs a plan first (country code per entry, SA106 box map, whether the book chart gets a `diya-gl:foreignPropertyField` tag in the diya-gl package); no book source exists today, so the first version is forms only. Spec: `https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/property-business-api/6.0`. **Source**: GAP1. **Owner**: Claude Code. **Model**: Opus (design), then Sonnet. **Size**: ~30 files.
+
+### GAP1-H5 design: the foreign property journey
+
+Read at main `d77564ba5`. Spec: Property Business (MTD) 6.0 OAS (`https://developer.service.hmrc.gov.uk/api-documentation/docs/api/service/property-business-api/6.0/oas/file` and the files it refers to), Business Source Adjustable Summary 7.0 OAS (`.../self-assessment-bsas-api/7.0/oas/file`), and HMRC's box map `mapping/csv/sa106_mapping_v2.csv` in `github.com/hmrc/income-tax-mtd-changelog`. The first version is forms only. The UK property journey is the pattern for every part.
+
+**What the API asks for, by tax year.** Each request carries a list of entries. The key of an entry changes with the tax year.
+
+| Tax year | Period endpoint | Entry key | Extra section |
+|---|---|---|---|
+| 2024-25 and before | dated: POST `period`, PUT `period/{submissionId}` | `countryCode` | `foreignFhlEea` (FHL in the EEA) |
+| 2025-26 | cumulative: PUT `cumulative` | `countryCode` | none |
+| 2026-27 on | cumulative: PUT `cumulative` | `propertyId` | none |
+
+- The annual submission follows the same split: `def1` (2024-25 and before, `countryCode`, `foreignFhlEea`), `def2` (2025-26, `countryCode`), `def3` (2026-27 on, `propertyId`).
+- The BSAS adjustment has four shapes: `foreignProperty[]` (2023-24 and before), `foreignProperty.countryLevelDetail[]` with `foreignFhlEea` (2024-25), `countryLevelDetail[]` (2025-26), `propertyLevelDetail[]` (2026-27 on). `zeroAdjustments: true` is the other choice from 2024-25.
+- A `propertyId` comes from "Create Foreign Property Details" (2026-27 on). The request has `propertyName` (1 to 105 characters, unique in a country), `countryCode`, and an optional `endDate` with `endReason`. The answer is `{ propertyId }`.
+- HMRC refuses two entries with the same country (`RULE_DUPLICATE_COUNTRY_CODE`) or the same property (`RULE_DUPLICATE_PROPERTY_ID`). It refuses itemised and consolidated expenses in one entry (`RULE_BOTH_EXPENSES_SUPPLIED`).
+- The dated model requires `foreignTaxCreditRelief` (true or false) and `rentIncome.rentAmount` in each country entry. The cumulative model makes both optional.
+
+**Decisions.**
+
+| Topic | Decision |
+|---|---|
+| Country code | ISO 3166-1 alpha-3, upper case, as the API pattern `^[A-Z]{3}$` needs. The page stores the code and shows the English short name |
+| Country list | `web/public/lib/country-codes.js`: the ISO 3166-1 list without `GBR`, with `JEY`, `GGY` and `IMN` in it. UK property goes on the UK journey |
+| Country check on the server | The Lambda checks the pattern only. HMRC checks the list and its `RULE_COUNTRY_CODE` shows under the country field |
+| Several countries (2024-25, 2025-26) | One fieldset per country. "Add another country" adds one. Each fieldset has "Remove". A country chosen in one fieldset is not offered in the others |
+| Several properties (2026-27 on) | The page reads the property list from "Retrieve Foreign Property Details" and shows one fieldset per property, headed "<name> (<country>)". "Add a property" opens `foreignPropertyDetails.html` |
+| Several properties in one country (2025-26 and before) | The person adds them up into the one country entry. The hint says so |
+| Empty entry | An entry with no figures is left out of the body. A body with no entries is refused on the page |
+| Expenses per entry | Each entry has its own "itemise or one total" choice, the same as the UK property page |
+| Amounts | Pounds sterling. The hint says to convert at the rate of the day or an average rate |
+| Book source | No `diya-gl:foreignPropertyField` tag in the first version. The tag shape for a later version is in row H5c |
+| Periods list | `hmrcItsaUkPropertyPeriodsGet` serves both types already (the HMRC path has no type). The foreign pages call it as it is |
+| BSAS trigger | `VALID_TYPES_OF_BUSINESS` in `hmrcItsaBsasTriggerPost.js` gets `foreign-property` |
+| Losses | `lossesAndClaims.html` takes `foreign-property` today (SA106 box FOR31). No change |
+| Dashboard | A `foreign-property` pick routes steps 3 to 8 to the foreign pages. The diversion note stays for the other business types |
+| Stack | The ten new Lambdas go in `HmrcItsaStack`. Each async pair costs about ten resources, so the stack goes from about 180 to about 280 of the 500 |
+
+**SA106 box map.** From `sa106_mapping_v2.csv`. Field names are relative to one `foreignProperty` entry.
+
+| Box | SA106 name | API field | Endpoint |
+|---|---|---|---|
+| FOR14 | Total rents and other receipts | `income.rentIncome.rentAmount` + `income.otherPropertyIncome` | period |
+| FOR14.1 | Property income allowance | `allowances.propertyIncomeAllowance` (at most 1,000) | annual |
+| FOR14.2 | Traditional accounting | no API field | none |
+| FOR15 | Number of overseas let properties | no API field | none |
+| FOR16 | Premiums for the grant of a lease | `income.premiumsOfLeaseGrant` | period |
+| FOR17 | Allowable property expenses | `expenses.*` itemised, or `expenses.consolidatedExpenses` | period |
+| FOR19 | Private use adjustment | `adjustments.privateUseAdjustment` | annual |
+| FOR20 | Balancing charges | `adjustments.balancingCharge` | annual |
+| FOR21 | Capital allowances | `allowances.otherCapitalAllowance` | annual |
+| FOR21.1 | Zero-emission car allowance | `allowances.zeroEmissionsCarAllowance` | annual |
+| FOR22.1 | Structures and Buildings Allowance | `allowances.structuredBuildingAllowance[]` | annual |
+| FOR22.2 | Electric charge-point allowance | `allowances.electricChargePointAllowance` | annual, 2024-25 and before |
+| FOR23 | Replacing domestic items | `allowances.costOfReplacingDomesticItems` | annual |
+| FOR24.1 | Residential finance costs | `expenses.residentialFinancialCost` | period |
+| FOR24.2 | Unused finance costs brought forward | `expenses.broughtFwdResidentialFinancialCost` | period |
+| FOR30A | Country or territory code | `countryCode` (2026-27 on: the property's country) | period, annual |
+| FOR30C | Foreign tax taken off or paid | `income.foreignTaxPaidOrDeducted` | period |
+| FOR30D | UK tax taken off | `income.specialWithholdingTaxOrUkTaxPaid` | period |
+| FOR30E | Claim Foreign Tax Credit Relief | `income.foreignTaxCreditRelief` (true or false) | period |
+
+- HMRC works out FOR18, FOR24, FOR25 to FOR30.1, FOR30B, FOR30F and FOR32. The page shows them from the tax calculation.
+- FOR17 groups `premisesRunningCosts`, `repairsAndMaintenance`, `financialCosts`, `professionalFees`, `travelCosts`, `costOfServices` and `other`.
+- The CSV maps FOR22.2 to `structuredBuildingAllowance > amount`. The schema has `electricChargePointAllowance` for that box, so the form uses it.
+- API fields with no box in the CSV: `allowances.annualInvestmentAllowance` (the form puts it beside FOR21), `allowances.zeroEmissionsGoodsVehicleAllowance` (2024-25 and before), `foreignFhlEea.*` and `foreignFhlEea.adjustments.periodOfGraceAdjustment` (2024-25 and before). The form takes all of them, labelled with the 2024-25 SA106 wording.
+- The BSAS adjustment takes `income.totalRentsReceived`, `premiumsOfLeaseGrant`, `otherPropertyIncome` and the nine expense fields per entry, the same names as the UK adjustment.
+
+**Endpoints, Lambdas and routes.** Each Lambda is an async ingest and worker pair, as the UK ones are. Each route is in Express (`app/bin/server.js` through the Lambda's `apiEndpoint`) and in API Gateway (`SubmitSharedNames.java` names the path and method; `HmrcItsaStack.lambdaFunctionProps` carries it to `ApiRoutesStack`).
+
+| HMRC operation | Tax years | Lambda | Submit route |
+|---|---|---|---|
+| Retrieve Foreign Property Details | 2026-27 on | `hmrcItsaForeignPropertyDetailsGet` | GET `/api/v1/hmrc/itsa/foreign-property/details` |
+| Create Foreign Property Details | 2026-27 on | `hmrcItsaForeignPropertyDetailsPost` | POST `.../foreign-property/details` |
+| Update Foreign Property Details | 2026-27 on | `hmrcItsaForeignPropertyDetailsPut` | PUT `.../foreign-property/details` |
+| Create dated, or create cumulative | all | `hmrcItsaForeignPropertyPeriodPost` | POST `.../foreign-property/period` |
+| Retrieve dated, or retrieve cumulative | all | `hmrcItsaForeignPropertyPeriodGet` | GET `.../foreign-property/period` |
+| Amend dated, or amend cumulative | all | `hmrcItsaForeignPropertyPeriodPut` | PUT `.../foreign-property/period` |
+| List period summaries | all | `hmrcItsaUkPropertyPeriodsGet` (as it is) | GET `.../uk-property/periods` |
+| Retrieve annual submission | all | `hmrcItsaForeignPropertyAnnualGet` | GET `.../foreign-property/annual` |
+| Create and amend annual submission | all | `hmrcItsaForeignPropertyAnnualPut` | PUT `.../foreign-property/annual` |
+| BSAS trigger | all | `hmrcItsaBsasTriggerPost` (adds the type) | POST `.../bsas/trigger` |
+| BSAS retrieve foreign property | all | `hmrcItsaBsasForeignPropertyGet` | GET `.../bsas/foreign-property` |
+| BSAS adjust foreign property | all | `hmrcItsaBsasForeignPropertyAdjustPost` | POST `.../bsas/foreign-property/adjust` |
+
+- `app/lib/foreignPropertyBody.js` builds the entries for the period, annual and adjustment Lambdas. It keys each entry by `countryCode` or `propertyId` from the tax year, drops empty sections, rounds to two places, and refuses a repeated key with a 400 before the HMRC call.
+- `app/lib/hmrcValidation.js` gets `isValidCountryCode` and `resolveForeignPropertyEntryKey(taxYear)` ("countryCode" or "propertyId", from `FOREIGN_PROPERTY_ID_START_TAX_YEAR = "2026-27"`). `resolveItsaSubmissionModel` stays the dated or cumulative switch.
+- The details Lambdas refuse a tax year before 2026-27 with a 400. The details PUT takes `propertyId` in the body and calls `.../foreign/{nino}/details/{propertyId}/{taxYear}`.
+- The write Lambdas publish `itsa-foreign-property-*` activity events and the `ItsaSubmissionFailure` metric, as the UK ones do. Each write gets an `OpsStack` panel entry.
+
+**Pages.** Under `web/public/hmrc/itsa/`, each with its `.page.js`.
+
+| Page | Does | Catalogue activity |
+|---|---|---|
+| `foreignPropertyDetails.html` | lists the properties for a tax year; adds one; changes the name; ends one with a date and a reason | `self-employed-property-details` (new, 0 tokens) |
+| `foreignPropertyPeriod.html` | the quarterly update: one fieldset per country or property; "Load current total" | `self-employed` |
+| `foreignPropertyPeriodAmend.html` | loads a period and sends the changed figures | `self-employed` |
+| `foreignPropertyPeriods.html` | lists the periods of a tax year | `self-employed-read` |
+| `foreignPropertyPeriodView.html` | shows one period, entry by entry | `self-employed-read` |
+| `foreignPropertyAnnualSubmission.html` | adjustments and allowances per entry, with SBA rows | `self-employed-year-end` |
+| `foreignPropertyAdjustments.html` | triggers the BSAS, shows it per entry, sends adjustments or zero adjustments | `self-employed-year-end` |
+
+- Shared front-end code: `web/public/lib/country-codes.js`, `web/public/lib/foreign-property-fields.js` (field ids, HMRC names and labels, in the shape of `uk-property-period-fields.js`), and `web/public/widgets/foreign-property-entries.js` (the add, remove and no-repeat logic for the fieldsets).
+- `web/public/lib/itsaSubmissionModel.js` gets the browser copy of `resolveForeignPropertyEntryKey`.
+- The 2024-25 page adds an "FHL in the EEA" section above the country fieldsets.
+- When the person adds a fieldset, focus moves to its country field. Each error links from the error summary to its field in the right fieldset.
+- `itsa-submission-record.js` shows one table per entry on the receipt. `hmrc-field-table.js` gets `foreignPropertySummaryRows` for the BSAS view.
+
+**Simulator.** New route and scenario files under `app/http-simulator/`, in the shape of the `itsa-uk-property-*` files.
+
+| Route file | Paths | Scenarios |
+|---|---|---|
+| `itsa-foreign-property-details.js` | GET and POST `.../foreign/{nino}/{businessId}/details/{taxYear}`, PUT `.../foreign/{nino}/details/{propertyId}/{taxYear}` | DEFAULT, STATEFUL, NOT_FOUND, DUPLICATE_PROPERTY_NAME, PROPERTY_BUSINESS_CEASED, OUTSIDE_AMENDMENT_WINDOW |
+| `itsa-foreign-property-cumulative.js` | GET and PUT `.../foreign/.../cumulative/{taxYear}` | DEFAULT, STATEFUL, NOT_FOUND, PROPERTY_ID_MISMATCH, UK_PROPERTY, TAX_YEAR_NOT_SUPPORTED, the two 500s |
+| `itsa-foreign-property-period.js` | POST `.../foreign/.../period/{taxYear}` | DEFAULT, STATEFUL, DUPLICATE_SUBMISSION, UK_PROPERTY |
+| `itsa-foreign-property-period-detail.js` | GET and PUT `.../foreign/.../period/{taxYear}/{submissionId}` | DEFAULT, NOT_FOUND, CONSOLIDATED |
+| `itsa-foreign-property-annual.js` | GET and PUT `.../foreign/.../annual/{taxYear}` | DEFAULT, STATEFUL, NOT_FOUND, UK_PROPERTY |
+| `itsa-bsas.js` (change) | GET and POST `.../adjustable-summary/{nino}/foreign-property/...` | as the UK property ones |
+
+- Every route checks the body the way HMRC does: a repeated country or property, both expense kinds in one entry, an empty `foreignProperty`, a bad country pattern, a `propertyId` the store does not hold.
+- `state/store.js` gets a `foreignProperties` map, so a POST to details gives a `propertyId` that the GET lists and the cumulative PUT accepts.
+
+**Behaviour tests.** `behaviour-tests/itsaForeignPropertyPeriod.behaviour.test.js` and `itsaForeignPropertyAnnualSubmission.behaviour.test.js`, in the shape of the UK ones, with a `foreign-property` test business from `createHmrcTestBusiness`.
+
+- Period: 2025-26 with France itemised and Spain consolidated; "Load current total"; amend; list; view. 2026-27: add two properties, file one cumulative update for both, end one property. On the simulator, 2024-25 with an FHL in the EEA section and one country.
+- Annual: load, change allowances in two entries, add an SBA row, save; trigger the BSAS for `foreign-property`, view it, send adjustments.
+- Each journey asserts the HMRC request body in DynamoDB and the fraud prevention headers, as the UK ones do.
+
+**The build.**
+
+| Part | Files | Tests | Proof |
+|---|---|---|---|
+| H5b1 the base and property details | `app/lib/hmrcValidation.js`, `app/lib/foreignPropertyBody.js` (new), `app/functions/hmrc/hmrcItsaForeignPropertyDetailsGet.js`, `...DetailsPost.js`, `...DetailsPut.js` (new), their three unit tests and `app/unit-tests/lib/foreignPropertyBody.test.js` (new), `app/unit-tests/lib/hmrcValidation.test.js`, and the wiring set (~24) | entry key per tax year; empty entry dropped; repeated country or property refused before HMRC; details refused before 2026-27; `endReason` without `endDate` refused | `npm test`; `./mvnw clean verify`; the synthesised `HmrcItsaStack` and `DataStack` templates each under 500 resources |
+| H5b2 the period Lambdas | `hmrcItsaForeignPropertyPeriodPost.js`, `...PeriodGet.js`, `...PeriodPut.js` (new), their unit tests, `...PeriodPost.activity.test.js`, `...PeriodPut.activity.test.js` (new), and the wiring set (~22) | dated POST with `foreignFhlEea` and `foreignNonFhlProperty[]`; cumulative PUT by country (2025-26) and by property (2026-27); itemised or consolidated per entry; receipt key; failure event | `npm test`; `./mvnw clean verify` |
+| H5b3 the annual Lambdas | `hmrcItsaForeignPropertyAnnualGet.js`, `...AnnualPut.js` (new), their unit tests, `...AnnualPut.activity.test.js` (new), and the wiring set (~19) | `def1`, `def2` and `def3` bodies; SBA rows pass through; the 2024-25-only allowances refused for a later year | `npm test`; `./mvnw clean verify` |
+| H5b4 the BSAS Lambdas | `hmrcItsaBsasForeignPropertyGet.js`, `hmrcItsaBsasForeignPropertyAdjustPost.js` (new), their unit tests, `hmrcItsaBsasTriggerPost.js` and its test, and the wiring set (~20) | the four adjustment shapes; `zeroAdjustments` alone; the trigger takes `foreign-property` | `npm test`; `./mvnw clean verify` |
+| H5b5 the simulator | the five new route files and five new scenario files, `routes/itsa-bsas.js`, `scenarios/itsa-bsas.js`, `app/http-simulator/server.js`, `state/store.js`, `app/unit-tests/http-simulator/routes/itsa-foreign-property.test.js` (new), the two `itsa-bsas.test.js` files (~17) | each scenario per route; each body check; a `propertyId` from POST is listed by GET and taken by the cumulative PUT | `npm test` |
+| H5b6 the shared front end and property details | `web/public/lib/country-codes.js`, `foreign-property-fields.js`, `web/public/widgets/foreign-property-entries.js`, `foreignPropertyDetails.html` and `.page.js` (new), `itsaSubmissionModel.js`, `web/public/lib/services/hmrc-service.js`, `submit.catalogue.toml`, `app/unit-tests/services/productCatalog.test.js`, the three `.pa11yci.*.json`, `web/unit-tests/country-codes.test.js`, `web/browser-tests/foreignPropertyEntries.browser.test.js`, `foreignPropertyDetails.browser.test.js` (new) (~16) | no `GBR`; every code three upper-case letters; add, remove, and no repeat of a country; focus on add; the details list, add, rename and end | browser tests; the `visual-review` skill on the new page's screenshots |
+| H5b7 the period pages | `foreignPropertyPeriod`, `foreignPropertyPeriodAmend`, `foreignPropertyPeriods`, `foreignPropertyPeriodView` (`.html` and `.page.js`, new), `submit.catalogue.toml`, `productCatalog.test.js`, the three `.pa11yci.*.json`, `itsa-submission-record.js`, `test-data-generator.js`, `web/browser-tests/foreignPropertyPeriodFields.browser.test.js` (new), `itsaSubmissionRecords.browser.test.js`, `itsaAccessibility.browser.test.js` (~18) | each field in each entry reaches the request body; the 2024-25 FHL section; the 2026-27 property fieldsets; the receipt shows each entry | browser tests; `visual-review` on the screenshots |
+| H5b8 the year-end pages and the dashboard | `foreignPropertyAnnualSubmission`, `foreignPropertyAdjustments` (`.html` and `.page.js`, new), `dashboard.html`, `dashboard.page.js`, `hmrc-field-table.js`, `submit.catalogue.toml`, `productCatalog.test.js`, the three `.pa11yci.*.json`, `itsaDashboard.browser.test.js`, `foreignPropertyAnnual.browser.test.js`, `foreignPropertyAdjustments.browser.test.js` (new), `structuredBuildingAllowanceRows.browser.test.js` (~17) | a `foreign-property` pick routes steps 3 to 8; allowances per entry; SBA rows per entry; BSAS view per entry | browser tests; `visual-review` on the screenshots |
+| H5b9 the behaviour tests and CI jobs | `behaviour-tests/itsaForeignPropertyPeriod.behaviour.test.js`, `itsaForeignPropertyAnnualSubmission.behaviour.test.js` (new), `steps/behaviour-hmrc-itsa-steps.js`, `playwright.config.js`, `package.json`, `.github/workflows/test.yml`, `deploy.yml`, `probe-test.yml`, `scripts/ci/select-jobs.mjs`, `app/unit-tests/scripts/selectJobs.test.js` (~10) | the journeys under "Behaviour tests" | the two `simulator - ...Behaviour` jobs green; `HMRC_ACCOUNT=synthetic npm run test:itsaForeignPropertyPeriodBehaviour-proxy` and the annual one green against the HMRC sandbox; the ci probe jobs green on the PR deploy |
+| H5b10 the docs, the availability table and the look pass | `web/public/docs/api/openapi.json`, `REPORT_CAPABILITIES.md`, `web/public/mtd-calendar.html`, `scripts/alarm-customer-lookup.mjs`, `videos/itsa-foreign-property-year.json` (new), `videos/publish.json`, `web/public/guide.page.js`, `PLAN_SITE_DESIGN.md` (~8) | the OpenAPI document lists the new routes; the alarm lookup knows the new events | the visual definition of done: `npm run video:walkthrough`, the site screenshots, `visual-review` and `ui-ux-pro-max` on the foreign journeys, the new video recorded |
+
+The wiring set is the 14 files that every new Lambda touches: `app/bin/server.js`, `SubmitSharedNames.java`, `HmrcItsaStack.java`, `DataStack.java`, `OpsStack.java`, `.env.proxy`, `.env.simulator`, `.env.test`, `app/test-helpers/mockHelpers.js`, `DataStackTest.java`, `HmrcItsaStackTest.java`, `SubmitApplicationCdkResourceTest.java`, `SubmitEnvironmentCdkResourceTest.java` and `infra/test/resources/lambda-env-allowlist.txt`.
+
+- Order. H5b1 to H5b4 share the wiring set, so they run one after the other. H5b5 and H5b6 can run beside H5b1. H5b7 follows H5b6. H5b8 follows H5b7 and GAP1-H2 (the SBA row widget). H5b9 follows H5b1 to H5b8. H5b10 is last.
+- Model. Every row is Sonnet. Each row copies a UK property file family that exists, with the entry list and the tax-year key as the new parts.
+- H5c the book source. Blocked until a book holds foreign property postings. In `../spreadsheets.diyaccounting.co.uk`: `app/lib/derivations/foreign-property.js` (new, `deriveForeignPropertyPeriod` and `deriveForeignPropertyAnnual`), `app/test/derivations-foreign-property.test.js` (new), `web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-book-v2.schema.json`, `web/diya-gl.co.uk/public/spec.html` (~5). Then in Submit, `web/public/widgets/books-import.js` and `scripts/build-books-bundle.mjs` with the rebuilt `web/public/lib/books-bundle.js` (~4). The account tags: `diya-gl:foreignPropertyField` (the entry field in HMRC's dotted names, for example `income.rentIncome.rentAmount`), `diya-gl:foreignPropertyCountry` (alpha-3), and `diya-gl:foreignPropertyName` (matched to HMRC's `propertyName` for 2026-27 on). The derivation sums postings by account, as `uk-property.js` does, and groups them into one entry per country or per name. Sonnet.
+
+**Open questions.**
+
+| # | Question | Alternatives | Recommendation |
+|---|---|---|---|
+| 1 | The country field control | (a) a native `<select>` of names, sorted; (b) a text input with a `<datalist>`; (c) the GOV.UK `accessible-autocomplete` library | (a): it works with a keyboard and a screen reader as it is, and adds no dependency |
+| 2 | Which codes HMRC permits (`RULE_COUNTRY_CODE`) | (a) the full ISO list without `GBR`; (b) a list taken from the SA106 notes | (a), with one sandbox run in H5b9 that sends `JEY`, `GGY` and `IMN`. Remove a code from the list if the sandbox refuses it |
+| 3 | Does a cumulative PUT that leaves out an entry clear that entry's figures at HMRC? | (a) the page always sends every entry, filled from "Load current total"; (b) the page sends only the entries the person changed | (a). Answer it with the sandbox `STATEFUL` scenario in H5b9 before the page text is final |
+| 4 | The dated model (2024-25 and before) with FHL in the EEA | (a) build it in H5b2 and H5b7, as the UK journey does; (b) build 2025-26 on first and add the dated model as its own row | (a): the same Lambdas choose the endpoint by tax year, and the FHL section is one fieldset |
+| 5 | The periods list route has `uk-property` in its name and serves both types | (a) call it as it is; (b) rename the Lambda and the route to `property/periods` with every caller, in its own change | (a) in H5b7. (b) is a separate rename row when the operator wants it |
+| 6 | The token cost of a property details write | (a) a new `self-employed-property-details` activity at 0 tokens; (b) `self-employed` at 1 token | (a): the write sends no figures, the same as reading business details |
+| 7 | Currency conversion | (a) a hint and amounts in pounds; (b) a converter with HMRC's monthly exchange rates | (a) in the first version. (b) is a later row if people ask for it |
+| 8 | The book tag shape for H5c | (a) tags per account: field, country and name; (b) a country on each ledger line | (a): `uk-property.js` already sums by account, and a chart can hold one account set per country |
+| 9 | New foreign Lambdas or a `location` parameter on the UK ones | (a) new foreign Lambdas; (b) one Lambda per operation for both types | (a): the bodies differ (one `ukProperty` object against a list of entries), and the UK Lambdas and their tests stay as they are |
