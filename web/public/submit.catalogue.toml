@@ -127,7 +127,7 @@ amount = 99
 currency = "gbp"
 default = true
 
-# resident: the single Resident bundle — DIYA-GL book storage plus VAT, ITSA and Companies
+# resident: the single Resident bundle — diya-gl book storage plus VAT, ITSA and Companies
 # House micro-entity filing as each is recognised. Replaced resident-itsa, resident-ltd and
 # resident-diya-gl, retired once Stripe live showed no subscription on their prices.
 # resident-vat stays separate at its own 99p price for its existing subscribers.
@@ -136,7 +136,7 @@ default = true
 [[bundles]]
 id = "resident"
 name = "Resident"
-description = "Save and load DIYA-GL books, and file VAT, Income Tax Self Assessment and micro-entity accounts to HMRC and Companies House as each is recognised. £39/year, or £3.99/month, cancel anytime."
+description = "Save and load diya-gl books, and file VAT, Income Tax Self Assessment and micro-entity accounts to HMRC and Companies House as each is recognised. £39/year, or £3.99/month, cancel anytime."
 levelName = "Resident"
 enable = "always"
 hidden = false
@@ -206,7 +206,7 @@ tokenRefreshInterval = "P1M"
 [[bundles]]
 id = "resident-pro"
 name = "Resident Pro"
-description = "Manage a practice's clients and file VAT, Income Tax Self Assessment and micro-entity accounts to HMRC and Companies House on their behalf, and save and load your own DIYA-GL books. £199/year, or £19.99/month, cancel anytime."
+description = "Manage a practice's clients and file VAT, Income Tax Self Assessment and micro-entity accounts to HMRC and Companies House on their behalf, and save and load your own diya-gl books. £199/year, or £19.99/month, cancel anytime."
 levelName = "Pro"
 enable = "always"
 hidden = false
@@ -526,11 +526,11 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "diya-gl-storage"
-name = "Save DIYA-GL books"
+name = "Save diya-gl books"
 display = "on-entitlement"
 bundles = ["resident"]
 metered = false
-# The DIYA-GL storage PUT route (app/services/diyaGlEntitlement.js) checks the resident bundle
+# The diya-gl storage PUT route (app/services/diyaGlEntitlement.js) checks the resident bundle
 # id directly rather than reading this activity, so this entry documents the entitlement
 # without adding a second enforcement path.
 # Matches both live prefixes. /api/v1/books and /api/v1/diya-gl are both served permanently, so
