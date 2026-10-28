@@ -117,6 +117,8 @@ test.describe("Company Lookup page", () => {
     await expect(page.locator("#searchResultsContainer")).toBeVisible();
     await expect(page.locator("#searchResults")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
     await expect(page.locator("#searchResults")).toContainText("00000001");
+    await expect(page.locator("#searchResults")).toContainText("Active");
+    await expect(page.locator("#searchResults")).toContainText("16 April 2009");
   });
 
   test("shows a message when no companies match", async ({ page }) => {
@@ -145,7 +147,12 @@ test.describe("Company Lookup page", () => {
 
     await expect(page.locator("#profileView")).toBeVisible();
     await expect(page.locator("#companyProfile")).toContainText("SIMULATOR EXAMPLE COMPANY LIMITED");
-    await expect(page.locator("#companyProfile")).toContainText("active");
+    await expect(page.locator("#companyProfile")).toContainText("Active");
+    await expect(page.locator("#companyProfile")).toContainText("Private limited company");
+    await expect(page.locator("#companyProfile")).toContainText("England and Wales");
+    await expect(page.locator("#companyProfile")).toContainText("16 April 2009");
+    await expect(page.locator("#companyProfile")).toContainText("62012 - Business and domestic software development");
+    await expect(page.locator("#companyProfile")).not.toContainText("2009-04-16");
   });
 
   test("puts the company number in the URL when a result is selected", async ({ page }) => {

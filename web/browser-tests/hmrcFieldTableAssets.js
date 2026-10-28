@@ -77,6 +77,7 @@ export async function servePageScripts(page) {
   await serveFile(page, "**/lib/hmrc-display-format.js", "lib/hmrc-display-format.js", "application/javascript");
   await serveFile(page, "**/lib/pending-request.js", "lib/pending-request.js", "application/javascript");
   await serveFile(page, "**/lib/accounts-form-sections.js", "lib/accounts-form-sections.js", "application/javascript");
+  await serveFile(page, "**/lib/companies-house-labels.js", "lib/companies-house-labels.js", "application/javascript");
   await serveFormErrors(page);
   return page.route("**/*.page.js", async (route) => {
     const pathname = decodeURIComponent(new URL(route.request().url()).pathname);
