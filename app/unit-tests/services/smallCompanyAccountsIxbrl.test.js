@@ -805,6 +805,53 @@ describe("the creditor lines, policies, accountants' report and controlling part
     ).toThrow(/bankLoansAfterOneYear/);
   });
 
+  test("tags the second policy set under shared subheadings in the order of the note", () => {
+    const policies = {
+      propertyPlantEquipmentPolicy: "Fixed asset policy text.",
+      depreciationMethodPolicy: "Straight line.",
+      inventoriesPolicy: "Stock policy text.",
+      cashCashEquivalentsPolicy: "Cash policy text.",
+      financialInstrumentsClassificationPolicy: "Classified as basic.",
+      employeeBenefitsPolicy: "Benefits policy text.",
+      definedContributionPensionsPolicy: "Pension policy text.",
+      foreignCurrencyTranslationPolicy: "Translation policy text.",
+      functionalPresentationCurrencyPolicy: "Pounds sterling.",
+      leasesPolicy: "Lease policy text.",
+      deferredTaxPolicy: "Deferred tax policy text.",
+    };
+    const xhtml = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, taxPolicy: "Tax policy.", ...policies });
+    const names = [
+      "PropertyPlantEquipmentPolicy",
+      "DescriptionDepreciationMethodForPropertyPlantEquipment",
+      "InventoriesPolicy",
+      "CashCashEquivalentsPolicy",
+      "FinancialInstrumentsClassificationPolicy",
+      "EmployeeBenefitsPolicy",
+      "DefinedContributionPensionsPolicy",
+      "ForeignCurrencyTranslationOperationsPolicy",
+      "FunctionalPresentationCurrencyPolicy",
+      "LeasesPolicy",
+      "TaxPolicy",
+      "DeferredTaxPolicy",
+    ];
+    const positions = names.map((name) => xhtml.indexOf(`name="core:${name}"`));
+    expect(positions.every((position, index) => position > 0 && (index === 0 || position > positions[index - 1]))).toBe(true);
+    for (const heading of [
+      "Tangible fixed assets",
+      "Stocks",
+      "Cash and cash equivalents",
+      "Employee benefits",
+      "Foreign currency",
+      "Leases",
+      "Taxation",
+    ]) {
+      expect(xhtml.split(`<h4>${heading}</h4>`), heading).toHaveLength(2);
+    }
+    const concepts = loadFrcTaxonomyConcepts();
+    for (const name of names) expect(concepts).toContain(`core:${name}`);
+    expect(ixbrlStructureProblems(xhtml)).toEqual([]);
+  });
+
   test("tags each policy under its subheading in the order of the note, and the going concern basis true", () => {
     const xhtml = buildSmallCompanyAccounts({
       ...SAMPLE_INPUT,

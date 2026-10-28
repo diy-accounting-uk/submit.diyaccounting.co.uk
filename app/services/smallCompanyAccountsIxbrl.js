@@ -118,10 +118,25 @@ export const SMALL_COMPANY_POLICY_FIELDS = [
   { field: "goingConcernStatement", heading: "Going concern", conceptKey: "descriptionGoingConcernStatus" },
   { field: "revenueRecognitionPolicy", heading: "Turnover", conceptKey: "revenueRecognitionPolicy" },
   { field: "tangibleFixedAssetsPolicy", heading: "Tangible fixed assets", conceptKey: "propertyPlantEquipmentMeasurementBasis" },
+  { field: "propertyPlantEquipmentPolicy", heading: "Tangible fixed assets", conceptKey: "propertyPlantEquipmentPolicy" },
+  { field: "depreciationMethodPolicy", heading: "Tangible fixed assets", conceptKey: "depreciationMethodPolicy" },
   { field: "impairmentPolicy", heading: "Impairment", conceptKey: "impairmentPolicy" },
+  { field: "inventoriesPolicy", heading: "Stocks", conceptKey: "inventoriesPolicy" },
+  { field: "cashCashEquivalentsPolicy", heading: "Cash and cash equivalents", conceptKey: "cashCashEquivalentsPolicy" },
   { field: "financialInstrumentsPolicy", heading: "Financial instruments", conceptKey: "financialInstrumentsPolicy" },
+  {
+    field: "financialInstrumentsClassificationPolicy",
+    heading: "Financial instruments",
+    conceptKey: "financialInstrumentsClassificationPolicy",
+  },
+  { field: "employeeBenefitsPolicy", heading: "Employee benefits", conceptKey: "employeeBenefitsPolicy" },
+  { field: "definedContributionPensionsPolicy", heading: "Employee benefits", conceptKey: "definedContributionPensionsPolicy" },
+  { field: "foreignCurrencyTranslationPolicy", heading: "Foreign currency", conceptKey: "foreignCurrencyTranslationPolicy" },
+  { field: "functionalPresentationCurrencyPolicy", heading: "Foreign currency", conceptKey: "functionalPresentationCurrencyPolicy" },
+  { field: "leasesPolicy", heading: "Leases", conceptKey: "leasesPolicy" },
   { field: "taxPolicy", heading: "Taxation", conceptKey: "taxPolicy" },
   { field: "currentIncomeTaxPolicy", heading: "Taxation", conceptKey: "currentIncomeTaxPolicy" },
+  { field: "deferredTaxPolicy", heading: "Taxation", conceptKey: "deferredTaxPolicy" },
   { field: "dividendPolicy", heading: "Dividends", conceptKey: "dividendPolicy" },
 ];
 
@@ -664,7 +679,7 @@ ${principalActivitySentence(input.principalActivity, refs)}
  * @param {1|2} [input.profitAndLossFormat] - 1 (by function, the default) or 2 (by nature)
  * @param {{current: object, prior?: object}} input.profitAndLoss - the lines of the format: SMALL_COMPANY_PROFIT_AND_LOSS_LINES or SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES
  * @param {Record<string, object>} [input.fixedAssetNote] - FIXED_ASSET_CLASSES to FIXED_ASSET_CLASS_FIELDS
- * @param {string} [input.goingConcernStatement] - SMALL_COMPANY_POLICY_FIELDS texts (going concern, turnover, tangible fixed assets, impairment, financial instruments, tax, current income tax, dividends), each tagged in the accounting policies note under its subheading
+ * @param {string} [input.goingConcernStatement] - SMALL_COMPANY_POLICY_FIELDS texts (going concern, turnover, tangible fixed assets and depreciation, impairment, stocks, cash, financial instruments, employee benefits, foreign currency, leases, tax, current and deferred tax, dividends), each tagged in the accounting policies note under its subheading
  * @param {{accountantsName: string, statement: string}} [input.accountantsReport] - adds the accountants' report page and the audit exempt with accountants' report status
  * @param {{ultimate: boolean, name?: string}} [input.controllingParty] - adds the controlling party note; an ultimate party needs a name; without a name the note states that the company has no ultimate controlling party
  * @param {{shareClass: string, nominalValue: number}} [input.shareCapital] - adds a share capital note; the shares issued are the called up share capital over the nominal value

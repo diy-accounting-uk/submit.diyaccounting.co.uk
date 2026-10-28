@@ -281,6 +281,38 @@ test.describe("File small company accounts page", () => {
     expect(smallCompany.goingConcernStatement).toBe("The company is a going concern.");
     expect(smallCompany.impairmentPolicy).toBe("Assets are reviewed for impairment each year.");
     expect(smallCompany.revenueRecognitionPolicy).toBeUndefined();
+    await page.fill("#propertyPlantEquipmentPolicy", "Cost less depreciation.");
+    await page.fill("#depreciationMethodPolicy", "Straight line over four years.");
+    await page.fill("#deferredTaxPolicy", "Deferred tax is not provided.");
+    await page.fill("#functionalPresentationCurrencyPolicy", "Pounds sterling.");
+    const second = await page.evaluate(() => buildAccountsPayload().smallCompany);
+    expect(second).toMatchObject({
+      propertyPlantEquipmentPolicy: "Cost less depreciation.",
+      depreciationMethodPolicy: "Straight line over four years.",
+      deferredTaxPolicy: "Deferred tax is not provided.",
+      functionalPresentationCurrencyPolicy: "Pounds sterling.",
+    });
+    expect(await page.locator("#morePolicies textarea").evaluateAll((boxes) => boxes.map((box) => box.id))).toEqual([
+      "goingConcernStatement",
+      "revenueRecognitionPolicy",
+      "tangibleFixedAssetsPolicy",
+      "propertyPlantEquipmentPolicy",
+      "depreciationMethodPolicy",
+      "impairmentPolicy",
+      "inventoriesPolicy",
+      "cashCashEquivalentsPolicy",
+      "financialInstrumentsPolicy",
+      "financialInstrumentsClassificationPolicy",
+      "employeeBenefitsPolicy",
+      "definedContributionPensionsPolicy",
+      "foreignCurrencyTranslationPolicy",
+      "functionalPresentationCurrencyPolicy",
+      "leasesPolicy",
+      "taxPolicy",
+      "currentIncomeTaxPolicy",
+      "deferredTaxPolicy",
+      "dividendPolicy",
+    ]);
   });
 
   test("the controlling party is none by default, can state there is no ultimate party, or can name one", async ({ page }) => {

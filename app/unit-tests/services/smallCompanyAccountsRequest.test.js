@@ -159,6 +159,8 @@ describe("services/smallCompanyAccountsRequest optional lines, policies and cont
       sectionFrom(SMALL_COMPANY_CASE_INPUT, {
         goingConcernStatement: " Going on. ",
         impairmentPolicy: "  ",
+        leasesPolicy: " Leases are operating leases. ",
+        deferredTaxPolicy: " No deferred tax. ",
         taxPolicy: "Tax.",
         currentIncomeTaxPolicy: " Current. ",
         dividendPolicy: " Dividends. ",
@@ -166,6 +168,8 @@ describe("services/smallCompanyAccountsRequest optional lines, policies and cont
     );
     expect(errors).toEqual([]);
     expect(result.goingConcernStatement).toBe("Going on.");
+    expect(result.leasesPolicy).toBe("Leases are operating leases.");
+    expect(result.deferredTaxPolicy).toBe("No deferred tax.");
     expect(result).not.toHaveProperty("impairmentPolicy");
     expect(result.taxPolicy).toBe("Tax.");
     expect(result.currentIncomeTaxPolicy).toBe("Current.");
