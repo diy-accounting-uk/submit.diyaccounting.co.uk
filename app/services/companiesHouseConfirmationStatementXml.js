@@ -201,6 +201,7 @@ function buildShareholderNameXml(shareholder) {
 }
 
 const MAX_JOINT_HOLDERS_PER_SHAREHOLDING = 10;
+const MAX_TRANSFERS_PER_SHAREHOLDING = 200;
 
 function buildShareholdingXml({ shareClass, numberHeld, transfers, shareholders }) {
   if (!shareClass) {
@@ -208,6 +209,9 @@ function buildShareholdingXml({ shareClass, numberHeld, transfers, shareholders 
   }
   if (shareholders && shareholders.length > MAX_JOINT_HOLDERS_PER_SHAREHOLDING) {
     throw new Error(`at most ${MAX_JOINT_HOLDERS_PER_SHAREHOLDING} joint holders are allowed per shareholding`);
+  }
+  if (transfers && transfers.length > MAX_TRANSFERS_PER_SHAREHOLDING) {
+    throw new Error(`at most ${MAX_TRANSFERS_PER_SHAREHOLDING} transfers are allowed per shareholding`);
   }
   const transfersXml = (transfers || [])
     .map(
