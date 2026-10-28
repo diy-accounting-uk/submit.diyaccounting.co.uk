@@ -122,6 +122,7 @@ export async function ingestHandler(event) {
     const updated = await setClientAuthorisation(user.sub, clientId, service, {
       status: "pending",
       invitationId: result.invitationId,
+      knownFact,
     });
 
     return http201CreatedResponse({

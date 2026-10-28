@@ -4,7 +4,7 @@
 // app/http-simulator/routes/agent-authorisation.js
 // HMRC Agent Authorisation API
 // Handles: POST /agents/{arn}/invitations, GET and DELETE /agents/{arn}/invitations/{invitationId},
-// GET /agents/{arn}/relationships
+// POST /agents/{arn}/relationships
 
 import { randomUUID } from "crypto";
 
@@ -13,7 +13,7 @@ import { randomUUID } from "crypto";
 const invitations = new Map();
 
 // Deterministic set of client identifiers the simulator treats as already having a relationship
-// with any agent, so GET /agents/{arn}/relationships has something to answer besides 404 without
+// with any agent, so POST /agents/{arn}/relationships has something to answer besides 404 without
 // requiring an invitation to have been accepted first.
 const PRE_AUTHORISED_CLIENT_IDS = new Set(["999999999", "AB123456C"]);
 
@@ -90,14 +90,17 @@ export function apiEndpoint(app) {
     res.status(204).send();
   });
 
-  // GET /agents/{arn}/relationships
-  app.get("/agents/:arn/relationships", (req, res) => {
+  // POST /agents/{arn}/relationships
+  app.post("/agents/:arn/relationships", (req, res) => {
     const { arn } = req.params;
-    const { service, clientIdType, clientId } = req.query;
-    console.log(`[http-simulator:agent-authorisation] GET /agents/${arn}/relationships service=${service} clientId=${clientId}`);
+    const { service, clientIdType, clientId, knownFact } = req.body || {};
+    console.log(`[http-simulator:agent-authorisation] POST /agents/${arn}/relationships service=${service} clientId=${clientId}`);
 
-    if (!isValidArn(arn) || !service || !clientIdType || !clientId) {
-      return res.status(400).json({ code: "INVALID_REQUEST", message: "service, clientIdType and clientId are required" });
+    if (!isValidArn(arn) || !Array.isArray(service) || service.length === 0 || !clientIdType || !clientId || !knownFact) {
+      return res.status(400).json({
+        code: "INVALID_REQUEST",
+        message: "service, clientIdType, clientId and knownFact are required",
+      });
     }
 
     if (!PRE_AUTHORISED_CLIENT_IDS.has(clientId)) {

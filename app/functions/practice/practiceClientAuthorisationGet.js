@@ -110,7 +110,23 @@ export async function ingestHandler(event) {
       }
       status = String(result.data?.status || "").toLowerCase() || "pending";
     } else {
-      const result = await getRelationship({ arn, service, clientIdType, clientId: clientIdentifier, accessToken, govClientHeaders });
+      if (!storedAuthorisation?.knownFact) {
+        return http400BadRequestResponse({
+          request,
+          headers: responseHeaders,
+          message: "Send an invitation first: HMRC's relationship check needs the known fact given with the invitation",
+          error: {},
+        });
+      }
+      const result = await getRelationship({
+        arn,
+        service,
+        clientIdType,
+        clientId: clientIdentifier,
+        knownFact: storedAuthorisation.knownFact,
+        accessToken,
+        govClientHeaders,
+      });
       if (result.status === 404) {
         status = "unauthorised";
       } else if (!result.ok) {
@@ -120,7 +136,11 @@ export async function ingestHandler(event) {
       }
     }
 
-    const updated = await setClientAuthorisation(user.sub, clientId, service, { status, invitationId });
+    const updated = await setClientAuthorisation(user.sub, clientId, service, {
+      status,
+      invitationId,
+      knownFact: storedAuthorisation?.knownFact,
+    });
 
     return http200OkResponse({
       request,

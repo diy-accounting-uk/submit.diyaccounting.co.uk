@@ -66,8 +66,13 @@ describe("practiceClientAuthorisationGet", () => {
     expect(getRelationship).not.toHaveBeenCalled();
   });
 
-  test("checks HMRC's relationships endpoint when no invitation is on file", async () => {
-    getClient.mockResolvedValue({ clientId: "c1", identifiers: { vrn: "123456789" }, archivedAt: null, authorisations: {} });
+  test("checks HMRC's relationships endpoint with the stored known fact when no invitation is on file", async () => {
+    getClient.mockResolvedValue({
+      clientId: "c1",
+      identifiers: { vrn: "123456789" },
+      archivedAt: null,
+      authorisations: { "MTD-VAT": { status: "cancelled", invitationId: null, knownFact: "2020-01-31" } },
+    });
     getPracticeArn.mockResolvedValue("TARN0000001");
     getRelationship.mockResolvedValue({ ok: true, status: 200, data: { authorisedRelationship: true } });
     setClientAuthorisation.mockResolvedValue({ clientId: "c1" });
@@ -77,12 +82,38 @@ describe("practiceClientAuthorisationGet", () => {
     expect(result.statusCode).toBe(200);
     expect(JSON.parse(result.body)).toMatchObject({ status: "authorised" });
     expect(getRelationship).toHaveBeenCalledWith(
-      expect.objectContaining({ arn: "TARN0000001", service: "MTD-VAT", clientIdType: "vrn", clientId: "123456789" }),
+      expect.objectContaining({
+        arn: "TARN0000001",
+        service: "MTD-VAT",
+        clientIdType: "vrn",
+        clientId: "123456789",
+        knownFact: "2020-01-31",
+      }),
     );
+    expect(setClientAuthorisation).toHaveBeenCalledWith("practice-sub", "c1", "MTD-VAT", {
+      status: "authorised",
+      invitationId: null,
+      knownFact: "2020-01-31",
+    });
+  });
+
+  test("asks for an invitation first when no known fact is stored", async () => {
+    getClient.mockResolvedValue({ clientId: "c1", identifiers: { vrn: "123456789" }, archivedAt: null, authorisations: {} });
+    getPracticeArn.mockResolvedValue("TARN0000001");
+
+    const result = await ingestHandler(buildAuthenticatedEvent({}));
+
+    expect(result.statusCode).toBe(400);
+    expect(getRelationship).not.toHaveBeenCalled();
   });
 
   test("reads unauthorised when HMRC answers no relationship", async () => {
-    getClient.mockResolvedValue({ clientId: "c1", identifiers: { vrn: "123456789" }, archivedAt: null, authorisations: {} });
+    getClient.mockResolvedValue({
+      clientId: "c1",
+      identifiers: { vrn: "123456789" },
+      archivedAt: null,
+      authorisations: { "MTD-VAT": { status: "cancelled", invitationId: null, knownFact: "2020-01-31" } },
+    });
     getPracticeArn.mockResolvedValue("TARN0000001");
     getRelationship.mockResolvedValue({ ok: false, status: 404, data: {} });
     setClientAuthorisation.mockResolvedValue({ clientId: "c1" });

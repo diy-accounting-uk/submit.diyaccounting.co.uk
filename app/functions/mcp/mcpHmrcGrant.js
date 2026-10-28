@@ -49,7 +49,7 @@ const CALLBACK_PAGE_PATH = "activities/submitVatCallback.html";
 const SCOPES_BY_SERVICE = {
   vat: ["read:vat", "write:vat"],
   itsa: ["read:self-assessment", "write:self-assessment"],
-  agent: ["read:sent-invitations", "write:sent-invitations"],
+  agent: ["read:sent-invitations", "write:sent-invitations", "write:cancel-invitations", "read:check-relationship"],
 };
 const HMRC_ACCOUNTS = ["synthetic", "live"];
 const STATE_PREFIX = "mcp";

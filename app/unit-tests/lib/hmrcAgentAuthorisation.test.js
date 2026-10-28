@@ -113,7 +113,7 @@ describe("lib/hmrcAgentAuthorisation", () => {
     expect(init.method).toBe("DELETE");
   });
 
-  it("getRelationship builds the query string from service, clientIdType and clientId", async () => {
+  it("getRelationship posts service, clientIdType, clientId and knownFact as JSON", async () => {
     const mockFetch = vi.fn().mockResolvedValueOnce(mockJsonResponse({ ok: true, status: 200, body: { authorisedRelationship: true } }));
     vi.stubGlobal("fetch", mockFetch);
 
@@ -123,14 +123,15 @@ describe("lib/hmrcAgentAuthorisation", () => {
       service: "MTD-VAT",
       clientIdType: "vrn",
       clientId: "123456789",
+      knownFact: "2020-01-31",
       accessToken: "token-123",
     });
 
     expect(result.ok).toBe(true);
-    const [url] = mockFetch.mock.calls[0];
-    expect(url).toBe(
-      "https://test-api.service.hmrc.gov.uk/agents/TARN0000001/relationships?service=MTD-VAT&clientIdType=vrn&clientId=123456789",
-    );
+    const [url, init] = mockFetch.mock.calls[0];
+    expect(url).toBe("https://test-api.service.hmrc.gov.uk/agents/TARN0000001/relationships");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ service: ["MTD-VAT"], clientIdType: "vrn", clientId: "123456789", knownFact: "2020-01-31" });
   });
 
   it("agentAuthorisationErrorResponse maps a 404 to a not-found response", async () => {

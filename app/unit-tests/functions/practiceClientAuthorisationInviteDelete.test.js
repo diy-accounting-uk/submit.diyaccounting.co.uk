@@ -47,7 +47,7 @@ describe("practiceClientAuthorisationInviteDelete", () => {
     getClient.mockResolvedValue({
       clientId: "c1",
       archivedAt: null,
-      authorisations: { "MTD-VAT": { status: "pending", invitationId: "inv-1" } },
+      authorisations: { "MTD-VAT": { status: "pending", invitationId: "inv-1", knownFact: "2020-01-01" } },
     });
     getPracticeArn.mockResolvedValue("TARN0000001");
     cancelInvitation.mockResolvedValue({ ok: true, status: 204 });
@@ -59,7 +59,11 @@ describe("practiceClientAuthorisationInviteDelete", () => {
     expect(cancelInvitation).toHaveBeenCalledWith(
       expect.objectContaining({ arn: "TARN0000001", invitationId: "inv-1", accessToken: "hmrc-token" }),
     );
-    expect(setClientAuthorisation).toHaveBeenCalledWith("practice-sub", "c1", "MTD-VAT", { status: "cancelled", invitationId: null });
+    expect(setClientAuthorisation).toHaveBeenCalledWith("practice-sub", "c1", "MTD-VAT", {
+      status: "cancelled",
+      invitationId: null,
+      knownFact: "2020-01-01",
+    });
   });
 
   test("answers 404 when there is no pending invitation for the service", async () => {
