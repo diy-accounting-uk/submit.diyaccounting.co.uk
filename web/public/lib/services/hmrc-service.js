@@ -932,6 +932,147 @@ export async function putUkPropertyAnnual(
 }
 
 /**
+ * Sends one foreign property details request and returns HMRC's answer, or throws with a
+ * message the page can show.
+ * @param {string} action - Words for the failure message, e.g. "retrieve the property list"
+ * @param {string} method - "GET", "POST" or "PUT"
+ * @param {string} url - The Submit route, with its query string for a GET
+ * @param {object|null} body - The JSON body for a POST or PUT
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a header
+ * @returns {Promise<object>} The response body
+ */
+async function foreignPropertyDetailsRequest(action, method, url, body, accessToken, govClientHeaders, testScenario) {
+  const headers = {
+    "Authorization": `Bearer ${accessToken}`,
+    "Content-Type": "application/json",
+    ...govClientHeaders,
+    "x-wait-time-ms": "0",
+  };
+  if (testScenario && method !== "GET") headers["Gov-Test-Scenario"] = testScenario;
+
+  const response = await authorizedFetch(url, { method, headers, ...(body && { body: JSON.stringify(body) }) });
+  const responseJson = await response.json();
+  if (!response.ok) {
+    if (responseJson?.reason === "hmrc_scope_insufficient") {
+      const message =
+        responseJson.userMessage || "Your HMRC authorization does not include the required permissions. Please try again to re-authorize.";
+      console.warn(message);
+      if (typeof window !== "undefined" && window.hmrcScopeCheck) {
+        window.hmrcScopeCheck.clearHmrcToken();
+      }
+      throw new Error(message);
+    }
+    console.error(
+      `Failed to ${action}. Remote call failed: ${method} ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`,
+    );
+    throw requestFailure(`Failed to ${action}.${failureReason(responseJson)}`, response, responseJson);
+  }
+  return responseJson;
+}
+
+/**
+ * Retrieve the foreign properties of a business for a tax year (2026-27 on) from HMRC.
+ * @param {string} nino - National Insurance number
+ * @param {string} businessId - HMRC business ID
+ * @param {string} taxYear - Tax year, e.g. "2026-27"
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a query parameter
+ * @returns {Promise<object>} Response containing propertyDetails
+ */
+export async function getForeignPropertyDetails(
+  nino,
+  businessId,
+  taxYear,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const params = new URLSearchParams({ nino, businessId, taxYear });
+  if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+  if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+  const url = `/api/v1/hmrc/itsa/foreign-property/details?${params}`;
+  return foreignPropertyDetailsRequest("retrieve the properties", "GET", url, null, accessToken, govClientHeaders, null);
+}
+
+/**
+ * Create a foreign property for a tax year (2026-27 on) with HMRC.
+ * @param {object} details - { nino, businessId, taxYear, propertyName, countryCode, endDate?, endReason? }
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response containing propertyId
+ */
+export async function postForeignPropertyDetails(
+  details,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const body = {
+    nino: details.nino,
+    businessId: details.businessId,
+    taxYear: details.taxYear,
+    runFraudPreventionHeaderValidation,
+    propertyName: details.propertyName,
+    countryCode: details.countryCode,
+    endDate: details.endDate,
+    endReason: details.endReason,
+  };
+  return foreignPropertyDetailsRequest(
+    "add the property",
+    "POST",
+    "/api/v1/hmrc/itsa/foreign-property/details",
+    body,
+    accessToken,
+    govClientHeaders,
+    testScenario,
+  );
+}
+
+/**
+ * Change the name of a foreign property, or end it with a date and a reason, with HMRC.
+ * @param {object} details - { nino, taxYear, propertyId, propertyName, endDate?, endReason? }
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value
+ * @returns {Promise<object>} Response, empty on success
+ */
+export async function putForeignPropertyDetails(
+  details,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const body = {
+    nino: details.nino,
+    taxYear: details.taxYear,
+    runFraudPreventionHeaderValidation,
+    propertyId: details.propertyId,
+    propertyName: details.propertyName,
+    endDate: details.endDate,
+    endReason: details.endReason,
+  };
+  return foreignPropertyDetailsRequest(
+    "save the property",
+    "PUT",
+    "/api/v1/hmrc/itsa/foreign-property/details",
+    body,
+    accessToken,
+    govClientHeaders,
+    testScenario,
+  );
+}
+
+/**
  * Retrieve a triggered ITSA business source adjustable summary (BSAS) for UK property.
  * @param {string} nino - National Insurance number
  * @param {string} calculationId - The BSAS calculation ID from the trigger response
@@ -1447,6 +1588,9 @@ if (typeof window !== "undefined") {
   window.putSelfEmploymentAnnual = putSelfEmploymentAnnual;
   window.getUkPropertyAnnual = getUkPropertyAnnual;
   window.putUkPropertyAnnual = putUkPropertyAnnual;
+  window.getForeignPropertyDetails = getForeignPropertyDetails;
+  window.postForeignPropertyDetails = postForeignPropertyDetails;
+  window.putForeignPropertyDetails = putForeignPropertyDetails;
   window.triggerBsas = triggerBsas;
   window.getBsasSelfEmployment = getBsasSelfEmployment;
   window.adjustBsasSelfEmployment = adjustBsasSelfEmployment;

@@ -54,6 +54,7 @@
     "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/ukPropertyPeriod.html",
     "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/ukPropertyPeriodAmend.html",
     "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/ukPropertyPeriods.html",
-    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/ukPropertyPeriodView.html"
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/ukPropertyPeriodView.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/foreignPropertyDetails.html"
   ]
 }

@@ -15,6 +15,10 @@
   // app/lib/hmrcValidation.js's CUMULATIVE_MODEL_START_TAX_YEAR.
   const CUMULATIVE_MODEL_START_YEAR = 2025;
 
+  // The first tax year a foreign property entry is keyed by propertyId, matching
+  // app/lib/hmrcValidation.js's FOREIGN_PROPERTY_ID_START_TAX_YEAR.
+  const FOREIGN_PROPERTY_ID_START_YEAR = 2026;
+
   function isValidTaxYear(taxYear) {
     if (typeof taxYear !== "string") {
       return false;
@@ -36,5 +40,13 @@
     return startYear >= CUMULATIVE_MODEL_START_YEAR ? "cumulative" : "dated";
   }
 
-  window.itsaSubmissionModel = { isValidTaxYear, resolveItsaSubmissionModel };
+  // Foreign property entries are keyed by "countryCode" up to 2025-26 and by "propertyId" from 2026-27.
+  function resolveForeignPropertyEntryKey(taxYear) {
+    if (!isValidTaxYear(taxYear)) {
+      throw new Error(`Invalid taxYear format - must be YYYY-YY, got: ${taxYear}`);
+    }
+    return Number(taxYear.slice(0, 4)) >= FOREIGN_PROPERTY_ID_START_YEAR ? "propertyId" : "countryCode";
+  }
+
+  window.itsaSubmissionModel = { isValidTaxYear, resolveItsaSubmissionModel, resolveForeignPropertyEntryKey };
 })();
