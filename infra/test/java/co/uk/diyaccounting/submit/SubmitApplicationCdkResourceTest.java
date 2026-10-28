@@ -164,7 +164,7 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcItsaStack.getStackName());
         Template hmrcItsaStackTemplate = Template.fromStack(submitApplication.hmrcItsaStack);
-        hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 48);
+        hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 52);
         // The four assist functions call no external API and share the /api/v1/hmrc alarm.
         assertGroupedStackHealthAlarm(
                 hmrcItsaStackTemplate,
@@ -172,6 +172,8 @@ class SubmitApplicationCdkResourceTest {
                         "hmrc",
                         "hmrc-itsa-bsas-uk-property-adjust-post",
                         "hmrc-itsa-bsas-uk-property-get",
+                        "hmrc-itsa-foreign-property-annual-get",
+                        "hmrc-itsa-foreign-property-annual-put",
                         "hmrc-itsa-foreign-property-details-get",
                         "hmrc-itsa-foreign-property-details-post",
                         "hmrc-itsa-foreign-property-details-put",
@@ -194,6 +196,8 @@ class SubmitApplicationCdkResourceTest {
                         outsideCallerQueueChecks(
                                 "hmrc-itsa-bsas-uk-property-adjust-post",
                                 "hmrc-itsa-bsas-uk-property-get",
+                                "hmrc-itsa-foreign-property-annual-get",
+                                "hmrc-itsa-foreign-property-annual-put",
                                 "hmrc-itsa-foreign-property-details-get",
                                 "hmrc-itsa-foreign-property-details-post",
                                 "hmrc-itsa-foreign-property-details-put",
@@ -518,9 +522,10 @@ class SubmitApplicationCdkResourceTest {
         // routes, for 187 + 6 = 193. GET, POST and PUT /api/v1/hmrc/itsa/foreign-property/details
         // share one path, adding three primary routes and one auto-HEAD route, for 193 + 4 = 197.
         // GET, POST and PUT /api/v1/hmrc/itsa/foreign-property/period share one path and add the
-        // same four, for 197 + 4 = 201 in total.
+        // same four, for 197 + 4 = 201. GET and PUT /api/v1/hmrc/itsa/foreign-property/annual share one
+        // path and add two primary routes and one auto-HEAD route, for 201 + 3 = 204 in total.
         assertEquals(
-                201,
+                204,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

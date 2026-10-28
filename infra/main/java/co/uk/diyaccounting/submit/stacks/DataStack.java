@@ -57,6 +57,8 @@ public class DataStack extends Stack {
     public ITable hmrcItsaForeignPropertyPeriodPostAsyncRequestsTable;
     public ITable hmrcItsaForeignPropertyPeriodGetAsyncRequestsTable;
     public ITable hmrcItsaForeignPropertyPeriodPutAsyncRequestsTable;
+    public ITable hmrcItsaForeignPropertyAnnualGetAsyncRequestsTable;
+    public ITable hmrcItsaForeignPropertyAnnualPutAsyncRequestsTable;
     public ITable hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable;
     public ITable hmrcItsaForeignPropertyDetailsPostAsyncRequestsTable;
     public ITable hmrcItsaForeignPropertyDetailsPutAsyncRequestsTable;
@@ -561,6 +563,38 @@ public class DataStack extends Stack {
         infof(
                 "Ensured HMRC ITSA Foreign Property Period PUT async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcItsaForeignPropertyPeriodPutAsyncRequestsTableName);
+
+        // HMRC ITSA Foreign Property Annual GET (retrieve) async request storage
+        this.hmrcItsaForeignPropertyAnnualGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyAnnualGetAsyncRequestsTable",
+                props.sharedNames().hmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyAnnualGetAsyncTTL",
+                props.sharedNames().hmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA Foreign Property Annual GET async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName);
+
+        // HMRC ITSA Foreign Property Annual PUT (create and amend) async request storage
+        this.hmrcItsaForeignPropertyAnnualPutAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyAnnualPutAsyncRequestsTable",
+                props.sharedNames().hmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyAnnualPutAsyncTTL",
+                props.sharedNames().hmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA Foreign Property Annual PUT async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName);
 
         // HMRC ITSA Foreign Property Details GET async request storage
         this.hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable = ensureTable(
@@ -1315,6 +1349,22 @@ public class DataStack extends Stack {
                 this,
                 "HmrcItsaForeignPropertyPeriodPutAsyncRequestsTableArn",
                 this.hmrcItsaForeignPropertyPeriodPutAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName",
+                this.hmrcItsaForeignPropertyAnnualGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaForeignPropertyAnnualGetAsyncRequestsTableArn",
+                this.hmrcItsaForeignPropertyAnnualGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName",
+                this.hmrcItsaForeignPropertyAnnualPutAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaForeignPropertyAnnualPutAsyncRequestsTableArn",
+                this.hmrcItsaForeignPropertyAnnualPutAsyncRequestsTable.getTableArn());
         cfnOutput(
                 this,
                 "HmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName",

@@ -61,6 +61,7 @@ class HmrcItsaStackTest {
                 SHARED_NAMES.hmrcItsaForeignPropertyPeriodPostWorkerLambdaFunctionName,
                 SHARED_NAMES.hmrcItsaForeignPropertyPeriodPutWorkerLambdaFunctionName,
                 SHARED_NAMES.hmrcItsaUkPropertyAnnualPutWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrcItsaForeignPropertyAnnualPutWorkerLambdaFunctionName,
                 SHARED_NAMES.hmrcItsaLossesAndClaimsPutWorkerLambdaFunctionName,
                 SHARED_NAMES.hmrcItsaLossesAndClaimsDeleteWorkerLambdaFunctionName,
                 SHARED_NAMES.hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaFunctionName,
