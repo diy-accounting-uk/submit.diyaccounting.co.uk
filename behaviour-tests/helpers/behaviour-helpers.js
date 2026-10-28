@@ -699,7 +699,9 @@ export async function findReaderViewDefects(page, options = {}) {
       const widths = inputs.map((input) => input.offsetWidth).sort((a, b) => a - b);
       const median = widths[Math.floor(widths.length / 2)];
       for (const input of inputs) {
-        if (input.offsetWidth < median / 2) {
+        // A control that fills its own box (a ledger cell, one of a pair of dates) is styled, however narrow.
+        const box = input.parentElement ? input.parentElement.clientWidth : 0;
+        if (input.offsetWidth < median / 2 && input.offsetWidth < box / 2) {
           defects.push({
             rule: "unstyled-control",
             detail: `${describe(input)} is ${input.offsetWidth}px wide, the median control is ${median}px`,
