@@ -99,16 +99,25 @@ function formatTimestamp(iso) {
 }
 
 // What the link opens, read from the address so the snapshot carries no second copy of it.
+function linkHost(url) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
+
 function linkLabel(observation) {
   const url = observation.deepLink || "";
+  const host = linkHost(url);
   if (url.includes("cloudwatch/home") && url.includes("#alarmsV2")) return "CloudWatch alarms";
   if (url.includes("cloudwatch/home")) {
     const match = url.match(/dashboards:name=([^&]+)/);
     return match ? "CloudWatch dashboard " + decodeURIComponent(match[1]) : "CloudWatch dashboards";
   }
   if (url.includes("/athena/")) return "Athena saved queries" + (observation.source ? " (" + observation.source + ")" : "");
-  if (url.includes("github.com") && url.includes("/workflows/")) return "GitHub workflow " + url.split("/workflows/")[1];
-  if (url.includes("analytics.google.com")) return "Google Analytics reports";
+  if (host === "github.com" && url.includes("/workflows/")) return "GitHub workflow " + url.split("/workflows/")[1];
+  if (host === "analytics.google.com") return "Google Analytics reports";
   return "Source console";
 }
 
