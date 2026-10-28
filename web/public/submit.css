@@ -483,6 +483,84 @@ header:has(> .chrome-fallback) {
   padding-top: calc(var(--nav-height) + var(--space-1));
 }
 
+/* A spreadsheet grid receding behind the header into the horizon: ruled rows
+   and columns, a tinted top row like a sheet's column header, and two shaded
+   cells, tilted back and faded out. It sits behind the band and the nav. */
+header {
+  --grid-line: 11%;
+  --grid-column: 7%;
+  --grid-tint: 7%;
+  --grid-cell-a: 11%;
+  --grid-cell-b: 8%;
+}
+
+header::after {
+  content: "";
+  position: absolute;
+  left: -5%;
+  right: -5%;
+  top: 2em;
+  height: 20em;
+  background:
+    linear-gradient(
+        color-mix(in srgb, var(--c-brand) var(--grid-cell-a), transparent),
+        color-mix(in srgb, var(--c-brand) var(--grid-cell-a), transparent)
+      )
+      2em 1.8em / 5em 1.5em no-repeat,
+    linear-gradient(
+        color-mix(in srgb, var(--c-brand) var(--grid-cell-b), transparent),
+        color-mix(in srgb, var(--c-brand) var(--grid-cell-b), transparent)
+      )
+      14em 3.3em / 5em 1.5em no-repeat,
+    linear-gradient(
+      to bottom,
+      color-mix(in srgb, var(--c-brand) var(--grid-tint), transparent) 0,
+      color-mix(in srgb, var(--c-brand) var(--grid-tint), transparent) 1.5em,
+      transparent 1.5em
+    ),
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--c-brand) var(--grid-column), transparent) 0 3px, transparent 3px 5em),
+    repeating-linear-gradient(180deg, color-mix(in srgb, var(--c-brand) var(--grid-line), transparent) 0 1px, transparent 1px 1.5em);
+  transform: perspective(600px) rotateX(50deg);
+  transform-origin: top center;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95) 0%, transparent 90%);
+  -webkit-mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.95) 0%, transparent 90%);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* The tilt fans the grid out towards the bottom. Where the margins beside the
+   content column are narrower than the fan, the header clips it so the page does not scroll sideways. */
+@media (max-width: 1100px) {
+  header {
+    overflow-x: clip;
+  }
+}
+
+@media (max-width: 600px) {
+  header::after {
+    height: 12em;
+  }
+}
+
+/* On the dark canvas the light brand blue is brighter, so the same low contrast needs less of it. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) header {
+    --grid-line: 11%;
+    --grid-column: 7%;
+    --grid-tint: 7%;
+    --grid-cell-a: 10%;
+    --grid-cell-b: 7%;
+  }
+}
+
+:root[data-theme="dark"] header {
+  --grid-line: 11%;
+  --grid-column: 7%;
+  --grid-tint: 7%;
+  --grid-cell-a: 10%;
+  --grid-cell-b: 7%;
+}
+
 .chrome-fallback {
   display: flex;
   align-items: center;
@@ -572,6 +650,13 @@ header:has(> .chrome-fallback) {
   font-weight: var(--weight-strong);
   font-size: var(--step-1);
   white-space: nowrap;
+}
+
+/* Three controls share the left of the band; the name steps down to fit the narrowest phones. */
+@media (max-width: 360px) {
+  .header-left .brand-name {
+    font-size: 0.85rem;
+  }
 }
 
 /* Home icon used outside the band */
