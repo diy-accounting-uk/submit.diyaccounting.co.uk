@@ -814,7 +814,7 @@ describe("operatorSnapshotPublish", () => {
     test("the company-accounts observation set reads turnover, profit and the balance sheet lines", async () => {
       mockQueriesWithRowsByFragment(
         {
-          cashatbank: ["3500.5", "3000", "3500.5", "3000"],
+          "cashatbank": ["3500.5", "3000", "3500.5", "3000"],
           "accounts.profitandloss.turnover": ["120000", "100000", "120000", "100000"],
           "accounts.profitandloss.profit": ["15000", "12000", "15000", "12000"],
           "accounts.balancesheet.currentyear.fixedassets": ["5000", "5000", "5000", "5000"],
