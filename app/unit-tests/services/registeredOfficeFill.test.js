@@ -15,21 +15,21 @@ describe("services/registeredOfficeFill", () => {
   beforeEach(() => vi.clearAllMocks());
 
   test("leaves a registered office the request carries alone", async () => {
-    const accounts = { companyNumber: "04549236", registeredOffice: "1 High Street" };
+    const accounts = { companyNumber: "04549236", registeredOffice: { addressLine1: "1 High Street" } };
     const errors = [];
     await fillRegisteredOffice(accounts, errors);
-    expect(accounts.registeredOffice).toBe("1 High Street");
+    expect(accounts.registeredOffice).toEqual({ addressLine1: "1 High Street" });
     expect(errors).toEqual([]);
     expect(mockGetCompanyProfile).not.toHaveBeenCalled();
   });
 
   test("takes the office from the company profile when the request has none", async () => {
-    mockGetCompanyProfile.mockResolvedValue({ profile: { registeredOffice: "9 Register Road, Cardiff" } });
-    const accounts = { companyNumber: "04549236", registeredOffice: "" };
+    mockGetCompanyProfile.mockResolvedValue({ profile: { registeredOffice: { addressLine1: "9 Register Road", cityOrTown: "Cardiff" } } });
+    const accounts = { companyNumber: "04549236", registeredOffice: undefined };
     const errors = [];
     await fillRegisteredOffice(accounts, errors);
     expect(mockGetCompanyProfile).toHaveBeenCalledWith("04549236");
-    expect(accounts.registeredOffice).toBe("9 Register Road, Cardiff");
+    expect(accounts.registeredOffice).toEqual({ addressLine1: "9 Register Road", cityOrTown: "Cardiff" });
     expect(errors).toEqual([]);
   });
 
@@ -37,7 +37,7 @@ describe("services/registeredOfficeFill", () => {
     for (const lookup of [() => Promise.resolve({ profile: null }), () => Promise.reject(new Error("down"))]) {
       mockGetCompanyProfile.mockImplementation(lookup);
       const errors = [];
-      await fillRegisteredOffice({ companyNumber: "04549236", registeredOffice: "" }, errors);
+      await fillRegisteredOffice({ companyNumber: "04549236", registeredOffice: undefined }, errors);
       expect(errors[0]).toContain("Missing registeredOffice");
     }
   });

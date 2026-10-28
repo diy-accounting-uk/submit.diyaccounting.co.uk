@@ -92,7 +92,11 @@ vi.mock("@app/services/companiesHouseXmlGateway.js", () => ({
   resolvePresenterCredentials: (...args) => mockResolvePresenterCredentials(...args),
 }));
 
-import { ingestHandler as companiesHouseAccountsPostHandler } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
+import {
+  ingestHandler as companiesHouseAccountsPostHandler,
+  readRegisteredOffice,
+  readAccountantsReport,
+} from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -100,7 +104,7 @@ function buildAccountsBody(overrides = {}) {
   return {
     companyNumber: "00000001",
     companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
-    registeredOffice: "1 Test Street, London, EC1A 1AA",
+    registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
     companyAuthCode: "AB12CD",
     periodStart: "2025-01-01",
     periodEnd: "2025-12-31",
@@ -681,5 +685,53 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
       await companiesHouseAccountsPostHandler(buildEvent());
       expect(mockBuildMicroEntityAccounts).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe("readRegisteredOffice", () => {
+  test("trims the parts and leaves an absent office absent", () => {
+    const errors = [];
+    expect(readRegisteredOffice({ addressLine1: " 1 High Street ", cityOrTown: "Leeds", postalCode: "" }, errors)).toEqual({
+      addressLine1: "1 High Street",
+      cityOrTown: "Leeds",
+    });
+    expect(readRegisteredOffice(undefined, errors)).toBeUndefined();
+    expect(errors).toEqual([]);
+  });
+
+  test("refuses a field outside the address parts, a non-string value, a missing addressLine1 and a string office", () => {
+    const unknownField = [];
+    readRegisteredOffice({ addressLine1: "1 High Street", street: "x" }, unknownField);
+    expect(unknownField).toEqual(["Invalid registeredOffice.street"]);
+    const notString = [];
+    readRegisteredOffice({ addressLine1: 4 }, notString);
+    expect(notString).toContain("Invalid registeredOffice.addressLine1");
+    const missing = [];
+    readRegisteredOffice({ cityOrTown: "Leeds" }, missing);
+    expect(missing).toEqual(["Missing registeredOffice.addressLine1"]);
+    const text = [];
+    readRegisteredOffice("1 High Street, Leeds", text);
+    expect(text).toEqual(["Invalid registeredOffice - must be an object of address parts"]);
+  });
+});
+
+describe("readAccountantsReport", () => {
+  test("trims both fields and leaves an absent report absent", () => {
+    const errors = [];
+    expect(readAccountantsReport({ accountantsName: " Test Firm LLP ", statement: " We compiled these. " }, errors)).toEqual({
+      accountantsName: "Test Firm LLP",
+      statement: "We compiled these.",
+    });
+    expect(readAccountantsReport(undefined, errors)).toBeUndefined();
+    expect(errors).toEqual([]);
+  });
+
+  test("refuses a missing field and a non-object", () => {
+    const errors = [];
+    readAccountantsReport({ accountantsName: "Test Firm LLP" }, errors);
+    expect(errors).toEqual(["Missing accountantsReport.statement"]);
+    const text = [];
+    readAccountantsReport("Test Firm LLP", text);
+    expect(text).toEqual(["Invalid accountantsReport - must be an object"]);
   });
 });

@@ -12,10 +12,12 @@ import {
   companyInformationCriterion,
   hiddenNarrativeCriterion,
   neverTradedCriterion,
+  notCarriedFromInput,
   periodCriterion,
   placeholderCriterion,
   sameBalanceSheetDateCriterion,
   substanceCriteria,
+  taxNoteBracketsCriterion,
 } from "../../../scripts/lib/companiesHouseReviewCriteria.js";
 import { parseFindings, readReviewFolder } from "../../../scripts/lib/companiesHouseReviewFolder.js";
 import {
@@ -96,6 +98,101 @@ describe("reconcile", () => {
     expect(result.mismatches).toBe(0);
   });
 
+  it("checks each registered office part against its tag", () => {
+    const c = caseNamed("micro-entity-accounts-dormant");
+    const result = reconcile(c.input, c.ours);
+    const fields = result.rows.filter((row) => row.field.startsWith("registeredOffice.")).map((row) => row.field);
+    expect(fields).toEqual([
+      "registeredOffice.addressLine1",
+      "registeredOffice.cityOrTown",
+      "registeredOffice.countyRegion",
+      "registeredOffice.postalCode",
+    ]);
+    const facts = c.ours.facts.filter((fact) => fact.concept !== "PostalCodeZip");
+    expect(reconcile(c.input, { ...c.ours, facts }).mismatches).toBe(1);
+  });
+
+  it("reconciles accruals, the current tax note, the current income tax policy and the dividend policy, and flags each when untagged", () => {
+    const base = caseNamed("small-company-accounts-filleted").input;
+    const { name, type, govTestScenario, expectedOutcome, fictional, ...requestBody } = base;
+    const sheet = base.smallCompany.balanceSheet;
+    const withAccruals = (year) => ({ ...year, accruals: 100, otherCreditors: year.otherCreditors - 100 });
+    const smallCompany = {
+      ...base.smallCompany,
+      balanceSheet: { currentYear: withAccruals(sheet.currentYear), priorYear: withAccruals(sheet.priorYear) },
+    };
+    const input = { ...base, smallCompany };
+    const errors = [];
+    const accounts = extractAndValidateAccountsParameters({ body: JSON.stringify({ ...requestBody, smallCompany }) }, errors);
+    expect(errors).toEqual([]);
+    const ours = oursFrom(buildAccountsIxbrl(accounts));
+    const result = reconcile(input, ours);
+    expect(result.mismatches).toBe(0);
+    const fields = result.rows.map((row) => row.field);
+    for (const field of [
+      "balanceSheet.currentYear.accruals",
+      "balanceSheet.priorYear.accruals",
+      "smallCompany.currentTax.currentYear",
+      "smallCompany.currentTax.priorYear",
+      "smallCompany.currentIncomeTaxPolicy",
+      "smallCompany.dividendPolicy",
+    ]) {
+      expect(fields).toContain(field);
+    }
+    for (const concept of ["AccruedLiabilities", "CurrentTaxForPeriod", "CurrentIncomeTaxPolicy", "DividendPolicy"]) {
+      const without = ours.facts.filter((fact) => fact.concept !== concept);
+      expect(reconcile(input, { ...ours, facts: without }).mismatches).toBeGreaterThan(0);
+    }
+  });
+
+  it("reconciles a case with an overdraft and a taxation line, recomputing the creditors total with them", () => {
+    const base = caseNamed("small-company-accounts-full").input;
+    const { name, type, govTestScenario, expectedOutcome, fictional, ...requestBody } = base;
+    const currentYear = {
+      ...base.smallCompany.balanceSheet.currentYear,
+      cashAtBank: base.smallCompany.balanceSheet.currentYear.cashAtBank + 100,
+      bankLoansOverdrafts: 100,
+      taxationSocialSecurity: 50,
+      otherCreditors: base.smallCompany.balanceSheet.currentYear.otherCreditors - 50,
+    };
+    const input = { ...base, smallCompany: { ...base.smallCompany, balanceSheet: { ...base.smallCompany.balanceSheet, currentYear } } };
+    const errors = [];
+    const accounts = extractAndValidateAccountsParameters(
+      { body: JSON.stringify({ ...requestBody, smallCompany: input.smallCompany }) },
+      errors,
+    );
+    expect(errors).toEqual([]);
+    const ours = oursFrom(buildAccountsIxbrl(accounts));
+    const result = reconcile(input, ours);
+    expect(result.mismatches).toBe(0);
+    const fields = result.rows.map((row) => row.field);
+    expect(fields).toContain("balanceSheet.currentYear.bankLoansOverdrafts");
+    expect(fields).toContain("balanceSheet.currentYear.taxationSocialSecurity");
+    expect(fields).not.toContain("balanceSheet.currentYear.bankLoansAfterOneYear");
+    expect(fields).not.toContain("balanceSheet.priorYear.bankLoansOverdrafts");
+    const withoutBank = ours.facts.filter((fact) => fact.concept !== "BankBorrowingsOverdrafts");
+    expect(reconcile(input, { ...ours, facts: withoutBank }).mismatches).toBeGreaterThan(0);
+  });
+
+  it("checks the accountants' report, the policies and the controlling party fact", () => {
+    const dormant = reconcile(caseNamed("micro-entity-accounts-dormant").input, caseNamed("micro-entity-accounts-dormant").ours);
+    expect(dormant.rows.map((row) => row.field)).toEqual(
+      expect.arrayContaining(["accountantsReport.accountantsName", "accountantsReport.statement"]),
+    );
+    const small = caseNamed("small-company-accounts-full");
+    const fields = reconcile(small.input, small.ours).rows.map((row) => row.field);
+    expect(fields).toEqual(
+      expect.arrayContaining([
+        "smallCompany.goingConcernStatement",
+        "smallCompany.revenueRecognitionPolicy",
+        "smallCompany.tangibleFixedAssetsPolicy",
+        "smallCompany.impairmentPolicy",
+        "smallCompany.financialInstrumentsPolicy",
+        "smallCompany.controllingParty.ultimate",
+      ]),
+    );
+  });
+
   it("counts a changed tagged figure as a mismatch", () => {
     const c = caseNamed("micro-entity-accounts");
     const facts = c.ours.facts.map((fact) =>
@@ -118,7 +215,29 @@ describe("substance criteria", () => {
   it.each(cases.map((c) => [c.name, c]))("passes every check for %s", (_name, c) => {
     const rows = substanceCriteria({ kind: c.kind, input: c.input, ours: c.ours, today: TODAY });
     expect(rows.filter((row) => row.result !== "pass").map((row) => `${row.criterion}: ${row.evidence}`)).toEqual([]);
-    expect(rows.length).toBe(c.kind === "dormant" ? 6 : 5);
+    expect(rows.length).toBe(c.kind === "dormant" ? 7 : 6);
+  });
+
+  it("passes the tax note's charge printed without brackets and fails it in brackets", () => {
+    const c = caseNamed("small-company-accounts-full");
+    const clean = taxNoteBracketsCriterion(c.ours);
+    expect(clean.result).toBe("pass");
+    expect(clean.evidence).toContain("without brackets");
+    const charge = c.ours.facts.find((fact) => fact.concept === "CurrentTaxForPeriod").text;
+    const noteStart = c.ours.visibleText.search(/^\s*\d+\.\s*Tax on profit\s*$/m);
+    expect(noteStart).toBeGreaterThan(0);
+    const bracketed = withText(c.ours, (t) => t.slice(0, noteStart) + t.slice(noteStart).replace(charge, `(${charge})`));
+    const failed = taxNoteBracketsCriterion(bracketed);
+    expect(failed.result).toBe("fail");
+    expect(failed.evidence).toContain(`(${charge})`);
+    // The profit and loss account's bracketed tax line is outside the note.
+    expect(
+      taxNoteBracketsCriterion(withText(c.ours, (t) => t.slice(0, noteStart).replace(charge, `(${charge})`) + t.slice(noteStart))).result,
+    ).toBe("pass");
+  });
+
+  it("passes a document with no tax note", () => {
+    expect(taxNoteBracketsCriterion(caseNamed("micro-entity-accounts").ours).evidence).toBe("no tax note");
   });
 
   it("fails a public company", () => {
@@ -192,7 +311,9 @@ describe("substance criteria", () => {
     const c = caseNamed("micro-entity-accounts");
     expect(placeholderCriterion({ ...c.input, companyName: "TEST COMPANY LIMITED" }, c.ours).result).toBe("fail");
     expect(placeholderCriterion({ ...c.input, director: { ...c.input.director, name: "Fictional Director" } }, c.ours).result).toBe("fail");
-    expect(placeholderCriterion({ ...c.input, registeredOffice: "Example Street, 00000000" }, c.ours).result).toBe("fail");
+    expect(
+      placeholderCriterion({ ...c.input, registeredOffice: { addressLine1: "Example Street", postalCode: "00000000" } }, c.ours).result,
+    ).toBe("fail");
     expect(placeholderCriterion({ ...c.input, companyNumber: "00000000" }, c.ours).result).toBe("fail");
     expect(placeholderCriterion(c.input, c.ours).result).toBe("pass");
   });
@@ -217,6 +338,59 @@ describe("substance criteria", () => {
     const dormant = caseNamed("micro-entity-accounts-dormant");
     expect(sameBalanceSheetDateCriterion(cases, dormant).result).toBe("pass");
     expect(sameBalanceSheetDateCriterion(cases, dormant).evidence).toContain("only case");
+  });
+});
+
+describe("facts the case input decides", () => {
+  const small = caseNamed("small-company-accounts-full").input;
+  const withBalanceSheetLine = (line) => ({
+    ...small,
+    smallCompany: {
+      ...small.smallCompany,
+      balanceSheet: { ...small.smallCompany.balanceSheet, currentYear: { ...small.smallCompany.balanceSheet.currentYear, ...line } },
+    },
+  });
+
+  it.each(["TaxationSocialSecurityPayable", "BankBorrowingsOverdrafts", "AccruedLiabilities"])(
+    "judges %s a line the filer has no figure for, and keeps it missing when the input carries one",
+    (concept) => {
+      expect(notCarriedFromInput(concept, small)).toBe("a balance sheet line the filer has no figure for");
+      const field = {
+        TaxationSocialSecurityPayable: "taxationSocialSecurity",
+        BankBorrowingsOverdrafts: "bankLoansOverdrafts",
+        AccruedLiabilities: "accruals",
+      }[concept];
+      expect(notCarriedFromInput(concept, withBalanceSheetLine({ [field]: 250 }))).toBeNull();
+    },
+  );
+
+  it("judges AddressLine2 and CountyRegion by the registered office parts", () => {
+    expect(notCarriedFromInput("AddressLine2", small)).toContain("address part");
+    expect(notCarriedFromInput("CountyRegion", small)).toContain("address part");
+    expect(
+      notCarriedFromInput("AddressLine2", { ...small, registeredOffice: { ...small.registeredOffice, addressLine2: "Unit 4" } }),
+    ).toBeNull();
+    expect(
+      notCarriedFromInput("CountyRegion", { ...small, registeredOffice: { ...small.registeredOffice, countyRegion: "Cheshire" } }),
+    ).toBeNull();
+  });
+
+  it("judges a pension policy and unpaid share capital the example's own when the input has neither", () => {
+    expect(notCarriedFromInput("DefinedContributionPensionsPolicy", small)).toContain("no pension");
+    expect(
+      notCarriedFromInput("DefinedContributionPensionsPolicy", { ...small, accountingPolicies: "Pension costs are charged as paid." }),
+    ).toBeNull();
+    expect(notCarriedFromInput("CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset", small)).toContain("all paid");
+    expect(
+      notCarriedFromInput(
+        "CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset",
+        withBalanceSheetLine({ calledUpShareCapitalNotPaid: 40 }),
+      ),
+    ).toBeNull();
+  });
+
+  it("leaves other concepts to the standing judgements", () => {
+    expect(notCarriedFromInput("Creditors", small)).toBeNull();
   });
 });
 

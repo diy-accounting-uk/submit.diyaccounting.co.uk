@@ -8,6 +8,8 @@
 
 import {
   SMALL_COMPANY_BALANCE_SHEET_LINES,
+  SMALL_COMPANY_OPTIONAL_BALANCE_SHEET_LINES,
+  SMALL_COMPANY_POLICY_FIELDS,
   PROFIT_AND_LOSS_FORMATS,
   profitAndLossLinesOf,
   FIXED_ASSET_CLASSES,
@@ -38,13 +40,36 @@ function readFigures(values, lines, label, errorMessages) {
   return figures;
 }
 
+// An optional line is absent (0) or a whole number of pounds that is not negative.
+function readOptionalLines(values, label, errorMessages) {
+  const figures = {};
+  for (const line of SMALL_COMPANY_OPTIONAL_BALANCE_SHEET_LINES) {
+    const raw = values?.[line];
+    if (raw === undefined || raw === null || raw === "") {
+      figures[line] = 0;
+      continue;
+    }
+    const numeric = Number(raw);
+    if (!Number.isInteger(numeric) || numeric < 0)
+      errorMessages.push(`Invalid ${label}.${line} - must be a whole number of pounds, not negative`);
+    figures[line] = numeric;
+  }
+  return figures;
+}
+
 function allFinite(figures) {
   return Object.values(figures).every((value) => Number.isFinite(value));
 }
 
 function readBalanceSheetYear(values, label, errorMessages) {
-  const figures = readFigures(values, SMALL_COMPANY_BALANCE_SHEET_LINES, label, errorMessages);
+  const figures = {
+    ...readFigures(values, SMALL_COMPANY_BALANCE_SHEET_LINES, label, errorMessages),
+    ...readOptionalLines(values, label, errorMessages),
+  };
   if (allFinite(figures)) {
+    if (figures.bankLoansAfterOneYear > figures.creditorsAfterOneYear) {
+      errorMessages.push(`${label}.bankLoansAfterOneYear must not be more than creditorsAfterOneYear`);
+    }
     const totals = withBalanceSheetTotals(figures);
     const netAssets = totals.fixedAssets + totals.currentAssets - totals.creditorsWithinOneYear - totals.creditorsAfterOneYear;
     if (netAssets !== figures.capitalAndReserves) {
@@ -93,6 +118,27 @@ function requiredText(value, label, errorMessages) {
   const text = typeof value === "string" ? value.trim() : "";
   if (!text) errorMessages.push(`Missing ${label}`);
   return text;
+}
+
+function readOptionalText(value, label, errorMessages) {
+  if (value === undefined || value === null) return "";
+  if (typeof value !== "string") {
+    errorMessages.push(`Invalid ${label} - must be text`);
+    return "";
+  }
+  return value.trim();
+}
+
+function readControllingParty(values, errorMessages) {
+  if (values === undefined || values === null) return undefined;
+  if (typeof values !== "object" || Array.isArray(values)) {
+    errorMessages.push("Invalid smallCompany.controllingParty - must be an object");
+    return undefined;
+  }
+  if (typeof values.ultimate !== "boolean") errorMessages.push("Invalid smallCompany.controllingParty.ultimate - must be true or false");
+  const name = readOptionalText(values.name, "smallCompany.controllingParty.name", errorMessages);
+  if (values.ultimate === true && !name) errorMessages.push("Missing smallCompany.controllingParty.name");
+  return { ultimate: values.ultimate === true, ...(name ? { name } : {}) };
 }
 
 function readShareCapital(values, calledUpShareCapital, errorMessages) {
@@ -156,10 +202,12 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
   const fixedAssetNote = readFixedAssetNote(section.fixedAssetNote, currentBalanceSheet.fixedAssets, errorMessages);
 
   const shareCapital = readShareCapital(section.shareCapital, currentBalanceSheet.calledUpShareCapital, errorMessages);
-  if (section.taxPolicy !== undefined && typeof section.taxPolicy !== "string") {
-    errorMessages.push("Invalid smallCompany.taxPolicy - must be text");
+  const policies = {};
+  for (const { field } of SMALL_COMPANY_POLICY_FIELDS) {
+    const text = readOptionalText(section[field], `smallCompany.${field}`, errorMessages);
+    if (text) policies[field] = text;
   }
-  const taxPolicy = typeof section.taxPolicy === "string" ? section.taxPolicy.trim() : "";
+  const controllingParty = readControllingParty(section.controllingParty, errorMessages);
 
   const statements = {};
   for (const field of SMALL_COMPANY_STATEMENT_FIELDS) {
@@ -177,7 +225,8 @@ export function extractAndValidateSmallCompany(smallCompany, statementsAccepted,
     profitAndLoss: { current: currentProfitAndLoss, ...(priorProfitAndLoss ? { prior: priorProfitAndLoss } : {}) },
     ...(fixedAssetNote ? { fixedAssetNote } : {}),
     ...(shareCapital ? { shareCapital } : {}),
-    ...(taxPolicy ? { taxPolicy } : {}),
+    ...policies,
+    ...(controllingParty ? { controllingParty } : {}),
     statementsAccepted: statements,
   };
 }

@@ -877,8 +877,9 @@ test.describe("books import on the micro-entity accounts page", () => {
     await expect(page.locator("#priorCapitalAndReserves")).toHaveValue("180802");
     await expect(page.locator("#averageEmployees")).toHaveValue("3");
     await expect(page.locator("#directorName")).toHaveValue("Carol Smith");
-    await expect(page.locator("#currentYearTotals")).toContainText("Matches capital and reserves.");
-    await expect(page.locator("#priorYearTotals")).toContainText("Matches capital and reserves.");
+    await expect(page.locator("#yearTotals")).toContainText("Matches capital and reserves.");
+    await expect(page.locator("#yearTotals")).toContainText("this year, 180802 last year");
+    await expect(page.getByText("Net assets:")).toHaveCount(1);
     await expect(page.locator("#dormant")).not.toBeChecked();
     await expect(page.locator("#directorDateApproved")).toHaveValue("");
   });
@@ -925,6 +926,9 @@ test.describe("books import on the small company accounts page", () => {
     await expect(page.locator("#currentProfitAndLossTotals")).toContainText("Profit for the year: 142226.");
     await expect(page.locator("#currentFixedAssets")).toHaveValue("208990");
     await expect(page.locator("#currentCashAtBank")).toHaveValue("192995");
+    await expect(page.locator("#currentBankLoansOverdrafts")).toHaveValue("0");
+    await expect(page.locator("#currentTaxationSocialSecurity")).toHaveValue("8957");
+    await expect(page.locator("#currentAccruals")).toHaveValue("");
     await expect(page.locator("#currentProfitAndLossAccount")).toHaveValue("307928");
     await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Matches share capital plus the profit and loss reserve.");
     await expect(page.locator("#includeFixedAssetNote")).toBeChecked();

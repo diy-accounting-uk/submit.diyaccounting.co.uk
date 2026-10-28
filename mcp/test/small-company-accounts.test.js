@@ -70,9 +70,11 @@ describe("derive_small_company_accounts", () => {
         expect(year.stocks).toBe(Math.round(sheet.E10));
         expect(year.debtors).toBe(Math.round(sheet.E11));
         expect(year.cashAtBank).toBe(Math.round(sheet.E12));
+        expect(year.bankLoansOverdrafts).toBe(Math.round(sheet.E19));
         expect(year.tradeCreditors).toBe(Math.round(sheet.E16));
         expect(year.corporationTax).toBe(Math.round(sheet.E17));
-        expect(year.otherCreditors).toBe(Math.round(sheet.E18));
+        expect(year.taxationSocialSecurity).toBe(Math.round(sheet.E18));
+        expect(year.otherCreditors).toBe(0);
         expect(year.creditorsAfterOneYear).toBe(Math.round(sheet.F31));
         expect(year.calledUpShareCapital).toBe(Math.round(sheet.F36));
         const netAssets =
@@ -80,8 +82,10 @@ describe("derive_small_company_accounts", () => {
           year.stocks +
           year.debtors +
           year.cashAtBank -
+          year.bankLoansOverdrafts -
           year.tradeCreditors -
           year.corporationTax -
+          year.taxationSocialSecurity -
           year.otherCreditors -
           year.creditorsAfterOneYear;
         expect(netAssets).toBe(year.capitalAndReserves);
@@ -95,8 +99,10 @@ describe("derive_small_company_accounts", () => {
           year.stocks +
           year.debtors +
           year.cashAtBank -
+          year.bankLoansOverdrafts -
           year.tradeCreditors -
           year.corporationTax -
+          year.taxationSocialSecurity -
           year.otherCreditors -
           year.creditorsAfterOneYear;
         expect(netAssets).toBe(year.capitalAndReserves);
@@ -111,7 +117,7 @@ describe("derive_small_company_accounts", () => {
         const xhtml = buildSmallCompanyAccounts({
           companyNumber: "12345678",
           companyName: answer.companyName,
-          registeredOffice: "1 Test Street, London, EC1A 1AA",
+          registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
           periodStart: answer.periodStart,
           periodEnd: answer.periodEnd,
           priorBalanceSheetDate: answer.priorBalanceSheetDate,
