@@ -555,6 +555,7 @@ function showError(message) {
   container.innerHTML = "";
   container.classList.add("objectives-failed");
   document.getElementById("visitorsPanel").hidden = true;
+  document.getElementById("chartsPanel").hidden = true;
   if (message === null) return;
   const notice = document.createElement("p");
   notice.id = "snapshotError";
@@ -571,6 +572,7 @@ async function initPage() {
     renderReinvestment(snapshot);
     renderCompanyAccounts(snapshot);
     renderActivities(snapshot);
+    window.renderDailyCharts(snapshot);
     renderVisitors(snapshot);
   } catch (error) {
     if (error.status === 403) {

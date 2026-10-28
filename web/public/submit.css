@@ -37,6 +37,16 @@
   --c-scrim-strong: rgb(11 12 12 / 0.92);
   --c-on-scrim: #ffffff;
 
+  /* chart lines: eight colours that stay apart for colour-blind readers, 3:1 or better on paper */
+  --chart-1: #0072b2;
+  --chart-2: #d55e00;
+  --chart-3: #007a5a;
+  --chart-4: #7b4fa3;
+  --chart-5: #a86a00;
+  --chart-6: #2a8ac4;
+  --chart-7: #b5487f;
+  --chart-8: #5f6b7d;
+
   --font-text: "Plain Zero", "Atkinson Hyperlegible", "Atkinson Fallback", system-ui, sans-serif;
   --font-figures: "Atkinson Hyperlegible", "Atkinson Fallback", system-ui, sans-serif;
   --font-code: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
@@ -106,6 +116,15 @@
     --c-info-tint: #1e2c40;
     --c-scrim: rgb(0 0 0 / 0.72);
     --shadow-card: none;
+
+    --chart-1: #56b4e9;
+    --chart-2: #ff8a4c;
+    --chart-3: #3ed6a3;
+    --chart-4: #d2a6ff;
+    --chart-5: #f2c14e;
+    --chart-6: #8fd3ff;
+    --chart-7: #f0a6ca;
+    --chart-8: #b8bec9;
   }
 }
 
@@ -5399,4 +5418,116 @@ table.observations th {
   #experimentsPanel {
     min-height: 300px;
   }
+}
+
+/* Operator dashboard daily charts. */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 900px) {
+  .charts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.chart-card {
+  min-width: 0;
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+}
+
+.chart-card h3 {
+  margin: 0 0 var(--space-2) 0;
+  font-size: var(--step-0);
+}
+
+.chart-svg {
+  display: block;
+  max-width: 100%;
+  touch-action: pan-y;
+}
+
+.chart-grid {
+  stroke: var(--c-rule-subtle);
+  stroke-width: 1;
+}
+
+.chart-axis {
+  fill: var(--c-ink-muted);
+  font-size: 11px;
+  font-family: var(--font-figures);
+}
+
+.chart-guide {
+  stroke: var(--c-ink-muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.chart-readout {
+  margin: var(--space-2) 0;
+  min-height: 2.8em;
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-empty,
+.chart-note {
+  margin: var(--space-2) 0;
+  color: var(--c-ink-muted);
+  font-size: var(--step--1);
+}
+
+.chart-modes {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.chart-mode,
+.chart-legend-item {
+  font: inherit;
+  font-size: var(--step--1);
+  color: var(--c-ink);
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--radius-card);
+  padding: 0.25em 0.6em;
+  cursor: pointer;
+}
+
+.chart-mode[aria-pressed="true"],
+.chart-legend-item[aria-pressed="true"] {
+  background: var(--c-brand-tint);
+  border-color: var(--c-brand);
+}
+
+.chart-legend-item[aria-pressed="false"] {
+  color: var(--c-ink-muted);
+  text-decoration: line-through;
+}
+
+.chart-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+}
+
+.chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.chart-swatch {
+  display: inline-block;
+  width: 1.4em;
+  border-top: 2px solid;
 }

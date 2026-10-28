@@ -114,6 +114,12 @@
         </table>
       </section>
 
+      <section id="chartsPanel" class="objective" hidden>
+        <h2>Daily trends, last 90 days</h2>
+        <p class="subtitle">One point a day. Press a name below a chart to hide or show its line; move over a chart to read a day.</p>
+        <div id="chartsGrid" class="charts-grid"></div>
+      </section>
+
       <div id="objectivesContainer"></div>
 
       <div class="side-panels">
@@ -154,6 +160,7 @@
     <script src="../widgets/auth-status.js"></script>
     <script src="../widgets/status-messages.js"></script>
     <script type="module" src="../widgets/view-source-link.js"></script>
+    <script src="dashboard.charts.js"></script>
     <script src="dashboard.page.js"></script>
   </body>
 </html>

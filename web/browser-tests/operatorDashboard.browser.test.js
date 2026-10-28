@@ -263,6 +263,82 @@ const FIXTURE_EXPERIMENTS = {
   ],
 };
 
+const CHART_DAYS = Array.from({ length: 90 }, (_, index) => {
+  const day = new Date(Date.UTC(2026, 8, 8));
+  day.setUTCDate(day.getUTCDate() - (89 - index));
+  return day.toISOString().slice(0, 10);
+});
+
+function chartSeries(id, label, scale, extra = {}) {
+  return { id, label, values: CHART_DAYS.map((_, index) => Math.round(scale * (1 + Math.sin(index / 7 + scale)) * 100) / 100), ...extra };
+}
+
+function chartWithSeries(id, objectiveId, title, unit, seriesLabels, extra = {}) {
+  const components = seriesLabels.map((label, index) => chartSeries(`${id}-${index}`, label, 3 + index * 2));
+  const total = {
+    id: "total",
+    label: "Total",
+    isTotal: true,
+    values: CHART_DAYS.map((_, day) => components.reduce((sum, series) => sum + series.values[day], 0)),
+  };
+  return { id, objectiveId, title, unit, modes: [{ id: "main", label: "Main", series: [total, ...components] }], ...extra };
+}
+
+const FIXTURE_DAILY_CHARTS = {
+  days: CHART_DAYS,
+  charts: [
+    {
+      ...chartWithSeries(
+        "activity-started-and-completed",
+        "activity-started-and-completed",
+        "Activity started and completed",
+        "count",
+        Array.from({ length: 12 }, (_, index) => `Activity number ${index + 1}`),
+      ),
+      modes: [
+        {
+          id: "started",
+          label: "Started",
+          series: [
+            chartSeries("total", "All activities", 20, { isTotal: true }),
+            ...Array.from({ length: 12 }, (_, index) => chartSeries(`a${index}`, `Activity number ${index + 1}`, 2 + index)),
+          ],
+        },
+        {
+          id: "completed",
+          label: "Completed",
+          series: [chartSeries("total", "All activities", 9, { isTotal: true }), chartSeries("a0", "Submit VAT (HMRC)", 4)],
+        },
+      ],
+    },
+    chartWithSeries(
+      "conversion-to-submission",
+      "conversion-to-submission",
+      "Conversion to submission",
+      "count",
+      ["Human sessions", "Active customers", "Submitted within 7 days"],
+      {
+        note: "Steps, left to right.",
+      },
+    ),
+    chartWithSeries("conversion-to-paid", "conversion-to-paid", "Conversion to paid", "gbp", [
+      "Subscriptions",
+      "Stripe donations",
+      "PayPal donations",
+    ]),
+    chartWithSeries("low-running-cost", "low-running-cost", "Low running cost", "usd", [
+      "Amazon CloudFront",
+      "AWS Lambda",
+      "Amazon DynamoDB",
+      "Other services",
+    ]),
+    chartWithSeries("retention", "retention", "Retention", "count", ["Submitters", "Returning submitters", "Renewals", "Cancellations"]),
+    chartWithSeries("visitors", "conversion-to-submission", "Visitors", "count", ["Human", "Operator", "Bot", "Synthetic"]),
+  ],
+};
+
+const FIXTURE_SNAPSHOT_WITH_CHARTS = { ...FIXTURE_SNAPSHOT, dailyCharts: FIXTURE_DAILY_CHARTS };
+
 const SAMPLE_VALUE_BY_UNIT = { count: 1234, gbp: 12345.67, usd: 123.45, ratio: 0.987, hours: 12.5, runs: 42 };
 
 // Every observation the publisher defines, each with a value in every column, which is the
@@ -352,6 +428,13 @@ test.describe("Operator Dashboard", () => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
     });
     await servePageScripts(page);
+    await page.route("**/dashboard.charts.js*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/javascript",
+        body: fs.readFileSync(path.join(process.cwd(), "web/public/operator/dashboard.charts.js"), "utf-8"),
+      });
+    });
     await page.route("**/widgets/page-chrome.js*", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: pageChromeJsContent });
     });
@@ -671,6 +754,98 @@ test.describe("Operator Dashboard", () => {
 
     await expect(page.locator("#experimentsPanel")).toBeVisible();
     await expect(page.locator("#experimentsList")).toHaveText("Experiments did not load.");
+  });
+
+  test.describe("daily charts", () => {
+    test("draws one chart for each of the six objectives, with a line for every series", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      await expect(page.locator("#chartsPanel")).toBeVisible();
+      await expect(page.locator(".chart-card")).toHaveCount(6);
+      await expect(page.locator(".chart-card h3")).toHaveText([
+        "Activity started and completed",
+        "Conversion to submission",
+        "Conversion to paid",
+        "Low running cost",
+        "Retention",
+        "Visitors",
+      ]);
+      const visitors = page.locator('.chart-card[data-chart-id="visitors"]');
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(5);
+      const points = await visitors.locator("polyline.chart-line").first().getAttribute("points");
+      expect(points.trim().split(" ")).toHaveLength(90);
+    });
+
+    test("hides and shows a line from its legend button", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const retention = page.locator('.chart-card[data-chart-id="retention"]');
+      await retention.locator('.chart-legend-item[data-series-id="retention-0"]').click();
+      await expect(retention.locator("polyline.chart-line")).toHaveCount(4);
+      await expect(retention.locator('.chart-legend-item[data-series-id="retention-0"]')).toHaveAttribute("aria-pressed", "false");
+      await retention.locator('.chart-legend-item[data-series-id="retention-0"]').click();
+      await expect(retention.locator("polyline.chart-line")).toHaveCount(5);
+    });
+
+    test("switches the activities chart between started and completed", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const activities = page.locator('.chart-card[data-chart-id="activity-started-and-completed"]');
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(13);
+      await activities.locator('.chart-mode[data-mode-id="completed"]').click();
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+    });
+
+    test("reads one day under the chart as the pointer moves over it", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const card = page.locator('.chart-card[data-chart-id="low-running-cost"]');
+      await expect(card.locator(".chart-readout")).toContainText("8 Sept");
+      await card.scrollIntoViewIfNeeded();
+      const box = await card.locator(".chart-overlay").boundingBox();
+      await page.mouse.move(box.x + 1, box.y + box.height / 2);
+      await expect(card.locator(".chart-readout")).toContainText("11 Jun");
+      await expect(card.locator(".chart-readout")).toContainText("$");
+    });
+
+    test("leaves out the charts panel when the snapshot carries no daily charts", async ({ page }) => {
+      await setupRoutes(page);
+      await loadDashboard(page);
+
+      await expect(page.locator("#chartsPanel")).toBeHidden();
+    });
+
+    for (const [width, height] of [
+      [390, 844],
+      [1280, 900],
+    ]) {
+      for (const colorScheme of ["light", "dark"]) {
+        test(`fits the page at ${width}px wide in ${colorScheme} mode and takes its line colours from the theme`, async ({ page }) => {
+          await page.setViewportSize({ width, height });
+          await page.emulateMedia({ colorScheme });
+          await setupRoutes(page, {
+            snapshotBody: { ...fullShapeSnapshot(), generatedAt: new Date().toISOString(), dailyCharts: FIXTURE_DAILY_CHARTS },
+          });
+          await loadDashboard(page);
+
+          await expect(page.locator(".chart-card")).toHaveCount(6);
+          const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+          expect(overflow).toBeLessThanOrEqual(0);
+          const cardRight = await page.evaluate(() =>
+            Math.max(...[...document.querySelectorAll(".chart-card svg")].map((svg) => svg.getBoundingClientRect().right)),
+          );
+          expect(cardRight).toBeLessThanOrEqual(width);
+          const firstColour = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--chart-1").trim());
+          expect(firstColour).toBe(colorScheme === "dark" ? "#56b4e9" : "#0072b2");
+          await page.locator("#chartsPanel").screenshot({ path: `target/rook-screenshots/dash/charts-${width}-${colorScheme}.png` });
+          await page.screenshot({ path: `target/rook-screenshots/dash/dashboard-${width}-${colorScheme}.png`, fullPage: true });
+        });
+      }
+    }
   });
 
   test.describe("reserved heights", () => {
