@@ -53,7 +53,7 @@ describe("mcpCodesEntry", () => {
   beforeEach(() => {
     table.items.clear();
     practiceClients.clear();
-    practiceClients.set("user-sub-1/client-a", { clientId: "client-a", displayName: "Alpha Ltd" });
+    practiceClients.set("user-sub-1/client-a", { clientId: "client-a", displayName: "Alpha Ltd", companyNumber: "01234567" });
     practiceClients.set("user-sub-1/client-b", { clientId: "client-b", displayName: "Beta Ltd" });
     practiceClients.set("other-sub/client-x", { clientId: "client-x", displayName: "Other Ltd" });
     process.env.MCP_SESSIONS_DYNAMODB_TABLE_NAME = "test-mcp-sessions";
@@ -284,7 +284,9 @@ describe("mcpCodesEntry", () => {
     test("mints for clients on the caller's practice list and stores the stored names", async () => {
       const { response, body } = await mint({ kind: "accounts", clients: [{ clientId: "client-a", displayName: "Forged" }] });
       expect(response.statusCode).toBe(201);
-      expect(table.items.get(`codes:${body.entryId}`).clients).toEqual([{ clientId: "client-a", displayName: "Alpha Ltd" }]);
+      expect(table.items.get(`codes:${body.entryId}`).clients).toEqual([
+        { clientId: "client-a", displayName: "Alpha Ltd", companyNumber: "01234567" },
+      ]);
     });
 
     test("refuses a client that is not on the caller's practice list, naming the id", async () => {

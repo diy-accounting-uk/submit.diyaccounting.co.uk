@@ -95,7 +95,11 @@ async function practiceClientsFor(sub, requested, errorMessages) {
     errorMessages.push(`clients names ids that are not in your practice's client list: ${unlisted.join(", ")}`);
     return undefined;
   }
-  return requested.map(({ clientId }, index) => ({ clientId, displayName: stored[index].displayName }));
+  return requested.map(({ clientId }, index) => ({
+    clientId,
+    displayName: stored[index].displayName,
+    ...(stored[index].companyNumber ? { companyNumber: stored[index].companyNumber } : {}),
+  }));
 }
 
 async function mint(event, request, responseHeaders) {

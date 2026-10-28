@@ -26,6 +26,9 @@ async function setupRoutes(page, { entry, putStatus = 200, putBody = { state: "f
   await page.route("**/companies-house/mcpCodes.html*", async (route) => {
     await route.fulfill({ status: 200, contentType: "text/html", body: readPublic("companies-house/mcpCodes.html") });
   });
+  await page.route("**/widgets/page-chrome.js*", async (route) => {
+    await route.fulfill({ status: 200, contentType: "application/javascript", body: readPublic("widgets/page-chrome.js") });
+  });
   await page.route("**/submit.css", async (route) => {
     await route.fulfill({ status: 200, contentType: "text/css", body: readPublic("submit.css") });
   });
@@ -42,6 +45,26 @@ async function setupRoutes(page, { entry, putStatus = 200, putBody = { state: "f
 }
 
 test.describe("Companies House codes page", () => {
+  test("is a page of the site, with the site header and footer", async ({ page }) => {
+    await setupRoutes(page, { entry: { state: "pending", kind: "accounts", companyNumber: "12345678", directors: [] } });
+    await page.goto(PAGE, { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("header nav")).toBeVisible();
+    await expect(page.locator("footer")).not.toBeEmpty();
+    await expect(page.locator(".chrome-fallback")).toHaveCount(0);
+  });
+
+  test("a single company reads as one filing and shows when the link ends", async ({ page }) => {
+    await setupRoutes(page, {
+      entry: { state: "pending", kind: "accounts", companyNumber: "12345678", directors: [], expiresAt: "2026-10-28T14:35:00.000Z" },
+    });
+    await page.goto(PAGE, { waitUntil: "domcontentloaded" });
+
+    await expect(page.locator("#codesUse")).toHaveText("this filing");
+    await expect(page.locator("#codesExpiry")).toContainText("This link works until");
+    await expect(page.locator("#codesExpiry")).toContainText(/\d\d:\d\d/);
+  });
+
   test("asks for the company code only, then tells the user to go back to the chat", async ({ page }) => {
     const puts = await setupRoutes(page, { entry: { state: "pending", kind: "accounts", companyNumber: "12345678", directors: [] } });
     await page.goto(PAGE, { waitUntil: "domcontentloaded" });
@@ -84,23 +107,27 @@ test.describe("Companies House codes page", () => {
         kind: "accounts",
         directors: [],
         clients: [
-          { clientId: "client-a", displayName: "Alpha Ltd" },
+          { clientId: "client-a", displayName: "Alpha Ltd", companyNumber: "01234567" },
           { clientId: "client-b", displayName: "Beta Ltd" },
+          { clientId: "client-c", displayName: "Gamma Ltd", companyNumber: "SC765432" },
         ],
       },
     });
     await page.goto(PAGE, { waitUntil: "domcontentloaded" });
 
-    await expect(page.locator("#codesIntro")).toContainText("2 clients");
+    await expect(page.locator("#codesIntro")).toContainText("3 clients");
+    await expect(page.locator("#codesUse")).toHaveText("each client's filing");
     await expect(page.locator("#companyAuthCodeGroup")).toBeHidden();
     await expect(page.locator("#clientCodeFields label")).toHaveText([
-      "Company authentication code for Alpha Ltd",
+      "Company authentication code for Alpha Ltd (01234567)",
       "Company authentication code for Beta Ltd",
+      "Company authentication code for Gamma Ltd (SC765432)",
     ]);
     await page.screenshot({ path: "target/mcp-codes-screenshots/mcp-codes-batch.png" });
 
     await page.locator("#clientCode0").fill("AlphaC1");
     await page.locator("#clientCode1").fill("BetaC22");
+    await page.locator("#clientCode2").fill("GammaC3");
     await page.locator("#saveCodesBtn").click();
 
     await expect(page.locator("#codesDoneView")).toBeVisible();
@@ -109,6 +136,7 @@ test.describe("Companies House codes page", () => {
         clients: [
           { clientId: "client-a", companyAuthCode: "AlphaC1" },
           { clientId: "client-b", companyAuthCode: "BetaC22" },
+          { clientId: "client-c", companyAuthCode: "GammaC3" },
         ],
       },
     ]);
