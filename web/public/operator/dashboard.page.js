@@ -379,32 +379,25 @@ function activityDisplayName(activityId, started, completed) {
   return activityId;
 }
 
-function renderActivitiesRow(activityId, started, completed) {
+function renderActivitiesRow(activityId, label, observation) {
   const row = document.createElement("tr");
   row.className = "activity-row";
   row.dataset.activityId = activityId;
 
   const labelCell = document.createElement("td");
-  labelCell.textContent = activityDisplayName(activityId, started, completed);
+  labelCell.textContent = label;
   row.appendChild(labelCell);
 
   // Last 1 hour/1 day/7 days carry no trend: they are refreshed by the hourly
   // activity-only publish, which patches only these three fields onto whatever the last
   // nightly full publish wrote for last30/last90, so this row can mix a very fresh count
   // with a day-old trend.
-  row.appendChild(activityCountCell(started, "last1h"));
-  row.appendChild(activityCountCell(started, "last1d"));
-  row.appendChild(activityCountCell(started, "last7d"));
-  row.appendChild(activityCountCell(started, "last30"));
-  row.appendChild(activityTrendCell(started));
-  row.appendChild(activityCountCell(started, "last90"));
-
-  row.appendChild(activityCountCell(completed, "last1h"));
-  row.appendChild(activityCountCell(completed, "last1d"));
-  row.appendChild(activityCountCell(completed, "last7d"));
-  row.appendChild(activityCountCell(completed, "last30"));
-  row.appendChild(activityTrendCell(completed));
-  row.appendChild(activityCountCell(completed, "last90"));
+  row.appendChild(activityCountCell(observation, "last1h"));
+  row.appendChild(activityCountCell(observation, "last1d"));
+  row.appendChild(activityCountCell(observation, "last7d"));
+  row.appendChild(activityCountCell(observation, "last30"));
+  row.appendChild(activityTrendCell(observation));
+  row.appendChild(activityCountCell(observation, "last90"));
 
   return row;
 }
@@ -437,11 +430,13 @@ function renderActivities(snapshot) {
   dataSinceNote.textContent = activitiesDataSinceNote(objective.observations, snapshot.generatedAt);
   dataSinceNote.hidden = dataSinceNote.textContent === "";
 
-  const body = document.getElementById("activitiesBody");
-  body.innerHTML = "";
-  activityIds.forEach((activityId) => {
-    const pair = byActivityId[activityId];
-    body.appendChild(renderActivitiesRow(activityId, pair.started, pair.completed));
+  ["started", "completed"].forEach((kind) => {
+    const body = document.getElementById(kind === "started" ? "activitiesStartedBody" : "activitiesCompletedBody");
+    body.innerHTML = "";
+    activityIds.forEach((activityId) => {
+      const pair = byActivityId[activityId];
+      body.appendChild(renderActivitiesRow(activityId, activityDisplayName(activityId, pair.started, pair.completed), pair[kind]));
+    });
   });
 }
 

@@ -661,22 +661,25 @@ test.describe("Operator Dashboard", () => {
     const panel = page.locator("#activitiesPanel");
     await expect(panel).toBeVisible();
 
-    const vatRow = panel.locator('.activity-row[data-activity-id="submit-vat"]');
-    await expect(vatRow.locator("td").nth(0)).toHaveText("Submit VAT (HMRC)");
-    await expect(vatRow.locator("td").nth(1)).toHaveText("1"); // started, last 1 hour
-    await expect(vatRow.locator("td").nth(2)).toHaveText("3"); // started, last 1 day
-    await expect(vatRow.locator("td").nth(3)).toHaveText("12"); // started, last 7 days
-    await expect(vatRow.locator("td").nth(4)).toHaveText("40"); // started, last 30
-    await expect(vatRow.locator("td").nth(5)).toHaveText("↑ 10.0%"); // started trend
-    await expect(vatRow.locator("td").nth(6)).toHaveText("110"); // started, last 90
-    await expect(vatRow.locator("td").nth(7)).toHaveText("none"); // completed, last 1 hour
-    await expect(vatRow.locator("td").nth(8)).toHaveText("2"); // completed, last 1 day
-    await expect(vatRow.locator("td").nth(9)).toHaveText("8"); // completed, last 7 days
-    await expect(vatRow.locator("td").nth(10)).toHaveText("22"); // completed, last 30
-    await expect(vatRow.locator("td").nth(11)).toHaveText("↓ 5.0%"); // completed trend
-    await expect(vatRow.locator("td").nth(12)).toHaveText("60"); // completed, last 90
+    const started = panel.locator('#activitiesStartedBody .activity-row[data-activity-id="submit-vat"]');
+    await expect(started.locator("td").nth(0)).toHaveText("Submit VAT (HMRC)");
+    await expect(started.locator("td").nth(1)).toHaveText("1"); // last 1 hour
+    await expect(started.locator("td").nth(2)).toHaveText("3"); // last 1 day
+    await expect(started.locator("td").nth(3)).toHaveText("12"); // last 7 days
+    await expect(started.locator("td").nth(4)).toHaveText("40"); // last 30
+    await expect(started.locator("td").nth(5)).toHaveText("↑ 10.0%"); // trend
+    await expect(started.locator("td").nth(6)).toHaveText("110"); // last 90
 
-    const bundleRow = panel.locator('.activity-row[data-activity-id="bundle"]');
+    const completed = panel.locator('#activitiesCompletedBody .activity-row[data-activity-id="submit-vat"]');
+    await expect(completed.locator("td").nth(0)).toHaveText("Submit VAT (HMRC)");
+    await expect(completed.locator("td").nth(1)).toHaveText("none");
+    await expect(completed.locator("td").nth(2)).toHaveText("2");
+    await expect(completed.locator("td").nth(3)).toHaveText("8");
+    await expect(completed.locator("td").nth(4)).toHaveText("22");
+    await expect(completed.locator("td").nth(5)).toHaveText("↓ 5.0%");
+    await expect(completed.locator("td").nth(6)).toHaveText("60");
+
+    const bundleRow = panel.locator('#activitiesStartedBody .activity-row[data-activity-id="bundle"]');
     await expect(bundleRow.locator("td").nth(0)).toHaveText("View and edit your bundles");
   });
 
@@ -684,7 +687,7 @@ test.describe("Operator Dashboard", () => {
     await setupRoutes(page);
     await loadDashboard(page);
 
-    const bundleRow = page.locator('#activitiesPanel .activity-row[data-activity-id="bundle"]');
+    const bundleRow = page.locator('#activitiesStartedBody .activity-row[data-activity-id="bundle"]');
     await expect(bundleRow.locator("td").nth(5)).toHaveText("new");
   });
 
@@ -699,8 +702,8 @@ test.describe("Operator Dashboard", () => {
     await setupRoutes(page);
     await loadDashboard(page);
 
-    await expect(page.locator("#activitiesTable thead th[colspan]").nth(0)).toHaveAttribute("title", /signed-in customer/);
-    await expect(page.locator("#activitiesTable thead th[colspan]").nth(1)).toHaveAttribute("title", /whether or not the customer clicked/);
+    await expect(page.locator("#activitiesStartedTable caption")).toHaveAttribute("title", /signed-in customer/);
+    await expect(page.locator("#activitiesCompletedTable caption")).toHaveAttribute("title", /whether or not the customer clicked/);
   });
 
   test("hides the activities panel when the snapshot carries no activity observations", async ({ page }) => {
@@ -898,9 +901,7 @@ test.describe("Operator Dashboard", () => {
       await setupRoutes(page);
       await loadDashboard(page);
 
-      // Excludes the rowspan="2" Activity header: it spans both header rows by design, so its
-      // own height is naturally about double a single-row header's, unrelated to wrapping.
-      const headerCells = page.locator("#activitiesTable thead th:not([rowspan])");
+      const headerCells = page.locator(".activities-table thead th");
       const count = await headerCells.count();
       for (let i = 0; i < count; i++) {
         const cell = headerCells.nth(i);
@@ -922,6 +923,9 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page);
 
       await eachObservationsTableFitsItsCard(page);
+      const scrollsSideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      expect(scrollsSideways).toBe(false);
+      await expect(page.locator("#activitiesStartedBody .activity-row td").nth(1)).toHaveAttribute("data-label", "Last 1 hour");
       await page.screenshot({ path: "target/dashboard-390.png", fullPage: true });
     });
   });

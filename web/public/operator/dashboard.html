@@ -78,30 +78,13 @@
         <h2>Activity started and completed</h2>
         <p class="subtitle">Each activity's primary button clicked, and how often it went on to complete</p>
         <p class="subtitle" id="activitiesDataSince" hidden></p>
-        <table class="observations data-table" id="activitiesTable">
+        <table class="observations data-table activities-table" id="activitiesStartedTable">
+          <caption title="Clicks on the activity's start button by a signed-in customer. Counting began on the day noted above the table.">
+            Started
+          </caption>
           <thead>
             <tr>
-              <th rowspan="2">Activity</th>
-              <th
-                colspan="6"
-                title="Clicks on the activity's start button by a signed-in customer. Counting began on the day noted above the table."
-              >
-                Started
-              </th>
-              <th
-                colspan="6"
-                title="Every completion event for the activity, whether or not the customer clicked its start button first: queries that run when a page loads, failed VAT submissions and bundle grants included."
-              >
-                Completed
-              </th>
-            </tr>
-            <tr>
-              <th>Last 1 hour</th>
-              <th>Last 1 day</th>
-              <th>Last 7 days</th>
-              <th>Last 30 days</th>
-              <th title="Last 30 days against the 30 days before them">vs previous 30 days</th>
-              <th>Last 90 days</th>
+              <th>Activity</th>
               <th>Last 1 hour</th>
               <th>Last 1 day</th>
               <th>Last 7 days</th>
@@ -110,7 +93,26 @@
               <th>Last 90 days</th>
             </tr>
           </thead>
-          <tbody id="activitiesBody"></tbody>
+          <tbody id="activitiesStartedBody"></tbody>
+        </table>
+        <table class="observations data-table activities-table" id="activitiesCompletedTable">
+          <caption
+            title="Every completion event for the activity, whether or not the customer clicked its start button first: queries that run when a page loads, failed VAT submissions and bundle grants included."
+          >
+            Completed
+          </caption>
+          <thead>
+            <tr>
+              <th>Activity</th>
+              <th>Last 1 hour</th>
+              <th>Last 1 day</th>
+              <th>Last 7 days</th>
+              <th>Last 30 days</th>
+              <th>Trend</th>
+              <th>Last 90 days</th>
+            </tr>
+          </thead>
+          <tbody id="activitiesCompletedBody"></tbody>
         </table>
       </section>
 
@@ -151,6 +153,7 @@
     <footer></footer>
 
     <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/stacked-table.js"></script>
     <script src="../lib/env-loader.js"></script>
     <script type="module" src="../submit.js"></script>
     <script src="../developer-mode.js"></script>

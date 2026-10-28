@@ -121,6 +121,22 @@ test.describe("Company Lookup page", () => {
     await expect(page.locator("#searchResults")).toContainText("16 April 2009");
   });
 
+  test("stacks the result table into labelled rows without sideways scroll at 390px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+
+    await page.fill("#companyQuery", "Simulator Example");
+    await page.click("#searchBtn");
+    await delay(300);
+
+    const labels = await page.locator("#searchResults tbody td").evaluateAll((cells) => cells.map((cell) => cell.dataset.label));
+    expect(labels).toEqual(["Company", "Number", "Status", "Incorporated", "Address"]);
+    const scrollsSideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    expect(scrollsSideways).toBe(false);
+  });
+
   test("shows a message when no companies match", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page, { searchResult: { totalResults: 0, itemsPerPage: 20, startIndex: 0, items: [] } });

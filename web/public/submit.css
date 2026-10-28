@@ -5326,25 +5326,19 @@ table.observations th {
 }
 
 /* Activity column: wide enough that a long catalogue name sits on one or two lines. */
-#activitiesTable th:first-child,
-#activitiesTable td:first-child {
+.activities-table th:first-child,
+.activities-table td:first-child {
   min-width: 18em;
 }
 
-#activitiesTable thead tr:first-child th:not(:first-child) {
-  text-align: center;
-}
-
-#activitiesTable thead tr:last-child th,
-#activitiesTable tbody td:not(:first-child) {
+.activities-table thead th,
+.activities-table tbody td:not(:first-child) {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#activitiesTable thead tr:first-child th:nth-child(3),
-#activitiesTable thead tr:last-child th:nth-child(7),
-#activitiesTable tbody td:nth-child(8) {
-  border-left: 2px solid var(--c-brand);
+.activities-table thead th:first-child {
+  text-align: left;
 }
 
 #reinvestmentTable th:nth-child(2),
@@ -5530,4 +5524,96 @@ table.observations th {
   display: inline-block;
   width: 1.4em;
   border-top: 2px solid;
+}
+
+/* Data tables under 40rem: each row is a block of label and value pairs, so no column sits out
+   of sight. lib/stacked-table.js copies the column headings onto the cells as data-label. The
+   operator dashboard's other observation tables keep scrolling inside their cards. */
+@media (max-width: 40rem) {
+  .data-table:not(.observations:not(.activities-table)),
+  .data-table:not(.observations:not(.activities-table)) tbody,
+  .rates-table,
+  .rates-table tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+    background: none;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) caption,
+  .rates-table caption,
+  .stacked-table caption {
+    display: block;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) thead,
+  .rates-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .data-table:not(.observations:not(.activities-table)) tr,
+  .rates-table tr {
+    display: block;
+    padding: var(--space-2) 0;
+    border-bottom: 2px solid var(--c-rule);
+  }
+
+  .data-table:not(.observations:not(.activities-table)) td,
+  .rates-table td {
+    display: grid;
+    grid-template-columns: minmax(6rem, 40%) minmax(0, 1fr);
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-1) 0;
+    border: 0;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) td[data-label]::before,
+  .rates-table td[data-label]::before {
+    content: attr(data-label);
+    font-weight: var(--weight-strong);
+    color: var(--c-ink-muted);
+  }
+
+  .data-table:not(.observations:not(.activities-table)) td[colspan],
+  .rates-table td[colspan] {
+    display: block;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) tbody th,
+  .rates-table tbody th {
+    display: block;
+    text-align: left;
+    border: 0;
+    padding: var(--space-2) 0 0;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) .receipt-nowrap {
+    white-space: normal;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) td .link-button {
+    text-align: left;
+  }
+
+  .activities-table th:first-child,
+  .activities-table td:first-child {
+    min-width: 0;
+  }
+}
+
+/* Above 1100px the tilted header grid still fans past the content column far enough to make the
+   page scroll sideways, so the header clips it there too. */
+@media (min-width: 1101px) {
+  header {
+    overflow-x: clip;
+  }
 }
