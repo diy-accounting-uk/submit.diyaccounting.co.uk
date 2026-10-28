@@ -362,6 +362,36 @@ function populateUkPropertyPeriodForm() {
   console.log("[Test Data] Populated ITSA UK property period form with test data");
 }
 
+/**
+ * Populate the ITSA foreign property period form with test data
+ * Used in foreignPropertyPeriod.html - NINO, a placeholder business ID, a 2025-26 quarter and one
+ * country with a rental income. The country entry is added when the list is empty.
+ */
+function populateForeignPropertyPeriodForm() {
+  const ninoInput = document.getElementById("nino");
+  const businessIdInput = document.getElementById("businessId");
+  const taxYearInput = document.getElementById("taxYear");
+  const fromDateInput = document.getElementById("fromDate");
+  const toDateInput = document.getElementById("toDate");
+
+  if (ninoInput) ninoInput.value = generateTestNino();
+  if (businessIdInput) businessIdInput.value = "XAIS12345678910";
+  if (taxYearInput) {
+    taxYearInput.value = "2025-26";
+    taxYearInput.dispatchEvent(new Event("input", { bubbles: true }));
+  }
+  if (fromDateInput) fromDateInput.value = "2025-04-06";
+  if (toDateInput) toDateInput.value = "2025-07-05";
+
+  if (!document.getElementById("fp-1-country")) document.getElementById("fp-add")?.click();
+  const countryInput = document.getElementById("fp-1-country");
+  const rentAmountInput = document.getElementById("fp-1-rentAmount");
+  if (countryInput) countryInput.value = "FRA";
+  if (rentAmountInput) rentAmountInput.value = "1000.00";
+
+  console.log("[Test Data] Populated ITSA foreign property period form with test data");
+}
+
 // Make functions available globally for inline script usage
 if (typeof window !== "undefined") {
   window.testDataGenerator = {
@@ -382,5 +412,6 @@ if (typeof window !== "undefined") {
     populateItsaObligationsForm,
     populateSelfEmploymentPeriodForm,
     populateUkPropertyPeriodForm,
+    populateForeignPropertyPeriodForm,
   };
 }

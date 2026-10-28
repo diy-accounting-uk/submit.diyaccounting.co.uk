@@ -54,6 +54,15 @@ const FIELD_LABELS = {
   "turnover": "Turnover",
   "periodAmount": "Rental income",
   "otherIncome": "Other property income",
+  // Foreign property period income
+  "rentIncome: rentAmount": "Rental income",
+  "rentAmount": "Rental income",
+  "otherPropertyIncome": "Other property income",
+  "premiumsOfLeaseGrant": "Premiums for the grant of a lease",
+  "foreignTaxPaidOrDeducted": "Foreign tax taken off or paid",
+  "specialWithholdingTaxOrUkTaxPaid": "UK tax taken off",
+  "foreignTaxCreditRelief": "Claim foreign tax credit relief",
+  "broughtFwdResidentialFinancialCost": "Unused residential finance costs brought forward",
   // Period expenses
   "consolidatedExpenses": "Total expenses",
   "costOfGoods": "Cost of goods",
@@ -299,16 +308,79 @@ const INCOME_LABEL_OVERRIDES = {
   "uk-property": {},
 };
 
+const PROPERTY_EXPENSE_LABELS = {
+  premisesRunningCosts: "Rent, rates, insurance and ground rent",
+  financialCosts: "Loan interest and other financial costs",
+  professionalFees: "Legal, management and other professional fees",
+  costOfServices: "Costs of services provided, including wages",
+  other: "Other property expenses",
+};
+
 const EXPENSE_LABEL_OVERRIDES = {
-  "uk-property": {
-    premisesRunningCosts: "Rent, rates, insurance and ground rent",
-    financialCosts: "Loan interest and other financial costs",
-    professionalFees: "Legal, management and other professional fees",
-    costOfServices: "Costs of services provided, including wages",
-    other: "Other property expenses",
-  },
+  "foreign-property": PROPERTY_EXPENSE_LABELS,
+  "uk-property": PROPERTY_EXPENSE_LABELS,
   "self-employment": {},
 };
+
+// The entries of a foreign property period summary: the EEA furnished holiday lettings (2024-25
+// and before) and one entry for each country or property, as HMRC returns them in its dated and
+// cumulative shapes.
+function foreignPeriodEntries(period) {
+  if (!isRecordObject(period)) return [];
+  const entries = [];
+  if (isRecordObject(period.foreignFhlEea)) {
+    entries.push({ id: "fhl", name: "Furnished holiday lettings in the EEA", ...period.foreignFhlEea });
+  }
+  const list = [period.foreignNonFhlProperty, period.foreignProperty].find(Array.isArray) || [];
+  list.forEach((entry, index) => {
+    if (!isRecordObject(entry)) return;
+    let name = `Entry ${index + 1}`;
+    if (nonEmptyText(entry.countryCode)) name = globalThis.countryCodes?.countryName(entry.countryCode) ?? entry.countryCode;
+    else if (nonEmptyText(entry.propertyId)) name = `Property ${entry.propertyId}`;
+    entries.push({ id: String(index + 1), name, income: entry.income, expenses: entry.expenses });
+  });
+  return entries;
+}
+
+// One income table and one expenses table for each entry of a foreign property period.
+function foreignPeriodSections(period, columnHeading, firstSectionPrefix) {
+  const entries = foreignPeriodEntries(period);
+  if (entries.length === 0) {
+    return [
+      {
+        heading: "Income",
+        explanation: "This is the income and expenses HMRC holds for the period.",
+        recordHtml: `${firstSectionPrefix}<p class="no-data">HMRC holds no figures for this period.</p>`,
+      },
+    ];
+  }
+  return entries.flatMap((entry, index) => {
+    const incomeEntries = collectEntries(entry.income);
+    const expenseEntries = collectEntries(entry.expenses);
+    return [
+      {
+        heading: `${entry.name}: income`,
+        explanation:
+          index === 0
+            ? "This is the income HMRC holds for the period, one table for each country or property. A cumulative year shows the running total from the start of the tax year."
+            : "",
+        recordHtml:
+          (index === 0 ? firstSectionPrefix : "") +
+          (incomeEntries.length > 0
+            ? periodTable(columnHeading, incomeEntries, `period-${entry.id}-income`, {})
+            : `<p class="no-data">HMRC holds no income for ${escapeRecordText(entry.name)}.</p>`),
+      },
+      {
+        heading: `${entry.name}: expenses`,
+        explanation: index === 0 ? "HMRC holds either one total or the itemised costs for each country or property." : "",
+        recordHtml:
+          expenseEntries.length > 0
+            ? periodTable(columnHeading, expenseEntries, `period-${entry.id}-expenses`, PROPERTY_EXPENSE_LABELS)
+            : `<p class="no-data">HMRC holds no expenses for ${escapeRecordText(entry.name)}.</p>`,
+      },
+    ];
+  });
+}
 
 function withKnownKeys(group, keys) {
   const source = isRecordObject(group) ? group : {};
@@ -336,7 +408,7 @@ function periodTable(columnHeading, entries, idPrefix, overrides) {
  * tax year.
  *
  * @param {object} input
- * @param {"self-employment"|"uk-property"} input.kind
+ * @param {"self-employment"|"uk-property"|"foreign-property"} input.kind
  * @param {object} input.period - HMRC's period summary
  * @param {string} [input.nino]
  * @param {string} [input.businessId]
@@ -369,6 +441,18 @@ export function periodCopyHtml({ kind, period, nino, businessId, taxYear, period
   });
 
   const columnHeading = periodLine || year || "Amount";
+
+  if (kind === "foreign-property") {
+    return customerCopyHtml({
+      title: periodLine ? `Your copy of the foreign property update for ${periodLine}` : "Your copy of the foreign property update",
+      reference: { label: nonEmptyText(periodId) ? idLabel : "Reporting", value: reference },
+      status: { kind: "accepted", text: "Held by HMRC" },
+      date: retrieved ? `Retrieved ${retrieved}` : "Not recorded",
+      sections: foreignPeriodSections(period, columnHeading, recordHead),
+      links,
+    });
+  }
+
   const expenseEntries = collectEntries(expenses);
 
   return customerCopyHtml({
