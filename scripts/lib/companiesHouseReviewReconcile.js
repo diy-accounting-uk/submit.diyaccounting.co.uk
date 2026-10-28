@@ -80,6 +80,7 @@ const POLICIES = {
   taxPolicy: "TaxPolicy",
   currentIncomeTaxPolicy: "CurrentIncomeTaxPolicy",
   deferredTaxPolicy: "DeferredTaxPolicy",
+  intangibleAssetsPolicy: "IntangibleAssetsPolicy",
   dividendPolicy: "DividendPolicy",
 };
 const PROFIT_AND_LOSS = {
@@ -92,6 +93,15 @@ const PROFIT_AND_LOSS = {
   profitBeforeTax: "ProfitLossOnOrdinaryActivitiesBeforeTax",
   tax: "TaxTaxCreditOnProfitOrLossOnOrdinaryActivities",
   profit: "ProfitLoss",
+};
+// Intangible assets note field -> [concept, context kind (e = balance sheet date, y = the period), year offset].
+const INTANGIBLE_ASSET_NOTE = {
+  costAtStart: ["IntangibleAssetsGrossCost", "e", -1],
+  additions: ["AdditionsOtherThanThroughBusinessCombinationsIntangibleAssets", "y", 0],
+  disposals: ["DisposalsIntangibleAssets", "y", 0],
+  amortisationAtStart: ["AccumulatedAmortisationImpairmentIntangibleAssets", "e", -1],
+  amortisationCharge: ["IncreaseFromAmortisationChargeForYearIntangibleAssets", "y", 0],
+  amortisationOnDisposals: ["DisposalsDecreaseInAmortisationImpairmentIntangibleAssets", "y", 0],
 };
 // Fixed asset note field -> [concept, context kind (e = balance sheet date, y = the period), year offset].
 const FIXED_ASSET_NOTE = {
@@ -240,6 +250,10 @@ export function reconcile(input, ours) {
         }
       }
     }
+    for (const [key, value] of Object.entries(small.intangibleAssetNote ?? {})) {
+      const [concept, kind, offset] = INTANGIBLE_ASSET_NOTE[key];
+      check(`intangibleAssetNote.${key}`, value, concept, `${kind}${year + offset}`);
+    }
     for (const [assetClass, note] of Object.entries(small.fixedAssetNote ?? {})) {
       for (const [key, value] of Object.entries(note)) {
         const [concept, kind, offset] = FIXED_ASSET_NOTE[key];
@@ -353,6 +367,31 @@ export function reconcile(input, ours) {
       );
     }
   }
+  if (small?.intangibleAssetNote) {
+    const concept = (key) => INTANGIBLE_ASSET_NOTE[key][0];
+    add(
+      `Intangible assets: cost at ${current} end`,
+      "cost at start + additions − disposals",
+      valueOf("IntangibleAssetsGrossCost", `e${current}`),
+      (valueOf(concept("costAtStart"), `e${prior}`) || 0) +
+        (valueOf(concept("additions"), `y${current}`) || 0) -
+        (valueOf(concept("disposals"), `y${current}`) || 0),
+    );
+    add(
+      `Intangible assets: amortisation at ${current} end`,
+      "at start + charge − on disposals",
+      valueOf(concept("amortisationAtStart"), `e${current}`),
+      (valueOf(concept("amortisationAtStart"), `e${prior}`) || 0) +
+        (valueOf(concept("amortisationCharge"), `y${current}`) || 0) -
+        (valueOf(concept("amortisationOnDisposals"), `y${current}`) || 0),
+    );
+    add(
+      `Intangible assets: net book value ${current}`,
+      "cost − amortisation",
+      valueOf("IntangibleAssets", `e${current}`),
+      (valueOf("IntangibleAssetsGrossCost", `e${current}`) || 0) - (valueOf(concept("amortisationAtStart"), `e${current}`) || 0),
+    );
+  }
   if (small?.fixedAssetNote) {
     for (const assetClass of Object.keys(small.fixedAssetNote)) {
       const context = (kind, y) => `${kind}${y}-ppe-${assetClass}`;
@@ -383,9 +422,16 @@ export function reconcile(input, ours) {
     }
     add(
       `Fixed assets ${current}`,
-      "total net book value of the classes = balance sheet fixed assets",
+      "total net book value of the classes and the intangible assets = balance sheet fixed assets",
       valueOf("FixedAssets", `e${current}`),
-      valueOf("PropertyPlantEquipment", `e${current}`),
+      sum(valueOf("PropertyPlantEquipment", `e${current}`), valueOf("IntangibleAssets", `e${current}`)),
+    );
+  } else if (small?.intangibleAssetNote) {
+    add(
+      `Fixed assets ${current}`,
+      "net book value of the intangible assets = balance sheet fixed assets",
+      valueOf("FixedAssets", `e${current}`),
+      valueOf("IntangibleAssets", `e${current}`),
     );
   }
 

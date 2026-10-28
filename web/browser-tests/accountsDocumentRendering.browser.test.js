@@ -143,6 +143,39 @@ test.describe("Accounts documents as a reader sees them", () => {
     }
   });
 
+  test("a small company intangible assets note shows beside the tangible note at phone and desktop width", async ({ page }) => {
+    const xhtml = buildSmallCompanyAccounts({
+      ...SMALL_COMPANY_CASE_INPUT,
+      fixedAssetNote: { landBuildings: SMALL_COMPANY_CASE_INPUT.fixedAssetNote.landBuildings },
+      intangibleAssetNote: {
+        costAtStart: 5000,
+        additions: 0,
+        disposals: 0,
+        amortisationAtStart: 800,
+        amortisationCharge: 200,
+        amortisationOnDisposals: 0,
+      },
+      intangibleAssetsPolicy: "Goodwill is amortised over five years.",
+    });
+    for (const width of [390, 1280]) {
+      await page.setViewportSize({ width, height: 1200 });
+      await openDocument(page, "small-company-intangibles", xhtml);
+      await page.screenshot({ path: path.join(SCREENSHOT_DIRECTORY, `small-company-intangibles-${width}.png`), fullPage: true });
+      const text = await visibleText(page);
+      expect(text).not.toMatch(HEADER_TEXT);
+      expect(text).toMatch(/\d+\. Intangible assets\n/);
+      expect(text).toContain("Goodwill is amortised over five years.");
+      expectInOrder(text.slice(text.search(/\d+\. Intangible assets\n/)), [
+        "Cost",
+        "Additions",
+        "Amortisation",
+        "Charge for the year",
+        "Net book value",
+      ]);
+      expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBeLessThanOrEqual(0);
+    }
+  });
+
   test("the CT computations document shows the computation and nothing of its header", async ({ page }) => {
     await openDocument(page, "ct-computations", computationsDocumentCase());
     await page.screenshot({ path: path.join(SCREENSHOT_DIRECTORY, "ct-computations.png"), fullPage: true });

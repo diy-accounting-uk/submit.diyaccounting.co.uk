@@ -240,6 +240,32 @@ test.describe("File small company accounts page", () => {
     }
   });
 
+  test("the intangible assets note shows when ticked, adds to the tangible note and reaches the request", async ({ page }) => {
+    await openFormView(page);
+    await fillCurrentYear(page);
+    await expect(page.locator("#intangibleAssetNoteFields")).toBeHidden();
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.intangibleAssetNote)).toBeUndefined();
+    await page.check("#includeIntangibleAssetNote");
+    await expect(page.locator("#intangibleAssetNoteFields")).toBeVisible();
+    await page.check("#includeFixedAssetNote");
+    await page.fill("#noteLandBuildingsCostAtStart", "700");
+    await page.fill("#intangibleNoteCostAtStart", "400");
+    await page.fill("#intangibleNoteAmortisationAtStart", "100");
+    await expect(page.locator("#intangibleAssetNoteTotals")).toContainText(
+      "Net book value: 300. With the tangible fixed assets note, matches",
+    );
+    expect(await page.evaluate(() => formProblem())).toBeNull();
+    const note = await page.evaluate(() => buildAccountsPayload().smallCompany.intangibleAssetNote);
+    expect(note).toMatchObject({ costAtStart: 400, amortisationAtStart: 100, additions: 0 });
+    await page.fill("#intangibleNoteAdditions", "50");
+    expect(await page.evaluate(() => formProblem())).toContain("net book value must equal the fixed assets");
+    await page.locator("#morePolicies summary").click();
+    await page.fill("#intangibleAssetsPolicy", "Goodwill is amortised over five years.");
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.intangibleAssetsPolicy)).toBe(
+      "Goodwill is amortised over five years.",
+    );
+  });
+
   test("the registered office parts fill from the company record, can be edited and reach the request", async ({ page }) => {
     await openFormView(page);
     await page.evaluate(() =>
@@ -298,6 +324,7 @@ test.describe("File small company accounts page", () => {
       "tangibleFixedAssetsPolicy",
       "propertyPlantEquipmentPolicy",
       "depreciationMethodPolicy",
+      "intangibleAssetsPolicy",
       "impairmentPolicy",
       "inventoriesPolicy",
       "cashCashEquivalentsPolicy",

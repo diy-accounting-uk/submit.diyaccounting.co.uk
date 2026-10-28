@@ -805,6 +805,65 @@ describe("the creditor lines, policies, accountants' report and controlling part
     ).toThrow(/bankLoansAfterOneYear/);
   });
 
+  test("an absent intangible assets note and policy change no output byte", () => {
+    expect(buildSmallCompanyAccounts({ ...WITH_COMPARATIVES, intangibleAssetsPolicy: undefined, intangibleAssetNote: undefined })).toBe(
+      buildSmallCompanyAccounts(WITH_COMPARATIVES),
+    );
+  });
+
+  test("tags an intangible assets note and adds its net book value to the tangible notes for the fixed assets", () => {
+    const intangibleAssetNote = {
+      costAtStart: 5000,
+      additions: 0,
+      disposals: 0,
+      amortisationAtStart: 800,
+      amortisationCharge: 200,
+      amortisationOnDisposals: 0,
+    };
+    const xhtml = buildSmallCompanyAccounts({
+      ...WITH_COMPARATIVES,
+      fixedAssetNote: { landBuildings: FIXED_ASSET_NOTE.landBuildings },
+      intangibleAssetNote,
+      intangibleAssetsPolicy: "Goodwill is amortised over five years.",
+    });
+    expect(nonFractionValue(xhtml, "core:IntangibleAssetsGrossCost", "e2025")).toBe(5000);
+    expect(nonFractionValue(xhtml, "core:IntangibleAssetsGrossCost", "e2026")).toBe(5000);
+    expect(nonFractionValue(xhtml, "core:AccumulatedAmortisationImpairmentIntangibleAssets", "e2025")).toBe(800);
+    expect(nonFractionValue(xhtml, "core:AccumulatedAmortisationImpairmentIntangibleAssets", "e2026")).toBe(1000);
+    expect(nonFractionValue(xhtml, "core:IncreaseFromAmortisationChargeForYearIntangibleAssets", "y2026")).toBe(200);
+    expect(nonFractionValue(xhtml, "core:IntangibleAssets", "e2026")).toBe(4000);
+    expect(nonFractionValue(xhtml, "core:IntangibleAssets", "e2025")).toBe(4200);
+    expect(xhtml).toContain('name="core:IntangibleAssetsPolicy"');
+    expect(xhtml).toMatch(/<h4>Intangible assets<\/h4>/);
+    expect(xhtml).toMatch(/<h3>\d+\. Intangible assets<\/h3>/);
+    const concepts = loadFrcTaxonomyConcepts();
+    for (const name of [
+      "IntangibleAssets",
+      "IntangibleAssetsGrossCost",
+      "AccumulatedAmortisationImpairmentIntangibleAssets",
+      "IntangibleAssetsPolicy",
+      "AdditionsOtherThanThroughBusinessCombinationsIntangibleAssets",
+      "DisposalsIntangibleAssets",
+      "IncreaseFromAmortisationChargeForYearIntangibleAssets",
+      "DisposalsDecreaseInAmortisationImpairmentIntangibleAssets",
+    ]) {
+      expect(concepts).toContain(`core:${name}`);
+    }
+    expect(ixbrlStructureProblems(xhtml)).toEqual([]);
+  });
+
+  test("refuses fixed asset notes whose net book value is not the fixed assets", () => {
+    const intangibleAssetNote = {
+      costAtStart: 5000,
+      additions: 0,
+      disposals: 0,
+      amortisationAtStart: 0,
+      amortisationCharge: 0,
+      amortisationOnDisposals: 0,
+    };
+    expect(() => buildSmallCompanyAccounts({ ...SAMPLE_INPUT, intangibleAssetNote })).toThrow(/does not equal fixed assets/);
+  });
+
   test("tags the second policy set under shared subheadings in the order of the note", () => {
     const policies = {
       propertyPlantEquipmentPolicy: "Fixed asset policy text.",

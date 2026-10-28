@@ -146,6 +146,26 @@ describe("services/smallCompanyAccountsRequest optional lines, policies and cont
     expect(result.balanceSheet.current.accruals).toBe(100);
   });
 
+  test("an intangible assets note is kept and its net book value is held against the fixed assets", () => {
+    const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
+    const note = {
+      costAtStart: base.fixedAssets,
+      additions: 0,
+      disposals: 0,
+      amortisationAtStart: 0,
+      amortisationCharge: 0,
+      amortisationOnDisposals: 0,
+    };
+    const kept = validate({ ...withYear({}), fixedAssetNote: undefined, intangibleAssetNote: note });
+    expect(kept.errors).toEqual([]);
+    expect(kept.result.intangibleAssetNote).toEqual(note);
+    const refused = validate({ ...withYear({}), fixedAssetNote: undefined, intangibleAssetNote: { ...note, amortisationCharge: 1 } });
+    expect(refused.errors.join(" ")).toContain("intangibleAssetNote net book value");
+    const negative = validate({ ...withYear({}), fixedAssetNote: undefined, intangibleAssetNote: { ...note, additions: -1 } });
+    expect(negative.errors.join(" ")).toContain("intangibleAssetNote.additions must not be negative");
+    expect(validate(withYear({})).result).not.toHaveProperty("intangibleAssetNote");
+  });
+
   test("the net assets check includes the new lines", () => {
     const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
     const { errors } = validate(withYear({ taxationSocialSecurity: 100 }));

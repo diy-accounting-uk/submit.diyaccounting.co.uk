@@ -120,6 +120,7 @@ export const SMALL_COMPANY_POLICY_FIELDS = [
   { field: "tangibleFixedAssetsPolicy", heading: "Tangible fixed assets", conceptKey: "propertyPlantEquipmentMeasurementBasis" },
   { field: "propertyPlantEquipmentPolicy", heading: "Tangible fixed assets", conceptKey: "propertyPlantEquipmentPolicy" },
   { field: "depreciationMethodPolicy", heading: "Tangible fixed assets", conceptKey: "depreciationMethodPolicy" },
+  { field: "intangibleAssetsPolicy", heading: "Intangible assets", conceptKey: "intangibleAssetsPolicy" },
   { field: "impairmentPolicy", heading: "Impairment", conceptKey: "impairmentPolicy" },
   { field: "inventoriesPolicy", heading: "Stocks", conceptKey: "inventoriesPolicy" },
   { field: "cashCashEquivalentsPolicy", heading: "Cash and cash equivalents", conceptKey: "cashCashEquivalentsPolicy" },
@@ -169,6 +170,26 @@ export const SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES = [
   "tax",
   "profit",
 ];
+
+export const INTANGIBLE_ASSET_FIELDS = [
+  "costAtStart",
+  "additions",
+  "disposals",
+  "amortisationAtStart",
+  "amortisationCharge",
+  "amortisationOnDisposals",
+];
+
+/**
+ * The intangible assets note's closing figures, derived from its movements.
+ * @param {object} figures - the INTANGIBLE_ASSET_FIELDS
+ * @returns {{costAtEnd: number, amortisationAtEnd: number, netBookValue: number}}
+ */
+export function intangibleAssetClosingFigures(figures) {
+  const costAtEnd = figures.costAtStart + figures.additions - figures.disposals;
+  const amortisationAtEnd = figures.amortisationAtStart + figures.amortisationCharge - figures.amortisationOnDisposals;
+  return { costAtEnd, amortisationAtEnd, netBookValue: costAtEnd - amortisationAtEnd };
+}
 
 export const FIXED_ASSET_CLASSES = ["landBuildings", "plantMachinery", "furnitureFittings", "computerEquipment", "motorVehicles"];
 
@@ -375,6 +396,10 @@ export function fixedAssetNoteNetBookValue(fixedAssetNote) {
   return Object.values(fixedAssetNote).reduce((total, classFigures) => total + fixedAssetClosingFigures(classFigures).netBookValue, 0);
 }
 
+function intangibleNetBookValue(intangibleAssetNote) {
+  return intangibleAssetNote ? intangibleAssetClosingFigures(intangibleAssetNote).netBookValue : 0;
+}
+
 function money(conceptKey, contextRef, value) {
   return renderMonetaryFact(conceptKey, contextRef, "GBP", value);
 }
@@ -543,6 +568,47 @@ function fixedAssetNoteTable({ refs, fixedAssetNote, entityIdentifierXml, period
   });
 }
 
+/**
+ * The intangible assets note as printed: one column with the cost and amortisation movements and
+ * the net book values at both balance sheet dates, tagged against the undimensioned contexts.
+ */
+function intangibleAssetNoteTable({ refs, intangibleAssetNote }) {
+  const figures = { ...intangibleAssetNote, ...intangibleAssetClosingFigures(intangibleAssetNote) };
+  const row = (label, conceptKey, contextRef, value, options = {}) => ({
+    label,
+    indent: options.indent,
+    style: options.style,
+    cells: [recordFigure(money(conceptKey, contextRef, value), value, { deduction: options.deduction })],
+  });
+  const startLabel = `At ${displayDate(refs.periodStartDate)}`;
+  const endLabel = `At ${displayDate(refs.periodEndDate)}`;
+  const priorEndLabel = `At ${displayDate(previousDay(refs.periodStartDate))}`;
+  return recordTable({
+    columns: ["Intangible assets"],
+    rows: [
+      { label: "Cost", style: "heading" },
+      row(startLabel, "intangibleAssetsGrossCost", refs.priorInstant, figures.costAtStart, { indent: true }),
+      row("Additions", "additionsIntangibleAssets", refs.current, figures.additions, { indent: true }),
+      row("Disposals", "disposalsIntangibleAssets", refs.current, figures.disposals, { indent: true, deduction: true }),
+      row(endLabel, "intangibleAssetsGrossCost", refs.currentInstant, figures.costAtEnd, { indent: true, style: "subtotal" }),
+      { label: "Amortisation", style: "heading" },
+      row(startLabel, "accumulatedAmortisationIntangibleAssets", refs.priorInstant, figures.amortisationAtStart, { indent: true }),
+      row("Charge for the year", "amortisationChargeIntangibleAssets", refs.current, figures.amortisationCharge, { indent: true }),
+      row("On disposals", "amortisationDisposalsIntangibleAssets", refs.current, figures.amortisationOnDisposals, {
+        indent: true,
+        deduction: true,
+      }),
+      row(endLabel, "accumulatedAmortisationIntangibleAssets", refs.currentInstant, figures.amortisationAtEnd, {
+        indent: true,
+        style: "subtotal",
+      }),
+      { label: "Net book value", style: "heading" },
+      row(endLabel, "intangibleAssets", refs.currentInstant, figures.netBookValue, { indent: true, style: "total" }),
+      row(priorEndLabel, "intangibleAssets", refs.priorInstant, figures.costAtStart - figures.amortisationAtStart, { indent: true }),
+    ],
+  });
+}
+
 // The after one year line splits into the bank loans and the rest when any year owes a bank.
 const AFTER_ONE_YEAR_SPLIT_ROWS = [
   ["Bank loans", "bankBorrowingsOverdrafts", "bankLoansAfterOneYear"],
@@ -679,6 +745,7 @@ ${principalActivitySentence(input.principalActivity, refs)}
  * @param {1|2} [input.profitAndLossFormat] - 1 (by function, the default) or 2 (by nature)
  * @param {{current: object, prior?: object}} input.profitAndLoss - the lines of the format: SMALL_COMPANY_PROFIT_AND_LOSS_LINES or SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES
  * @param {Record<string, object>} [input.fixedAssetNote] - FIXED_ASSET_CLASSES to FIXED_ASSET_CLASS_FIELDS
+ * @param {object} [input.intangibleAssetNote] - INTANGIBLE_ASSET_FIELDS of the one intangible assets note; its net book value is part of fixed assets
  * @param {string} [input.goingConcernStatement] - SMALL_COMPANY_POLICY_FIELDS texts (going concern, turnover, tangible fixed assets and depreciation, impairment, stocks, cash, financial instruments, employee benefits, foreign currency, leases, tax, current and deferred tax, dividends), each tagged in the accounting policies note under its subheading
  * @param {{accountantsName: string, statement: string}} [input.accountantsReport] - adds the accountants' report page and the audit exempt with accountants' report status
  * @param {{ultimate: boolean, name?: string}} [input.controllingParty] - adds the controlling party note; an ultimate party needs a name; without a name the note states that the company has no ultimate controlling party
@@ -705,6 +772,7 @@ export function buildSmallCompanyAccounts(input) {
   // The request carries no deferred tax, so the profit and loss tax charge is the current tax of the period.
   const showsTaxNote = [input.profitAndLoss.current, priorProfitAndLoss].some((figures) => (figures?.tax ?? 0) !== 0);
   const hasFixedAssetNote = Boolean(input.fixedAssetNote) && Object.keys(input.fixedAssetNote).length > 0;
+  const hasIntangibleNote = Boolean(input.intangibleAssetNote);
   const {
     xml: contextsXml,
     refs,
@@ -712,7 +780,7 @@ export function buildSmallCompanyAccounts(input) {
     periodXml,
   } = buildContexts(input, {
     // The fixed asset note's opening balances sit at the prior balance sheet date.
-    includePriorInstant: Boolean(priorBalanceSheet) || hasFixedAssetNote,
+    includePriorInstant: Boolean(priorBalanceSheet) || hasFixedAssetNote || hasIntangibleNote,
     includePriorPeriod: Boolean(priorProfitAndLoss) && (!input.filleted || showsTaxNote),
     // A filleted set has no profit and loss account, so its prior year duration carries only the tax note's dimensioned fact.
     priorPeriodFactsAreDimensioned: Boolean(input.filleted),
@@ -727,9 +795,11 @@ export function buildSmallCompanyAccounts(input) {
       : []),
   ];
   if (problems.length > 0) throw new Error(problems.join("; "));
-  if (input.fixedAssetNote && fixedAssetNoteNetBookValue(input.fixedAssetNote) !== input.balanceSheet.current.fixedAssets) {
+  const noteNetBookValue =
+    (input.fixedAssetNote ? fixedAssetNoteNetBookValue(input.fixedAssetNote) : 0) + intangibleNetBookValue(input.intangibleAssetNote);
+  if ((input.fixedAssetNote || hasIntangibleNote) && noteNetBookValue !== input.balanceSheet.current.fixedAssets) {
     throw new Error(
-      `The fixed asset note's net book value (${fixedAssetNoteNetBookValue(input.fixedAssetNote)}) does not equal fixed assets (${input.balanceSheet.current.fixedAssets})`,
+      `The fixed asset notes' net book value (${noteNetBookValue}) does not equal fixed assets (${input.balanceSheet.current.fixedAssets})`,
     );
   }
 
@@ -851,7 +921,7 @@ export function buildSmallCompanyAccounts(input) {
       }),
     });
   }
-  let fixedAssetNoteNumber;
+  const fixedAssetNoteNumbers = [];
   if (hasFixedAssetNote) {
     notes.push({
       title: "Tangible fixed assets",
@@ -863,7 +933,7 @@ export function buildSmallCompanyAccounts(input) {
         additionalContexts,
       }),
     });
-    fixedAssetNoteNumber = notes.length;
+    fixedAssetNoteNumbers.push(notes.length);
     const depreciationCharge = Object.values(input.fixedAssetNote).reduce(
       (total, classFigures) => total + classFigures.depreciationCharge,
       0,
@@ -878,6 +948,18 @@ export function buildSmallCompanyAccounts(input) {
           },
     );
   }
+
+  if (hasIntangibleNote) {
+    notes.push({
+      title: "Intangible assets",
+      html: intangibleAssetNoteTable({
+        refs: { ...refs, periodStartDate: input.periodStart, periodEndDate: input.periodEnd },
+        intangibleAssetNote: input.intangibleAssetNote,
+      }),
+    });
+    fixedAssetNoteNumbers.push(notes.length);
+  }
+  const fixedAssetNoteRef = fixedAssetNoteNumbers.join(", ");
 
   let debtorsNoteNumber;
   if (hasDebtorsSplit(balanceSheetYears)) {
@@ -958,7 +1040,7 @@ export function buildSmallCompanyAccounts(input) {
   pages.push(`<div class="page">
 ${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${recordTable({
     columns: columns.slice(0, years.length),
-    notes: Boolean(fixedAssetNoteNumber) || Boolean(debtorsNoteNumber),
+    notes: Boolean(fixedAssetNoteRef) || Boolean(debtorsNoteNumber),
     rows: balanceSheetRows({
       years,
       currentAssetLines: subLineRows(CURRENT_ASSET_SUB_LINES, balanceSheetYears, balanceSheetRefs, "").map((line) =>
@@ -966,7 +1048,7 @@ ${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.curr
       ),
       creditorLines: subLineRows(CREDITOR_SUB_LINES, balanceSheetYears, balanceSheetRefs, "-within-one-year"),
       creditorAfterOneYearLines: creditorAfterOneYearLines(balanceSheetYears, balanceSheetRefs),
-      notes: { fixedAssets: fixedAssetNoteNumber },
+      notes: { fixedAssets: fixedAssetNoteRef || undefined },
     }),
   })}
 ${statementKeys.map((key) => `<p>${renderStatement(key, refs.current)}</p>`).join("\n")}

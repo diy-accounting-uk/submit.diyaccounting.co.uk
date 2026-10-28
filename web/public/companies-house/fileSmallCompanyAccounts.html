@@ -2195,6 +2195,150 @@
             </div>
           </section>
           <section class="form-section">
+            <h3>Intangible assets note</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="checkbox"
+                  id="includeIntangibleAssetNote"
+                  name="includeIntangibleAssetNote"
+                  aria-describedby="includeIntangibleAssetNote-hint"
+                /><label for="includeIntangibleAssetNote">Include the intangible assets note (goodwill and other intangibles)</label>
+              </div>
+              <p id="includeIntangibleAssetNote-hint" class="hint">
+                The net book value of the intangible assets is part of the fixed assets above, with any tangible fixed assets note.
+              </p>
+            </div>
+            <div id="intangibleAssetNoteFields" style="display: none">
+              <p id="ledgerHint10" class="hint">Whole pounds. For example, £600 or £1,200.</p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th scope="col">Line</th>
+                    <th scope="col" class="ledger__figure">Amount (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Cost at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="intangibleNoteCostAtStart" class="visually-hidden">Cost at the start of the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteCostAtStart"
+                          name="intangibleNoteCostAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter cost at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Additions</th>
+                    <td class="ledger__figure">
+                      <label for="intangibleNoteAdditions" class="visually-hidden">Additions</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteAdditions"
+                          name="intangibleNoteAdditions"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter additions"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Disposals (cost)</th>
+                    <td class="ledger__figure">
+                      <label for="intangibleNoteDisposals" class="visually-hidden">Disposals (cost)</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteDisposals"
+                          name="intangibleNoteDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter disposals (cost)"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Amortisation at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="intangibleNoteAmortisationAtStart" class="visually-hidden">Amortisation at the start of the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteAmortisationAtStart"
+                          name="intangibleNoteAmortisationAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter amortisation at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Amortisation charge for the period</th>
+                    <td class="ledger__figure">
+                      <label for="intangibleNoteAmortisationCharge" class="visually-hidden">Amortisation charge for the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteAmortisationCharge"
+                          name="intangibleNoteAmortisationCharge"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter amortisation charge for the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Amortisation on disposals</th>
+                    <td class="ledger__figure">
+                      <label for="intangibleNoteAmortisationOnDisposals" class="visually-hidden">Amortisation on disposals</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteAmortisationOnDisposals"
+                          name="intangibleNoteAmortisationOnDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter amortisation on disposals"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p id="intangibleAssetNoteTotals" class="hint"></p>
+            </div>
+          </section>
+          <section class="form-section">
             <h3>Directors and activity</h3>
             <div class="form-group">
               <label for="principalActivity">Principal activity</label>
@@ -2228,6 +2372,10 @@
               <div class="form-group">
                 <label for="depreciationMethodPolicy">Tangible fixed assets: depreciation method</label>
                 <textarea id="depreciationMethodPolicy" name="depreciationMethodPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="intangibleAssetsPolicy">Intangible assets</label>
+                <textarea id="intangibleAssetsPolicy" name="intangibleAssetsPolicy" rows="3"></textarea>
               </div>
               <div class="form-group">
                 <label for="impairmentPolicy">Impairment</label>
