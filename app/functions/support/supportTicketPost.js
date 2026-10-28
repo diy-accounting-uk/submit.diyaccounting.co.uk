@@ -180,7 +180,7 @@ export async function dispatchSupportReader() {
     }
     return true;
   } catch (error) {
-    logger.warn({ message: "Support reader dispatch failed", errorName: error.name });
+    logger.warn({ message: "Support reader dispatch failed", cause: error instanceof TypeError ? "network" : "token or request" });
     return false;
   }
 }
