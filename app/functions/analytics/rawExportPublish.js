@@ -36,6 +36,7 @@ export const VIEW_NAMES = [
   "v_alarm_state_changes_daily",
   "v_dora_runs_daily",
   "v_returning_submitters_quarterly",
+  "v_returning_submitters_rolling_daily",
   "v_subscription_renewals_daily",
   "v_subscription_cancellations_daily",
   "v_operator_interventions_daily",
@@ -110,7 +111,12 @@ export const OBJECTIVES = [
   },
   {
     objective: "Retention",
-    views: ["v_returning_submitters_quarterly", "v_subscription_renewals_daily", "v_subscription_cancellations_daily"],
+    views: [
+      "v_returning_submitters_quarterly",
+      "v_returning_submitters_rolling_daily",
+      "v_subscription_renewals_daily",
+      "v_subscription_cancellations_daily",
+    ],
     levers: [
       "Reminder emails before a period end",
       "The obligations and receipts views",
