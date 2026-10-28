@@ -489,7 +489,11 @@ function renderSnapshot(snapshot) {
 function renderExperiments(experiments) {
   const list = document.getElementById("experimentsList");
   list.innerHTML = "";
-  (experiments || []).forEach((experiment) => {
+  if (!experiments || experiments.length === 0) {
+    showExperimentsMessage("No experiments published");
+    return;
+  }
+  experiments.forEach((experiment) => {
     const item = document.createElement("li");
     item.className = "experiment";
     item.dataset.experimentId = experiment.id;
@@ -507,6 +511,15 @@ function renderExperiments(experiments) {
       ")";
     list.appendChild(item);
   });
+}
+
+function showExperimentsMessage(message) {
+  const list = document.getElementById("experimentsList");
+  list.innerHTML = "";
+  const item = document.createElement("li");
+  item.className = "experiments-empty";
+  item.textContent = message;
+  list.appendChild(item);
 }
 
 async function fetchJson(path) {
@@ -572,10 +585,8 @@ async function initPage() {
   try {
     const parsed = await fetchToml("/experiments.toml");
     renderExperiments(parsed.experiments);
-  } catch (error) {
-    // The experiments panel is a secondary feature; a missing or unreadable file hides
-    // it rather than blocking the objectives above.
-    document.getElementById("experimentsPanel").hidden = true;
+  } catch {
+    showExperimentsMessage("Experiments did not load.");
   }
 }
 

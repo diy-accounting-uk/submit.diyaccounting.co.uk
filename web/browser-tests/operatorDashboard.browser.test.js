@@ -323,7 +323,10 @@ test.describe("Operator Dashboard", () => {
     submitCssContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.css"), "utf-8");
   });
 
-  async function setupRoutes(page, { snapshotStatus = 200, snapshotBody = FIXTURE_SNAPSHOT } = {}) {
+  async function setupRoutes(
+    page,
+    { snapshotStatus = 200, snapshotBody = FIXTURE_SNAPSHOT, experimentsStatus = 200, experimentsBody = FIXTURE_EXPERIMENTS } = {},
+  ) {
     await page.route("**/dashboard.html*", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: dashboardHtmlContent });
     });
@@ -335,7 +338,7 @@ test.describe("Operator Dashboard", () => {
       });
     });
     await page.route("**/experiments.toml*", async (route) => {
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(FIXTURE_EXPERIMENTS) });
+      await route.fulfill({ status: experimentsStatus, contentType: "application/json", body: JSON.stringify(experimentsBody) });
     });
     await page.route("**/auth/login.html*", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: "<html><body>login stub</body></html>" });
@@ -652,6 +655,22 @@ test.describe("Operator Dashboard", () => {
     await expect(experiment).toContainText("(no hypothesis yet)");
     await expect(experiment).toContainText("2026-09-01");
     await expect(experiment).toContainText("2026-09-30");
+  });
+
+  test("says no experiments are published when the file lists none", async ({ page }) => {
+    await setupRoutes(page, { experimentsBody: {} });
+    await loadDashboard(page);
+
+    await expect(page.locator("#experimentsPanel")).toBeVisible();
+    await expect(page.locator("#experimentsList")).toHaveText("No experiments published");
+  });
+
+  test("keeps the experiments panel and says so when the file does not load", async ({ page }) => {
+    await setupRoutes(page, { experimentsStatus: 404, experimentsBody: {} });
+    await loadDashboard(page);
+
+    await expect(page.locator("#experimentsPanel")).toBeVisible();
+    await expect(page.locator("#experimentsList")).toHaveText("Experiments did not load.");
   });
 
   test.describe("reserved heights", () => {
