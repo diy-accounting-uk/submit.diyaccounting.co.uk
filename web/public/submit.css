@@ -4896,6 +4896,11 @@ main ul.check-list {
   max-width: 200px;
 }
 
+.section-media .original-logo {
+  max-width: 160px;
+  height: auto;
+}
+
 .directors-list {
   list-style: none;
   padding: 0;
