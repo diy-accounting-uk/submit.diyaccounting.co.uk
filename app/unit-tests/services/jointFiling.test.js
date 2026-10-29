@@ -4,7 +4,15 @@
 // app/unit-tests/services/jointFiling.test.js
 
 import { describe, expect, test } from "vitest";
-import { readJointFilingId, jointFilingFields, readRevision, readAmended, amendedFields } from "@app/services/jointFiling.js";
+import {
+  readJointFilingId,
+  jointFilingFields,
+  readRevision,
+  readAmended,
+  amendedFields,
+  sanitiseFormRequest,
+  formRequestFields,
+} from "@app/services/jointFiling.js";
 import { findMatchingActivitiesForUrlPath } from "@app/services/bundleManagement.js";
 import { loadCatalogFromRoot } from "@app/services/productCatalog.js";
 
@@ -110,5 +118,66 @@ describe("services/jointFiling revisions and amendments", () => {
   test("adds the amended field to a record only for an amendment", () => {
     expect(amendedFields(true)).toEqual({ amended: true });
     expect(amendedFields(false)).toEqual({});
+  });
+});
+
+describe("sanitiseFormRequest", () => {
+  const body = {
+    companyNumber: "00001A",
+    companyName: "Example Ltd",
+    registeredOffice: { addressLine1: "1 High Street", postalCode: "AB1 2CD", nested: { x: 1 } },
+    formValues: { turnover: "1000", declarationAccepted: true, companiesHouseCopy: "full" },
+  };
+
+  test("keeps the company and the typed answers", () => {
+    expect(sanitiseFormRequest(body)).toEqual({
+      company: {
+        companyNumber: "00001A",
+        companyName: "Example Ltd",
+        registeredOffice: { addressLine1: "1 High Street", postalCode: "AB1 2CD" },
+      },
+      values: { turnover: "1000", declarationAccepted: true, companiesHouseCopy: "full" },
+    });
+  });
+
+  test.each([
+    "companyAuthCode",
+    "companyAuthenticationCode",
+    "presenterCode",
+    "presenterId",
+    "gatewayPassword",
+    "gatewayUserId",
+    "password",
+    "accessToken",
+    "idToken",
+    "clientSecret",
+    "credentials",
+    "apiKey",
+  ])("removes %s from the answers", (key) => {
+    const result = sanitiseFormRequest({ ...body, formValues: { ...body.formValues, [key]: "s3cret" } });
+    expect(result.values).not.toHaveProperty(key);
+    expect(JSON.stringify(result)).not.toContain("s3cret");
+    expect(result.values.turnover).toBe("1000");
+  });
+
+  test("removes a secret named in the registered office and values that are not text or true/false", () => {
+    const result = sanitiseFormRequest({
+      ...body,
+      registeredOffice: { addressLine1: "1 High Street", token: "s3cret" },
+      formValues: { ...body.formValues, "nested": { a: 1 }, "list": ["a"], "count": 3, "bad key": "x" },
+    });
+    expect(result.company.registeredOffice).toEqual({ addressLine1: "1 High Street" });
+    expect(Object.keys(result.values).sort()).toEqual(["companiesHouseCopy", "declarationAccepted", "turnover"]);
+  });
+
+  test("returns undefined when the body carries no answers", () => {
+    expect(sanitiseFormRequest(undefined)).toBeUndefined();
+    expect(sanitiseFormRequest({})).toBeUndefined();
+    expect(sanitiseFormRequest({ formValues: ["a"] })).toBeUndefined();
+  });
+
+  test("adds the field only when there is a form request", () => {
+    expect(formRequestFields({ values: {} })).toEqual({ formRequest: { values: {} } });
+    expect(formRequestFields(undefined)).toEqual({});
   });
 });

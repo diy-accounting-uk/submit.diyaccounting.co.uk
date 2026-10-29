@@ -157,6 +157,10 @@ test.describe("File Company Tax Return entry form", () => {
         await route.fulfill({ status: submission.status, contentType: "application/json", body: JSON.stringify(submission.body) });
         return;
       }
+      if (url.pathname.startsWith("/api/v1/hmrc/receipt/") && submission.receipt) {
+        await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(submission.receipt) });
+        return;
+      }
       if (url.pathname.startsWith("/api/v1/hmrc/ct/return/") && route.request().method() === "GET" && submission.pollBody) {
         await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(submission.pollBody) });
         return;
@@ -292,6 +296,110 @@ test.describe("File Company Tax Return entry form", () => {
     await expect(page.locator("#previewView")).toBeVisible();
     await expect(page.locator("#statusMessagesContainer")).toContainText(message);
     expect(new URL(page.url()).hash).toBe("#review");
+  });
+
+  // The receipt of an accepted filing carries the answers it was made from: the form of a
+  // filled book, read back from the page the way the page reads it to send.
+  const AMEND_RECEIPT_NAME = "2026-10-24T11:30:00.000Z-ABCDEF0123456789.json";
+  const ORIGINAL_JOINT_FILING_ID = "0b8f6f0e-6d3e-4a39-9a55-2f1f4c6d8a10";
+
+  async function formValuesOnThePage(page) {
+    return page.evaluate(() => {
+      const values = {};
+      for (const control of document.getElementById("returnForm").querySelectorAll("input, textarea")) {
+        if (control.type === "radio") {
+          if (control.checked) values[control.name] = control.value;
+        } else if (control.type === "checkbox") {
+          values[control.id] = control.checked;
+        } else {
+          values[control.id] = control.value;
+        }
+      }
+      return values;
+    });
+  }
+
+  async function filledFormValues(page) {
+    await openForm(page);
+    await dropBook(page);
+    await completeTheAnswersTheBookLeaves(page);
+    return formValuesOnThePage(page);
+  }
+
+  async function openAmendment(page, receipt) {
+    const submission = { requests: [], status: 200, body: { correlationId: "NEW", pollIntervalSeconds: 1 }, receipt };
+    await serveRealSite(page, [], submission);
+    await page.goto(`${PAGE_URL}?amend=${encodeURIComponent(AMEND_RECEIPT_NAME)}`, { waitUntil: "domcontentloaded" });
+    return submission;
+  }
+
+  test("?amend= refills the form from the receipt and sends an amended return under the original jointFilingId", async ({ page }) => {
+    const values = await filledFormValues(page);
+    expect(Object.keys(values).some((key) => /password|authcode|gatewayuser/i.test(key))).toBe(false);
+    const receipt = {
+      kind: "company-tax-return",
+      statusCode: "ACCEPT",
+      formRequest: { company: { companyNumber: "12345678", companyName: "Precision Code Ltd" }, values },
+    };
+    const submission = await openAmendment(page, receipt);
+
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#formCompanyName")).toHaveText("Precision Code Ltd");
+    await expect(page.locator("#currentTurnover")).toHaveValue("341283");
+    await expect(page.locator("#utr")).toHaveValue("8596148860");
+    await expect(page.locator("#declarationAccepted")).toBeChecked();
+
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await expect(page.locator("#sendStepHeading")).toHaveText("Send the amended return to HMRC");
+    await page.locator("#gatewayUserId").fill("gateway-user");
+    await page.locator("#gatewayPassword").fill("gateway-password");
+    await page.locator("#submitReturnBtn").click();
+
+    await expect.poll(() => submission.requests.length).toBe(1);
+    expect(submission.requests[0]).toMatchObject({ amended: true, gatewayUserId: "gateway-user" });
+    expect(submission.requests[0]).not.toHaveProperty("jointFilingId");
+    expect(submission.requests[0].formValues).toEqual(expect.objectContaining({ currentTurnover: "341283", utr: "8596148860" }));
+    expect(JSON.stringify(submission.requests[0].formValues)).not.toContain("gateway-password");
+  });
+
+  test("?amend= on a joint filing keeps its jointFilingId and asks for the revised accounts first", async ({ page }) => {
+    const values = { ...(await filledFormValues(page)), sendTo: "both" };
+    const receipt = {
+      kind: "company-tax-return",
+      statusCode: "ACCEPT",
+      jointFilingId: ORIGINAL_JOINT_FILING_ID,
+      formRequest: { company: { companyNumber: "12345678", companyName: "Precision Code Ltd" }, values },
+    };
+    await openAmendment(page, receipt);
+
+    await expect(page.locator("#formView")).toBeVisible();
+    await expect(page.locator("#accountsLockNote")).toContainText("You are revising the accounts filed at Companies House");
+    await page.locator("#previewBtn").click();
+    await expect(page.locator("#previewView")).toBeVisible();
+    await expect(page.locator("#sendStepHeading")).toHaveText(
+      "Send the revised accounts to Companies House and the amended return to HMRC",
+    );
+    await expect(page.locator("#revisionGroup")).toBeVisible();
+    await expect(page.locator("#companyAuthCode")).toHaveValue("");
+  });
+
+  test("?amend= on a receipt filed before the answers were kept says so and starts nothing", async ({ page }) => {
+    await openAmendment(page, { kind: "company-tax-return", statusCode: "ACCEPT" });
+
+    await expect(page.locator("#statusMessagesContainer")).toContainText("its answers were not kept");
+    await expect(page.locator("#companyView")).toBeVisible();
+    await expect(page.locator("#formView")).toBeHidden();
+  });
+
+  test("?amend= on a receipt that was not accepted, or is not a filing, says so and starts nothing", async ({ page }) => {
+    await openAmendment(page, { kind: "company-tax-return", statusCode: "REJECT", formRequest: { company: {}, values: {} } });
+    await expect(page.locator("#statusMessagesContainer")).toContainText("was not accepted");
+    await expect(page.locator("#formView")).toBeHidden();
+
+    await openAmendment(page, { statusCode: "ACCEPT", formBundleNumber: "123" });
+    await expect(page.locator("#statusMessagesContainer")).toContainText("cannot be amended");
+    await expect(page.locator("#formView")).toBeHidden();
   });
 
   for (const scheme of ["light", "dark"]) {

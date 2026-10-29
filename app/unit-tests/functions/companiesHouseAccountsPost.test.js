@@ -451,6 +451,32 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     });
   });
 
+  describe("the form the accounts were made from", () => {
+    async function pendingData() {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const updates = mockSend.mock.calls.map(([cmd]) => cmd).filter((cmd) => cmd instanceof lib.UpdateCommand);
+      return updates.find((cmd) => cmd.input.ExpressionAttributeValues[":status"] === "pending").input.ExpressionAttributeValues[":data"];
+    }
+
+    test("stores the sanitised form answers with the pending request", async () => {
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({
+          body: buildAccountsBody({ formValues: { turnover: "1000", presenterCode: "leaked", companyAuthCode: "ABC123" } }),
+        }),
+      );
+      expect(response.statusCode).toBe(201);
+      const data = await pendingData();
+      expect(data.formRequest.values).toEqual({ turnover: "1000" });
+      expect(JSON.stringify(data)).not.toContain("leaked");
+      expect(JSON.stringify(data.formRequest)).not.toContain("ABC123");
+    });
+
+    test("stores no form request when the page sent no answers", async () => {
+      await companiesHouseAccountsPostHandler(buildEvent());
+      expect(await pendingData()).not.toHaveProperty("formRequest");
+    });
+  });
+
   describe("revised accounts", () => {
     const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
     const REVISION = { originalDateOfApproval: "2026-01-10", differences: "Creditors are restated." };

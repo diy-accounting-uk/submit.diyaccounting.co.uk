@@ -279,6 +279,31 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
   });
 
+  describe("the form the return was made from", () => {
+    const formValues = { turnover: "1000", declarationAccepted: true, gatewayPassword: "leaked", companyAuthCode: "ABC123" };
+
+    test("stores the sanitised form answers with the pending request", async () => {
+      const response = await hmrcCtReturnPostHandler(
+        buildEvent({ body: { ...baseBody, gatewayUserId: USER_ID, gatewayPassword: PASSWORD, formValues } }),
+      );
+      expect(response.statusCode).toBe(201);
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      const data = update.input.ExpressionAttributeValues[":data"];
+      expect(data.formRequest.values).toEqual({ turnover: "1000", declarationAccepted: true });
+      expect(JSON.stringify(data)).not.toContain("leaked");
+      expect(JSON.stringify(data)).not.toContain("ABC123");
+      expect(JSON.stringify(data)).not.toContain(PASSWORD);
+    });
+
+    test("stores no form request when the page sent no answers", async () => {
+      await hmrcCtReturnPostHandler(buildEvent());
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      expect(update.input.ExpressionAttributeValues[":data"]).not.toHaveProperty("formRequest");
+    });
+  });
+
   describe("a return sent as half of a pair", () => {
     const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
 

@@ -44,7 +44,14 @@ import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } 
 import { initializeSalt } from "../../services/subHasher.js";
 import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
 import { applyCodesEntry } from "../../services/companiesHouseCodesEntry.js";
-import { readJointFilingId, jointFilingFields, readRevision, amendedFields } from "../../services/jointFiling.js";
+import {
+  readJointFilingId,
+  jointFilingFields,
+  readRevision,
+  amendedFields,
+  sanitiseFormRequest,
+  formRequestFields,
+} from "../../services/jointFiling.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
 
@@ -426,7 +433,9 @@ export async function ingestHandler(event) {
 
   const errorMessages = [];
   const accounts = extractAndValidateAccountsParameters(filingEvent, errorMessages, { clientId });
-  const jointFilingId = readJointFilingId(parseRequestBody(filingEvent), errorMessages);
+  const filingBody = parseRequestBody(filingEvent);
+  const jointFilingId = readJointFilingId(filingBody, errorMessages);
+  const formRequest = sanitiseFormRequest(filingBody);
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
@@ -467,6 +476,7 @@ export async function ingestHandler(event) {
         chargeActivityId: accounts.regime === "small-company" ? "file-small-company-accounts" : "file-micro-entity-accounts",
         ...jointFilingFields(jointFilingId),
         ...amendedFields(Boolean(accounts.revision)),
+        ...formRequestFields(formRequest),
       },
       asyncRequestsTableName,
     );

@@ -70,6 +70,7 @@ const VIEW_HASH = { companyView: "company", formView: "form", previewView: "revi
 
 let company = null;
 let previewRequest = null;
+let reviewedValues = null;
 let reviewedPreview = null;
 let currentView = "companyView";
 let reviewReached = false;
@@ -1110,6 +1111,7 @@ async function handleReturnFormSubmit(event) {
     }
     const values = readValues();
     previewRequest = ct600RequestFromValues(values, company, state.workingSheet);
+    reviewedValues = values;
     const preview = await window.previewCtReturn(previewRequest);
     renderReview(preview);
     reviewedPreview = preview;
@@ -1328,6 +1330,7 @@ function companiesHouseRequest(companyAuthCode) {
     ...previewRequest,
     ...smallCompany,
     companyAuthCode,
+    formValues: reviewedValues,
     jointFilingId: sending.jointFilingId,
     ...(sending.revision ? { revision: sending.revision } : {}),
   };
@@ -1337,6 +1340,7 @@ function taxReturnRequest(gatewayUserId, gatewayPassword) {
   return {
     ...previewRequest,
     reviewedBoxes: reviewedPreview.boxes,
+    formValues: reviewedValues,
     gatewayUserId,
     gatewayPassword,
     ...(sending.jointFilingId ? { jointFilingId: sending.jointFilingId } : {}),
@@ -1489,6 +1493,7 @@ async function resumeJoint() {
     await ensureBundle();
     refresh();
     previewRequest = ct600RequestFromValues(saved.values, company, state.workingSheet);
+    reviewedValues = saved.values;
     reviewedPreview = await window.previewCtReturn(previewRequest);
     renderReview(reviewedPreview);
     reviewReached = true;
@@ -1756,6 +1761,7 @@ function startAgain() {
   companiesHousePollWindow++;
   company = null;
   previewRequest = null;
+  reviewedValues = null;
   reviewedPreview = null;
   reviewReached = false;
   changing = null;
@@ -1789,6 +1795,69 @@ function startAgain() {
   showView("companyView");
 }
 
+// --- Amending from a receipt ---------------------------------------------------------------
+
+const AMENDABLE_KINDS = new Set(["company-tax-return", "companies-house-accounts"]);
+
+function refuseAmendment(text) {
+  window.showStatus(text, "error");
+}
+
+// The receipt holds the answers the filing was made from. The form refills from them, the amended
+// return (and the revised accounts when the filing included accounts) goes under the original
+// jointFilingId, and the customer types the authentication code and the Gateway password again.
+async function loadAmendment(receiptName) {
+  window.showLoading();
+  window.hideStatus();
+  try {
+    const res = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(receiptName)}`, {});
+    if (!res.ok) {
+      refuseAmendment("We could not load that receipt, so there is nothing to amend. Open it again from your receipts.");
+      return;
+    }
+    const receipt = await res.json();
+    if (!AMENDABLE_KINDS.has(receipt?.kind)) {
+      refuseAmendment(
+        "That receipt is not an accounts or Company Tax Return filing, so it cannot be amended. Open the filing from your receipts.",
+      );
+      return;
+    }
+    if (receipt.statusCode !== "ACCEPT") {
+      refuseAmendment("That filing was not accepted, so there is nothing to amend. File it again from the start.");
+      return;
+    }
+    if (!receipt.formRequest?.company || !receipt.formRequest.values) {
+      refuseAmendment(
+        "This filing was made before amending from a receipt was possible, so its answers were not kept. File the amended return from the start.",
+      );
+      return;
+    }
+    if (receipt.kind === "companies-house-accounts" && !receipt.jointFilingId) {
+      refuseAmendment(
+        "These accounts were filed on their own. Amend the Company Tax Return filed with them, or file revised accounts from the start.",
+      );
+      return;
+    }
+    company = receipt.formRequest.company;
+    element("formCompanyName").textContent = company.companyName;
+    element("formCompanyNumber").textContent = company.companyNumber;
+    fillValues(receipt.formRequest.values);
+    await ensureBundle();
+    refresh();
+    Object.assign(sending, {
+      mode: receipt.jointFilingId ? "both" : "hmrc",
+      copy: copyOf(receipt.formRequest.values),
+      jointFilingId: receipt.jointFilingId ?? null,
+    });
+    startAmendment({ accounts: Boolean(receipt.jointFilingId) });
+  } catch (error) {
+    console.error("Failed to load the filing to amend:", error);
+    refuseAmendment(error.message || "Failed to load the filing to amend.");
+  } finally {
+    window.hideLoading();
+  }
+}
+
 renderForm();
 mountBooksCard();
 updateGovTestScenarioVisibility();
@@ -1819,4 +1888,11 @@ element("changeCompanyLink").addEventListener("click", (event) => {
   showView("companyView");
 });
 
-resumeJoint();
+const amendReceiptName = new URLSearchParams(window.location.search).get("amend");
+if (!amendReceiptName) {
+  resumeJoint();
+} else if (window.__submitReady__) {
+  loadAmendment(amendReceiptName);
+} else {
+  document.addEventListener("submit-ready", () => loadAmendment(amendReceiptName), { once: true });
+}

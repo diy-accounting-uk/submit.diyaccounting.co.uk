@@ -130,6 +130,20 @@ test.describe("Filings page - customer copy", () => {
     await expect(copy.locator(".customer-copy-links a").first()).toHaveAttribute("href", "fileCompanyTaxReturn.html");
   });
 
+  test("links an accepted Company Tax Return that kept its answers to the page that amends it", async ({ page }) => {
+    const formRequest = { company: { companyNumber: "06846849", companyName: "Example Trading Limited" }, values: { turnover: "1000" } };
+    await openFiling(page, CT_RECEIPT_NAME, { ...CT_RECEIPT, formRequest });
+    const link = page.locator("#amendFilingLink");
+    await expect(link).toBeVisible();
+    await expect(link).toHaveText("Amend");
+    await expect(link).toHaveAttribute("href", `fileCompanyTaxReturn.html?amend=${encodeURIComponent(CT_RECEIPT_NAME)}`);
+  });
+
+  test("offers no Amend link on a Company Tax Return that kept no answers, or on accounts", async ({ page }) => {
+    await openFiling(page, CT_RECEIPT_NAME, CT_RECEIPT);
+    await expect(page.locator("#amendFilingLink")).toBeHidden();
+  });
+
   test("says so when the filing was made before the document was kept", async ({ page }) => {
     const { filedDocument, ...older } = ACCOUNTS_RECEIPT;
     expect(filedDocument).toBeTruthy();
