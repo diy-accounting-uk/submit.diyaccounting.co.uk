@@ -141,6 +141,8 @@ describe("productCatalogHelper", () => {
       "hmrc/itsa/adjustments.html",
       "hmrc/itsa/ukPropertyAnnualSubmission.html",
       "hmrc/itsa/ukPropertyAdjustments.html",
+      "hmrc/itsa/foreignPropertyAnnualSubmission.html",
+      "hmrc/itsa/foreignPropertyAdjustments.html",
       "hmrc/itsa/lossesAndClaims.html",
       "hmrc/itsa/taxLiabilityAdjustments.html",
     ]);

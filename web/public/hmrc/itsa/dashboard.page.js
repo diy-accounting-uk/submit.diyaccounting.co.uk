@@ -42,38 +42,62 @@ function readPickedBusiness() {
   }
 }
 
-// The dated and cumulative self-employment models share one page family; the UK property
-// models share their own. Foreign property and any other HMRC business type have no page
-// family here, so a pick of that type hides the step 3 to 8 links and shows the diversion
-// note instead of routing to either family.
+// The dated and cumulative self-employment models share one page family; UK property and
+// foreign property each have their own. Any other HMRC business type has no page family here,
+// so a pick of that type hides the step 3 to 8 links and shows the diversion note instead of
+// routing to a family.
 const STEP_LINK_IDS = ["step3Link", "step4Link", "step5Link", "step6Link", "step7Link", "step8Link"];
+
+const STEP_PAGES = {
+  "self-employment": [
+    "selfEmploymentPeriod.html",
+    "selfEmploymentPeriods.html",
+    "selfEmploymentPeriodView.html",
+    "selfEmploymentPeriodAmend.html",
+    "annualSubmission.html",
+    "adjustments.html",
+  ],
+  "uk-property": [
+    "ukPropertyPeriod.html",
+    "ukPropertyPeriods.html",
+    "ukPropertyPeriodView.html",
+    "ukPropertyPeriodAmend.html",
+    "ukPropertyAnnualSubmission.html",
+    "ukPropertyAdjustments.html",
+  ],
+  "foreign-property": [
+    "foreignPropertyPeriod.html",
+    "foreignPropertyPeriods.html",
+    "foreignPropertyPeriodView.html",
+    "foreignPropertyPeriodAmend.html",
+    "foreignPropertyAnnualSubmission.html",
+    "foreignPropertyAdjustments.html",
+  ],
+};
 
 function listedBusinessNeedsDiversion() {
   return Array.from(document.querySelectorAll('#businessPickerList input[name="pickedBusiness"]')).some(
-    (radio) => radio.dataset.typeOfBusiness !== "self-employment" && radio.dataset.typeOfBusiness !== "uk-property",
+    (radio) => !STEP_PAGES[radio.dataset.typeOfBusiness],
   );
 }
 
 function applyPickedBusinessToLinks(business) {
   if (business && business.businessId) window.CarriedIdentifiers.remember("businessId", business.businessId);
   const typeOfBusiness = business && business.typeOfBusiness;
-  const isUkProperty = typeOfBusiness === "uk-property";
-  const pickedNeedsDiversion = !!typeOfBusiness && typeOfBusiness !== "self-employment" && !isUkProperty;
+  const pickedNeedsDiversion = !!typeOfBusiness && !STEP_PAGES[typeOfBusiness];
 
   STEP_LINK_IDS.forEach((id) => {
     document.getElementById(id).closest(".dashboard-step").style.display = pickedNeedsDiversion ? "none" : "";
   });
-  document.getElementById("foreignPropertyDiversionNote").style.display =
+  document.getElementById("otherBusinessDiversionNote").style.display =
     pickedNeedsDiversion || listedBusinessNeedsDiversion() ? "block" : "none";
 
   if (pickedNeedsDiversion) return;
 
-  document.getElementById("step3Link").href = isUkProperty ? "ukPropertyPeriod.html" : "selfEmploymentPeriod.html";
-  document.getElementById("step4Link").href = isUkProperty ? "ukPropertyPeriods.html" : "selfEmploymentPeriods.html";
-  document.getElementById("step5Link").href = isUkProperty ? "ukPropertyPeriodView.html" : "selfEmploymentPeriodView.html";
-  document.getElementById("step6Link").href = isUkProperty ? "ukPropertyPeriodAmend.html" : "selfEmploymentPeriodAmend.html";
-  document.getElementById("step7Link").href = isUkProperty ? "ukPropertyAnnualSubmission.html" : "annualSubmission.html";
-  document.getElementById("step8Link").href = isUkProperty ? "ukPropertyAdjustments.html" : "adjustments.html";
+  const pages = STEP_PAGES[typeOfBusiness] || STEP_PAGES["self-employment"];
+  STEP_LINK_IDS.forEach((id, index) => {
+    document.getElementById(id).href = pages[index];
+  });
 }
 
 function el(tag, className, text) {

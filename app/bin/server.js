@@ -53,6 +53,8 @@ import { apiEndpoint as hmrcItsaUkPropertyAnnualPutApiEndpoint } from "../functi
 import { apiEndpoint as hmrcItsaForeignPropertyPeriodPostApiEndpoint } from "../functions/hmrc/hmrcItsaForeignPropertyPeriodPost.js";
 import { apiEndpoint as hmrcItsaForeignPropertyPeriodGetApiEndpoint } from "../functions/hmrc/hmrcItsaForeignPropertyPeriodGet.js";
 import { apiEndpoint as hmrcItsaForeignPropertyPeriodPutApiEndpoint } from "../functions/hmrc/hmrcItsaForeignPropertyPeriodPut.js";
+import { apiEndpoint as hmrcItsaForeignPropertyAnnualGetApiEndpoint } from "../functions/hmrc/hmrcItsaForeignPropertyAnnualGet.js";
+import { apiEndpoint as hmrcItsaForeignPropertyAnnualPutApiEndpoint } from "../functions/hmrc/hmrcItsaForeignPropertyAnnualPut.js";
 import { apiEndpoint as hmrcItsaForeignPropertyDetailsGetApiEndpoint } from "../functions/hmrc/hmrcItsaForeignPropertyDetailsGet.js";
 import { apiEndpoint as hmrcItsaForeignPropertyDetailsPostApiEndpoint } from "../functions/hmrc/hmrcItsaForeignPropertyDetailsPost.js";
 import { apiEndpoint as hmrcItsaForeignPropertyDetailsPutApiEndpoint } from "../functions/hmrc/hmrcItsaForeignPropertyDetailsPut.js";
@@ -348,6 +350,8 @@ hmrcItsaUkPropertyAnnualPutApiEndpoint(app);
 hmrcItsaForeignPropertyPeriodPostApiEndpoint(app);
 hmrcItsaForeignPropertyPeriodGetApiEndpoint(app);
 hmrcItsaForeignPropertyPeriodPutApiEndpoint(app);
+hmrcItsaForeignPropertyAnnualGetApiEndpoint(app);
+hmrcItsaForeignPropertyAnnualPutApiEndpoint(app);
 hmrcItsaForeignPropertyDetailsGetApiEndpoint(app);
 hmrcItsaForeignPropertyDetailsPostApiEndpoint(app);
 hmrcItsaForeignPropertyDetailsPutApiEndpoint(app);
