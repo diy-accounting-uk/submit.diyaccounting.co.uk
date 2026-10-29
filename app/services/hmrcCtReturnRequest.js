@@ -9,6 +9,7 @@
 // computations attached as iXBRL. The boxes and computation lines are worked here, from the figures. Shared by the preview and the submit Lambdas.
 
 import { parseRequestBody } from "../lib/httpResponseHelper.js";
+import { readAmended } from "./jointFiling.js";
 import { isValidIsoDate } from "../lib/hmrcValidation.js";
 import { extractAndValidateAccountsParameters, buildAccountsIxbrl } from "../functions/companies-house/companiesHouseAccountsPost.js";
 import { buildCt600IrEnvelope, ltdTaxDataForPeriodEnd } from "./ct600Xml.js";
@@ -208,8 +209,10 @@ export function extractAndValidateCtReturnParameters(
   }
 
   const reviewedBoxes = readReviewedBoxes(body.reviewedBoxes, requireReviewedBoxes, errorMessages);
+  const amended = readAmended(body, errorMessages);
 
   return {
+    amended,
     accounts,
     utr,
     tradeName,
@@ -224,11 +227,12 @@ export function extractAndValidateCtReturnParameters(
 /**
  * Build the CT600 IRenvelope and the two attachments for a validated request. The server works
  * every box and computation line from the figures, so the return, the accounts and the
- * computations name the same company, UTR and declarant.
+ * computations name the same company, UTR and declarant. An amended request builds the return
+ * with ReturnType="amended", which replaces the return HMRC holds for the period.
  * @param {ReturnType<typeof extractAndValidateCtReturnParameters>} request
  * @returns {{irEnvelopeXml: string, accountsIxbrl: string, computationsIxbrl: string, boxes: object, computationLines: object, losses: object, carryBack: object|undefined, worked: object}}
  */
-export function buildCtReturnDocuments({ accounts, utr, tradeName, figures }) {
+export function buildCtReturnDocuments({ accounts, utr, tradeName, figures, amended }) {
   const { boxes, computationLines, losses, carryBack, worked, periodStart, periodEnd } = deriveCt600FromFigures(
     figures,
     ltdTaxDataForPeriodEnd(figures.periodEnd),
@@ -246,6 +250,6 @@ export function buildCtReturnDocuments({ accounts, utr, tradeName, figures }) {
     carryBack,
     tradeOutsideUk: figures.lossOutsideUk === true,
   });
-  const irEnvelopeXml = buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl });
+  const irEnvelopeXml = buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl, amended });
   return { irEnvelopeXml, accountsIxbrl, computationsIxbrl, boxes, computationLines, losses, carryBack, worked };
 }

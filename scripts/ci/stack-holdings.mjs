@@ -32,6 +32,7 @@ export const STACK_JOB_STACKS = {
   "deploy-auth": [{ stack: "AuthStack", region: "eu-west-2" }],
   "deploy-hmrc": [{ stack: "HmrcStack", region: "eu-west-2" }],
   "deploy-hmrc-itsa": [{ stack: "HmrcItsaStack", region: "eu-west-2" }],
+  "deploy-hmrc-itsa-property": [{ stack: "HmrcItsaPropertyStack", region: "eu-west-2" }],
   "deploy-companies-house": [{ stack: "CompaniesHouseStack", region: "eu-west-2" }],
   "deploy-account": [{ stack: "AccountStack", region: "eu-west-2" }],
   "deploy-billing": [{ stack: "BillingStack", region: "eu-west-2" }],

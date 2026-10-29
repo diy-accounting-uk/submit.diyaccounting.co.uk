@@ -675,4 +675,32 @@ describe("the accountants' report of a micro-entity", () => {
     expect(xhtml).not.toContain("NameEntityAccountants");
     expect(xhtml).not.toContain("accrep:");
   });
+
+  describe("revised accounts", () => {
+    const REVISION = {
+      originalDateOfApproval: "2026-09-01",
+      differences: "Creditors falling due within one year are restated to include a late invoice.",
+    };
+
+    test("flags the report as a revised version of one already filed", () => {
+      const xhtml = buildMicroEntityAccounts({ ...SAMPLE_INPUT, revision: REVISION, dateOfApproval: "2026-10-20" });
+      expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("true");
+    });
+
+    test("states that the accounts replace the original and name what changed", () => {
+      const xhtml = buildMicroEntityAccounts({ ...SAMPLE_INPUT, revision: REVISION, dateOfApproval: "2026-10-20" });
+      expect(xhtml).toContain("These are revised accounts. They replace the original accounts of the company");
+      expect(xhtml).toContain("which were approved on 1 September 2026");
+      expect(xhtml).toContain("now the statutory accounts of the company");
+      expect(xhtml).toContain("prepared as at the date of the original accounts, not as at the date of the revision");
+      expect(xhtml).toContain("Creditors falling due within one year are restated to include a late invoice.");
+      expect(xhtml).toContain("20 October 2026");
+    });
+
+    test("an original filing carries no revision page and the flag stays false", () => {
+      const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
+      expect(xhtml).not.toContain("These are revised accounts");
+      expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("false");
+    });
+  });
 });

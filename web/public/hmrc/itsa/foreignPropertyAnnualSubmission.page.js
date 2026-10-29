@@ -288,7 +288,7 @@ async function loadAnnual(criteria, accessToken) {
       criteria.runFraudPreventionHeaderValidation,
       null,
     );
-    const properties = result?.propertyDetails || [];
+    const properties = result?.foreignPropertyDetails || [];
     entries.setProperties(properties);
     if (properties.length === 0) {
       notes.push({

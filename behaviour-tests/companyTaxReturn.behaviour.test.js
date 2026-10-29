@@ -60,6 +60,15 @@ import {
   waitForCompaniesHouse,
   countRequestsTo,
   readReceiptsOfTheFilings,
+  captureRequestBodies,
+  startAmendingTheFiling,
+  reviseTheAccounts,
+  changeTheTaxAnswerAndReview,
+  verifyAmendedSendStep,
+  describeTheRevisionAndSend,
+  verifyRevisedAccountsAndAmendedReturnAccepted,
+  verifyAmendedReturnAccepted,
+  verifyRevisedAccountsRejected,
 } from "./steps/behaviour-hmrc-company-tax-return-steps.js";
 import { companiesHouseLookupFixture } from "./steps/behaviour-companies-house-filing-steps.js";
 import { buildCtReturnExportFromBook, FIXTURE_UTR } from "@app/test-helpers/ctReturnFixture.js";
@@ -351,6 +360,129 @@ test("Click through: reload while Companies House is pending, then see the filin
   await verifyBothAccepted(page, screenshotPath);
   await verifyAccountsLocked(page, screenshotPath);
   expect(accountsPosts.count).toBe(1);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+const REVISION_DIFFERENCES = "The average number of employees is restated from 2 to 3.";
+
+test("Click through: amend the accounts and the return from the locked state, and see revised accounts and an amended return under the original filing", async ({
+  page,
+}, testInfo) => {
+  const accountsPosts = await captureRequestBodies(page, "/api/v1/companies-house/accounts", "POST");
+  const returnPosts = await captureRequestBodies(page, "/api/v1/hmrc/ct/return", "POST");
+  await reachJointReview(page, testInfo, { receives: "The full accounts" });
+  await enterJointCredentialsAndSubmit(page, { ...gatewayCredentials, companyAuthCode }, screenshotPath);
+  await verifyBothAccepted(page, screenshotPath);
+
+  await startAmendingTheFiling(page, { accounts: true }, screenshotPath);
+  await reviseTheAccounts(page, { approvedOn: "2026-07-01", averageEmployees: "3" }, screenshotPath);
+  await previewCompanyTaxReturn(page, screenshotPath);
+  await verifyAmendedSendStep(page, { accounts: true }, screenshotPath);
+  await describeTheRevisionAndSend(page, { ...gatewayCredentials, companyAuthCode, differences: REVISION_DIFFERENCES }, screenshotPath);
+  await verifyRevisedAccountsAndAmendedReturnAccepted(page, screenshotPath);
+
+  expect(accountsPosts.bodies).toHaveLength(2);
+  expect(returnPosts.bodies).toHaveLength(2);
+  const [originalAccounts, revisedAccounts] = accountsPosts.bodies;
+  const [originalReturn, amendedReturn] = returnPosts.bodies;
+  expect(originalAccounts.revision).toBeUndefined();
+  expect(revisedAccounts.revision).toEqual({ originalDateOfApproval: "2026-06-01", differences: REVISION_DIFFERENCES });
+  expect(revisedAccounts.director.dateApproved).toBe("2026-07-01");
+  expect(originalReturn.amended).toBeUndefined();
+  expect(amendedReturn.amended).toBe(true);
+  expect(amendedReturn.revision).toEqual(revisedAccounts.revision);
+  expect(revisedAccounts.jointFilingId).toBe(originalAccounts.jointFilingId);
+  expect(amendedReturn.jointFilingId).toBe(originalAccounts.jointFilingId);
+
+  const receipts = (await readReceiptsOfTheFilings(page)).filter((entry) => entry.listedJointFilingId === originalAccounts.jointFilingId);
+  expect(receipts).toHaveLength(4);
+  const revised = receipts.find((entry) => entry.kind === "companies-house-accounts" && entry.listedAmended);
+  const amended = receipts.find((entry) => entry.kind === "company-tax-return" && entry.listedAmended);
+  expect(revised.receipt.jointFilingId).toBe(originalAccounts.jointFilingId);
+  expect(amended.receipt.jointFilingId).toBe(originalAccounts.jointFilingId);
+  expect(revised.receipt.filedDocument).toContain("These are revised accounts");
+  expect(revised.receipt.filedDocument).toContain(REVISION_DIFFERENCES);
+  expect(Buffer.from(amended.receipt.filed.accountsIxbrl, "utf8").toString()).toContain("These are revised accounts");
+  expect(receipts.filter((entry) => !entry.listedAmended)).toHaveLength(2);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: amend only the Company Tax Return from the locked state, and the accounts stay as filed", async ({
+  page,
+}, testInfo) => {
+  const accountsPosts = await captureRequestBodies(page, "/api/v1/companies-house/accounts", "POST");
+  const returnPosts = await captureRequestBodies(page, "/api/v1/hmrc/ct/return", "POST");
+  await reachJointReview(page, testInfo, { receives: "The full accounts" });
+  await enterJointCredentialsAndSubmit(page, { ...gatewayCredentials, companyAuthCode }, screenshotPath);
+  await verifyBothAccepted(page, screenshotPath);
+
+  await startAmendingTheFiling(page, { accounts: false }, screenshotPath);
+  await changeTheTaxAnswerAndReview(page, { fieldId: "declarantStatus", value: "Finance Director" }, screenshotPath);
+  await verifyAmendedSendStep(page, { accounts: false }, screenshotPath);
+  await resendTheTaxReturn(page, { password: gatewayCredentials.password }, screenshotPath);
+  await verifyAmendedReturnAccepted(page, screenshotPath);
+
+  expect(accountsPosts.bodies).toHaveLength(1);
+  expect(returnPosts.bodies).toHaveLength(2);
+  expect(returnPosts.bodies[1].amended).toBe(true);
+  expect(returnPosts.bodies[1].revision).toBeUndefined();
+  expect(returnPosts.bodies[1].jointFilingId).toBe(accountsPosts.bodies[0].jointFilingId);
+
+  const receipts = (await readReceiptsOfTheFilings(page)).filter(
+    (entry) => entry.listedJointFilingId === accountsPosts.bodies[0].jointFilingId,
+  );
+  expect(receipts).toHaveLength(3);
+  const amended = receipts.filter((entry) => entry.listedAmended);
+  expect(amended.map((entry) => entry.kind)).toEqual(["company-tax-return"]);
+  expect(amended[0].receipt.jointFilingId).toBe(accountsPosts.bodies[0].jointFilingId);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: amend a Company Tax Return filed to HMRC alone", async ({ page }, testInfo) => {
+  const returnPosts = await captureRequestBodies(page, "/api/v1/hmrc/ct/return", "POST");
+  await reachPreview(page, testInfo);
+  await enterGatewayCredentialsAndSubmit(page, gatewayCredentials, screenshotPath);
+  await verifyReturnAccepted(page, screenshotPath);
+
+  await expect(page.locator("#amendReturnBtn")).toBeVisible();
+  await expect(page.locator("#amendAccountsBtn")).toBeHidden();
+  await startAmendingTheFiling(page, { accounts: false }, screenshotPath);
+  await changeTheTaxAnswerAndReview(page, { fieldId: "declarantStatus", value: "Finance Director" }, screenshotPath);
+  await resendTheTaxReturn(page, { password: gatewayCredentials.password }, screenshotPath);
+  await verifyAmendedReturnAccepted(page, screenshotPath);
+
+  expect(returnPosts.bodies).toHaveLength(2);
+  expect(returnPosts.bodies[0].amended).toBeUndefined();
+  expect(returnPosts.bodies[1].amended).toBe(true);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: Companies House rejects the revised accounts, the amended return is not sent, and the fixed revision then goes to both", async ({
+  page,
+}, testInfo) => {
+  const returnPosts = await captureRequestBodies(page, "/api/v1/hmrc/ct/return", "POST");
+  await reachJointReview(page, testInfo, { receives: "The full accounts" });
+  await enterJointCredentialsAndSubmit(page, { ...gatewayCredentials, companyAuthCode }, screenshotPath);
+  await verifyBothAccepted(page, screenshotPath);
+
+  await startAmendingTheFiling(page, { accounts: true }, screenshotPath);
+  await reviseTheAccounts(page, { approvedOn: "2026-07-01", averageEmployees: "3" }, screenshotPath);
+  await previewCompanyTaxReturn(page, screenshotPath);
+  await setCtGovTestScenario(page, "ACCOUNTS_REJECTED", screenshotPath);
+  await describeTheRevisionAndSend(page, { ...gatewayCredentials, companyAuthCode, differences: REVISION_DIFFERENCES }, screenshotPath);
+  await verifyRevisedAccountsRejected(page, screenshotPath);
+  expect(returnPosts.bodies).toHaveLength(1);
+
+  await returnToReviewToSendAgain(page, screenshotPath);
+  await clearGovTestScenario(page);
+  await describeTheRevisionAndSend(page, { ...gatewayCredentials, companyAuthCode, differences: REVISION_DIFFERENCES }, screenshotPath);
+  await verifyRevisedAccountsAndAmendedReturnAccepted(page, screenshotPath);
+  expect(returnPosts.bodies).toHaveLength(2);
+  expect(returnPosts.bodies[1].amended).toBe(true);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });

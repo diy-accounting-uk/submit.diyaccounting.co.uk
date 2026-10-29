@@ -36,6 +36,7 @@ window.generateRandomState = function(){ return "s"; };
 window.getGovClientHeaders = function(){ return Promise.resolve({}); };
 window.getForeignPropertyDetails = function(nino, businessId, taxYear){
   window.__sent.push({ call: "get", nino, businessId, taxYear });
+  if (window.__notFound) return Promise.reject(Object.assign(new Error("not found"), { status: 404 }));
   return Promise.resolve({ foreignPropertyDetails: window.__properties });
 };
 window.postForeignPropertyDetails = function(details){
@@ -204,6 +205,15 @@ test.describe("foreign property details", () => {
     await page.locator("#propertyCountry").selectOption("FRA");
     await page.locator("#savePropertyBtn").click();
     await expect(page.locator(".error-summary")).toContainText("105 characters or fewer");
+  });
+
+  test("shows the empty list and the add button when HMRC answers not found", async ({ page }) => {
+    await page.evaluate(() => {
+      window.__notFound = true;
+    });
+    await loadList(page);
+    await expect(page.locator("#propertiesTable")).toContainText("HMRC holds no foreign properties for this tax year");
+    await expect(page.locator("#addPropertyBtn")).toBeVisible();
   });
 
   test("shows an empty message when HMRC holds no properties", async ({ page }) => {

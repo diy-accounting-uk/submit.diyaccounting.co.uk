@@ -294,6 +294,34 @@ test.describe("File Company Tax Return entry form", () => {
     expect(new URL(page.url()).hash).toBe("#review");
   });
 
+  for (const scheme of ["light", "dark"]) {
+    test(`the result view gives its buttons one width and the HMRC heading a gap at 390 px in ${scheme}`, async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 900 });
+      await page.emulateMedia({ colorScheme: scheme });
+      await openForm(page, [], { requests: [], status: 200, body: {}, pollBody: ACCEPTED_RETURN });
+      await page.evaluate(() => {
+        document.getElementById("formView").style.display = "none";
+        document.getElementById("resultView").style.display = "block";
+        document.getElementById("jointProgress").style.display = "block";
+        document.getElementById("hmrcHeading").style.display = "block";
+        for (const id of ["sendCtNowBtn", "waitForCompaniesHouseBtn", "tryAgainBtn"])
+          document.getElementById(id).style.display = "inline-flex";
+        document.getElementById("companiesHouseOutcome").textContent = "Companies House has your accounts.";
+      });
+
+      const widths = await page.evaluate(() =>
+        ["sendCtNowBtn", "waitForCompaniesHouseBtn"].map((id) => Math.round(document.getElementById(id).getBoundingClientRect().width)),
+      );
+      expect(widths[1]).toBe(widths[0]);
+      const gapAboveHmrc = await page.evaluate(() => {
+        const heading = document.getElementById("hmrcHeading").getBoundingClientRect().top;
+        return heading - document.getElementById("waitForCompaniesHouseBtn").getBoundingClientRect().bottom;
+      });
+      expect(gapAboveHmrc).toBeGreaterThanOrEqual(16);
+      await page.locator("#resultView").screenshot({ path: recordScreenshotPath(`ct600-joint-result-${scheme}`, 390) });
+    });
+  }
+
   for (const [width, scheme] of [
     [1280, "light"],
     [390, "dark"],

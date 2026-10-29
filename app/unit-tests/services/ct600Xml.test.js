@@ -378,4 +378,14 @@ describe("buildCt600IrEnvelope", () => {
     const { boxes } = boxesFor({ results, company: COMPANY });
     expect(() => buildCt600IrEnvelope({ boxes, accountsIxbrl: "", computationsIxbrl: "<html/>" })).toThrow(/accounts and the computations/);
   });
+
+  test("an amended return writes ReturnType amended and keeps the rest of the return", () => {
+    const { boxes } = boxesFor({ results, company: COMPANY });
+    const args = { boxes, accountsIxbrl: "<html>accounts</html>", computationsIxbrl: "<html>computations</html>" };
+    const original = buildCt600IrEnvelope(args);
+    const amended = buildCt600IrEnvelope({ ...args, amended: true });
+    const document = parseXmlDocument(amended);
+    expect(document.documentElement.querySelector("CompanyTaxReturn").getAttribute("ReturnType")).toBe("amended");
+    expect(amended).toBe(original.replace('ReturnType="new"', 'ReturnType="amended"'));
+  });
 });

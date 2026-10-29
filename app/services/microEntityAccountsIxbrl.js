@@ -38,6 +38,7 @@ import {
   accountsStatusMember,
   accountantsReportPage,
   renderCompanyDescriptionFacts,
+  revisionPage,
   companyInformationNote,
   shareNoun,
 } from "./accountsIxbrlCommon.js";
@@ -194,6 +195,7 @@ function withOptionalHeadings(balanceSheetYears) {
  * @param {number} input.averageNumberOfEmployees
  * @param {string} input.directorName
  * @param {string} input.dateOfApproval - ISO date
+ * @param {{originalDateOfApproval: string, differences: string}} [input.revision] - makes the document revised accounts that replace accounts already filed
  * @param {{accountantsName: string, statement: string}} [input.accountantsReport] - adds the accountants' report page and the audit exempt with accountants' report status
  * @param {object} input.balanceSheet
  * @param {object} input.balanceSheet.current - fixedAssets, currentAssets, creditorsWithinOneYear,
@@ -238,7 +240,14 @@ export function buildMicroEntityAccounts(input) {
   hiddenFacts.push(...renderProductionSoftwareFacts(refs.current));
   hiddenFacts.push(...renderReportHeaderFacts({ refs, entityIdentifierXml, periodXml, additionalContexts }));
   hiddenFacts.push(
-    ...renderCompanyDescriptionFacts({ companyNumber: input.companyNumber, refs, entityIdentifierXml, periodXml, additionalContexts }),
+    ...renderCompanyDescriptionFacts({
+      companyNumber: input.companyNumber,
+      refs,
+      entityIdentifierXml,
+      periodXml,
+      additionalContexts,
+      revised: Boolean(input.revision),
+    }),
   );
   hiddenFacts.push(
     `<ix:nonNumeric name="${qname(CONCEPTS.reportIncludesDetailedProfitLossStatement)}" contextRef="${refs.current}">${profitAndLoss ? "true" : "false"}</ix:nonNumeric>`,
@@ -374,6 +383,14 @@ export function buildMicroEntityAccounts(input) {
       })}`
     : "";
 
+  const revisionHtml = input.revision
+    ? `\n${revisionPage({
+        heading: heading("Revised accounts", `for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}`),
+        periodEnd: input.periodEnd,
+        revision: input.revision,
+      })}`
+    : "";
+
   const bodyHtml = `${coverPage({
     refs,
     companyName: input.companyName,
@@ -381,7 +398,7 @@ export function buildMicroEntityAccounts(input) {
     title: input.dormant ? "Unaudited dormant micro-entity accounts" : "Unaudited micro-entity accounts",
     periodStart: input.periodStart,
     periodEnd: input.periodEnd,
-  })}${accountantsPage}
+  })}${revisionHtml}${accountantsPage}
 <div class="page">
 ${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${recordTable({
     columns,

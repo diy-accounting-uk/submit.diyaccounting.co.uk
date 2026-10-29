@@ -302,6 +302,23 @@ describe("hmrcCtReturnGet ingestHandler", () => {
       expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
     });
 
+    test("writes the amended mark into the receipt and the result of an amended return", async () => {
+      storedRecord = pendingRecord({ data: { jointFilingId: JOINT_FILING_ID, amended: true } });
+      engineReturns(SUCCESS, DELETE_RESPONSE);
+      const response = await hmrcCtReturnGetHandler(buildEvent());
+      expect(parseResponseBody(response)).toMatchObject({ statusCode: "ACCEPT", jointFilingId: JOINT_FILING_ID, amended: true });
+      const [receipt] = await commands("PutCommand");
+      expect(receipt.input.Item.receipt).toMatchObject({ jointFilingId: JOINT_FILING_ID, amended: true });
+    });
+
+    test("an original return writes no amended mark", async () => {
+      storedRecord = pendingRecord({ data: { jointFilingId: JOINT_FILING_ID } });
+      engineReturns(SUCCESS, DELETE_RESPONSE);
+      await hmrcCtReturnGetHandler(buildEvent());
+      const [receipt] = await commands("PutCommand");
+      expect(receipt.input.Item.receipt).not.toHaveProperty("amended");
+    });
+
     test("a return sent alone writes no jointFilingId and charges nothing", async () => {
       engineReturns(SUCCESS, DELETE_RESPONSE);
       await hmrcCtReturnGetHandler(buildEvent());

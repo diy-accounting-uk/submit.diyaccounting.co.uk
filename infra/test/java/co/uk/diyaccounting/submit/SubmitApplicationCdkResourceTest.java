@@ -220,6 +220,16 @@ class SubmitApplicationCdkResourceTest {
                         List.of("hmrc-itsa-dlq-not-empty", "hmrc-itsa-queue-message-age")),
                 routedPrefixes);
 
+        infof("Created stack:", submitApplication.hmrcItsaPropertyStack.getStackName());
+        Template hmrcItsaPropertyStackTemplate = Template.fromStack(submitApplication.hmrcItsaPropertyStack);
+        hmrcItsaPropertyStackTemplate.resourceCountIs("AWS::Lambda::Function", 4);
+        assertGroupedStackHealthAlarm(
+                hmrcItsaPropertyStackTemplate,
+                List.of("hmrc-itsa-bsas-foreign-property-adjust", "hmrc-itsa-bsas-foreign-property-get"),
+                outsideCallerQueueChecks(
+                        "hmrc-itsa-bsas-foreign-property-adjust", "hmrc-itsa-bsas-foreign-property-get"),
+                routedPrefixes);
+
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
         companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 24);
@@ -523,9 +533,11 @@ class SubmitApplicationCdkResourceTest {
         // share one path, adding three primary routes and one auto-HEAD route, for 193 + 4 = 197.
         // GET, POST and PUT /api/v1/hmrc/itsa/foreign-property/period share one path and add the
         // same four, for 197 + 4 = 201. GET and PUT /api/v1/hmrc/itsa/foreign-property/annual share one
-        // path and add two primary routes and one auto-HEAD route, for 201 + 3 = 204 in total.
+        // path and add two primary routes and one auto-HEAD route, for 201 + 3 = 204. GET
+        // /api/v1/hmrc/itsa/bsas/foreign-property and POST its /adjust path each sit on their own
+        // unshared path, adding two primary routes and two auto-HEAD routes, for 204 + 4 = 208 in total.
         assertEquals(
-                204,
+                208,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")
@@ -678,6 +690,7 @@ class SubmitApplicationCdkResourceTest {
         assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.authStack));
         assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.hmrcStack));
         assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.hmrcItsaStack));
+        assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.hmrcItsaPropertyStack));
         assertEveryLambdaHasAnExplicitLogGroup(accountStackTemplate);
         assertEveryLambdaHasAnExplicitLogGroup(Template.fromStack(submitApplication.billingStack));
         assertEveryLambdaHasAnExplicitLogGroup(apiStackTemplate);
@@ -742,6 +755,7 @@ class SubmitApplicationCdkResourceTest {
                 submitApplication.authStack,
                 submitApplication.hmrcStack,
                 submitApplication.hmrcItsaStack,
+                submitApplication.hmrcItsaPropertyStack,
                 submitApplication.companiesHouseStack,
                 submitApplication.accountStack,
                 submitApplication.billingStack,

@@ -65,6 +65,8 @@ import { apiEndpoint as hmrcItsaBsasSelfEmploymentGetApiEndpoint } from "../func
 import { apiEndpoint as hmrcItsaBsasSelfEmploymentAdjustPostApiEndpoint } from "../functions/hmrc/hmrcItsaBsasSelfEmploymentAdjustPost.js";
 import { apiEndpoint as hmrcItsaBsasUkPropertyGetApiEndpoint } from "../functions/hmrc/hmrcItsaBsasUkPropertyGet.js";
 import { apiEndpoint as hmrcItsaBsasUkPropertyAdjustPostApiEndpoint } from "../functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js";
+import { apiEndpoint as hmrcItsaBsasForeignPropertyGetApiEndpoint } from "../functions/hmrc/hmrcItsaBsasForeignPropertyGet.js";
+import { apiEndpoint as hmrcItsaBsasForeignPropertyAdjustPostApiEndpoint } from "../functions/hmrc/hmrcItsaBsasForeignPropertyAdjustPost.js";
 import { apiEndpoint as hmrcItsaCalculationTriggerPostApiEndpoint } from "../functions/hmrc/hmrcItsaCalculationTriggerPost.js";
 import { apiEndpoint as hmrcItsaCalculationGetApiEndpoint } from "../functions/hmrc/hmrcItsaCalculationGet.js";
 import { apiEndpoint as hmrcItsaFinalDeclarationPostApiEndpoint } from "../functions/hmrc/hmrcItsaFinalDeclarationPost.js";
@@ -362,6 +364,8 @@ hmrcItsaBsasSelfEmploymentGetApiEndpoint(app);
 hmrcItsaBsasSelfEmploymentAdjustPostApiEndpoint(app);
 hmrcItsaBsasUkPropertyGetApiEndpoint(app);
 hmrcItsaBsasUkPropertyAdjustPostApiEndpoint(app);
+hmrcItsaBsasForeignPropertyGetApiEndpoint(app);
+hmrcItsaBsasForeignPropertyAdjustPostApiEndpoint(app);
 hmrcItsaCalculationTriggerPostApiEndpoint(app);
 hmrcItsaCalculationGetApiEndpoint(app);
 hmrcItsaFinalDeclarationPostApiEndpoint(app);

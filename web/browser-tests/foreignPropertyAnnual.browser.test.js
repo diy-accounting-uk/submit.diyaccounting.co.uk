@@ -44,7 +44,7 @@ window.getGovClientHeaders = function(){ return Promise.resolve({}); };
 window.resolveSyntheticTestScenario = function(explicit, account, fallback){ return explicit || (account === "synthetic" ? fallback : null); };
 window.getForeignPropertyDetails = function(nino, businessId, taxYear){
   window.__sent.push({ call: "details", taxYear: taxYear });
-  return Promise.resolve({ propertyDetails: window.__properties });
+  return Promise.resolve({ foreignPropertyDetails: window.__properties });
 };
 window.getForeignPropertyAnnual = function(nino, businessId, taxYear, token, headers, fpv, scenario){
   window.__sent.push({ call: "get", nino: nino, businessId: businessId, taxYear: taxYear, scenario: scenario });

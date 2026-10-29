@@ -110,6 +110,11 @@ export const SKIPPABLE_JOBS = [
     id: "behaviour-test-simulator-itsa-uk-property-annual-submission",
     description: "ITSA UK property annual submission behaviour, simulator.",
   },
+  { id: "behaviour-test-simulator-itsa-foreign-property-period", description: "ITSA foreign property period behaviour, simulator." },
+  {
+    id: "behaviour-test-simulator-itsa-foreign-property-annual-submission",
+    description: "ITSA foreign property annual submission behaviour, simulator.",
+  },
   { id: "behaviour-test-simulator-itsa-losses-and-claims", description: "ITSA losses and claims behaviour, simulator." },
   { id: "behaviour-test-simulator-itsa-final-declaration", description: "ITSA final declaration behaviour, simulator." },
   {
@@ -131,6 +136,10 @@ export const DEPLOY_SKIPPABLE_JOBS = [
   { id: "deploy-auth", description: "Deploys AuthStack (Cognito user pool, hosted UI, identity providers) via CDK." },
   { id: "deploy-hmrc", description: "Deploys HmrcStack (the VAT MTD Lambda functions and their API Gateway routes) via CDK." },
   { id: "deploy-hmrc-itsa", description: "Deploys HmrcItsaStack (the Income Tax MTD Lambda functions and routes) via CDK." },
+  {
+    id: "deploy-hmrc-itsa-property",
+    description: "Deploys HmrcItsaPropertyStack (the Income Tax MTD foreign property adjustable summary Lambdas) via CDK.",
+  },
   {
     id: "deploy-companies-house",
     description: "Deploys CompaniesHouseStack (confirmation statement and accounts filing Lambdas) via CDK.",
@@ -183,6 +192,14 @@ export const DEPLOY_SKIPPABLE_JOBS = [
   {
     id: "web-test-itsa-uk-property-annual-synthetic",
     description: "ITSA UK property annual submission behaviour against the deployed environment.",
+  },
+  {
+    id: "web-test-itsa-foreign-property-period-synthetic",
+    description: "ITSA foreign property period behaviour against the deployed environment.",
+  },
+  {
+    id: "web-test-itsa-foreign-property-annual-synthetic",
+    description: "ITSA foreign property annual submission behaviour against the deployed environment.",
   },
   { id: "web-test-itsa-losses-and-claims-synthetic", description: "ITSA losses and claims behaviour against the deployed environment." },
   {

@@ -62,7 +62,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        environment: [ci, prod]
+        # A pull request runs the ci leg only: the prod environment is for jobs on main.
+        environment: ${{ github.event_name == 'pull_request' && fromJSON('["ci"]') || fromJSON('["ci", "prod"]') }}
     runs-on: ubuntu-24.04
     environment: ${{ matrix.environment }}
     permissions:

@@ -373,6 +373,28 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
     });
 
+    test("writes the amended mark into the receipt of a revision, beside the jointFilingId", async () => {
+      storePendingRequest({
+        filedDocument: "<html/>",
+        chargeActivityId: "file-small-company-accounts",
+        jointFilingId: JOINT_FILING_ID,
+        amended: true,
+      });
+      gatewayAnswers("ACCEPT");
+      const response = await companiesHouseAccountsGetHandler(buildEvent());
+      expect(parseResponseBody(response)).toMatchObject({ statusCode: "ACCEPT", jointFilingId: JOINT_FILING_ID, amended: true });
+      const [receipt] = await puts();
+      expect(receipt.input.Item.receipt).toMatchObject({ kind: "companies-house-accounts", jointFilingId: JOINT_FILING_ID, amended: true });
+    });
+
+    test("an original filing writes no amended mark", async () => {
+      storePendingRequest({ filedDocument: "<html/>", chargeActivityId: "file-small-company-accounts", jointFilingId: JOINT_FILING_ID });
+      gatewayAnswers("ACCEPT");
+      await companiesHouseAccountsGetHandler(buildEvent());
+      const [receipt] = await puts();
+      expect(receipt.input.Item.receipt).not.toHaveProperty("amended");
+    });
+
     test("a filing with no jointFilingId writes none and charges nothing", async () => {
       storePendingRequest({ filedDocument: "<html/>", chargeActivityId: "file-small-company-accounts" });
       gatewayAnswers("ACCEPT");
