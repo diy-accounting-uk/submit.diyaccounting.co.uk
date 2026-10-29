@@ -5457,7 +5457,7 @@ table.observations th {
 }
 
 #visitorsPanel {
-  min-height: 300px;
+  min-height: 410px;
 }
 
 #experimentsPanel {
@@ -5470,7 +5470,7 @@ table.observations th {
   }
 
   #visitorsPanel {
-    min-height: 400px;
+    min-height: 480px;
   }
 
   #experimentsPanel {
@@ -5489,7 +5489,7 @@ table.observations th {
   }
 
   #visitorsPanel {
-    min-height: 440px;
+    min-height: 520px;
   }
 
   #experimentsPanel {

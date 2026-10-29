@@ -35,12 +35,16 @@ const SYNTHETIC_SESSION_STORAGE_VALUE = "test_";
 // after sign-in has already sent its kind.
 const OPERATOR_LOCAL_STORAGE_KEY = "visitorKind.operator";
 
+// The token the sign-in callbacks store; a browser holding one that is not flagged as an
+// operator's is an authenticated user.
+const SIGN_IN_LOCAL_STORAGE_KEY = "cognitoIdToken";
+
 /**
  * Classify the current browser session: "bot" for crawlers, AI agents and the synthetic
  * canaries; "synthetic" for the behaviour-test suites; "operator" for a browser flagged by
- * the operator bundle; "human" otherwise.
+ * the operator bundle; "authenticated" for any other signed-in browser; "human" otherwise.
  *
- * @returns {"human"|"operator"|"bot"|"synthetic"}
+ * @returns {"human"|"authenticated"|"operator"|"bot"|"synthetic"}
  */
 export function classifyVisitorKind() {
   let userAgent = "";
@@ -64,6 +68,9 @@ export function classifyVisitorKind() {
   try {
     if (localStorage.getItem(OPERATOR_LOCAL_STORAGE_KEY) === "1") {
       return "operator";
+    }
+    if (localStorage.getItem(SIGN_IN_LOCAL_STORAGE_KEY)) {
+      return "authenticated";
     }
   } catch {
     // localStorage unavailable: fall through to human

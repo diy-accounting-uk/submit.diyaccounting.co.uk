@@ -228,15 +228,21 @@ function renderObjective(objective) {
   return section;
 }
 
+// Operator, authenticated user and human come from GA4 sessions; synthetic and bot from the
+// CloudFront access log, which has no hourly reading.
 const VISITOR_KINDS = [
-  ["sessions-human", "Human"],
   ["sessions-operator", "Operator"],
-  ["sessions-bot", "Bot"],
+  ["sessions-authenticated", "Authenticated user"],
+  ["sessions-human", "Human"],
   ["sessions-synthetic", "Synthetic"],
+  ["sessions-bot", "Bot"],
 ];
+
+const LOG_VISITOR_KINDS = ["sessions-synthetic", "sessions-bot"];
 
 const VISITORS_FAST_WINDOW_UNAVAILABLE =
   "Not available: no sessions in this window, or this environment's GA4 property has no streaming export and its daily export reaches the lake two days late.";
+const VISITORS_LOG_FAST_WINDOW_UNAVAILABLE = "Not available: the CloudFront access log is read once a day.";
 
 function renderVisitors(snapshot) {
   const tbody = document.getElementById("visitorsBody");
@@ -262,7 +268,10 @@ function renderVisitors(snapshot) {
 
     // The fast windows read GA4's streaming export; a property that only exports daily
     // (ci) leaves them empty, and GA4's daily export reaches the lake two days late.
-    ["last1h", "last1d", "last7d"].forEach((key) => row.appendChild(activityCountCell(observation, key, VISITORS_FAST_WINDOW_UNAVAILABLE)));
+    const fastWindowUnavailable = LOG_VISITOR_KINDS.includes(observationId)
+      ? VISITORS_LOG_FAST_WINDOW_UNAVAILABLE
+      : VISITORS_FAST_WINDOW_UNAVAILABLE;
+    ["last1h", "last1d", "last7d"].forEach((key) => row.appendChild(activityCountCell(observation, key, fastWindowUnavailable)));
     row.appendChild(activityCountCell(observation, "last30"));
     row.appendChild(activityTrendCell(observation));
     row.appendChild(activityCountCell(observation, "last90"));

@@ -505,6 +505,20 @@ describe("operatorSnapshotPublish", () => {
       expect(dailyCharts.charts.find((chart) => chart.id === "visitors").reconciliation).toBeUndefined();
     });
 
+    test("Bot and Synthetic visitors read the CloudFront log view, the other three kinds read Google Analytics", () => {
+      const conversion = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "conversion-to-submission");
+      const viewOf = (id) => conversion.observations.find((observation) => observation.id === id).view;
+
+      expect(["sessions-bot", "sessions-synthetic"].map(viewOf)).toEqual(["v_visitors_cloudfront_daily", "v_visitors_cloudfront_daily"]);
+      expect(["sessions-operator", "sessions-authenticated", "sessions-human"].map(viewOf)).toEqual(
+        Array(3).fill("v_visitors_by_kind_daily"),
+      );
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "visitors");
+      expect(chart.modes[0].componentOrder).toEqual(["operator", "authenticated", "human", "synthetic", "bot"]);
+      expect(chart.modes[0].sql).toContain("v_visitors_cloudfront_daily");
+      expect(chart.note).toContain("CloudFront");
+    });
+
     test("every chart mode asks for the last 90 days and answers day, component and value", () => {
       for (const definition of buildDailyChartDefinitions()) {
         for (const mode of definition.modes) {
@@ -558,7 +572,7 @@ describe("operatorSnapshotPublish", () => {
       mockAthenaSend.mockImplementation((command) => {
         switch (command.constructor.name) {
           case "StartQueryExecutionCommand": {
-            const failing = command.input.QueryString.includes("v_visitors_by_kind_daily") && !command.input.QueryString.includes("UNION");
+            const failing = command.input.QueryString.includes("v_visitors_cloudfront_daily");
             return Promise.resolve({ QueryExecutionId: failing ? "failing-1" : "q" });
           }
           case "GetQueryExecutionCommand":
@@ -868,7 +882,7 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const conversion = snapshot.objectives.find((o) => o.id === "conversion-to-submission");
-      for (const id of ["sessions-human", "sessions-operator", "sessions-bot", "sessions-synthetic"]) {
+      for (const id of ["sessions-human", "sessions-operator", "sessions-authenticated", "sessions-bot", "sessions-synthetic"]) {
         const observation = conversion.observations.find((o) => o.id === id);
         expect(observation.last30).toEqual({ value: 10, trend: 1 });
         expect(observation.last90).toEqual({ value: 30, trend: 0.5 });
@@ -1266,7 +1280,7 @@ describe("operatorSnapshotPublish", () => {
   });
 
   describe("visitor fast windows", () => {
-    const visitorIds = ["sessions-human", "sessions-operator", "sessions-bot", "sessions-synthetic"];
+    const visitorIds = ["sessions-human", "sessions-operator", "sessions-authenticated"];
     const context = {
       envName: "test",
       region: "eu-west-2",
@@ -1284,7 +1298,7 @@ describe("operatorSnapshotPublish", () => {
         .map(([command]) => command.input.QueryString);
       expect(sqlStatements).toHaveLength(1);
       expect(sqlStatements[0]).toContain("FROM   v_visitors_by_kind_hourly");
-      for (const kind of ["human", "operator", "bot", "synthetic"]) {
+      for (const kind of ["human", "operator", "authenticated"]) {
         expect(sqlStatements[0]).toContain(`AND (visitor_kind = '${kind}') THEN sessions END`);
       }
     });

@@ -359,7 +359,13 @@ const FIXTURE_DAILY_CHARTS = {
       ["Submitters", "Returning submitters", "Renewals", "Cancellations", "Passes issued"],
       { note: "The 90-day windows roll.", reconciliation: "Last 90 days, customers: 12 distinct submitters made 90 completions." },
     ),
-    chartWithSeries("visitors", "conversion-to-submission", "Visitors", "count", ["Human", "Operator", "Bot", "Synthetic"]),
+    chartWithSeries("visitors", "conversion-to-submission", "Visitors", "count", [
+      "Operator",
+      "Authenticated user",
+      "Human",
+      "Synthetic",
+      "Bot",
+    ]),
   ],
 };
 
@@ -589,8 +595,8 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     const rows = page.locator("#visitorsPanel tr.visitors-kind");
-    await expect(rows).toHaveCount(4);
-    await expect(rows.locator("td:first-child")).toHaveText(["Human", "Operator", "Bot", "Synthetic"]);
+    await expect(rows).toHaveCount(5);
+    await expect(rows.locator("td:first-child")).toHaveText(["Operator", "Authenticated user", "Human", "Synthetic", "Bot"]);
 
     const human = page.locator('#visitorsPanel tr.visitors-kind[data-kind="human"]');
     await expect(human.locator("td").nth(1)).toHaveText("2");
@@ -622,6 +628,9 @@ test.describe("Operator Dashboard", () => {
 
     const human = page.locator('#visitorsPanel tr.visitors-kind[data-kind="human"]');
     await expect(human.locator("td").nth(1)).not.toHaveAttribute("title", /.+/);
+
+    const synthetic = page.locator('#visitorsPanel tr.visitors-kind[data-kind="synthetic"]');
+    await expect(synthetic.locator("td").nth(1)).toHaveAttribute("title", /CloudFront access log/);
 
     const operator = page.locator('#visitorsPanel tr.visitors-kind[data-kind="operator"]');
     await expect(operator.locator("td").nth(1)).toHaveText("not measured");
@@ -865,7 +874,7 @@ test.describe("Operator Dashboard", () => {
         "Visitors",
       ]);
       const visitors = page.locator('.chart-card[data-chart-id="visitors"]');
-      await expect(visitors.locator("polyline.chart-line")).toHaveCount(5);
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(6);
       const points = await visitors.locator("polyline.chart-line").first().getAttribute("points");
       expect(points.trim().split(" ")).toHaveLength(90);
     });

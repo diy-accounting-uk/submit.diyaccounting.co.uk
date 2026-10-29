@@ -273,30 +273,39 @@ export const OBJECTIVE_DEFINITIONS = [
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
-        id: "sessions-bot",
-        label: "Sessions, bot visitors",
+        id: "sessions-authenticated",
+        label: "Sessions, authenticated users",
         unit: "count",
         view: "v_visitors_by_kind_daily",
         dayColumn: "day",
         valueExpr: "sessions",
         aggregation: "sum",
-        where: "visitor_kind = 'bot'",
+        where: "visitor_kind = 'authenticated'",
         fastWindowView: "v_visitors_by_kind_hourly",
         fastWindowColumn: "hour",
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
-        id: "sessions-synthetic",
-        label: "Sessions, synthetic visitors",
+        id: "sessions-bot",
+        label: "Page requests, bot visitors",
         unit: "count",
-        view: "v_visitors_by_kind_daily",
+        view: "v_visitors_cloudfront_daily",
         dayColumn: "day",
-        valueExpr: "sessions",
+        valueExpr: "page_requests",
+        aggregation: "sum",
+        where: "visitor_kind = 'bot'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "sessions-synthetic",
+        label: "Page requests, synthetic visitors",
+        unit: "count",
+        view: "v_visitors_cloudfront_daily",
+        dayColumn: "day",
+        valueExpr: "page_requests",
         aggregation: "sum",
         where: "visitor_kind = 'synthetic'",
-        fastWindowView: "v_visitors_by_kind_hourly",
-        fastWindowColumn: "hour",
-        deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
     ],
   },
@@ -1404,19 +1413,20 @@ export const DAILY_CHART_DAYS = 90;
 const dailyWindowFilter = (dayColumn) => `${dayColumn} > date_add('day', -${DAILY_CHART_DAYS}, current_date)`;
 
 const VISITOR_KIND_LABELS = {
-  "human": "Human",
   "operator": "Operator",
-  "bot": "Bot",
+  "authenticated": "Authenticated user",
+  "human": "Human",
   "synthetic": "Synthetic",
+  "bot": "Bot",
   "(unclassified)": "Unclassified",
 };
 
 const VISITOR_KIND_DESCRIPTIONS = {
-  "human": "Sessions of visitors who are not signed in and are not flagged as a bot, an operator or a test.",
-  "operator": "Sessions of the operator, flagged when the operator signs in.",
-  "bot": "Sessions whose user agent matches a known crawler or automated client.",
-  "synthetic": "Sessions of the behaviour tests.",
-  "(unclassified)": "Sessions with no visitor kind recorded.",
+  operator: "Google Analytics sessions of the operator, flagged once the operator bundle has loaded in the browser.",
+  authenticated: "Google Analytics sessions of signed-in users who are not operators.",
+  human: "Google Analytics sessions of visitors who are not signed in and are not flagged as a bot, an operator or a test.",
+  synthetic: "Page requests from the behaviour tests, counted from the CloudFront access log by their DIYAccountingProbe user agent.",
+  bot: "Page requests whose user agent matches a known crawler, AI agent or the probe monitor, counted from the CloudFront access log.",
 };
 
 function activityLabels() {
@@ -1714,22 +1724,21 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Visitors",
       unit: "count",
-      note: "Sessions per day by kind of visitor, from Google Analytics. Bots and synthetic test traffic are mostly invisible to it.",
+      note: "Operator, authenticated user and human count Google Analytics sessions, so only visitors who accepted analytics. Synthetic and bot count page requests from the CloudFront access log, which Google Analytics cannot see; no client address is read, so they are requests, not people.",
       modes: [
         {
           id: "sessions",
-          label: "Sessions",
-          total: "All visitors",
-          totalDescription: "Sessions of every kind added together.",
+          label: "Visitors",
+          total: null,
+          componentOrder: ["operator", "authenticated", "human", "synthetic", "bot"],
           labelOf: (id) => VISITOR_KIND_LABELS[id] ?? id,
           descriptionOf: (id) => VISITOR_KIND_DESCRIPTIONS[id],
-          sql: longFormSql({
-            dayExpression: "day",
-            componentExpression: "visitor_kind",
-            valueExpression: "sessions",
-            view: "v_visitors_by_kind_daily",
-            dayColumn: "day",
-          }),
+          sql:
+            `SELECT cast(day AS varchar) AS day, visitor_kind AS component, cast(sum(sessions) AS double) AS value\n` +
+            `FROM   v_visitors_by_kind_daily\nWHERE  ${dailyWindowFilter("day")} AND visitor_kind IN ('operator', 'authenticated', 'human')\nGROUP  BY 1, 2\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), visitor_kind, cast(sum(page_requests) AS double)\n` +
+            `FROM   v_visitors_cloudfront_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
         },
       ],
     },

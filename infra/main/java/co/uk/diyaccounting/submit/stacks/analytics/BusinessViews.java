@@ -193,6 +193,10 @@ public class BusinessViews extends Construct {
                     "VAT submissions each day and account, customers apart from test accounts",
                     List.of("activity_events_all")),
             new ViewDefinition(
+                    "v_visitors_cloudfront_daily",
+                    "Page requests each day from bots and synthetic test traffic, read from the CloudFront access log",
+                    List.of("cloudfront_requests")),
+            new ViewDefinition(
                     "v_subscription_renewals_daily",
                     "Subscriptions that renewed each day, by bundle",
                     List.of("activity_events_all")),

@@ -19,6 +19,20 @@ describe("classifyVisitorKind", () => {
     expect(classifyVisitorKind()).toBe("human");
   });
 
+  it("classifies a signed-in browser as authenticated and a flagged operator as operator", () => {
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15" });
+    vi.stubGlobal("sessionStorage", { getItem: vi.fn(() => null) });
+    vi.stubGlobal("localStorage", { getItem: vi.fn((key) => (key === "cognitoIdToken" ? "token" : null)) });
+
+    expect(classifyVisitorKind()).toBe("authenticated");
+
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn((key) => (key === "cognitoIdToken" ? "token" : key === "visitorKind.operator" ? "1" : null)),
+    });
+
+    expect(classifyVisitorKind()).toBe("operator");
+  });
+
   it("classifies a search crawler as bot", () => {
     vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)" });
     vi.stubGlobal("sessionStorage", { getItem: vi.fn(() => null) });
