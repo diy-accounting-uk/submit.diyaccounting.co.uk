@@ -274,7 +274,19 @@ jobs:
       - name: Decide whether this ref is eligible for a job-selection call
         id: eligibility
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          markdown_only=false
+          before='${{ github.event.before }}'
+          if [ "${{ github.event_name }}" = "push" ] && [ -n "$before" ] \
+            && [ "$before" != "0000000000000000000000000000000000000000" ] \
+            && git cat-file -e "${before}^{commit}" 2>/dev/null; then
+            changed=$(git diff --name-only "${before}..${{ github.sha }}")
+            non_md=$(printf '%s\n' "$changed" | grep -v -E '\.md$' || true)
+            if [ -n "$changed" ] && [ -z "$non_md" ]; then
+              markdown_only=true
+            fi
+          fi
+          echo "markdown-only=${markdown_only}" | tee -a "$GITHUB_OUTPUT"
+          if [ "${{ github.ref }}" = "refs/heads/main" ] || [ "$markdown_only" = "true" ]; then
             echo "eligible=false" | tee -a "$GITHUB_OUTPUT"
           else
             echo "eligible=true" | tee -a "$GITHUB_OUTPUT"
@@ -448,6 +460,7 @@ jobs:
             --prompt-hash "${{ steps.prompt.outputs.prompt-hash }}" \
             --catalogue deploy.yml \
             --mode "${SELECT_JOBS_MODE}" \
+            --markdown-only "${{ steps.eligibility.outputs.markdown-only }}" \
             --out "${OUT_DIR}/decision.json")
           echo "skip-json=${SKIP_JSON}" | tee -a "$GITHUB_OUTPUT"
           ADVISED_JSON=$(jq -c '.advisedSkip // []' "${OUT_DIR}/decision.json" 2>/dev/null || echo '[]')

@@ -405,11 +405,14 @@ function normaliseMode(mode) {
 // advised skips against actual job results (the dual-run trial) reads the same field whichever
 // mode produced it. `enforcedSkip` is what a dependent job's `if:` should act on: the advised
 // list in "enforcing" mode, always empty in "advisory" mode.
-export function decideForContext({ context, claudeOutputRaw, knownJobIds = SKIPPABLE_JOB_IDS, mode = "advisory" }) {
+export function decideForContext({ context, claudeOutputRaw, knownJobIds = SKIPPABLE_JOB_IDS, mode = "advisory", markdownOnly = false }) {
   const resolvedMode = normaliseMode(mode);
   const ref = context && context.ref;
   if (!isEligibleRef(ref)) {
     return { ok: true, skip: [], decisions: [], error: null, reason: "main: full run", mode: resolvedMode, enforcedSkip: [] };
+  }
+  if (markdownOnly) {
+    return { ok: true, skip: [], decisions: [], error: null, reason: "markdown-only", mode: resolvedMode, enforcedSkip: [] };
   }
   if (typeof claudeOutputRaw !== "string" || claudeOutputRaw.length === 0) {
     return {
@@ -442,6 +445,7 @@ export function buildDecisionArtifact({ modelId, promptHash, catalogue, context,
     decisions: answer.decisions,
     ok: answer.ok,
     error: answer.error,
+    reason: answer.reason || null,
     decidedAt: new Date().toISOString(),
   };
 }
@@ -497,6 +501,7 @@ function runDecide(opts) {
     claudeOutputRaw,
     knownJobIds: JOB_ID_CATALOGUES[catalogue],
     mode: opts.mode,
+    markdownOnly: opts["markdown-only"] === "true",
   });
   const diffReport = opts.context ? readJson(path.join(path.dirname(opts.context), DIFF_REPORT_FILE), null) : null;
   const artifact = buildDecisionArtifact({

@@ -406,6 +406,7 @@ jobs:
     name: 'select jobs'
     needs:
       - params
+      - changes
     continue-on-error: true
     runs-on: ubuntu-24.04
     # `continue-on-error: true` reports a step FAILURE inside this job as `success` downstream,
@@ -455,7 +456,12 @@ jobs:
       - name: Decide whether this ref is eligible for a job-selection call
         id: eligibility
         run: |
-          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+          if [ "${{ needs.changes.outputs.code }}" = "false" ]; then
+            echo "markdown-only=true" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "markdown-only=false" | tee -a "$GITHUB_OUTPUT"
+          fi
+          if [ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ needs.changes.outputs.code }}" = "false" ]; then
             echo "eligible=false" | tee -a "$GITHUB_OUTPUT"
           else
             echo "eligible=true" | tee -a "$GITHUB_OUTPUT"
@@ -632,6 +638,7 @@ jobs:
             --prompt-hash "${{ steps.prompt.outputs.prompt-hash }}" \
             --catalogue test.yml \
             --mode "${SELECT_JOBS_MODE}" \
+            --markdown-only "${{ steps.eligibility.outputs.markdown-only }}" \
             --out "${OUT_DIR}/decision.json")
           echo "skip-json=${SKIP_JSON}" | tee -a "$GITHUB_OUTPUT"
           ADVISED_JSON=$(jq -c '.advisedSkip // []' "${OUT_DIR}/decision.json" 2>/dev/null || echo '[]')

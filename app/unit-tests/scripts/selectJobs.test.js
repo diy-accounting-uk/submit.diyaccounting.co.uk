@@ -150,6 +150,27 @@ describe("decideForContext", () => {
     expect(answer.error).toBeTruthy();
   });
 
+  test("a non-main ref on a Markdown-only push runs everything without claude output", () => {
+    const answer = decideForContext({
+      context: { ref: "refs/heads/claude/ltd-select-jobs" },
+      claudeOutputRaw: "",
+      markdownOnly: true,
+      mode: "enforcing",
+    });
+    expect(answer.ok).toBe(true);
+    expect(answer.skip).toEqual([]);
+    expect(answer.enforcedSkip).toEqual([]);
+    expect(answer.error).toBeNull();
+    expect(answer.reason).toBe("markdown-only");
+  });
+
+  test("a Markdown-only push ignores a claude answer that says to skip a job", () => {
+    const raw = success(JSON.stringify({ decisions: [{ job: "mvn-test", skip: true, reason: "no Java file changed" }] }));
+    const answer = decideForContext({ context: { ref: "refs/heads/claude/ltd-select-jobs" }, claudeOutputRaw: raw, markdownOnly: true });
+    expect(answer.skip).toEqual([]);
+    expect(answer.reason).toBe("markdown-only");
+  });
+
   test("a non-main ref with a valid answer applies the skip decisions", () => {
     const raw = success(JSON.stringify({ decisions: [{ job: "mvn-test", skip: true, reason: "no Java file changed" }] }));
     const answer = decideForContext({ context: { ref: "refs/heads/claude/ltd-select-jobs" }, claudeOutputRaw: raw });
