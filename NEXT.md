@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-7ad5966** (PR #577's merge 7ad59662d; `/submit/prod/last-known-good-deployment` reads it; the company book pull runs the main image `env-ingestion-7ad59662d…`, so the hotfix image is replaced by the same code from main). `npm run video:embed-check` needs `eval "$(aws --profile diya-submit-prod configure export-credentials --format env)"` when the SDK's SSO cache reads expired. The site's `script-src` carries no `'unsafe-inline'`.
+**Prod runs deployment prod-fa52915** (PR #582's merge fa52915b0, deploy 40808307458 green; `/submit/prod/last-known-good-deployment` reads it, unverified until SSO is fresh). `npm run video:embed-check` needs `eval "$(aws --profile diya-submit-prod configure export-credentials --format env)"` when the SDK's SSO cache reads expired. The site's `script-src` carries no `'unsafe-inline'`.
 **ci**: ci-set1 stands (12 stacks, wave helix's redeploy) and is `/submit/ci/last-known-good-deployment`; its slot is free. As last-known-good it is held past its 05:40 UTC self-destruct by the protection window in `app/functions/infra/selfDestruct.js` (its schedule `cron(35 1/4 * * ? *)` checks again at 09:35); ci-set2 is gone and both slots are free.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
