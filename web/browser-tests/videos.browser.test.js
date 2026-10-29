@@ -196,8 +196,10 @@ test.describe("relabelled and stripped titles", () => {
   const stripped = EMBEDDED.find((v) => v.id === "change-registered-email");
   const contentsText = (video) => video.title.replace("DIY Accounting Submit: ", "");
 
-  test("a video of a feature not yet on prod reads coming soon in its heading, iframe title and Contents link", async ({ page }) => {
-    expect(relabelled.title).toMatch(/\(coming soon - sandbox example\)$/);
+  test("a video of a feature not yet on prod carries its sandbox label in its heading, iframe title and Contents link", async ({
+    page,
+  }) => {
+    expect(relabelled.title).toMatch(/\(sandbox\)$/);
     await serveRealSite(page);
     await page.goto("http://localhost:3000/videos-hmrc-itsa.html", { waitUntil: "domcontentloaded" });
     const section = page.locator(`section.video-section#${relabelled.id}`);
