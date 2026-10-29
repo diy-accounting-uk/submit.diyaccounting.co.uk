@@ -14,7 +14,8 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
+import { getUserBundles, getAccountSettings } from "../../data/dynamoDbBundleRepository.js";
+import { resolveAccountSettings } from "../../lib/accountSettings.js";
 import { isOperatorEmail } from "../../lib/operators.js";
 import { v4 as uuidv4 } from "uuid";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
@@ -160,6 +161,7 @@ export async function retrieveUserBundles(userId, requestId = null, userEmail = 
     // Load user bundles from DynamoDB
     const userBundles = await getUserBundles(userId);
     logger.info({ message: "Successfully retrieved bundles from repository", userId, count: userBundles.length });
+    const settings = resolveAccountSettings(await getAccountSettings(userId));
 
     // Load catalogue (synchronous file read)
     let catalog;
@@ -167,7 +169,7 @@ export async function retrieveUserBundles(userId, requestId = null, userEmail = 
       catalog = loadCatalogFromRoot();
     } catch (error) {
       logger.warn({ message: "Failed to load catalogue, returning user bundles only", error: error.message });
-      return { bundles: userBundles, tokensRemaining: 0 };
+      return { bundles: userBundles, tokensRemaining: 0, settings };
     }
 
     // Load capacity counters for capped bundles
@@ -253,7 +255,7 @@ export async function retrieveUserBundles(userId, requestId = null, userEmail = 
       }
     }
 
-    return { bundles: result, tokensRemaining: sumTokensRemaining(userBundles) };
+    return { bundles: result, tokensRemaining: sumTokensRemaining(userBundles), settings };
   } catch (error) {
     logger.error({ message: "Error retrieving user bundles", error: error.message, userId, requestId });
     throw error;

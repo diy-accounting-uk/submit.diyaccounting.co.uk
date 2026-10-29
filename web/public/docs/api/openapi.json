@@ -2958,6 +2958,13 @@
         }
       }
     },
+    "/account/settings" : {
+      "put" : {
+        "summary" : "Change account settings",
+        "description" : "Changes the account settings of the authenticated user, such as showing or hiding pass generation",
+        "operationId" : "accountSettings"
+      }
+    },
     "/companies-house/confirmation-statement/render" : {
       "post" : {
         "summary" : "Render a confirmation statement filing for review",

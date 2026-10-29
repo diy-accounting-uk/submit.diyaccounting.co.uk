@@ -586,6 +586,7 @@ metered = true
 # Time-limited (7 days), unlimited capacity (100 uses).
 # Encourages short digital campaigns (social media, email, messaging).
 paths = ["passes/generate-digital.html", "^/api/v1/pass/generate$"]
+accountSetting = "passGeneration"
 
 [[activities]]
 id = "generate-pass-physical"
@@ -599,6 +600,7 @@ metered = true
 # Usage-limited (10 uses), unlimited time.
 # Encourages continued display on merchandise (t-shirts, mugs).
 paths = ["passes/generate-physical.html", "^/api/v1/pass/generate$"]
+accountSetting = "passGeneration"
 
 [[activities]]
 id = "help"

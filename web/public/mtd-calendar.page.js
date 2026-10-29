@@ -3,7 +3,7 @@
 
 // web/public/mtd-calendar.page.js
 // A "Web form" link names its catalogue activity. Where the catalogue does not list that activity
-// in this environment, the link becomes plain text.
+// in this environment and the person has not turned on preview features, the link becomes plain text.
 
 (async function () {
   "use strict";
@@ -11,14 +11,19 @@
   if (anchors.length === 0) return;
   try {
     const service = await import("/lib/services/catalog-service.js");
-    const [response, environmentName] = await Promise.all([fetch("/submit.catalogue.toml"), service.fetchCurrentEnvironmentName()]);
+    const viewerSettings = await import("/lib/services/viewer-settings.js");
+    const [response, environmentName, viewer] = await Promise.all([
+      fetch("/submit.catalogue.toml"),
+      service.fetchCurrentEnvironmentName(),
+      viewerSettings.fetchViewer(),
+    ]);
     if (!response.ok) return;
     const catalog = window.TOML.parse(await response.text());
     anchors.forEach(function (anchor) {
       const activity = (catalog.activities || []).find(function (entry) {
         return entry.id === anchor.dataset.activity;
       });
-      if (activity && !service.isActivityListedInEnvironment(activity, environmentName)) {
+      if (activity && !service.isActivityShown(activity, environmentName, viewer)) {
         anchor.replaceWith(document.createTextNode(anchor.textContent));
       }
     });

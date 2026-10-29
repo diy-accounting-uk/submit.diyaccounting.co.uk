@@ -281,18 +281,19 @@ class SubmitApplicationCdkResourceTest {
                 "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        // 22 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
+        // 24 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
         // practiceClientsListGet(1), practiceClientsPost(1), practiceClientGet(1),
         // practiceClientDelete(1), practiceClientAuthorisationInvitePost(1),
         // practiceClientAuthorisationGet(1), practiceClientAuthorisationInviteDelete(1),
         // interestPost(1), passGet(1), passPost(1), passAdminPost(1),
         // passGeneratePost(1), passMyPassesGet(1), bundleCapacityReconcile(1), sessionBeaconPost(1),
-        // sessionSignOutPost(1), activityStartedPost(1)
+        // sessionSignOutPost(1), activityStartedPost(1), accountSettingsPut(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
-        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 23);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 24);
         assertGroupedStackHealthAlarm(
                 accountStackTemplate,
                 List.of(
+                        "account-settings-put",
                         "activity-started-post",
                         "bundle",
                         "bundle-capacity-reconcile",
@@ -535,9 +536,11 @@ class SubmitApplicationCdkResourceTest {
         // same four, for 197 + 4 = 201. GET and PUT /api/v1/hmrc/itsa/foreign-property/annual share one
         // path and add two primary routes and one auto-HEAD route, for 201 + 3 = 204. GET
         // /api/v1/hmrc/itsa/bsas/foreign-property and POST its /adjust path each sit on their own
-        // unshared path, adding two primary routes and two auto-HEAD routes, for 204 + 4 = 208 in total.
+        // unshared path, adding two primary routes and two auto-HEAD routes, for 204 + 4 = 208. PUT
+        // /api/v1/account/settings sits on its own unshared path, adding its primary route and its
+        // auto-HEAD route, for 208 + 2 = 210 in total.
         assertEquals(
-                208,
+                210,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

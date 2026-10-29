@@ -1,0 +1,104 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>DIY Accounting Submit - Settings</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="./lib/analytics.js"></script>
+    <script src="./lib/session-beacon.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
+      <h1>Settings</h1>
+      <p class="subtitle">What this site shows you</p>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div class="form-container">
+        <div
+          data-requires-sign-in
+          data-sign-in-title="Log in to change your settings"
+          data-sign-in-text="Settings change what the site shows you. Log in to change them."
+        >
+          <section class="settings-group" aria-labelledby="sessionSettingsHeading">
+            <h2 id="sessionSettingsHeading">This session</h2>
+            <p class="hint">These last until you close this browser tab.</p>
+
+            <div class="setting-row">
+              <label class="setting-switch" for="previewFeaturesSwitch">
+                <input type="checkbox" role="switch" id="previewFeaturesSwitch" />
+                <span class="setting-switch-track" aria-hidden="true"></span>
+                <span class="setting-switch-label">Preview features</span>
+              </label>
+              <p class="hint" id="previewFeaturesHint">
+                Show the bundles, activities, pages and guidance that this site does not offer yet. A preview feature runs against test
+                services only and files nothing real.
+              </p>
+            </div>
+
+            <div class="setting-row" id="operatorFeaturesRow" hidden>
+              <label class="setting-switch" for="operatorFeaturesSwitch">
+                <input type="checkbox" role="switch" id="operatorFeaturesSwitch" />
+                <span class="setting-switch-track" aria-hidden="true"></span>
+                <span class="setting-switch-label">Operator features</span>
+              </label>
+              <p class="hint" id="operatorFeaturesHint">
+                Turn this off to see the site as a customer sees it, without the operator bundle and pages.
+              </p>
+            </div>
+          </section>
+
+          <section class="settings-group" aria-labelledby="accountSettingsHeading">
+            <h2 id="accountSettingsHeading">This account</h2>
+            <p class="hint">These are kept with your account on every device.</p>
+
+            <div class="setting-row">
+              <label class="setting-switch" for="passGenerationSwitch">
+                <input type="checkbox" role="switch" id="passGenerationSwitch" />
+                <span class="setting-switch-track" aria-hidden="true"></span>
+                <span class="setting-switch-label">Pass generation</span>
+              </label>
+              <p class="hint" id="passGenerationHint">
+                Show the pages that generate a digital or physical pass and the list of passes you generated.
+              </p>
+            </div>
+          </section>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="widgets/page-chrome.js"></script>
+    <script src="lib/env-loader.js"></script>
+    <script type="module" src="submit.js"></script>
+    <script src="developer-mode.js"></script>
+    <script src="lib/request-cache.js"></script>
+    <script src="lib/toml-parser.js"></script>
+    <script src="widgets/entitlement-status.js"></script>
+    <script src="widgets/auth-status.js"></script>
+    <script src="widgets/status-messages.js"></script>
+    <script src="widgets/signed-out-panel.js"></script>
+    <script type="module" src="widgets/view-source-link.js"></script>
+    <script type="module" src="settings.page.js"></script>
+  </body>
+</html>

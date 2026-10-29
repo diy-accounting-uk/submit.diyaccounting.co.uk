@@ -40,10 +40,15 @@
     if (lists.length === 0) return;
     try {
       const service = await import("/lib/services/catalog-service.js");
-      const [response, environmentName] = await Promise.all([fetch("/submit.catalogue.toml"), service.fetchCurrentEnvironmentName()]);
+      const viewerSettings = await import("/lib/services/viewer-settings.js");
+      const [response, environmentName, viewer] = await Promise.all([
+        fetch("/submit.catalogue.toml"),
+        service.fetchCurrentEnvironmentName(),
+        viewerSettings.fetchViewer(),
+      ]);
       if (!response.ok) return;
       const catalog = window.TOML.parse(await response.text());
-      const { groups } = service.featureStatusSummary(catalog, environmentName);
+      const { groups } = service.featureStatusSummary(catalog, environmentName, viewer);
       lists.forEach((list) => renderFeatureStatusList(list, groups));
     } catch (err) {
       console.warn("feature-status: could not read the catalogue", err);

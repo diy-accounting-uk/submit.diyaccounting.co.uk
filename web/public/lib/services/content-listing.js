@@ -3,10 +3,11 @@
 
 // Decides which content a page shows. An item that names a catalogue activity (a video's
 // `catalogueActivity`, an FAQ's `activity`, an element's data-listed-activity) shows only where
-// the catalogue lists that activity in the current environment. An item that names none always
-// shows.
+// the catalogue lists that activity in the current environment, or preview features are on. An
+// item that names none always shows.
 
-import { fetchCurrentEnvironmentName, isActivityListedInEnvironment } from "./catalog-service.js";
+import { fetchCurrentEnvironmentName, isActivityShown } from "./catalog-service.js";
+import { fetchViewer } from "./viewer-settings.js";
 
 /**
  * Build the listing check for the current environment from the deployed catalogue. When the
@@ -15,13 +16,17 @@ import { fetchCurrentEnvironmentName, isActivityListedInEnvironment } from "./ca
  */
 export async function fetchActivityListing() {
   try {
-    const [response, environmentName] = await Promise.all([fetch("/submit.catalogue.toml"), fetchCurrentEnvironmentName()]);
+    const [response, environmentName, viewer] = await Promise.all([
+      fetch("/submit.catalogue.toml"),
+      fetchCurrentEnvironmentName(),
+      fetchViewer(),
+    ]);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const catalog = window.TOML.parse(await response.text());
     return (activityId) => {
       if (!activityId) return true;
       const activity = (catalog.activities ?? []).find((candidate) => candidate.id === activityId);
-      return activity !== undefined && isActivityListedInEnvironment(activity, environmentName);
+      return activity !== undefined && isActivityShown(activity, environmentName, viewer);
     };
   } catch (err) {
     console.warn("content-listing: could not read the catalogue", err);

@@ -786,6 +786,93 @@ header::after {
   color: var(--c-brand);
 }
 
+.settings-cog {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  min-height: 24px;
+  padding: 2px;
+  color: var(--c-ink-muted);
+  border-radius: var(--radius-control);
+  transition: color 150ms;
+}
+
+.settings-cog:hover {
+  color: var(--c-brand);
+}
+
+/* Settings page */
+.settings-group {
+  margin-bottom: var(--space-6);
+}
+
+.setting-row {
+  margin-bottom: var(--space-4);
+}
+
+.setting-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  cursor: pointer;
+  font-weight: var(--weight-strong);
+}
+
+.setting-switch input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.setting-switch-track {
+  position: relative;
+  flex: none;
+  width: 2.75rem;
+  height: 1.5rem;
+  border-radius: 999px;
+  background: var(--c-rule-subtle);
+  border: 1px solid var(--c-ink-muted);
+  transition: background 150ms;
+}
+
+.setting-switch-track::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 1.1rem;
+  height: 1.1rem;
+  border-radius: 50%;
+  background: var(--c-paper);
+  border: 1px solid var(--c-ink-muted);
+  transition: transform 150ms;
+}
+
+.setting-switch input:checked + .setting-switch-track {
+  background: var(--c-brand);
+  border-color: var(--c-brand);
+}
+
+.setting-switch input:checked + .setting-switch-track::after {
+  transform: translateX(1.25rem);
+}
+
+.setting-switch input:focus-visible + .setting-switch-track {
+  outline: 2px solid var(--c-brand);
+  outline-offset: 2px;
+}
+
+.setting-switch input:disabled + .setting-switch-track {
+  opacity: 0.5;
+}
+
 .login-link {
   display: inline-flex;
   align-items: center;

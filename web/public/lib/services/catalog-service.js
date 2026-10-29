@@ -62,6 +62,47 @@ export function isActivityListedInEnvironment(activity, environmentName) {
 }
 
 /**
+ * Whether a bundle or activity serves only operators: every bundle it names is the operator bundle.
+ * @param {string[]|undefined} bundleIds - The bundle ids of an activity
+ * @returns {boolean} True when the item is for operators only
+ */
+function isOperatorOnly(bundleIds) {
+  return Array.isArray(bundleIds) && bundleIds.length > 0 && bundleIds.every((id) => id === "operator");
+}
+
+/**
+ * Whether the catalogue shows an activity to this person: listed in the environment, or shown by
+ * preview features, and not switched off by the person's own settings. An activity may name an
+ * account setting in `accountSetting` (a setting that is false hides it), and an operator who
+ * turned operator features off does not see an activity that only the operator bundle serves.
+ * @param {object} activity - An activity entry from the parsed catalog
+ * @param {string|null} environmentName - The current environment name
+ * @param {{preview: boolean, operatorFeatures: boolean, account: object}} viewer - From viewer-settings.js fetchViewer
+ * @returns {boolean} True if the activity shows
+ */
+export function isActivityShown(activity, environmentName, viewer) {
+  if (activity?.accountSetting && viewer?.account?.[activity.accountSetting] === false) return false;
+  if (viewer?.operatorFeatures === false && isOperatorOnly(activity?.bundles)) return false;
+  return viewer?.preview === true || isActivityListedInEnvironment(activity, environmentName);
+}
+
+/**
+ * Whether the catalogue shows a bundle to this person: listed in the environment, or shown by
+ * preview features, and not the operator bundle for an operator who turned operator features off.
+ * @param {object} bundle - A bundle entry from the parsed catalog
+ * @param {string|null} environmentName - The current environment name
+ * @param {{preview: boolean, operatorFeatures: boolean}} viewer - From viewer-settings.js fetchViewer
+ * @returns {boolean} True if the bundle shows
+ */
+export function isBundleShown(bundle, environmentName, viewer) {
+  if (viewer?.operatorFeatures === false && bundle?.id === "operator") return false;
+  if (viewer?.preview === true) return true;
+  const listed = bundle?.listedInEnvironments;
+  if (!Array.isArray(listed) || listed.length === 0) return true;
+  return typeof environmentName === "string" && listed.includes(environmentName);
+}
+
+/**
  * The page an activity's home button opens: the first `.html` entry in its catalogue `paths`.
  * An activity with no page has no button on the home page.
  * @param {object} activity - An activity entry from the parsed catalog
@@ -122,14 +163,15 @@ export function activityStatus(activity) {
  * the environment appears in neither.
  * @param {object} catalog - The parsed catalog
  * @param {string|null} environmentName - The current environment name
+ * @param {object} [viewer] - From viewer-settings.js fetchViewer; preview features list every feature
  * @returns {{groups: {status: string, labels: string[]}[], filings: string[]}}
  */
-export function featureStatusSummary(catalog, environmentName) {
+export function featureStatusSummary(catalog, environmentName, viewer) {
   const byStatus = { production: [], sandbox: [], preview: [] };
   const filings = [];
   for (const feature of STATUS_FEATURES) {
     const activity = (catalog?.activities ?? []).find((candidate) => candidate.id === feature.activity);
-    if (!activity || !isActivityListedInEnvironment(activity, environmentName)) continue;
+    if (!activity || !isActivityShown(activity, environmentName, viewer)) continue;
     const status = activityStatus(activity);
     if (!status) continue;
     if (!byStatus[status].includes(feature.label)) byStatus[status].push(feature.label);
@@ -164,6 +206,8 @@ if (typeof window !== "undefined") {
   window.isActivityAvailable = isActivityAvailable;
   window.fetchCatalogText = fetchCatalogText;
   window.isActivityListedInEnvironment = isActivityListedInEnvironment;
+  window.isActivityShown = isActivityShown;
+  window.isBundleShown = isBundleShown;
   window.activityPagePath = activityPagePath;
   window.activityArea = activityArea;
   window.fetchCurrentEnvironmentName = fetchCurrentEnvironmentName;
