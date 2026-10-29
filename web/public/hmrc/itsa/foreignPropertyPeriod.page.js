@@ -104,7 +104,7 @@ async function loadProperties(criteria, accessToken) {
     criteria.runFraudPreventionHeaderValidation,
     criteria.testScenario,
   );
-  const properties = result?.propertyDetails || [];
+  const properties = result?.foreignPropertyDetails || [];
   figures.setProperties(properties);
   return properties;
 }
