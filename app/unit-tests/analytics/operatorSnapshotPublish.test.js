@@ -59,6 +59,7 @@ import {
   buildChartSeries,
   buildDailyChartDefinitions,
   buildDailyCharts,
+  vatSubmissionReconciliationText,
   toObservationWindows,
   toActivityFastWindows,
   buildSnapshot,
@@ -435,6 +436,74 @@ describe("operatorSnapshotPublish", () => {
       expect(series.map((line) => line.description)).toEqual(["Everything.", "Line a.", "Line b.", "The 1 smaller lines added together."]);
     });
 
+    test("the Retention table and graph read the same rolling definition of returning submitters", () => {
+      const retention = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "retention");
+      const returning = retention.observations.find((observation) => observation.id === "returning-submitters");
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "retention");
+
+      expect(returning.view).toBe("v_returning_submitters_rolling_daily");
+      expect(returning.valueExpr).toBe("returning_submitters_90d");
+      expect(returning.aggregation).toBe("latest");
+      expect(chart.modes[0].sql).toContain("returning_submitters_90d");
+      expect(chart.modes[0].sql).toContain("FROM   v_returning_submitters_rolling_daily");
+      expect(chart.note).toContain("roll");
+    });
+
+    test("Passes issued is a Retention row and line and a Conversion to paid line counted, not in pounds", () => {
+      const retention = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "retention");
+      const row = retention.observations.find((observation) => observation.id === "retention-passes-issued");
+      const charts = buildDailyChartDefinitions();
+      const paid = charts.find((definition) => definition.id === "conversion-to-paid");
+      const passes = paid.modes.find((mode) => mode.id === "passes");
+
+      expect(row).toMatchObject({ view: "v_pass_redemptions_daily", valueExpr: "passes_issued", aggregation: "sum" });
+      expect(charts.find((definition) => definition.id === "retention").modes[0].sql).toContain("'passes-issued'");
+      expect(passes.unit).toBe("count");
+      expect(passes.sql).toContain("passes_issued");
+      expect(passes.descriptionOf("passes-issued")).toBeTruthy();
+    });
+
+    test("the reconciliation line sets distinct submitters against completions, test accounts apart", () => {
+      const text = vatSubmissionReconciliationText({
+        rows: [
+          { actor_group: "customer", submissions: "90", submitters: "12" },
+          { actor_group: "test", submissions: "40", submitters: "3" },
+        ],
+        series: [{ id: "submitters-90d", values: [1, 11] }],
+        days: 90,
+      });
+
+      expect(text).toContain("12 distinct submitters");
+      expect(text).toContain("90 Submit VAT (HMRC) completions");
+      expect(text).toContain("reads 11");
+      expect(text).toContain("3 accounts made 40 completions");
+    });
+
+    test("buildDailyCharts attaches the Retention reconciliation line", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          case "GetQueryResultsCommand":
+            return Promise.resolve({
+              ResultSet: resultSetOfRows(
+                ["day", "component", "value", "actor_group", "submissions", "submitters"],
+                [[END_DAY, "x", "1", "customer", "5", "2"]],
+              ),
+            });
+          default:
+            return Promise.resolve({});
+        }
+      });
+
+      const { dailyCharts } = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY });
+
+      expect(dailyCharts.charts.find((chart) => chart.id === "retention").reconciliation).toContain("2 distinct submitters");
+      expect(dailyCharts.charts.find((chart) => chart.id === "visitors").reconciliation).toBeUndefined();
+    });
+
     test("every chart mode asks for the last 90 days and answers day, component and value", () => {
       for (const definition of buildDailyChartDefinitions()) {
         for (const mode of definition.modes) {
@@ -728,7 +797,7 @@ describe("operatorSnapshotPublish", () => {
         "FROM   security_hub_findings",
         "FROM   guardduty_findings",
         "FROM   github_alerts",
-        "FROM   v_returning_submitters_quarterly",
+        "FROM   v_returning_submitters_rolling_daily",
         "FROM   v_subscription_renewals_daily",
         "FROM   v_subscription_cancellations_daily",
         "FROM   v_operator_interventions_daily",

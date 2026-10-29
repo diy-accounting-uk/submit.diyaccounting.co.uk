@@ -65,8 +65,9 @@ function lineStylesFor(seriesList) {
 }
 
 function drawChart(state) {
-  const { chart, days, svg, readout, unit } = state;
+  const { chart, days, svg, readout } = state;
   const mode = chart.modes[state.modeIndex];
+  const unit = mode.unit || chart.unit;
   const visible = mode.series.filter((series) => !state.hidden.has(series.id));
   const styles = lineStylesFor(mode.series);
 
@@ -247,7 +248,7 @@ function renderChartCard(chart, days) {
   heading.textContent = chart.title;
   card.appendChild(heading);
 
-  const state = { chart, days, unit: chart.unit, modeIndex: 0, hidden: new Set(), card };
+  const state = { chart, days, modeIndex: 0, hidden: new Set(), card };
 
   if (chart.modes.length > 1) {
     const tabs = document.createElement("div");
@@ -294,6 +295,13 @@ function renderChartCard(chart, days) {
   state.legend = document.createElement("ul");
   state.legend.className = "chart-legend";
   card.appendChild(state.legend);
+
+  if (chart.reconciliation) {
+    const reconciliation = document.createElement("p");
+    reconciliation.className = "chart-note chart-reconciliation";
+    reconciliation.textContent = chart.reconciliation;
+    card.appendChild(reconciliation);
+  }
 
   if (chart.note) {
     const note = document.createElement("p");

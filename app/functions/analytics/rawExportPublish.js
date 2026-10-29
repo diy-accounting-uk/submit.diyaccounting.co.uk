@@ -37,6 +37,7 @@ export const VIEW_NAMES = [
   "v_dora_runs_daily",
   "v_returning_submitters_quarterly",
   "v_returning_submitters_rolling_daily",
+  "v_vat_submissions_by_actor_daily",
   "v_subscription_renewals_daily",
   "v_subscription_cancellations_daily",
   "v_operator_interventions_daily",
@@ -114,6 +115,7 @@ export const OBJECTIVES = [
     views: [
       "v_returning_submitters_quarterly",
       "v_returning_submitters_rolling_daily",
+      "v_vat_submissions_by_actor_daily",
       "v_subscription_renewals_daily",
       "v_subscription_cancellations_daily",
     ],

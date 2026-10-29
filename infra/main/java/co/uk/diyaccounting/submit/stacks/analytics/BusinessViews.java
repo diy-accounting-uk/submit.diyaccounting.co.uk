@@ -189,6 +189,10 @@ public class BusinessViews extends Construct {
                     "Each day, the customers who submitted in the last 90 days and how many also submitted in the 90 days before",
                     List.of("dynamo_receipts")),
             new ViewDefinition(
+                    "v_vat_submissions_by_actor_daily",
+                    "VAT submissions each day and account, customers apart from test accounts",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
                     "v_subscription_renewals_daily",
                     "Subscriptions that renewed each day, by bundle",
                     List.of("activity_events_all")),

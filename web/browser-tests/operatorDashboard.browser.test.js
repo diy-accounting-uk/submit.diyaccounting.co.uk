@@ -330,18 +330,35 @@ const FIXTURE_DAILY_CHARTS = {
         note: "Steps, left to right.",
       },
     ),
-    chartWithSeries("conversion-to-paid", "conversion-to-paid", "Conversion to paid", "gbp", [
-      "Subscriptions",
-      "Stripe donations",
-      "PayPal donations",
-    ]),
+    {
+      ...chartWithSeries("conversion-to-paid", "conversion-to-paid", "Conversion to paid", "gbp", [
+        "Subscriptions",
+        "Stripe donations",
+        "PayPal donations",
+      ]),
+      modes: [
+        {
+          id: "revenue",
+          label: "Revenue",
+          series: [chartSeries("subscriptions", "Subscriptions", 5), chartSeries("stripe-donations", "Stripe donations", 3)],
+        },
+        { id: "passes", label: "Passes issued", unit: "count", series: [chartSeries("passes-issued", "Passes issued", 4)] },
+      ],
+    },
     chartWithSeries("low-running-cost", "low-running-cost", "AWS costs", "usd", [
       "Amazon CloudFront",
       "AWS Lambda",
       "Amazon DynamoDB",
       "Other services",
     ]),
-    chartWithSeries("retention", "retention", "Retention", "count", ["Submitters", "Returning submitters", "Renewals", "Cancellations"]),
+    chartWithSeries(
+      "retention",
+      "retention",
+      "Retention",
+      "count",
+      ["Submitters", "Returning submitters", "Renewals", "Cancellations", "Passes issued"],
+      { note: "The 90-day windows roll.", reconciliation: "Last 90 days, customers: 12 distinct submitters made 90 completions." },
+    ),
     chartWithSeries("visitors", "conversion-to-submission", "Visitors", "count", ["Human", "Operator", "Bot", "Synthetic"]),
   ],
 };
@@ -840,10 +857,10 @@ test.describe("Operator Dashboard", () => {
 
       const retention = page.locator('.chart-card[data-chart-id="retention"]');
       await retention.locator('.chart-legend-item[data-series-id="retention-0"]').click();
-      await expect(retention.locator("polyline.chart-line")).toHaveCount(4);
+      await expect(retention.locator("polyline.chart-line")).toHaveCount(5);
       await expect(retention.locator('.chart-legend-item[data-series-id="retention-0"]')).toHaveAttribute("aria-pressed", "false");
       await retention.locator('.chart-legend-item[data-series-id="retention-0"]').click();
-      await expect(retention.locator("polyline.chart-line")).toHaveCount(5);
+      await expect(retention.locator("polyline.chart-line")).toHaveCount(6);
     });
 
     test("switches the activities chart between started and completed", async ({ page }) => {
@@ -862,23 +879,38 @@ test.describe("Operator Dashboard", () => {
 
       const card = page.locator('.chart-card[data-chart-id="retention"]');
       const lines = card.locator("polyline.chart-line");
-      await expect(lines).toHaveCount(5);
+      await expect(lines).toHaveCount(6);
 
       await card.locator('[data-action="hide-all"]').click();
       await expect(lines).toHaveCount(0);
       await card.locator('[data-action="show-all"]').click();
-      await expect(lines).toHaveCount(5);
+      await expect(lines).toHaveCount(6);
 
       await card.locator(".chart-legend-item", { hasText: "Renewals" }).click();
-      await expect(lines).toHaveCount(4);
-      await card.locator(".chart-legend-item", { hasText: "Renewals" }).click();
       await expect(lines).toHaveCount(5);
+      await card.locator(".chart-legend-item", { hasText: "Renewals" }).click();
+      await expect(lines).toHaveCount(6);
 
       await card.locator(".chart-legend-item", { hasText: "Cancellations" }).dblclick();
       await expect(lines).toHaveCount(1);
       await expect(card.locator('.chart-legend-item[aria-pressed="true"]')).toHaveCount(1);
       await card.locator(".chart-legend-item", { hasText: "Cancellations" }).dblclick();
-      await expect(lines).toHaveCount(5);
+      await expect(lines).toHaveCount(6);
+    });
+
+    test("shows the retention reconciliation line and counts Passes issued without a pound sign", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const retention = page.locator('.chart-card[data-chart-id="retention"]');
+      await expect(retention.locator(".chart-reconciliation")).toContainText("12 distinct submitters");
+      await expect(retention.locator(".chart-legend-item", { hasText: "Passes issued" })).toBeVisible();
+
+      const paid = page.locator('.chart-card[data-chart-id="conversion-to-paid"]');
+      await expect(paid.locator(".chart-readout")).toContainText("£");
+      await paid.locator('.chart-mode[data-mode-id="passes"]').click();
+      await expect(paid.locator(".chart-readout")).toContainText("Passes issued");
+      await expect(paid.locator(".chart-readout")).not.toContainText("£");
     });
 
     test("describes each line in its legend tooltip", async ({ page }) => {

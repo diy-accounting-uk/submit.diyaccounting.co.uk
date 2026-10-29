@@ -580,14 +580,34 @@ export const OBJECTIVE_DEFINITIONS = [
     name: "Retention",
     observations: [
       {
-        id: "returning-submitters",
-        label: "Returning submitters",
+        id: "submitters-90d",
+        label: "Submitters, 90 days to the latest day",
         unit: "count",
-        view: "v_returning_submitters_quarterly",
-        dayColumn: "quarter",
-        valueExpr: "returning_submitters",
-        aggregation: "sum",
+        view: "v_returning_submitters_rolling_daily",
+        dayColumn: "day",
+        valueExpr: "submitters_90d",
+        aggregation: "latest",
         deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      },
+      {
+        id: "returning-submitters",
+        label: "Returning submitters, 90 days to the latest day",
+        unit: "count",
+        view: "v_returning_submitters_rolling_daily",
+        dayColumn: "day",
+        valueExpr: "returning_submitters_90d",
+        aggregation: "latest",
+        deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      },
+      {
+        id: "retention-passes-issued",
+        label: "Passes issued",
+        unit: "count",
+        view: "v_pass_redemptions_daily",
+        dayColumn: "day",
+        valueExpr: "passes_issued",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
         id: "subscription-renewals",
@@ -833,7 +853,9 @@ const BETTER_UP_IDS = [
   "passes-issued",
   "passes-redeemed",
   "paid-landings",
+  "submitters-90d",
   "returning-submitters",
+  "retention-passes-issued",
   "subscription-renewals",
   "company-turnover",
   "company-profit",
@@ -1378,6 +1400,31 @@ const STRIPE_DONATION_COMPONENT_CASE =
   `WHEN ${PAYPAL_DONATION_PRODUCT_FILTER} THEN 'paypal-donations' ` +
   `WHEN product LIKE 'paypal-%' THEN 'paypal-other' ELSE 'subscriptions' END`;
 
+const plural = (count, singular, pluralForm) => `${count} ${Number(count) === 1 ? singular : pluralForm}`;
+
+/**
+ * The line under the Retention graph that lets the graph's submitters be checked against the
+ * Submit VAT (HMRC) completions in the activities table: the same window's distinct submitters
+ * and completions from the activity events, customers apart from test accounts, beside the
+ * graph's own Submitters line on its latest day (read from receipts).
+ *
+ * @param {{rows: Array<{actor_group: string, submissions: string, submitters: string}>, series: Array<{id: string, values: number[]}>, days: number}} params
+ * @returns {string}
+ */
+export function vatSubmissionReconciliationText({ rows, series, days }) {
+  const group = (name) => rows.find((row) => row.actor_group === name) ?? { submissions: "0", submitters: "0" };
+  const customer = group("customer");
+  const test = group("test");
+  const receiptSubmitters = series.find((line) => line.id === "submitters-90d")?.values.at(-1) ?? 0;
+  return (
+    `Last ${days} days, customers: ${plural(customer.submitters, "distinct submitter", "distinct submitters")} in the activity events ` +
+    `made ${plural(customer.submissions, "Submit VAT (HMRC) completion", "Submit VAT (HMRC) completions")}; ` +
+    `the Submitters line reads ${receiptSubmitters} on its latest day, counted from receipts. ` +
+    `Test accounts apart: ${plural(test.submitters, "account", "accounts")} made ${plural(test.submissions, "completion", "completions")}. ` +
+    `Completions include failed attempts. The lake does not mark an operator's own account, so operator submissions are in the customer figures.`
+  );
+}
+
 /**
  * The charts the dashboard draws. A mode is one set of lines; a chart with two modes (activities:
  * started and completed) shows one at a time. `total` names the sum-of-components line, or is
@@ -1467,7 +1514,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-paid",
       title: "Conversion to paid",
       unit: "gbp",
-      note: "Revenue per day in pounds, by where the money came from. Each day is a UTC day.",
+      note: "Revenue per day in pounds, by where the money came from; Passes issued is a count of passes per day. Each day is a UTC day.",
       modes: [
         {
           id: "revenue",
@@ -1493,6 +1540,21 @@ export function buildDailyChartDefinitions() {
             componentExpression: STRIPE_DONATION_COMPONENT_CASE,
             valueExpression: "revenue_gbp",
             view: "v_revenue_daily",
+            dayColumn: "day",
+          }),
+        },
+        {
+          id: "passes",
+          label: "Passes issued",
+          unit: "count",
+          total: null,
+          labelOf: () => "Passes issued",
+          descriptionOf: () => "Passes issued on the day, of every pass type; a count, not pounds.",
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "'passes-issued'",
+            valueExpression: "passes_issued",
+            view: "v_pass_redemptions_daily",
             dayColumn: "day",
           }),
         },
@@ -1562,7 +1624,13 @@ export function buildDailyChartDefinitions() {
       objectiveId: "retention",
       title: "Retention",
       unit: "count",
-      note: "Submitters and returning submitters cover the 90 days up to each day; a returning submitter also submitted in the 90 days before that.",
+      note: "The 90-day windows roll: each day counts the customers who submitted in the 90 days up to it, so a figure falls when a submission leaves the window. A returning submitter also submitted in the 90 days before that; the table above reads the same line on its latest day. Passes issued are a count per day.",
+      reconciliation: {
+        sql:
+          `SELECT actor_group, cast(sum(submissions) AS varchar) AS submissions, cast(count(DISTINCT hashed_sub) AS varchar) AS submitters\n` +
+          `FROM   v_vat_submissions_by_actor_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
+        text: vatSubmissionReconciliationText,
+      },
       modes: [
         {
           id: "retention",
@@ -1574,10 +1642,12 @@ export function buildDailyChartDefinitions() {
               "returning-submitters-90d": "Of those, the customers who also submitted in the 90 days before that.",
               "renewals": "Subscriptions renewed on the day.",
               "cancellations": "Subscriptions cancelled on the day.",
+              "passes-issued": "Passes issued on the day, of every pass type.",
             })[id],
-          componentOrder: ["submitters-90d", "returning-submitters-90d", "renewals", "cancellations"],
+          componentOrder: ["submitters-90d", "returning-submitters-90d", "renewals", "cancellations", "passes-issued"],
           labelOf: (id) =>
             ({
+              "passes-issued": "Passes issued",
               "submitters-90d": "Submitters, 90 days to this day",
               "returning-submitters-90d": "Returning submitters, 90 days to this day",
               "renewals": "Subscription renewals",
@@ -1594,7 +1664,10 @@ export function buildDailyChartDefinitions() {
             `FROM   v_subscription_renewals_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), 'cancellations', cast(sum(cancellations) AS double)\n` +
-            `FROM   v_subscription_cancellations_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
+            `FROM   v_subscription_cancellations_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'passes-issued', cast(sum(passes_issued) AS double)\n` +
+            `FROM   v_pass_redemptions_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
         },
       ],
     },
@@ -1714,7 +1787,15 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
     async ({ definition, mode }) => {
       try {
         const rows = await runAthenaQuery({ workGroup, database, sql: mode.sql });
-        return { chartId: definition.id, mode: { id: mode.id, label: mode.label, series: buildChartSeries({ days, rows, mode }) } };
+        return {
+          chartId: definition.id,
+          mode: {
+            id: mode.id,
+            label: mode.label,
+            ...(mode.unit ? { unit: mode.unit } : {}),
+            series: buildChartSeries({ days, rows, mode }),
+          },
+        };
       } catch (error) {
         failedChartIds.add(definition.id);
         logger.warn({
@@ -1738,6 +1819,24 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
       ...(note ? { note } : {}),
       modes: modeResults.filter((result) => result && result.chartId === id).map((result) => result.mode),
     }));
+
+  // A reconciliation query that fails leaves its chart without the line and still counts as a failure.
+  for (const chart of charts) {
+    const { reconciliation } = definitions.find((definition) => definition.id === chart.id);
+    if (!reconciliation) continue;
+    try {
+      const rows = await runAthenaQuery({ workGroup, database, sql: reconciliation.sql });
+      const series = chart.modes.flatMap((mode) => mode.series);
+      chart.reconciliation = reconciliation.text({ rows, series, days: days.length });
+    } catch (error) {
+      failedChartIds.add(`${chart.id}-reconciliation`);
+      logger.warn({
+        message: "Chart reconciliation query failed, publishing no reconciliation line",
+        chartId: chart.id,
+        error: error.message,
+      });
+    }
+  }
   return { dailyCharts: { days, charts }, failedChartIds: [...failedChartIds] };
 }
 
