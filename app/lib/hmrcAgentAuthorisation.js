@@ -166,7 +166,9 @@ export function agentAuthorisationErrorResponse(request, result, responseHeaders
     return http403ForbiddenResponse({
       request,
       headers: responseHeaders,
-      message: "Forbidden - the practice's HMRC access token may be invalid or lack the agent enrolment",
+      message: result.data?.code
+        ? `Forbidden - HMRC answered ${result.data.code}`
+        : "Forbidden - the practice's HMRC access token may be invalid or lack the agent enrolment",
       error: errorResponse,
     });
   }
