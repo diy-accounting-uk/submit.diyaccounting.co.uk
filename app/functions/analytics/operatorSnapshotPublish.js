@@ -1112,12 +1112,21 @@ function isS3Throttling(error) {
   return error.message.includes("HIVE_S3_THROTTLING");
 }
 
+// GENERIC_INTERNAL_ERROR is Athena failing on its own side, not a SQL error, and the same query
+// started again normally succeeds. SQL errors such as SYNTAX_ERROR are not matched here.
+function isAthenaInternalError(error) {
+  return error.message.includes("FAILED: GENERIC_INTERNAL_ERROR");
+}
+
 export async function runAthenaQuery({ workGroup, database, sql }) {
   const athenaClient = getAthenaClient();
   const maxThrottleRetries = Number(process.env.ATHENA_THROTTLE_MAX_RETRIES || 2);
   const throttleBackoffMs = Number(process.env.ATHENA_THROTTLE_BACKOFF_MS || 10000);
+  const maxInternalErrorRetries = 1;
+  let throttleRetries = 0;
+  let internalErrorRetries = 0;
 
-  for (let retry = 0; ; retry += 1) {
+  for (;;) {
     const { QueryExecutionId } = await athenaClient.send(
       new StartQueryExecutionCommand({
         QueryString: sql,
@@ -1129,9 +1138,23 @@ export async function runAthenaQuery({ workGroup, database, sql }) {
     try {
       await pollUntilTerminal(athenaClient, QueryExecutionId);
     } catch (error) {
-      if (retry < maxThrottleRetries && isS3Throttling(error)) {
-        logger.warn({ message: "Athena query throttled by S3, starting it again", queryExecutionId: QueryExecutionId, retry: retry + 1 });
-        await sleep(throttleBackoffMs * 2 ** retry);
+      if (throttleRetries < maxThrottleRetries && isS3Throttling(error)) {
+        logger.warn({
+          message: "Athena query throttled by S3, starting it again",
+          queryExecutionId: QueryExecutionId,
+          retry: throttleRetries + 1,
+        });
+        await sleep(throttleBackoffMs * 2 ** throttleRetries);
+        throttleRetries += 1;
+        continue;
+      }
+      if (internalErrorRetries < maxInternalErrorRetries && isAthenaInternalError(error)) {
+        logger.warn({
+          message: "Athena query failed with its own internal error, starting it again",
+          queryExecutionId: QueryExecutionId,
+          retry: internalErrorRetries + 1,
+        });
+        internalErrorRetries += 1;
         continue;
       }
       throw error;

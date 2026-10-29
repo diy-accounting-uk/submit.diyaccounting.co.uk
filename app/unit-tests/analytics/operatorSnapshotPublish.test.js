@@ -926,8 +926,8 @@ describe("operatorSnapshotPublish", () => {
       expect(rows).toEqual([{ last_30: "1", prev_30: "2", last_90: "3", prev_90: "4" }]);
     });
 
-    // The first `throttledStarts` executions fail with S3 throttling; every later one succeeds.
-    function mockThrottledThenSucceeding(throttledStarts) {
+    // The first `failingStarts` executions fail with `reason`; every later one succeeds.
+    function mockFailingThenSucceeding(reason, failingStarts) {
       let starts = 0;
       mockAthenaSend.mockImplementation((command) => {
         switch (command.constructor.name) {
@@ -936,10 +936,8 @@ describe("operatorSnapshotPublish", () => {
             return Promise.resolve({ QueryExecutionId: `qid-${starts}` });
           case "GetQueryExecutionCommand": {
             const start = Number(command.input.QueryExecutionId.slice(4));
-            if (start <= throttledStarts) {
-              return Promise.resolve({
-                QueryExecution: { Status: { State: "FAILED", StateChangeReason: "HIVE_S3_THROTTLING: Please reduce your request rate." } },
-              });
+            if (start <= failingStarts) {
+              return Promise.resolve({ QueryExecution: { Status: { State: "FAILED", StateChangeReason: reason } } });
             }
             return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
           }
@@ -952,17 +950,39 @@ describe("operatorSnapshotPublish", () => {
       return () => starts;
     }
 
+    const THROTTLED = "HIVE_S3_THROTTLING: Please reduce your request rate.";
+    const INTERNAL_ERROR = "GENERIC_INTERNAL_ERROR: Cannot invoke a method because factory is null.";
+
     test("runAthenaQuery starts a query again when S3 throttled it", async () => {
-      const startCount = mockThrottledThenSucceeding(2);
+      const startCount = mockFailingThenSucceeding(THROTTLED, 2);
       const rows = await runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" });
       expect(rows).toEqual([{ value: "7" }]);
       expect(startCount()).toBe(3);
     });
 
     test("runAthenaQuery gives up after its throttling retries", async () => {
-      const startCount = mockThrottledThenSucceeding(3);
+      const startCount = mockFailingThenSucceeding(THROTTLED, 3);
       await expect(runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" })).rejects.toThrow("HIVE_S3_THROTTLING");
       expect(startCount()).toBe(3);
+    });
+
+    test("runAthenaQuery starts a query again once after Athena's own internal error, and then succeeds", async () => {
+      const startCount = mockFailingThenSucceeding(INTERNAL_ERROR, 1);
+      const rows = await runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" });
+      expect(rows).toEqual([{ value: "7" }]);
+      expect(startCount()).toBe(2);
+    });
+
+    test("runAthenaQuery fails when Athena's internal error comes back on the second run too", async () => {
+      const startCount = mockFailingThenSucceeding(INTERNAL_ERROR, 2);
+      await expect(runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" })).rejects.toThrow("GENERIC_INTERNAL_ERROR");
+      expect(startCount()).toBe(2);
+    });
+
+    test("runAthenaQuery does not start a SQL error again", async () => {
+      const startCount = mockFailingThenSucceeding("SYNTAX_ERROR: line 1:8: mismatched input 'FROM'.", 1);
+      await expect(runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" })).rejects.toThrow("SYNTAX_ERROR");
+      expect(startCount()).toBe(1);
     });
 
     test("runAthenaQuery does not start a query again for any other failure", async () => {
