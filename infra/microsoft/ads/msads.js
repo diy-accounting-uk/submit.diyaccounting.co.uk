@@ -1,0 +1,828 @@
+#!/usr/bin/env node
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
+// infra/microsoft/ads/msads.js
+//
+// Read-only client for the Microsoft Advertising account named in infra/microsoft/ads/msads.toml
+// (Bing Ads API v13, REST endpoints). It has no create, update or delete call.
+//
+// Usage:
+//   node infra/microsoft/ads/msads.js --consent [--client-file <path>]
+//   node infra/microsoft/ads/msads.js --whoami [--json]
+//   node infra/microsoft/ads/msads.js --inventory [--json] [--campaign-types "Search Audience"]
+//   node infra/microsoft/ads/msads.js --forecast [--keywords "a,b" | --keywords-file <path>] [--max-cpc-gbp <n>] [--json]
+//   node infra/microsoft/ads/msads.js --report [--from YYYY-MM-DD --to YYYY-MM-DD] [--json]
+//
+// The account signs in with Google. --consent runs the loopback OAuth flow scripts/youtube-upload.js
+// uses, with the YouTube OAuth client and the scopes in msads.toml, and stores the refresh token in
+// the Secrets Manager secret msads.toml names (an AWS write, through
+// scripts/put-secret-with-rotation-tag.sh). Every other mode reads that token, exchanges it at
+// Google's token endpoint for an access token and calls the API with it.
+//
+// Every request carries the developer token, the Google access token as a Bearer token, the
+// IdentityProvider header and, once whoami has found it, the customer id and the account id.
+// The customer id is not stored: it is read from the account's ParentCustomerId on each run.
+
+import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
+import fs from "node:fs";
+import path from "node:path";
+import zlib from "node:zlib";
+import TOML from "@iarna/toml";
+import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
+
+import { resolveClientCredentials, runLoopbackConsent } from "../../../scripts/youtube-upload.js";
+
+export const CONFIG_PATH = "infra/microsoft/ads/msads.toml";
+export const POLL_INTERVAL_MS = 3000;
+export const POLL_ATTEMPTS = 40;
+export const DEFAULT_CAMPAIGN_TYPES = "Search";
+export const AD_TYPES = ["ExpandedText", "ResponsiveSearch", "DynamicSearch"];
+export const CAMPAIGN_CRITERION_TYPES = ["Location", "LocationIntent", "Radius", "DayTime", "Device", "Age", "Gender"];
+export const CAMPAIGN_REPORT_COLUMNS = [
+  "CampaignId",
+  "CampaignName",
+  "Impressions",
+  "Clicks",
+  "Ctr",
+  "AverageCpc",
+  "Spend",
+  "Conversions",
+  "Revenue",
+];
+export const DEFAULT_MAX_CPC_GBP = 1;
+export const REPORT_TIME_ZONE = "GreenwichMeanTimeDublinEdinburghLisbonLondon";
+
+export function parseConfig(tomlString) {
+  const parsed = TOML.parse(tomlString);
+  const config = {
+    accountId: parsed.account?.account_id,
+    accountNumber: parsed.account?.account_number,
+    oauthClientSecretName: parsed.secrets?.oauth_client,
+    refreshTokenSecretName: parsed.secrets?.refresh_token,
+    developerTokenSecretName: parsed.secrets?.developer_token,
+    scope: parsed.oauth?.scope,
+    identityProvider: parsed.oauth?.identity_provider,
+    tokenUrl: parsed.oauth?.token_url,
+    customerManagementUrl: parsed.api?.customer_management,
+    campaignManagementUrl: parsed.api?.campaign_management,
+    adInsightUrl: parsed.api?.ad_insight,
+    reportingUrl: parsed.api?.reporting,
+  };
+  const missing = Object.entries(config)
+    .filter(([, value]) => !value)
+    .map(([key]) => key);
+  if (missing.length > 0) throw new Error(`msads.toml is missing: ${missing.join(", ")}`);
+  return config;
+}
+
+export function loadConfigFromRoot() {
+  return parseConfig(fs.readFileSync(path.join(process.cwd(), CONFIG_PATH), "utf-8"));
+}
+
+const MODES = ["consent", "whoami", "inventory", "forecast", "report"];
+const VALUE_FLAGS = {
+  "--client-file": "clientFile",
+  "--campaign-types": "campaignTypes",
+  "--keywords": "keywords",
+  "--keywords-file": "keywordsFile",
+  "--max-cpc-gbp": "maxCpcGbp",
+  "--from": "from",
+  "--to": "to",
+};
+
+export function parseArgs(argv) {
+  const opts = { mode: undefined, json: false, campaignTypes: DEFAULT_CAMPAIGN_TYPES };
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg.startsWith("--") && MODES.includes(arg.slice(2))) {
+      if (opts.mode) throw new Error(`Only one mode at a time: ${opts.mode} and ${arg.slice(2)}`);
+      opts.mode = arg.slice(2);
+    } else if (arg === "--json") {
+      opts.json = true;
+    } else if (VALUE_FLAGS[arg]) {
+      const value = argv[++i];
+      if (!value) throw new Error(`${arg} requires an argument`);
+      opts[VALUE_FLAGS[arg]] = value;
+    } else {
+      throw new Error(`Unknown argument: ${arg}`);
+    }
+  }
+  if (!opts.mode) throw new Error(`One mode is required: ${MODES.join(", ")} (each with a -- prefix)`);
+  if (Boolean(opts.from) !== Boolean(opts.to)) throw new Error("--from and --to must be given together");
+  if (opts.keywords && opts.keywordsFile) throw new Error("--keywords and --keywords-file are mutually exclusive");
+  return opts;
+}
+
+// --- Credentials ---
+
+let cachedSecretsManagerClient = null;
+function getSecretsManagerClient() {
+  if (!cachedSecretsManagerClient) {
+    cachedSecretsManagerClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
+  }
+  return cachedSecretsManagerClient;
+}
+
+async function readSecretString(smClient, secretId) {
+  const result = await smClient.send(new GetSecretValueCommand({ SecretId: secretId }));
+  return result.SecretString;
+}
+
+/** The developer token secret is a bare string or a JSON object holding it. */
+export function parseDeveloperToken(secretString) {
+  const trimmed = (secretString ?? "").trim();
+  if (!trimmed.startsWith("{")) return trimmed;
+  const parsed = JSON.parse(trimmed);
+  const token = parsed.developer_token ?? parsed.DeveloperToken ?? parsed.token;
+  if (!token) throw new Error("developer token secret is JSON without developer_token");
+  return token;
+}
+
+export async function refreshAccessToken({ config, clientCredentials, refreshToken, fetchImpl = fetch }) {
+  const body = new URLSearchParams({
+    client_id: clientCredentials.client_id,
+    client_secret: clientCredentials.client_secret,
+    refresh_token: refreshToken,
+    grant_type: "refresh_token",
+  });
+  const response = await fetchImpl(config.tokenUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const parsed = await response.json();
+  if (!response.ok || !parsed.access_token) {
+    throw new Error(
+      `Google token refresh failed (${response.status} ${parsed.error ?? ""}). Run --consent again to store a new refresh token.`,
+    );
+  }
+  return parsed.access_token;
+}
+
+export async function openSession({ config, clientFile, smClient = getSecretsManagerClient(), fetchImpl = fetch }) {
+  const clientCredentials = await resolveClientCredentials({ clientFile, smClient });
+  let storedRefreshToken;
+  try {
+    storedRefreshToken = await readSecretString(smClient, config.refreshTokenSecretName);
+  } catch (error) {
+    if (error.name === "ResourceNotFoundException") {
+      throw new Error(`No refresh token in ${config.refreshTokenSecretName}. Run: node infra/microsoft/ads/msads.js --consent`);
+    }
+    throw error;
+  }
+  const developerToken = parseDeveloperToken(await readSecretString(smClient, config.developerTokenSecretName));
+  const accessToken = await refreshAccessToken({
+    config,
+    clientCredentials,
+    refreshToken: JSON.parse(storedRefreshToken).refresh_token,
+    fetchImpl,
+  });
+  return { config, accessToken, developerToken, fetchImpl, customerId: undefined };
+}
+
+export function buildHeaders(session) {
+  const headers = {
+    "Authorization": `Bearer ${session.accessToken}`,
+    "DeveloperToken": session.developerToken,
+    "IdentityProvider": session.config.identityProvider,
+    "Content-Type": "application/json",
+  };
+  if (session.customerId) headers.CustomerId = String(session.customerId);
+  if (session.withAccount !== false) headers.CustomerAccountId = session.config.accountId;
+  return headers;
+}
+
+export function redact(text, session) {
+  let out = String(text);
+  for (const secret of [session.accessToken, session.developerToken]) {
+    if (secret) out = out.split(secret).join("[redacted]");
+  }
+  return out;
+}
+
+export async function callApi(session, baseUrl, operationPath, body) {
+  const response = await session.fetchImpl(`${baseUrl}${operationPath}`, {
+    method: "POST",
+    headers: buildHeaders(session),
+    body: JSON.stringify(body),
+  });
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(`${operationPath} failed (${response.status}): ${redact(text, session).slice(0, 600)}`);
+  }
+  return text ? JSON.parse(text) : {};
+}
+
+// --- Customer ---
+
+export function shapeAccount(account) {
+  return {
+    id: String(account.Id),
+    number: account.Number,
+    name: account.Name,
+    currency: account.CurrencyCode,
+    lifeCycleStatus: account.AccountLifeCycleStatus,
+    financialStatus: account.AccountFinancialStatus,
+    timeZone: account.TimeZone,
+    parentCustomerId: account.ParentCustomerId === undefined ? undefined : String(account.ParentCustomerId),
+  };
+}
+
+export async function discoverCustomer(session) {
+  const { config } = session;
+  session.withAccount = false;
+  session.customerId = undefined;
+  const userBody = await callApi(session, config.customerManagementUrl, "/User/Query", { UserId: null });
+  const accountsBody = await callApi(session, config.customerManagementUrl, "/Accounts/Search", {
+    Predicates: [{ Field: "AccountId", Operator: "Equals", Value: config.accountId }],
+    Ordering: null,
+    PageInfo: { Index: 0, Size: 10 },
+  });
+  session.withAccount = true;
+  const accounts = (accountsBody.Accounts ?? []).map(shapeAccount);
+  const account = accounts.find((a) => a.id === config.accountId);
+  if (!account) throw new Error(`Account ${config.accountId} is not visible to the signed-in user`);
+  const customerId = account.parentCustomerId ?? (userBody.User?.CustomerId ? String(userBody.User.CustomerId) : undefined);
+  if (!customerId) throw new Error("Could not read the customer id from the account or the user");
+  session.customerId = customerId;
+  return {
+    user: { id: String(userBody.User?.Id), name: userBody.User?.UserName, customerId: String(userBody.User?.CustomerId ?? "") },
+    roles: (userBody.CustomerRoles ?? []).map((r) => ({
+      customerId: String(r.CustomerId),
+      roleId: r.RoleId,
+      accountIds: (r.AccountIds ?? []).map(String),
+    })),
+    customerId,
+    account,
+  };
+}
+
+// --- Inventory ---
+
+export function shapeCampaign(c) {
+  return {
+    id: String(c.Id),
+    name: c.Name,
+    status: c.Status,
+    type: c.CampaignType,
+    budgetId: c.BudgetId ? String(c.BudgetId) : undefined,
+    budgetType: c.BudgetType,
+    dailyBudget: c.DailyBudget,
+    biddingScheme: c.BiddingScheme ?? null,
+    languages: c.Languages ?? [],
+    timeZone: c.TimeZone,
+    startDate: c.StartDate ?? null,
+    endDate: c.EndDate ?? null,
+    trackingUrlTemplate: c.TrackingUrlTemplate,
+    finalUrlSuffix: c.FinalUrlSuffix,
+  };
+}
+
+export function shapeAdGroup(g) {
+  return {
+    id: String(g.Id),
+    name: g.Name,
+    status: g.Status,
+    cpcBid: g.CpcBid?.Amount,
+    language: g.Language,
+    network: g.Network,
+    biddingScheme: g.BiddingScheme ?? null,
+  };
+}
+
+export function shapeKeyword(k) {
+  return {
+    id: String(k.Id),
+    text: k.Text,
+    matchType: k.MatchType,
+    status: k.Status,
+    bid: k.Bid?.Amount,
+    editorialStatus: k.EditorialStatus,
+  };
+}
+
+function assetTexts(links) {
+  return (links ?? []).map((l) => l.Text ?? l.Asset?.Text).filter(Boolean);
+}
+
+export function shapeAd(ad) {
+  return {
+    id: String(ad.Id),
+    type: ad.Type,
+    status: ad.Status,
+    finalUrls: ad.FinalUrls ?? [],
+    headlines: ad.TitlePart1 ? [ad.TitlePart1, ad.TitlePart2, ad.TitlePart3].filter(Boolean) : assetTexts(ad.Headlines),
+    descriptions: ad.Text ? [ad.Text, ad.TextPart2].filter(Boolean) : assetTexts(ad.Descriptions),
+    path: [ad.Path1, ad.Path2].filter(Boolean).join("/"),
+    editorialStatus: ad.EditorialStatus,
+  };
+}
+
+export function shapeCriterion(cc) {
+  const { Type: criterionType, ...detail } = cc.Criterion ?? {};
+  return {
+    id: String(cc.Id),
+    type: criterionType,
+    negative: cc.Type === "NegativeCampaignCriterion",
+    status: cc.Status,
+    bidMultiplier: cc.CriterionBid?.Multiplier,
+    detail,
+  };
+}
+
+export function shapeNegativeKeywords(body) {
+  return (body.EntityNegativeKeywords ?? []).flatMap((e) =>
+    (e.NegativeKeywords ?? []).map((k) => ({ entityId: String(e.EntityId), text: k.Text, matchType: k.MatchType })),
+  );
+}
+
+export function dateObject(value) {
+  if (!value) return null;
+  if (typeof value === "object" && value.Year) return value;
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(value));
+  return match ? { Year: Number(match[1]), Month: Number(match[2]), Day: Number(match[3]) } : null;
+}
+
+export function isoDate(date) {
+  return `${date.Year}-${String(date.Month).padStart(2, "0")}-${String(date.Day).padStart(2, "0")}`;
+}
+
+export function earliestStart(campaigns, fallbackDate) {
+  const starts = campaigns.map((c) => dateObject(c.startDate)).filter(Boolean);
+  if (starts.length === 0) return fallbackDate;
+  return starts.map(isoDate).sort()[0];
+}
+
+export async function readInventory(session, { campaignTypes }) {
+  const { config } = session;
+  const findings = [];
+  const campaignBody = await callApi(session, config.campaignManagementUrl, "/Campaigns/QueryByAccountId", {
+    AccountId: config.accountId,
+    CampaignType: campaignTypes,
+    ReturnAdditionalFields: null,
+  });
+  const campaigns = (campaignBody.Campaigns ?? []).map(shapeCampaign);
+
+  const budgetIds = [...new Set(campaigns.map((c) => c.budgetId).filter(Boolean))];
+  const budgets =
+    budgetIds.length === 0
+      ? []
+      : ((await callApi(session, config.campaignManagementUrl, "/Budgets/QueryByIds", { BudgetIds: budgetIds })).Budgets ?? []).map(
+          (b) => ({ id: String(b.Id), name: b.Name, amount: b.Amount, type: b.BudgetType }),
+        );
+
+  for (const campaign of campaigns) {
+    const adGroups = (
+      (
+        await callApi(session, config.campaignManagementUrl, "/AdGroups/QueryByCampaignId", {
+          CampaignId: campaign.id,
+          ReturnAdditionalFields: null,
+        })
+      ).AdGroups ?? []
+    ).map(shapeAdGroup);
+    for (const adGroup of adGroups) {
+      adGroup.keywords = (
+        (
+          await callApi(session, config.campaignManagementUrl, "/Keywords/QueryByAdGroupId", {
+            AdGroupId: adGroup.id,
+            ReturnAdditionalFields: null,
+          })
+        ).Keywords ?? []
+      ).map(shapeKeyword);
+      adGroup.ads = (
+        (
+          await callApi(session, config.campaignManagementUrl, "/Ads/QueryByAdGroupId", {
+            AdGroupId: adGroup.id,
+            AdTypes: AD_TYPES,
+            ReturnAdditionalFields: null,
+          })
+        ).Ads ?? []
+      ).map(shapeAd);
+    }
+    campaign.adGroups = adGroups;
+    campaign.criteria = [];
+    for (const criterionType of CAMPAIGN_CRITERION_TYPES) {
+      try {
+        const body = await callApi(session, config.campaignManagementUrl, "/CampaignCriterions/QueryByIds", {
+          CampaignCriterionIds: null,
+          CampaignId: campaign.id,
+          CriterionType: criterionType,
+          ReturnAdditionalFields: null,
+        });
+        campaign.criteria.push(...(body.CampaignCriterions ?? []).map(shapeCriterion));
+      } catch (error) {
+        findings.push(`campaign ${campaign.id} ${criterionType} criteria not read: ${error.message}`);
+      }
+    }
+    try {
+      campaign.negativeKeywords = shapeNegativeKeywords(
+        await callApi(session, config.campaignManagementUrl, "/NegativeKeywords/QueryByEntityIds", {
+          EntityIds: [campaign.id],
+          EntityType: "Campaign",
+          ParentEntityId: config.accountId,
+        }),
+      );
+    } catch (error) {
+      campaign.negativeKeywords = [];
+      findings.push(`campaign ${campaign.id} negative keywords not read: ${error.message}`);
+    }
+  }
+  return { campaigns, budgets, findings };
+}
+
+// --- Reporting ---
+
+export function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (quoted) {
+      if (ch === '"' && text[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (ch === '"') {
+        quoted = false;
+      } else {
+        field += ch;
+      }
+    } else if (ch === '"') {
+      quoted = true;
+    } else if (ch === ",") {
+      row.push(field);
+      field = "";
+    } else if (ch === "\n" || ch === "\r") {
+      if (ch === "\r" && text[i + 1] === "\n") i++;
+      row.push(field);
+      field = "";
+      if (row.some((v) => v !== "")) rows.push(row);
+      row = [];
+    } else {
+      field += ch;
+    }
+  }
+  row.push(field);
+  if (row.some((v) => v !== "")) rows.push(row);
+  return rows;
+}
+
+/** Reads the first entry of a zip archive from its central directory. */
+export function unzipFirstEntry(buffer) {
+  let eocd = -1;
+  for (let i = buffer.length - 22; i >= 0; i--) {
+    if (buffer.readUInt32LE(i) === 0x06054b50) {
+      eocd = i;
+      break;
+    }
+  }
+  if (eocd < 0) throw new Error("not a zip archive");
+  const centralOffset = buffer.readUInt32LE(eocd + 16);
+  if (buffer.readUInt32LE(centralOffset) !== 0x02014b50) throw new Error("zip central directory not found");
+  const method = buffer.readUInt16LE(centralOffset + 10);
+  const compressedSize = buffer.readUInt32LE(centralOffset + 20);
+  const localOffset = buffer.readUInt32LE(centralOffset + 42);
+  const nameLength = buffer.readUInt16LE(localOffset + 26);
+  const extraLength = buffer.readUInt16LE(localOffset + 28);
+  const start = localOffset + 30 + nameLength + extraLength;
+  const data = buffer.subarray(start, start + compressedSize);
+  if (method === 0) return data;
+  if (method === 8) return zlib.inflateRawSync(data);
+  throw new Error(`unsupported zip method ${method}`);
+}
+
+export function parseDateArg(value, label) {
+  const date = dateObject(value);
+  if (!date) throw new Error(`${label} must be YYYY-MM-DD`);
+  return date;
+}
+
+export function defaultReportRange(now = new Date()) {
+  const day = (offset) => {
+    const d = new Date(now.getTime() - offset * 86400000);
+    return d.toISOString().slice(0, 10);
+  };
+  return { from: day(28), to: day(1) };
+}
+
+export function buildCampaignReportRequest({ accountId, from, to }) {
+  return {
+    ReportRequest: {
+      ExcludeColumnHeaders: false,
+      ExcludeReportFooter: true,
+      ExcludeReportHeader: true,
+      Format: "Csv",
+      FormatVersion: "2.0",
+      ReportName: "msads-campaign-summary",
+      ReturnOnlyCompleteData: false,
+      Type: "CampaignPerformanceReportRequest",
+      Aggregation: "Summary",
+      Columns: CAMPAIGN_REPORT_COLUMNS,
+      Scope: { AccountIds: [accountId] },
+      Time: {
+        CustomDateRangeStart: parseDateArg(from, "from"),
+        CustomDateRangeEnd: parseDateArg(to, "to"),
+        ReportTimeZone: REPORT_TIME_ZONE,
+      },
+    },
+  };
+}
+
+export function shapeReportRows(csvText) {
+  const [header, ...rows] = parseCsv(csvText);
+  if (!header) return [];
+  const num = (v) => (v === undefined || v === "" || v === "--" ? 0 : Number(String(v).replace(/[%,]/g, "")));
+  return rows.map((cells) => {
+    const r = Object.fromEntries(header.map((name, i) => [name, cells[i]]));
+    return {
+      campaignId: r.CampaignId,
+      campaign: r.CampaignName,
+      impressions: num(r.Impressions),
+      clicks: num(r.Clicks),
+      ctrPercent: num(r.Ctr),
+      averageCpc: num(r.AverageCpc),
+      spend: num(r.Spend),
+      conversions: num(r.Conversions),
+      revenue: num(r.Revenue),
+    };
+  });
+}
+
+export async function runCampaignReport(session, { from, to, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) }) {
+  const { config } = session;
+  const submit = await callApi(
+    session,
+    config.reportingUrl,
+    "/GenerateReport/Submit",
+    buildCampaignReportRequest({ accountId: config.accountId, from, to }),
+  );
+  const reportRequestId = submit.ReportRequestId;
+  if (!reportRequestId) throw new Error("Report submit returned no ReportRequestId");
+  for (let attempt = 0; attempt < POLL_ATTEMPTS; attempt++) {
+    const poll = await callApi(session, config.reportingUrl, "/GenerateReport/Poll", { ReportRequestId: reportRequestId });
+    const status = poll.ReportRequestStatus?.Status;
+    if (status === "Success") {
+      const url = poll.ReportRequestStatus.ReportDownloadUrl;
+      if (!url) return [];
+      const download = await session.fetchImpl(url);
+      if (!download.ok) throw new Error(`Report download failed (${download.status})`);
+      const text = unzipFirstEntry(Buffer.from(await download.arrayBuffer())).toString("utf8");
+      const csv = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
+      return shapeReportRows(csv);
+    }
+    if (status === "Error") throw new Error("Report generation failed");
+    await sleep(POLL_INTERVAL_MS);
+  }
+  throw new Error(`Report ${reportRequestId} was not ready after ${POLL_ATTEMPTS} polls`);
+}
+
+// --- Forecast ---
+
+export function parseKeywordsList(value) {
+  return value
+    .split(",")
+    .map((k) => k.trim())
+    .filter(Boolean);
+}
+
+export function readKeywordsFile(filePath, read = (p) => fs.readFileSync(p, "utf8")) {
+  return read(filePath)
+    .split("\n")
+    .map((k) => k.trim())
+    .filter((k) => k && !k.startsWith("#"));
+}
+
+function campaignMaxCpc(campaign, fallback) {
+  return campaign.biddingScheme?.MaxCpc?.Amount ?? fallback;
+}
+
+export function buildTrafficEstimateRequest({ campaign, extraKeywords = [], maxCpcGbp = DEFAULT_MAX_CPC_GBP, matchType = "Exact" }) {
+  const cpc = campaignMaxCpc(campaign, maxCpcGbp);
+  const adGroupEstimators = campaign.adGroups
+    .filter((g) => g.keywords.length > 0)
+    .map((g) => ({
+      AdGroupId: g.id,
+      MaxCpc: g.cpcBid ?? cpc,
+      KeywordEstimators: g.keywords.map((k) => ({
+        Keyword: { Id: k.id, MatchType: k.matchType, Text: k.text },
+        MaxCpc: k.bid ?? g.cpcBid ?? cpc,
+      })),
+    }));
+  if (extraKeywords.length > 0) {
+    adGroupEstimators.push({
+      MaxCpc: cpc,
+      KeywordEstimators: extraKeywords.map((text) => ({ Keyword: { MatchType: matchType, Text: text }, MaxCpc: cpc })),
+    });
+  }
+  const criteria = campaign.criteria
+    .filter((c) => !c.negative && (c.type === "LocationCriterion" || c.type === "DeviceCriterion"))
+    .map((c) => ({ Type: c.type, ...c.detail }));
+  for (const language of campaign.languages.filter((l) => l !== "All")) criteria.push({ Type: "LanguageCriterion", Language: language });
+  return {
+    CampaignEstimators: [
+      {
+        CampaignId: campaign.id,
+        DailyBudget: campaign.dailyBudget ?? undefined,
+        Criteria: criteria,
+        AdGroupEstimators: adGroupEstimators,
+      },
+    ],
+  };
+}
+
+export function shapeTrafficEstimates(body) {
+  const side = (s) => ({
+    clicks: s?.Clicks,
+    impressions: s?.Impressions,
+    averageCpc: s?.AverageCpc,
+    totalCost: s?.TotalCost,
+    ctr: s?.Ctr,
+    averagePosition: s?.AveragePosition,
+  });
+  return (body.CampaignEstimates ?? []).flatMap((c) =>
+    (c.AdGroupEstimates ?? []).flatMap((g) =>
+      (g.KeywordEstimates ?? []).map((k) => ({
+        campaignId: String(c.CampaignId),
+        adGroupId: g.AdGroupId ? String(g.AdGroupId) : undefined,
+        keyword: k.Keyword?.Text,
+        matchType: k.Keyword?.MatchType,
+        minimum: side(k.Minimum),
+        maximum: side(k.Maximum),
+      })),
+    ),
+  );
+}
+
+export async function readForecast(session, { inventory, extraKeywords, maxCpcGbp }) {
+  const results = [];
+  for (const campaign of inventory.campaigns) {
+    const body = await callApi(
+      session,
+      session.config.adInsightUrl,
+      "/KeywordTrafficEstimates/Query",
+      buildTrafficEstimateRequest({ campaign, extraKeywords, maxCpcGbp }),
+    );
+    results.push(...shapeTrafficEstimates(body));
+  }
+  return results;
+}
+
+// --- Printing ---
+
+function table(headers, rows) {
+  const widths = headers.map((h, i) => Math.max(h.length, ...rows.map((r) => String(r[i] ?? "").length)));
+  const line = (cells) => cells.map((c, i) => String(c ?? "").padEnd(widths[i])).join("  ");
+  return [line(headers), line(widths.map((w) => "-".repeat(w))), ...rows.map(line)].join("\n");
+}
+
+const money = (v) => (v === undefined || v === null ? "" : Number(v).toFixed(2));
+
+export function formatWhoami(w) {
+  const roles = w.roles.map((r) => ["customer", r.customerId, "role", r.roleId, "accounts", r.accountIds.join(",")].join(" ")).join("; ");
+  return [
+    `User ${w.user.id} (${w.user.name}) customer ${w.user.customerId}`,
+    `Customer ID ${w.customerId}`,
+    `Account ${w.account.id} number ${w.account.number} "${w.account.name}" ${w.account.currency} ${w.account.lifeCycleStatus} ${w.account.financialStatus}`,
+    `Roles: ${roles}`,
+  ].join("\n");
+}
+
+export function formatInventory(inv) {
+  const out = [];
+  for (const c of inv.campaigns) {
+    const budget = inv.budgets.find((b) => b.id === c.budgetId);
+    out.push(
+      `\nCampaign ${c.id} "${c.name}" ${c.status} ${c.type ?? ""} budget ${money(budget?.amount ?? c.dailyBudget)} (${budget?.type ?? c.budgetType ?? ""}) bidding ${c.biddingScheme?.Type ?? "unknown"} languages ${c.languages.join(",")}`,
+    );
+    out.push(`  starts ${c.startDate ? JSON.stringify(c.startDate) : "-"} tracking ${c.trackingUrlTemplate ?? "-"}`);
+    const spent = inv.spend?.find((s) => s.campaignId === c.id)?.spend ?? 0;
+    out.push(`  spend to date: ${inv.spend ? money(spent) : "not read"} (${inv.spendRange?.from} to ${inv.spendRange?.to})`);
+    for (const g of c.adGroups) {
+      out.push(
+        `  Ad group ${g.id} "${g.name}" ${g.status} cpc bid ${money(g.cpcBid)} network ${g.network ?? ""} language ${g.language ?? ""}`,
+      );
+      out.push(
+        table(
+          ["    keyword", "match", "status", "bid"],
+          g.keywords.map((k) => [`    ${k.text}`, k.matchType, k.status, money(k.bid)]),
+        ),
+      );
+      for (const a of g.ads) {
+        out.push(`    Ad ${a.id} ${a.type} ${a.status} ${a.finalUrls.join(" ")}`);
+        out.push(`      headlines: ${a.headlines.join(" | ")}`);
+        out.push(`      descriptions: ${a.descriptions.join(" | ")}`);
+      }
+    }
+    out.push("  Targeting:");
+    for (const t of c.criteria) {
+      out.push(
+        `    ${t.negative ? "exclude " : ""}${t.type} ${JSON.stringify(t.detail)} ${t.status ?? ""} multiplier ${t.bidMultiplier ?? "-"}`,
+      );
+    }
+    const negatives = c.negativeKeywords.map((k) => k.text + " [" + k.matchType + "]").join(", ");
+    out.push(`  Negative keywords: ${negatives || "none"}`);
+  }
+  for (const f of inv.findings) out.push(`NOT READ: ${f}`);
+  return out.join("\n");
+}
+
+export function formatForecast(rows) {
+  return table(
+    ["keyword", "match", "clicks min", "clicks max", "impr min", "impr max", "cpc min", "cpc max", "cost min", "cost max"],
+    rows.map((r) => [
+      r.keyword,
+      r.matchType,
+      r.minimum.clicks,
+      r.maximum.clicks,
+      r.minimum.impressions,
+      r.maximum.impressions,
+      money(r.minimum.averageCpc),
+      money(r.maximum.averageCpc),
+      money(r.minimum.totalCost),
+      money(r.maximum.totalCost),
+    ]),
+  );
+}
+
+export function formatReport(rows) {
+  return table(
+    ["campaign", "impressions", "clicks", "ctr %", "avg cpc", "spend", "conversions", "revenue"],
+    rows.map((r) => [
+      r.campaign,
+      r.impressions,
+      r.clicks,
+      r.ctrPercent,
+      money(r.averageCpc),
+      money(r.spend),
+      r.conversions,
+      money(r.revenue),
+    ]),
+  );
+}
+
+// --- Modes ---
+
+async function runConsent(config, clientFile) {
+  const clientCredentials = await resolveClientCredentials({ clientFile, smClient: getSecretsManagerClient() });
+  console.log(`Sign in with the Google account that owns Microsoft Advertising account ${config.accountNumber}.`);
+  const refreshToken = await runLoopbackConsent({ clientCredentials, scopes: config.scope.split(" ") });
+  console.log(`Writing the refresh token to Secrets Manager secret ${config.refreshTokenSecretName} (AWS write).`);
+  execFileSync(
+    // eslint-disable-next-line sonarjs/no-os-command-from-path -- deliberately runs this repo's own script, resolved relative to cwd, not searched on PATH
+    "scripts/put-secret-with-rotation-tag.sh",
+    [
+      config.refreshTokenSecretName,
+      JSON.stringify({ refresh_token: refreshToken }),
+      "--description",
+      "Google refresh token for Microsoft Advertising API sign-in",
+    ],
+    { stdio: "inherit" },
+  );
+}
+
+function emit(opts, data, text) {
+  console.log(opts.json ? JSON.stringify(data, null, 2) : text);
+}
+
+export async function main(argv = process.argv.slice(2)) {
+  const opts = parseArgs(argv);
+  const config = loadConfigFromRoot();
+  if (opts.mode === "consent") return runConsent(config, opts.clientFile);
+
+  const session = await openSession({ config, clientFile: opts.clientFile });
+  const who = await discoverCustomer(session);
+  if (opts.mode === "whoami") return emit(opts, who, formatWhoami(who));
+
+  if (opts.mode === "report") {
+    const range = opts.from ? { from: opts.from, to: opts.to } : defaultReportRange();
+    const rows = await runCampaignReport(session, range);
+    return emit(opts, { range, rows }, `Campaign report ${range.from} to ${range.to}\n${formatReport(rows)}`);
+  }
+
+  const inventory = await readInventory(session, { campaignTypes: opts.campaignTypes });
+  if (opts.mode === "inventory") {
+    const today = new Date().toISOString().slice(0, 10);
+    const spendRange = { from: earliestStart(inventory.campaigns, defaultReportRange().from), to: today };
+    inventory.spendRange = spendRange;
+    inventory.spend = await runCampaignReport(session, spendRange);
+    return emit(opts, { ...who, ...inventory }, formatInventory(inventory));
+  }
+
+  let extraKeywords = [];
+  if (opts.keywords) extraKeywords = parseKeywordsList(opts.keywords);
+  else if (opts.keywordsFile) extraKeywords = readKeywordsFile(opts.keywordsFile);
+  const maxCpcGbp = opts.maxCpcGbp ? Number(opts.maxCpcGbp) : DEFAULT_MAX_CPC_GBP;
+  if (inventory.campaigns.length === 0) throw new Error("No campaigns to forecast against");
+  const rows = await readForecast(session, { inventory, extraKeywords, maxCpcGbp });
+  return emit(opts, rows, formatForecast(rows));
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main().catch((err) => {
+    console.error("msads failed:", err.message);
+    process.exit(1);
+  });
+}

@@ -582,5 +582,11 @@
     "remedy": "none",
     "budgetPerDay": 0,
     "why": "A customer was not charged after HMRC accepted; the ledger needs a person."
+  },
+  {
+    "family": "prod-env-charges-without-activation",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A customer paid and the bundle was not granted; the grant and the email to the customer are the operator's, by .claude/skills/paid-without-activation/SKILL.md."
   }
 ]

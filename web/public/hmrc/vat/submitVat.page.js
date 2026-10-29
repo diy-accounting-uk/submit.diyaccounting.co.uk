@@ -937,11 +937,12 @@ onDOMReady(async function () {
   }
 
   const hmrcAssistActivity =
-    window.hmrcScopeCheck && window.fetchCurrentEnvironmentName && window.isActivityListedInEnvironment
+    window.hmrcScopeCheck && window.fetchCurrentEnvironmentName && window.isActivityShown
       ? await window.hmrcScopeCheck.getActivityById("vat-assist-check")
       : null;
   const hmrcAssistEnvironmentName = hmrcAssistActivity ? await window.fetchCurrentEnvironmentName() : null;
-  if (hmrcAssistActivity && window.isActivityListedInEnvironment(hmrcAssistActivity, hmrcAssistEnvironmentName)) {
+  const hmrcAssistViewer = hmrcAssistActivity ? await (await import("/lib/services/viewer-settings.js")).fetchViewer() : null;
+  if (hmrcAssistActivity && window.isActivityShown(hmrcAssistActivity, hmrcAssistEnvironmentName, hmrcAssistViewer)) {
     hmrcAssist = window.hmrcAssistMessages.mount({
       kind: "vat",
       container: document.getElementById("hmrcAssistCheck"),

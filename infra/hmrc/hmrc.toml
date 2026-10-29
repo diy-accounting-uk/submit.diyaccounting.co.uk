@@ -73,11 +73,6 @@ redirect_uris = [
   probe = "/organisations/vat/193051768/obligations"
 
   [[application.sandbox.subscription]]
-  api = "agent-authorisation-api"
-  version = "1.0"
-  probe = "/agents/XARN0000067/invitations/ABBBBBBBBBBCA"
-
-  [[application.sandbox.subscription]]
   api = "test-fraud-prevention-headers"
   version = "1.0"
   method = "POST"

@@ -60,67 +60,21 @@ class OperatorSnapshotPublishTest {
     }
 
     @Test
-    void prodGetsTwoSchedulesCiGetsOneAndBothShareOneLambdaAndOneAlarm() {
-        Template prodTemplate = synthOperatorSnapshotPublish("prod");
-
+    void prodAndCiShareOneLambdaOneAlarmAndNoSchedule() {
         // The function name is stable across every redeploy of this env-scoped stack, so its
         // log group goes through the idempotent AwsCustomResource path, adding a second Lambda
-        // function: the shared create-if-missing/retention singleton provider. Two Rules target
-        // that one function: the full nightly run and the hourly activity-only run.
-        prodTemplate.resourceCountIs("AWS::Lambda::Function", 2);
-        prodTemplate.resourceCountIs("AWS::Events::Rule", 2);
-        prodTemplate.resourceCountIs("AWS::CloudWatch::Alarm", 1);
-        prodTemplate.resourceCountIs("AWS::S3::Bucket", 0);
-
-        prodTemplate.hasResourceProperties(
-                "AWS::Lambda::Function",
-                Match.objectLike(Map.of("FunctionName", "docs-env-operator-snapshot-publish")));
-
-        Template ciTemplate = synthOperatorSnapshotPublish("ci");
-        ciTemplate.resourceCountIs("AWS::Events::Rule", 1);
-    }
-
-    @Test
-    void prodRunsDailyAndCiRunsWeeklyBothWithModeFull() {
-        var prodTemplate = synthOperatorSnapshotPublish("prod");
-        prodTemplate.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of(
-                        "ScheduleExpression",
-                        "cron(15 3 * * ? *)",
-                        "Targets",
-                        Match.arrayWith(List.of(Match.objectLike(Map.of("Input", "{\"mode\":\"full\"}")))))));
-
-        var ciTemplate = synthOperatorSnapshotPublish("ci");
-        ciTemplate.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of(
-                        "ScheduleExpression",
-                        "cron(15 3 ? * MON *)",
-                        "Targets",
-                        Match.arrayWith(List.of(Match.objectLike(Map.of("Input", "{\"mode\":\"full\"}")))))));
-    }
-
-    @Test
-    void prodOnlyRunsTheActivityOnlyScheduleHourlyAtMinute45WithModeActivityOnly() {
-        var prodTemplate = synthOperatorSnapshotPublish("prod");
-        prodTemplate.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of(
-                        "ScheduleExpression",
-                        "cron(45 * * * ? *)",
-                        "Targets",
-                        Match.arrayWith(List.of(Match.objectLike(Map.of("Input", "{\"mode\":\"activity-only\"}")))))));
-
-        var ciTemplate = synthOperatorSnapshotPublish("ci");
-        var ciRules = ciTemplate.findResources("AWS::Events::Rule");
-        assertTrue(
-                ciRules.values().stream().noneMatch(rule -> {
-                    @SuppressWarnings("unchecked")
-                    var properties = (Map<String, Object>) rule.get("Properties");
-                    return "cron(45 * * * ? *)".equals(properties.get("ScheduleExpression"));
-                }),
-                "expected ci to have no hourly activity-only schedule");
+        // function: the shared create-if-missing/retention singleton provider. The ingestion
+        // state machine starts this function; it carries no rule of its own.
+        for (var envName : List.of("prod", "ci")) {
+            Template template = synthOperatorSnapshotPublish(envName);
+            template.resourceCountIs("AWS::Lambda::Function", 2);
+            template.resourceCountIs("AWS::Events::Rule", 0);
+            template.resourceCountIs("AWS::CloudWatch::Alarm", 1);
+            template.resourceCountIs("AWS::S3::Bucket", 0);
+            template.hasResourceProperties(
+                    "AWS::Lambda::Function",
+                    Match.objectLike(Map.of("FunctionName", "docs-env-operator-snapshot-publish")));
+        }
     }
 
     @Test

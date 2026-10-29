@@ -1441,6 +1441,16 @@ public class SubmitSharedNames {
     public HttpMethod sessionSignOutPostLambdaHttpMethod;
     public String sessionSignOutPostLambdaUrlPath;
 
+    // Account Settings PUT Lambda (standard JWT auth)
+    public String accountSettingsPutIngestLambdaHandler;
+    public String accountSettingsPutIngestLambdaFunctionName;
+    public String accountSettingsPutIngestLambdaArn;
+    public String accountSettingsPutIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod accountSettingsPutLambdaHttpMethod;
+    public String accountSettingsPutLambdaUrlPath;
+    public boolean accountSettingsPutLambdaJwtAuthorizer;
+    public boolean accountSettingsPutLambdaCustomAuthorizer;
+
     // Billing Lambda names
     public String billingCheckoutPostIngestLambdaHandler;
     public String billingCheckoutPostIngestLambdaFunctionName;
@@ -5660,6 +5670,29 @@ public class SubmitSharedNames {
                 "Session sign-out",
                 "Ends the caller's sign-in session on every Cognito app client",
                 "sessionSignOut"));
+
+        // Account Settings PUT Lambda (standard JWT auth, same as bundleGet)
+        this.accountSettingsPutLambdaHttpMethod = HttpMethod.PUT;
+        this.accountSettingsPutLambdaUrlPath = "/api/v1/account/settings";
+        this.accountSettingsPutLambdaJwtAuthorizer = true;
+        this.accountSettingsPutLambdaCustomAuthorizer = false;
+        var accountSettingsPutLambdaHandlerName = "accountSettingsPut.ingestHandler";
+        var accountSettingsPutLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(accountSettingsPutLambdaHandlerName);
+        this.accountSettingsPutIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, accountSettingsPutLambdaHandlerDashed);
+        this.accountSettingsPutIngestLambdaHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, accountSettingsPutLambdaHandlerName);
+        this.accountSettingsPutIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, accountSettingsPutLambdaHandlerDashed);
+        this.accountSettingsPutIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.accountSettingsPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.accountSettingsPutLambdaHttpMethod,
+                this.accountSettingsPutLambdaUrlPath,
+                "Change account settings",
+                "Changes the account settings of the authenticated user, such as showing or hiding pass generation",
+                "accountSettings"));
 
         // Billing Checkout POST Lambda (billing JWT auth: main and books client audiences)
         this.billingCheckoutPostLambdaHttpMethod = HttpMethod.POST;

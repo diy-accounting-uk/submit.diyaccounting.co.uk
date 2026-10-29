@@ -4,6 +4,7 @@
 // Correlation and tracing utilities for request tracking
 
 import { randomHex } from "./crypto-utils.js";
+import { isPreviewOn, PREVIEW_FEATURES_HEADER } from "../services/viewer-settings.js";
 
 /**
  * Generate a W3C traceparent header value
@@ -196,6 +197,18 @@ export function installCorrelationInterceptor() {
       }
 
       if (isBackendCall) {
+        // Preview features: ask the API to run an unlisted activity, which it allows only against
+        // a sandbox service. A page that preview features opened sends the synthetic HMRC account.
+        if (isPreviewOn()) {
+          headerObject[PREVIEW_FEATURES_HEADER] = "on";
+          if (document.body?.dataset.previewActivity) {
+            for (const name of Object.keys(headerObject)) {
+              if (name.toLowerCase() === "hmrcaccount") delete headerObject[name];
+            }
+            headerObject["hmrcAccount"] = "synthetic";
+          }
+        }
+
         // Always send traceparent for backend calls
         headerObject["traceparent"] = getOrCreateTraceparent();
 

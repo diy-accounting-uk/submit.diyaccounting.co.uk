@@ -265,16 +265,19 @@
   }
 
   // A nav link that names a catalogue activity shows only where the catalogue lists that activity
-  // in this environment. It starts hidden, so a page that cannot read the catalogue shows no link.
+  // in this environment, or preview features are on. It starts hidden, so a page that cannot read
+  // the catalogue shows no link.
   async function revealListedNavLinks(header, rootPrefix) {
     const gated = header.querySelectorAll(".main-nav a[data-activity]");
     if (gated.length === 0) return;
     try {
       await loadTomlParser(rootPrefix);
       const service = await import("/lib/services/catalog-service.js");
-      const [catalogResponse, environmentName] = await Promise.all([
+      const viewerSettings = await import("/lib/services/viewer-settings.js");
+      const [catalogResponse, environmentName, viewer] = await Promise.all([
         fetch(new URL(rootPrefix + "submit.catalogue.toml", window.location.href).href),
         service.fetchCurrentEnvironmentName(new URL(rootPrefix + "submit.environment-name.txt", window.location.href).href),
+        viewerSettings.fetchViewer(),
       ]);
       if (!catalogResponse.ok) return;
       const catalog = window.TOML.parse(await catalogResponse.text());
@@ -282,7 +285,7 @@
         const activity = (catalog.activities || []).find(function (entry) {
           return entry.id === anchor.dataset.activity;
         });
-        if (activity && service.isActivityListedInEnvironment(activity, environmentName)) anchor.hidden = false;
+        if (activity && service.isActivityShown(activity, environmentName, viewer)) anchor.hidden = false;
       });
     } catch (err) {
       console.warn("page-chrome: could not read the catalogue for the nav", err);

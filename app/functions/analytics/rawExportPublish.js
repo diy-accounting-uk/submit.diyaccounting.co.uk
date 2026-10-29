@@ -32,11 +32,13 @@ export const VIEW_NAMES = [
   "v_submissions_by_activity_daily",
   "v_traffic_sources_daily",
   "v_visitors_by_kind_daily",
+  "v_visitors_cloudfront_daily",
   "v_availability_sli_daily",
   "v_alarm_state_changes_daily",
   "v_dora_runs_daily",
   "v_returning_submitters_quarterly",
   "v_returning_submitters_rolling_daily",
+  "v_vat_submissions_by_actor_daily",
   "v_subscription_renewals_daily",
   "v_subscription_cancellations_daily",
   "v_operator_interventions_daily",
@@ -87,7 +89,7 @@ export const OBJECTIVES = [
     ],
   },
   {
-    objective: "Low running cost",
+    objective: "AWS costs",
     views: [],
     levers: [
       "Deployment lifecycle (destroy-* workflows)",
@@ -114,6 +116,7 @@ export const OBJECTIVES = [
     views: [
       "v_returning_submitters_quarterly",
       "v_returning_submitters_rolling_daily",
+      "v_vat_submissions_by_actor_daily",
       "v_subscription_renewals_daily",
       "v_subscription_cancellations_daily",
     ],

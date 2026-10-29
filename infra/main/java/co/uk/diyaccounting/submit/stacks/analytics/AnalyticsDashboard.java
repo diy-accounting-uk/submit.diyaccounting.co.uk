@@ -68,6 +68,7 @@ public class AnalyticsDashboard extends Construct {
 
     public final Function metricsPublishLambda;
     public final Alarm errorsAlarm;
+    public final Alarm chargesWithoutActivationAlarm;
     public final Dashboard dashboard;
 
     @Value.Immutable
@@ -225,6 +226,24 @@ public class AnalyticsDashboard extends Construct {
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
+        // ============================================================================
+        // Charges-without-activation alarm: a paid Stripe charge on the reconciliation day with
+        // no subscription-activated event, so a customer paid and the webhook did not grant the
+        // bundle. The metric is one datapoint a night; a day with no row publishes nothing, which
+        // is not a breach. No SnsAction: the alarm-state-change rule in OpsStack routes every
+        // alarm to Telegram and opens the [ALARM] issue.
+        // ============================================================================
+        this.chargesWithoutActivationAlarm = Alarm.Builder.create(this, prefix + "-ChargesWithoutActivationAlarm")
+                .alarmName(prefix + "-charges-without-activation")
+                .alarmDescription(
+                        "A paid Stripe charge has no activation. Runbook: .claude/skills/paid-without-activation/SKILL.md")
+                .metric(metric("ChargesWithoutActivation"))
+                .threshold(0)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 

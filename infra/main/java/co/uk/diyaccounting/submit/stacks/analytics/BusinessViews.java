@@ -189,6 +189,14 @@ public class BusinessViews extends Construct {
                     "Each day, the customers who submitted in the last 90 days and how many also submitted in the 90 days before",
                     List.of("dynamo_receipts")),
             new ViewDefinition(
+                    "v_vat_submissions_by_actor_daily",
+                    "VAT submissions each day and account, customers apart from test accounts",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_visitors_cloudfront_daily",
+                    "Page requests each day from bots and synthetic test traffic, read from the CloudFront access log",
+                    List.of("cloudfront_requests")),
+            new ViewDefinition(
                     "v_subscription_renewals_daily",
                     "Subscriptions that renewed each day, by bundle",
                     List.of("activity_events_all")),
@@ -212,6 +220,20 @@ public class BusinessViews extends Construct {
                     "v_cost_daily",
                     "Billed cost each day from the FOCUS export, by service, deployment and stack",
                     List.of("cost_focus")),
+            new ViewDefinition(
+                    "v_cost_by_resource_daily",
+                    "Billed cost each day from the FOCUS export, by charge, SKU and resource",
+                    List.of("cost_focus")),
+            new ViewDefinition(
+                    "v_agent_cost_daily",
+                    "Bedrock cost each day per agent run that posted a result and per agent pull request a person merged",
+                    List.of("v_cost_daily", "v_agent_runs_daily"),
+                    List.of("v_cost_daily", "v_agent_runs_daily")),
+            new ViewDefinition(
+                    "v_submission_failure_rate_daily",
+                    "VAT returns sent to HMRC each day, how many failed and the share that failed",
+                    List.of("v_submissions_daily"),
+                    List.of("v_submissions_daily")),
             new ViewDefinition(
                     "v_cost_per_submission_daily",
                     "The day's cost divided by the day's completed submissions",

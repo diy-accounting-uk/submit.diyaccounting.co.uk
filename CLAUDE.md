@@ -76,6 +76,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/clean/SKILL.md` — gather stale deployments, merged branches, worktrees of merged branches, logs and test artefacts, and build output; ask once; remove every agreed category in one go; then fetch, switch to main and pull when nothing is in progress; invoke as `/clean`
 - `.claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md` — from a submission-failure alarm, find the customer, what HMRC said and whether they wrote in, read-only and without scanning a customer table
 - `.claude/skills/ads-advisor/SKILL.md` — answer questions about Google Ads performance, forecast clicks for a daily budget, and propose bidding strategy changes from live account data
+- `.claude/skills/microsoft-ads/SKILL.md` — answer questions about the Microsoft Advertising (Bing) account: read its inventory, report spend, forecast clicks for its keywords and budget, and propose changes, from live data; the twin of ads-advisor
 - `.claude/skills/capabilities/SKILL.md` — find the tooling the repository already has before building any, and keep `REPORT_CAPABILITIES.md` current; invoke as `/capabilities`
 - `.claude/skills/itsa-readiness/SKILL.md` — say whether the Income Tax (MTD) recognition email can go to HMRC, check by check with the evidence; invoke as `/itsa-readiness`
 - `.claude/skills/fast-deploy/SKILL.md` — put a candidate fix live on a ci set in minutes from the local tree (`npm run deploy:app-ci`, or a single-stack `deploy-cdk-stack.yml` dispatch) when a ci `test.yml` or `deploy.yml` failed and confidence in the fix is short of high; prod only on the operator's direct instruction; invoke as `/fast-deploy`
@@ -87,6 +88,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/companies-house-review/SKILL.md` — review our accounts filings as the Companies House XML team does: rebuild each filed case, render it beside the example of its type, run the test validator, and write `findings.md` and `walkthrough.md` under `target/companies-house-review/<date>/`; invoke as `/companies-house-review`
 - `.claude/skills/email-draft/SKILL.md` — draft an email the operator sends in his own name, on Opus at minimum: the thread and his recent sent mail from corpus-loom, a facts pass, the prose rules, then his friendlier voice; invoke when a row or the operator asks for an email or a reply
 - `.claude/skills/companies-house-judge/SKILL.md` — judge a Companies House review folder as the XML team would, as an LLM: our data in `source/`, the example in `reference/`, input against output in `reconciliation.md`, one `index.html` per review, `judge.json` per case, and a NEXT.md row per fix; runs after every review and before any email cites it; invoke as `/companies-house-judge`
+- `.claude/skills/paid-without-activation/SKILL.md` — from a `prod-env-charges-without-activation` alarm, find the Stripe charge with no activation and its account from Stripe's records and the lake, read the webhook log for the failure, print the event re-delivery command that grants the bundle, and draft the email to the customer; invoke when that alarm fires
 
 ## Permission Handling
 

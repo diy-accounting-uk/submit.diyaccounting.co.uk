@@ -100,11 +100,11 @@
           <thead>
             <tr>
               <th>Activity</th>
-              <th>Last 1 hour</th>
-              <th>Last 1 day</th>
+              <th title="Since midnight UK time">Today</th>
+              <th>Previous day</th>
               <th>Last 7 days</th>
               <th>Last 30 days</th>
-              <th title="Last 30 days against the 30 days before them">vs previous 30 days</th>
+              <th title="Last 30 days against the 30 days before them">30 day trend</th>
               <th>Last 90 days</th>
             </tr>
           </thead>
@@ -119,11 +119,11 @@
           <thead>
             <tr>
               <th>Activity</th>
-              <th>Last 1 hour</th>
-              <th>Last 1 day</th>
+              <th title="Since midnight UK time">Today</th>
+              <th>Previous day</th>
               <th>Last 7 days</th>
               <th>Last 30 days</th>
-              <th>Trend</th>
+              <th title="Last 30 days against the 30 days before them">30 day trend</th>
               <th>Last 90 days</th>
             </tr>
           </thead>
@@ -133,7 +133,10 @@
 
       <section id="chartsPanel" class="objective" hidden>
         <h2>Daily trends, last 90 days</h2>
-        <p class="subtitle">One point a day. Press a name below a chart to hide or show its line; move over a chart to read a day.</p>
+        <p class="subtitle">
+          One point a day. Press a name below a chart to hide or show its line; double-click a name to show only that line, and again to
+          show all. Move over a chart to read a day.
+        </p>
         <div id="chartsGrid" class="charts-grid"></div>
       </section>
 
@@ -142,15 +145,19 @@
       <div class="side-panels">
         <section id="visitorsPanel" class="objective">
           <h2>Visitors</h2>
+          <p class="subtitle">
+            Operator, authenticated user and human count Google Analytics sessions, so only visitors who accepted analytics. Synthetic and
+            bot count page requests in the CloudFront access log.
+          </p>
           <table class="observations data-table" id="visitorsTable">
             <thead>
               <tr>
                 <th>Kind</th>
-                <th>Last 1 hour</th>
-                <th>Last 1 day</th>
+                <th title="Since midnight UK time">Today</th>
+                <th>Previous day</th>
                 <th>Last 7 days</th>
                 <th>Last 30 days</th>
-                <th title="Last 30 days against the 30 days before them">vs previous 30 days</th>
+                <th title="Last 30 days against the 30 days before them">30 day trend</th>
                 <th>Last 90 days</th>
               </tr>
             </thead>

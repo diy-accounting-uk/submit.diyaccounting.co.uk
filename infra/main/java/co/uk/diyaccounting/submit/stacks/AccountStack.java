@@ -133,6 +133,10 @@ public class AccountStack extends Stack {
     public Function sessionSignOutPostLambda;
     public ILogGroup sessionSignOutPostLambdaLogGroup;
 
+    public AbstractApiLambdaProps accountSettingsPutLambdaProps;
+    public Function accountSettingsPutLambda;
+    public ILogGroup accountSettingsPutLambdaLogGroup;
+
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -347,7 +351,8 @@ public class AccountStack extends Stack {
 
         // Grant DynamoDB permissions to both API and Worker Lambdas
         // bundleGet performs lazy token refresh (UpdateItem) when a bundle's tokenResetAt has elapsed.
-        bundlesTable.grant(this.bundleGetLambda, "dynamodb:Query", "dynamodb:UpdateItem");
+        // It also reads the account settings item.
+        bundlesTable.grant(this.bundleGetLambda, "dynamodb:Query", "dynamodb:GetItem", "dynamodb:UpdateItem");
         bundleCapacityTable.grant(this.bundleGetLambda, "dynamodb:BatchGetItem");
 
         infof(
@@ -1483,6 +1488,46 @@ public class AccountStack extends Stack {
                 "Created Session Sign-Out POST Lambda %s",
                 this.sessionSignOutPostLambda.getNode().getId());
 
+        // ============================================================================
+        // Account Settings PUT Lambda (standard JWT auth)
+        // ============================================================================
+        var accountSettingsPutLambdaEnv = new PopulatedMap<String, String>()
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var accountSettingsPutApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().accountSettingsPutIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().accountSettingsPutIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().accountSettingsPutIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().accountSettingsPutIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().accountSettingsPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().accountSettingsPutLambdaHttpMethod)
+                        .urlPath(props.sharedNames().accountSettingsPutLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().accountSettingsPutLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().accountSettingsPutLambdaCustomAuthorizer)
+                        .environment(accountSettingsPutLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(accountSettingsPutApiLambda);
+        this.accountSettingsPutLambdaProps = accountSettingsPutApiLambda.apiProps;
+        this.accountSettingsPutLambda = accountSettingsPutApiLambda.ingestLambda;
+        this.accountSettingsPutLambdaLogGroup = accountSettingsPutApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.accountSettingsPutLambdaProps);
+
+        // The handler reads the settings item and writes it back.
+        bundlesTable.grant(this.accountSettingsPutLambda, "dynamodb:GetItem", "dynamodb:PutItem");
+        SubHashSaltHelper.grantSaltAccess(this.accountSettingsPutLambda, region, account, props.envName());
+
+        infof(
+                "Created Account Settings PUT Lambda %s",
+                this.accountSettingsPutLambda.getNode().getId());
+
         Lambda.appStackHealthAlarm(
                 this, props.envName(), props.resourceNamePrefix(), "account", healthCheckedFunctions);
 
@@ -1497,6 +1542,7 @@ public class AccountStack extends Stack {
         cfnOutput(this, "BundleCapacityReconcileLambdaArn", this.bundleCapacityReconcileLambda.getFunctionArn());
         cfnOutput(this, "SessionBeaconPostLambdaArn", this.sessionBeaconPostLambda.getFunctionArn());
         cfnOutput(this, "SessionSignOutPostLambdaArn", this.sessionSignOutPostLambda.getFunctionArn());
+        cfnOutput(this, "AccountSettingsPutLambdaArn", this.accountSettingsPutLambda.getFunctionArn());
 
         infof(
                 "AccountStack %s created successfully for %s",

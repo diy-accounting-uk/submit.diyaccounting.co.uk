@@ -9,6 +9,7 @@ import { loadCatalogFromRoot, isActivityListedInEnvironment } from "./productCat
 import * as dynamoDbBundleStore from "../data/dynamoDbBundleRepository.js";
 import { getUserBundles } from "../data/dynamoDbBundleRepository.js";
 import { isOperatorEmail } from "../lib/operators.js";
+import { previewRunsAgainstSandbox } from "../lib/previewFeatures.js";
 import { holdsPracticeLicence } from "./practiceLicence.js";
 import { getClient } from "../data/dynamoDbPracticeClientRepository.js";
 
@@ -136,7 +137,9 @@ export async function enforceBundles(event, options = {}) {
   const catalog = loadCatalogFromRoot();
   const environmentName = process.env.ENVIRONMENT_NAME;
   const pathActivities = findMatchingActivitiesForUrlPath(catalog, requestPath);
-  const matchedActivities = pathActivities.filter((activity) => isActivityListedInEnvironment(activity, environmentName));
+  const listedActivities = pathActivities.filter((activity) => isActivityListedInEnvironment(activity, environmentName));
+  const matchedActivities =
+    listedActivities.length === 0 && previewRunsAgainstSandbox(event, requestPath) ? pathActivities : listedActivities;
   if (pathActivities.length > 0 && matchedActivities.length === 0) {
     const environmentRestrictedActivity = pathActivities[0];
     const errorDetails = {

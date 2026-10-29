@@ -9,6 +9,8 @@ import { parse as parseToml } from "@iarna/toml";
 
 import {
   isActivityListedInEnvironment,
+  isActivityShown,
+  isBundleShown,
   fetchCurrentEnvironmentName,
   activityPagePath,
   activityArea,
@@ -128,5 +130,60 @@ describe("featureStatusSummary", () => {
     expect(prod.groups.map((group) => group.status)).toEqual(["production"]);
     expect(prod.groups[0].labels).not.toContain("HMRC Assist for VAT");
     expect(prod.groups[0].labels).not.toContain("HMRC Company Tax Return (CT600)");
+  });
+});
+
+describe("isActivityShown", () => {
+  const hidden = { id: "practice", bundles: ["default"], environments: ["ci"] };
+  const viewer = { preview: false, operatorFeatures: true, account: { passGeneration: true } };
+
+  it("shows an activity the environment lists", () => {
+    expect(isActivityShown(hidden, "ci", viewer)).toBe(true);
+  });
+
+  it("hides an unlisted activity until preview features are on", () => {
+    expect(isActivityShown(hidden, "prod", viewer)).toBe(false);
+    expect(isActivityShown(hidden, "prod", { ...viewer, preview: true })).toBe(true);
+  });
+
+  it("hides an activity that names an account setting the person turned off", () => {
+    const pass = { id: "generate-pass-digital", bundles: ["resident"], accountSetting: "passGeneration" };
+    expect(isActivityShown(pass, "prod", viewer)).toBe(true);
+    expect(isActivityShown(pass, "prod", { ...viewer, account: { passGeneration: false } })).toBe(false);
+  });
+
+  it("hides an account-setting activity under preview features too", () => {
+    const pass = { id: "generate-pass-digital", bundles: ["resident"], accountSetting: "passGeneration" };
+    expect(isActivityShown(pass, "prod", { ...viewer, preview: true, account: { passGeneration: false } })).toBe(false);
+  });
+
+  it("hides an operator-only activity for an operator who turned operator features off", () => {
+    const operatorOnly = { id: "operator-dashboard", bundles: ["operator"] };
+    expect(isActivityShown(operatorOnly, "prod", viewer)).toBe(true);
+    expect(isActivityShown(operatorOnly, "prod", { ...viewer, operatorFeatures: false })).toBe(false);
+  });
+
+  it("keeps an activity that other bundles serve when operator features are off", () => {
+    const shared = { id: "shared", bundles: ["operator", "resident"] };
+    expect(isActivityShown(shared, "prod", { ...viewer, operatorFeatures: false })).toBe(true);
+  });
+});
+
+describe("isBundleShown", () => {
+  const viewer = { preview: false, operatorFeatures: true };
+
+  it("shows a bundle the environment lists and hides one it does not", () => {
+    const resident = { id: "resident", listedInEnvironments: ["ci"] };
+    expect(isBundleShown(resident, "ci", viewer)).toBe(true);
+    expect(isBundleShown(resident, "prod", viewer)).toBe(false);
+  });
+
+  it("shows an unlisted bundle under preview features", () => {
+    expect(isBundleShown({ id: "resident", listedInEnvironments: ["ci"] }, "prod", { ...viewer, preview: true })).toBe(true);
+  });
+
+  it("hides the operator bundle when operator features are off", () => {
+    expect(isBundleShown({ id: "operator" }, "prod", viewer)).toBe(true);
+    expect(isBundleShown({ id: "operator" }, "prod", { ...viewer, operatorFeatures: false })).toBe(false);
   });
 });

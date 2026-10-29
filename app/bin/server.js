@@ -21,6 +21,7 @@ import { apiEndpoint as mcpHmrcGrantApiEndpoint } from "../functions/mcp/mcpHmrc
 import { apiEndpoint as bundleGetApiEndpoint } from "../functions/account/bundleGet.js";
 import { apiEndpoint as bundlePostApiEndpoint } from "../functions/account/bundlePost.js";
 import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bundleDelete.js";
+import { apiEndpoint as accountSettingsPutApiEndpoint } from "../functions/account/accountSettingsPut.js";
 import { apiEndpoint as practiceClientsListGetApiEndpoint } from "../functions/practice/practiceClientsListGet.js";
 import { apiEndpoint as practiceClientsPostApiEndpoint } from "../functions/practice/practiceClientsPost.js";
 import { apiEndpoint as practiceClientGetApiEndpoint } from "../functions/practice/practiceClientGet.js";
@@ -320,6 +321,7 @@ if (!process.env.STRIPE_PRICE_ID_RESIDENT_PRO_YEAR && !process.env.STRIPE_TEST_P
 bundleGetApiEndpoint(app);
 bundlePostApiEndpoint(app);
 bundleDeleteApiEndpoint(app);
+accountSettingsPutApiEndpoint(app);
 practiceClientsListGetApiEndpoint(app);
 practiceClientsPostApiEndpoint(app);
 practiceClientGetApiEndpoint(app);

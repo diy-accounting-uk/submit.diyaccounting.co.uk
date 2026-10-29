@@ -59,12 +59,14 @@ import {
   buildChartSeries,
   buildDailyChartDefinitions,
   buildDailyCharts,
+  buildCostDrivers,
+  shortResourceName,
+  vatSubmissionReconciliationText,
   toObservationWindows,
   toActivityFastWindows,
   buildSnapshot,
   buildReinvestment,
   REINVESTMENT_FRACTION,
-  mergeFastWindows,
   mapInOrderWithConcurrency,
   writeSnapshot,
   parseResultSet,
@@ -94,11 +96,13 @@ function resultSetOfRows(header, rows) {
 }
 
 const WINDOWED_COLUMN_POSITION = { last_30: 0, prev_30: 1, last_90: 2, prev_90: 3 };
+const FAST_COLUMN_KEY = { today: "today", prev_1: "previousDay", last_7: "last7" };
 
 // Answers one batch query the way Athena would: one column per `AS o<i>_<column>` alias in its
 // SQL. A windowed column (last_30, prev_30, last_90, prev_90) takes its value by position from
 // windowedRowFor(line, sql), the row chosen for the SQL line that defines it; o<i>_data_since
-// answers null; a fast-window column (last_1h, last_1d, last_7d) takes fastValues["1h"|"1d"|"7d"].
+// answers null; an hourly query's column (today, prev_1, last_7) takes
+// fastValues.today|previousDay|last7; the other columns of a day query answer null.
 // SQL with no such alias answers the plain windowed header with windowedRowFor(sql, sql).
 function resultSetForSql(sql, windowedRowFor, fastValues) {
   const aliasLines = sql.split("\n").filter((line) => /AS o\d+_\w+,?$/.test(line));
@@ -112,8 +116,8 @@ function resultSetForSql(sql, windowedRowFor, fastValues) {
     header.push(alias);
     if (column in WINDOWED_COLUMN_POSITION) {
       row.push(windowedRowFor(line, sql)[WINDOWED_COLUMN_POSITION[column]]);
-    } else if (column.startsWith("last_")) {
-      row.push(fastValues[column.slice("last_".length)]);
+    } else if (sql.includes("_first_hour") || sql.includes("AS o0_first_hour")) {
+      row.push(column in FAST_COLUMN_KEY ? fastValues[FAST_COLUMN_KEY[column]] : null);
     } else {
       row.push(null);
     }
@@ -124,7 +128,7 @@ function resultSetForSql(sql, windowedRowFor, fastValues) {
 // Every query succeeds and answers through resultSetForSql, except one whose SQL contains
 // `failingFragment` (e.g. a missing Glue table): that one runs to a terminal FAILED state, the
 // same shape Athena answers a TABLE_NOT_FOUND query with.
-function mockQueries({ windowedRowFor, fastValues = { "1h": null, "1d": null, "7d": null }, failingFragment }) {
+function mockQueries({ windowedRowFor, fastValues = { today: null, previousDay: null, last7: null }, failingFragment }) {
   const sqlById = new Map();
   let counter = 0;
   mockAthenaSend.mockImplementation((command) => {
@@ -229,24 +233,29 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).toContain("FROM   company_accounts");
     });
 
-    test("builds the four conditional aggregates without a filter", () => {
+    test("builds every window as a conditional aggregate without a filter", () => {
       const sql = buildWindowedBatchSql({
         view: "v_availability_sli_daily",
         dayColumn: "day",
         observations: [{ valueExpr: "pass_rate", aggregation: "avg" }],
       });
+      const ukToday = "CAST(current_timestamp AT TIME ZONE 'Europe/London' AS date)";
       expect(sql).toBe(
-        "SELECT avg(CASE WHEN day > date_add('day', -30, current_date) THEN pass_rate END) AS o0_last_30,\n" +
+        `SELECT avg(CASE WHEN day >= ${ukToday} THEN pass_rate END) AS o0_today,\n` +
+          `       avg(CASE WHEN day = date_add('day', -1, ${ukToday}) THEN pass_rate END) AS o0_prev_1,\n` +
+          "       avg(CASE WHEN day > date_add('day', -7, current_date) THEN pass_rate END) AS o0_last_7,\n" +
+          "       avg(CASE WHEN day > date_add('day', -30, current_date) THEN pass_rate END) AS o0_last_30,\n" +
           "       avg(CASE WHEN day > date_add('day', -60, current_date) AND day <= date_add('day', -30, current_date) THEN pass_rate END) AS o0_prev_30,\n" +
           "       avg(CASE WHEN day > date_add('day', -90, current_date) THEN pass_rate END) AS o0_last_90,\n" +
-          "       avg(CASE WHEN day > date_add('day', -180, current_date) AND day <= date_add('day', -90, current_date) THEN pass_rate END) AS o0_prev_90\n" +
+          "       avg(CASE WHEN day > date_add('day', -180, current_date) AND day <= date_add('day', -90, current_date) THEN pass_rate END) AS o0_prev_90,\n" +
+          "       cast(min(day) AS varchar) AS o0_first_day\n" +
           "FROM   v_availability_sli_daily",
       );
     });
 
     test("answers every observation of one view in one query, each filtered inside its own CASE", () => {
       const sql = buildWindowedBatchSql({
-        view: "v_dora_runs_daily",
+        view: "v_login_to_submission_funnel",
         dayColumn: "day",
         observations: [
           { valueExpr: "runs", aggregation: "sum", where: "workflow = 'deploy'" },
@@ -262,6 +271,32 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).not.toContain("WHERE");
     });
 
+    test("a whole-day source's Today is its newest reading up to today, with the reading's day beside it", () => {
+      const sql = buildWindowedBatchSql({
+        view: "v_cost_daily",
+        dayColumn: "day",
+        observations: [{ valueExpr: "cost_usd", aggregation: "sum", where: "sub_account_id = '1'" }],
+      });
+      const ukToday = "CAST(current_timestamp AT TIME ZONE 'Europe/London' AS date)";
+      expect(sql).toContain(`max_by(cost_usd, day) FILTER (WHERE day <= ${ukToday} AND (sub_account_id = '1')) AS o0_today`);
+      expect(sql).toContain(`cast(max(day) FILTER (WHERE day <= ${ukToday} AND (sub_account_id = '1')) AS varchar) AS o0_today_as_of`);
+      expect(sql).toContain(
+        `sum(CASE WHEN day = date_add('day', -1, ${ukToday}) AND (sub_account_id = '1') THEN cost_usd END) AS o0_prev_1`,
+      );
+    });
+
+    test("a live source's Today counts the rows since UK midnight and carries no reading day", () => {
+      const sql = buildWindowedBatchSql({
+        view: "v_alarm_state_changes_daily",
+        dayColumn: "day",
+        observations: [{ valueExpr: "times_fired", aggregation: "sum" }],
+      });
+      expect(sql).toContain(
+        "sum(CASE WHEN day >= CAST(current_timestamp AT TIME ZONE 'Europe/London' AS date) THEN times_fired END) AS o0_today",
+      );
+      expect(sql).not.toContain("today_as_of");
+    });
+
     test("counts matching rows with a literal value expression, as the security observations do", () => {
       const sql = buildWindowedBatchSql({
         view: "security_hub_findings",
@@ -274,13 +309,15 @@ describe("operatorSnapshotPublish", () => {
       );
     });
 
-    test("runs against a monthly or quarterly grain column exactly as it would a daily one", () => {
+    test("a monthly or quarterly grain column has the longer windows and no Today or Previous day", () => {
       const sql = buildWindowedBatchSql({
         view: "v_cost_vs_target_monthly",
         dayColumn: "month",
         observations: [{ valueExpr: "variance_usd", aggregation: "avg" }],
       });
       expect(sql).toContain("avg(CASE WHEN month > date_add('day', -30, current_date) THEN variance_usd END) AS o0_last_30");
+      expect(sql).not.toContain("o0_today");
+      expect(sql).not.toContain("o0_prev_1");
     });
   });
 
@@ -377,6 +414,239 @@ describe("operatorSnapshotPublish", () => {
       expect(series[0].values.at(-1)).toBe(34);
     });
 
+    test("the AWS costs chart folds to 12 services and offers account and deployment modes with account names", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "low-running-cost");
+
+      expect(chart.title).toBe("AWS costs");
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["cost", "account", "deployment", "charge", "agent"]);
+      expect(chart.modes[0].maxComponents).toBe(12);
+      const account = chart.modes.find((mode) => mode.id === "account");
+      expect(account.labelOf("972912397388")).toBe("submit-prod");
+      expect(account.labelOf("887764105431")).toBe("management");
+      expect(chart.modes.find((mode) => mode.id === "deployment").sql).toContain("deployment AS component");
+    });
+
+    test("the AWS costs chart offers CloudWatch by charge and Bedrock cost per agent result", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "low-running-cost");
+
+      const charge = chart.modes.find((mode) => mode.id === "charge");
+      expect(charge.sql).toContain("charge_description AS component");
+      expect(charge.sql).toContain("FROM   v_cost_by_resource_daily");
+      expect(charge.sql).toContain("service_name LIKE '%CloudWatch%'");
+      expect(charge.maxComponents).toBe(10);
+      expect(charge.descriptionOf("$3.00 per Dashboard per Month")).toContain("$3.00 per Dashboard per Month");
+
+      const agent = chart.modes.find((mode) => mode.id === "agent");
+      expect(agent.sql).toContain("FROM   v_agent_cost_daily");
+      expect(agent.sql).toContain("cost_per_posted_run_usd IS NOT NULL");
+      expect(agent.descriptionOf("cost-per-accepted-pr")).toContain("merged");
+    });
+
+    test("Uptime charts HMRC failures by class and by status and the failure rate as a percentage", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "hmrc-failures");
+
+      expect(chart.objectiveId).toBe("uptime");
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["class", "status", "rate"]);
+      expect(chart.modes[0].sql).toContain("failure_class AS component");
+      expect(chart.modes[1].sql).toContain("hmrc_status AS component");
+      expect(chart.modes[1].sql).toContain("FROM   v_hmrc_failures_by_class");
+      expect(chart.modes[1].labelOf("none")).toBe("No HMRC status");
+      expect(chart.modes[1].labelOf("429")).toBe("HMRC 429");
+      expect(chart.modes[2].sql).toContain("failure_rate * 100");
+      expect(chart.modes[2].sql).toContain("failure_rate IS NOT NULL");
+    });
+
+    test("failures and agent cost sit on the objectives that own them, each with a description", () => {
+      const observationsOf = (objectiveId) => OBJECTIVE_DEFINITIONS.find((objective) => objective.id === objectiveId).observations;
+      const byId = (objectiveId, id) => observationsOf(objectiveId).find((observation) => observation.id === id);
+
+      expect(byId("uptime", "hmrc-submission-failures")).toMatchObject({ view: "v_submission_failure_rate_daily", valueExpr: "failures" });
+      expect(byId("uptime", "hmrc-submission-failure-rate")).toMatchObject({ unit: "ratio", valueExpr: "failure_rate" });
+      expect(byId("conversion-to-submission", "submission-failure-rate")).toMatchObject({ unit: "ratio", valueExpr: "failure_rate" });
+      expect(byId("low-running-cost", "bedrock-cost-per-posted-run-usd")).toMatchObject({ view: "v_agent_cost_daily", unit: "usd" });
+      expect(byId("low-running-cost", "bedrock-cost-per-accepted-pr-usd")).toMatchObject({ valueExpr: "cost_per_accepted_pr_usd" });
+      expect(byId("operator-effort", "agent-cost-per-posted-run-usd")).toMatchObject({ view: "v_agent_cost_daily" });
+      expect(byId("operator-effort", "agent-cost-per-accepted-pr-usd")).toMatchObject({ view: "v_agent_cost_daily" });
+      for (const id of ["hmrc-submission-failures", "hmrc-submission-failure-rate"]) {
+        expect(byId("uptime", id).description.length).toBeGreaterThan(20);
+        expect(betterDirection(id)).toBe("down");
+      }
+      expect(betterDirection("agent-cost-per-accepted-pr-usd")).toBe("down");
+    });
+
+    test("shortResourceName drops the partition, service, region and account from an ARN", () => {
+      expect(shortResourceName("arn:aws:logs:eu-west-2:972912397388:log-group:/aws/cloudtrail/prod-env-cloud-trail")).toBe(
+        "log-group:/aws/cloudtrail/prod-env-cloud-trail",
+      );
+      expect(shortResourceName("arn:aws:synthetics:eu-west-2:972912397388:canary:prod-dbf4e0a-api")).toBe("canary:prod-dbf4e0a-api");
+      expect(shortResourceName("(no resource)")).toBe("(no resource)");
+    });
+
+    test("buildCostDrivers reads the ten dearest CloudWatch charges of the last 30 days", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({
+              ResultSet: resultSetOfRows(
+                ["charge_description", "resource_id", "cost_usd"],
+                [["$0.5985 per GB custom log data ingested", "arn:aws:logs:eu-west-2:1:log-group:/aws/x", "67.862"]],
+              ),
+            });
+        }
+      });
+
+      const drivers = await buildCostDrivers({ workGroup: "wg", database: "db" });
+
+      const sql = mockAthenaSend.mock.calls.find(([command]) => command.constructor.name === "StartQueryExecutionCommand")[0].input
+        .QueryString;
+      expect(sql).toContain("FROM   v_cost_by_resource_daily");
+      expect(sql).toContain("service_name LIKE '%CloudWatch%'");
+      expect(sql).toContain("LIMIT  10");
+      expect(drivers).toEqual({
+        days: 30,
+        rows: [
+          {
+            charge: "$0.5985 per GB custom log data ingested",
+            resource: "log-group:/aws/x",
+            resourceId: "arn:aws:logs:eu-west-2:1:log-group:/aws/x",
+            costUsd: 67.862,
+          },
+        ],
+      });
+    });
+
+    test("AWS costs holds AWS figures only and the ads figures sit under Conversion to paid", () => {
+      const idsOf = (objectiveId) => OBJECTIVE_DEFINITIONS.find((objective) => objective.id === objectiveId).observations.map((o) => o.id);
+
+      expect(OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "low-running-cost").name).toBe("AWS costs");
+      expect(idsOf("low-running-cost")).toEqual(
+        expect.arrayContaining([
+          "cost-submit-prod-usd",
+          "cost-submit-ci-usd",
+          "cost-other-accounts-usd",
+          "cost-bedrock-usd",
+          "cost-cloudwatch-usd",
+          "cost-cloudfront-usd",
+        ]),
+      );
+      expect(idsOf("low-running-cost")).not.toContain("ads-cost-gbp");
+      expect(idsOf("conversion-to-paid")).toEqual(
+        expect.arrayContaining(["paid-landings", "ads-cost-gbp", "ads-cost-per-paid-landing-gbp"]),
+      );
+    });
+
+    test("every chart carries a note and every mode describes its lines", () => {
+      for (const definition of buildDailyChartDefinitions()) {
+        expect(definition.note, definition.id).toBeTruthy();
+        for (const mode of definition.modes) {
+          expect(mode.descriptionOf, `${definition.id}/${mode.id}`).toBeTypeOf("function");
+          if (mode.total) expect(mode.totalDescription, `${definition.id}/${mode.id}`).toBeTruthy();
+        }
+      }
+    });
+
+    test("buildChartSeries gives each line, the total and Other a description", () => {
+      const days = dailyChartDays(END_DAY);
+      const rows = ["a", "b", "c"].map((component, index) => ({ day: END_DAY, component, value: String(3 - index) }));
+      const mode = {
+        total: "All",
+        totalDescription: "Everything.",
+        maxComponents: 2,
+        labelOf: (id) => id,
+        descriptionOf: (id) => `Line ${id}.`,
+      };
+
+      const series = buildChartSeries({ days, rows, mode });
+
+      expect(series.map((line) => line.description)).toEqual(["Everything.", "Line a.", "Line b.", "The 1 smaller lines added together."]);
+    });
+
+    test("the Retention table and graph read the same rolling definition of returning submitters", () => {
+      const retention = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "retention");
+      const returning = retention.observations.find((observation) => observation.id === "returning-submitters");
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "retention");
+
+      expect(returning.view).toBe("v_returning_submitters_rolling_daily");
+      expect(returning.valueExpr).toBe("returning_submitters_90d");
+      expect(returning.aggregation).toBe("latest");
+      expect(chart.modes[0].sql).toContain("returning_submitters_90d");
+      expect(chart.modes[0].sql).toContain("FROM   v_returning_submitters_rolling_daily");
+      expect(chart.note).toContain("roll");
+    });
+
+    test("Passes issued is a Retention row and line and a Conversion to paid line counted, not in pounds", () => {
+      const retention = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "retention");
+      const row = retention.observations.find((observation) => observation.id === "retention-passes-issued");
+      const charts = buildDailyChartDefinitions();
+      const paid = charts.find((definition) => definition.id === "conversion-to-paid");
+      const passes = paid.modes.find((mode) => mode.id === "passes");
+
+      expect(row).toMatchObject({ view: "v_pass_redemptions_daily", valueExpr: "passes_issued", aggregation: "sum" });
+      expect(charts.find((definition) => definition.id === "retention").modes[0].sql).toContain("'passes-issued'");
+      expect(passes.unit).toBe("count");
+      expect(passes.sql).toContain("passes_issued");
+      expect(passes.descriptionOf("passes-issued")).toBeTruthy();
+    });
+
+    test("the reconciliation line sets distinct submitters against completions, test accounts apart", () => {
+      const text = vatSubmissionReconciliationText({
+        rows: [
+          { actor_group: "customer", submissions: "90", submitters: "12" },
+          { actor_group: "test", submissions: "40", submitters: "3" },
+        ],
+        series: [{ id: "submitters-90d", values: [1, 11] }],
+        days: 90,
+      });
+
+      expect(text).toContain("12 distinct submitters");
+      expect(text).toContain("90 Submit VAT (HMRC) completions");
+      expect(text).toContain("reads 11");
+      expect(text).toContain("3 accounts made 40 completions");
+    });
+
+    test("buildDailyCharts attaches the Retention reconciliation line", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          case "GetQueryResultsCommand":
+            return Promise.resolve({
+              ResultSet: resultSetOfRows(
+                ["day", "component", "value", "actor_group", "submissions", "submitters"],
+                [[END_DAY, "x", "1", "customer", "5", "2"]],
+              ),
+            });
+          default:
+            return Promise.resolve({});
+        }
+      });
+
+      const { dailyCharts } = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY });
+
+      expect(dailyCharts.charts.find((chart) => chart.id === "retention").reconciliation).toContain("2 distinct submitters");
+      expect(dailyCharts.charts.find((chart) => chart.id === "visitors").reconciliation).toBeUndefined();
+    });
+
+    test("Bot and Synthetic visitors read the CloudFront log view, the other three kinds read Google Analytics", () => {
+      const conversion = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "conversion-to-submission");
+      const viewOf = (id) => conversion.observations.find((observation) => observation.id === id).view;
+
+      expect(["sessions-bot", "sessions-synthetic"].map(viewOf)).toEqual(["v_visitors_cloudfront_daily", "v_visitors_cloudfront_daily"]);
+      expect(["sessions-operator", "sessions-authenticated", "sessions-human"].map(viewOf)).toEqual(
+        Array(3).fill("v_visitors_by_kind_daily"),
+      );
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "visitors");
+      expect(chart.modes[0].componentOrder).toEqual(["operator", "authenticated", "human", "synthetic", "bot"]);
+      expect(chart.modes[0].sql).toContain("v_visitors_cloudfront_daily");
+      expect(chart.note).toContain("CloudFront");
+    });
+
     test("every chart mode asks for the last 90 days and answers day, component and value", () => {
       for (const definition of buildDailyChartDefinitions()) {
         for (const mode of definition.modes) {
@@ -388,7 +658,7 @@ describe("operatorSnapshotPublish", () => {
       }
     });
 
-    test("buildDailyCharts publishes six objectives' charts with 90 points on every series", async () => {
+    test("buildDailyCharts publishes seven charts with 90 points on every series", async () => {
       mockAthenaSend.mockImplementation((command) => {
         switch (command.constructor.name) {
           case "StartQueryExecutionCommand":
@@ -410,6 +680,7 @@ describe("operatorSnapshotPublish", () => {
       expect(dailyCharts.days).toHaveLength(90);
       expect(dailyCharts.charts.map((chart) => chart.id)).toEqual([
         "activity-started-and-completed",
+        "hmrc-failures",
         "conversion-to-submission",
         "conversion-to-paid",
         "low-running-cost",
@@ -430,7 +701,7 @@ describe("operatorSnapshotPublish", () => {
       mockAthenaSend.mockImplementation((command) => {
         switch (command.constructor.name) {
           case "StartQueryExecutionCommand": {
-            const failing = command.input.QueryString.includes("v_visitors_by_kind_daily") && !command.input.QueryString.includes("UNION");
+            const failing = command.input.QueryString.includes("v_visitors_cloudfront_daily");
             return Promise.resolve({ QueryExecutionId: failing ? "failing-1" : "q" });
           }
           case "GetQueryExecutionCommand":
@@ -450,7 +721,7 @@ describe("operatorSnapshotPublish", () => {
 
       expect(failedChartIds).toEqual(["visitors"]);
       expect(dailyCharts.charts.map((chart) => chart.id)).not.toContain("visitors");
-      expect(dailyCharts.charts).toHaveLength(5);
+      expect(dailyCharts.charts).toHaveLength(6);
     });
 
     test("runAthenaQuery follows result pages, reading the header from the first only", async () => {
@@ -497,6 +768,43 @@ describe("operatorSnapshotPublish", () => {
   });
 
   describe("toObservationWindows", () => {
+    const TODAY = new Date("2026-10-29T12:00:00Z");
+
+    test("a sum over a window with no rows is a measured zero once the source began before the window ended", () => {
+      const windows = toObservationWindows(
+        { last_30: null, prev_30: null, last_90: null, prev_90: null, first_day: "2026-09-05" },
+        "sum",
+        TODAY,
+      );
+
+      expect(windows.last30.value).toBe(0);
+      expect(windows.last90.value).toBe(0);
+    });
+
+    test("a window that ends before the source's first day stays not measured", () => {
+      const windows = toObservationWindows(
+        { last_30: "4", prev_30: null, last_90: "4", prev_90: null, first_day: "2026-10-20" },
+        "sum",
+        TODAY,
+      );
+
+      expect(windows.last30.value).toBe(4);
+      expect(windows.last30.isNew).toBe(true);
+      expect(windows.last30.trend).toBeNull();
+    });
+
+    test("an average over a covered window with no rows is flagged noEvents, and a window with a figure is not", () => {
+      const windows = toObservationWindows({ last_30: null, last_90: "0.5", first_day: "2026-09-05" }, "avg", TODAY);
+
+      expect(windows.last30).toMatchObject({ value: null, noEvents: true });
+      expect(windows.last90.noEvents).toBeUndefined();
+      expect(toObservationWindows({ last_30: null, first_day: "2026-10-30" }, "avg", TODAY).last30.noEvents).toBeUndefined();
+    });
+
+    test("a source with no first day reports nothing", () => {
+      expect(toObservationWindows({ last_30: null, first_day: null }, "sum", TODAY).last30.value).toBeNull();
+    });
+
     test("reads all four columns and computes each window's trend", () => {
       const windows = toObservationWindows({ last_30: "110", prev_30: "100", last_90: "300", prev_90: "300" });
       expect(windows.last30.value).toBe(110);
@@ -523,9 +831,47 @@ describe("operatorSnapshotPublish", () => {
 
     test("reads a missing row as every window null", () => {
       expect(toObservationWindows(undefined)).toEqual({
+        today: { value: null },
+        previousDay: { value: null },
+        last7: { value: null },
         last30: { value: null, trend: null },
         last90: { value: null, trend: null },
       });
+    });
+
+    test("a live source's Today and Previous day are measured zeros once the source began", () => {
+      const windows = toObservationWindows({ today: null, prev_1: null, last_7: "3", first_day: "2026-09-05" }, "sum", TODAY);
+      expect(windows.today).toEqual({ value: 0 });
+      expect(windows.previousDay).toEqual({ value: 0 });
+      expect(windows.last7).toEqual({ value: 3 });
+    });
+
+    test("a whole-day source's Today is its latest reading with that reading's day, and never a zero", () => {
+      const reported = toObservationWindows(
+        { today: "12.5", today_as_of: "2026-10-28", prev_1: "12.5", first_day: "2026-09-05" },
+        "sum",
+        TODAY,
+        { latestReading: true },
+      );
+      expect(reported.today).toEqual({ value: 12.5, asOf: "2026-10-28" });
+
+      const silent = toObservationWindows({ today: null, today_as_of: null, first_day: "2026-09-05" }, "sum", TODAY, {
+        latestReading: true,
+      });
+      expect(silent.today).toEqual({ value: null });
+    });
+
+    test("a monthly figure has no Today or Previous day", () => {
+      const windows = toObservationWindows({ last_30: "5", first_day: "2026-01-01" }, "avg", TODAY, { periodic: true });
+      expect(windows.today).toEqual({ value: null, notApplicable: true });
+      expect(windows.previousDay).toEqual({ value: null, notApplicable: true });
+    });
+
+    test("Today is judged against the UK calendar day when the UTC day has not turned over yet", () => {
+      const justAfterUkMidnight = new Date("2026-10-29T23:30:00Z");
+      expect(toObservationWindows({ today: null, first_day: "2026-10-29" }, "sum", justAfterUkMidnight).today.value).toBe(0);
+      const duringBst = new Date("2026-06-30T23:30:00Z");
+      expect(toObservationWindows({ today: null, first_day: "2026-07-01" }, "sum", duringBst).today.value).toBe(0);
     });
   });
 
@@ -670,7 +1016,7 @@ describe("operatorSnapshotPublish", () => {
         "FROM   security_hub_findings",
         "FROM   guardduty_findings",
         "FROM   github_alerts",
-        "FROM   v_returning_submitters_quarterly",
+        "FROM   v_returning_submitters_rolling_daily",
         "FROM   v_subscription_renewals_daily",
         "FROM   v_subscription_cancellations_daily",
         "FROM   v_operator_interventions_daily",
@@ -703,7 +1049,7 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const conversion = snapshot.objectives.find((o) => o.id === "conversion-to-submission");
-      for (const id of ["sessions-human", "sessions-operator", "sessions-bot", "sessions-synthetic"]) {
+      for (const id of ["sessions-human", "sessions-operator", "sessions-authenticated", "sessions-bot", "sessions-synthetic"]) {
         const observation = conversion.observations.find((o) => o.id === id);
         expect(observation.last30).toEqual({ value: 10, trend: 1 });
         expect(observation.last90).toEqual({ value: 30, trend: 0.5 });
@@ -920,11 +1266,10 @@ describe("operatorSnapshotPublish", () => {
     test("the revenue observation sums only the days after the 30-day cutoff into its trailing window", () => {
       const revenue = OBJECTIVE_DEFINITIONS.flatMap((o) => o.observations).find((o) => o.id === "revenue-gbp");
       const sql = buildWindowedBatchSql({ view: revenue.view, dayColumn: revenue.dayColumn, observations: [revenue] });
-      const trailingColumn = sql.split("\n")[0];
+      const trailingColumn = sql.split("\n").find((line) => line.includes("AS o0_last_30"));
 
-      expect(trailingColumn).toBe("SELECT sum(CASE WHEN day > date_add('day', -30, current_date) THEN revenue_gbp END) AS o0_last_30,");
+      expect(trailingColumn.trim()).toBe("sum(CASE WHEN day > date_add('day', -30, current_date) THEN revenue_gbp END) AS o0_last_30,");
       expect(sql).toContain("FROM   v_revenue_daily");
-      expect(sql).not.toContain("WHERE");
     });
 
     test("buildReinvestment gives a budget of the fraction of the trailing 30-day revenue", () => {
@@ -946,20 +1291,6 @@ describe("operatorSnapshotPublish", () => {
 
       expect(snapshot.reinvestment).toEqual({ fraction: 0.2, trailing30IncomeGbp: 100, budgetGbp: 20 });
     });
-
-    test("a fast-window-only patch carries no reinvestment figures", async () => {
-      mockAllQueriesSucceedWith(["100", "50", "300", "200"]);
-
-      const patch = await buildSnapshot({
-        workGroup: "wg",
-        database: "db",
-        context,
-        objectiveIds: ["conversion-to-submission"],
-        fastWindowOnly: true,
-      });
-
-      expect(patch.reinvestment).toBeUndefined();
-    });
   });
 
   describe("writeSnapshot", () => {
@@ -977,7 +1308,12 @@ describe("operatorSnapshotPublish", () => {
   });
 
   describe("buildFastWindowBatchSql", () => {
-    test("builds the three no-trend aggregates for every observation of one hourly view in one query", () => {
+    const midnightToday =
+      "CAST(with_timezone(date_trunc('day', CAST(current_timestamp AT TIME ZONE 'Europe/London' AS timestamp)), 'Europe/London') AT TIME ZONE 'UTC' AS timestamp)";
+    const midnightYesterday =
+      "CAST(with_timezone(date_trunc('day', CAST(current_timestamp AT TIME ZONE 'Europe/London' AS timestamp)) - interval '1' day, 'Europe/London') AT TIME ZONE 'UTC' AS timestamp)";
+
+    test("builds Today, Previous day and Last 7 days for every observation of one hourly view in one query", () => {
       const sql = buildFastWindowBatchSql({
         fastWindowView: "v_activity_started_hourly",
         fastWindowColumn: "hour",
@@ -987,23 +1323,15 @@ describe("operatorSnapshotPublish", () => {
         ],
       });
       expect(sql).toContain("FROM   v_activity_started_hourly");
+      expect(sql).toContain(`sum(CASE WHEN hour >= ${midnightToday} AND (activity = 'submit-vat') THEN starts END) AS o0_today`);
       expect(sql).toContain(
-        "sum(CASE WHEN hour > date_add('hour', -1, current_timestamp) AND (activity = 'submit-vat') THEN starts END) AS o0_last_1h",
+        `sum(CASE WHEN hour >= ${midnightYesterday} AND hour < ${midnightToday} AND (activity = 'submit-vat') THEN starts END) AS o0_prev_1`,
       );
       expect(sql).toContain(
-        "sum(CASE WHEN hour > date_add('day', -1, current_timestamp) AND (activity = 'submit-vat') THEN starts END) AS o0_last_1d",
+        "sum(CASE WHEN hour > date_add('day', -7, current_timestamp) AND (activity = 'submit-vat') THEN starts END) AS o0_last_7",
       );
-      expect(sql).toContain(
-        "sum(CASE WHEN hour > date_add('day', -7, current_timestamp) AND (activity = 'submit-vat') THEN starts END) AS o0_last_7d",
-      );
-      expect(sql).toContain(
-        "sum(CASE WHEN hour > date_add('hour', -1, current_timestamp) AND (activity = 'bundle') THEN starts END) AS o1_last_1h",
-      );
-      expect(sql).toContain(
-        "sum(CASE WHEN hour > date_add('day', -7, current_timestamp) AND (activity = 'bundle') THEN starts END) AS o1_last_7d",
-      );
+      expect(sql).toContain(`sum(CASE WHEN hour >= ${midnightToday} AND (activity = 'bundle') THEN starts END) AS o1_today`);
       expect(sql).not.toContain("WHERE");
-      expect(sql).not.toContain("prev_");
       expect(sql).not.toContain("last_30");
     });
 
@@ -1014,84 +1342,44 @@ describe("operatorSnapshotPublish", () => {
         observations: [{ valueExpr: "sessions", aggregation: "sum" }],
       });
       expect(sql).toBe(
-        "SELECT sum(CASE WHEN hour > date_add('hour', -1, current_timestamp) THEN sessions END) AS o0_last_1h,\n" +
-          "       sum(CASE WHEN hour > date_add('day', -1, current_timestamp) THEN sessions END) AS o0_last_1d,\n" +
-          "       sum(CASE WHEN hour > date_add('day', -7, current_timestamp) THEN sessions END) AS o0_last_7d\n" +
+        `SELECT sum(CASE WHEN hour >= ${midnightToday} THEN sessions END) AS o0_today,\n` +
+          `       sum(CASE WHEN hour >= ${midnightYesterday} AND hour < ${midnightToday} THEN sessions END) AS o0_prev_1,\n` +
+          "       sum(CASE WHEN hour > date_add('day', -7, current_timestamp) THEN sessions END) AS o0_last_7,\n" +
+          "       cast(min(hour) AS varchar) AS o0_first_hour\n" +
           "FROM   v_visitors_by_kind_hourly",
       );
     });
   });
 
   describe("toActivityFastWindows", () => {
+    test("empty fast windows read zero when the hourly view holds rows and null when it holds none", () => {
+      expect(toActivityFastWindows({ today: null, prev_1: "2", last_7: "5", first_hour: "2026-10-22 10:00:00.000" })).toEqual({
+        today: { value: 0 },
+        previousDay: { value: 2 },
+        last7: { value: 5 },
+      });
+      expect(toActivityFastWindows({ today: null, prev_1: null, last_7: null, first_hour: null }).today.value).toBeNull();
+    });
+
     test("reads the three columns, each with no trend", () => {
-      expect(toActivityFastWindows({ last_1h: "1", last_1d: "4", last_7d: "20" })).toEqual({
-        last1h: { value: 1 },
-        last1d: { value: 4 },
-        last7d: { value: 20 },
+      expect(toActivityFastWindows({ today: "1", prev_1: "4", last_7: "20" })).toEqual({
+        today: { value: 1 },
+        previousDay: { value: 4 },
+        last7: { value: 20 },
       });
     });
 
     test("reads a missing row as every window null", () => {
       expect(toActivityFastWindows(undefined)).toEqual({
-        last1h: { value: null },
-        last1d: { value: null },
-        last7d: { value: null },
+        today: { value: null },
+        previousDay: { value: null },
+        last7: { value: null },
       });
     });
   });
 
-  describe("buildSnapshot with objectiveIds and fastWindowOnly", () => {
-    test("objectiveIds restricts the run to the named objectives only", async () => {
-      mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
-
-      const context = {
-        envName: "test",
-        region: "eu-west-2",
-        athenaWorkGroupName: "test-env-analytics",
-        githubRepo: "r",
-        ga4PropertyId: null,
-      };
-      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context, objectiveIds: ["uptime"] });
-
-      expect(snapshot.objectives).toHaveLength(1);
-      expect(snapshot.objectives[0].id).toBe("uptime");
-    });
-
-    test("fastWindowOnly runs one fast-window query per hourly view and answers id plus the three windows, nothing else", async () => {
-      mockFastWindowBatchAnswering({ "1h": "1", "1d": "3", "7d": "12" });
-
-      const context = {
-        envName: "test",
-        region: "eu-west-2",
-        athenaWorkGroupName: "test-env-analytics",
-        githubRepo: "r",
-        ga4PropertyId: null,
-      };
-      const patch = await buildSnapshot({
-        workGroup: "wg",
-        database: "db",
-        context,
-        objectiveIds: ["activity-started-and-completed"],
-        fastWindowOnly: true,
-      });
-
-      const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
-      const sqlStatements = startCalls.map(([command]) => command.input.QueryString);
-      expect(sqlStatements).toHaveLength(2);
-      expect(sqlStatements.some((sql) => sql.includes("FROM   v_activity_started_hourly"))).toBe(true);
-      expect(sqlStatements.some((sql) => sql.includes("FROM   v_submissions_by_activity_hourly"))).toBe(true);
-
-      const activities = patch.objectives.find((o) => o.id === "activity-started-and-completed");
-      const observation = activities.observations.find((o) => o.id === "submit-vat::started");
-      expect(observation).toEqual({ id: "submit-vat::started", last1h: { value: 1 }, last1d: { value: 3 }, last7d: { value: 12 } });
-      expect(observation.label).toBeUndefined();
-      expect(observation.last30).toBeUndefined();
-      expect(observation.deepLink).toBeUndefined();
-    });
-  });
-
-  describe("visitor fast windows", () => {
-    const visitorIds = ["sessions-human", "sessions-operator", "sessions-bot", "sessions-synthetic"];
+  describe("hourly-grain observations in the snapshot", () => {
+    const visitorIds = ["sessions-human", "sessions-operator", "sessions-authenticated"];
     const context = {
       envName: "test",
       region: "eu-west-2",
@@ -1100,277 +1388,81 @@ describe("operatorSnapshotPublish", () => {
       ga4PropertyId: null,
     };
 
-    test("every visitor kind's fast columns come from one query of the hourly view, each filtered to its kind", async () => {
-      mockFastWindowBatchAnswering({ "1h": "1", "1d": "3", "7d": "12" });
-      await buildSnapshot({ workGroup: "wg", database: "db", context, objectiveIds: ["conversion-to-submission"], fastWindowOnly: true });
+    test("one query per hourly view answers every activity and visitor observation that reads it", async () => {
+      mockFastWindowBatchAnswering({ today: "1", previousDay: "3", last7: "12" });
+      await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const sqlStatements = mockAthenaSend.mock.calls
         .filter(([command]) => command.constructor.name === "StartQueryExecutionCommand")
         .map(([command]) => command.input.QueryString);
-      expect(sqlStatements).toHaveLength(1);
-      expect(sqlStatements[0]).toContain("FROM   v_visitors_by_kind_hourly");
-      for (const kind of ["human", "operator", "bot", "synthetic"]) {
-        expect(sqlStatements[0]).toContain(`AND (visitor_kind = '${kind}') THEN sessions END`);
+      const hourly = sqlStatements.filter((sql) => /FROM   \w+_hourly/.test(sql));
+      expect(hourly).toHaveLength(3);
+      const visitors = hourly.find((sql) => sql.includes("FROM   v_visitors_by_kind_hourly"));
+      for (const kind of ["human", "operator", "authenticated"]) {
+        expect(visitors).toContain(`AND (visitor_kind = '${kind}') THEN sessions END`);
       }
     });
 
-    test("a fast-window-only run lists only the visitor observations that have a fast view", async () => {
-      mockFastWindowBatchAnswering({ "1h": "1", "1d": "3", "7d": "12" });
-      const patch = await buildSnapshot({
-        workGroup: "wg",
-        database: "db",
-        context,
-        objectiveIds: ["conversion-to-submission"],
-        fastWindowOnly: true,
-      });
+    test("an hourly figure replaces the day-grain Today, Previous day and Last 7 days and leaves the 30 and 90 day windows", async () => {
+      mockFastWindowBatchAnswering({ today: "1", previousDay: "3", last7: "12" });
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
-      const conversion = patch.objectives.find((o) => o.id === "conversion-to-submission");
-      expect(conversion.observations.map((o) => o.id)).toEqual(visitorIds);
-      expect(conversion.observations[0]).toEqual({
-        id: "sessions-human",
-        last1h: { value: 1 },
-        last1d: { value: 3 },
-        last7d: { value: 12 },
-      });
+      const conversion = snapshot.objectives.find((o) => o.id === "conversion-to-submission");
+      const human = conversion.observations.find((o) => o.id === "sessions-human");
+      expect(human.today).toEqual({ value: 1 });
+      expect(human.previousDay).toEqual({ value: 3 });
+      expect(human.last7).toEqual({ value: 12 });
+      expect(human.last30.value).toBe(10);
+      expect(conversion.observations.filter((o) => o.id.startsWith("sessions-")).length).toBeGreaterThan(visitorIds.length);
     });
 
-    test("a visitor's fast columns are null when the hourly view has no rows", async () => {
-      mockFastWindowBatchAnswering({ "1h": null, "1d": null, "7d": null });
-      const patch = await buildSnapshot({
-        workGroup: "wg",
-        database: "db",
-        context,
-        objectiveIds: ["conversion-to-submission"],
-        fastWindowOnly: true,
-      });
+    test("a visitor's hourly figures are null when the hourly view has no rows", async () => {
+      mockFastWindowBatchAnswering({ today: null, previousDay: null, last7: null });
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
-      const human = patch.objectives[0].observations.find((o) => o.id === "sessions-human");
-      expect(human.last1h).toEqual({ value: null });
-      expect(human.last7d).toEqual({ value: null });
+      const human = snapshot.objectives
+        .find((o) => o.id === "conversion-to-submission")
+        .observations.find((o) => o.id === "sessions-human");
+      expect(human.today).toEqual({ value: null });
+      expect(human.last7).toEqual({ value: null });
     });
 
-    test("a failing fast-window query leaves its observations unpatched and counts each one as failed", async () => {
+    test("a failing hourly query leaves its observations on the day-grain windows and counts each one as failed", async () => {
       mockQueriesWithOneFailing("v_visitors_by_kind_hourly", ["1", "1", "1", "1"]);
-      const patch = await buildSnapshot({
-        workGroup: "wg",
-        database: "db",
-        context,
-        objectiveIds: ["conversion-to-submission"],
-        fastWindowOnly: true,
-      });
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
-      const conversion = patch.objectives.find((o) => o.id === "conversion-to-submission");
-      expect(conversion.observations).toEqual(visitorIds.map((id) => ({ id })));
-      expect(patch.failedObservationCount).toBe(visitorIds.length);
-    });
-
-    test("mergeFastWindows patches the visitor observations of the conversion objective and leaves its other observations", () => {
-      const existing = {
-        generatedAt: "a",
-        objectives: [
-          {
-            id: "conversion-to-submission",
-            observations: [
-              { id: "new-accounts", last30: { value: 5 } },
-              { id: "sessions-human", last30: { value: 210 } },
-            ],
-          },
-        ],
-        failedObservationCount: 0,
-      };
-      const patch = {
-        generatedAt: "b",
-        objectives: [
-          {
-            id: "conversion-to-submission",
-            observations: [{ id: "sessions-human", last1h: { value: 2 }, last1d: { value: 30 }, last7d: { value: 90 } }],
-          },
-        ],
-        failedObservationCount: 0,
-      };
-
-      const merged = mergeFastWindows(existing, patch);
-
-      const observations = merged.objectives[0].observations;
-      expect(observations[0]).toEqual({ id: "new-accounts", last30: { value: 5 } });
-      expect(observations[1]).toEqual({
-        id: "sessions-human",
-        last30: { value: 210 },
-        last1h: { value: 2 },
-        last1d: { value: 30 },
-        last7d: { value: 90 },
-      });
-    });
-  });
-
-  describe("mergeFastWindows", () => {
-    const existingSnapshot = {
-      generatedAt: "2026-09-25T03:15:00.000Z",
-      environment: "test",
-      objectives: [
-        {
-          id: "uptime",
-          name: "Uptime",
-          observations: [{ id: "probe-pass-rate", last30: { value: 0.99, trend: 0 }, last90: { value: 0.98, trend: 0.01 } }],
-        },
-        {
-          id: "activity-started-and-completed",
-          name: "Activity started and completed",
-          observations: [
-            {
-              id: "submit-vat::started",
-              label: "Submit VAT (HMRC) — started",
-              unit: "count",
-              last30: { value: 40, trend: 0.1 },
-              last90: { value: 110, trend: 0.05 },
-              deepLink: "https://example.com/activities",
-            },
-            {
-              id: "bundle::started",
-              label: "View and edit your bundles — started",
-              unit: "count",
-              last30: { value: 31, trend: 0 },
-              last90: { value: 90, trend: 0 },
-              deepLink: "https://example.com/activities",
-            },
-          ],
-        },
-      ],
-      failedObservationCount: 0,
-    };
-
-    test("overlays only the matching observations' fast windows, leaving their other fields and every other objective untouched", () => {
-      const patchSnapshot = {
-        generatedAt: "2026-09-26T09:00:00.000Z",
-        environment: "test",
-        objectives: [
-          {
-            id: "activity-started-and-completed",
-            name: "Activity started and completed",
-            observations: [{ id: "submit-vat::started", last1h: { value: 1 }, last1d: { value: 3 }, last7d: { value: 12 } }],
-          },
-        ],
-        failedObservationCount: 0,
-      };
-
-      const merged = mergeFastWindows(existingSnapshot, patchSnapshot);
-
-      expect(merged.generatedAt).toBe("2026-09-26T09:00:00.000Z");
-      expect(merged.objectives.find((o) => o.id === "uptime")).toEqual(existingSnapshot.objectives[0]);
-
-      const activities = merged.objectives.find((o) => o.id === "activity-started-and-completed");
-      const vatStarted = activities.observations.find((o) => o.id === "submit-vat::started");
-      expect(vatStarted).toEqual({
-        id: "submit-vat::started",
-        label: "Submit VAT (HMRC) — started",
-        unit: "count",
-        last30: { value: 40, trend: 0.1 },
-        last90: { value: 110, trend: 0.05 },
-        deepLink: "https://example.com/activities",
-        last1h: { value: 1 },
-        last1d: { value: 3 },
-        last7d: { value: 12 },
-      });
-
-      // Not named in the patch (its own fast-window query failed this run): left exactly as it was.
-      const bundleStarted = activities.observations.find((o) => o.id === "bundle::started");
-      expect(bundleStarted).toEqual(existingSnapshot.objectives[1].observations[1]);
-    });
-
-    test("carries the patch's failedObservationCount, not the existing snapshot's", () => {
-      const patchSnapshot = {
-        generatedAt: "2026-09-26T09:00:00.000Z",
-        environment: "test",
-        objectives: [{ id: "activity-started-and-completed", name: "Activity started and completed", observations: [] }],
-        failedObservationCount: 2,
-      };
-
-      const merged = mergeFastWindows(existingSnapshot, patchSnapshot);
-      expect(merged.failedObservationCount).toBe(2);
+      expect(snapshot.failedObservationCount).toBe(visitorIds.length);
     });
   });
 
   describe("handler", () => {
-    test("requires its environment variables before it ever looks at event.mode", async () => {
+    test("requires its environment variables", async () => {
       delete process.env.ANALYTICS_LAKE_BUCKET_NAME;
       await expect(handler()).rejects.toThrow(/ANALYTICS_LAKE_BUCKET_NAME/);
     });
 
-    test("requires event.mode to be full or activity-only", async () => {
-      await expect(handler()).rejects.toThrow(/event\.mode/);
-      await expect(handler({ mode: "nightly" })).rejects.toThrow(/event\.mode/);
-    });
-
-    test("mode full builds and writes a whole snapshot", async () => {
+    test("builds and writes a whole snapshot", async () => {
       mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
 
-      const result = await handler({ mode: "full" });
+      const result = await handler();
 
       expect(result).toEqual({ environment: "test", objectives: 10 });
       expect(mockS3Send).toHaveBeenCalledTimes(2);
     });
 
-    test("mode full still publishes the snapshot but rejects when an observation failed, so the Lambda's Errors metric still fires", async () => {
+    test("a failing cost drivers query publishes the snapshot without them and counts as one failure", async () => {
+      mockQueriesWithOneFailing("LIMIT  10", ["10", "5", "30", "20"]);
+
+      await expect(handler()).rejects.toThrow(/1 observation/);
+      const putCalls = mockS3Send.mock.calls.filter(([command]) => command.constructor.name === "PutObjectCommand");
+      expect(JSON.parse(putCalls[0][0].input.Body).costDrivers).toBeUndefined();
+    });
+
+    test("still publishes the snapshot but rejects when an observation failed, so the Lambda's Errors metric still fires", async () => {
       mockQueriesWithOneFailing("guardduty_findings", ["10", "5", "30", "20"]);
 
-      await expect(handler({ mode: "full" })).rejects.toThrow(/1 observation/);
+      await expect(handler()).rejects.toThrow(/1 observation/);
       expect(mockS3Send).toHaveBeenCalledTimes(2);
-    });
-
-    test("mode activity-only reads the latest snapshot, patches only the fast windows, and writes the merged result", async () => {
-      const existingSnapshot = {
-        generatedAt: "2026-09-25T03:15:00.000Z",
-        environment: "test",
-        objectives: [
-          {
-            id: "activity-started-and-completed",
-            name: "Activity started and completed",
-            observations: [
-              {
-                id: "submit-vat::started",
-                label: "Submit VAT (HMRC) — started",
-                unit: "count",
-                last30: { value: 40, trend: 0.1 },
-                last90: { value: 110, trend: 0.05 },
-                deepLink: "https://example.com/activities",
-              },
-            ],
-          },
-        ],
-        failedObservationCount: 0,
-      };
-
-      mockS3Send.mockImplementation((command) => {
-        if (command.constructor.name === "GetObjectCommand") {
-          return Promise.resolve({ Body: { transformToString: async () => JSON.stringify(existingSnapshot) } });
-        }
-        return Promise.resolve({});
-      });
-      mockFastWindowBatchAnswering({ "1h": "1", "1d": "3", "7d": "12" });
-
-      const result = await handler({ mode: "activity-only" });
-
-      expect(result).toEqual({ environment: "test", objectives: 1 });
-
-      const putCalls = mockS3Send.mock.calls.filter(([command]) => command.constructor.name === "PutObjectCommand");
-      expect(putCalls).toHaveLength(2);
-      const writtenSnapshot = JSON.parse(putCalls[0][0].input.Body);
-      const vatStarted = writtenSnapshot.objectives[0].observations.find((o) => o.id === "submit-vat::started");
-      expect(vatStarted.last1h).toEqual({ value: 1 });
-      expect(vatStarted.last30).toEqual({ value: 40, trend: 0.1 });
-    });
-
-    test("mode activity-only refuses to patch onto nothing when the full run has never published", async () => {
-      mockS3Send.mockImplementation((command) => {
-        if (command.constructor.name === "GetObjectCommand") {
-          const error = new Error("The specified key does not exist.");
-          error.name = "NoSuchKey";
-          return Promise.reject(error);
-        }
-        return Promise.resolve({});
-      });
-
-      await expect(handler({ mode: "activity-only" })).rejects.toThrow(/full run/);
     });
   });
 });

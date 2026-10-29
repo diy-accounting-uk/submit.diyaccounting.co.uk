@@ -10,6 +10,10 @@ import { calculateOneMonthTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbBundleRepository.js" });
 
+// The user's account settings live in the user's own partition of this table, under this sort key.
+// The sort key is not a bundle id, so a read of the user's bundles leaves the item out.
+export const ACCOUNT_SETTINGS_ITEM_ID = "#account-settings";
+
 export async function putBundle(userId, bundle) {
   logger.info({ message: `putBundle [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
 
@@ -160,6 +164,8 @@ export async function deleteBundle(userId, bundleId) {
   }
 }
 
+// Removes the user's bundles. The account settings item is an account preference, not a bundle,
+// and stays.
 export async function deleteAllBundles(userId) {
   logger.info({ message: `deleteAllBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
 
@@ -175,8 +181,8 @@ export async function deleteAllBundles(userId) {
       count: bundles.length,
     });
     const deleteResults = await Promise.allSettled(
-      bundles.map(async (bundleId) => {
-        await deleteBundle(userId, bundleId);
+      bundles.map(async (bundle) => {
+        await deleteBundle(userId, bundle.bundleId);
       }),
     );
 
@@ -427,9 +433,10 @@ export async function getUserBundles(userId) {
     );
     logger.info({ message: "Queried DynamoDB for user bundles", hashedSub, itemCount: response.Count });
 
-    if (response.Items && response.Items.length > 0) {
-      logger.info({ message: "Retrieved bundles from DynamoDB", hashedSub, count: response.Items.length });
-      return response.Items;
+    const bundles = response.Items?.filter((item) => item.bundleId !== ACCOUNT_SETTINGS_ITEM_ID) ?? [];
+    if (bundles.length > 0) {
+      logger.info({ message: "Retrieved bundles from DynamoDB", hashedSub, count: bundles.length });
+      return bundles;
     }
 
     // Fall back to previous salt versions during migration window
@@ -445,9 +452,10 @@ export async function getUserBundles(userId) {
             },
           }),
       );
-      if (fallbackResponse.Items && fallbackResponse.Items.length > 0) {
+      const fallbackBundles = fallbackResponse.Items?.filter((item) => item.bundleId !== ACCOUNT_SETTINGS_ITEM_ID) ?? [];
+      if (fallbackBundles.length > 0) {
         logger.warn({ message: "Found bundles at old salt version", version, hashedSub: oldHash });
-        return fallbackResponse.Items;
+        return fallbackBundles;
       }
     }
 
@@ -459,6 +467,53 @@ export async function getUserBundles(userId) {
       error: error.message,
       userId,
     });
+    throw error;
+  }
+}
+
+export async function getAccountSettings(userId) {
+  logger.info({ message: `getAccountSettings [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
+
+  try {
+    const hashedSub = hashSub(userId);
+    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+    const response = await executeDynamoDbCommand(
+      (module) =>
+        new module.GetCommand({
+          TableName: tableName,
+          Key: { hashedSub, bundleId: ACCOUNT_SETTINGS_ITEM_ID },
+        }),
+    );
+    return response.Item?.settings ?? {};
+  } catch (error) {
+    logger.error({ message: "Error retrieving account settings from DynamoDB", error: error.message, userId });
+    throw error;
+  }
+}
+
+export async function updateAccountSettings(userId, settings) {
+  logger.info({ message: `updateAccountSettings [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, settings });
+
+  try {
+    const hashedSub = hashSub(userId);
+    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+    const merged = { ...(await getAccountSettings(userId)), ...settings };
+    await executeDynamoDbCommand(
+      (module) =>
+        new module.PutCommand({
+          TableName: tableName,
+          Item: {
+            hashedSub,
+            bundleId: ACCOUNT_SETTINGS_ITEM_ID,
+            saltVersion: getSaltVersion(),
+            settings: merged,
+            updatedAt: new Date().toISOString(),
+          },
+        }),
+    );
+    return merged;
+  } catch (error) {
+    logger.error({ message: "Error updating account settings in DynamoDB", error: error.message, userId });
     throw error;
   }
 }

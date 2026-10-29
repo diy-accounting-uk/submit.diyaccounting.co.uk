@@ -48,6 +48,9 @@ const FIXTURE_SNAPSHOT = {
           source: "v_alarm_state_changes_daily",
           measure: "total of the days",
           better: "down",
+          today: { value: 1 },
+          previousDay: { value: 0 },
+          last7: { value: 2 },
           last30: { value: 3, trend: -0.25 },
           last90: { value: 10, trend: 0.1 },
           deepLink: "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#alarmsV2:",
@@ -70,9 +73,9 @@ const FIXTURE_SNAPSHOT = {
           id: "sessions-human",
           label: "Sessions, human visitors",
           unit: "count",
-          last1h: { value: 2 },
-          last1d: { value: 30 },
-          last7d: { value: 90 },
+          today: { value: 2 },
+          previousDay: { value: 30 },
+          last7: { value: 90 },
           last30: { value: 210, trend: 0.05 },
           last90: { value: 600, trend: 0.02 },
           deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
@@ -97,6 +100,7 @@ const FIXTURE_SNAPSHOT = {
           id: "sessions-synthetic",
           label: "Sessions, synthetic visitors",
           unit: "count",
+          today: { value: 60, asOf: "2026-10-28" },
           last30: { value: 60, trend: 0 },
           last90: { value: 180, trend: 0 },
           deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
@@ -104,7 +108,7 @@ const FIXTURE_SNAPSHOT = {
       ],
     },
     { id: "conversion-to-paid", name: "Conversion to paid", observations: [] },
-    { id: "low-running-cost", name: "Low running cost", observations: [] },
+    { id: "low-running-cost", name: "AWS costs", observations: [] },
     { id: "security", name: "Security", observations: [] },
     { id: "retention", name: "Retention", observations: [] },
     { id: "operator-effort", name: "Operator effort", observations: [] },
@@ -188,9 +192,9 @@ const FIXTURE_SNAPSHOT = {
           id: "submit-vat::started",
           label: "Submit VAT (HMRC) — started",
           unit: "count",
-          last1h: { value: 1 },
-          last1d: { value: 3 },
-          last7d: { value: 12 },
+          today: { value: 1 },
+          previousDay: { value: 3 },
+          last7: { value: 12 },
           last30: { value: 40, trend: 0.1 },
           last90: { value: 110, trend: 0.05 },
           dataSince: "2026-09-28",
@@ -199,9 +203,9 @@ const FIXTURE_SNAPSHOT = {
           id: "submit-vat::completed",
           label: "Submit VAT (HMRC) — completed",
           unit: "count",
-          last1h: { value: 0 },
-          last1d: { value: 2 },
-          last7d: { value: 8 },
+          today: { value: 0 },
+          previousDay: { value: 2 },
+          last7: { value: 8 },
           last30: { value: 22, trend: -0.05 },
           last90: { value: 60, trend: 0.02 },
           dataSince: "2026-09-03",
@@ -281,7 +285,9 @@ function chartSeries(id, label, scale, extra = {}) {
 }
 
 function chartWithSeries(id, objectiveId, title, unit, seriesLabels, extra = {}) {
-  const components = seriesLabels.map((label, index) => chartSeries(`${id}-${index}`, label, 3 + index * 2));
+  const components = seriesLabels.map((label, index) =>
+    chartSeries(`${id}-${index}`, label, 3 + index * 2, { description: `What ${label} measures.` }),
+  );
   const total = {
     id: "total",
     label: "Total",
@@ -328,19 +334,55 @@ const FIXTURE_DAILY_CHARTS = {
         note: "Steps, left to right.",
       },
     ),
-    chartWithSeries("conversion-to-paid", "conversion-to-paid", "Conversion to paid", "gbp", [
-      "Subscriptions",
-      "Stripe donations",
-      "PayPal donations",
-    ]),
-    chartWithSeries("low-running-cost", "low-running-cost", "Low running cost", "usd", [
+    {
+      ...chartWithSeries("conversion-to-paid", "conversion-to-paid", "Conversion to paid", "gbp", [
+        "Subscriptions",
+        "Stripe donations",
+        "PayPal donations",
+      ]),
+      modes: [
+        {
+          id: "revenue",
+          label: "Revenue",
+          series: [chartSeries("subscriptions", "Subscriptions", 5), chartSeries("stripe-donations", "Stripe donations", 3)],
+        },
+        { id: "passes", label: "Passes issued", unit: "count", series: [chartSeries("passes-issued", "Passes issued", 4)] },
+      ],
+    },
+    chartWithSeries("low-running-cost", "low-running-cost", "AWS costs", "usd", [
       "Amazon CloudFront",
       "AWS Lambda",
       "Amazon DynamoDB",
       "Other services",
     ]),
-    chartWithSeries("retention", "retention", "Retention", "count", ["Submitters", "Returning submitters", "Renewals", "Cancellations"]),
-    chartWithSeries("visitors", "conversion-to-submission", "Visitors", "count", ["Human", "Operator", "Bot", "Synthetic"]),
+    chartWithSeries(
+      "retention",
+      "retention",
+      "Retention",
+      "count",
+      ["Submitters", "Returning submitters", "Renewals", "Cancellations", "Passes issued"],
+      { note: "The 90-day windows roll.", reconciliation: "Last 90 days, customers: 12 distinct submitters made 90 completions." },
+    ),
+    chartWithSeries("visitors", "conversion-to-submission", "Visitors", "count", [
+      "Operator",
+      "Authenticated user",
+      "Human",
+      "Synthetic",
+      "Bot",
+    ]),
+  ],
+};
+
+const FIXTURE_COST_DRIVERS = {
+  days: 30,
+  rows: [
+    {
+      charge: "$0.5985 per GB custom log data ingested in Standard log class - EU (London)",
+      resource: "log-group:/aws/cloudtrail/prod-env-cloud-trail",
+      resourceId: "arn:aws:logs:eu-west-2:972912397388:log-group:/aws/cloudtrail/prod-env-cloud-trail",
+      costUsd: 67.862,
+    },
+    { charge: "$0.0015 per canary run per month - EU (London)", resource: "canary:prod-dbf4e0a-api", resourceId: "arn:x", costUsd: 3.795 },
   ],
 };
 
@@ -376,10 +418,11 @@ function fullShapeSnapshot() {
         measure: measureDescription(observation),
         better: betterDirection(observation.id),
         ...windows(observation.unit),
-        ...(observation.fastWindowView ? { last1h: { value: 12 }, last1d: { value: 123 }, last7d: { value: 1234 } } : {}),
+        ...(observation.fastWindowView ? { today: { value: 12 }, previousDay: { value: 123 }, last7: { value: 1234 } } : {}),
         deepLink: observation.deepLink(context),
       })),
     })),
+    costDrivers: FIXTURE_COST_DRIVERS,
     failedObservationCount: 0,
   };
 }
@@ -494,16 +537,16 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     const alarms = page.locator('.observation[data-observation-id="alarms-fired"]');
-    await expect(alarms.locator("td").nth(2)).toHaveText("↓ 25.0%");
-    await expect(alarms.locator("td").nth(2)).toHaveClass(/trend-good/);
+    await expect(alarms.locator("td").nth(5)).toHaveText("↓ 25.0%");
+    await expect(alarms.locator("td").nth(5)).toHaveClass(/trend-good/);
 
     const passRate = page.locator('.observation[data-observation-id="probe-pass-rate"]');
-    await expect(passRate.locator("td").nth(2)).toHaveClass(/trend-good/);
+    await expect(passRate.locator("td").nth(5)).toHaveClass(/trend-good/);
 
     const bot = page.locator('#visitorsPanel tr.visitors-kind[data-kind="bot"]');
     await expect(bot.locator("td").nth(5)).toHaveClass(/trend-flat/);
 
-    await expect(page.locator('.objective[data-objective-id="uptime"] thead th').nth(2)).toHaveText("vs previous 30 days");
+    await expect(page.locator('.objective[data-objective-id="uptime"] thead th').nth(5)).toHaveText("30 day trend");
   });
 
   test("states the source and how each window is built under the observation", async ({ page }) => {
@@ -570,8 +613,8 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     const rows = page.locator("#visitorsPanel tr.visitors-kind");
-    await expect(rows).toHaveCount(4);
-    await expect(rows.locator("td:first-child")).toHaveText(["Human", "Operator", "Bot", "Synthetic"]);
+    await expect(rows).toHaveCount(5);
+    await expect(rows.locator("td:first-child")).toHaveText(["Operator", "Authenticated user", "Human", "Synthetic", "Bot"]);
 
     const human = page.locator('#visitorsPanel tr.visitors-kind[data-kind="human"]');
     await expect(human.locator("td").nth(1)).toHaveText("2");
@@ -585,29 +628,96 @@ test.describe("Operator Dashboard", () => {
     await expect(bot.locator("td").nth(5)).toHaveText("↓ 10.0%");
   });
 
-  test("explains why a visitor fast-window figure is missing only on the cells that have none", async ({ page }) => {
+  test("explains why a visitor figure is missing only on the cells that have none, and which day a latest reading is for", async ({
+    page,
+  }) => {
     await setupRoutes(page);
     await loadDashboard(page);
 
     const headers = page.locator("#visitorsTable thead th");
-    await expect(headers).toHaveText([
-      "Kind",
-      "Last 1 hour",
-      "Last 1 day",
-      "Last 7 days",
-      "Last 30 days",
-      "vs previous 30 days",
-      "Last 90 days",
-    ]);
-    await expect(headers.nth(1)).not.toHaveAttribute("title", /.+/);
+    await expect(headers).toHaveText(["Kind", "Today", "Previous day", "Last 7 days", "Last 30 days", "30 day trend", "Last 90 days"]);
+    await expect(headers.nth(2)).not.toHaveAttribute("title", /.+/);
 
     const human = page.locator('#visitorsPanel tr.visitors-kind[data-kind="human"]');
     await expect(human.locator("td").nth(1)).not.toHaveAttribute("title", /.+/);
+
+    const synthetic = page.locator('#visitorsPanel tr.visitors-kind[data-kind="synthetic"]');
+    await expect(synthetic.locator("td").nth(1)).toHaveText("60");
+    await expect(synthetic.locator("td").nth(1)).toHaveAttribute("title", /Latest reading, reported for 2026-10-28/);
 
     const operator = page.locator('#visitorsPanel tr.visitors-kind[data-kind="operator"]');
     await expect(operator.locator("td").nth(1)).toHaveText("not measured");
     await expect(operator.locator("td").nth(1)).toHaveAttribute("title", /streaming export/);
     await expect(operator.locator("td").nth(4)).not.toHaveAttribute("title", /.+/);
+  });
+
+  test("says none for a window with no events and not measured for a figure the source did not report", async ({ page }) => {
+    const objectives = FIXTURE_SNAPSHOT.objectives.map((objective) =>
+      objective.id === "retention"
+        ? {
+            ...objective,
+            observations: [
+              { id: "quiet", label: "Quiet ratio", unit: "ratio", last30: { value: null, noEvents: true }, last90: { value: null } },
+            ],
+          }
+        : objective,
+    );
+    await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, objectives } });
+    await loadDashboard(page);
+
+    const row = page.locator('tr.observation[data-observation-id="quiet"]');
+    await expect(row.locator("td").nth(4)).toHaveText("none");
+    await expect(row.locator("td").nth(6)).toHaveText("not measured");
+  });
+
+  test("lists the dearest CloudWatch charges under AWS costs, or says none are published", async ({ page }) => {
+    await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, costDrivers: FIXTURE_COST_DRIVERS } });
+    await loadDashboard(page);
+
+    const section = page.locator('.objective[data-objective-id="low-running-cost"]');
+    await expect(section.locator(".cost-drivers h3")).toHaveText("Top 2 CloudWatch charges, last 30 days");
+    const rows = section.locator("tr.cost-driver");
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0).locator("td").nth(0)).toHaveText("log-group:/aws/cloudtrail/prod-env-cloud-trail");
+    await expect(rows.nth(0).locator("td").nth(0)).toHaveAttribute("title", /arn:aws:logs:eu-west-2:972912397388/);
+    await expect(rows.nth(0).locator("td").nth(2)).toHaveText("US$67.86");
+
+    await setupRoutes(page);
+    await loadDashboard(page);
+    await expect(page.locator('.objective[data-objective-id="low-running-cost"] .cost-drivers')).toContainText(
+      "No CloudWatch charges published yet.",
+    );
+  });
+
+  test("shows n/a for the daily windows of a monthly figure", async ({ page }) => {
+    const objectives = FIXTURE_SNAPSHOT.objectives.map((objective) =>
+      objective.id === "retention"
+        ? {
+            ...objective,
+            observations: [
+              {
+                id: "monthly",
+                label: "Monthly figure",
+                unit: "usd",
+                description: "Cost for the month.",
+                today: { value: null, notApplicable: true },
+                previousDay: { value: null, notApplicable: true },
+                last7: { value: 5 },
+                last30: { value: 40 },
+                last90: { value: 90 },
+              },
+            ],
+          }
+        : objective,
+    );
+    await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, objectives } });
+    await loadDashboard(page);
+
+    const row = page.locator('tr.observation[data-observation-id="monthly"]');
+    await expect(row.locator("td").nth(1)).toHaveText("n/a");
+    await expect(row.locator("td").nth(2)).toHaveText("n/a");
+    await expect(row.locator("td").nth(3)).toHaveText("US$5.00");
+    await expect(row.locator("td").nth(0)).toHaveAttribute("title", "Cost for the month.");
   });
 
   test("shows a placeholder for an objective with no observations yet", async ({ page }) => {
@@ -715,8 +825,8 @@ test.describe("Operator Dashboard", () => {
 
     const started = panel.locator('#activitiesStartedBody .activity-row[data-activity-id="submit-vat"]');
     await expect(started.locator("td").nth(0)).toHaveText("Submit VAT (HMRC)");
-    await expect(started.locator("td").nth(1)).toHaveText("1"); // last 1 hour
-    await expect(started.locator("td").nth(2)).toHaveText("3"); // last 1 day
+    await expect(started.locator("td").nth(1)).toHaveText("1"); // today
+    await expect(started.locator("td").nth(2)).toHaveText("3"); // previous day
     await expect(started.locator("td").nth(3)).toHaveText("12"); // last 7 days
     await expect(started.locator("td").nth(4)).toHaveText("40"); // last 30
     await expect(started.locator("td").nth(5)).toHaveText("↑ 10.0%"); // trend
@@ -822,12 +932,12 @@ test.describe("Operator Dashboard", () => {
         "Activity started and completed",
         "Conversion to submission",
         "Conversion to paid",
-        "Low running cost",
+        "AWS costs",
         "Retention",
         "Visitors",
       ]);
       const visitors = page.locator('.chart-card[data-chart-id="visitors"]');
-      await expect(visitors.locator("polyline.chart-line")).toHaveCount(5);
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(6);
       const points = await visitors.locator("polyline.chart-line").first().getAttribute("points");
       expect(points.trim().split(" ")).toHaveLength(90);
     });
@@ -838,10 +948,10 @@ test.describe("Operator Dashboard", () => {
 
       const retention = page.locator('.chart-card[data-chart-id="retention"]');
       await retention.locator('.chart-legend-item[data-series-id="retention-0"]').click();
-      await expect(retention.locator("polyline.chart-line")).toHaveCount(4);
+      await expect(retention.locator("polyline.chart-line")).toHaveCount(5);
       await expect(retention.locator('.chart-legend-item[data-series-id="retention-0"]')).toHaveAttribute("aria-pressed", "false");
       await retention.locator('.chart-legend-item[data-series-id="retention-0"]').click();
-      await expect(retention.locator("polyline.chart-line")).toHaveCount(5);
+      await expect(retention.locator("polyline.chart-line")).toHaveCount(6);
     });
 
     test("switches the activities chart between started and completed", async ({ page }) => {
@@ -852,6 +962,54 @@ test.describe("Operator Dashboard", () => {
       await expect(activities.locator("polyline.chart-line")).toHaveCount(13);
       await activities.locator('.chart-mode[data-mode-id="completed"]').click();
       await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+    });
+
+    test("shows all, hides all, isolates one line on a double-click and restores on a second", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const card = page.locator('.chart-card[data-chart-id="retention"]');
+      const lines = card.locator("polyline.chart-line");
+      await expect(lines).toHaveCount(6);
+
+      await card.locator('[data-action="hide-all"]').click();
+      await expect(lines).toHaveCount(0);
+      await card.locator('[data-action="show-all"]').click();
+      await expect(lines).toHaveCount(6);
+
+      await card.locator(".chart-legend-item", { hasText: "Renewals" }).click();
+      await expect(lines).toHaveCount(5);
+      await card.locator(".chart-legend-item", { hasText: "Renewals" }).click();
+      await expect(lines).toHaveCount(6);
+
+      await card.locator(".chart-legend-item", { hasText: "Cancellations" }).dblclick();
+      await expect(lines).toHaveCount(1);
+      await expect(card.locator('.chart-legend-item[aria-pressed="true"]')).toHaveCount(1);
+      await card.locator(".chart-legend-item", { hasText: "Cancellations" }).dblclick();
+      await expect(lines).toHaveCount(6);
+    });
+
+    test("shows the retention reconciliation line and counts Passes issued without a pound sign", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const retention = page.locator('.chart-card[data-chart-id="retention"]');
+      await expect(retention.locator(".chart-reconciliation")).toContainText("12 distinct submitters");
+      await expect(retention.locator(".chart-legend-item", { hasText: "Passes issued" })).toBeVisible();
+
+      const paid = page.locator('.chart-card[data-chart-id="conversion-to-paid"]');
+      await expect(paid.locator(".chart-readout")).toContainText("£");
+      await paid.locator('.chart-mode[data-mode-id="passes"]').click();
+      await expect(paid.locator(".chart-readout")).toContainText("Passes issued");
+      await expect(paid.locator(".chart-readout")).not.toContainText("£");
+    });
+
+    test("describes each line in its legend tooltip", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const card = page.locator('.chart-card[data-chart-id="retention"]');
+      await expect(card.locator(".chart-legend-item", { hasText: "Renewals" })).toHaveAttribute("title", "What Renewals measures.");
     });
 
     test("reads one day under the chart as the pointer moves over it", async ({ page }) => {
@@ -994,7 +1152,7 @@ test.describe("Operator Dashboard", () => {
       await eachObservationsTableFitsItsCard(page);
       const scrollsSideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
       expect(scrollsSideways).toBe(false);
-      await expect(page.locator("#activitiesStartedBody .activity-row td").nth(1)).toHaveAttribute("data-label", "Last 1 hour");
+      await expect(page.locator("#activitiesStartedBody .activity-row td").nth(1)).toHaveAttribute("data-label", "Today");
       await page.screenshot({ path: "target/dashboard-390.png", fullPage: true });
     });
   });

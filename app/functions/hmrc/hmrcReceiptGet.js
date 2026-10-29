@@ -18,6 +18,7 @@ import { getUserSub } from "../../lib/jwtHelper.js";
 import { getReceipt, listUserReceipts } from "../../data/dynamoDbReceiptRepository.js";
 import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcReceiptGet.js" });
 
@@ -129,6 +130,12 @@ export async function ingestHandler(event) {
     } else {
       logger.info({ message: "Listing user receipts", userSub, clientId });
       const receipts = await listUserReceipts(userSub, clientId);
+      await publishActivityEvent({
+        event: "receipts-viewed",
+        summary: "Receipts viewed",
+        userSub,
+        clientId,
+      });
       return http200OkResponse({
         request,
         headers: { ...responseHeaders },

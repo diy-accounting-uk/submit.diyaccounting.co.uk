@@ -706,6 +706,10 @@ export async function fetchVideoSnippets({ videoIds, accessToken, quotaProject =
 
 const SYNCED_SNIPPET_FIELDS = ["title", "description"];
 
+function trimEnd(value) {
+  return typeof value === "string" ? value.trimEnd() : value;
+}
+
 /**
  * Compare each entry's declared title and description against YouTube's snippet.
  * Pure, so it is unit tested; the network call that produces `liveSnippetsById` is not.
@@ -718,7 +722,8 @@ export function planMetadataSync({ list, liveSnippetsById }) {
     const entry = { ...listed, description: resolveDescription(listed, list) };
     const live = liveSnippetsById[entry.videoId] ?? {};
     for (const field of SYNCED_SNIPPET_FIELDS) {
-      if (live[field] !== entry[field]) {
+      // YouTube stores a snippet with its trailing whitespace removed.
+      if (live[field] !== trimEnd(entry[field])) {
         plan.push({ id: entry.id, videoId: entry.videoId, field, live: live[field], declared: entry[field] });
       }
     }

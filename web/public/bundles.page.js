@@ -50,6 +50,8 @@ let __fetchBundlesController = null;
 let __catalogueData = null; // Catalogue TOML data (stored for re-renders)
 let __catalogueSettled = false; // True once the catalogue has loaded or failed to load
 let __currentEnv = null; // Current environment name
+let __viewer = null; // What this person has chosen to see: preview features, operator features, account settings
+let __catalogService = null; // lib/services/catalog-service.js, read once the catalogue loads
 
 const parseUserBundles = () => (Array.isArray(__userBundles) ? __userBundles : []);
 
@@ -90,8 +92,9 @@ const fetchUserBundles = async () => {
       init: { headers: { Authorization: `Bearer ${idToken}` }, signal },
     });
     if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-      __fullBundleData = bundlesData.bundles;
-      __userBundles = bundlesData.bundles.filter((b) => b.allocated).map((b) => b.bundleId);
+      const operatorFeaturesOn = (await import("/lib/services/viewer-settings.js")).isOperatorFeaturesOn();
+      __fullBundleData = bundlesData.bundles.filter((b) => operatorFeaturesOn || b.bundleId !== "operator");
+      __userBundles = __fullBundleData.filter((b) => b.allocated).map((b) => b.bundleId);
       if (userId) {
         await window.bundleCache.setBundles(userId, __userBundles, 5 * 60 * 1000); // 5 minutes TTL
       }
@@ -513,10 +516,7 @@ function updateBundleStatus() {
 const messageEl = (text) => domEl("p", { class: "service-description" }, text);
 
 function isListedInCurrentEnvironment(b) {
-  const listed = b?.listedInEnvironments;
-  if (!Array.isArray(listed) || listed.length === 0) return true;
-  if (!__currentEnv) return false;
-  return listed.includes(__currentEnv);
+  return __catalogService.isBundleShown(b, __currentEnv, __viewer);
 }
 
 // --- render catalogue bundles (reusable, reads from __catalogueData)
@@ -588,6 +588,8 @@ const __catalogueReady = (async function () {
     }
 
     __currentEnv = await readEnvironment();
+    __viewer = await (await import("/lib/services/viewer-settings.js")).fetchViewer();
+    __catalogService = await import("/lib/services/catalog-service.js");
     renderCatalogueBundles();
     __catalogueSettled = true;
     renderCurrentBundles();
@@ -1039,6 +1041,8 @@ function renderGeneratedPassesEmptyText() {
 async function fetchMyGeneratedPasses(append) {
   const idToken = getIdToken();
   if (!idToken) return;
+  const viewer = await (await import("/lib/services/viewer-settings.js")).fetchViewer();
+  if (viewer.account.passGeneration === false) return;
 
   try {
     let url = "/api/v1/pass/my-passes?limit=10";

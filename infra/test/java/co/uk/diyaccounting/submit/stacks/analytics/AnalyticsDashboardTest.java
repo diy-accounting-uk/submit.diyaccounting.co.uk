@@ -63,7 +63,7 @@ class AnalyticsDashboardTest {
     }
 
     @Test
-    void createsOneLambdaNoScheduleOrDlqAndOneAlarm() {
+    void createsOneLambdaNoScheduleOrDlqAndTwoAlarms() {
         Template template = synthAnalyticsDashboard();
 
         // The metrics-publish function name is stable across every redeploy of this env-scoped
@@ -74,7 +74,7 @@ class AnalyticsDashboardTest {
         // this Lambda directly as the last step of the nightly chain.
         template.resourceCountIs("AWS::Events::Rule", 0);
         template.resourceCountIs("AWS::SQS::Queue", 0);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 1);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 2);
         template.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
 
         // Importing both buckets by name creates no bucket of its own.
@@ -86,11 +86,11 @@ class AnalyticsDashboardTest {
     }
 
     @Test
-    void alarmCarriesNoSnsActionAndMatchesTheErrorsMetric() {
+    void alarmsCarryNoSnsActionAndMatchTheErrorsAndChargesMetrics() {
         Template template = synthAnalyticsDashboard();
 
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
-        assertEquals(1, alarms.size());
+        assertEquals(2, alarms.size());
         for (Map<String, Object> alarm : alarms.values()) {
             @SuppressWarnings("unchecked")
             var properties = (Map<String, Object>) alarm.get("Properties");
@@ -103,6 +103,19 @@ class AnalyticsDashboardTest {
                         "AlarmName", "docs-env-analytics-metrics-publish-errors",
                         "MetricName", "Errors",
                         "Namespace", "AWS/Lambda")));
+
+        template.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName", "docs-env-charges-without-activation",
+                        "MetricName", "ChargesWithoutActivation",
+                        "Namespace", "Submit/Analytics",
+                        "Period", 86400,
+                        "Statistic", "Sum",
+                        "Threshold", 0,
+                        "EvaluationPeriods", 1,
+                        "ComparisonOperator", "GreaterThanThreshold",
+                        "TreatMissingData", "notBreaching")));
     }
 
     @Test

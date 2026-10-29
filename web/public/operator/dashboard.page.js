@@ -53,6 +53,7 @@ const RESERVE_FLOOR_GBP = 2000;
 const NOT_MEASURED = "not measured";
 const NONE = "none";
 const NO_BASE = "no base";
+const NOT_APPLICABLE = "n/a";
 
 const numberFormat = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 });
 const percentFormat = new Intl.NumberFormat("en-GB", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
@@ -67,7 +68,13 @@ const timestampFormat = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
 });
 
-// "not measured" is a figure the pipeline could not produce; "none" is a measured count of zero.
+// "not measured" is a figure the source did not report; "none" is a measured count of zero, or
+// a window the source covered in which nothing happened (the window carries noEvents).
+function formatWindowValue(unit, window) {
+  if (window && window.noEvents && (window.value === null || window.value === undefined)) return NONE;
+  return formatValue(unit, window && window.value);
+}
+
 function formatValue(unit, value) {
   if (value === null || value === undefined) return NOT_MEASURED;
   if (unit === "ratio") return percentFormat.format(value * 100) + "%";
@@ -130,6 +137,7 @@ function renderObservationRow(observation) {
 
   const label = document.createElement("td");
   label.textContent = observation.label;
+  if (observation.description) label.title = observation.description;
   if (observation.source) {
     const source = document.createElement("small");
     source.className = "observation-source";
@@ -138,9 +146,8 @@ function renderObservationRow(observation) {
   }
   row.appendChild(label);
 
-  const last30 = document.createElement("td");
-  last30.textContent = formatValue(observation.unit, observation.last30 && observation.last30.value);
-  row.appendChild(last30);
+  ["today", "previousDay", "last7"].forEach((key) => row.appendChild(windowCell(observation, key)));
+  row.appendChild(windowCell(observation, "last30"));
 
   const trend30 = formatTrend(
     observation.last30 && observation.last30.trend,
@@ -152,9 +159,7 @@ function renderObservationRow(observation) {
   trend30Cell.className = trend30.className;
   row.appendChild(trend30Cell);
 
-  const last90 = document.createElement("td");
-  last90.textContent = formatValue(observation.unit, observation.last90 && observation.last90.value);
-  row.appendChild(last90);
+  row.appendChild(windowCell(observation, "last90"));
 
   const linkCell = document.createElement("td");
   if (observation.deepLink) {
@@ -211,7 +216,7 @@ function renderObjective(objective) {
   table.className = "observations data-table";
   const thead = document.createElement("thead");
   thead.innerHTML =
-    '<tr><th>Observation</th><th>Last 30 days</th><th title="Last 30 days against the 30 days before them">vs previous 30 days</th><th>Last 90 days</th><th>Where to look</th></tr>';
+    '<tr><th>Observation</th><th title="Since midnight UK time">Today</th><th>Previous day</th><th>Last 7 days</th><th>Last 30 days</th><th title="Last 30 days against the 30 days before them">30 day trend</th><th>Last 90 days</th><th>Where to look</th></tr>';
   table.appendChild(thead);
 
   const tbody = document.createElement("tbody");
@@ -222,14 +227,17 @@ function renderObjective(objective) {
   return section;
 }
 
+// Operator, authenticated user and human come from GA4 sessions; synthetic and bot from the
+// CloudFront access log, which has no hourly reading.
 const VISITOR_KINDS = [
-  ["sessions-human", "Human"],
   ["sessions-operator", "Operator"],
-  ["sessions-bot", "Bot"],
+  ["sessions-authenticated", "Authenticated user"],
+  ["sessions-human", "Human"],
   ["sessions-synthetic", "Synthetic"],
+  ["sessions-bot", "Bot"],
 ];
 
-const VISITORS_FAST_WINDOW_UNAVAILABLE =
+const VISITORS_WINDOW_UNAVAILABLE =
   "Not available: no sessions in this window, or this environment's GA4 property has no streaming export and its daily export reaches the lake two days late.";
 
 function renderVisitors(snapshot) {
@@ -254,12 +262,14 @@ function renderVisitors(snapshot) {
     kindCell.textContent = kindLabel;
     row.appendChild(kindCell);
 
-    // The fast windows read GA4's streaming export; a property that only exports daily
-    // (ci) leaves them empty, and GA4's daily export reaches the lake two days late.
-    ["last1h", "last1d", "last7d"].forEach((key) => row.appendChild(activityCountCell(observation, key, VISITORS_FAST_WINDOW_UNAVAILABLE)));
-    row.appendChild(activityCountCell(observation, "last30"));
+    // GA4 kinds read the hourly streaming export; a property that only exports daily (ci)
+    // leaves it empty, and GA4's daily export reaches the lake two days late. Synthetic and bot
+    // come from the access log, read as whole days.
+    ["today", "previousDay", "last7", "last30"].forEach((key) =>
+      row.appendChild(windowCell(observation, key, VISITORS_WINDOW_UNAVAILABLE)),
+    );
     row.appendChild(activityTrendCell(observation));
-    row.appendChild(activityCountCell(observation, "last90"));
+    row.appendChild(windowCell(observation, "last90"));
 
     tbody.appendChild(row);
   });
@@ -388,11 +398,23 @@ function renderReinvestment(snapshot) {
   });
 }
 
-function activityCountCell(observation, key, unavailableTitle) {
+// One window of one observation. A monthly figure has no Today or Previous day; a whole-day
+// source's Today is its latest reading, and the tooltip says which day that reading is for.
+function windowCell(observation, key, unavailableTitle) {
   const cell = document.createElement("td");
-  const value = observation && observation[key] && observation[key].value;
-  cell.textContent = formatValue("count", value);
-  if (unavailableTitle && (value === null || value === undefined)) cell.title = unavailableTitle;
+  const window = observation && observation[key];
+  const unit = (observation && observation.unit) || "count";
+  if (window && window.notApplicable) {
+    cell.textContent = NOT_APPLICABLE;
+    cell.title = "This figure is reported by month or quarter, so it has no daily window.";
+    return cell;
+  }
+  cell.textContent = formatWindowValue(unit, window);
+  if (window && window.asOf) {
+    cell.title = "Latest reading, reported for " + window.asOf + ". This source reports whole days.";
+  } else if (unavailableTitle && (!window || window.value === null || window.value === undefined)) {
+    cell.title = unavailableTitle;
+  }
   return cell;
 }
 
@@ -444,16 +466,9 @@ function renderActivitiesRow(activityId, label, observation) {
   labelCell.textContent = label;
   row.appendChild(labelCell);
 
-  // Last 1 hour/1 day/7 days carry no trend: they are refreshed by the hourly
-  // activity-only publish, which patches only these three fields onto whatever the last
-  // nightly full publish wrote for last30/last90, so this row can mix a very fresh count
-  // with a day-old trend.
-  row.appendChild(activityCountCell(observation, "last1h"));
-  row.appendChild(activityCountCell(observation, "last1d"));
-  row.appendChild(activityCountCell(observation, "last7d"));
-  row.appendChild(activityCountCell(observation, "last30"));
+  ["today", "previousDay", "last7", "last30"].forEach((key) => row.appendChild(windowCell(observation, key)));
   row.appendChild(activityTrendCell(observation));
-  row.appendChild(activityCountCell(observation, "last90"));
+  row.appendChild(windowCell(observation, "last90"));
 
   return row;
 }
@@ -533,8 +548,53 @@ function renderSnapshot(snapshot) {
 
   OBJECTIVE_ORDER.forEach((objectiveId) => {
     const objective = objectivesById[objectiveId] || { id: objectiveId, name: objectiveId, observations: [] };
-    container.appendChild(renderObjective(objective));
+    const section = renderObjective(objective);
+    if (objectiveId === "low-running-cost") section.appendChild(renderCostDrivers(snapshot.costDrivers));
+    container.appendChild(section);
   });
+}
+
+// The most expensive CloudWatch charges, each a resource and the charge on it.
+function renderCostDrivers(costDrivers) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "cost-drivers";
+  const heading = document.createElement("h3");
+  heading.textContent =
+    "Top " +
+    ((costDrivers && costDrivers.rows.length) || 10) +
+    " CloudWatch charges, last " +
+    ((costDrivers && costDrivers.days) || 30) +
+    " days";
+  wrapper.appendChild(heading);
+  if (!costDrivers || costDrivers.rows.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "cost-drivers-empty";
+    empty.textContent = "No CloudWatch charges published yet.";
+    wrapper.appendChild(empty);
+    return wrapper;
+  }
+  const table = document.createElement("table");
+  table.className = "observations data-table cost-drivers-table";
+  table.innerHTML = "<thead><tr><th>Resource</th><th>Charge</th><th>Cost</th></tr></thead>";
+  const tbody = document.createElement("tbody");
+  costDrivers.rows.forEach((driver) => {
+    const row = document.createElement("tr");
+    row.className = "cost-driver";
+    const resource = document.createElement("td");
+    resource.textContent = driver.resource;
+    resource.title = driver.resourceId;
+    const charge = document.createElement("td");
+    charge.textContent = driver.charge;
+    const cost = document.createElement("td");
+    cost.textContent = formatValue("usd", driver.costUsd);
+    row.appendChild(resource);
+    row.appendChild(charge);
+    row.appendChild(cost);
+    tbody.appendChild(row);
+  });
+  table.appendChild(tbody);
+  wrapper.appendChild(table);
+  return wrapper;
 }
 
 function renderExperiments(experiments) {

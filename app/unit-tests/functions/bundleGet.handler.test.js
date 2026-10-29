@@ -218,7 +218,7 @@ describe("bundleGet ingestHandler", () => {
     expect(response.statusCode).toBe(200);
 
     // Verify that GetCommand was NOT called for this requestId
-    const getCalls = mockSend.mock.calls.filter((call) => call[0] instanceof MockGetCommand);
+    const getCalls = mockSend.mock.calls.filter((call) => call[0] instanceof MockGetCommand && call[0].input.Key.requestId);
     expect(getCalls.length).toBe(0);
   });
 

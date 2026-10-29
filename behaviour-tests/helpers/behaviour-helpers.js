@@ -152,7 +152,7 @@ export async function runStripeListen(webhookUrl) {
   logger.info(`[stripe-listen]: Starting stripe listen --forward-to ${webhookUrl}...`);
   return new Promise((resolve, reject) => {
     // eslint-disable-next-line sonarjs/no-os-command-from-path
-    const child = spawn("stripe", ["listen", "--forward-to", webhookUrl], {
+    const child = spawn("stripe", ["listen", "--all-snapshot", "--forward-to", webhookUrl], {
       env: { ...process.env },
       stdio: ["pipe", "pipe", "pipe"],
     });
@@ -1010,6 +1010,23 @@ export async function createHmrcTestAgent(hmrcClientId, hmrcClientSecret) {
     throw new Error("HMRC created a test agent without an agentServicesAccountNumber");
   }
   return { ...agent, arn: agent.agentServicesAccountNumber };
+}
+
+/**
+ * Accepts an agent invitation on HMRC's sandbox through the Agent Authorisation Test Support API,
+ * standing in for the client accepting it on HMRC's own pages.
+ * @param {string} invitationId - the id the invitation's Location header carried
+ */
+export async function acceptHmrcAgentInvitation(invitationId) {
+  const baseUrl = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
+  const url = `${baseUrl}/agent-authorisation-test-support/invitations/${encodeURIComponent(invitationId)}`;
+  const response = await fetch(url, {
+    method: "PUT",
+    headers: { "Accept": "application/vnd.hmrc.1.0+json", "Content-Length": "0" },
+  });
+  if (response.status !== 204) {
+    throw new Error(`HMRC test support did not accept invitation ${invitationId}: ${response.status} ${await response.text()}`);
+  }
 }
 
 /**

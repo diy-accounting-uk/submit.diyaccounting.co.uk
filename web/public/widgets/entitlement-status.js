@@ -99,7 +99,11 @@
               // localStorage unavailable: the session stays classified as human
             }
           }
-          bundlesCache = data.bundles.filter((b) => b.allocated).map((b) => (typeof b === "string" ? b : b.bundleId));
+          const viewerSettings = await import("/lib/services/viewer-settings.js");
+          const operatorFeaturesOn = viewerSettings.isOperatorFeaturesOn();
+          bundlesCache = data.bundles
+            .filter((b) => b.allocated && (operatorFeaturesOn || b.bundleId !== "operator"))
+            .map((b) => (typeof b === "string" ? b : b.bundleId));
           return bundlesCache;
         }
       } catch (err) {
@@ -230,9 +234,42 @@
     return { text: `Activity: requires ${activityList}`, style: "requires" };
   }
 
+  function unavailablePanel(heading, text, linkHref, linkText) {
+    const panel = document.createElement("section");
+    panel.className = "signed-out-panel";
+    panel.id = "activityUnavailablePanel";
+    const headingElement = document.createElement("h2");
+    headingElement.textContent = heading;
+    const textElement = document.createElement("p");
+    textElement.textContent = text;
+    const link = document.createElement("a");
+    link.className = "btn";
+    link.href = linkHref;
+    link.textContent = linkText;
+    panel.append(headingElement, textElement, link);
+    return panel;
+  }
+
+  // The banner on a page that preview features opened: its requests run against the test services.
+  function previewSandboxBanner() {
+    const banner = document.createElement("div");
+    banner.className = "feature-status-summary";
+    banner.dataset.previewSandbox = "";
+    const line = document.createElement("p");
+    const tag = document.createElement("span");
+    tag.className = "status-tag";
+    tag.dataset.status = "sandbox";
+    tag.textContent = "Sandbox";
+    line.append(tag, " This feature is open because preview features are on. It runs against the test services and files nothing real.");
+    banner.append(line);
+    return banner;
+  }
+
   /**
    * Put the not-available panel in place of the page's content when the page's activity is not
-   * listed in the current environment. Nothing the page was going to show remains to be used.
+   * shown to this person: the catalogue does not list it in this environment and preview features
+   * are off, or the person switched it off in their settings. Under preview features a page the
+   * catalogue does not list opens with a sandbox banner, and its requests go to the test services.
    * @returns {Promise<boolean>} True when the panel replaced the page's content
    */
   async function guardUnlistedActivity() {
@@ -242,22 +279,30 @@
     const activity = findMatchingActivity(catalog, window.location.pathname);
     if (!activity) return false;
     const service = await import("/lib/services/catalog-service.js");
-    const environmentName = await service.fetchCurrentEnvironmentName();
-    if (service.isActivityListedInEnvironment(activity, environmentName)) return false;
+    const viewerSettings = await import("/lib/services/viewer-settings.js");
+    const [environmentName, viewer] = await Promise.all([service.fetchCurrentEnvironmentName(), viewerSettings.fetchViewer()]);
+    const listed = service.isActivityListedInEnvironment(activity, environmentName);
+    if (service.isActivityShown(activity, environmentName, viewer)) {
+      if (!listed) {
+        main.prepend(previewSandboxBanner());
+        document.body.dataset.previewActivity = activity.id;
+      }
+      return false;
+    }
 
-    const panel = document.createElement("section");
-    panel.className = "signed-out-panel";
-    panel.id = "activityUnavailablePanel";
-    const heading = document.createElement("h2");
-    heading.textContent = "Not available here yet";
-    const text = document.createElement("p");
-    text.textContent =
-      "This part of DIY Accounting Submit is not open on this site yet. Nothing has been sent and nothing has been charged.";
-    const link = document.createElement("a");
-    link.className = "btn";
-    link.href = "/mtd-calendar.html#availability";
-    link.textContent = "See what is available";
-    panel.append(heading, text, link);
+    const panel = listed
+      ? unavailablePanel(
+          "Switched off in your settings",
+          "You turned this off. Nothing has been sent and nothing has been charged.",
+          "/settings.html",
+          "Open settings",
+        )
+      : unavailablePanel(
+          "Not available here yet",
+          "This part of DIY Accounting Submit is not open on this site yet. Nothing has been sent and nothing has been charged.",
+          "/mtd-calendar.html#availability",
+          "See what is available",
+        );
     main.replaceChildren(panel);
     document.body.dataset.activityUnavailable = activity.id;
     return true;

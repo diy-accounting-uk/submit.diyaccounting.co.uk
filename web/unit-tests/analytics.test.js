@@ -210,6 +210,20 @@ describe("web/public/lib/analytics.js", () => {
     );
   });
 
+  it("tags a signed-in visit that is not an operator's as authenticated, and an operator's as operator", () => {
+    global.localStorage.setItem("cognitoIdToken", "token");
+
+    eval(scriptContent);
+    const kinds = () =>
+      global.dataLayer.filter((args) => args[0] === "set" && args[1] === "user_properties").map((args) => args[2].visitor_kind);
+    expect(kinds()).toContain("authenticated");
+
+    global.dataLayer.length = 0;
+    global.localStorage.setItem("visitorKind.operator", "1");
+    eval(scriptContent);
+    expect(kinds()).toEqual(["operator"]);
+  });
+
   it("tags a canary visit as bot", () => {
     global.navigator.userAgent = "DIYAccounting-Probe-Monitor/1.0";
 

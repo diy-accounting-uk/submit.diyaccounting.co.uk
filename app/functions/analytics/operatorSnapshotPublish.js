@@ -3,15 +3,13 @@
 
 // app/functions/analytics/operatorSnapshotPublish.js
 //
-// Nightly (prod) or weekly (ci) job that reads the analytics views behind the one-stop
-// objectives dashboard and writes one JSON snapshot per environment: the trailing 30 and 90
-// days for each of the eight objectives' observations, each carrying its value, its trend
-// against the prior comparable period, and a deep link to where the operator can see more.
-// An hourly "activity-only" run (prod only) refreshes just the Last 1 hour/1 day/7 days columns
-// of the activities and visitors observations in between, patching them onto that snapshot rather than rebuilding
-// it — see handler()'s mode branch. The API route (operatorSnapshotGet.js) only ever reads what
-// this Lambda writes; it never queries Athena itself, so the dashboard stays fast even while a
-// query here is slow.
+// Hourly (prod) or weekly (ci) job, run as the last step of the ingestion state machine, that
+// reads the analytics views behind the one-stop objectives dashboard and writes one JSON
+// snapshot per environment: for each observation of the eight objectives, Today (since midnight
+// UK time), Previous day, Last 7 days, Last 30 days with its trend against the 30 days before,
+// Last 90 days, and a deep link to where the operator can see more. The API route
+// (operatorSnapshotGet.js) only ever reads what this Lambda writes; it never queries Athena
+// itself, so the dashboard stays fast even while a query here is slow.
 
 import { AthenaClient, StartQueryExecutionCommand, GetQueryExecutionCommand, GetQueryResultsCommand } from "@aws-sdk/client-athena";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -24,13 +22,20 @@ import {
   buildGa4ReportsLink,
 } from "../../lib/consoleLinks.js";
 import { loadCatalogFromRoot, isActivityListedInEnvironment } from "../../services/productCatalog.js";
-import { readLatestSnapshot } from "./operatorSnapshotGet.js";
 
 const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotPublish.js" });
 
-// The objectives an "activity-only" run refreshes: every observation in them that carries a
-// fastWindowView (see handler()'s mode branch).
-const FAST_WINDOW_OBJECTIVE_IDS = ["activity-started-and-completed", "conversion-to-submission"];
+// The AWS accounts of the organisation, by the name the estate gives each, keyed as v_cost_daily's
+// sub_account_id carries them.
+export const AWS_ACCOUNT_NAMES_BY_ID = {
+  "972912397388": "submit-prod",
+  "367191799875": "submit-ci",
+  "064390746177": "spreadsheets",
+  "887764105431": "management",
+  "914216784828": "backup",
+  "283165661847": "gateway",
+};
+const AWS_ACCOUNT_IDS_BY_NAME = Object.fromEntries(Object.entries(AWS_ACCOUNT_NAMES_BY_ID).map(([id, name]) => [name, id]));
 
 // The share of trailing 30-day income the operator dashboard offers as the paid-traffic budget.
 export const REINVESTMENT_FRACTION = 0.2;
@@ -64,9 +69,9 @@ function buildActivityObservations() {
       aggregation: "sum",
       where: `activity = '${activity.id}'`,
       reportDataSince: true,
-      // v_activity_started_daily groups by whole calendar day, which cannot answer a trailing
-      // 1-hour or 1-day window accurately (see v_activity_started_hourly.sql), so the fast
-      // columns read from the hourly view instead, in the same query shape.
+      // v_activity_started_daily groups by whole calendar day, which cannot answer Today
+      // since UK midnight accurately (see v_activity_started_hourly.sql), so Today, Previous
+      // day and Last 7 days read from the hourly view instead, in the same query shape.
       fastWindowView: "v_activity_started_hourly",
       fastWindowColumn: "hour",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
@@ -159,6 +164,28 @@ export const OBJECTIVE_DEFINITIONS = [
         deepLink: (ctx) => buildGithubActionsWorkflowLink(ctx.githubRepo, "deploy.yml"),
       },
       {
+        id: "hmrc-submission-failures",
+        label: "HMRC submission failures",
+        description: "VAT returns that customers sent to HMRC and that failed, counted from the activity events.",
+        unit: "count",
+        view: "v_submission_failure_rate_daily",
+        dayColumn: "day",
+        valueExpr: "failures",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "hmrc-submission-failure-rate",
+        label: "HMRC submission failure rate",
+        description: "The share of VAT returns sent to HMRC that failed, averaged over the days. A day with no submissions has no rate.",
+        unit: "ratio",
+        view: "v_submission_failure_rate_daily",
+        dayColumn: "day",
+        valueExpr: "failure_rate",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
         id: "agent-posted-rate",
         label: "Agent runs that posted a result",
         unit: "ratio",
@@ -225,6 +252,17 @@ export const OBJECTIVE_DEFINITIONS = [
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
+        id: "submission-failure-rate",
+        label: "VAT submissions that failed",
+        description: "The share of VAT returns sent to HMRC that failed, averaged over the days. A day with no submissions has no rate.",
+        unit: "ratio",
+        view: "v_submission_failure_rate_daily",
+        dayColumn: "day",
+        valueExpr: "failure_rate",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
         id: "sessions-by-channel",
         label: "Sessions, all channels",
         unit: "count",
@@ -261,30 +299,39 @@ export const OBJECTIVE_DEFINITIONS = [
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
-        id: "sessions-bot",
-        label: "Sessions, bot visitors",
+        id: "sessions-authenticated",
+        label: "Sessions, authenticated users",
         unit: "count",
         view: "v_visitors_by_kind_daily",
         dayColumn: "day",
         valueExpr: "sessions",
         aggregation: "sum",
-        where: "visitor_kind = 'bot'",
+        where: "visitor_kind = 'authenticated'",
         fastWindowView: "v_visitors_by_kind_hourly",
         fastWindowColumn: "hour",
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
-        id: "sessions-synthetic",
-        label: "Sessions, synthetic visitors",
+        id: "sessions-bot",
+        label: "Page requests, bot visitors",
         unit: "count",
-        view: "v_visitors_by_kind_daily",
+        view: "v_visitors_cloudfront_daily",
         dayColumn: "day",
-        valueExpr: "sessions",
+        valueExpr: "page_requests",
+        aggregation: "sum",
+        where: "visitor_kind = 'bot'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "sessions-synthetic",
+        label: "Page requests, synthetic visitors",
+        unit: "count",
+        view: "v_visitors_cloudfront_daily",
+        dayColumn: "day",
+        valueExpr: "page_requests",
         aggregation: "sum",
         where: "visitor_kind = 'synthetic'",
-        fastWindowView: "v_visitors_by_kind_hourly",
-        fastWindowColumn: "hour",
-        deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
     ],
   },
@@ -377,42 +424,6 @@ export const OBJECTIVE_DEFINITIONS = [
         aggregation: "sum",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
-    ],
-  },
-  {
-    id: "low-running-cost",
-    name: "Low running cost",
-    observations: [
-      {
-        id: "monthly-cost-usd",
-        label: "Monthly cost",
-        unit: "usd",
-        view: "v_cost_vs_target_monthly",
-        dayColumn: "month",
-        valueExpr: "billed_cost_usd",
-        aggregation: "sum",
-        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
-      },
-      {
-        id: "cost-variance-vs-target-usd",
-        label: "Cost vs $64.77 target",
-        unit: "usd",
-        view: "v_cost_vs_target_monthly",
-        dayColumn: "month",
-        valueExpr: "variance_usd",
-        aggregation: "avg",
-        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
-      },
-      {
-        id: "cost-per-completion-usd",
-        label: "Cost per completion",
-        unit: "usd",
-        view: "v_cost_per_submission_daily",
-        dayColumn: "day",
-        valueExpr: "cost_per_completion_usd",
-        aggregation: "avg",
-        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
-      },
       {
         id: "paid-landings",
         label: "Paid landings",
@@ -441,6 +452,132 @@ export const OBJECTIVE_DEFINITIONS = [
         dayColumn: "day",
         valueExpr: "cost_per_paid_landing_gbp",
         aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+    ],
+  },
+  {
+    id: "low-running-cost",
+    name: "AWS costs",
+    observations: [
+      {
+        id: "monthly-cost-usd",
+        label: "Monthly cost",
+        unit: "usd",
+        view: "v_cost_vs_target_monthly",
+        dayColumn: "month",
+        valueExpr: "billed_cost_usd",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "cost-variance-vs-target-usd",
+        label: "Cost vs $64.77 target",
+        unit: "usd",
+        view: "v_cost_vs_target_monthly",
+        dayColumn: "month",
+        valueExpr: "variance_usd",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "bedrock-cost-per-posted-run-usd",
+        label: "Bedrock cost per agent run that posted",
+        description:
+          "The day's Claude on Bedrock cost divided by the agent runs that posted a result that day, averaged over the days. The cost export lands a day or two late.",
+        unit: "usd",
+        view: "v_agent_cost_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_posted_run_usd",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "bedrock-cost-per-accepted-pr-usd",
+        label: "Bedrock cost per accepted agent pull request",
+        description:
+          "The day's Claude on Bedrock cost divided by the agent pull requests a person merged that day, averaged over the days.",
+        unit: "usd",
+        view: "v_agent_cost_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_accepted_pr_usd",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "cost-per-completion-usd",
+        label: "Cost per completion",
+        unit: "usd",
+        view: "v_cost_per_submission_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_completion_usd",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "cost-submit-prod-usd",
+        label: "Cost in submit-prod",
+        unit: "usd",
+        view: "v_cost_daily",
+        dayColumn: "day",
+        valueExpr: "billed_cost_usd",
+        aggregation: "sum",
+        where: `sub_account_id = '${AWS_ACCOUNT_IDS_BY_NAME["submit-prod"]}'`,
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "cost-submit-ci-usd",
+        label: "Cost in submit-ci",
+        unit: "usd",
+        view: "v_cost_daily",
+        dayColumn: "day",
+        valueExpr: "billed_cost_usd",
+        aggregation: "sum",
+        where: `sub_account_id = '${AWS_ACCOUNT_IDS_BY_NAME["submit-ci"]}'`,
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "cost-other-accounts-usd",
+        label: "Cost in the other accounts",
+        unit: "usd",
+        view: "v_cost_daily",
+        dayColumn: "day",
+        valueExpr: "billed_cost_usd",
+        aggregation: "sum",
+        where: `sub_account_id NOT IN ('${AWS_ACCOUNT_IDS_BY_NAME["submit-prod"]}', '${AWS_ACCOUNT_IDS_BY_NAME["submit-ci"]}')`,
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "cost-bedrock-usd",
+        label: "Claude on Bedrock, all models",
+        unit: "usd",
+        view: "v_cost_daily",
+        dayColumn: "day",
+        valueExpr: "billed_cost_usd",
+        aggregation: "sum",
+        where: "service_name LIKE '%Bedrock%'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "cost-cloudwatch-usd",
+        label: "CloudWatch",
+        unit: "usd",
+        view: "v_cost_daily",
+        dayColumn: "day",
+        valueExpr: "billed_cost_usd",
+        aggregation: "sum",
+        where: "service_name LIKE '%CloudWatch%'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "cost-cloudfront-usd",
+        label: "CloudFront",
+        unit: "usd",
+        view: "v_cost_daily",
+        dayColumn: "day",
+        valueExpr: "billed_cost_usd",
+        aggregation: "sum",
+        where: "service_name LIKE '%CloudFront%'",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
     ],
@@ -502,14 +639,34 @@ export const OBJECTIVE_DEFINITIONS = [
     name: "Retention",
     observations: [
       {
-        id: "returning-submitters",
-        label: "Returning submitters",
+        id: "submitters-90d",
+        label: "Submitters, 90 days to the latest day",
         unit: "count",
-        view: "v_returning_submitters_quarterly",
-        dayColumn: "quarter",
-        valueExpr: "returning_submitters",
-        aggregation: "sum",
+        view: "v_returning_submitters_rolling_daily",
+        dayColumn: "day",
+        valueExpr: "submitters_90d",
+        aggregation: "latest",
         deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      },
+      {
+        id: "returning-submitters",
+        label: "Returning submitters, 90 days to the latest day",
+        unit: "count",
+        view: "v_returning_submitters_rolling_daily",
+        dayColumn: "day",
+        valueExpr: "returning_submitters_90d",
+        aggregation: "latest",
+        deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      },
+      {
+        id: "retention-passes-issued",
+        label: "Passes issued",
+        unit: "count",
+        view: "v_pass_redemptions_daily",
+        dayColumn: "day",
+        valueExpr: "passes_issued",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
         id: "subscription-renewals",
@@ -537,6 +694,29 @@ export const OBJECTIVE_DEFINITIONS = [
     id: "operator-effort",
     name: "Operator effort",
     observations: [
+      {
+        id: "agent-cost-per-posted-run-usd",
+        label: "Agent cost per run that posted",
+        description: "The day's Claude on Bedrock cost divided by the agent runs that posted a result that day, averaged over the days.",
+        unit: "usd",
+        view: "v_agent_cost_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_posted_run_usd",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "agent-cost-per-accepted-pr-usd",
+        label: "Agent cost per accepted pull request",
+        description:
+          "The day's Claude on Bedrock cost divided by the agent pull requests a person merged that day, averaged over the days.",
+        unit: "usd",
+        view: "v_agent_cost_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_accepted_pr_usd",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
       {
         id: "operator-interventions-total",
         label: "Operator interventions, all kinds",
@@ -755,18 +935,33 @@ const BETTER_UP_IDS = [
   "passes-issued",
   "passes-redeemed",
   "paid-landings",
+  "submitters-90d",
   "returning-submitters",
+  "retention-passes-issued",
   "subscription-renewals",
   "company-turnover",
   "company-profit",
 ];
 const BETTER_DOWN_IDS = [
   "alarms-fired",
+  "hmrc-submission-failures",
+  "hmrc-submission-failure-rate",
+  "submission-failure-rate",
+  "bedrock-cost-per-posted-run-usd",
+  "bedrock-cost-per-accepted-pr-usd",
+  "agent-cost-per-posted-run-usd",
+  "agent-cost-per-accepted-pr-usd",
   "deploy-failure-rate",
   "agent-median-hours-to-close",
   "monthly-cost-usd",
   "cost-variance-vs-target-usd",
   "cost-per-completion-usd",
+  "cost-submit-prod-usd",
+  "cost-submit-ci-usd",
+  "cost-other-accounts-usd",
+  "cost-bedrock-usd",
+  "cost-cloudwatch-usd",
+  "cost-cloudfront-usd",
   "ads-cost-gbp",
   "ads-cost-per-paid-landing-gbp",
   "security-hub-open-findings",
@@ -811,13 +1006,13 @@ export const OBJECTIVE_GUIDANCE = {
     levers: "Sign-in friction, the first screen after sign-in, guide and video content, search and ad landing pages.",
   },
   "conversion-to-paid": {
-    sli: "Revenue and paid conversions from donations, subscriptions and passes.",
-    levers: "Price, the bundle page, the donation prompt after a submission, pass campaigns.",
+    sli: "Revenue and paid conversions from donations, subscriptions and passes, and the Google Ads spend and paid landings that lead to them.",
+    levers: "Price, the bundle page, the donation prompt after a submission, pass campaigns, the ads daily budget.",
   },
   "low-running-cost": {
-    sli: "AWS spend per month and per completed submission, and paid-advertising spend per landing.",
+    sli: "AWS spend per month, per account, per service and per completed submission.",
     target: "AWS spend of $64.77 a month.",
-    levers: "Retire idle stacks, shorten log retention, cut provisioned concurrency, set the ads daily budget.",
+    levers: "Retire idle stacks, shorten log retention, cut provisioned concurrency.",
   },
   "security": {
     sli: "Open findings in Security Hub, GuardDuty and GitHub.",
@@ -946,18 +1141,65 @@ export async function runAthenaQuery({ workGroup, database, sql }) {
   }
 }
 
+// The UK calendar date now, and the instants the UK day boundaries fall on, as Athena
+// evaluates them. Athena's session zone is UTC, so the hourly views' timestamps are UTC.
+const UK_TODAY = "CAST(current_timestamp AT TIME ZONE 'Europe/London' AS date)";
+const UK_MIDNIGHT_TODAY =
+  "CAST(with_timezone(date_trunc('day', CAST(current_timestamp AT TIME ZONE 'Europe/London' AS timestamp)), 'Europe/London') AT TIME ZONE 'UTC' AS timestamp)";
+const UK_MIDNIGHT_YESTERDAY =
+  "CAST(with_timezone(date_trunc('day', CAST(current_timestamp AT TIME ZONE 'Europe/London' AS timestamp)) - interval '1' day, 'Europe/London') AT TIME ZONE 'UTC' AS timestamp)";
+
+// Windows every day-grain observation gets. Today and Previous day are the UK calendar days.
 const WINDOWED_COLUMNS = [
+  ["today", (day) => `${day} >= ${UK_TODAY}`],
+  ["prev_1", (day) => `${day} = date_add('day', -1, ${UK_TODAY})`],
+  ["last_7", (day) => `${day} > date_add('day', -7, current_date)`],
   ["last_30", (day) => `${day} > date_add('day', -30, current_date)`],
   ["prev_30", (day) => `${day} > date_add('day', -60, current_date) AND ${day} <= date_add('day', -30, current_date)`],
   ["last_90", (day) => `${day} > date_add('day', -90, current_date)`],
   ["prev_90", (day) => `${day} > date_add('day', -180, current_date) AND ${day} <= date_add('day', -90, current_date)`],
 ];
 
+// The windows an hourly-grain view answers: Today since UK midnight, Previous day, Last 7 days.
 const FAST_WINDOW_COLUMNS = [
-  ["last_1h", (hour) => `${hour} > date_add('hour', -1, current_timestamp)`],
-  ["last_1d", (hour) => `${hour} > date_add('day', -1, current_timestamp)`],
-  ["last_7d", (hour) => `${hour} > date_add('day', -7, current_timestamp)`],
+  ["today", (hour) => `${hour} >= ${UK_MIDNIGHT_TODAY}`],
+  ["prev_1", (hour) => `${hour} >= ${UK_MIDNIGHT_YESTERDAY} AND ${hour} < ${UK_MIDNIGHT_TODAY}`],
+  ["last_7", (hour) => `${hour} > date_add('day', -7, current_timestamp)`],
 ];
+
+// Views whose sources report whole days (the FOCUS cost export, Google Ads, GA4's daily export,
+// Stripe and PayPal reconciliation, the operator effort pulls, security findings, the company
+// book, rolling retention). Their Today is the latest reading, never a count of zero for a day
+// the source has not reported yet; the reading's own day goes in `today_as_of`.
+export const LATEST_READING_VIEWS = new Set([
+  "v_dora_runs_daily",
+  "v_agent_runs_daily",
+  "v_traffic_sources_daily",
+  "v_visitors_by_kind_daily",
+  "v_visitors_cloudfront_daily",
+  "v_revenue_daily",
+  "v_paid_landings_daily",
+  "v_ads_cost_daily",
+  "v_ads_cost_per_paid_landing_daily",
+  "v_cost_per_submission_daily",
+  "v_cost_daily",
+  "v_cost_by_resource_daily",
+  "v_agent_cost_daily",
+  "security_hub_findings",
+  "guardduty_findings",
+  "github_alerts",
+  "v_returning_submitters_rolling_daily",
+  "v_subscription_renewals_daily",
+  "v_subscription_cancellations_daily",
+  "v_operator_interventions_daily",
+  "v_compliance_status",
+  "company_accounts",
+]);
+
+// A view with one row per month or quarter has no Today or Previous day.
+function isPeriodicDayColumn(dayColumn) {
+  return dayColumn in PERIOD_NAME_BY_DAY_COLUMN;
+}
 
 // Observation `i` of a batch reads its figures from the columns named o<i>_<column>.
 function observationColumnPrefix(index) {
@@ -969,33 +1211,50 @@ function caseFilter(where) {
 }
 
 /**
- * The trailing 30 and 90 day figures and their immediately preceding comparable periods (the
- * 30 or 90 days before that) for every observation that reads one view through one day column,
- * in one query: observation `i` gets the columns `o<i>_last_30`, `o<i>_prev_30`, `o<i>_last_90`
- * and `o<i>_prev_90`, and its `where` moves into its own CASE conditions. A window with no rows
- * reads as SQL NULL rather than a false zero.
+ * Every window of every observation that reads one view through one day column, in one query:
+ * observation `i` gets the columns `o<i>_today`, `o<i>_prev_1`, `o<i>_last_7`, `o<i>_last_30`,
+ * `o<i>_prev_30`, `o<i>_last_90` and `o<i>_prev_90`, and its `where` moves into its own CASE
+ * conditions. A window with no rows reads as SQL NULL rather than a false zero.
+ *
+ * A view in LATEST_READING_VIEWS reports whole days, so its `o<i>_today` is the value on the
+ * newest day up to today and `o<i>_today_as_of` is that day. A view with one row per month or
+ * quarter has no Today or Previous day, so those columns are left out.
  *
  * `reportDataSince` adds `o<i>_data_since`, the earliest day the view holds rows for that
  * observation, so a window longer than the data reads as "since <day>" on the page rather than
  * as a full window.
  *
  * Each query lists every partition prefix its view's tables project and reads their objects, so
- * the nightly run makes one query per view rather than one per observation.
+ * every run makes one query per view rather than one per observation.
  *
  * @param {{view: string, dayColumn: string, observations: Array<{valueExpr: string, aggregation: string, where?: string, reportDataSince?: boolean}>}} group
  * @returns {string}
  */
 export function buildWindowedBatchSql({ view, dayColumn, observations }) {
+  const latestReading = LATEST_READING_VIEWS.has(view);
+  const periodic = isPeriodicDayColumn(dayColumn);
   const columns = observations.flatMap(({ valueExpr, aggregation, where, reportDataSince }, index) => {
     const prefix = observationColumnPrefix(index);
     const filter = caseFilter(where);
     // "latest" reads the value on the newest day inside the window, for a balance that a
-    // sum, average or highest-day figure would misstate.
-    const windowColumns = WINDOWED_COLUMNS.map(([alias, condition]) =>
-      aggregation === "latest"
-        ? `max_by(${valueExpr}, ${dayColumn}) FILTER (WHERE ${condition(dayColumn)}${filter}) AS ${prefix}${alias}`
-        : `${aggregation}(CASE WHEN ${condition(dayColumn)}${filter} THEN ${valueExpr} END) AS ${prefix}${alias}`,
+    // sum, average or highest-day figure would misstate; a whole-day source's Today reads its
+    // newest day up to today the same way.
+    const windowColumns = WINDOWED_COLUMNS.filter(([alias]) => !(periodic && (alias === "today" || alias === "prev_1"))).map(
+      ([alias, condition]) => {
+        const newestDay = latestReading && alias === "today";
+        if (aggregation === "latest" || newestDay) {
+          const window = newestDay ? `${dayColumn} <= ${UK_TODAY}` : condition(dayColumn);
+          return `max_by(${valueExpr}, ${dayColumn}) FILTER (WHERE ${window}${filter}) AS ${prefix}${alias}`;
+        }
+        return `${aggregation}(CASE WHEN ${condition(dayColumn)}${filter} THEN ${valueExpr} END) AS ${prefix}${alias}`;
+      },
     );
+    if (latestReading && !periodic) {
+      windowColumns.push(`cast(max(${dayColumn}) FILTER (WHERE ${dayColumn} <= ${UK_TODAY}${filter}) AS varchar) AS ${prefix}today_as_of`);
+    }
+    // The view's earliest day, whatever the observation's filter: a window that ends on or after
+    // it was covered by the source, so an empty window there is a measured zero.
+    windowColumns.push(`cast(min(${dayColumn}) AS varchar) AS ${prefix}first_day`);
     if (reportDataSince) {
       const earliest = where ? `min(CASE WHEN ${where} THEN ${dayColumn} END)` : `min(${dayColumn})`;
       windowColumns.push(`cast(${earliest} AS varchar) AS ${prefix}data_since`);
@@ -1006,16 +1265,15 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
 }
 
 /**
- * The three fast, no-trend columns on the operator dashboard's Activities table (Last 1 hour,
- * Last 1 day, Last 7 days), computed against an hourly-grain view rather than
- * buildWindowedBatchSql's `dayColumn`: a column truncated to a whole calendar day always reads
- * as "today" or "not today" against an hour-old cutoff, never a genuine trailing hour.
+ * Today (since UK midnight), Previous day and Last 7 days for the observations whose events
+ * have an hourly-grain view, computed against that view rather than buildWindowedBatchSql's
+ * `dayColumn`: a day-grain column cannot answer a window that starts at UK midnight when the
+ * day's rows are grouped by UTC or by a source's own day.
  *
  * One query answers every observation that reads the same hourly view: observation `i` gets
- * the columns `o<i>_last_1h`, `o<i>_last_1d` and `o<i>_last_7d`, and its `where` moves into
- * its own CASE conditions. Each query lists and reads every object of the view's 8 days of
- * partitions, so one query per observation (16 activities each way, every hour) read the
- * same objects 16 times over.
+ * the columns `o<i>_today`, `o<i>_prev_1` and `o<i>_last_7`, and its `where` moves into its own
+ * CASE conditions. Each query lists and reads every object of the view's 8 days of partitions,
+ * so one query per observation (16 activities each way) read the same objects 16 times over.
  *
  * @param {{fastWindowView: string, fastWindowColumn: string, observations: Array<{valueExpr: string, aggregation: string, where?: string}>}} group
  * @returns {string}
@@ -1023,10 +1281,13 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
 export function buildFastWindowBatchSql({ fastWindowView, fastWindowColumn, observations }) {
   const columns = observations.flatMap(({ valueExpr, aggregation, where }, index) => {
     const filter = caseFilter(where);
-    return FAST_WINDOW_COLUMNS.map(
-      ([alias, condition]) =>
-        `${aggregation}(CASE WHEN ${condition(fastWindowColumn)}${filter} THEN ${valueExpr} END) AS ${observationColumnPrefix(index)}${alias}`,
-    );
+    return [
+      ...FAST_WINDOW_COLUMNS.map(
+        ([alias, condition]) =>
+          `${aggregation}(CASE WHEN ${condition(fastWindowColumn)}${filter} THEN ${valueExpr} END) AS ${observationColumnPrefix(index)}${alias}`,
+      ),
+      `cast(min(${fastWindowColumn}) AS varchar) AS ${observationColumnPrefix(index)}first_hour`,
+    ];
   });
   return `SELECT ${columns.join(",\n       ")}\nFROM   ${fastWindowView}`;
 }
@@ -1064,7 +1325,9 @@ async function runObservationBatches({ workGroup, database, observations, groupK
     const sql = buildSql(groupObservations);
     try {
       const rows = await runAthenaQuery({ workGroup, database, sql });
-      groupObservations.forEach((observation, index) => resultsById.set(observation.id, toResult(observationRow(rows, index))));
+      groupObservations.forEach((observation, index) =>
+        resultsById.set(observation.id, toResult(observationRow(rows, index), observation)),
+      );
     } catch (error) {
       for (const observation of groupObservations) failedIds.add(observation.id);
       logger.warn({
@@ -1083,11 +1346,15 @@ function toNumberOrNull(value) {
   return Number(value);
 }
 
+// A fast window with no events reads zero once the hourly view holds any rows at all; a view
+// with no rows (a property with no streaming export) reports nothing, which stays null.
 export function toActivityFastWindows(row) {
+  const reported = row?.first_hour !== null && row?.first_hour !== undefined;
+  const fastValue = (value) => toNumberOrNull(value) ?? (reported ? 0 : null);
   return {
-    last1h: { value: toNumberOrNull(row?.last_1h) },
-    last1d: { value: toNumberOrNull(row?.last_1d) },
-    last7d: { value: toNumberOrNull(row?.last_7d) },
+    today: { value: fastValue(row?.today) },
+    previousDay: { value: fastValue(row?.prev_1) },
+    last7: { value: fastValue(row?.last_7) },
   };
 }
 
@@ -1107,20 +1374,66 @@ function newInWindowFlag(current, previous) {
   return current !== null && current > 0 && (previous === null || previous === 0) ? { isNew: true } : {};
 }
 
-export function toObservationWindows(row) {
-  const last30 = toNumberOrNull(row?.last_30);
-  const prev30 = toNumberOrNull(row?.prev_30);
-  const last90 = toNumberOrNull(row?.last_90);
-  const prev90 = toNumberOrNull(row?.prev_90);
+const WINDOW_END_DAYS_BACK = { today: 0, prev_1: 1, last_7: 0, last_30: 0, prev_30: 30, last_90: 0, prev_90: 90 };
+
+const ukDayFormat = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" });
+
+// A window the source covered but that held no rows: a sum is a measured zero; an average has
+// no figure to give but is flagged noEvents so the page says "none" rather than "not measured".
+// A window that ends before the source's first day stays null.
+function readWindow(row, column, aggregation, today) {
+  const value = toNumberOrNull(row?.[column]);
+  if (value !== null || !row?.first_day) return { value };
+  const windowEnd = new Date(today);
+  windowEnd.setUTCDate(windowEnd.getUTCDate() - WINDOW_END_DAYS_BACK[column]);
+  const windowEndDay = column === "today" || column === "prev_1" ? ukDayFormat.format(windowEnd) : windowEnd.toISOString().slice(0, 10);
+  if (row.first_day.slice(0, 10) > windowEndDay) return { value };
+  if (aggregation === "sum") return { value: 0 };
+  return aggregation === "avg" ? { value, noEvents: true } : { value };
+}
+
+// Today for a source that reports whole days is its latest reading, whatever day that was: no
+// reading is "not measured", never a zero, and the reading's own day travels with the figure.
+function readLatestToday(row) {
+  const value = toNumberOrNull(row?.today);
+  return value === null ? { value: null } : { value, ...(row?.today_as_of ? { asOf: row.today_as_of.slice(0, 10) } : {}) };
+}
+
+export function toObservationWindows(row, aggregation, today = new Date(), { latestReading = false, periodic = false } = {}) {
+  const current30 = readWindow(row, "last_30", aggregation, today);
+  const previous30 = readWindow(row, "prev_30", aggregation, today);
+  const current90 = readWindow(row, "last_90", aggregation, today);
+  const previous90 = readWindow(row, "prev_90", aggregation, today);
+  const [last30, prev30, last90, prev90] = [current30, previous30, current90, previous90].map((window) => window.value);
+  const dayWindow = latestReading ? readLatestToday(row) : readWindow(row, "today", aggregation, today);
   const windows = {
-    last30: { value: last30, trend: computeTrend(last30, prev30), ...newInWindowFlag(last30, prev30) },
-    last90: { value: last90, trend: computeTrend(last90, prev90), ...newInWindowFlag(last90, prev90) },
+    today: periodic ? { value: null, notApplicable: true } : dayWindow,
+    previousDay: periodic ? { value: null, notApplicable: true } : readWindow(row, "prev_1", aggregation, today),
+    last7: readWindow(row, "last_7", aggregation, today),
+    last30: {
+      value: last30,
+      trend: computeTrend(last30, prev30),
+      ...newInWindowFlag(last30, prev30),
+      ...(current30.noEvents ? { noEvents: true } : {}),
+    },
+    last90: {
+      value: last90,
+      trend: computeTrend(last90, prev90),
+      ...newInWindowFlag(last90, prev90),
+      ...(current90.noEvents ? { noEvents: true } : {}),
+    },
   };
   if (row?.data_since) windows.dataSince = row.data_since;
   return windows;
 }
 
-const nullObservationWindows = { last30: { value: null, trend: null }, last90: { value: null, trend: null } };
+const nullObservationWindows = {
+  today: { value: null },
+  previousDay: { value: null },
+  last7: { value: null },
+  last30: { value: null, trend: null },
+  last90: { value: null, trend: null },
+};
 
 /**
  * The reinvestment loop's figures: trailing 30-day income (the revenue-gbp observation's
@@ -1147,19 +1460,10 @@ export function buildReinvestment(objectives) {
  * objectives publishing. Each failure is logged at warn level, and every observation it covers
  * is counted in the returned snapshot's failedObservationCount, so the caller can still surface it.
  *
- * `objectiveIds`, when given, builds only those objectives instead of every one in
- * OBJECTIVE_DEFINITIONS — the activity-only run's way of refreshing just the fast columns
- * without re-running the other objectives.
- *
- * `fastWindowOnly` skips the 30/90-day queries entirely and answers only each observation's `id`
- * plus its last1h/last1d/last7d fields, for an observation that carries a `fastWindowView`, and
- * lists only those observations. The result is a patch to merge onto an existing snapshot with
- * mergeFastWindows, not a standalone snapshot: it carries no label, unit or deepLink.
- *
- * @param {{workGroup: string, database: string, context: object, objectiveIds?: string[], fastWindowOnly?: boolean}} params
+ * @param {{workGroup: string, database: string, context: object}} params
  * @returns {Promise<object>}
  */
-// Each query takes a few seconds; run in series, the nightly run went past the Lambda's timeout.
+// Each query takes a few seconds; run in series, the run went past the Lambda's timeout.
 const OBSERVATION_QUERY_CONCURRENCY = 5;
 
 export async function mapInOrderWithConcurrency(items, concurrency, mapItem) {
@@ -1176,11 +1480,8 @@ export async function mapInOrderWithConcurrency(items, concurrency, mapItem) {
   return results;
 }
 
-export async function buildSnapshot({ workGroup, database, context, objectiveIds, fastWindowOnly = false }) {
-  const objectiveDefinitions = objectiveIds
-    ? OBJECTIVE_DEFINITIONS.filter((objective) => objectiveIds.includes(objective.id))
-    : OBJECTIVE_DEFINITIONS;
-  const allObservations = objectiveDefinitions.flatMap((objective) => objective.observations);
+export async function buildSnapshot({ workGroup, database, context }) {
+  const allObservations = OBJECTIVE_DEFINITIONS.flatMap((objective) => objective.observations);
 
   const [fast, windowed] = await Promise.all([
     runObservationBatches({
@@ -1200,28 +1501,30 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
     runObservationBatches({
       workGroup,
       database,
-      observations: fastWindowOnly ? [] : allObservations,
+      observations: allObservations,
       groupKey: (observation) => `${observation.view}|${observation.dayColumn}`,
       buildSql: (observations) => buildWindowedBatchSql({ view: observations[0].view, dayColumn: observations[0].dayColumn, observations }),
-      toResult: toObservationWindows,
+      toResult: (row, observation) =>
+        toObservationWindows(row, observation.aggregation, new Date(), {
+          latestReading: LATEST_READING_VIEWS.has(observation.view),
+          periodic: isPeriodicDayColumn(observation.dayColumn),
+        }),
       failureMessage: "Windowed query failed, publishing null for its observations",
     }),
   ]);
   const failedIds = new Set([...fast.failedIds, ...windowed.failedIds]);
 
-  const objectives = objectiveDefinitions.map((objective) => {
-    if (fastWindowOnly) {
-      const observations = objective.observations
-        .filter((observation) => observation.fastWindowView)
-        .map((observation) => ({ id: observation.id, ...(fast.resultsById.get(observation.id) ?? {}) }));
-      return { id: objective.id, name: objective.name, observations };
-    }
+  const objectives = OBJECTIVE_DEFINITIONS.map((objective) => {
     const observations = objective.observations.map((observation) => {
       const windows = windowed.resultsById.get(observation.id) ?? nullObservationWindows;
       const observationResult = {
         id: observation.id,
         label: observation.label,
+        ...(observation.description ? { description: observation.description } : {}),
         unit: observation.unit,
+        today: windows.today,
+        previousDay: windows.previousDay,
+        last7: windows.last7,
         last30: windows.last30,
         last90: windows.last90,
         deepLink: observation.deepLink(context),
@@ -1242,7 +1545,7 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
     generatedAt: new Date().toISOString(),
     environment: context.envName,
     objectives,
-    ...(fastWindowOnly ? {} : { reinvestment: buildReinvestment(objectives) }),
+    reinvestment: buildReinvestment(objectives),
     failedObservationCount: failedIds.size,
   };
 }
@@ -1260,11 +1563,20 @@ export const DAILY_CHART_DAYS = 90;
 const dailyWindowFilter = (dayColumn) => `${dayColumn} > date_add('day', -${DAILY_CHART_DAYS}, current_date)`;
 
 const VISITOR_KIND_LABELS = {
-  "human": "Human",
   "operator": "Operator",
-  "bot": "Bot",
+  "authenticated": "Authenticated user",
+  "human": "Human",
   "synthetic": "Synthetic",
+  "bot": "Bot",
   "(unclassified)": "Unclassified",
+};
+
+const VISITOR_KIND_DESCRIPTIONS = {
+  operator: "Google Analytics sessions of the operator, flagged once the operator bundle has loaded in the browser.",
+  authenticated: "Google Analytics sessions of signed-in users who are not operators.",
+  human: "Google Analytics sessions of visitors who are not signed in and are not flagged as a bot, an operator or a test.",
+  synthetic: "Page requests from the behaviour tests, counted from the CloudFront access log by their DIYAccountingProbe user agent.",
+  bot: "Page requests whose user agent matches a known crawler, AI agent or the probe monitor, counted from the CloudFront access log.",
 };
 
 function activityLabels() {
@@ -1286,6 +1598,31 @@ const STRIPE_DONATION_COMPONENT_CASE =
   `WHEN ${PAYPAL_DONATION_PRODUCT_FILTER} THEN 'paypal-donations' ` +
   `WHEN product LIKE 'paypal-%' THEN 'paypal-other' ELSE 'subscriptions' END`;
 
+const plural = (count, singular, pluralForm) => `${count} ${Number(count) === 1 ? singular : pluralForm}`;
+
+/**
+ * The line under the Retention graph that lets the graph's submitters be checked against the
+ * Submit VAT (HMRC) completions in the activities table: the same window's distinct submitters
+ * and completions from the activity events, customers apart from test accounts, beside the
+ * graph's own Submitters line on its latest day (read from receipts).
+ *
+ * @param {{rows: Array<{actor_group: string, submissions: string, submitters: string}>, series: Array<{id: string, values: number[]}>, days: number}} params
+ * @returns {string}
+ */
+export function vatSubmissionReconciliationText({ rows, series, days }) {
+  const group = (name) => rows.find((row) => row.actor_group === name) ?? { submissions: "0", submitters: "0" };
+  const customer = group("customer");
+  const test = group("test");
+  const receiptSubmitters = series.find((line) => line.id === "submitters-90d")?.values.at(-1) ?? 0;
+  return (
+    `Last ${days} days, customers: ${plural(customer.submitters, "distinct submitter", "distinct submitters")} in the activity events ` +
+    `made ${plural(customer.submissions, "Submit VAT (HMRC) completion", "Submit VAT (HMRC) completions")}; ` +
+    `the Submitters line reads ${receiptSubmitters} on its latest day, counted from receipts. ` +
+    `Test accounts apart: ${plural(test.submitters, "account", "accounts")} made ${plural(test.submissions, "completion", "completions")}. ` +
+    `Completions include failed attempts. The lake does not mark an operator's own account, so operator submissions are in the customer figures.`
+  );
+}
+
 /**
  * The charts the dashboard draws. A mode is one set of lines; a chart with two modes (activities:
  * started and completed) shows one at a time. `total` names the sum-of-components line, or is
@@ -1300,12 +1637,15 @@ export function buildDailyChartDefinitions() {
       objectiveId: "activity-started-and-completed",
       title: "Activity started and completed",
       unit: "count",
+      note: "Days are UTC. Started counts people opening an activity; Completed counts activities that reached their end. Only activities listed on prod appear.",
       modes: [
         {
           id: "started",
           label: "Started",
           total: "All activities",
+          totalDescription: "Starts of every activity added together.",
           labelOf: (id) => labels[id] ?? id,
+          descriptionOf: (id) => `Times ${labels[id] ?? id} was started in a day.`,
           sql: longFormSql({
             dayExpression: "day",
             componentExpression: "activity",
@@ -1318,13 +1658,72 @@ export function buildDailyChartDefinitions() {
           id: "completed",
           label: "Completed",
           total: "All activities",
+          totalDescription: "Completions of every activity added together.",
           labelOf: (id) => labels[id] ?? id,
+          descriptionOf: (id) => `Times ${labels[id] ?? id} was completed in a day.`,
           sql: longFormSql({
             dayExpression: "day",
             componentExpression: "activity",
             valueExpression: "completions",
             view: "v_submissions_by_activity_daily",
             dayColumn: "day",
+          }),
+        },
+      ],
+    },
+    {
+      id: "hmrc-failures",
+      objectiveId: "uptime",
+      title: "HMRC submission failures",
+      unit: "count",
+      note: "VAT returns that failed on their way to HMRC, from the activity events. Days are UTC. Failure rate is a percentage of that day's submissions.",
+      modes: [
+        {
+          id: "class",
+          label: "By failure class",
+          total: "All failures",
+          totalDescription: "Failures of every class added together.",
+          maxComponents: 8,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `VAT submissions that failed with the class ${id}.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "failure_class",
+            valueExpression: "failures",
+            view: "v_hmrc_failures_by_class",
+            dayColumn: "day",
+          }),
+        },
+        {
+          id: "status",
+          label: "By HMRC status",
+          total: "All failures",
+          totalDescription: "Failures of every HMRC status added together.",
+          maxComponents: 8,
+          labelOf: (id) => (id === "none" ? "No HMRC status" : `HMRC ${id}`),
+          descriptionOf: (id) =>
+            id === "none" ? "Failures that never reached HMRC, so carry no status." : `VAT submissions HMRC answered with status ${id}.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "hmrc_status",
+            valueExpression: "failures",
+            view: "v_hmrc_failures_by_class",
+            dayColumn: "day",
+          }),
+        },
+        {
+          id: "rate",
+          label: "Failure rate",
+          total: null,
+          labelOf: () => "Failure rate, %",
+          descriptionOf: () => "Share of the day's VAT submissions that failed, as a percentage. A day with no submissions has no point.",
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "'failure-rate'",
+            valueExpression: "failure_rate * 100",
+            view: "v_submission_failure_rate_daily",
+            dayColumn: "day",
+            where: "failure_rate IS NOT NULL",
           }),
         },
       ],
@@ -1340,6 +1739,12 @@ export function buildDailyChartDefinitions() {
           id: "funnel",
           label: "Funnel",
           total: null,
+          descriptionOf: (id) =>
+            ({
+              "human-sessions": "Sessions of visitors classed as human, from Google Analytics; counts visitors who accepted analytics.",
+              "active-customers": "Customers who signed in on the day.",
+              "submitted-within-7-days": "Of those who signed in on the day, the customers who made a submission within 7 days.",
+            })[id],
           componentOrder: ["human-sessions", "active-customers", "submitted-within-7-days"],
           labelOf: (id) =>
             ({
@@ -1364,11 +1769,20 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-paid",
       title: "Conversion to paid",
       unit: "gbp",
+      note: "Revenue per day in pounds, by where the money came from; Passes issued is a count of passes per day. Each day is a UTC day.",
       modes: [
         {
           id: "revenue",
           label: "Revenue",
           total: "All revenue",
+          totalDescription: "Revenue from every source added together, in pounds.",
+          descriptionOf: (id) =>
+            ({
+              "subscriptions": "Stripe charges for bundles and subscriptions.",
+              "stripe-donations": "Stripe charges from the four donation Payment Links.",
+              "paypal-donations": "PayPal donation receipts.",
+              "paypal-other": "PayPal receipts that are not donations.",
+            })[id],
           labelOf: (id) =>
             ({
               "subscriptions": "Subscriptions",
@@ -1384,21 +1798,38 @@ export function buildDailyChartDefinitions() {
             dayColumn: "day",
           }),
         },
+        {
+          id: "passes",
+          label: "Passes issued",
+          unit: "count",
+          total: null,
+          labelOf: () => "Passes issued",
+          descriptionOf: () => "Passes issued on the day, of every pass type; a count, not pounds.",
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "'passes-issued'",
+            valueExpression: "passes_issued",
+            view: "v_pass_redemptions_daily",
+            dayColumn: "day",
+          }),
+        },
       ],
     },
     {
       id: "low-running-cost",
       objectiveId: "low-running-cost",
-      title: "Low running cost",
+      title: "AWS costs",
       unit: "usd",
-      note: "AWS cost across every account in the organisation, by service.",
+      note: "AWS cost across every account in the organisation. Cost shows the 12 largest services and folds the rest into Other.",
       modes: [
         {
           id: "cost",
           label: "Cost",
           total: "All services",
-          maxComponents: 6,
+          totalDescription: "Every service in every account added together, in dollars.",
+          maxComponents: 12,
           labelOf: (id) => id,
+          descriptionOf: (id) => `Dollars billed for ${id} across all accounts.`,
           sql: longFormSql({
             dayExpression: "day",
             componentExpression: "service_name",
@@ -1407,6 +1838,76 @@ export function buildDailyChartDefinitions() {
             dayColumn: "day",
           }),
         },
+        {
+          id: "account",
+          label: "By account",
+          total: "All accounts",
+          totalDescription: "Every account added together, in dollars.",
+          labelOf: (id) => AWS_ACCOUNT_NAMES_BY_ID[id] ?? id,
+          descriptionOf: (id) => `Dollars billed in the ${AWS_ACCOUNT_NAMES_BY_ID[id] ?? "unnamed"} account (${id}).`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "sub_account_id",
+            valueExpression: "billed_cost_usd",
+            view: "v_cost_daily",
+            dayColumn: "day",
+          }),
+        },
+        {
+          id: "deployment",
+          label: "By deployment",
+          total: "All deployments",
+          totalDescription: "Every deployment added together, in dollars.",
+          maxComponents: 12,
+          labelOf: (id) => id,
+          descriptionOf: (id) =>
+            id === "untagged"
+              ? "Dollars billed for charges with no deployment tag."
+              : `Dollars billed for resources tagged with deployment ${id}.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "deployment",
+            valueExpression: "billed_cost_usd",
+            view: "v_cost_daily",
+            dayColumn: "day",
+          }),
+        },
+        {
+          id: "charge",
+          label: "CloudWatch by charge",
+          total: "All CloudWatch",
+          totalDescription: "Every CloudWatch charge added together, in dollars.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Dollars billed for the CloudWatch charge "${id}" across all accounts.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "charge_description",
+            valueExpression: "billed_cost_usd",
+            view: "v_cost_by_resource_daily",
+            dayColumn: "day",
+            where: "service_name LIKE '%CloudWatch%'",
+          }),
+        },
+        {
+          id: "agent",
+          label: "Bedrock per agent result",
+          total: null,
+          componentOrder: ["cost-per-posted-run", "cost-per-accepted-pr"],
+          labelOf: (id) =>
+            ({ "cost-per-posted-run": "Per run that posted", "cost-per-accepted-pr": "Per accepted pull request" })[id] ?? id,
+          descriptionOf: (id) =>
+            ({
+              "cost-per-posted-run": "The day's Claude on Bedrock cost divided by the agent runs that posted a result that day.",
+              "cost-per-accepted-pr": "The day's Claude on Bedrock cost divided by the agent pull requests a person merged that day.",
+            })[id],
+          sql:
+            `SELECT cast(day AS varchar) AS day, 'cost-per-posted-run' AS component, cast(sum(cost_per_posted_run_usd) AS double) AS value\n` +
+            `FROM   v_agent_cost_daily\nWHERE  ${dailyWindowFilter("day")} AND cost_per_posted_run_usd IS NOT NULL\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'cost-per-accepted-pr', cast(sum(cost_per_accepted_pr_usd) AS double)\n` +
+            `FROM   v_agent_cost_daily\nWHERE  ${dailyWindowFilter("day")} AND cost_per_accepted_pr_usd IS NOT NULL\nGROUP  BY 1`,
+        },
       ],
     },
     {
@@ -1414,15 +1915,30 @@ export function buildDailyChartDefinitions() {
       objectiveId: "retention",
       title: "Retention",
       unit: "count",
-      note: "Submitters and returning submitters cover the 90 days up to each day; a returning submitter also submitted in the 90 days before that.",
+      note: "The 90-day windows roll: each day counts the customers who submitted in the 90 days up to it, so a figure falls when a submission leaves the window. A returning submitter also submitted in the 90 days before that; the table above reads the same line on its latest day. Passes issued are a count per day.",
+      reconciliation: {
+        sql:
+          `SELECT actor_group, cast(sum(submissions) AS varchar) AS submissions, cast(count(DISTINCT hashed_sub) AS varchar) AS submitters\n` +
+          `FROM   v_vat_submissions_by_actor_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
+        text: vatSubmissionReconciliationText,
+      },
       modes: [
         {
           id: "retention",
           label: "Retention",
           total: null,
-          componentOrder: ["submitters-90d", "returning-submitters-90d", "renewals", "cancellations"],
+          descriptionOf: (id) =>
+            ({
+              "submitters-90d": "Distinct customers with a VAT submission in the 90 days up to the day.",
+              "returning-submitters-90d": "Of those, the customers who also submitted in the 90 days before that.",
+              "renewals": "Subscriptions renewed on the day.",
+              "cancellations": "Subscriptions cancelled on the day.",
+              "passes-issued": "Passes issued on the day, of every pass type.",
+            })[id],
+          componentOrder: ["submitters-90d", "returning-submitters-90d", "renewals", "cancellations", "passes-issued"],
           labelOf: (id) =>
             ({
+              "passes-issued": "Passes issued",
               "submitters-90d": "Submitters, 90 days to this day",
               "returning-submitters-90d": "Returning submitters, 90 days to this day",
               "renewals": "Subscription renewals",
@@ -1439,7 +1955,10 @@ export function buildDailyChartDefinitions() {
             `FROM   v_subscription_renewals_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), 'cancellations', cast(sum(cancellations) AS double)\n` +
-            `FROM   v_subscription_cancellations_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
+            `FROM   v_subscription_cancellations_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'passes-issued', cast(sum(passes_issued) AS double)\n` +
+            `FROM   v_pass_redemptions_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
         },
       ],
     },
@@ -1448,19 +1967,21 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Visitors",
       unit: "count",
+      note: "Operator, authenticated user and human count Google Analytics sessions, so only visitors who accepted analytics. Synthetic and bot count page requests from the CloudFront access log, which Google Analytics cannot see; no client address is read, so they are requests, not people.",
       modes: [
         {
           id: "sessions",
-          label: "Sessions",
-          total: "All visitors",
+          label: "Visitors",
+          total: null,
+          componentOrder: ["operator", "authenticated", "human", "synthetic", "bot"],
           labelOf: (id) => VISITOR_KIND_LABELS[id] ?? id,
-          sql: longFormSql({
-            dayExpression: "day",
-            componentExpression: "visitor_kind",
-            valueExpression: "sessions",
-            view: "v_visitors_by_kind_daily",
-            dayColumn: "day",
-          }),
+          descriptionOf: (id) => VISITOR_KIND_DESCRIPTIONS[id],
+          sql:
+            `SELECT cast(day AS varchar) AS day, visitor_kind AS component, cast(sum(sessions) AS double) AS value\n` +
+            `FROM   v_visitors_by_kind_daily\nWHERE  ${dailyWindowFilter("day")} AND visitor_kind IN ('operator', 'authenticated', 'human')\nGROUP  BY 1, 2\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), visitor_kind, cast(sum(page_requests) AS double)\n` +
+            `FROM   v_visitors_cloudfront_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
         },
       ],
     },
@@ -1498,11 +2019,17 @@ export function buildChartSeries({ days, rows, mode }) {
   }
 
   const sum = (values) => values.reduce((total, value) => total + value, 0);
-  let components = [...valuesByComponent.entries()].map(([id, values]) => ({ id, label: mode.labelOf(id), values }));
+  const describe = (id) => (mode.descriptionOf ? { description: mode.descriptionOf(id) } : {});
+  let components = [...valuesByComponent.entries()].map(([id, values]) => ({ id, label: mode.labelOf(id), ...describe(id), values }));
   if (mode.componentOrder) {
     components = mode.componentOrder.map(
       (id) =>
-        components.find((component) => component.id === id) ?? { id, label: mode.labelOf(id), values: new Array(days.length).fill(0) },
+        components.find((component) => component.id === id) ?? {
+          id,
+          label: mode.labelOf(id),
+          ...describe(id),
+          values: new Array(days.length).fill(0),
+        },
     );
   } else {
     components.sort((a, b) => sum(b.values) - sum(a.values) || a.label.localeCompare(b.label));
@@ -1510,7 +2037,12 @@ export function buildChartSeries({ days, rows, mode }) {
   if (mode.maxComponents && components.length > mode.maxComponents) {
     const kept = components.slice(0, mode.maxComponents);
     const folded = components.slice(mode.maxComponents);
-    kept.push({ id: "other", label: "Other", values: days.map((_, index) => sum(folded.map((component) => component.values[index]))) });
+    kept.push({
+      id: "other",
+      label: "Other",
+      description: `The ${folded.length} smaller lines added together.`,
+      values: days.map((_, index) => sum(folded.map((component) => component.values[index]))),
+    });
     components = kept;
   }
 
@@ -1519,6 +2051,7 @@ export function buildChartSeries({ days, rows, mode }) {
     series.unshift({
       id: "total",
       label: mode.total,
+      ...(mode.totalDescription ? { description: mode.totalDescription } : {}),
       isTotal: true,
       values: days.map((_, index) => Math.round(sum(components.map((component) => component.values[index])) * 100) / 100),
     });
@@ -1544,7 +2077,15 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
     async ({ definition, mode }) => {
       try {
         const rows = await runAthenaQuery({ workGroup, database, sql: mode.sql });
-        return { chartId: definition.id, mode: { id: mode.id, label: mode.label, series: buildChartSeries({ days, rows, mode }) } };
+        return {
+          chartId: definition.id,
+          mode: {
+            id: mode.id,
+            label: mode.label,
+            ...(mode.unit ? { unit: mode.unit } : {}),
+            series: buildChartSeries({ days, rows, mode }),
+          },
+        };
       } catch (error) {
         failedChartIds.add(definition.id);
         logger.warn({
@@ -1568,41 +2109,63 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
       ...(note ? { note } : {}),
       modes: modeResults.filter((result) => result && result.chartId === id).map((result) => result.mode),
     }));
+
+  // A reconciliation query that fails leaves its chart without the line and still counts as a failure.
+  for (const chart of charts) {
+    const { reconciliation } = definitions.find((definition) => definition.id === chart.id);
+    if (!reconciliation) continue;
+    try {
+      const rows = await runAthenaQuery({ workGroup, database, sql: reconciliation.sql });
+      const series = chart.modes.flatMap((mode) => mode.series);
+      chart.reconciliation = reconciliation.text({ rows, series, days: days.length });
+    } catch (error) {
+      failedChartIds.add(`${chart.id}-reconciliation`);
+      logger.warn({
+        message: "Chart reconciliation query failed, publishing no reconciliation line",
+        chartId: chart.id,
+        error: error.message,
+      });
+    }
+  }
   return { dailyCharts: { days, charts }, failedChartIds: [...failedChartIds] };
 }
 
+export const COST_DRIVER_DAYS = 30;
+export const COST_DRIVER_COUNT = 10;
+
+// The log group, alarm or canary an ARN names, without the partition, service, region and
+// account: "arn:aws:logs:eu-west-2:123:log-group:/aws/x" reads "log-group:/aws/x". A value that
+// is not an ARN is returned as it is.
+export function shortResourceName(resourceId) {
+  const parts = String(resourceId).split(":");
+  return parts[0] === "arn" && parts.length > 5 ? parts.slice(5).join(":") : resourceId;
+}
+
 /**
- * Patches an existing snapshot's objectives with a fastWindowOnly-built patch, overlaying only
- * the patched observations' last1h/last1d/last7d fields and leaving every other field on every
- * other observation — and every objective the patch does not name — untouched. This is what lets
- * the hourly activity-only run refresh three columns without blanking the rest, which only the
- * nightly full run recomputes.
+ * The most expensive CloudWatch charges over the last COST_DRIVER_DAYS days, each a resource (a
+ * log group, an alarm, a canary) and the charge on it, across every account in the organisation.
+ * The FOCUS export names no resource for some charges, which group under "(no resource)".
  *
- * @param {object} existingSnapshot - the snapshot read back from snapshots/<env>/latest.json
- * @param {object} patchSnapshot - buildSnapshot's result with objectiveIds: FAST_WINDOW_OBJECTIVE_IDS, fastWindowOnly: true
- * @returns {object}
+ * @returns {Promise<{days: number, rows: Array<{charge: string, resource: string, resourceId: string, costUsd: number}>}>}
  */
-export function mergeFastWindows(existingSnapshot, patchSnapshot) {
-  const patchById = new Map(patchSnapshot.objectives.flatMap((objective) => objective.observations.map((patch) => [patch.id, patch])));
-  const patchedObjectiveIds = new Set(patchSnapshot.objectives.map((objective) => objective.id));
-
-  const objectives = (existingSnapshot.objectives ?? []).map((objective) => {
-    if (!patchedObjectiveIds.has(objective.id)) return objective;
-    return {
-      ...objective,
-      observations: objective.observations.map((observation) => {
-        const patch = patchById.get(observation.id);
-        if (!patch) return observation;
-        return { ...observation, last1h: patch.last1h, last1d: patch.last1d, last7d: patch.last7d };
-      }),
-    };
+export async function buildCostDrivers({ workGroup, database }) {
+  const rows = await runAthenaQuery({
+    workGroup,
+    database,
+    sql:
+      `SELECT charge_description, resource_id, cast(sum(billed_cost_usd) AS double) AS cost_usd\n` +
+      `FROM   v_cost_by_resource_daily\n` +
+      `WHERE  day > date_add('day', -${COST_DRIVER_DAYS}, current_date) AND service_name LIKE '%CloudWatch%'\n` +
+      `GROUP  BY 1, 2\nORDER  BY 3 DESC\nLIMIT  ${COST_DRIVER_COUNT}`,
   });
-
   return {
-    ...existingSnapshot,
-    generatedAt: patchSnapshot.generatedAt,
-    objectives,
-    failedObservationCount: patchSnapshot.failedObservationCount,
+    days: COST_DRIVER_DAYS,
+    rows: rows.map((row) => ({
+      charge: row.charge_description,
+      resource: shortResourceName(row.resource_id),
+      resourceId: row.resource_id,
+      costUsd: Number(row.cost_usd),
+    })),
   };
 }
 
@@ -1636,13 +2199,10 @@ export async function writeSnapshot({ bucket, envName, snapshot }) {
 }
 
 /**
- * `event.mode` picks what this invocation refreshes: "full" rebuilds every objective the way
- * this Lambda always has (the nightly and weekly schedules); "activity-only" runs only the
- * activity and visitor observations' fast-window queries and patches them onto the existing
- * snapshot (the hourly schedule). There is no default: a schedule that forgot to set it is a configuration
- * bug, not a case to guess at.
+ * Rebuilds every objective and publishes the snapshot. The ingestion state machine runs it as
+ * its last step, so the daily sources have landed before it reads.
  */
-export async function handler(event) {
+export async function handler() {
   const envName = process.env.ENVIRONMENT_NAME;
   const workGroup = process.env.ATHENA_WORK_GROUP_NAME;
   const database = process.env.GLUE_DATABASE_NAME;
@@ -1652,11 +2212,6 @@ export async function handler(event) {
   if (!database) throw new Error("GLUE_DATABASE_NAME environment variable is required");
   if (!lakeBucket) throw new Error("ANALYTICS_LAKE_BUCKET_NAME environment variable is required");
 
-  const mode = event?.mode;
-  if (mode !== "full" && mode !== "activity-only") {
-    throw new Error(`event.mode must be "full" or "activity-only", got: ${JSON.stringify(mode)}`);
-  }
-
   const context = {
     envName,
     region: process.env.AWS_REGION || "eu-west-2",
@@ -1665,31 +2220,27 @@ export async function handler(event) {
     ga4PropertyId: process.env.GA4_PROPERTY_ID || null,
   };
 
-  let snapshot;
-  if (mode === "full") {
-    snapshot = await buildSnapshot({ workGroup, database, context });
-    const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup, database });
-    snapshot = { ...snapshot, dailyCharts, failedObservationCount: snapshot.failedObservationCount + failedChartIds.length };
-  } else {
-    const existing = await readLatestSnapshot();
-    if (!existing) {
-      throw new Error("No existing snapshot to patch in activity-only mode; the full run has not published one yet");
-    }
-    const patch = await buildSnapshot({
-      workGroup,
-      database,
-      context,
-      objectiveIds: FAST_WINDOW_OBJECTIVE_IDS,
-      fastWindowOnly: true,
-    });
-    snapshot = mergeFastWindows(existing, patch);
+  const built = await buildSnapshot({ workGroup, database, context });
+  const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup, database });
+  let costDrivers = null;
+  let failedCostDrivers = 0;
+  try {
+    costDrivers = await buildCostDrivers({ workGroup, database });
+  } catch (error) {
+    failedCostDrivers = 1;
+    logger.warn({ message: "Cost drivers query failed, publishing none", error: error.message });
   }
+  const snapshot = {
+    ...built,
+    dailyCharts,
+    ...(costDrivers ? { costDrivers } : {}),
+    failedObservationCount: built.failedObservationCount + failedChartIds.length + failedCostDrivers,
+  };
   await writeSnapshot({ bucket: lakeBucket, envName, snapshot });
 
   logger.info({
     message: "Operator snapshot published",
     environment: envName,
-    mode,
     objectives: snapshot.objectives.length,
     failedObservations: snapshot.failedObservationCount,
   });

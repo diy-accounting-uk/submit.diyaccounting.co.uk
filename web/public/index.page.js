@@ -39,7 +39,9 @@ async function initializeBundles() {
       }
 
       if (bundlesData && bundlesData.bundles && Array.isArray(bundlesData.bundles)) {
-        const allocated = bundlesData.bundles.filter((b) => b.allocated);
+        const viewerSettings = await import("/lib/services/viewer-settings.js");
+        const operatorFeaturesOn = viewerSettings.isOperatorFeaturesOn();
+        const allocated = bundlesData.bundles.filter((b) => b.allocated && (operatorFeaturesOn || b.bundleId !== "operator"));
         __userBundles = allocated.map((b) => b.bundleId);
         __syntheticBundleIds = new Set(allocated.filter((b) => b.qualifiers?.synthetic === true).map((b) => b.bundleId));
         // Set sessionStorage for synthetic mode based on bundle qualifiers (single source of truth)
@@ -232,10 +234,10 @@ function activityItem({ buttonClass, label, href, disabled, note, noteClass }) {
 }
 
 // The status box and the subtitle say what the catalogue lists for this environment.
-function renderFeatureStatus(catalog, environmentName) {
+function renderFeatureStatus(catalog, environmentName, viewer) {
   const list = document.getElementById("featureStatusList");
   const subtitle = document.getElementById("homeSubtitle");
-  const { groups, filings } = window.featureStatusSummary(catalog, environmentName);
+  const { groups, filings } = window.featureStatusSummary(catalog, environmentName, viewer);
   if (list) window.renderFeatureStatusList(list, groups);
   if (subtitle && filings.length > 0) {
     subtitle.textContent = `Submit ${window.joinWithAnd(filings)} to HMRC and Companies House`;
@@ -262,7 +264,9 @@ async function renderDynamicActivities() {
     const activeBundles = getActiveBundles(catalog, userBundles);
     const expiredBundles = getExpiredBundles(userBundles);
     const currentEnvironmentName = await window.fetchCurrentEnvironmentName();
-    renderFeatureStatus(catalog, currentEnvironmentName);
+    const viewerSettings = await import("/lib/services/viewer-settings.js");
+    const viewer = await viewerSettings.fetchViewer();
+    renderFeatureStatus(catalog, currentEnvironmentName, viewer);
 
     // Build a map of bundle id -> levelName for upsell display (distinct levels)
     const bundleLevelNameMap = {};
@@ -281,8 +285,8 @@ async function renderDynamicActivities() {
     for (const activity of catalog.activities || []) {
       if (!activity.bundles || !Array.isArray(activity.bundles)) continue;
 
-      // Skip activities not listed in the current environment
-      if (!window.isActivityListedInEnvironment(activity, currentEnvironmentName)) continue;
+      // Skip activities the catalogue does not show this person in the current environment
+      if (!window.isActivityShown(activity, currentEnvironmentName, viewer)) continue;
 
       const displayRule = activity.display || "on-entitlement";
 

@@ -108,11 +108,11 @@ allocation = "automatic"
         `<body><script>\nwindow.showStatus = window.showStatus || function(){};\nwindow.checkAuthStatus = window.checkAuthStatus || function(){};\nwindow.toggleMenu = window.toggleMenu || function(){};\n</script>`,
       );
 
-    // Load the modified bundles page HTML
-    await page.setContent(modifiedHtml, {
-      url: "http://localhost:3000/bundles.html",
-      waitUntil: "domcontentloaded",
+    // Load the modified bundles page HTML from its own address, so the page script can import modules
+    await page.route("**/bundles.html", async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: modifiedHtml });
     });
+    await page.goto("http://localhost:3000/bundles.html", { waitUntil: "domcontentloaded" });
 
     // Wait a moment for the inline script to fetch and render
     await delay(400);

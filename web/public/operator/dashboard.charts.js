@@ -3,7 +3,7 @@
 
 // Daily line charts for the operator dashboard, drawn as inline SVG from snapshot.dailyCharts:
 // one chart per objective, one point per day, a line per component and a total line where the
-// parts add up. A legend button hides or shows a line; moving over the chart reads one day.
+// parts add up. A legend button hides or shows a line, a double-click on it shows only that line (again, all lines), Show all and Hide all set every line at once, and a legend button's tooltip says what the line is; moving over the chart reads one day.
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const CHART_HEIGHT = 220;
@@ -65,8 +65,9 @@ function lineStylesFor(seriesList) {
 }
 
 function drawChart(state) {
-  const { chart, days, svg, readout, unit } = state;
+  const { chart, days, svg, readout } = state;
   const mode = chart.modes[state.modeIndex];
+  const unit = mode.unit || chart.unit;
   const visible = mode.series.filter((series) => !state.hidden.has(series.id));
   const styles = lineStylesFor(mode.series);
 
@@ -163,6 +164,23 @@ function drawChart(state) {
   );
 }
 
+// Whether the visible lines are exactly the one named, which is what a double-click leaves.
+function isIsolated(state, seriesId) {
+  const mode = state.chart.modes[state.modeIndex];
+  return mode.series.every((series) => (series.id === seriesId) === !state.hidden.has(series.id));
+}
+
+function syncLegend(state) {
+  state.legend.querySelectorAll(".chart-legend-item").forEach((button) => {
+    button.setAttribute("aria-pressed", String(!state.hidden.has(button.dataset.seriesId)));
+  });
+}
+
+function updateAfterVisibilityChange(state) {
+  syncLegend(state);
+  drawChart(state);
+}
+
 function drawLegend(state) {
   const mode = state.chart.modes[state.modeIndex];
   const styles = lineStylesFor(mode.series);
@@ -174,6 +192,7 @@ function drawLegend(state) {
     button.className = "chart-legend-item";
     button.dataset.seriesId = series.id;
     button.setAttribute("aria-pressed", String(!state.hidden.has(series.id)));
+    if (series.description) button.title = series.description;
     const swatch = document.createElement("span");
     swatch.className = "chart-swatch";
     swatch.style.borderTopColor = styles[index].colour;
@@ -181,15 +200,43 @@ function drawLegend(state) {
     swatch.style.borderTopWidth = series.isTotal ? "3px" : "2px";
     button.appendChild(swatch);
     button.appendChild(document.createTextNode(series.label));
+    // A double-click is two clicks first, which toggle the line twice and so leave the state
+    // as it was; the double-click then shows only this line, or all lines when only this one shows.
     button.addEventListener("click", () => {
       if (state.hidden.has(series.id)) state.hidden.delete(series.id);
       else state.hidden.add(series.id);
-      drawLegend(state);
-      drawChart(state);
+      updateAfterVisibilityChange(state);
+    });
+    button.addEventListener("dblclick", () => {
+      state.hidden = isIsolated(state, series.id)
+        ? new Set()
+        : new Set(mode.series.filter((other) => other.id !== series.id).map((other) => other.id));
+      updateAfterVisibilityChange(state);
     });
     item.appendChild(button);
     state.legend.appendChild(item);
   });
+}
+
+function legendControls(state) {
+  const controls = document.createElement("div");
+  controls.className = "chart-legend-controls";
+  [
+    ["show-all", "Show all", () => new Set()],
+    ["hide-all", "Hide all", () => new Set(state.chart.modes[state.modeIndex].series.map((series) => series.id))],
+  ].forEach(([action, label, hiddenAfter]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "chart-mode chart-legend-control";
+    button.dataset.action = action;
+    button.textContent = label;
+    button.addEventListener("click", () => {
+      state.hidden = hiddenAfter();
+      updateAfterVisibilityChange(state);
+    });
+    controls.appendChild(button);
+  });
+  return controls;
 }
 
 function renderChartCard(chart, days) {
@@ -201,7 +248,7 @@ function renderChartCard(chart, days) {
   heading.textContent = chart.title;
   card.appendChild(heading);
 
-  const state = { chart, days, unit: chart.unit, modeIndex: 0, hidden: new Set(), card };
+  const state = { chart, days, modeIndex: 0, hidden: new Set(), card };
 
   if (chart.modes.length > 1) {
     const tabs = document.createElement("div");
@@ -227,8 +274,11 @@ function renderChartCard(chart, days) {
     card.appendChild(tabs);
   }
 
+  const plot = document.createElement("div");
+  plot.className = "chart-plot";
   state.svg = svgElement("svg", { class: "chart-svg", role: "img" });
-  card.appendChild(state.svg);
+  plot.appendChild(state.svg);
+  card.appendChild(plot);
 
   state.readout = document.createElement("p");
   state.readout.className = "chart-readout";
@@ -238,11 +288,20 @@ function renderChartCard(chart, days) {
   state.empty.className = "chart-empty";
   state.empty.textContent = "No data in the last " + days.length + " days.";
   state.empty.hidden = true;
-  card.appendChild(state.empty);
+  plot.appendChild(state.empty);
+
+  card.appendChild(legendControls(state));
 
   state.legend = document.createElement("ul");
   state.legend.className = "chart-legend";
   card.appendChild(state.legend);
+
+  if (chart.reconciliation) {
+    const reconciliation = document.createElement("p");
+    reconciliation.className = "chart-note chart-reconciliation";
+    reconciliation.textContent = chart.reconciliation;
+    card.appendChild(reconciliation);
+  }
 
   if (chart.note) {
     const note = document.createElement("p");

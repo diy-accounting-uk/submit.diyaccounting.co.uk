@@ -14,6 +14,11 @@ vi.mock("@app/data/dynamoDbReceiptRepository.js", () => ({
   listUserReceipts: vi.fn(),
 }));
 
+vi.mock("@app/lib/activityAlert.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  publishActivityEvent: vi.fn().mockResolvedValue({}),
+}));
+
 vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
   getClient: vi.fn(),
 }));
@@ -21,6 +26,7 @@ vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
 const { ingestHandler: hmrcReceiptGetHandler } = await import("@app/functions/hmrc/hmrcReceiptGet.js");
 const { listUserReceipts } = await import("@app/data/dynamoDbReceiptRepository.js");
 const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
+const { publishActivityEvent } = await import("@app/lib/activityAlert.js");
 
 function makeJwt(sub) {
   const header = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" }))
@@ -46,6 +52,14 @@ describe("hmrcReceiptGet ingestHandler", () => {
     Object.assign(process.env, setupTestEnv());
     listUserReceipts.mockReset().mockResolvedValue([]);
     getClient.mockReset();
+    publishActivityEvent.mockClear();
+  });
+
+  test("publishes a receipts-viewed event when a receipt list is returned", async () => {
+    const response = await hmrcReceiptGetHandler(buildAuthenticatedEvent({ sub: "list-sub" }));
+
+    expect(response.statusCode).toBe(200);
+    expect(publishActivityEvent).toHaveBeenCalledWith(expect.objectContaining({ event: "receipts-viewed", userSub: "list-sub" }));
   });
 
   test("HEAD request returns expected status", async () => {

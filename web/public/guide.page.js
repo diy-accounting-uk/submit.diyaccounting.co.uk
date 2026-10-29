@@ -5,6 +5,8 @@
 // headline and a caption each) from that video's walkthrough in videos/publish.json; a journey
 // without frames lists text steps. A frame opens full size in the lightbox.
 
+import { fetchActivityListing } from "./lib/services/content-listing.js";
+
 const MANIFEST_URL = "videos/publish.json";
 
 const GROUPS = [
@@ -82,6 +84,7 @@ const GROUPS = [
       { video: "accounting-spreadsheet-profit" },
       {
         id: "diya-gl-storage",
+        catalogueActivity: "diya-gl-storage",
         title: "Save your diya-gl books",
         steps: [
           ["Keep your book in diya-gl", "Write your sales and purchases to a diya-gl book."],
@@ -195,7 +198,7 @@ function addJump(list, id, title) {
   list.append(item);
 }
 
-function render(container, videos) {
+function render(container, videos, isListed) {
   const byId = new Map(videos.map((video) => [video.id, video]));
   for (const group of GROUPS) {
     const section = el("section", "guide-group");
@@ -208,7 +211,8 @@ function render(container, videos) {
     for (const journey of group.journeys) {
       if (journey.video) {
         const video = byId.get(journey.video);
-        if (!video || !Array.isArray(video.walkthrough) || video.walkthrough.length === 0) continue;
+        if (!video || !isListed(video.catalogueActivity)) continue;
+        if (!Array.isArray(video.walkthrough) || video.walkthrough.length === 0) continue;
         const { title, note } = splitTitle(video.title);
         section.append(
           journeyElement(
@@ -220,6 +224,7 @@ function render(container, videos) {
         );
         addJump(jumpList, video.id, title);
       } else {
+        if (!isListed(journey.catalogueActivity)) continue;
         section.append(
           journeyElement(
             journey.id,
@@ -231,7 +236,7 @@ function render(container, videos) {
         addJump(jumpList, journey.id, journey.title);
       }
     }
-    container.append(section);
+    if (jumpList.children.length > 0) container.append(section);
   }
 }
 
@@ -318,7 +323,7 @@ async function init() {
     const response = await fetch(MANIFEST_URL);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const manifest = await response.json();
-    render(container, manifest.videos);
+    render(container, manifest.videos, await fetchActivityListing());
     openFromHash();
     window.addEventListener("hashchange", openFromHash);
   } catch (error) {

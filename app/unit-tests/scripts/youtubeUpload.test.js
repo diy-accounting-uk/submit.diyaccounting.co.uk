@@ -1208,6 +1208,12 @@ describe("metadata sync", () => {
     expect(planMetadataSync({ list, liveSnippetsById: matching })).toEqual([]);
   });
 
+  test("plans nothing when the declared description differs only by trailing whitespace", () => {
+    const trailing = { videos: [{ ...list.videos[0], title: "New title", description: "Same description\n\n" }] };
+    const live = { [list.videos[0].videoId]: { title: "New title", description: "Same description" } };
+    expect(planMetadataSync({ list: trailing, liveSnippetsById: live })).toEqual([]);
+  });
+
   test("a snippet update carries the declared text with the live categoryId, tags and language", () => {
     expect(buildSnippetUpdate({ entry: list.videos[0], liveSnippet: liveSnippetsById["yt-1"] })).toEqual({
       id: "yt-1",

@@ -25,6 +25,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest: use when a signed-in user clicks the homepage join button to register feedback interest.
     - [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon: use when the site needs to record a visit or logout as an activity event, filtered for crawlers.
     - [SITE-05](#site-05-submit-support-tickets) Submit support tickets: use when a visitor needs to send a support request from the site.
+    - [SITE-24](#site-24-change-an-account-setting) Change an account setting: use when a signed-in user changes a preference that belongs to the account, such as pass generation, and it must follow them to every browser.
   - [Server and API plumbing](#server-and-api-plumbing-site)
     - [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes: use when a Lambda-style apiEndpoint handler needs to run behind the local Express dev server.
     - [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors: use when a Lambda function needs a standard JSON response, or Express needs a JSON error page.
@@ -192,6 +193,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions: use when the live ci-/prod- DNS records under submit need listing, or a CloudFront distribution ID needs finding for an origin.
     - [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs: use when a script or test needs a named stack's output values, such as a URL, table name or ARN.
     - [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup: use when every user in a Cognito user pool needs exporting with their attributes to CSV or JSON.
+    - [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap: use when a deployed web root must not list pages for activities that the environment does not list, such as preview pages on prod.
   - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops)
     - [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot: use when a branch needs a registered ci host, or a slot must be freed or checked before a sweep.
     - [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order: use when a CI branch deploy must not race another deploy, destroy or video-capture run for the same slot.
@@ -390,6 +392,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation: use when one month's Stripe balance transactions and payouts must be pulled and staged for accounts reconciliation.
     - [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths: use when a finance script must find the shared staging tree, or label a month by UK accounting year-end.
     - [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines: use when staged Stripe transactions or payouts must become validated diya-gl bookkeeping lines.
+    - [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account) Read and forecast the Microsoft Advertising account: use when a task asks what the Microsoft Advertising (Bing) account holds, what it has spent or what its keywords and budget would buy.
+    - [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data) Answer Microsoft Advertising questions from live data: use when asked how the Bing account is doing, what a Bing budget would buy, or what to change in it.
 - **[MCP and tools](#mcp-and-tools-mcp)**
   - [Server and CLI](#server-and-cli-mcp)
     - [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools: use when a session needs the submission MCP's tool set, over stdio or one call across every practice client.
@@ -475,6 +479,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role: use when the operator asks to explore ci, for an exploratory or judgement pass, or for a human-eye review of the site.
     - [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday: use when you need every page's status, console errors, failed requests, broken images, sideways or text overflow, page weight and raw identifiers, as the visitor and the signed-in customer, with a contact sheet per role, viewport and theme; or when a review needs the week's crawl output.
     - [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page: use when you must compare this week's exploratory crawl with the last, or find which pages changed in look between two crawl folders.
+    - [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation: use when the `prod-env-charges-without-activation` alarm fires, or the operator asks who paid and got no bundle.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -547,7 +552,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area SITE -->
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
-- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets
+- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
 - [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
@@ -587,6 +592,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest
 - [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon
 - [SITE-05](#site-05-submit-support-tickets) Submit support tickets
+- [SITE-24](#site-24-change-an-account-setting) Change an account setting
 <!-- /generated:group account-and-engagement-apis-site -->
 
 #### SITE-03 Capture feedback interest
@@ -618,6 +624,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/support/supportTicketPost.js, web/public/lib/support-api.js, app/unit-tests/functions/supportTicketPost.test.js, app/unit-tests/supportIssueFormCategories.test.js
 - **Keywords:** support ticket, github issue, github app, rate limit, unverified issue, help page form
 - **Related:** SITE-13
+
+#### SITE-24 Change an account setting
+
+- **Use when:** a signed-in user changes a preference that belongs to the account, such as pass generation, and it must follow them to every browser.
+- **Does:** accountSettingsPut.js validates the named settings against app/lib/accountSettings.js. It merges them into one settings item in the user's own partition of the bundles table. getUserBundles leaves that item out of the bundle list. bundleGet.js returns the settings with the bundles. settings.page.js and viewer-settings.js call the route.
+- **Run:** `PUT /api/v1/account/settings`
+- **Entry:** `app/functions/account/accountSettingsPut.js:ingestHandler`; `web/public/lib/services/viewer-settings.js:updateAccountSetting`
+- **Files:** app/functions/account/accountSettingsPut.js, app/lib/accountSettings.js, app/data/dynamoDbBundleRepository.js, app/functions/account/bundleGet.js, web/public/settings.html, web/public/settings.page.js, web/public/lib/services/viewer-settings.js, app/unit-tests/functions/accountSettings.test.js, app/unit-tests/lib/accountSettings.test.js, web/browser-tests/settings.browser.test.js
+- **Keywords:** account settings, settings page, pass generation, preview features, operator features, settings cog, viewer settings
+- **Related:** SITE-05
 
 ### Server and API plumbing (SITE)
 
@@ -2106,7 +2122,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->
-- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup
+- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
@@ -2139,6 +2155,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions
 - [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs
 - [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup
+- [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap
 <!-- /generated:group deploy-pipeline-ops -->
 
 #### OPS-01 Cancel superseded push-triggered deploys
@@ -2298,6 +2315,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/export-cognito-users.sh
 - **Keywords:** cognito export, user pool, csv export, json export, user attributes
 - **Related:** OPS-110
+
+#### OPS-143 Remove unlisted pages from the published sitemap
+
+- **Use when:** a deployed web root must not list pages for activities that the environment does not list, such as preview pages on prod.
+- **Does:** publish-sitemap.mjs reads submit.catalogue.toml and videos/publish.json. filterSitemap removes the url entries for pages of unlisted activities and for videos pages whose videos are all unlisted. It rewrites sitemap.xml in the built web root. web/public/sitemap.xml keeps the full list. deploy.yml, deploy-app.yml and deploy-app.js run it.
+- **Run:** `node scripts/publish-sitemap.mjs <web-root> <environment-name>`
+- **Entry:** `scripts/publish-sitemap.mjs:filterSitemap`
+- **Files:** scripts/publish-sitemap.mjs, app/unit-tests/scripts/publishSitemap.test.js, scripts/deploy-app.js, .github/workflows/deploy.yml, .github/workflows/deploy-app.yml
+- **Keywords:** sitemap, publish sitemap, unlisted pages, preview pages, seo, catalogue environments
+- **Related:** OPS-01
 
 ### ci slot pool and sweep (OPS)
 
@@ -3648,7 +3675,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
 - [Google Ads data and paid landing tracking](#google-ads-data-and-paid-landing-tracking-data): [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs) Count paid landings from CloudFront access logs · [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake) Pull Google Ads daily cost into the lake
 - [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads · [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
-- [Finance staging and reconciliation](#finance-staging-and-reconciliation-data): [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation) Stage PayPal transactions for reconciliation · [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation · [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths · [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines
+- [Finance staging and reconciliation](#finance-staging-and-reconciliation-data): [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation) Stage PayPal transactions for reconciliation · [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation · [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths · [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines · [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account) Read and forecast the Microsoft Advertising account · [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data) Answer Microsoft Advertising questions from live data
 <!-- /generated:area DATA -->
 
 ### Lake ingestion (DATA)
@@ -4312,6 +4339,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation
 - [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths
 - [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines
+- [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account) Read and forecast the Microsoft Advertising account
+- [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data) Answer Microsoft Advertising questions from live data
 <!-- /generated:group finance-staging-and-reconciliation-data -->
 
 #### DATA-48 Stage PayPal transactions for reconciliation
@@ -4354,6 +4383,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** diya-gl lines, stripe gross fee split, credit note, bank line, arrival_date, stripe reconciliation, validateLines
 - **Related:** DATA-49
 
+
+#### DATA-62 Read and forecast the Microsoft Advertising account
+
+- **Use when:** a task asks what the Microsoft Advertising (Bing) account holds, what it has spent or what its keywords and budget would buy.
+- **Does:** msads.js is a read-only client for the Bing Ads API v13 REST endpoints, signed in with Google OAuth and the IdentityProvider header. It reads the user, customer and account, the full campaign inventory with spend to date, a campaign report by date range, and Ad Insight traffic estimates. It has no write call. The consent mode stores the Google refresh token in Secrets Manager.
+- **Run:** `npm run msads:consent`; `npm run msads:whoami`; `npm run msads:inventory`; `npm run msads:forecast`; `npm run msads:report -- --from 2026-10-29 --to 2026-11-12`
+- **Entry:** `infra/microsoft/ads/msads.js:main`
+- **Files:** infra/microsoft/ads/msads.js, infra/microsoft/ads/msads.toml, app/unit-tests/scripts/msads.test.js
+- **Keywords:** microsoft advertising, bing ads, msads, bing forecast, ad insight, traffic estimates, identityprovider google, developer token
+- **Related:** DATA-33, DATA-34, DATA-35, DATA-63
+
+#### DATA-63 Answer Microsoft Advertising questions from live data
+
+- **Use when:** asked how the Bing account is doing, what a Bing budget would buy, or what to change in it.
+- **Does:** the microsoft-ads skill, the twin of ads-advisor, says how to read the account, report, forecast and propose changes with the msads commands.
+- **Run:** `/microsoft-ads`
+- **Entry:** `.claude/skills/microsoft-ads/SKILL.md`
+- **Files:** .claude/skills/microsoft-ads/SKILL.md
+- **Keywords:** microsoft advertising skill, bing advisor, bing performance, bing budget
+- **Related:** DATA-62, DATA-36
 ## MCP and tools (MCP)
 
 <!-- generated:area MCP -->
@@ -4627,7 +4676,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -4951,6 +5000,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role
 - [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday
 - [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page
+- [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -5209,6 +5259,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/exploratory-diff.mjs, app/unit-tests/scripts/exploratoryDiff.test.js
 - **Keywords:** crawl diff, week on week, image diff, pixelmatch, screenshot comparison, regression, contact sheet
 - **Related:** DEV-51, DEV-46
+
+#### DEV-53 Repair a paid Stripe charge that has no activation
+
+- **Use when:** the `prod-env-charges-without-activation` alarm fires, or the operator asks who paid and got no bundle.
+- **Does:** `ChargesWithoutActivation` in `Submit/Analytics` is the shortfall of `subscription-activated` events against paid Stripe charges for the reconciliation day. The alarm breaches above 0 for a day. The skill finds the charge and its checkout session in Stripe, the account by `hashedSub` with `Query` only, and the webhook failure in the Lambda log. It prints the `stripe events resend` command that re-runs the grant, then drafts the customer email with email-draft.
+- **Run:** `/paid-without-activation`
+- **Entry:** `.claude/skills/paid-without-activation/SKILL.md`
+- **Files:** .claude/skills/paid-without-activation/SKILL.md, app/functions/analytics/analyticsMetricsPublish.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/AnalyticsDashboard.java, app/functions/billing/billingWebhookPost.js
+- **Keywords:** paid without activation, charge no activation, webhook failed, bundle not granted, stripe events resend, customer paid no bundle, reconciliation alarm
+- **Related:** DEV-42, DEV-45
 
 
 ## Spreadsheets and diya-gl (SS)
@@ -5923,6 +5983,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - account migration: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - account policies: [BILL-31](#bill-31-configure-stripe-account-policies)
 - account separation: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
+- account settings: [SITE-24](#site-24-change-an-account-setting)
 - account stack: [BILL-36](#bill-36-cdk-account-stack)
 - accounting year-end: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - accounts data product: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
@@ -5943,6 +6004,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - activity_events_all: [DATA-27](#data-27-sql-views-activity-and-traffic)
 - actor class: [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - ad group performance: [DATA-34](#data-34-report-google-ads-campaign-performance)
+- ad insight: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - add-bundle: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
 - add-references command: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - add_client: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
@@ -6106,6 +6168,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - billing portal: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal)
 - billing stack: [BILL-37](#bill-37-cdk-billing-app-stack)
 - billion laughs: [CH-11](#ch-11-parse-xml-safely)
+- bing ads: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
+- bing advisor: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
+- bing budget: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
+- bing forecast: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
+- bing performance: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
 - blast radius: [SS-42](#ss-42-route-tests-by-blast-radius)
 - blind crawl: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - blocked requests: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
@@ -6169,6 +6236,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - bundle catalogue: [BILL-44](#bill-44-document-the-price-update-project), [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue)
 - bundle entitlement: [CH-04](#ch-04-fetch-a-company-profile), [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api)
 - bundle mapping: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
+- bundle not granted: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - bundleentitlementerror: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request)
 - bundles: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - bundles table: [OPS-16](#ops-16-run-dynamodb-data-migrations)
@@ -6204,6 +6272,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - captions: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [OPS-92](#ops-92-redact-secrets-from-video-artefacts), [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
 - cash account: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - catalogue: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
+- catalogue environments: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
 - catalogue sync: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
 - catalogue.toml: [SS-09](#ss-09-build-package-zips-and-the-catalogue), [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - cdk: [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [BILL-36](#bill-36-cdk-account-stack), [BILL-37](#bill-37-cdk-billing-app-stack), [BILL-38](#bill-38-cdk-billing-webhook-stack), [BILL-39](#bill-39-cdk-diya-gl-stack)
@@ -6236,6 +6305,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - channel handle: [DATA-46](#data-46-configure-the-youtube-channel-as-code)
 - channel state: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
 - channel uploads: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
+- charge no activation: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - charge reference: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - charges: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - chat harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
@@ -6459,6 +6529,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - customer copy: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - customer id hashing: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - customer lookup: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
+- customer paid no bundle: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - customer portal: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal)
 - cut: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
 - daily budget: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DATA-35](#data-35-forecast-google-ads-keyword-performance)
@@ -6544,6 +6615,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - developer hub: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - developer mode: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - developer onboarding: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
+- developer token: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - developer_token_not_approved: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - device id: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
 - digital pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
@@ -6990,6 +7062,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - identity pool: [SS-34](#ss-34-configure-cloudwatch-rum)
 - identity-sandbox: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - identity.toml: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
+- identityprovider google: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - image diff: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - import from clicks: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - import prior year: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
@@ -7215,6 +7288,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mfa context: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - micro-entity: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - micro-entity accounts: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
+- microsoft advertising: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
+- microsoft advertising skill: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
 - migration: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
 - migration runner: [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - mileage: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
@@ -7241,6 +7316,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - move book: [BILL-15](#bill-15-move-a-book-to-a-client)
 - move_book_to_client: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - movebooktoclient: [BILL-15](#bill-15-move-a-book-to-a-client)
+- msads: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - mtd calendar: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - mtd enrolment: [HMRC-11](#hmrc-11-retrieve-itsa-status)
 - mtd for itsa: [HMRC-10](#hmrc-10-retrieve-itsa-obligations)
@@ -7334,6 +7410,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - operator dashboard page: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - operator dashboard route: [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api)
 - operator effort: [DATA-07](#data-07-pull-github-operator-effort-data)
+- operator features: [SITE-24](#site-24-change-an-account-setting)
 - operator interventions: [DATA-07](#data-07-pull-github-operator-effort-data), [DATA-31](#data-31-sql-views-dora-and-operations)
 - operator match: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request)
 - operator objective: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs), [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
@@ -7372,6 +7449,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pages report: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - pagination: [CH-03](#ch-03-search-the-companies-house-register), [BILL-19](#bill-19-list-a-users-diya-gl-books)
 - paid landings: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
+- paid without activation: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - parallel branch: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - parquet: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - parseisodurationtodate: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
@@ -7379,7 +7457,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - partition projection: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - partition registration: [DATA-11](#data-11-run-glue-data-quality-checks)
 - pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
-- pass generation: [SITE-19](#site-19-generate-qr-codes)
+- pass generation: [SITE-24](#site-24-change-an-account-setting), [SITE-19](#site-19-generate-qr-codes)
 - pass link: [BILL-10](#bill-10-redeem-a-pass)
 - pass redemptions: [DATA-28](#data-28-sql-views-revenue-and-subscription)
 - passes: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
@@ -7479,7 +7557,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pretest: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - pretooluse hook: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - prettier: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
+- preview features: [SITE-24](#site-24-change-an-account-setting)
 - preview merge: [SS-52](#ss-52-preview-what-auto-merge-would-do)
+- preview pages: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
 - price: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
 - price id: [BILL-24](#bill-24-create-a-stripe-checkout-session)
 - price sync: [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue)
@@ -7529,6 +7609,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - publish artifacts: [OPS-51](#ops-51-publish-build-artifacts-and-documentation)
 - publish diya-gl: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - publish filter: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
+- publish sitemap: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
 - publish stack: [OPS-120](#ops-120-provision-the-publish-stack)
 - publish video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - publish.json: [OPS-93](#ops-93-publish-demo-videos-to-youtube), [DEV-41](#dev-41-publish-videos-to-the-youtube-channel)
@@ -7580,6 +7661,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reconcile: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - reconcile stripe: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - reconciliation: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
+- reconciliation alarm: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - reconciliation pages: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - recording: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
 - recover checkout: [BILL-27](#bill-27-recover-an-abandoned-checkout)
@@ -7798,7 +7880,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - send day: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - sensitive fields: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - sensitivepathscan: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
-- seo: [SS-25](#ss-25-generate-sitemaps)
+- seo: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
 - sequential commits: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - service worker: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - session beacon: [SITE-04](#site-04-track-visits-via-session-beacon)
@@ -7809,6 +7891,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - session-report skill: [SS-56](#ss-56-write-the-session-report)
 - sessions by host source: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - set origins: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
+- settings cog: [SITE-24](#site-24-change-an-account-setting)
+- settings page: [SITE-24](#site-24-change-an-account-setting)
 - settle in-flight work: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
 - setup guide: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
 - sha256: [SITE-17](#site-17-trace-and-secure-client-requests)
@@ -7831,7 +7915,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - site map: [SITE-12](#site-12-map-the-site-structure)
 - site screenshots: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - site-video-capture: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy)
-- sitemap: [SS-25](#ss-25-generate-sitemaps)
+- sitemap: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
 - sitemap.xml: [SS-25](#ss-25-generate-sitemaps)
 - skip_libreoffice: [SS-42](#ss-42-route-tests-by-blast-radius)
 - slot pool: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
@@ -7899,6 +7983,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - stripe: [BILL-24](#bill-24-create-a-stripe-checkout-session), [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status), [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-27](#bill-27-recover-an-abandoned-checkout), [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-31](#bill-31-configure-stripe-account-policies), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - stripe balance transactions: [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
 - stripe donor: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
+- stripe events resend: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - stripe gross fee split: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - stripe import: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - stripe listen: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
@@ -8033,6 +8118,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - trackevent: [SS-33](#ss-33-send-diya-gl-ga4-events)
 - trademarks: [SITE-20](#site-20-document-business-governance-and-positioning)
 - traffic by country: [DATA-27](#data-27-sql-views-activity-and-traffic)
+- traffic estimates: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - traffic report: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - traffic sources: [DATA-27](#data-27-sql-views-activity-and-traffic)
 - traffic views: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
@@ -8074,6 +8160,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - unit tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
 - unlimited sentinel: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - unlisted: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
+- unlisted pages: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
 - unlisted to public: [DEV-41](#dev-41-publish-videos-to-the-youtube-channel)
 - unrecognised identity: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
 - unset iam session: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
@@ -8148,6 +8235,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - view vat return: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return)
 - view_item_list: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - viewer request: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
+- viewer settings: [SITE-24](#site-24-change-an-account-setting)
 - visibility: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
 - visitor classification: [SITE-04](#site-04-track-visits-via-session-beacon)
 - visitor kind: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
@@ -8179,6 +8267,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - web-test-local: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
 - webhook: [BILL-28](#bill-28-process-stripe-webhook-events)
 - webhook endpoints: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
+- webhook failed: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - webhook signing secret: [BILL-32](#bill-32-provision-stripe-secrets)
 - webhook stack: [BILL-38](#bill-38-cdk-billing-webhook-stack)
 - webhooks: [OPS-60](#ops-60-guide-github-repository-configuration)

@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Microsoft Advertising account G1202SF9, as read by infra/microsoft/ads/msads.js.
+#
+# The account signs in with Google, so the API takes a Google OAuth access token plus an
+# IdentityProvider header. The OAuth client is the YouTube Desktop client: its secret name is
+# below, and the scopes are the non-sensitive openid, profile and email ones.
+
+[account]
+account_id = "188495572"
+account_number = "G1202SF9"
+
+[secrets]
+oauth_client = "prod/submit/youtube/oauth_client"
+refresh_token = "prod/submit/microsoft-ads/google_refresh_token"
+developer_token = "prod/submit/microsoft-ads/developer_token"
+
+[oauth]
+scope = "openid profile email"
+identity_provider = "Google"
+token_url = "https://oauth2.googleapis.com/token"
+
+[api]
+customer_management = "https://clientcenter.api.bingads.microsoft.com/CustomerManagement/v13"
+campaign_management = "https://campaign.api.bingads.microsoft.com/CampaignManagement/v13"
+ad_insight = "https://adinsight.api.bingads.microsoft.com/AdInsight/v13"
+reporting = "https://reporting.api.bingads.microsoft.com/Reporting/v13"

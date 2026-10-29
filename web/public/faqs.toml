@@ -555,6 +555,7 @@ priority = 29
 
 [[faq]]
 id = "self-assessment-itsa"
+activity = "self-employed"
 category = "submission"
 question = "Can I file Income Tax Self Assessment (ITSA)?"
 answer = """
@@ -578,20 +579,31 @@ id = "companies-house-filings"
 category = "submission"
 question = "Can I file with Companies House?"
 answer = """
-Yes, with different status for each filing:
+Yes. These Companies House services are in **production**: company lookup, change of registered office address, change of registered email address.
 
-- **Production:** company lookup, change of registered office address, change of registered email address
-- **Sandbox:** micro-entity accounts, small company accounts, confirmation statement, PSC verification statement. A sandbox filing goes to the Companies House test service and files nothing real.
+See the [availability table](mtd-calendar.html#availability) for the current status.
+"""
+keywords = ["companies house", "registered office", "registered email", "company lookup"]
+priority = 31
+
+[[faq]]
+id = "companies-house-sandbox-filings"
+activity = "file-confirmation-statement"
+category = "submission"
+question = "Can I file accounts or a confirmation statement with Companies House?"
+answer = """
+Not yet for real filings. These filings are in **sandbox**: micro-entity accounts, small company accounts, confirmation statement and PSC verification statement. A sandbox filing goes to the Companies House test service and files nothing real.
 
 Filing accounts, a confirmation statement or a company tax return needs the **Resident** or **Resident Pro** bundle and costs one token. Confirmation statements also carry a £61.35 charge for each filing.
 
 See the [availability table](mtd-calendar.html#availability) for the current status.
 """
-keywords = ["companies house", "accounts", "confirmation statement", "micro-entity", "small company", "registered office", "registered email", "psc", "annual accounts"]
+keywords = ["companies house", "accounts", "confirmation statement", "micro-entity", "small company", "psc", "annual accounts"]
 priority = 31
 
 [[faq]]
 id = "company-tax-return-ct600"
+activity = "file-company-tax-return"
 category = "submission"
 question = "Can I file a Company Tax Return (CT600)?"
 answer = """
@@ -606,6 +618,7 @@ priority = 32
 
 [[faq]]
 id = "diya-gl-books"
+activity = "diya-gl-storage"
 category = "bundles"
 question = "What is diya-gl and can I save my books here?"
 answer = """

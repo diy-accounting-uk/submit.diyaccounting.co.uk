@@ -57,6 +57,8 @@ class NightlyIngestionWorkflowTest {
         var dataQualityRunLambda = testLambda(stack, "DataQualityRunLambda", "docs-env-data-quality-run");
         var metricsPublishLambda = testLambda(stack, "MetricsPublishLambda", "docs-env-analytics-metrics-publish");
         var rawExportPublishLambda = testLambda(stack, "RawExportPublishLambda", "docs-env-raw-export-publish");
+        var operatorSnapshotPublishLambda =
+                testLambda(stack, "OperatorSnapshotPublishLambda", "docs-env-operator-snapshot-publish");
 
         var props = NightlyIngestionWorkflow.NightlyIngestionWorkflowProps.builder()
                 .idPrefix("docs-env")
@@ -69,7 +71,8 @@ class NightlyIngestionWorkflowTest {
                 .operatorEffortPullLambda(operatorEffortPullLambda)
                 .dataQualityRunLambda(dataQualityRunLambda)
                 .metricsPublishLambda(metricsPublishLambda)
-                .rawExportPublishLambda(rawExportPublishLambda);
+                .rawExportPublishLambda(rawExportPublishLambda)
+                .operatorSnapshotPublishLambda(operatorSnapshotPublishLambda);
         if (withOptionalJobs) {
             props.companyBookPullLambda(testLambda(stack, "CompanyBookPullLambda", "docs-env-company-book-pull"))
                     .paypalDonationsPullLambda(
@@ -111,7 +114,8 @@ class NightlyIngestionWorkflowTest {
     }
 
     @Test
-    void definitionRunsFiveIngestionJobsInParallelThenDataQualityThenMetricsPublishThenRawExportThenSucceed() {
+    void
+            definitionRunsFiveIngestionJobsInParallelThenDataQualityThenMetricsPublishThenRawExportThenOperatorSnapshotThenSucceed() {
         Template template = synthWorkflow();
 
         var definitionText = joinedDefinitionString(template);
@@ -131,6 +135,7 @@ class NightlyIngestionWorkflowTest {
         int dataQualityIndex = definitionText.indexOf("\"data quality run\":{");
         int metricsPublishIndex = definitionText.indexOf("\"metrics publish\":{");
         int rawExportIndex = definitionText.indexOf("\"raw export publish\":{");
+        int operatorSnapshotIndex = definitionText.indexOf("\"operator snapshot publish\":{");
 
         assertTrue(parallelIndex >= 0, "expected the parallel branch state");
         assertTrue(stripeIndex > parallelIndex, "Stripe task should be nested inside the parallel branch");
@@ -147,6 +152,9 @@ class NightlyIngestionWorkflowTest {
         assertTrue(dataQualityIndex > parallelIndex, "data quality should run after the parallel branch");
         assertTrue(metricsPublishIndex > dataQualityIndex, "metrics publish should run after data quality");
         assertTrue(rawExportIndex > metricsPublishIndex, "raw export should run after metrics publish");
+        assertTrue(
+                operatorSnapshotIndex > rawExportIndex,
+                "the operator snapshot should publish after every ingestion job and export has finished");
 
         // Exactly five LambdaInvoke tasks named as the ingestion jobs sit in the parallel
         // branch: the definition contains no sixth job's state key between the parallel
@@ -169,11 +177,11 @@ class NightlyIngestionWorkflowTest {
 
         var definitionText = joinedDefinitionString(template);
 
-        // Eight tasks, one States.TaskFailed retry shape each (interval 60 is unique to this
+        // Nine tasks, one States.TaskFailed retry shape each (interval 60 is unique to this
         // retry: retryOnServiceExceptions adds its own separate retry, interval 2, for AWS
         // Lambda service errors, which every LambdaInvoke task carries in addition to this one).
         assertEquals(
-                8,
+                9,
                 countOccurrences(
                         definitionText,
                         "\"ErrorEquals\":[\"States.TaskFailed\"],\"IntervalSeconds\":60,\"MaxAttempts\":2,\"BackoffRate\":2"),
@@ -203,7 +211,8 @@ class NightlyIngestionWorkflowTest {
                 "operator effort pull",
                 "data quality run",
                 "metrics publish",
-                "raw export publish")) {
+                "raw export publish",
+                "operator snapshot publish")) {
             assertFalse(stateText(definitionText, key).contains("\"Catch\""), key + " should not catch");
         }
     }
@@ -220,14 +229,14 @@ class NightlyIngestionWorkflowTest {
     }
 
     @Test
-    void scheduleRunsDailyInProdAndWeeklyElsewhere() {
+    void scheduleRunsHourlyInProdAndWeeklyElsewhere() {
         Template ciTemplate = synthWorkflow("docs");
         ciTemplate.hasResourceProperties(
                 "AWS::Scheduler::Schedule", Match.objectLike(Map.of("ScheduleExpression", "cron(15 2 ? * MON *)")));
 
         Template prodTemplate = synthWorkflow("prod");
         prodTemplate.hasResourceProperties(
-                "AWS::Scheduler::Schedule", Match.objectLike(Map.of("ScheduleExpression", "cron(15 2 * * ? *)")));
+                "AWS::Scheduler::Schedule", Match.objectLike(Map.of("ScheduleExpression", "cron(15 * * * ? *)")));
     }
 
     @Test
@@ -283,6 +292,8 @@ class NightlyIngestionWorkflowTest {
                         "ExecutionsStarted",
                         "ComparisonOperator",
                         "LessThanThreshold",
+                        "Period",
+                        10800,
                         "Threshold",
                         1,
                         "TreatMissingData",
@@ -304,7 +315,8 @@ class NightlyIngestionWorkflowTest {
             "Ads cost pull failed, recorded",
             "data quality run",
             "metrics publish",
-            "raw export publish");
+            "raw export publish",
+            "operator snapshot publish");
 
     /** The text of one state's definition, up to where the next state's definition starts. */
     private static String stateText(String definitionText, String stateName) {
