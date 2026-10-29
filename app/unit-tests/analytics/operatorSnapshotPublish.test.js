@@ -377,6 +377,38 @@ describe("operatorSnapshotPublish", () => {
       expect(series[0].values.at(-1)).toBe(34);
     });
 
+    test("the AWS costs chart folds to 12 services and offers account and deployment modes with account names", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "low-running-cost");
+
+      expect(chart.title).toBe("AWS costs");
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["cost", "account", "deployment"]);
+      expect(chart.modes[0].maxComponents).toBe(12);
+      const account = chart.modes.find((mode) => mode.id === "account");
+      expect(account.labelOf("972912397388")).toBe("submit-prod");
+      expect(account.labelOf("887764105431")).toBe("management");
+      expect(chart.modes.find((mode) => mode.id === "deployment").sql).toContain("deployment AS component");
+    });
+
+    test("AWS costs holds AWS figures only and the ads figures sit under Conversion to paid", () => {
+      const idsOf = (objectiveId) => OBJECTIVE_DEFINITIONS.find((objective) => objective.id === objectiveId).observations.map((o) => o.id);
+
+      expect(OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "low-running-cost").name).toBe("AWS costs");
+      expect(idsOf("low-running-cost")).toEqual(
+        expect.arrayContaining([
+          "cost-submit-prod-usd",
+          "cost-submit-ci-usd",
+          "cost-other-accounts-usd",
+          "cost-bedrock-usd",
+          "cost-cloudwatch-usd",
+          "cost-cloudfront-usd",
+        ]),
+      );
+      expect(idsOf("low-running-cost")).not.toContain("ads-cost-gbp");
+      expect(idsOf("conversion-to-paid")).toEqual(
+        expect.arrayContaining(["paid-landings", "ads-cost-gbp", "ads-cost-per-paid-landing-gbp"]),
+      );
+    });
+
     test("every chart mode asks for the last 90 days and answers day, component and value", () => {
       for (const definition of buildDailyChartDefinitions()) {
         for (const mode of definition.modes) {

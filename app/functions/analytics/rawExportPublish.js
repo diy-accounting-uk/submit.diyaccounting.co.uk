@@ -87,7 +87,7 @@ export const OBJECTIVES = [
     ],
   },
   {
-    objective: "Low running cost",
+    objective: "AWS costs",
     views: [],
     levers: [
       "Deployment lifecycle (destroy-* workflows)",

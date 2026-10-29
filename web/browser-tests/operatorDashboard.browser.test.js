@@ -104,7 +104,7 @@ const FIXTURE_SNAPSHOT = {
       ],
     },
     { id: "conversion-to-paid", name: "Conversion to paid", observations: [] },
-    { id: "low-running-cost", name: "Low running cost", observations: [] },
+    { id: "low-running-cost", name: "AWS costs", observations: [] },
     { id: "security", name: "Security", observations: [] },
     { id: "retention", name: "Retention", observations: [] },
     { id: "operator-effort", name: "Operator effort", observations: [] },
@@ -333,7 +333,7 @@ const FIXTURE_DAILY_CHARTS = {
       "Stripe donations",
       "PayPal donations",
     ]),
-    chartWithSeries("low-running-cost", "low-running-cost", "Low running cost", "usd", [
+    chartWithSeries("low-running-cost", "low-running-cost", "AWS costs", "usd", [
       "Amazon CloudFront",
       "AWS Lambda",
       "Amazon DynamoDB",
@@ -822,7 +822,7 @@ test.describe("Operator Dashboard", () => {
         "Activity started and completed",
         "Conversion to submission",
         "Conversion to paid",
-        "Low running cost",
+        "AWS costs",
         "Retention",
         "Visitors",
       ]);
