@@ -114,7 +114,8 @@ class NightlyIngestionWorkflowTest {
     }
 
     @Test
-    void definitionRunsFiveIngestionJobsInParallelThenDataQualityThenMetricsPublishThenRawExportThenOperatorSnapshotThenSucceed() {
+    void
+            definitionRunsFiveIngestionJobsInParallelThenDataQualityThenMetricsPublishThenRawExportThenOperatorSnapshotThenSucceed() {
         Template template = synthWorkflow();
 
         var definitionText = joinedDefinitionString(template);

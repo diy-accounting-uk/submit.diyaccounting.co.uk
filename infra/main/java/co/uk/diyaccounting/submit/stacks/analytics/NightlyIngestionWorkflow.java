@@ -291,8 +291,7 @@ public class NightlyIngestionWorkflow {
         if (isProd) {
             this.executionsMissedAlarm = Alarm.Builder.create(scope, prefix + "-NightlyExecutionsMissedAlarm")
                     .alarmName(props.stateMachineName() + "-missed")
-                    .alarmDescription(
-                            "The analytics ingestion state machine has not started an execution in 3 hours")
+                    .alarmDescription("The analytics ingestion state machine has not started an execution in 3 hours")
                     .metric(this.stateMachine.metricStarted(MetricOptions.builder()
                             .period(Duration.hours(3))
                             .statistic("Sum")
