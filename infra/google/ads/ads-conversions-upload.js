@@ -231,10 +231,15 @@ export function printEvents(events) {
 
 // --- Network edges. Covered by the dry run and the first validate-only call, not unit tests. ---
 
-async function queryLake({ env, since, athena = new AthenaClient({ region: process.env.AWS_REGION || "eu-west-2" }) }) {
+export async function queryLake({
+  env,
+  since,
+  buildQuery = buildLakeQuery,
+  athena = new AthenaClient({ region: process.env.AWS_REGION || "eu-west-2" }),
+}) {
   const { QueryExecutionId } = await athena.send(
     new StartQueryExecutionCommand({
-      QueryString: buildLakeQuery(since),
+      QueryString: buildQuery(since),
       QueryExecutionContext: { Database: `${env}_env_analytics` },
       WorkGroup: `${env}-env-analytics`,
     }),

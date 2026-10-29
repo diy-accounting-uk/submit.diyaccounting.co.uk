@@ -122,6 +122,81 @@ describe("web/public/lib/analytics.js", () => {
     });
   });
 
+  describe("Microsoft Advertising UET", () => {
+    beforeEach(() => {
+      fetchResponseText = "GA4_MEASUREMENT_ID=G-TESTMEASURE\nUET_TAG_ID=187012345\n";
+      delete global.uetq;
+      delete global.UET;
+    });
+
+    it("loads nothing before consent", async () => {
+      eval(scriptContent);
+      await flushPromises();
+
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(headScripts).toHaveLength(0);
+      expect(global.uetq).toBeUndefined();
+    });
+
+    it("loads bat.js after consent with the id from /submit.env and denies then grants ad_storage", async () => {
+      eval(scriptContent);
+      acceptBannerThenFire();
+      await flushPromises();
+
+      const uetScript = headScripts.find((el) => el.src === "https://bat.bing.com/bat.js");
+      expect(uetScript).toBeDefined();
+      expect(global.uetq).toEqual(["consent", "default", { ad_storage: "denied" }, "consent", "update", { ad_storage: "granted" }]);
+
+      const queued = global.uetq;
+      let options;
+      global.UET = function UET(opts) {
+        options = opts;
+        this.push = vi.fn();
+      };
+      uetScript.onload();
+      expect(options).toMatchObject({ ti: "187012345", enableAutoSpaTracking: true, q: queued });
+      expect(global.uetq.push).toHaveBeenCalledWith("pageLoad");
+    });
+
+    it("does not load bat.js when the tag id is blank", async () => {
+      fetchResponseText = "GA4_MEASUREMENT_ID=G-TESTMEASURE\nUET_TAG_ID=\n";
+
+      eval(scriptContent);
+      acceptBannerThenFire();
+      await flushPromises();
+
+      expect(headScripts.map((el) => el.src)).toEqual(["https://www.googletagmanager.com/gtag/js?id=G-TESTMEASURE"]);
+      expect(global.uetq).toBeUndefined();
+    });
+
+    it("sends the four goal events to UET with revenue, and no other event", async () => {
+      eval(`${scriptContent}\nglobalThis.exposedGtag = gtag;`);
+      acceptBannerThenFire();
+      await flushPromises();
+
+      global.exposedGtag("event", "purchase", { value: 0.99, currency: "GBP" });
+      global.exposedGtag("event", "submit_vat_return", { value: 0, currency: "GBP" });
+      global.exposedGtag("event", "login", { method: "google" });
+
+      expect(global.uetq.slice(6)).toEqual([
+        "event",
+        "purchase",
+        { revenue_value: 0.99, currency: "GBP" },
+        "event",
+        "submit_vat_return",
+        {},
+      ]);
+    });
+
+    it("sends no UET event when UET never started", () => {
+      eval(`${scriptContent}\nglobalThis.exposedGtag = gtag;`);
+
+      global.exposedGtag("event", "purchase", { value: 1, currency: "GBP" });
+
+      expect(global.uetq).toBeUndefined();
+    });
+  });
+
   describe("before consent", () => {
     it("defaults all four consent types to denied", () => {
       eval(scriptContent);

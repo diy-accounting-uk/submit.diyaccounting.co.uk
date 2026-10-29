@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// Google Analytics 4 — Submit (submit.diyaccounting.co.uk)
+// Google Analytics 4 and Microsoft Advertising UET — Submit (submit.diyaccounting.co.uk)
 // The measurement id is per environment, not hardcoded: it comes from /submit.env's
-// GA4_MEASUREMENT_ID key, generated at deploy time (see web/public/submit.env). This script
-// loads in <head>, before lib/env-loader.js runs, so it reads /submit.env itself rather than
-// waiting on window.envReady.
+// GA4_MEASUREMENT_ID key, generated at deploy time (see web/public/submit.env). The UET tag id
+// comes from the UET_TAG_ID key the same way; a blank id keeps UET off. This script loads in
+// <head>, before lib/env-loader.js runs, so it reads /submit.env itself rather than waiting on
+// window.envReady.
 window.dataLayer = window.dataLayer || [];
 function gtag() {
   dataLayer.push(arguments);
+  mirrorGtagEventToUet(arguments);
 }
 gtag("consent", "default", {
   analytics_storage: "denied",
@@ -190,6 +192,39 @@ function startGa4(measurementId) {
   document.head.appendChild(script);
 }
 
+// The GA4 events that infra/microsoft/ads/ads.toml declares as UET event goals. Each is sent to
+// UET under the same name when a GA4 event of that name fires and UET has started.
+const UET_GOAL_EVENTS = ["purchase", "submit_vat_return", "runner_download", "donate"];
+const UET_SCRIPT_URL = "https://bat.bing.com/bat.js";
+
+function mirrorGtagEventToUet(args) {
+  if (args[0] !== "event" || !UET_GOAL_EVENTS.includes(args[1]) || !window.uetq) return;
+  const params = args[2] || {};
+  const uetParams = {};
+  if (typeof params.value === "number" && params.value > 0) {
+    uetParams.revenue_value = params.value;
+    uetParams.currency = params.currency || "GBP";
+  }
+  window.uetq.push("event", args[1], uetParams);
+}
+
+// Microsoft Advertising UET, loaded only after the visitor accepts. The consent default is
+// denied and the accept moves ad_storage to granted before the first page view is sent, so UET
+// sets no cookie before the choice. The queue UET reads on load is window.uetq.
+function startUet(tagId) {
+  window.uetq = window.uetq || [];
+  window.uetq.push("consent", "default", { ad_storage: "denied" });
+  window.uetq.push("consent", "update", { ad_storage: "granted" });
+  const script = document.createElement("script");
+  script.async = true;
+  script.src = UET_SCRIPT_URL;
+  script.onload = () => {
+    window.uetq = new window.UET({ ti: tagId, enableAutoSpaTracking: true, q: window.uetq });
+    window.uetq.push("pageLoad");
+  };
+  document.head.appendChild(script);
+}
+
 let ga4Started = false;
 
 // Basic consent mode: gtag.js is requested only after the visitor accepts, so Google receives
@@ -206,9 +241,13 @@ function startAnalyticsAfterConsent() {
       if (measurementId) {
         startGa4(measurementId);
       }
+      const uetTagId = readSubmitEnvValue(envText, "UET_TAG_ID");
+      if (uetTagId) {
+        startUet(uetTagId);
+      }
       return null;
     })
-    .catch((error) => console.warn("Failed to read GA4_MEASUREMENT_ID from /submit.env:", error));
+    .catch((error) => console.warn("Failed to read GA4_MEASUREMENT_ID or UET_TAG_ID from /submit.env:", error));
 }
 
 document.addEventListener("consent-granted", startAnalyticsAfterConsent);
