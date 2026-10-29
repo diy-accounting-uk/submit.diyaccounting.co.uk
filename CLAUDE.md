@@ -87,6 +87,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/companies-house-review/SKILL.md` — review our accounts filings as the Companies House XML team does: rebuild each filed case, render it beside the example of its type, run the test validator, and write `findings.md` and `walkthrough.md` under `target/companies-house-review/<date>/`; invoke as `/companies-house-review`
 - `.claude/skills/email-draft/SKILL.md` — draft an email the operator sends in his own name, on Opus at minimum: the thread and his recent sent mail from corpus-loom, a facts pass, the prose rules, then his friendlier voice; invoke when a row or the operator asks for an email or a reply
 - `.claude/skills/companies-house-judge/SKILL.md` — judge a Companies House review folder as the XML team would, as an LLM: our data in `source/`, the example in `reference/`, input against output in `reconciliation.md`, one `index.html` per review, `judge.json` per case, and a NEXT.md row per fix; runs after every review and before any email cites it; invoke as `/companies-house-judge`
+- `.claude/skills/paid-without-activation/SKILL.md` — from a `prod-env-charges-without-activation` alarm, find the Stripe charge with no activation and its account from Stripe's records and the lake, read the webhook log for the failure, print the event re-delivery command that grants the bundle, and draft the email to the customer; invoke when that alarm fires
 
 ## Permission Handling
 

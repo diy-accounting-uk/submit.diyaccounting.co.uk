@@ -475,6 +475,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role: use when the operator asks to explore ci, for an exploratory or judgement pass, or for a human-eye review of the site.
     - [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday: use when you need every page's status, console errors, failed requests, broken images, sideways or text overflow, page weight and raw identifiers, as the visitor and the signed-in customer, with a contact sheet per role, viewport and theme; or when a review needs the week's crawl output.
     - [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page: use when you must compare this week's exploratory crawl with the last, or find which pages changed in look between two crawl folders.
+    - [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation: use when the `prod-env-charges-without-activation` alarm fires, or the operator asks who paid and got no bundle.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -4627,7 +4628,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -4951,6 +4952,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role
 - [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday
 - [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page
+- [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -5209,6 +5211,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/exploratory-diff.mjs, app/unit-tests/scripts/exploratoryDiff.test.js
 - **Keywords:** crawl diff, week on week, image diff, pixelmatch, screenshot comparison, regression, contact sheet
 - **Related:** DEV-51, DEV-46
+
+#### DEV-53 Repair a paid Stripe charge that has no activation
+
+- **Use when:** the `prod-env-charges-without-activation` alarm fires, or the operator asks who paid and got no bundle.
+- **Does:** `ChargesWithoutActivation` in `Submit/Analytics` is the shortfall of `subscription-activated` events against paid Stripe charges for the reconciliation day. The alarm breaches above 0 for a day. The skill finds the charge and its checkout session in Stripe, the account by `hashedSub` with `Query` only, and the webhook failure in the Lambda log. It prints the `stripe events resend` command that re-runs the grant, then drafts the customer email with email-draft.
+- **Run:** `/paid-without-activation`
+- **Entry:** `.claude/skills/paid-without-activation/SKILL.md`
+- **Files:** .claude/skills/paid-without-activation/SKILL.md, app/functions/analytics/analyticsMetricsPublish.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/AnalyticsDashboard.java, app/functions/billing/billingWebhookPost.js
+- **Keywords:** paid without activation, charge no activation, webhook failed, bundle not granted, stripe events resend, customer paid no bundle, reconciliation alarm
+- **Related:** DEV-42, DEV-45
 
 
 ## Spreadsheets and diya-gl (SS)
@@ -6169,6 +6181,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - bundle catalogue: [BILL-44](#bill-44-document-the-price-update-project), [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue)
 - bundle entitlement: [CH-04](#ch-04-fetch-a-company-profile), [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api)
 - bundle mapping: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
+- bundle not granted: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - bundleentitlementerror: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request)
 - bundles: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - bundles table: [OPS-16](#ops-16-run-dynamodb-data-migrations)
@@ -6236,6 +6249,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - channel handle: [DATA-46](#data-46-configure-the-youtube-channel-as-code)
 - channel state: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
 - channel uploads: [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site)
+- charge no activation: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - charge reference: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - charges: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - chat harness: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
@@ -6459,6 +6473,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - customer copy: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - customer id hashing: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - customer lookup: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
+- customer paid no bundle: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - customer portal: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal)
 - cut: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
 - daily budget: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DATA-35](#data-35-forecast-google-ads-keyword-performance)
@@ -7372,6 +7387,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pages report: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - pagination: [CH-03](#ch-03-search-the-companies-house-register), [BILL-19](#bill-19-list-a-users-diya-gl-books)
 - paid landings: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
+- paid without activation: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - parallel branch: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - parquet: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - parseisodurationtodate: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
@@ -7580,6 +7596,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reconcile: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - reconcile stripe: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - reconciliation: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would), [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
+- reconciliation alarm: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - reconciliation pages: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - recording: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
 - recover checkout: [BILL-27](#bill-27-recover-an-abandoned-checkout)
@@ -7899,6 +7916,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - stripe: [BILL-24](#bill-24-create-a-stripe-checkout-session), [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status), [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-27](#bill-27-recover-an-abandoned-checkout), [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-31](#bill-31-configure-stripe-account-policies), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - stripe balance transactions: [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
 - stripe donor: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
+- stripe events resend: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - stripe gross fee split: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - stripe import: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - stripe listen: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
@@ -8179,6 +8197,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - web-test-local: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
 - webhook: [BILL-28](#bill-28-process-stripe-webhook-events)
 - webhook endpoints: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
+- webhook failed: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - webhook signing secret: [BILL-32](#bill-32-provision-stripe-secrets)
 - webhook stack: [BILL-38](#bill-38-cdk-billing-webhook-stack)
 - webhooks: [OPS-60](#ops-60-guide-github-repository-configuration)

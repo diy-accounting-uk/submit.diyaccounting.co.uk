@@ -205,6 +205,17 @@ describe("analyticsMetricsPublish", () => {
       },
     );
 
+    test("ChargesWithoutActivation publishes the shortfall of activations against charges, clamped at zero", () => {
+      const definition = METRIC_DEFINITIONS.find((d) => d.metricName === "ChargesWithoutActivation");
+      expect(definition.usesReconciliationDate).toBe(true);
+      expect(definition.dimension).toBeNull();
+      expect(definition.sql("2026-08-28")).toContain("greatest(-activity_minus_stripe, 0)");
+      expect(definition.sql("2026-08-28")).toContain("DATE '2026-08-28'");
+      expect(toMetricData(definition, [{ charges_without_activation: "2" }], timestamp)).toEqual([
+        { MetricName: "ChargesWithoutActivation", Value: 2, Unit: "Count", Timestamp: timestamp, Dimensions: [] },
+      ]);
+    });
+
     test("reconciliation metrics carry no dimension: the gap columns are not published", () => {
       for (const metricName of ["Ga4Purchases", "StripePaidCharges", "ActivityActivations"]) {
         const definition = METRIC_DEFINITIONS.find((d) => d.metricName === metricName);
@@ -329,7 +340,7 @@ describe("analyticsMetricsPublish", () => {
       }
     });
 
-    test("on the unmanned default, queries the reconciliation trio two days ago and everything else yesterday", async () => {
+    test("on the unmanned default, queries the reconciliation metrics two days ago and everything else yesterday", async () => {
       vi.useFakeTimers();
       vi.setSystemTime(new Date("2026-08-29T05:00:00Z"));
       mockAllQueriesSucceedEmpty();
@@ -339,7 +350,7 @@ describe("analyticsMetricsPublish", () => {
       vi.useRealTimers();
 
       const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
-      const reconciliationNames = ["Ga4Purchases", "StripePaidCharges", "ActivityActivations"];
+      const reconciliationNames = ["Ga4Purchases", "StripePaidCharges", "ActivityActivations", "ChargesWithoutActivation"];
       METRIC_DEFINITIONS.forEach((definition, index) => {
         const expectedDate = reconciliationNames.includes(definition.metricName) ? "2026-08-27" : "2026-08-28";
         expect(startCalls[index][0].input.QueryString).toContain(expectedDate);
