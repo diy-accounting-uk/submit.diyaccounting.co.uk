@@ -38,7 +38,7 @@ import {
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
-import { readJointFilingId, jointFilingFields } from "../../services/jointFiling.js";
+import { readJointFilingId, jointFilingFields, amendedFields } from "../../services/jointFiling.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcCtReturnPost.js" });
 
@@ -173,6 +173,7 @@ export async function ingestHandler(event) {
         gatewayTest,
         messageClass: CT600_CLASS,
         ...jointFilingFields(jointFilingId),
+        ...amendedFields(returnRequest.amended),
         filed: {
           boxes: documents.boxes,
           computationsIxbrl: documents.computationsIxbrl,

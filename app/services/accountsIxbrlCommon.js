@@ -620,6 +620,29 @@ export function coverPage({ refs, companyName, companyNumber, title, periodStart
 }
 
 /**
+ * The page that makes accounts a revision: the statements the Companies (Revision of Defective
+ * Accounts and Reports) Regulations 2008 require of revised accounts, and the respects in which
+ * they differ from the original accounts. Revised accounts carry the date they were approved on
+ * the balance sheet, as any accounts do.
+ * @param {object} input
+ * @param {string} input.periodEnd - ISO date the accounts are made up to
+ * @param {{originalDateOfApproval: string, differences: string}} input.revision
+ * @param {string} input.heading - the page heading, already built
+ * @returns {string}
+ */
+export function revisionPage({ heading, periodEnd, revision }) {
+  const originalDate = displayDate(revision.originalDateOfApproval);
+  return `<div class="page">
+${heading}<p>These are revised accounts. They replace the original accounts of the company for the financial year ended ${escapeXmlText(displayDate(periodEnd))}, which were approved on ${escapeXmlText(originalDate)}.</p>
+<p>The revised accounts are now the statutory accounts of the company.</p>
+<p>They have been prepared as at the date of the original accounts, not as at the date of the revision, and so they do not deal with events between those dates.</p>
+<p>They have been prepared in accordance with the provisions of the Companies Act 2006 that applied to the original accounts when those were approved.</p>
+<h3>Respects in which the original accounts differ</h3>
+<p>${escapeXmlText(revision.differences)}</p>
+</div>`;
+}
+
+/**
  * The approval line under the balance sheet statements: the board that approves, the tagged
  * approval date and the name of the director who signs. A director's name is tagged as an officer
  * when the caller passes the context that names the officer; the directors' report tags the
@@ -672,11 +695,20 @@ export function countryMemberForCompanyNumber(companyNumber) {
 
 /**
  * The hidden facts that describe the filing company and its accounts: legal form, country of
- * formation, the scope of the accounts, that the report is not an amended version, and that the
- * accounting standards applied match the entry point.
+ * formation, the scope of the accounts, whether the report is an amended (revised) version of one
+ * already filed, and that the accounting standards applied match the entry point.
+ * @param {object} input
+ * @param {boolean} [input.revised] - true for revised accounts that replace accounts already filed
  * @returns {string[]}
  */
-export function renderCompanyDescriptionFacts({ companyNumber, refs, entityIdentifierXml, periodXml, additionalContexts }) {
+export function renderCompanyDescriptionFacts({
+  companyNumber,
+  refs,
+  entityIdentifierXml,
+  periodXml,
+  additionalContexts,
+  revised = false,
+}) {
   const dimensioned = (dimension, member, id) =>
     buildDimensionedContext({
       additionalContexts,
@@ -692,7 +724,7 @@ export function renderCompanyDescriptionFacts({ companyNumber, refs, entityIdent
       dimensioned(DIMENSIONS.countriesRegions, countryMemberForCompanyNumber(companyNumber), "country"),
     ),
     renderFixedFact("scopeAccounts", refs.current),
-    renderTextFact("reportAmendedRevisedVersion", refs.current, "false"),
+    renderTextFact("reportAmendedRevisedVersion", refs.current, revised ? "true" : "false"),
     renderTextFact("accountingStandardsAppliedMatchesEntryPoint", refs.current, "true"),
   ];
 }

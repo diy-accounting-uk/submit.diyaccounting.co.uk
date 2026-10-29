@@ -4,7 +4,7 @@
 // app/unit-tests/services/jointFiling.test.js
 
 import { describe, expect, test } from "vitest";
-import { readJointFilingId, jointFilingFields } from "@app/services/jointFiling.js";
+import { readJointFilingId, jointFilingFields, readRevision, readAmended, amendedFields } from "@app/services/jointFiling.js";
 import { findMatchingActivitiesForUrlPath } from "@app/services/bundleManagement.js";
 import { loadCatalogFromRoot } from "@app/services/productCatalog.js";
 
@@ -60,5 +60,55 @@ describe("the activities a call from the joint page matches", () => {
   test("a pair costs two tokens: one for the accounts activity and one for the Company Tax Return activity", () => {
     expect(["file-micro-entity-accounts", "file-small-company-accounts"].map(tokenCostOf)).toEqual([1, 1]);
     expect(tokenCostOf("file-company-tax-return")).toBe(1);
+  });
+});
+
+describe("services/jointFiling revisions and amendments", () => {
+  const REVISION = { originalDateOfApproval: "2026-09-01", differences: " Creditors are restated. " };
+
+  test("reads a revision and trims what it changes", () => {
+    const errors = [];
+    expect(readRevision({ revision: REVISION }, "2026-10-20", errors)).toEqual({
+      originalDateOfApproval: "2026-09-01",
+      differences: "Creditors are restated.",
+    });
+    expect(errors).toEqual([]);
+  });
+
+  test("a body with no revision is an original filing", () => {
+    const errors = [];
+    expect(readRevision({}, "2026-10-20", errors)).toBeUndefined();
+    expect(readRevision({ revision: null }, "2026-10-20", errors)).toBeUndefined();
+    expect(errors).toEqual([]);
+  });
+
+  test("refuses a revision that is not an object, lacks a date or says nothing, or predates the original", () => {
+    const refuse = (revision, approved = "2026-10-20") => {
+      const errors = [];
+      readRevision({ revision }, approved, errors);
+      return errors;
+    };
+    expect(refuse("yes")).toEqual(["Invalid revision - must be an object"]);
+    expect(refuse({ differences: "x" })).toEqual(["Invalid or missing revision.originalDateOfApproval - must be YYYY-MM-DD"]);
+    expect(refuse({ originalDateOfApproval: "2026-09-01", differences: "  " })).toEqual([
+      "Missing revision.differences - say what the revision changes",
+    ]);
+    expect(refuse(REVISION, "2026-08-31")).toEqual(["revision.originalDateOfApproval is after the date the revised accounts are approved"]);
+    expect(refuse({ ...REVISION, differences: "x".repeat(2001) })).toEqual(["revision.differences is longer than 2000 characters"]);
+  });
+
+  test("reads the amended flag", () => {
+    const errors = [];
+    expect(readAmended({ amended: true }, errors)).toBe(true);
+    expect(readAmended({}, errors)).toBe(false);
+    expect(readAmended({ amended: false }, errors)).toBe(false);
+    expect(errors).toEqual([]);
+    expect(readAmended({ amended: "yes" }, errors)).toBe(false);
+    expect(errors).toEqual(["Invalid amended - must be true or false"]);
+  });
+
+  test("adds the amended field to a record only for an amendment", () => {
+    expect(amendedFields(true)).toEqual({ amended: true });
+    expect(amendedFields(false)).toEqual({});
   });
 });

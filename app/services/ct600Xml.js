@@ -130,9 +130,10 @@ function financialYearXml(name, year, profit, rate, tax) {
  * @param {Record<number, string|number>} input.boxes - deriveCt600FromFigures output
  * @param {string} input.accountsIxbrl - the full FRS 102 accounts document
  * @param {string} input.computationsIxbrl - from ctComputationsIxbrl.js
+ * @param {boolean} [input.amended] - true for a return that replaces one already filed for the period
  * @returns {string}
  */
-export function buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl }) {
+export function buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl, amended = false }) {
   if (!accountsIxbrl || !computationsIxbrl) throw new Error("Both the accounts and the computations iXBRL are attached to the return");
   const b = boxes;
   const encoded = (document) => Buffer.from(document, "utf8").toString("base64");
@@ -191,7 +192,7 @@ export function buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl }
     wrap("AmountArising", wrap("LossesOfTradesUK", moneyElement("Arising", b[780])) + moneyElement("LossesOfTradesOutsideUK", b[790])),
   );
 
-  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd><DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>Company</Sender></IRheader><CompanyTaxReturn ReturnType="new"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary><Accounts><ThisPeriodAccounts>yes</ThisPeriodAccounts></Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations></ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}${notIncluded}${qualifyingExpenditure}${losses}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration><AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
+  return `<IRenvelope xmlns="${CT600_NAMESPACE}"><IRheader><Keys><Key Type="UTR">${b[3]}</Key></Keys><PeriodEnd>${b[35]}</PeriodEnd><DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>Company</Sender></IRheader><CompanyTaxReturn ReturnType="${amended ? "amended" : "new"}"><CompanyInformation><CompanyName>${escapeXmlText(b[1])}</CompanyName><RegistrationNumber>${b[2]}</RegistrationNumber><Reference>${b[3]}</Reference><CompanyType>${b[4]}</CompanyType><PeriodCovered><From>${b[30]}</From><To>${b[35]}</To></PeriodCovered></CompanyInformation><ReturnInfoSummary><Accounts><ThisPeriodAccounts>yes</ThisPeriodAccounts></Accounts><Computations><ThisPeriodComputations>yes</ThisPeriodComputations></Computations></ReturnInfoSummary><Turnover>${moneyElement("Total", b[145])}</Turnover>${companyTaxCalculation}${calculationOfTax}${reconciliation}${indicators}${allowances}${notIncluded}${qualifyingExpenditure}${losses}<Declaration><AcceptDeclaration>yes</AcceptDeclaration><Name>${escapeXmlText(b[975])}</Name><Status>${escapeXmlText(b[985])}</Status></Declaration><AttachedFiles><XBRLsubmission><Computation><Instance><EncodedInlineXBRLDocument Filename="computations.html">${encoded(computationsIxbrl)}</EncodedInlineXBRLDocument></Instance></Computation><Accounts><Instance><EncodedInlineXBRLDocument Filename="accounts.html">${encoded(accountsIxbrl)}</EncodedInlineXBRLDocument></Instance></Accounts></XBRLsubmission></AttachedFiles></CompanyTaxReturn></IRenvelope>`;
 }
 
 /**
