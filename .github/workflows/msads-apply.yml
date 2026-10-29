@@ -1,0 +1,105 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: msads apply
+run-name: "msads apply (${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.apply)) && 'apply' || 'plan' }}) from ${{ github.ref_name }}"
+
+concurrency:
+  group: msads-apply-${{ github.ref }}
+  cancel-in-progress: false
+
+# Every run step pipes through tee; without an explicit bash shell GitHub runs `bash -e` and the
+# pipe masks a failing script.
+defaults:
+  run:
+    shell: bash
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Apply the difference (true) or plan only (false)"
+        required: false
+        default: false
+        type: boolean
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'infra/microsoft/**'
+      - '.github/workflows/msads-apply.yml'
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+  # A dispatch with apply=false plans; push and a dispatch with apply=true apply. Every run is
+  # on the prod environment, so none runs for a pull request.
+  MSADS_APPLY: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.apply)) && 'true' || 'false' }}
+
+jobs:
+  msads-apply:
+    name: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.apply)) && 'apply' || 'plan' }}
+    runs-on: ubuntu-24.04
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      # Plans (or applies) infra/microsoft/ads/ads.toml against the Microsoft Advertising account.
+      # It reads the Google OAuth client, the stored refresh token and the developer token from
+      # Secrets Manager through the AWS chain above; the Microsoft API takes the Google access
+      # token the refresh token yields, so no other credential is needed.
+      - name: Plan the Microsoft Advertising account
+        run: |
+          if [ "$MSADS_APPLY" != "true" ]; then
+            node infra/microsoft/ads/msads.js --plan 2>&1 | tee msads-sync.log
+          else
+            node infra/microsoft/ads/msads.js --apply 2>&1 | tee msads-sync.log
+          fi
+
+      - name: Generate step summary
+        if: always()
+        run: |
+          echo "# Microsoft Advertising ($([ "$MSADS_APPLY" = "true" ] && echo apply || echo plan))" >> "$GITHUB_STEP_SUMMARY"
+          if [ -f msads-sync.log ]; then
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            cat msads-sync.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi

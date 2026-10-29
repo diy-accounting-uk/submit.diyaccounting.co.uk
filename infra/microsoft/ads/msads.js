@@ -4,8 +4,9 @@
 
 // infra/microsoft/ads/msads.js
 //
-// Read-only client for the Microsoft Advertising account named in infra/microsoft/ads/msads.toml
-// (Bing Ads API v13, REST endpoints). It has no create, update or delete call.
+// Client for the Microsoft Advertising account named in infra/microsoft/ads/msads.toml (Bing Ads
+// API v13, REST endpoints). Every mode reads, except --apply, which creates and updates what
+// infra/microsoft/ads/ads.toml names and deletes nothing.
 //
 // Usage:
 //   node infra/microsoft/ads/msads.js --consent [--client-file <path>]
@@ -13,6 +14,9 @@
 //   node infra/microsoft/ads/msads.js --inventory [--json] [--campaign-types "Search Audience"]
 //   node infra/microsoft/ads/msads.js --forecast [--keywords "a,b" | --keywords-file <path>] [--max-cpc-gbp <n>] [--json]
 //   node infra/microsoft/ads/msads.js --report [--from YYYY-MM-DD --to YYYY-MM-DD] [--json]
+//   node infra/microsoft/ads/msads.js --export          (the live account as ads.toml)
+//   node infra/microsoft/ads/msads.js --plan            (the difference between ads.toml and the account)
+//   node infra/microsoft/ads/msads.js --apply           (make the account match ads.toml)
 //
 // The account signs in with Google. --consent runs the loopback OAuth flow scripts/youtube-upload.js
 // uses, with the YouTube OAuth client and the scopes in msads.toml, and stores the refresh token in
@@ -33,6 +37,7 @@ import TOML from "@iarna/toml";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 
 import { resolveClientCredentials, runLoopbackConsent } from "../../../scripts/youtube-upload.js";
+import { loadDesiredFromRoot, planChanges, formatPlan, applyPlan, exportToToml, shapeUetTag, shapeGoal, GOAL_TYPES } from "./msads-sync.js";
 
 export const CONFIG_PATH = "infra/microsoft/ads/msads.toml";
 export const POLL_INTERVAL_MS = 3000;
@@ -81,7 +86,7 @@ export function loadConfigFromRoot() {
   return parseConfig(fs.readFileSync(path.join(process.cwd(), CONFIG_PATH), "utf-8"));
 }
 
-const MODES = ["consent", "whoami", "inventory", "forecast", "report"];
+const MODES = ["consent", "whoami", "inventory", "forecast", "report", "export", "plan", "apply"];
 const VALUE_FLAGS = {
   "--client-file": "clientFile",
   "--campaign-types": "campaignTypes",
@@ -202,9 +207,9 @@ export function redact(text, session) {
   return out;
 }
 
-export async function callApi(session, baseUrl, operationPath, body) {
+export async function callApi(session, baseUrl, operationPath, body, { method = "POST" } = {}) {
   const response = await session.fetchImpl(`${baseUrl}${operationPath}`, {
-    method: "POST",
+    method,
     headers: buildHeaders(session),
     body: JSON.stringify(body),
   });
@@ -226,6 +231,8 @@ export function shapeAccount(account) {
     lifeCycleStatus: account.AccountLifeCycleStatus,
     financialStatus: account.AccountFinancialStatus,
     timeZone: account.TimeZone,
+    autoTagType: account.AutoTagType,
+    timeStamp: account.TimeStamp,
     parentCustomerId: account.ParentCustomerId === undefined ? undefined : String(account.ParentCustomerId),
   };
 }
@@ -430,6 +437,36 @@ export async function readInventory(session, { campaignTypes }) {
     }
   }
   return { campaigns, budgets, findings };
+}
+
+// --- Conversion setup and sync ---
+
+export async function readConversionSetup(session) {
+  const { config } = session;
+  const tags = await callApi(session, config.campaignManagementUrl, "/UetTags/QueryByIds", { TagIds: null });
+  const goals = await callApi(session, config.campaignManagementUrl, "/ConversionGoals/QueryByIds", {
+    ConversionGoalIds: null,
+    ConversionGoalTypes: GOAL_TYPES.join(","),
+    ReturnAdditionalFields: null,
+  });
+  return { uetTags: (tags.UetTags ?? []).map(shapeUetTag), goals: (goals.ConversionGoals ?? []).map(shapeGoal) };
+}
+
+export async function readLiveState(session, who) {
+  const inventory = await readInventory(session, { campaignTypes: DEFAULT_CAMPAIGN_TYPES });
+  const setup = await readConversionSetup(session);
+  return { account: who.account, campaigns: inventory.campaigns, findings: inventory.findings, ...setup };
+}
+
+export function buildSyncApi(session) {
+  return (operationPath, body, { method = "POST", service = "campaignManagement" } = {}) =>
+    callApi(
+      session,
+      service === "customerManagement" ? session.config.customerManagementUrl : session.config.campaignManagementUrl,
+      operationPath,
+      body,
+      { method },
+    );
 }
 
 // --- Reporting ---
@@ -787,6 +824,19 @@ function emit(opts, data, text) {
   console.log(opts.json ? JSON.stringify(data, null, 2) : text);
 }
 
+async function runSync(opts, session, who) {
+  const live = await readLiveState(session, who);
+  if (opts.mode === "export") return emit(opts, live, exportToToml(live));
+  const plan = planChanges(loadDesiredFromRoot(), live);
+  for (const finding of live.findings) console.log(`NOT READ: ${finding}`);
+  if (opts.mode === "plan") return emit(opts, plan, formatPlan(plan));
+  console.log(formatPlan(plan));
+  const ctx = await applyPlan(plan, { api: buildSyncApi(session), accountId: session.config.accountId, log: console.log });
+  if (plan.actions.some((a) => a.kind === "create-uet")) {
+    console.log(`UET tag id: ${ctx.tagId}. Put it in infra/microsoft/ads/ads.toml [uet].tag_id and in UET_TAG_ID.`);
+  }
+}
+
 export async function main(argv = process.argv.slice(2)) {
   const opts = parseArgs(argv);
   const config = loadConfigFromRoot();
@@ -801,6 +851,8 @@ export async function main(argv = process.argv.slice(2)) {
     const rows = await runCampaignReport(session, range);
     return emit(opts, { range, rows }, `Campaign report ${range.from} to ${range.to}\n${formatReport(rows)}`);
   }
+
+  if (["export", "plan", "apply"].includes(opts.mode)) return runSync(opts, session, who);
 
   const inventory = await readInventory(session, { campaignTypes: opts.campaignTypes });
   if (opts.mode === "inventory") {

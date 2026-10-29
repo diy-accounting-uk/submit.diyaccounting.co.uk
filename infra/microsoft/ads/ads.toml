@@ -1,0 +1,402 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Microsoft Advertising account G1202SF9, as code.
+#
+# infra/microsoft/ads/msads.js reads this file with --plan (print the difference from the live
+# account), --apply (make the account match) and --export (print the live account in this shape).
+# The account, secrets and API addresses are in infra/microsoft/ads/msads.toml. --apply creates
+# and updates what this file names and deletes nothing.
+#
+# The campaign below mirrors the Google "Search: MTD VAT" campaign in infra/google/ads/ads.toml:
+# the same ad groups, phrase keywords, negative keywords and responsive search ads. Microsoft
+# Search campaigns take Enhanced CPC at the campaign level and ignore Manual CPC, so the bid
+# cap is the ad group bid, held at or under the Google ceiling.
+
+[account]
+auto_tagging = true
+
+# The Universal Event Tracking tag. --apply creates it with AddUetTags when no tag of this name
+# exists and prints its id. Put that id in tag_id, and in the UET_TAG_ID value the deploy writes
+# to /submit.env, so the site loads the tag.
+[uet]
+name = "DIY Accounting Submit"
+description = "Site tag for submit.diyaccounting.co.uk"
+tag_id = ""
+
+# msads-conversions-upload.js sends paid conversions to this offline goal by msclkid.
+[upload]
+conversion_goal_name = "DIY Accounting (upload) purchase"
+
+# The four events the site sends to GA4, as UET event goals on the same event names. Microsoft
+# Advertising imports goals from Google Ads, not from GA4, so these are declared here.
+# revenue is "variable" (the event carries the value) or "none".
+[[conversion_goal]]
+name = "DIY Accounting (web) purchase"
+type = "Event"
+event = "purchase"
+category = "Purchase"
+count_type = "All"
+window_minutes = 43200
+revenue = "variable"
+
+[[conversion_goal]]
+name = "DIY Accounting (web) submit_vat_return"
+type = "Event"
+event = "submit_vat_return"
+category = "Signup"
+count_type = "All"
+window_minutes = 43200
+revenue = "none"
+
+[[conversion_goal]]
+name = "DIY Accounting (web) runner_download"
+type = "Event"
+event = "runner_download"
+category = "Signup"
+count_type = "All"
+window_minutes = 43200
+revenue = "none"
+
+[[conversion_goal]]
+name = "DIY Accounting (web) donate"
+type = "Event"
+event = "donate"
+category = "Other"
+count_type = "All"
+window_minutes = 43200
+revenue = "variable"
+
+[[conversion_goal]]
+name = "DIY Accounting (upload) purchase"
+type = "OfflineConversion"
+category = "Purchase"
+count_type = "All"
+window_minutes = 43200
+revenue = "variable"
+
+[[campaign]]
+name = "Search: MTD VAT"
+type = "Search"
+status = "Active"
+budget_gbp = 1.00
+locations = ["GB"]
+location_intent = "PeopleIn"
+languages = ["English"]
+is_political = false
+final_url_suffix = "utm_source=bing&utm_medium=cpc&utm_campaign=search-mtd-vat"
+
+[campaign.network]
+partner_syndication = false
+
+[campaign.bidding]
+strategy = "enhanced_cpc"
+ad_group_cpc_bid_gbp = 1.00
+cpc_bid_ceiling_gbp = 2.00
+
+[campaign.negative_keywords]
+phrase = [
+  "login", "log in", "sign in", "gateway", "government gateway", "hmrc login", "hmrc account",
+  "hmrc app", "online services login", "agent services", "asa", "job", "jobs", "vacancy",
+  "vacancies", "salary", "career", "careers", "recruitment", "apprentice", "course", "courses",
+  "training", "exam", "qualification", "aat", "acca", "cima", "cpd", "tutorial", "degree",
+  "university", "calculator", "calculate", "rate", "rates", "threshold", "registration",
+  "register for vat", "register", "deregister", "deregistration", "refund", "reclaim",
+  "claim back", "vat number", "check vat number", "vies", "eu vat", "ec sales", "intrastat",
+  "customs", "import", "duty", "margin scheme", "reverse charge", "vat 652", "error correction",
+  "appeal", "penalty appeal", "tribunal", "helpline", "phone number", "contact", "address",
+  "definition", "meaning", "what is", "wiki", "history", "news", "self assessment", "sa100",
+  "corporation tax", "ct600", "paye", "payroll", "cis", "p11d", "capital gains", "inheritance",
+  "stamp duty", "council tax", "income tax", "confirmation statement", "accountant", "accountants",
+  "bookkeeper", "bookkeeping services", "near me", "firm", "practice", "outsourced", "xero",
+  "sage", "quickbooks", "qbo", "freeagent", "kashflow", "zoho", "freshbooks", "wave", "crunch",
+  "ember", "anna", "tide", "starling", "revolut", "monzo", "mettle", "coconut", "pandle",
+  "123 sheets", "taxcalc", "absolute", "andica", "easy mtd", "100pcvatfreebridge", "portico",
+  "vitaltax", "app", "apps", "android", "iphone", "ios", "ipad", "play store", "app store",
+  "mobile app", "free download", "crack", "torrent", "open source", "github", "api", "developer",
+  "sdk", "sandbox", "test", "ireland", "irish", "revenue.ie", "ros", "usa", "us", "canada",
+  "australia", "gst", "india", "dubai", "uae", "south africa", "nz", "template download",
+  "template free", "free template", "pdf", "excel formula", "excel formulas",
+  "spreadsheet tutorial",
+]
+exact = [
+  "vat online account", "vat account",
+]
+
+[[campaign.ad_group]]
+name = "Own brand"
+
+[[campaign.ad_group.keyword]]
+text = "diy accounting"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "diyaccounting"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "diy accounting spreadsheets"
+match_type = "PHRASE"
+
+[campaign.ad_group.ad]
+headlines = [
+  "DIY Accounting Submit",
+  "From The DIY Accounting Team",
+  "Send VAT From Your Spreadsheet",
+  "Try 3 VAT Returns Free",
+  "Then 99p A Month",
+  "On HMRC's MTD Software List",
+  "Keep Your Excel Bookkeeping",
+  "Cancel Any Time",
+  "UK Company, Trading Since 2006",
+]
+descriptions = [
+  "Send the VAT return from your DIY Accounting spreadsheet to HMRC. 3 free, then 99p/month.",
+  "Keep your Excel bookkeeping. Submit the VAT return to HMRC yourself, no accountant needed.",
+  "Free day pass covers 3 VAT submissions. Then 99p a month. No card needed for the pass.",
+]
+final_url = "https://submit.diyaccounting.co.uk/"
+
+[[campaign.ad_group]]
+name = "Bridging software"
+
+[[campaign.ad_group.keyword]]
+text = "mtd bridging software"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "vat bridging software"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "hmrc bridging software"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "bridging software for vat returns"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "bridging software vat"
+match_type = "PHRASE"
+
+[campaign.ad_group.ad]
+headlines = [
+  "Bridging Software For MTD VAT",
+  "Keep Your Excel Bookkeeping",
+  "Try 3 VAT Returns Free",
+  "Then 99p A Month",
+  "On HMRC's MTD Software List",
+  "Type In The 9 Boxes, Send",
+  "Sends Your Return To HMRC",
+  "No Card For The Free Pass",
+  "Cancel Any Time",
+  "UK Company, Trading Since 2006",
+]
+descriptions = [
+  "Bridging software for MTD VAT. Figures stay in your spreadsheet. We send them to HMRC.",
+  "Free day pass covers 3 VAT submissions. Then 99p a month. No card needed for the pass.",
+  "Keep your Excel bookkeeping. Submit the VAT return to HMRC yourself, no accountant needed.",
+  "Any spreadsheet works. Sign in, connect HMRC once, type the boxes, send. Cancel any time.",
+]
+final_url = "https://submit.diyaccounting.co.uk/"
+
+[[campaign.ad_group]]
+name = "MTD VAT software"
+
+[[campaign.ad_group.keyword]]
+text = "making tax digital vat"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "making tax digital for vat"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "vat mtd"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "mtd compatible software"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "mtd vat software"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "mtd vat return"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "making tax digital software"
+match_type = "PHRASE"
+
+[campaign.ad_group.ad]
+headlines = [
+  "MTD VAT From Your Spreadsheet",
+  "On HMRC's MTD Software List",
+  "Try 3 VAT Returns Free",
+  "Then 99p A Month",
+  "File Your Own VAT Return",
+  "Made For Spreadsheet Users",
+  "Sends Your Return To HMRC",
+  "Cancel Any Time",
+  "Type In The 9 Boxes, Send",
+  "UK Company, Trading Since 2006",
+]
+descriptions = [
+  "Type the 9 boxes from your spreadsheet and send the return to HMRC under MTD. 3 free.",
+  "Free MTD VAT filing for your first 3 returns. Then 99p a month. UK company, since 2006.",
+  "Keep your Excel bookkeeping. Submit the VAT return to HMRC yourself, no accountant needed.",
+  "Any spreadsheet works. Sign in, connect HMRC once, type the boxes, send. Cancel any time.",
+]
+final_url = "https://submit.diyaccounting.co.uk/"
+
+[[campaign.ad_group]]
+name = "Submit VAT return"
+
+[[campaign.ad_group.keyword]]
+text = "submit vat return"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "submit vat return online"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "file vat return online"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "vat return online"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "how to submit vat return"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "hmrc vat submission"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "vat return hmrc"
+match_type = "PHRASE"
+
+[campaign.ad_group.ad]
+headlines = [
+  "Submit VAT To HMRC From Excel",
+  "VAT Deadline: File It Today",
+  "Try 3 VAT Returns Free",
+  "File Your Own VAT Return",
+  "Then 99p A Month",
+  "No Card For The Free Pass",
+  "On HMRC's MTD Software List",
+  "Type In The 9 Boxes, Send",
+  "Cancel Any Time",
+  "Sends Your Return To HMRC",
+]
+descriptions = [
+  "Due on the 7th? Take a free day pass, type your 9 boxes and send the return to HMRC now.",
+  "Type the 9 boxes from your spreadsheet and send the return to HMRC under MTD. 3 free.",
+  "Free day pass covers 3 VAT submissions. Then 99p a month. No card needed for the pass.",
+  "Any spreadsheet works. Sign in, connect HMRC once, type the boxes, send. Cancel any time.",
+]
+final_url = "https://submit.diyaccounting.co.uk/"
+
+[[campaign.ad_group]]
+name = "Free MTD VAT"
+
+[[campaign.ad_group.keyword]]
+text = "free mtd software"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "free vat return software"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "free mtd vat software"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "cheapest mtd software"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "mtd software for small business"
+match_type = "PHRASE"
+
+[campaign.ad_group.ad]
+headlines = [
+  "Free MTD VAT Day Pass",
+  "Free VAT Return Software UK",
+  "Try 3 VAT Returns Free",
+  "Then 99p A Month",
+  "No Card For The Free Pass",
+  "On HMRC's MTD Software List",
+  "Keep Your Excel Bookkeeping",
+  "Sends Your Return To HMRC",
+  "Cancel Any Time",
+  "Type In The 9 Boxes, Send",
+]
+descriptions = [
+  "Free MTD VAT filing for your first 3 returns. Then 99p a month. UK company, since 2006.",
+  "Free day pass covers 3 VAT submissions. Then 99p a month. No card needed for the pass.",
+  "Bridging software for MTD VAT. Figures stay in your spreadsheet. We send them to HMRC.",
+  "Any spreadsheet works. Sign in, connect HMRC once, type the boxes, send. Cancel any time.",
+]
+final_url = "https://submit.diyaccounting.co.uk/"
+
+[[campaign.ad_group]]
+name = "Spreadsheet and Excel"
+
+[[campaign.ad_group.keyword]]
+text = "excel vat return template"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "vat return template"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "vat spreadsheet template"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "making tax digital excel spreadsheet"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "excel vat return"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "vat return spreadsheet"
+match_type = "PHRASE"
+
+[[campaign.ad_group.keyword]]
+text = "vat return excel spreadsheet"
+match_type = "PHRASE"
+
+[campaign.ad_group.ad]
+headlines = [
+  "Submit VAT To HMRC From Excel",
+  "Made For Spreadsheet Users",
+  "Keep Your Excel Bookkeeping",
+  "Try 3 VAT Returns Free",
+  "Then 99p A Month",
+  "Same Spreadsheet, New Sender",
+  "On HMRC's MTD Software List",
+  "Type In The 9 Boxes, Send",
+  "Cancel Any Time",
+  "Sends Your Return To HMRC",
+]
+descriptions = [
+  "Keep your Excel bookkeeping. Submit the VAT return to HMRC yourself, no accountant needed.",
+  "Type the 9 boxes from your spreadsheet and send the return to HMRC under MTD. 3 free.",
+  "Bridging software for MTD VAT. Figures stay in your spreadsheet. We send them to HMRC.",
+  "Free day pass covers 3 VAT submissions. Then 99p a month. No card needed for the pass.",
+]
+final_url = "https://submit.diyaccounting.co.uk/"
