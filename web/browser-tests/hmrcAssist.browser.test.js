@@ -349,6 +349,15 @@ test.describe("HMRC Assist check on the VAT return", () => {
     });
   }
 
+  test("shows the control on prod when preview features are on for the session", async ({ page }) => {
+    await page.addInitScript(() => sessionStorage.setItem("previewFeatures", "on"));
+    await openForm(page, { environmentName: "prod" });
+    await fillBoxes(page);
+    await settle(page);
+
+    await expect(page.locator("#hmrcAssistCheckBtn")).toBeVisible();
+  });
+
   test("shows no control when the obligation is fulfilled", async ({ page }) => {
     await openForm(page, { obligations: [obligation("F")] });
     await fillBoxes(page);
