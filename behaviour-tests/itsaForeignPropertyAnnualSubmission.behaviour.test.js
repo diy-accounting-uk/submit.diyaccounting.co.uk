@@ -29,16 +29,22 @@ import {
 import { ensureBundleViaPassApi } from "./steps/behaviour-bundle-steps.js";
 import {
   fillInItsaBusinessDetails,
+  fillInItsaForeignPropertyAdjustment,
   fillInItsaForeignPropertyAnnualEdits,
   fillInItsaForeignPropertyAnnualLoad,
   initItsaBusinessDetails,
+  initItsaForeignPropertyAdjustments,
   initItsaForeignPropertyAnnualSubmission,
+  requestItsaForeignPropertyYearEndSummary,
   submitItsaBusinessDetailsForm,
+  submitItsaForeignPropertyAdjustment,
   submitItsaForeignPropertyAnnualLoadForm,
   submitItsaForeignPropertyAnnualSaveForm,
   verifyItsaBusinessDetailsResults,
+  verifyItsaForeignPropertyAdjustmentResults,
   verifyItsaForeignPropertyAnnualLoadResults,
   verifyItsaForeignPropertyAnnualSaveResults,
+  verifyItsaForeignPropertyYearEndSummary,
 } from "./steps/behaviour-hmrc-itsa-steps.js";
 import {
   acceptCookiesHmrc,
@@ -55,6 +61,7 @@ import {
   assertConsistentHashedSub,
   assertEssentialFraudPreventionHeadersPresent,
   assertFraudPreventionHeaders,
+  countHmrcApiRequestValues,
   intentionallyNotSuppliedHeaders,
 } from "./helpers/dynamodb-assertions.js";
 import {
@@ -327,6 +334,37 @@ test("Click through: Load and save a Foreign Property Annual Submission with HMR
   await submitItsaForeignPropertyAnnualSaveForm(page, screenshotPath);
   await verifyItsaForeignPropertyAnnualSaveResults(page, screenshotPath);
 
+  /* ********************************************************* */
+  /*  YEAR-END SUMMARY: TRIGGER, VIEW AND SEND AN ADJUSTMENT   */
+  /* ********************************************************* */
+
+  // The summary of the year just saved is requested for the foreign property business, read back
+  // as one table for each country, and adjusted in the first country.
+  const adjustedRent = 1500;
+  const adjustedRunningCosts = 120;
+  await initItsaForeignPropertyAdjustments(page, screenshotPath);
+  await requestItsaForeignPropertyYearEndSummary(
+    page,
+    {
+      hmrcNino: testNino,
+      businessId,
+      taxYear,
+      accountingPeriodStartDate: "2025-04-06",
+      accountingPeriodEndDate: "2026-04-05",
+      runFraudPreventionHeaderValidation,
+    },
+    screenshotPath,
+  );
+  await verifyItsaForeignPropertyYearEndSummary(page, screenshotPath);
+  await fillInItsaForeignPropertyAdjustment(
+    page,
+    0,
+    { totalRentsReceived: adjustedRent, premisesRunningCosts: adjustedRunningCosts },
+    screenshotPath,
+  );
+  await submitItsaForeignPropertyAdjustment(page, screenshotPath);
+  await verifyItsaForeignPropertyAdjustmentResults(page, screenshotPath);
+
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ****************** */
@@ -355,6 +393,9 @@ test("Click through: Load and save a Foreign Property Annual Submission with HMR
       { url: "/api/v1/hmrc/itsa/business/details", method: "GET" },
       { url: "/api/v1/hmrc/itsa/foreign-property/annual", method: "GET" },
       { url: "/api/v1/hmrc/itsa/foreign-property/annual", method: "PUT" },
+      { url: "/api/v1/hmrc/itsa/bsas/trigger", method: "POST" },
+      { url: "/api/v1/hmrc/itsa/bsas/foreign-property", method: "GET" },
+      { url: "/api/v1/hmrc/itsa/bsas/foreign-property/adjust", method: "POST" },
       { url: "/test/fraud-prevention-headers/validate", method: "GET" },
     ],
     env: {
@@ -445,6 +486,44 @@ test("Click through: Load and save a Foreign Property Annual Submission with HMR
     expect(sentEntries[firstCountry].allowances.structuredBuildingAllowance).toHaveLength(1);
     expect(sentEntries[firstCountry].allowances.structuredBuildingAllowance[0].building.postcode).toBe("TF3 4GH");
     expect(sentEntries[secondCountry].allowances).toEqual({ propertyIncomeAllowance: 1000 });
+
+    const bsasPath = `/individuals/self-assessment/adjustable-summary/${testNino}`;
+    const triggerRequests = assertHmrcApiRequestExists(
+      hmrcApiRequestsFile,
+      "POST",
+      `${bsasPath}/trigger`,
+      "ITSA foreign property BSAS trigger",
+    );
+    assertEssentialFraudPreventionHeadersPresent(triggerRequests[0], "POST BSAS trigger request");
+    const triggerBody = JSON.parse(triggerRequests[0].httpRequest.body);
+    expect(triggerBody.typeOfBusiness).toBe("foreign-property");
+    expect(triggerBody.businessId).toBe(businessId);
+    const calculationId = triggerRequests[0].httpResponse.body.calculationId;
+    expect(calculationId).toBeTruthy();
+
+    const summaryRequests = assertHmrcApiRequestExists(
+      hmrcApiRequestsFile,
+      "GET",
+      `${bsasPath}/foreign-property/${calculationId}/${taxYear}`,
+      "ITSA foreign property BSAS retrieve",
+    );
+    assertEssentialFraudPreventionHeadersPresent(summaryRequests[0], "GET foreign property BSAS request");
+
+    const adjustRequests = assertHmrcApiRequestExists(
+      hmrcApiRequestsFile,
+      "POST",
+      `${bsasPath}/foreign-property/${calculationId}/adjust/${taxYear}`,
+      "ITSA foreign property BSAS adjustment",
+    );
+    expect(adjustRequests).toHaveLength(1);
+    assertEssentialFraudPreventionHeadersPresent(adjustRequests[0], "POST foreign property BSAS adjustment request");
+    const adjustBody = JSON.parse(adjustRequests[0].httpRequest.body);
+    const adjustedCountry = adjustBody.foreignProperty.countryLevelDetail[0];
+    expect(adjustedCountry.countryCode).toBeTruthy();
+    expect(adjustedCountry.income.totalRentsReceived).toBe(adjustedRent);
+    expect(adjustedCountry.expenses.premisesRunningCosts).toBe(adjustedRunningCosts);
+    expect(adjustBody.foreignProperty.zeroAdjustments).toBeUndefined();
+    expect(countHmrcApiRequestValues(adjustRequests[0], { "httpResponse.statusCode": 200 })).toBe(1);
 
     if (runFraudPreventionHeaderValidation) {
       await assertFraudPreventionHeaders(hmrcApiRequestsFile, true, true, false, userSub);
