@@ -204,7 +204,7 @@ describe("http-simulator/scenarios/confirmation-statement", () => {
       const result = pollConfirmationStatement({ ...VALID, submissionNumber: "CS0007", scenario: "CS_DIRECTOR_NOT_VERIFIED" });
       expect(result.statusCode).toBe("REJECT");
       expect(result.rejections[0]).toMatchObject({ rejectCode: "12604" });
-      expect(result.rejections[0].description).toContain("ALICE EXAMPLE");
+      expect(result.rejections[0].description).toContain("ELEANOR BRAMWELL");
     });
 
     test("Gov-Test-Scenario PENDING_FOREVER never advances to ACCEPT", () => {

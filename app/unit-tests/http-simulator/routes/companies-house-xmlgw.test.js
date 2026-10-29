@@ -706,7 +706,7 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
       const document = parseXmlDocument(response.text);
       expect(firstElementText(document, "StatusCode")).toBe("REJECT");
       expect(firstElementText(document, "RejectCode")).toBe("12604");
-      expect(firstElementText(document, "Description")).toContain("ALICE EXAMPLE");
+      expect(firstElementText(document, "Description")).toContain("ELEANOR BRAMWELL");
     });
 
     test("an accounts submission number and a confirmation statement submission number poll independently", async () => {

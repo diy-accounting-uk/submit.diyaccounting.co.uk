@@ -29,8 +29,10 @@
 //
 // A recording of the submit site is cropped to its content column (CONTENT_COLUMN_CSS_PX wide,
 // centred) before scaling, because the app is 800 to 960px wide in a 1920px viewport and the
-// frame outside it is blank. A script with a localApp records another tool's full-width page
-// and keeps the whole frame.
+// frame outside it is blank. A script with a localApp records another tool's full-width page,
+// and a script with fullWidthFrames records a site page wider than the column; both keep the
+// whole width. A frame loses a cut top line and an empty tail, except in a fullWidthFrames script,
+// whose panels would be cut mid-edge.
 
 import fs from "fs";
 import path from "path";
@@ -176,12 +178,17 @@ function ffmpegProbeDurationMs(ffmpeg, mp4Path) {
   return (Number(match[1]) * 3600 + Number(match[2]) * 60 + Number(match[3])) * 1000;
 }
 
+/** True for a script whose page is wider than the content column: another tool's page (localApp) or a full-width page of the site (fullWidthFrames). */
+export function keepsFullFrame(script) {
+  return Boolean(script.localApp) || script.fullWidthFrames === true;
+}
+
 /**
  * The ffmpeg crop filter that keeps the content column, centred, of a frame laid out at
  * viewportWidthCssPx; empty for a script that records a full-width page.
  */
 export function columnCropFilter(script) {
-  if (script.localApp) return "";
+  if (keepsFullFrame(script)) return "";
   const keep = `trunc(iw*${CONTENT_COLUMN_CSS_PX}/${script.viewport.width}/2)*2`;
   return `crop=${keep}:ih:(iw-${keep})/2:0,`;
 }
@@ -196,7 +203,9 @@ function ffmpegProbeSize(ffmpeg, mp4Path) {
 /** Every SAMPLE_FPS-th of a second of the recording, cropped as the frames are, tested for the headline card. */
 export function sampleRecording(ffmpeg, mp4Path, script) {
   const video = ffmpegProbeSize(ffmpeg, mp4Path);
-  const keepWidth = script.localApp ? video.width : Math.trunc((video.width * CONTENT_COLUMN_CSS_PX) / script.viewport.width / 2) * 2;
+  const keepWidth = keepsFullFrame(script)
+    ? video.width
+    : Math.trunc((video.width * CONTENT_COLUMN_CSS_PX) / script.viewport.width / 2) * 2;
   const height = Math.max(8, Math.round((SAMPLE_WIDTH * video.height) / keepWidth));
   const result = spawnSync(
     ffmpeg,
@@ -232,7 +241,6 @@ export function seekArgs(frameMs) {
 
 /** The crop filter that drops the cut top line and the empty tail of the frame at frameMs; empty when the frame needs neither. */
 export function regionCropFilter(ffmpeg, inputPath, frameMs, cropFilter) {
-  if (!cropFilter) return "";
   const result = spawnSync(
     ffmpeg,
     [
@@ -320,7 +328,8 @@ export function buildForEntry(entry, { ffmpeg = resolveFfmpegBinary(), outRoot =
   const script = JSON.parse(fs.readFileSync(path.resolve("videos", `${entry.id}.json`), "utf8"));
   const plan = planWalkthrough({ script, timeline, videoDurationMs: ffmpegProbeDurationMs(ffmpeg, mp4Path) });
   const cropFilter = columnCropFilter(script);
-  const fullWidth = cropFilter ? COLUMN_FULL_WIDTH : FULL_WIDTH;
+  const trimsFrames = !script.fullWidthFrames || Boolean(script.localApp);
+  const fullWidth = keepsFullFrame(script) ? FULL_WIDTH : COLUMN_FULL_WIDTH;
   const outDir = path.join(outRoot, entry.id);
   fs.rmSync(outDir, { recursive: true, force: true });
   fs.mkdirSync(outDir, { recursive: true });
@@ -348,7 +357,7 @@ export function buildForEntry(entry, { ffmpeg = resolveFfmpegBinary(), outRoot =
       source = mp4Path;
       frameMs = picked.ms;
     }
-    const itemCrop = `${cropFilter}${regionCropFilter(ffmpeg, source, frameMs, cropFilter)}`;
+    const itemCrop = trimsFrames ? `${cropFilter}${regionCropFilter(ffmpeg, source, frameMs, cropFilter)}` : cropFilter;
     writeWebp(ffmpeg, source, frameMs, THUMB_WIDTH, 70, path.join(outDir, `${frameKey(item)}-thumb.webp`), itemCrop);
     const fullPath = path.join(outDir, `${frameKey(item)}.webp`);
     let size = Infinity;

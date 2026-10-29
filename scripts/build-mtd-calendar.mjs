@@ -140,6 +140,7 @@ export const AVAILABILITY = [
     filing: "Companies House accounts (micro-entity, small company, dormant)",
     web: "companies-house/fileMicroEntityAccounts.html",
     activity: "file-micro-entity-accounts",
+    otherActivities: ["file-small-company-accounts"],
     video: "yPSpvLKrTJU",
     cells: [["sandbox"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["sandbox", "micro-entity"], NOT_OFFERED],
   },
@@ -152,6 +153,7 @@ export const AVAILABILITY = [
   },
   {
     filing: "Companies House PSC verification statement",
+    activity: "file-psc-verification-statement",
     video: "zyo32coCwso",
     cells: [["sandbox"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
@@ -169,6 +171,12 @@ export const AVAILABILITY = [
     cells: [["preview"], ["preview", "book export file"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
 ];
+
+// The status of an activity in the table's web form column, or undefined when no row shows it.
+export function availabilityStatus(activity) {
+  const row = AVAILABILITY.find((r) => r.activity === activity || (r.otherActivities ?? []).includes(activity));
+  return row?.cells[0][0];
+}
 
 const COMPANIES = ["owner-managed-company", "property-company", "small-company"];
 export const BUSINESS_TYPES = [

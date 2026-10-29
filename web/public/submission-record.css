@@ -183,8 +183,14 @@
   padding-right: 1rem;
   overflow-wrap: anywhere;
 }
+.customer-copy-sheet .submission-record table.statement td.label:has(+ td.text-value) {
+  overflow-wrap: normal;
+  vertical-align: top;
+}
 .customer-copy-sheet .submission-record table.statement td.text-value {
   font-weight: 700;
+  overflow-wrap: anywhere;
+  vertical-align: top;
 }
 
 .customer-copy-sheet .submission-record table.statement {

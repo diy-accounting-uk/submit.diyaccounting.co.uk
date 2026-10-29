@@ -1,0 +1,458 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "itsa-foreign-property-year",
+  "title": "A foreign property year: France and Spain, annual submission and adjustments",
+  "description": "A signed-in walk through Making Tax Digital for Income Tax for a foreign property business: sign in, take out Resident, then save the annual submission for two countries, France and Spain, and read and adjust the year-end summary HMRC works out.",
+  "auth": "user",
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/hmrc/itsa/foreignPropertyAnnualSubmission.html",
+    "web/public/hmrc/itsa/foreignPropertyAdjustments.html"
+  ],
+  "hmrcServices": ["mtd-vat", "mtd-income-tax"],
+  "environments": ["ci"],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+  "pacing": {
+    "perCharMs": 80,
+    "betweenActionsMs": 500,
+    "aroundMotionMs": 500,
+    "minResidualMs": 120,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 16,
+    "minMs": 1200,
+    "fadeMs": 200,
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
+  },
+  "suppress": [
+    "#syntheticIndicator",
+    "#feedbackEngagementBanner",
+    "#feedbackEngagementSection",
+    ".dev-float-left",
+    "#latestTestsLink",
+    "#apiDocsLink",
+    "#viewSourceLink",
+    "#localstorageContainer",
+    ".entitlement-status",
+    "#developerSection"
+  ],
+  "finalHoldMs": 2500,
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "This is a sandbox example against HMRC's test service, not a live filing.",
+          "headline": "A sandbox example",
+          "keyWord": "sandbox"
+        },
+        {
+          "action": "point",
+          "target": {
+            "role": "heading",
+            "name": "Activities"
+          },
+          "dwellMs": 300
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps a whole year's filings in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
+        },
+        {
+          "action": "consent"
+        },
+        {
+          "action": "hold",
+          "ms": 400
+        }
+      ]
+    },
+    {
+      "id": "subscription",
+      "chapter": "Resident",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": {
+            "role": "link",
+            "name": "Bundles"
+          },
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Resident",
+          "testPass": true,
+          "caption": "Resident opens the Self Assessment activities.",
+          "headline": "Unlock Self Assessment",
+          "keyWord": "Self"
+        },
+        {
+          "action": "hold",
+          "ms": 500
+        }
+      ]
+    },
+    {
+      "id": "authorise",
+      "chapter": "Authorise",
+      "offCamera": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/foreignPropertyAnnualSubmission.html",
+          "waitFor": "#itsaForeignAnnualLoadForm"
+        },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XFIS00000000002"
+        },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2025-26"
+        },
+        {
+          "action": "click",
+          "target": "#loadBtn"
+        },
+        {
+          "action": "hmrcAuthorise",
+          "timeoutMs": 60000
+        },
+        {
+          "action": "await",
+          "until": "#annualEditForm",
+          "label": "Loading the annual submission",
+          "timeoutMs": 60000
+        }
+      ]
+    },
+    {
+      "id": "annual-submission",
+      "chapter": "The annual submission",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/foreignPropertyAnnualSubmission.html",
+          "waitFor": "#itsaForeignAnnualLoadForm",
+          "caption": "A foreign property landlord files one annual submission, with a section for each country.",
+          "headline": "One submission, each country",
+          "keyWord": "country"
+        },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XFIS00000000002"
+        },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2025-26",
+          "caption": "The tax year the submission covers.",
+          "headline": "Choose the tax year",
+          "keyWord": "year"
+        },
+        {
+          "action": "testScenario",
+          "value": "NOT_FOUND"
+        },
+        {
+          "action": "click",
+          "target": "#loadBtn",
+          "caption": "Load what HMRC already holds for the year. Nothing yet.",
+          "headline": "Load the year so far",
+          "keyWord": "Load"
+        },
+        {
+          "action": "await",
+          "until": "#annualEditForm",
+          "label": "Loading the annual submission",
+          "timeoutMs": 60000
+        },
+        {
+          "action": "click",
+          "target": "#fa-add",
+          "scrollTo": "#fa-add",
+          "caption": "Add a country for each place you let property.",
+          "headline": "Add a country",
+          "keyWord": "country"
+        },
+        {
+          "action": "select",
+          "target": ".foreign-property-entry-list > fieldset:last-of-type select[id$='-country']",
+          "value": "FRA",
+          "caption": "The first country is France.",
+          "headline": "France",
+          "keyWord": "France"
+        },
+        {
+          "action": "fill",
+          "target": ".foreign-property-entry-list > fieldset:last-of-type input[id$='-balancingCharge']",
+          "value": "250",
+          "caption": "A balancing charge for France.",
+          "headline": "A balancing charge",
+          "keyWord": "balancing"
+        },
+        {
+          "action": "click",
+          "target": ".foreign-property-entry-list > fieldset:last-of-type input[id$='-allowanceTypeItemised']"
+        },
+        {
+          "action": "fill",
+          "target": ".foreign-property-entry-list > fieldset:last-of-type input[id$='-annualInvestmentAllowance']",
+          "value": "500",
+          "caption": "And an annual investment allowance.",
+          "headline": "An investment allowance",
+          "keyWord": "investment"
+        },
+        {
+          "action": "click",
+          "target": "#fa-add",
+          "scrollTo": "#fa-add",
+          "caption": "Add the second country.",
+          "headline": "Add Spain",
+          "keyWord": "second"
+        },
+        {
+          "action": "select",
+          "target": ".foreign-property-entry-list > fieldset:last-of-type select[id$='-country']",
+          "value": "ESP",
+          "caption": "The second country is Spain.",
+          "headline": "Spain",
+          "keyWord": "Spain"
+        },
+        {
+          "action": "click",
+          "target": ".foreign-property-entry-list > fieldset:last-of-type input[id$='-allowanceTypePropertyIncome']",
+          "caption": "Claim the property income allowance for Spain.",
+          "headline": "Claim the property allowance",
+          "keyWord": "allowance"
+        },
+        {
+          "action": "fill",
+          "target": ".foreign-property-entry-list > fieldset:last-of-type input[id$='-propertyIncomeAllowance']",
+          "value": "1000"
+        },
+        {
+          "action": "hold",
+          "ms": 600
+        },
+        {
+          "action": "click",
+          "target": "#saveBtn",
+          "scrollTo": "#saveBtn",
+          "caption": "Save the year's adjustments and allowances.",
+          "headline": "Save the annual submission",
+          "keyWord": "Save"
+        },
+        {
+          "action": "await",
+          "until": "#annualSubmissionResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC accepts the annual submission.",
+          "headline": "HMRC accepts the year",
+          "keyWord": "accepts"
+        },
+        {
+          "action": "point",
+          "scrollTo": "#annualSubmissionCopy .customer-copy-header",
+          "target": "#annualSubmissionCopy .customer-copy-header",
+          "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
+          "headline": "The record as submitted",
+          "keyWord": "record",
+          "dwellMs": 600
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "point",
+          "scrollTo": "#annualSubmissionCopy .customer-copy-section:nth-of-type(2)",
+          "target": "#annualSubmissionCopy .customer-copy-section:nth-of-type(2)",
+          "caption": "Every country's figures are on the record, ready to keep.",
+          "headline": "Keep this copy",
+          "keyWord": "keep",
+          "dwellMs": 600
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "itsa-foreign-property-annual-record"
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        }
+      ]
+    },
+    {
+      "id": "adjustments",
+      "chapter": "Year end: adjustable summary",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/foreignPropertyAdjustments.html",
+          "waitFor": "#itsaForeignBsasTriggerForm",
+          "caption": "HMRC works out an adjustable summary from what was filed.",
+          "headline": "HMRC works out a summary",
+          "keyWord": "summary"
+        },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XFIS00000000002"
+        },
+        {
+          "action": "select",
+          "target": "#taxYear",
+          "value": "2025-26"
+        },
+        {
+          "action": "fill",
+          "target": "#accountingPeriodStartDate",
+          "value": "2025-04-06"
+        },
+        {
+          "action": "fill",
+          "target": "#accountingPeriodEndDate",
+          "value": "2026-04-05"
+        },
+        {
+          "action": "click",
+          "target": "#triggerBtn",
+          "caption": "Trigger the summary and read what HMRC calculated.",
+          "headline": "Trigger HMRC's summary",
+          "keyWord": "summary"
+        },
+        {
+          "action": "await",
+          "until": "#summaryContainer",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "France and Spain together: income, expenses and profit, as HMRC worked them out.",
+          "headline": "France and Spain together",
+          "keyWord": "together"
+        },
+        {
+          "action": "point",
+          "target": "#summaryEntries",
+          "dwellMs": 500
+        },
+        {
+          "action": "fill",
+          "target": "#adjust-1-totalRentsReceived",
+          "value": "1500",
+          "caption": "Change a figure if HMRC's version is wrong, then submit.",
+          "headline": "Correct a figure",
+          "keyWord": "Correct"
+        },
+        {
+          "action": "click",
+          "target": "#submitAdjustmentBtn"
+        },
+        {
+          "action": "await",
+          "until": "#adjustmentResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000
+        },
+        {
+          "action": "scroll",
+          "target": "#adjustmentResults"
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "foreign-property-adjustments"
+        },
+        {
+          "action": "hold",
+          "ms": 1200
+        }
+      ]
+    }
+  ]
+}

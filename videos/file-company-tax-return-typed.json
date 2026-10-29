@@ -526,8 +526,8 @@
           "until": "#returnResult:has-text('ACCEPTED')",
           "label": "Waiting for HMRC",
           "timeoutMs": 120000,
-          "caption": "HMRC's test service accepts the return.",
-          "headline": "HMRC accepts the return",
+          "caption": "The simulator accepts the return.",
+          "headline": "The simulator accepts the return",
           "keyWord": "accepts"
         },
         {

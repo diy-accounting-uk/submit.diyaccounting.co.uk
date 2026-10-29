@@ -13,7 +13,7 @@
 
 import { randomUUID } from "crypto";
 import { findEntryListError, taxYearStartYear, usesPropertyId } from "./itsa-foreign-property-period.js";
-import { getForeignPropertiesForNino } from "../state/store.js";
+import { getForeignAnnualCountries, getForeignPropertiesForNino } from "../state/store.js";
 import {
   getBsasTriggerErrorForScenario,
   getBsasSelfEmploymentForScenario,
@@ -357,7 +357,8 @@ export function apiEndpoint(app) {
     }
 
     const heldPropertyId = getForeignPropertiesForNino(nino)[0]?.propertyId;
-    const result = getBsasForeignPropertyForScenario(govTestScenario, nino, calculationId, taxYear, heldPropertyId);
+    const submittedCountries = getForeignAnnualCountries(nino, taxYear);
+    const result = getBsasForeignPropertyForScenario(govTestScenario, nino, calculationId, taxYear, heldPropertyId, submittedCountries);
     if (result.status) {
       return res.status(result.status).json(result.body);
     }

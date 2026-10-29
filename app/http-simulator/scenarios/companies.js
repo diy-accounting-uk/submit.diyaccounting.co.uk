@@ -121,7 +121,7 @@ const officersByCompanyNumber = {
     resigned_count: 0,
     items: [
       {
-        name: "EXAMPLE, Alice",
+        name: "BRAMWELL, Eleanor",
         officer_role: "director",
         appointed_on: "2015-01-01",
         date_of_birth: { month: 1, year: 1970 },
@@ -134,7 +134,7 @@ const officersByCompanyNumber = {
         },
       },
       {
-        name: "SAMPLE, Bob",
+        name: "TENNANT, Marcus",
         officer_role: "director",
         appointed_on: "2015-01-01",
         date_of_birth: { month: 2, year: 1975 },
@@ -149,7 +149,7 @@ const officersByCompanyNumber = {
     resigned_count: 0,
     items: [
       {
-        name: "EXAMPLE, Alice",
+        name: "BRAMWELL, Eleanor",
         officer_role: "director",
         appointed_on: "2015-01-01",
         date_of_birth: { month: 1, year: 1970 },
@@ -158,7 +158,7 @@ const officersByCompanyNumber = {
         identity_verification_details: null,
       },
       {
-        name: "SAMPLE, Bob",
+        name: "TENNANT, Marcus",
         officer_role: "director",
         appointed_on: "2015-01-01",
         date_of_birth: { month: 2, year: 1975 },
@@ -176,7 +176,7 @@ const pscsByCompanyNumber = {
     ceased_count: 0,
     items: [
       {
-        name: "Alice Example",
+        name: "Eleanor Bramwell",
         kind: "individual-person-with-significant-control",
         natures_of_control: ["ownership-of-shares-50-to-75-percent", "voting-rights-50-to-75-percent"],
         notified_on: "2016-04-06",
@@ -190,7 +190,7 @@ const pscsByCompanyNumber = {
         },
       },
       {
-        name: "Bob Sample",
+        name: "Marcus Tennant",
         kind: "individual-person-with-significant-control",
         natures_of_control: ["ownership-of-shares-25-to-50-percent", "voting-rights-25-to-50-percent"],
         notified_on: "2016-04-06",
@@ -206,7 +206,7 @@ const pscsByCompanyNumber = {
     ceased_count: 0,
     items: [
       {
-        name: "Alice Example",
+        name: "Eleanor Bramwell",
         kind: "individual-person-with-significant-control",
         natures_of_control: ["ownership-of-shares-50-to-75-percent", "voting-rights-50-to-75-percent"],
         notified_on: "2016-04-06",
@@ -216,7 +216,7 @@ const pscsByCompanyNumber = {
         identity_verification_details: null,
       },
       {
-        name: "Bob Sample",
+        name: "Marcus Tennant",
         kind: "individual-person-with-significant-control",
         natures_of_control: ["ownership-of-shares-25-to-50-percent", "voting-rights-25-to-50-percent"],
         notified_on: "2016-04-06",

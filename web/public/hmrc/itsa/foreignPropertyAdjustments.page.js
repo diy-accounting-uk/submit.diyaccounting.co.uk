@@ -39,6 +39,7 @@ const FHL_ITEMISED_EXPENSE_FIELDS = ITEMISED_EXPENSE_FIELDS.filter((field) => fi
 
 let triggered = { nino: "", taxYear: "", calculationId: "" };
 let adjustableEntries = [];
+let summaryCalculation = null;
 
 function el(tag, props = {}, children = []) {
   const node = document.createElement(tag);
@@ -181,6 +182,7 @@ function displaySummary(bsas, taxYear) {
   HmrcFieldTable.mountFieldTable(document.getElementById("summaryDetails"), HmrcFieldTable.foreignPropertySummaryRows(calculation), {
     caption: "Year-end summary",
   });
+  summaryCalculation = calculation;
   adjustableEntries = adjustableEntriesOf(bsas, taxYear);
   document.getElementById("summaryEntries").replaceChildren(
     ...adjustableEntries.map((entry, index) => {
@@ -224,10 +226,84 @@ async function runTriggerAndRetrieve(criteria, accessToken) {
   hideStatus();
 }
 
+const FIELD_LABELS = Object.fromEntries(
+  [...INCOME_FIELDS, ...ITEMISED_EXPENSE_FIELDS, CONSOLIDATED_FIELD].map((field) => [field.id, field.label]),
+);
+
+// One row for each figure the person adjusted: the figure HMRC calculated and the figure now held.
+function adjustedFigureRows(adjustDetails) {
+  const rows = [];
+  for (const sent of adjustDetails.foreignProperty || []) {
+    const key = sent.countryCode ?? sent.propertyId;
+    const held = adjustableEntries.find((entry) => entry.key === key);
+    for (const group of ["income", "expenses"]) {
+      for (const [id, value] of Object.entries(sent[group] || {})) {
+        rows.push([`${held?.name ?? key}: ${FIELD_LABELS[id]}`, held?.detail?.[group]?.[id], value]);
+      }
+    }
+  }
+  for (const group of ["income", "expenses"]) {
+    for (const [id, value] of Object.entries(adjustDetails.foreignFhlEea?.[group] || {})) {
+      rows.push([`${FHL_NAME}: ${FIELD_LABELS[id]}`, undefined, value]);
+    }
+  }
+  return rows;
+}
+
+// The summary's income, expenses and net profit before the adjustment and after it. An entry that
+// sent one total for its expenses replaces that entry's expenses; otherwise each figure replaces HMRC's.
+function totalsAfterAdjustment(calculation, adjustDetails) {
+  let incomeChange = 0;
+  let expensesChange = 0;
+  for (const sent of adjustDetails.foreignProperty || []) {
+    const held = adjustableEntries.find((entry) => entry.key === (sent.countryCode ?? sent.propertyId));
+    const before = (group, id) => held?.detail?.[group]?.[id] ?? 0;
+    for (const [id, value] of Object.entries(sent.income || {})) incomeChange += value - before("income", id);
+    const expenses = sent.expenses || {};
+    if (expenses.consolidatedExpenses !== undefined) {
+      expensesChange += expenses.consolidatedExpenses - (held?.detail?.totalExpenses ?? 0);
+    } else {
+      for (const [id, value] of Object.entries(expenses)) expensesChange += value - before("expenses", id);
+    }
+  }
+  const income = { before: calculation.totalIncome ?? 0, after: (calculation.totalIncome ?? 0) + incomeChange };
+  const expenses = { before: calculation.totalExpenses ?? 0, after: (calculation.totalExpenses ?? 0) + expensesChange };
+  return [
+    ["Total income", income.before, income.after],
+    ["Total expenses", expenses.before, expenses.after],
+    ["Net profit or loss", income.before - expenses.before, income.after - expenses.after],
+  ];
+}
+
+function showAdjustmentResult(adjustDetails) {
+  const container = document.getElementById("adjustmentSummary");
+  const columns = [{ label: "Item" }, { label: "HMRC calculated", kind: "money" }, { label: "Now held", kind: "money" }];
+  const figures = adjustedFigureRows(adjustDetails);
+  const parts = [];
+  if (adjustDetails.zeroAdjustments) {
+    parts.push(el("p", { textContent: "You confirmed the summary as it stands. No figure changed." }));
+  } else if (figures.length > 0) {
+    const adjusted = el("div", { id: "adjustedFigures" });
+    HmrcFieldTable.mountResultsTable(adjusted, columns, figures);
+    parts.push(el("h4", { textContent: "What you adjusted" }), adjusted);
+  }
+  if (summaryCalculation) {
+    const totals = el("div", { id: "adjustedTotals" });
+    HmrcFieldTable.mountResultsTable(
+      totals,
+      [{ label: "Total" }, { label: "Before", kind: "money" }, { label: "After", kind: "money" }],
+      totalsAfterAdjustment(summaryCalculation, adjustDetails),
+    );
+    parts.push(el("h4", { textContent: "Your year-end totals" }), totals);
+  }
+  container.replaceChildren(...parts);
+}
+
 async function sendAdjustment(request, accessToken) {
   const govClientHeaders = await getGovClientHeaders();
   const { adjustDetails, testScenario, runFraudPreventionHeaderValidation } = request;
   await window.adjustBsasForeignProperty(adjustDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+  showAdjustmentResult(adjustDetails);
   document.getElementById("summaryContainer").style.display = "none";
   document.getElementById("adjustmentResults").style.display = "block";
 }
