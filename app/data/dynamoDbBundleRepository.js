@@ -164,6 +164,8 @@ export async function deleteBundle(userId, bundleId) {
   }
 }
 
+// Removes the user's bundles. The account settings item is an account preference, not a bundle,
+// and stays.
 export async function deleteAllBundles(userId) {
   logger.info({ message: `deleteAllBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]` });
 
@@ -179,8 +181,8 @@ export async function deleteAllBundles(userId) {
       count: bundles.length,
     });
     const deleteResults = await Promise.allSettled(
-      bundles.map(async (bundleId) => {
-        await deleteBundle(userId, bundleId);
+      bundles.map(async (bundle) => {
+        await deleteBundle(userId, bundle.bundleId);
       }),
     );
 
