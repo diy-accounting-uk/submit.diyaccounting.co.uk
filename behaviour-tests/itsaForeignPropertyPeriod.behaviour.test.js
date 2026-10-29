@@ -339,6 +339,9 @@ test("Click through: File a Foreign Property Quarterly Update with HMRC", async 
   // 2025-26 reports one running total for the year, keyed by country. France itemises its
   // expenses and Spain gives one total, so the request carries both shapes of an entry.
   const taxYear = "2025-26";
+  // The sandbox business reports quarterly, so HMRC refuses a cumulative update without the
+  // period's dates (RULE_MISSING_SUBMISSION_DATES). Every update below names the first quarter.
+  const quarter = { fromDate: "2025-04-06", toDate: "2025-07-05" };
   // STATEFUL asks the HMRC sandbox (and the simulator) to keep what is sent, so the load below
   // has something to read back. A live account never carries a sandbox header.
   const storeScenario = isSyntheticMode() ? "STATEFUL" : undefined;
@@ -350,6 +353,7 @@ test("Click through: File a Foreign Property Quarterly Update with HMRC", async 
       hmrcNino: testNino,
       businessId,
       taxYear,
+      ...quarter,
       entries: [
         { countryCode: "FRA", rentAmount: 1000, premisesRunningCosts: 200 },
         { countryCode: "ESP", rentAmount: 500, consolidatedExpenses: 100 },
@@ -418,7 +422,7 @@ test("Click through: File a Foreign Property Quarterly Update with HMRC", async 
   // entry's figures, are answers only HMRC holds. The probes send the requests straight through
   // the page's HMRC service and record what came back; they assert only where the answer is ours.
   const probes = { countryCodes: {}, omittedEntry: {} };
-  const period = (foreignProperty) => ({ nino: testNino, businessId, taxYear, foreignProperty });
+  const period = (foreignProperty) => ({ nino: testNino, businessId, taxYear, ...quarter, foreignProperty });
 
   await sendCumulativeUpdate(page, period([countryEntry("FRA", 1000), countryEntry("ESP", 500)]), storeScenario);
   probes.omittedEntry.secondPut = await sendCumulativeUpdate(page, period([countryEntry("FRA", 1000)]), storeScenario);
