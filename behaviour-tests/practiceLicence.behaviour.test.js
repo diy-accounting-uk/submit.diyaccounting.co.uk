@@ -67,11 +67,13 @@ const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMOD
 // HMRC_ACCOUNT=synthetic the test creates a test agent and uses that agent's own ARN instead.
 let practiceArn = getEnvVarAndLog("practiceArn", "TEST_HMRC_AGENT_ARN", "XARN0000067");
 const synthetic = isSyntheticMode();
+const usesHmrcSandbox = String(process.env.HMRC_AGENT_AUTHORISATION_BASE_URI || "").includes("service.hmrc.gov.uk");
 
 // The client identifier the simulator's agent-authorisation stand-in always answers "already
 // authorised" for (app/http-simulator/routes/agent-authorisation.js's PRE_AUTHORISED_CLIENT_IDS),
 // so both clients' GET .../authorisation calls resolve without a client-side acceptance step.
 const PRE_AUTHORISED_VRN = "999999999";
+const SIMULATOR_KNOWN_FACT = "2015-01-01";
 
 // The simulator's default obligations (app/http-simulator/scenarios/obligations.js) always carry
 // one open period at these dates; the earlier Jan-Mar period is already fulfilled, so filing
@@ -119,6 +121,8 @@ test("A practice adds two clients and submits a VAT return for each through run_
   /* ************************************************* */
   let currentTestUsername = hmrcTestUsername;
   let currentTestPassword = hmrcTestPassword;
+  let hmrcClientVrn = PRE_AUTHORISED_VRN;
+  let hmrcClientKnownFact = SIMULATOR_KNOWN_FACT;
   if (!hmrcTestUsername) {
     const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
     const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
@@ -128,6 +132,12 @@ test("A practice adds two clients and submits a VAT return for each through run_
     const testUser = await createHmrcTestUser(hmrcClientId, hmrcClientSecret, { serviceNames: ["mtd-vat"] });
     currentTestUsername = testUser.userId;
     currentTestPassword = testUser.password;
+    if (usesHmrcSandbox) {
+      // HMRC's sandbox resolves the invited client from its own records, so the client is the
+      // test organisation just created and the known fact is its VAT registration date.
+      hmrcClientVrn = testUser.vrn;
+      hmrcClientKnownFact = testUser.vatRegistrationDate;
+    }
   }
 
   /* *********************************************************************** */
@@ -216,11 +226,11 @@ test("A practice adds two clients and submits a VAT return for each through run_
   // A throwaway client, invited once so the invite endpoint records the practice's ARN. Its own
   // invitation is left pending (the simulator never accepts one), so it is archived immediately
   // and never appears in the practice's client list run_for_clients loops over.
-  const bootstrapClient = await addClient(session, { displayName: "ARN bootstrap", vrn: PRE_AUTHORISED_VRN });
+  const bootstrapClient = await addClient(session, { displayName: "ARN bootstrap", vrn: hmrcClientVrn });
   await inviteClient(session, {
     clientId: bootstrapClient.client.clientId,
     service: "MTD-VAT",
-    knownFact: "2015-01-01",
+    knownFact: hmrcClientKnownFact,
     arn: practiceArn,
   });
   await callSubmitApi(session, `/api/v1/practice/clients/${encodeURIComponent(bootstrapClient.client.clientId)}`, { method: "DELETE" });
@@ -228,8 +238,8 @@ test("A practice adds two clients and submits a VAT return for each through run_
   // HMRC's relationship check needs the known fact given with an invitation, so each client is
   // invited and the invitation cancelled; the stored known fact then lets the check run.
   async function addClientWithRelationshipCheckable(displayName) {
-    const added = await addClient(session, { displayName, vrn: PRE_AUTHORISED_VRN });
-    await inviteClient(session, { clientId: added.client.clientId, service: "MTD-VAT", knownFact: "2015-01-01" });
+    const added = await addClient(session, { displayName, vrn: hmrcClientVrn });
+    await inviteClient(session, { clientId: added.client.clientId, service: "MTD-VAT", knownFact: hmrcClientKnownFact });
     const { accessToken } = await hmrcAccessTokenFor(session, "cancel_invitation");
     await callSubmitApi(
       session,
@@ -287,7 +297,7 @@ test("A practice adds two clients and submits a VAT return for each through run_
   /*  THE PRACTICE PAGE: the licence line, Connect to HMRC as the       */
   /*  agent, and an invitation sent from the page.                      */
   /* ****************************************************************** */
-  const webClient = await addClient(session, { displayName: "Practice Web Client", vrn: PRE_AUTHORISED_VRN });
+  const webClient = await addClient(session, { displayName: "Practice Web Client", vrn: hmrcClientVrn });
   await page.evaluate(() => sessionStorage.setItem("hmrcAccount", "synthetic"));
   await page.goto(`${baseUrl}/practice.html`);
   await expect(page.locator("#licenceLine")).toHaveText("Your practice holds the Resident Pro licence.");
