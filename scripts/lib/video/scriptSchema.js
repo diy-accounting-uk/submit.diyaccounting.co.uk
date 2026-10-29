@@ -179,6 +179,10 @@ export function validateScript(script) {
     }
   }
 
+  if ("fullWidthFrames" in script && typeof script.fullWidthFrames !== "boolean") {
+    fail("fullWidthFrames", "must be true or false");
+  }
+
   if ("localApp" in script) {
     const localAppPath = "localApp";
     if (!script.localApp || typeof script.localApp !== "object") fail(localAppPath, "must be an object");

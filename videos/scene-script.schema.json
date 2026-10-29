@@ -88,6 +88,10 @@
       "default": ["ci", "prod"],
       "description": "Where this script can be recorded. Defaults to [\"ci\", \"prod\"] when absent. An activity absent from prod records against a ci set instead: declare [\"ci\"] and the on-deploy dispatcher sends this script to the live ci set. A simulator script records on the runner with no deployment."
     },
+    "fullWidthFrames": {
+      "type": "boolean",
+      "description": "True keeps the whole width of each walkthrough frame, for a site page wider than the content column. Absent: the frame is cropped to the content column. A script with localApp always keeps the whole width."
+    },
     "localApp": {
       "type": "object",
       "additionalProperties": false,

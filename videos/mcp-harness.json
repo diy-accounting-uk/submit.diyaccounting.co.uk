@@ -35,6 +35,7 @@
       "sidePct": 12.5
     }
   },
+  "fullWidthFrames": true,
   "consentAnswer": "declined",
   "suppress": ["#syntheticIndicator", "#feedbackEngagementBanner", "#feedbackEngagementSection"],
   "environments": ["ci", "simulator"],

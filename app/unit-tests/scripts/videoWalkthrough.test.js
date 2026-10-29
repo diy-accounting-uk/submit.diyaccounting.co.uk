@@ -243,4 +243,8 @@ describe("columnCropFilter", () => {
   it("keeps the whole frame of a recording that targets another tool's page", () => {
     expect(columnCropFilter({ viewport: { width: 1920, height: 1080 }, localApp: { command: "x", url: "y", readyPattern: "z" } })).toBe("");
   });
+
+  it("keeps the whole frame of a site page that declares fullWidthFrames", () => {
+    expect(columnCropFilter({ viewport: { width: 1920, height: 1080 }, fullWidthFrames: true })).toBe("");
+  });
 });
