@@ -67,18 +67,24 @@ const workflows = (process.env.WAIT_FOR_CI_DEPLOYS_WORKFLOWS || DEFAULT_WORKFLOW
   .filter(Boolean);
 const targetEnvironment = process.env.WAIT_FOR_CI_DEPLOYS_TARGET_ENVIRONMENT || "";
 
-async function github(path) {
-  const response = await fetch(`${apiBase}/repos/${repository}${path}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: "application/vnd.github+json",
-      "X-GitHub-Api-Version": "2022-11-28",
-    },
-  });
-  if (!response.ok) {
-    throw new Error(`GitHub API ${path} answered ${response.status}: ${await response.text()}`);
+// GitHub's API answers 5xx now and then; a wait that fails on one would fail the whole destroy.
+export async function github(path, { attempts = 3, retrySeconds = 10 } = {}) {
+  for (let attempt = 1; ; attempt += 1) {
+    const response = await fetch(`${apiBase}/repos/${repository}${path}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: "application/vnd.github+json",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+    });
+    if (response.ok) return response.json();
+    const body = await response.text();
+    if (response.status < 500 || attempt >= attempts) {
+      throw new Error(`GitHub API ${path} answered ${response.status}: ${body}`);
+    }
+    console.log(`GitHub API ${path} answered ${response.status}; trying again in ${retrySeconds}s (attempt ${attempt} of ${attempts}).`);
+    await sleep(retrySeconds);
   }
-  return response.json();
 }
 
 async function fetchJobs(runId) {

@@ -10,7 +10,7 @@ process.env.GH_TOKEN = "test-token";
 process.env.GITHUB_REPOSITORY = "diy-accounting-uk/submit.diyaccounting.co.uk";
 process.env.CURRENT_RUN_ID = "1";
 
-const { blockedOnlyByDestroyCiCallerJobs, olderUnfinishedRuns } =
+const { blockedOnlyByDestroyCiCallerJobs, olderUnfinishedRuns, github } =
   await import("../../../.github/actions/wait-for-ci-deploys/wait-for-ci-deploys.mjs");
 
 function run(overrides) {
@@ -122,5 +122,38 @@ describe("olderUnfinishedRuns", () => {
     const result = await olderUnfinishedRuns(runs, currentCreatedAt, currentId);
     expect(result).toEqual([]);
     expect(global.fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("github", () => {
+  function answer(status, body) {
+    return { ok: status < 400, status, json: async () => body, text: async () => JSON.stringify(body) };
+  }
+
+  test("tries again after a 5xx and returns the next answer", async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(answer(502, { message: "Server Error" }))
+      .mockResolvedValueOnce(answer(200, { jobs: [] }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(github("/actions/runs/7/jobs", { retrySeconds: 0 })).resolves.toEqual({ jobs: [] });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    vi.unstubAllGlobals();
+  });
+
+  test("fails after the last attempt still answers 5xx", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(answer(503, { message: "Unavailable" }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(github("/actions/runs/7", { attempts: 3, retrySeconds: 0 })).rejects.toThrow("answered 503");
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+    vi.unstubAllGlobals();
+  });
+
+  test("fails at once on a 4xx", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(answer(404, { message: "Not Found" }));
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(github("/actions/runs/7", { retrySeconds: 0 })).rejects.toThrow("answered 404");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    vi.unstubAllGlobals();
   });
 });
