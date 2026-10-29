@@ -24,6 +24,7 @@ import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
+  acceptHmrcAgentInvitation,
   addOnPageLogging,
   createHmrcTestAgent,
   createHmrcTestUser,
@@ -32,6 +33,7 @@ import {
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
+  runStripeListen,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn, goToHomePageUsingMainNav } from "./steps/behaviour-steps.js";
 import { clickLogIn, loginWithCognitoOrMockAuth, verifyLoggedInStatus } from "./steps/behaviour-login-steps.js";
@@ -82,6 +84,7 @@ const OPEN_OBLIGATION_PERIOD = { periodStart: "2017-04-01", periodEnd: "2017-06-
 
 let mockOAuth2Process;
 let serverProcess;
+let stripeListenProcess;
 let dynamoControl;
 let mcpCredentialsDir;
 
@@ -100,11 +103,18 @@ test.beforeAll(async () => {
 
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
+  // The signing secret must be in env before the server starts: the webhook handler caches the
+  // first one it reads. Without the forwarded webhook the resident-pro checkout never grants.
+  stripeListenProcess = await runStripeListen(new URL("api/v1/billing/webhook", baseUrl).href);
+  if (stripeListenProcess) {
+    process.env.STRIPE_TEST_WEBHOOK_SECRET = stripeListenProcess.secret;
+  }
   serverProcess = await runLocalHttpServer(runTestServer, httpServerPort);
 });
 
 test.afterAll(async () => {
   if (serverProcess) serverProcess.kill();
+  if (stripeListenProcess) stripeListenProcess.kill();
   if (mockOAuth2Process) mockOAuth2Process.kill();
   try {
     await dynamoControl?.stop?.();
@@ -223,23 +233,40 @@ test("A practice adds two clients and submits a VAT return for each through run_
   expect(authorisation.ok, `request_hmrc_authorisation: ${JSON.stringify(authorisation.result)}`).toBe(true);
   await grantMcpHmrcAccessInBrowser(page, authorisation.result.url, agentUsername, agentPassword, screenshotPath);
 
+  // HMRC's sandbox refuses a second invitation for an organisation while the first is pending, so
+  // each invited client on the sandbox is its own VAT test organisation.
+  async function clientIdentity() {
+    if (!usesHmrcSandbox) return { vrn: hmrcClientVrn, knownFact: hmrcClientKnownFact };
+    const hmrcClientId = process.env.HMRC_SANDBOX_CLIENT_ID || process.env.HMRC_CLIENT_ID;
+    const hmrcClientSecret = process.env.HMRC_SANDBOX_CLIENT_SECRET || process.env.HMRC_CLIENT_SECRET;
+    const organisation = await createHmrcTestUser(hmrcClientId, hmrcClientSecret, { serviceNames: ["mtd-vat"] });
+    return { vrn: organisation.vrn, knownFact: organisation.vatRegistrationDate };
+  }
+
   // A throwaway client, invited once so the invite endpoint records the practice's ARN. Its own
   // invitation is left pending (the simulator never accepts one), so it is archived immediately
   // and never appears in the practice's client list run_for_clients loops over.
-  const bootstrapClient = await addClient(session, { displayName: "ARN bootstrap", vrn: hmrcClientVrn });
+  const bootstrapIdentity = await clientIdentity();
+  const bootstrapClient = await addClient(session, { displayName: "ARN bootstrap", vrn: bootstrapIdentity.vrn });
   await inviteClient(session, {
     clientId: bootstrapClient.client.clientId,
     service: "MTD-VAT",
-    knownFact: hmrcClientKnownFact,
+    knownFact: bootstrapIdentity.knownFact,
     arn: practiceArn,
   });
   await callSubmitApi(session, `/api/v1/practice/clients/${encodeURIComponent(bootstrapClient.client.clientId)}`, { method: "DELETE" });
 
-  // HMRC's relationship check needs the known fact given with an invitation, so each client is
-  // invited and the invitation cancelled; the stored known fact then lets the check run.
+  // The simulator's relationship check needs the known fact given with an invitation, so each
+  // client is invited and the invitation cancelled; the stored known fact then lets the check run.
+  // On the sandbox the invitation is accepted instead, and the status check reads it as accepted.
   async function addClientWithRelationshipCheckable(displayName) {
-    const added = await addClient(session, { displayName, vrn: hmrcClientVrn });
-    await inviteClient(session, { clientId: added.client.clientId, service: "MTD-VAT", knownFact: hmrcClientKnownFact });
+    const identity = await clientIdentity();
+    const added = await addClient(session, { displayName, vrn: identity.vrn });
+    const invited = await inviteClient(session, { clientId: added.client.clientId, service: "MTD-VAT", knownFact: identity.knownFact });
+    if (usesHmrcSandbox) {
+      await acceptHmrcAgentInvitation(invited.invitationId);
+      return added;
+    }
     const { accessToken } = await hmrcAccessTokenFor(session, "cancel_invitation");
     await callSubmitApi(
       session,
@@ -253,8 +280,9 @@ test("A practice adds two clients and submits a VAT return for each through run_
 
   const statusA = await clientAuthorisationStatus(session, { clientId: clientA.client.clientId, service: "MTD-VAT" });
   const statusB = await clientAuthorisationStatus(session, { clientId: clientB.client.clientId, service: "MTD-VAT" });
-  expect(statusA.status).toBe("authorised");
-  expect(statusB.status).toBe("authorised");
+  const grantedStatus = usesHmrcSandbox ? "accepted" : "authorised";
+  expect(statusA.status).toBe(grantedStatus);
+  expect(statusB.status).toBe(grantedStatus);
 
   /* ******************************************************************* */
   /*  RUN_FOR_CLIENTS: one submit_vat_return call per client in the list  */
@@ -297,7 +325,8 @@ test("A practice adds two clients and submits a VAT return for each through run_
   /*  THE PRACTICE PAGE: the licence line, Connect to HMRC as the       */
   /*  agent, and an invitation sent from the page.                      */
   /* ****************************************************************** */
-  const webClient = await addClient(session, { displayName: "Practice Web Client", vrn: hmrcClientVrn });
+  const webIdentity = await clientIdentity();
+  const webClient = await addClient(session, { displayName: "Practice Web Client", vrn: webIdentity.vrn });
   await page.evaluate(() => sessionStorage.setItem("hmrcAccount", "synthetic"));
   await page.goto(`${baseUrl}/practice.html`);
   await expect(page.locator("#licenceLine")).toHaveText("Your practice holds the Resident Pro licence.");
@@ -309,7 +338,7 @@ test("A practice adds two clients and submits a VAT return for each through run_
   await page.locator("#arnInput").fill(practiceArn);
   const vatCell = webClientRow.locator(`.auth-cell[data-client-id="${webClient.client.clientId}"][data-service="MTD-VAT"]`);
   await vatCell.locator(".invite-toggle-btn").click();
-  await vatCell.locator(".invite-known-fact").fill("2015-01-01");
+  await vatCell.locator(".invite-known-fact").fill(webIdentity.knownFact);
   await vatCell.locator(".invite-send-btn").click();
   await expect(vatCell.locator(".auth-status")).toHaveText("Pending");
   await expect(vatCell.locator(".check-status-btn")).toBeEnabled();
