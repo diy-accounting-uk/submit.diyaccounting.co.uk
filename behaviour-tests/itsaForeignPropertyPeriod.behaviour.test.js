@@ -709,7 +709,7 @@ test("Click through: File a Foreign Property Quarterly Update with HMRC", async 
       addRequests.forEach((request, index) => {
         assertEssentialFraudPreventionHeadersPresent(request, `POST foreign property details request ${index + 1}`);
       });
-      const propertyIds = addRequests.map((request) => JSON.parse(request.httpResponse.body).propertyId);
+      const propertyIds = addRequests.map((request) => request.httpResponse.body.propertyId);
       expect(propertyIds.every(Boolean)).toBe(true);
 
       const propertyYearRequests = assertHmrcApiRequestExists(
