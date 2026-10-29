@@ -2,9 +2,8 @@
 -- Copyright (C) 2006-2026 DIY Accounting Limited
 
 -- Same rows as v_activity_started_daily, grouped by hour instead of day. The operator
--- dashboard's Last 1 hour and Last 1 day activity columns need a real hour boundary: a
--- day-grain "day" column compared against "1 hour ago" only ever reads as "today" or "not
--- today", never a genuine trailing hour, so those two columns read from this view instead.
+-- dashboard's Today column starts at UK midnight, which a day-grain "day" column cannot
+-- answer, so its Today, Previous day and Last 7 days activity columns read from this view.
 -- The partition predicate keeps it to the last 8 days: the dashboard reads at most 7, and
 -- without it every query lists every projected dt prefix the base table carries.
 CREATE OR REPLACE VIEW v_activity_started_hourly AS

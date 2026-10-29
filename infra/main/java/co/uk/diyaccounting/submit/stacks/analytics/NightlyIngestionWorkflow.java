@@ -50,7 +50,8 @@ import software.constructs.Construct;
  * <p>Definition: a {@code Parallel} branch runs the five ingestion jobs (Stripe reconciliation,
  * GA4 report pull, GA4 event export pull, GA4 daily aggregate pull, operator effort pull) at
  * once, since they share no data; then the data quality run; then the metrics publish; then the
- * raw export publish; then {@code Succeed}. Every task retries twice on {@code States.TaskFailed}
+ * raw export publish; then the operator snapshot publish; then {@code Succeed}. In prod it runs
+ * every hour, in ci every Monday. Every task retries twice on {@code States.TaskFailed}
  * with a 60-second interval and a backoff rate of 2, on top of {@code retryOnServiceExceptions}.
  * A failure in a core task ends the execution in {@code Failed} and stops the metrics publish
  * and raw export, which is the entire reason for this phase.
@@ -134,6 +135,12 @@ public class NightlyIngestionWorkflow {
         /** Imported by name from {@code AnalyticsStack}: {@code RawExport.publishLambda}. */
         IFunction rawExportPublishLambda();
 
+        /**
+         * Imported by name from {@code AnalyticsStack}: {@code OperatorSnapshotPublish.snapshotPublishLambda}.
+         * The last step, so the snapshot reads only after every ingestion job has landed its day.
+         */
+        IFunction operatorSnapshotPublishLambda();
+
         static ImmutableNightlyIngestionWorkflowProps.Builder builder() {
             return ImmutableNightlyIngestionWorkflowProps.builder();
         }
@@ -194,12 +201,18 @@ public class NightlyIngestionWorkflow {
                 buildTask(scope, prefix + "-Nightly-MetricsPublish", "metrics publish", props.metricsPublishLambda());
         var rawExportTask =
                 buildTask(scope, prefix + "-Nightly-RawExport", "raw export publish", props.rawExportPublishLambda());
+        var operatorSnapshotTask = buildTask(
+                scope,
+                prefix + "-Nightly-OperatorSnapshotPublish",
+                "operator snapshot publish",
+                props.operatorSnapshotPublishLambda());
         var succeed = Succeed.Builder.create(scope, prefix + "-Nightly-Succeed").build();
 
         var definition = Chain.start(ingestionParallel)
                 .next(dataQualityTask)
                 .next(metricsPublishTask)
                 .next(rawExportTask)
+                .next(operatorSnapshotTask)
                 .next(succeed);
 
         // ============================================================================
@@ -229,12 +242,12 @@ public class NightlyIngestionWorkflow {
         // ============================================================================
         // Schedule
         // ============================================================================
-        // prod: 02:15 daily, the slot the Stripe reconciliation job used to run alone in. ci:
-        // 02:15 every Monday, keeping the weekly cadence the third-party calls have today.
+        // prod: at minute 15 of every hour, so each daily source lands its latest day hourly and
+        // the operator dashboard's Today column is at most an hour old. ci: 02:15 every Monday,
+        // keeping the weekly cadence the third-party calls have today.
         var cronOptions = isProd
                 ? CronOptionsWithTimezone.builder()
                         .minute("15")
-                        .hour("2")
                         .timeZone(TimeZone.ETC_UTC)
                         .build()
                 : CronOptionsWithTimezone.builder()
@@ -249,7 +262,7 @@ public class NightlyIngestionWorkflow {
                 prefix + "-NightlySchedule",
                 ScheduleProps.builder()
                         .scheduleName(props.stateMachineName() + "-schedule")
-                        .description("Start the nightly analytics ingestion and publish state machine")
+                        .description("Start the analytics ingestion and publish state machine")
                         .schedule(ScheduleExpression.cron(cronOptions))
                         .timeWindow(TimeWindow.off())
                         .target(StepFunctionsStartExecution.Builder.create(this.stateMachine)
@@ -261,7 +274,7 @@ public class NightlyIngestionWorkflow {
         // ============================================================================
         this.executionsFailedAlarm = Alarm.Builder.create(scope, prefix + "-NightlyExecutionsFailedAlarm")
                 .alarmName(props.stateMachineName() + "-failed")
-                .alarmDescription("The nightly analytics ingestion state machine failed at least once in 24 hours")
+                .alarmDescription("The analytics ingestion state machine failed at least once in 24 hours")
                 .metric(this.stateMachine.metricFailed(MetricOptions.builder()
                         .period(Duration.hours(24))
                         .statistic("Sum")
@@ -279,9 +292,9 @@ public class NightlyIngestionWorkflow {
             this.executionsMissedAlarm = Alarm.Builder.create(scope, prefix + "-NightlyExecutionsMissedAlarm")
                     .alarmName(props.stateMachineName() + "-missed")
                     .alarmDescription(
-                            "The nightly analytics ingestion state machine has not started an execution in 26 hours")
+                            "The analytics ingestion state machine has not started an execution in 3 hours")
                     .metric(this.stateMachine.metricStarted(MetricOptions.builder()
-                            .period(Duration.hours(26))
+                            .period(Duration.hours(3))
                             .statistic("Sum")
                             .build()))
                     .threshold(1)

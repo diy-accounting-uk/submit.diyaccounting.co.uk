@@ -17,7 +17,7 @@
 // The same function has a second, hourly mode (event.mode === "hourly") that counts sessions
 // by hour and visitor kind straight from GA4's raw export for the last few days, reading
 // events_intraday_YYYYMMDD while a day is still streaming and events_YYYYMMDD once GA4 has
-// replaced it. That is the only source for the dashboard's Last 1 hour, 1 day and 7 days
+// replaced it. That is the only source for the dashboard's Today, Previous day and Last 7 days
 // visitor columns, because the daily aggregates above land two days late. A day with neither
 // table (a property that does not stream, or a day before streaming began) is an empty hour,
 // never an error.

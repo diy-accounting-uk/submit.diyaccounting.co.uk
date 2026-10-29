@@ -2,7 +2,7 @@
 -- Copyright (C) 2006-2026 DIY Accounting Limited
 
 -- Same rows as v_submissions_by_activity_daily, grouped by hour instead of day: see
--- v_activity_started_hourly.sql for why the dashboard's Last 1 hour and Last 1 day columns
+-- v_activity_started_hourly.sql for why the dashboard's Today column
 -- cannot read that day-grain view's own "day" column, and for its 8-day partition predicate.
 CREATE OR REPLACE VIEW v_submissions_by_activity_hourly AS
 SELECT hour, activity, outcome, client_id,

@@ -3,15 +3,13 @@
 
 // app/functions/analytics/operatorSnapshotPublish.js
 //
-// Nightly (prod) or weekly (ci) job that reads the analytics views behind the one-stop
-// objectives dashboard and writes one JSON snapshot per environment: the trailing 30 and 90
-// days for each of the eight objectives' observations, each carrying its value, its trend
-// against the prior comparable period, and a deep link to where the operator can see more.
-// An hourly "activity-only" run (prod only) refreshes just the Last 1 hour/1 day/7 days columns
-// of the activities and visitors observations in between, patching them onto that snapshot rather than rebuilding
-// it — see handler()'s mode branch. The API route (operatorSnapshotGet.js) only ever reads what
-// this Lambda writes; it never queries Athena itself, so the dashboard stays fast even while a
-// query here is slow.
+// Hourly (prod) or weekly (ci) job, run as the last step of the ingestion state machine, that
+// reads the analytics views behind the one-stop objectives dashboard and writes one JSON
+// snapshot per environment: for each observation of the eight objectives, Today (since midnight
+// UK time), Previous day, Last 7 days, Last 30 days with its trend against the 30 days before,
+// Last 90 days, and a deep link to where the operator can see more. The API route
+// (operatorSnapshotGet.js) only ever reads what this Lambda writes; it never queries Athena
+// itself, so the dashboard stays fast even while a query here is slow.
 
 import { AthenaClient, StartQueryExecutionCommand, GetQueryExecutionCommand, GetQueryResultsCommand } from "@aws-sdk/client-athena";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -24,13 +22,8 @@ import {
   buildGa4ReportsLink,
 } from "../../lib/consoleLinks.js";
 import { loadCatalogFromRoot, isActivityListedInEnvironment } from "../../services/productCatalog.js";
-import { readLatestSnapshot } from "./operatorSnapshotGet.js";
 
 const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotPublish.js" });
-
-// The objectives an "activity-only" run refreshes: every observation in them that carries a
-// fastWindowView (see handler()'s mode branch).
-const FAST_WINDOW_OBJECTIVE_IDS = ["activity-started-and-completed", "conversion-to-submission"];
 
 // The AWS accounts of the organisation, by the name the estate gives each, keyed as v_cost_daily's
 // sub_account_id carries them.
@@ -76,9 +69,9 @@ function buildActivityObservations() {
       aggregation: "sum",
       where: `activity = '${activity.id}'`,
       reportDataSince: true,
-      // v_activity_started_daily groups by whole calendar day, which cannot answer a trailing
-      // 1-hour or 1-day window accurately (see v_activity_started_hourly.sql), so the fast
-      // columns read from the hourly view instead, in the same query shape.
+      // v_activity_started_daily groups by whole calendar day, which cannot answer Today
+      // since UK midnight accurately (see v_activity_started_hourly.sql), so Today, Previous
+      // day and Last 7 days read from the hourly view instead, in the same query shape.
       fastWindowView: "v_activity_started_hourly",
       fastWindowColumn: "hour",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
@@ -1061,18 +1054,64 @@ export async function runAthenaQuery({ workGroup, database, sql }) {
   }
 }
 
+// The UK calendar date now, and the instants the UK day boundaries fall on, as Athena
+// evaluates them. Athena's session zone is UTC, so the hourly views' timestamps are UTC.
+const UK_TODAY = "CAST(current_timestamp AT TIME ZONE 'Europe/London' AS date)";
+const UK_MIDNIGHT_TODAY =
+  "CAST(with_timezone(date_trunc('day', CAST(current_timestamp AT TIME ZONE 'Europe/London' AS timestamp)), 'Europe/London') AT TIME ZONE 'UTC' AS timestamp)";
+const UK_MIDNIGHT_YESTERDAY =
+  "CAST(with_timezone(date_trunc('day', CAST(current_timestamp AT TIME ZONE 'Europe/London' AS timestamp)) - interval '1' day, 'Europe/London') AT TIME ZONE 'UTC' AS timestamp)";
+
+// Windows every day-grain observation gets. Today and Previous day are the UK calendar days.
 const WINDOWED_COLUMNS = [
+  ["today", (day) => `${day} >= ${UK_TODAY}`],
+  ["prev_1", (day) => `${day} = date_add('day', -1, ${UK_TODAY})`],
+  ["last_7", (day) => `${day} > date_add('day', -7, current_date)`],
   ["last_30", (day) => `${day} > date_add('day', -30, current_date)`],
   ["prev_30", (day) => `${day} > date_add('day', -60, current_date) AND ${day} <= date_add('day', -30, current_date)`],
   ["last_90", (day) => `${day} > date_add('day', -90, current_date)`],
   ["prev_90", (day) => `${day} > date_add('day', -180, current_date) AND ${day} <= date_add('day', -90, current_date)`],
 ];
 
+// The windows an hourly-grain view answers: Today since UK midnight, Previous day, Last 7 days.
 const FAST_WINDOW_COLUMNS = [
-  ["last_1h", (hour) => `${hour} > date_add('hour', -1, current_timestamp)`],
-  ["last_1d", (hour) => `${hour} > date_add('day', -1, current_timestamp)`],
-  ["last_7d", (hour) => `${hour} > date_add('day', -7, current_timestamp)`],
+  ["today", (hour) => `${hour} >= ${UK_MIDNIGHT_TODAY}`],
+  ["prev_1", (hour) => `${hour} >= ${UK_MIDNIGHT_YESTERDAY} AND ${hour} < ${UK_MIDNIGHT_TODAY}`],
+  ["last_7", (hour) => `${hour} > date_add('day', -7, current_timestamp)`],
 ];
+
+// Views whose sources report whole days (the FOCUS cost export, Google Ads, GA4's daily export,
+// Stripe and PayPal reconciliation, the operator effort pulls, security findings, the company
+// book, rolling retention). Their Today is the latest reading, never a count of zero for a day
+// the source has not reported yet; the reading's own day goes in `today_as_of`.
+export const LATEST_READING_VIEWS = new Set([
+  "v_dora_runs_daily",
+  "v_agent_runs_daily",
+  "v_traffic_sources_daily",
+  "v_visitors_by_kind_daily",
+  "v_visitors_cloudfront_daily",
+  "v_revenue_daily",
+  "v_paid_landings_daily",
+  "v_ads_cost_daily",
+  "v_ads_cost_per_paid_landing_daily",
+  "v_cost_per_submission_daily",
+  "v_cost_daily",
+  "v_cost_by_resource_daily",
+  "security_hub_findings",
+  "guardduty_findings",
+  "github_alerts",
+  "v_returning_submitters_rolling_daily",
+  "v_subscription_renewals_daily",
+  "v_subscription_cancellations_daily",
+  "v_operator_interventions_daily",
+  "v_compliance_status",
+  "company_accounts",
+]);
+
+// A view with one row per month or quarter has no Today or Previous day.
+function isPeriodicDayColumn(dayColumn) {
+  return dayColumn in PERIOD_NAME_BY_DAY_COLUMN;
+}
 
 // Observation `i` of a batch reads its figures from the columns named o<i>_<column>.
 function observationColumnPrefix(index) {
@@ -1084,33 +1123,47 @@ function caseFilter(where) {
 }
 
 /**
- * The trailing 30 and 90 day figures and their immediately preceding comparable periods (the
- * 30 or 90 days before that) for every observation that reads one view through one day column,
- * in one query: observation `i` gets the columns `o<i>_last_30`, `o<i>_prev_30`, `o<i>_last_90`
- * and `o<i>_prev_90`, and its `where` moves into its own CASE conditions. A window with no rows
- * reads as SQL NULL rather than a false zero.
+ * Every window of every observation that reads one view through one day column, in one query:
+ * observation `i` gets the columns `o<i>_today`, `o<i>_prev_1`, `o<i>_last_7`, `o<i>_last_30`,
+ * `o<i>_prev_30`, `o<i>_last_90` and `o<i>_prev_90`, and its `where` moves into its own CASE
+ * conditions. A window with no rows reads as SQL NULL rather than a false zero.
+ *
+ * A view in LATEST_READING_VIEWS reports whole days, so its `o<i>_today` is the value on the
+ * newest day up to today and `o<i>_today_as_of` is that day. A view with one row per month or
+ * quarter has no Today or Previous day, so those columns are left out.
  *
  * `reportDataSince` adds `o<i>_data_since`, the earliest day the view holds rows for that
  * observation, so a window longer than the data reads as "since <day>" on the page rather than
  * as a full window.
  *
  * Each query lists every partition prefix its view's tables project and reads their objects, so
- * the nightly run makes one query per view rather than one per observation.
+ * every run makes one query per view rather than one per observation.
  *
  * @param {{view: string, dayColumn: string, observations: Array<{valueExpr: string, aggregation: string, where?: string, reportDataSince?: boolean}>}} group
  * @returns {string}
  */
 export function buildWindowedBatchSql({ view, dayColumn, observations }) {
+  const latestReading = LATEST_READING_VIEWS.has(view);
+  const periodic = isPeriodicDayColumn(dayColumn);
   const columns = observations.flatMap(({ valueExpr, aggregation, where, reportDataSince }, index) => {
     const prefix = observationColumnPrefix(index);
     const filter = caseFilter(where);
     // "latest" reads the value on the newest day inside the window, for a balance that a
-    // sum, average or highest-day figure would misstate.
-    const windowColumns = WINDOWED_COLUMNS.map(([alias, condition]) =>
-      aggregation === "latest"
-        ? `max_by(${valueExpr}, ${dayColumn}) FILTER (WHERE ${condition(dayColumn)}${filter}) AS ${prefix}${alias}`
-        : `${aggregation}(CASE WHEN ${condition(dayColumn)}${filter} THEN ${valueExpr} END) AS ${prefix}${alias}`,
+    // sum, average or highest-day figure would misstate; a whole-day source's Today reads its
+    // newest day up to today the same way.
+    const windowColumns = WINDOWED_COLUMNS.filter(([alias]) => !(periodic && (alias === "today" || alias === "prev_1"))).map(
+      ([alias, condition]) => {
+        const newestDay = latestReading && alias === "today";
+        if (aggregation === "latest" || newestDay) {
+          const window = newestDay ? `${dayColumn} <= ${UK_TODAY}` : condition(dayColumn);
+          return `max_by(${valueExpr}, ${dayColumn}) FILTER (WHERE ${window}${filter}) AS ${prefix}${alias}`;
+        }
+        return `${aggregation}(CASE WHEN ${condition(dayColumn)}${filter} THEN ${valueExpr} END) AS ${prefix}${alias}`;
+      },
     );
+    if (latestReading && !periodic) {
+      windowColumns.push(`cast(max(${dayColumn}) FILTER (WHERE ${dayColumn} <= ${UK_TODAY}${filter}) AS varchar) AS ${prefix}today_as_of`);
+    }
     // The view's earliest day, whatever the observation's filter: a window that ends on or after
     // it was covered by the source, so an empty window there is a measured zero.
     windowColumns.push(`cast(min(${dayColumn}) AS varchar) AS ${prefix}first_day`);
@@ -1124,16 +1177,15 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
 }
 
 /**
- * The three fast, no-trend columns on the operator dashboard's Activities table (Last 1 hour,
- * Last 1 day, Last 7 days), computed against an hourly-grain view rather than
- * buildWindowedBatchSql's `dayColumn`: a column truncated to a whole calendar day always reads
- * as "today" or "not today" against an hour-old cutoff, never a genuine trailing hour.
+ * Today (since UK midnight), Previous day and Last 7 days for the observations whose events
+ * have an hourly-grain view, computed against that view rather than buildWindowedBatchSql's
+ * `dayColumn`: a day-grain column cannot answer a window that starts at UK midnight when the
+ * day's rows are grouped by UTC or by a source's own day.
  *
  * One query answers every observation that reads the same hourly view: observation `i` gets
- * the columns `o<i>_last_1h`, `o<i>_last_1d` and `o<i>_last_7d`, and its `where` moves into
- * its own CASE conditions. Each query lists and reads every object of the view's 8 days of
- * partitions, so one query per observation (16 activities each way, every hour) read the
- * same objects 16 times over.
+ * the columns `o<i>_today`, `o<i>_prev_1` and `o<i>_last_7`, and its `where` moves into its own
+ * CASE conditions. Each query lists and reads every object of the view's 8 days of partitions,
+ * so one query per observation (16 activities each way) read the same objects 16 times over.
  *
  * @param {{fastWindowView: string, fastWindowColumn: string, observations: Array<{valueExpr: string, aggregation: string, where?: string}>}} group
  * @returns {string}
@@ -1212,9 +1264,9 @@ export function toActivityFastWindows(row) {
   const reported = row?.first_hour !== null && row?.first_hour !== undefined;
   const fastValue = (value) => toNumberOrNull(value) ?? (reported ? 0 : null);
   return {
-    last1h: { value: fastValue(row?.last_1h) },
-    last1d: { value: fastValue(row?.last_1d) },
-    last7d: { value: fastValue(row?.last_7d) },
+    today: { value: fastValue(row?.today) },
+    previousDay: { value: fastValue(row?.prev_1) },
+    last7: { value: fastValue(row?.last_7) },
   };
 }
 
@@ -1234,7 +1286,9 @@ function newInWindowFlag(current, previous) {
   return current !== null && current > 0 && (previous === null || previous === 0) ? { isNew: true } : {};
 }
 
-const WINDOW_END_DAYS_BACK = { last_30: 0, prev_30: 30, last_90: 0, prev_90: 90 };
+const WINDOW_END_DAYS_BACK = { today: 0, prev_1: 1, last_7: 0, last_30: 0, prev_30: 30, last_90: 0, prev_90: 90 };
+
+const ukDayFormat = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/London", year: "numeric", month: "2-digit", day: "2-digit" });
 
 // A window the source covered but that held no rows: a sum is a measured zero; an average has
 // no figure to give but is flagged noEvents so the page says "none" rather than "not measured".
@@ -1244,18 +1298,30 @@ function readWindow(row, column, aggregation, today) {
   if (value !== null || !row?.first_day) return { value };
   const windowEnd = new Date(today);
   windowEnd.setUTCDate(windowEnd.getUTCDate() - WINDOW_END_DAYS_BACK[column]);
-  if (row.first_day.slice(0, 10) > windowEnd.toISOString().slice(0, 10)) return { value };
+  const windowEndDay = column === "today" || column === "prev_1" ? ukDayFormat.format(windowEnd) : windowEnd.toISOString().slice(0, 10);
+  if (row.first_day.slice(0, 10) > windowEndDay) return { value };
   if (aggregation === "sum") return { value: 0 };
   return aggregation === "avg" ? { value, noEvents: true } : { value };
 }
 
-export function toObservationWindows(row, aggregation, today = new Date()) {
+// Today for a source that reports whole days is its latest reading, whatever day that was: no
+// reading is "not measured", never a zero, and the reading's own day travels with the figure.
+function readLatestToday(row) {
+  const value = toNumberOrNull(row?.today);
+  return value === null ? { value: null } : { value, ...(row?.today_as_of ? { asOf: row.today_as_of.slice(0, 10) } : {}) };
+}
+
+export function toObservationWindows(row, aggregation, today = new Date(), { latestReading = false, periodic = false } = {}) {
   const current30 = readWindow(row, "last_30", aggregation, today);
   const previous30 = readWindow(row, "prev_30", aggregation, today);
   const current90 = readWindow(row, "last_90", aggregation, today);
   const previous90 = readWindow(row, "prev_90", aggregation, today);
   const [last30, prev30, last90, prev90] = [current30, previous30, current90, previous90].map((window) => window.value);
+  const dayWindow = latestReading ? readLatestToday(row) : readWindow(row, "today", aggregation, today);
   const windows = {
+    today: periodic ? { value: null, notApplicable: true } : dayWindow,
+    previousDay: periodic ? { value: null, notApplicable: true } : readWindow(row, "prev_1", aggregation, today),
+    last7: readWindow(row, "last_7", aggregation, today),
     last30: {
       value: last30,
       trend: computeTrend(last30, prev30),
@@ -1273,7 +1339,13 @@ export function toObservationWindows(row, aggregation, today = new Date()) {
   return windows;
 }
 
-const nullObservationWindows = { last30: { value: null, trend: null }, last90: { value: null, trend: null } };
+const nullObservationWindows = {
+  today: { value: null },
+  previousDay: { value: null },
+  last7: { value: null },
+  last30: { value: null, trend: null },
+  last90: { value: null, trend: null },
+};
 
 /**
  * The reinvestment loop's figures: trailing 30-day income (the revenue-gbp observation's
@@ -1300,19 +1372,10 @@ export function buildReinvestment(objectives) {
  * objectives publishing. Each failure is logged at warn level, and every observation it covers
  * is counted in the returned snapshot's failedObservationCount, so the caller can still surface it.
  *
- * `objectiveIds`, when given, builds only those objectives instead of every one in
- * OBJECTIVE_DEFINITIONS — the activity-only run's way of refreshing just the fast columns
- * without re-running the other objectives.
- *
- * `fastWindowOnly` skips the 30/90-day queries entirely and answers only each observation's `id`
- * plus its last1h/last1d/last7d fields, for an observation that carries a `fastWindowView`, and
- * lists only those observations. The result is a patch to merge onto an existing snapshot with
- * mergeFastWindows, not a standalone snapshot: it carries no label, unit or deepLink.
- *
- * @param {{workGroup: string, database: string, context: object, objectiveIds?: string[], fastWindowOnly?: boolean}} params
+ * @param {{workGroup: string, database: string, context: object}} params
  * @returns {Promise<object>}
  */
-// Each query takes a few seconds; run in series, the nightly run went past the Lambda's timeout.
+// Each query takes a few seconds; run in series, the run went past the Lambda's timeout.
 const OBSERVATION_QUERY_CONCURRENCY = 5;
 
 export async function mapInOrderWithConcurrency(items, concurrency, mapItem) {
@@ -1329,11 +1392,8 @@ export async function mapInOrderWithConcurrency(items, concurrency, mapItem) {
   return results;
 }
 
-export async function buildSnapshot({ workGroup, database, context, objectiveIds, fastWindowOnly = false }) {
-  const objectiveDefinitions = objectiveIds
-    ? OBJECTIVE_DEFINITIONS.filter((objective) => objectiveIds.includes(objective.id))
-    : OBJECTIVE_DEFINITIONS;
-  const allObservations = objectiveDefinitions.flatMap((objective) => objective.observations);
+export async function buildSnapshot({ workGroup, database, context }) {
+  const allObservations = OBJECTIVE_DEFINITIONS.flatMap((objective) => objective.observations);
 
   const [fast, windowed] = await Promise.all([
     runObservationBatches({
@@ -1353,28 +1413,30 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
     runObservationBatches({
       workGroup,
       database,
-      observations: fastWindowOnly ? [] : allObservations,
+      observations: allObservations,
       groupKey: (observation) => `${observation.view}|${observation.dayColumn}`,
       buildSql: (observations) => buildWindowedBatchSql({ view: observations[0].view, dayColumn: observations[0].dayColumn, observations }),
-      toResult: (row, observation) => toObservationWindows(row, observation.aggregation),
+      toResult: (row, observation) =>
+        toObservationWindows(row, observation.aggregation, new Date(), {
+          latestReading: LATEST_READING_VIEWS.has(observation.view),
+          periodic: isPeriodicDayColumn(observation.dayColumn),
+        }),
       failureMessage: "Windowed query failed, publishing null for its observations",
     }),
   ]);
   const failedIds = new Set([...fast.failedIds, ...windowed.failedIds]);
 
-  const objectives = objectiveDefinitions.map((objective) => {
-    if (fastWindowOnly) {
-      const observations = objective.observations
-        .filter((observation) => observation.fastWindowView)
-        .map((observation) => ({ id: observation.id, ...(fast.resultsById.get(observation.id) ?? {}) }));
-      return { id: objective.id, name: objective.name, observations };
-    }
+  const objectives = OBJECTIVE_DEFINITIONS.map((objective) => {
     const observations = objective.observations.map((observation) => {
       const windows = windowed.resultsById.get(observation.id) ?? nullObservationWindows;
       const observationResult = {
         id: observation.id,
         label: observation.label,
+        ...(observation.description ? { description: observation.description } : {}),
         unit: observation.unit,
+        today: windows.today,
+        previousDay: windows.previousDay,
+        last7: windows.last7,
         last30: windows.last30,
         last90: windows.last90,
         deepLink: observation.deepLink(context),
@@ -1395,7 +1457,7 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
     generatedAt: new Date().toISOString(),
     environment: context.envName,
     objectives,
-    ...(fastWindowOnly ? {} : { reinvestment: buildReinvestment(objectives) }),
+    reinvestment: buildReinvestment(objectives),
     failedObservationCount: failedIds.size,
   };
 }
@@ -1888,41 +1950,6 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
 }
 
 /**
- * Patches an existing snapshot's objectives with a fastWindowOnly-built patch, overlaying only
- * the patched observations' last1h/last1d/last7d fields and leaving every other field on every
- * other observation — and every objective the patch does not name — untouched. This is what lets
- * the hourly activity-only run refresh three columns without blanking the rest, which only the
- * nightly full run recomputes.
- *
- * @param {object} existingSnapshot - the snapshot read back from snapshots/<env>/latest.json
- * @param {object} patchSnapshot - buildSnapshot's result with objectiveIds: FAST_WINDOW_OBJECTIVE_IDS, fastWindowOnly: true
- * @returns {object}
- */
-export function mergeFastWindows(existingSnapshot, patchSnapshot) {
-  const patchById = new Map(patchSnapshot.objectives.flatMap((objective) => objective.observations.map((patch) => [patch.id, patch])));
-  const patchedObjectiveIds = new Set(patchSnapshot.objectives.map((objective) => objective.id));
-
-  const objectives = (existingSnapshot.objectives ?? []).map((objective) => {
-    if (!patchedObjectiveIds.has(objective.id)) return objective;
-    return {
-      ...objective,
-      observations: objective.observations.map((observation) => {
-        const patch = patchById.get(observation.id);
-        if (!patch) return observation;
-        return { ...observation, last1h: patch.last1h, last1d: patch.last1d, last7d: patch.last7d };
-      }),
-    };
-  });
-
-  return {
-    ...existingSnapshot,
-    generatedAt: patchSnapshot.generatedAt,
-    objectives,
-    failedObservationCount: patchSnapshot.failedObservationCount,
-  };
-}
-
-/**
  * Writes the snapshot to its latest pointer and a dated copy alongside it, so the page always
  * reads the same key while a historical run stays available under its own date.
  *
@@ -1952,13 +1979,10 @@ export async function writeSnapshot({ bucket, envName, snapshot }) {
 }
 
 /**
- * `event.mode` picks what this invocation refreshes: "full" rebuilds every objective the way
- * this Lambda always has (the nightly and weekly schedules); "activity-only" runs only the
- * activity and visitor observations' fast-window queries and patches them onto the existing
- * snapshot (the hourly schedule). There is no default: a schedule that forgot to set it is a configuration
- * bug, not a case to guess at.
+ * Rebuilds every objective and publishes the snapshot. The ingestion state machine runs it as
+ * its last step, so the daily sources have landed before it reads.
  */
-export async function handler(event) {
+export async function handler() {
   const envName = process.env.ENVIRONMENT_NAME;
   const workGroup = process.env.ATHENA_WORK_GROUP_NAME;
   const database = process.env.GLUE_DATABASE_NAME;
@@ -1968,11 +1992,6 @@ export async function handler(event) {
   if (!database) throw new Error("GLUE_DATABASE_NAME environment variable is required");
   if (!lakeBucket) throw new Error("ANALYTICS_LAKE_BUCKET_NAME environment variable is required");
 
-  const mode = event?.mode;
-  if (mode !== "full" && mode !== "activity-only") {
-    throw new Error(`event.mode must be "full" or "activity-only", got: ${JSON.stringify(mode)}`);
-  }
-
   const context = {
     envName,
     region: process.env.AWS_REGION || "eu-west-2",
@@ -1981,31 +2000,14 @@ export async function handler(event) {
     ga4PropertyId: process.env.GA4_PROPERTY_ID || null,
   };
 
-  let snapshot;
-  if (mode === "full") {
-    snapshot = await buildSnapshot({ workGroup, database, context });
-    const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup, database });
-    snapshot = { ...snapshot, dailyCharts, failedObservationCount: snapshot.failedObservationCount + failedChartIds.length };
-  } else {
-    const existing = await readLatestSnapshot();
-    if (!existing) {
-      throw new Error("No existing snapshot to patch in activity-only mode; the full run has not published one yet");
-    }
-    const patch = await buildSnapshot({
-      workGroup,
-      database,
-      context,
-      objectiveIds: FAST_WINDOW_OBJECTIVE_IDS,
-      fastWindowOnly: true,
-    });
-    snapshot = mergeFastWindows(existing, patch);
-  }
+  const built = await buildSnapshot({ workGroup, database, context });
+  const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup, database });
+  const snapshot = { ...built, dailyCharts, failedObservationCount: built.failedObservationCount + failedChartIds.length };
   await writeSnapshot({ bucket: lakeBucket, envName, snapshot });
 
   logger.info({
     message: "Operator snapshot published",
     environment: envName,
-    mode,
     objectives: snapshot.objectives.length,
     failedObservations: snapshot.failedObservationCount,
   });

@@ -48,6 +48,9 @@ const FIXTURE_SNAPSHOT = {
           source: "v_alarm_state_changes_daily",
           measure: "total of the days",
           better: "down",
+          today: { value: 1 },
+          previousDay: { value: 0 },
+          last7: { value: 2 },
           last30: { value: 3, trend: -0.25 },
           last90: { value: 10, trend: 0.1 },
           deepLink: "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#alarmsV2:",
@@ -70,9 +73,9 @@ const FIXTURE_SNAPSHOT = {
           id: "sessions-human",
           label: "Sessions, human visitors",
           unit: "count",
-          last1h: { value: 2 },
-          last1d: { value: 30 },
-          last7d: { value: 90 },
+          today: { value: 2 },
+          previousDay: { value: 30 },
+          last7: { value: 90 },
           last30: { value: 210, trend: 0.05 },
           last90: { value: 600, trend: 0.02 },
           deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
@@ -97,6 +100,7 @@ const FIXTURE_SNAPSHOT = {
           id: "sessions-synthetic",
           label: "Sessions, synthetic visitors",
           unit: "count",
+          today: { value: 60, asOf: "2026-10-28" },
           last30: { value: 60, trend: 0 },
           last90: { value: 180, trend: 0 },
           deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
@@ -188,9 +192,9 @@ const FIXTURE_SNAPSHOT = {
           id: "submit-vat::started",
           label: "Submit VAT (HMRC) — started",
           unit: "count",
-          last1h: { value: 1 },
-          last1d: { value: 3 },
-          last7d: { value: 12 },
+          today: { value: 1 },
+          previousDay: { value: 3 },
+          last7: { value: 12 },
           last30: { value: 40, trend: 0.1 },
           last90: { value: 110, trend: 0.05 },
           dataSince: "2026-09-28",
@@ -199,9 +203,9 @@ const FIXTURE_SNAPSHOT = {
           id: "submit-vat::completed",
           label: "Submit VAT (HMRC) — completed",
           unit: "count",
-          last1h: { value: 0 },
-          last1d: { value: 2 },
-          last7d: { value: 8 },
+          today: { value: 0 },
+          previousDay: { value: 2 },
+          last7: { value: 8 },
           last30: { value: 22, trend: -0.05 },
           last90: { value: 60, trend: 0.02 },
           dataSince: "2026-09-03",
@@ -401,7 +405,7 @@ function fullShapeSnapshot() {
         measure: measureDescription(observation),
         better: betterDirection(observation.id),
         ...windows(observation.unit),
-        ...(observation.fastWindowView ? { last1h: { value: 12 }, last1d: { value: 123 }, last7d: { value: 1234 } } : {}),
+        ...(observation.fastWindowView ? { today: { value: 12 }, previousDay: { value: 123 }, last7: { value: 1234 } } : {}),
         deepLink: observation.deepLink(context),
       })),
     })),
@@ -519,16 +523,16 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     const alarms = page.locator('.observation[data-observation-id="alarms-fired"]');
-    await expect(alarms.locator("td").nth(2)).toHaveText("↓ 25.0%");
-    await expect(alarms.locator("td").nth(2)).toHaveClass(/trend-good/);
+    await expect(alarms.locator("td").nth(5)).toHaveText("↓ 25.0%");
+    await expect(alarms.locator("td").nth(5)).toHaveClass(/trend-good/);
 
     const passRate = page.locator('.observation[data-observation-id="probe-pass-rate"]');
-    await expect(passRate.locator("td").nth(2)).toHaveClass(/trend-good/);
+    await expect(passRate.locator("td").nth(5)).toHaveClass(/trend-good/);
 
     const bot = page.locator('#visitorsPanel tr.visitors-kind[data-kind="bot"]');
     await expect(bot.locator("td").nth(5)).toHaveClass(/trend-flat/);
 
-    await expect(page.locator('.objective[data-objective-id="uptime"] thead th').nth(2)).toHaveText("vs previous 30 days");
+    await expect(page.locator('.objective[data-objective-id="uptime"] thead th').nth(5)).toHaveText("30 day trend");
   });
 
   test("states the source and how each window is built under the observation", async ({ page }) => {
@@ -610,27 +614,22 @@ test.describe("Operator Dashboard", () => {
     await expect(bot.locator("td").nth(5)).toHaveText("↓ 10.0%");
   });
 
-  test("explains why a visitor fast-window figure is missing only on the cells that have none", async ({ page }) => {
+  test("explains why a visitor figure is missing only on the cells that have none, and which day a latest reading is for", async ({
+    page,
+  }) => {
     await setupRoutes(page);
     await loadDashboard(page);
 
     const headers = page.locator("#visitorsTable thead th");
-    await expect(headers).toHaveText([
-      "Kind",
-      "Last 1 hour",
-      "Last 1 day",
-      "Last 7 days",
-      "Last 30 days",
-      "vs previous 30 days",
-      "Last 90 days",
-    ]);
-    await expect(headers.nth(1)).not.toHaveAttribute("title", /.+/);
+    await expect(headers).toHaveText(["Kind", "Today", "Previous day", "Last 7 days", "Last 30 days", "30 day trend", "Last 90 days"]);
+    await expect(headers.nth(2)).not.toHaveAttribute("title", /.+/);
 
     const human = page.locator('#visitorsPanel tr.visitors-kind[data-kind="human"]');
     await expect(human.locator("td").nth(1)).not.toHaveAttribute("title", /.+/);
 
     const synthetic = page.locator('#visitorsPanel tr.visitors-kind[data-kind="synthetic"]');
-    await expect(synthetic.locator("td").nth(1)).toHaveAttribute("title", /CloudFront access log/);
+    await expect(synthetic.locator("td").nth(1)).toHaveText("60");
+    await expect(synthetic.locator("td").nth(1)).toHaveAttribute("title", /Latest reading, reported for 2026-10-28/);
 
     const operator = page.locator('#visitorsPanel tr.visitors-kind[data-kind="operator"]');
     await expect(operator.locator("td").nth(1)).toHaveText("not measured");
@@ -653,8 +652,39 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     const row = page.locator('tr.observation[data-observation-id="quiet"]');
-    await expect(row.locator("td").nth(1)).toHaveText("none");
-    await expect(row.locator("td").nth(3)).toHaveText("not measured");
+    await expect(row.locator("td").nth(4)).toHaveText("none");
+    await expect(row.locator("td").nth(6)).toHaveText("not measured");
+  });
+
+  test("shows n/a for the daily windows of a monthly figure", async ({ page }) => {
+    const objectives = FIXTURE_SNAPSHOT.objectives.map((objective) =>
+      objective.id === "retention"
+        ? {
+            ...objective,
+            observations: [
+              {
+                id: "monthly",
+                label: "Monthly figure",
+                unit: "usd",
+                description: "Cost for the month.",
+                today: { value: null, notApplicable: true },
+                previousDay: { value: null, notApplicable: true },
+                last7: { value: 5 },
+                last30: { value: 40 },
+                last90: { value: 90 },
+              },
+            ],
+          }
+        : objective,
+    );
+    await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, objectives } });
+    await loadDashboard(page);
+
+    const row = page.locator('tr.observation[data-observation-id="monthly"]');
+    await expect(row.locator("td").nth(1)).toHaveText("n/a");
+    await expect(row.locator("td").nth(2)).toHaveText("n/a");
+    await expect(row.locator("td").nth(3)).toHaveText("US$5.00");
+    await expect(row.locator("td").nth(0)).toHaveAttribute("title", "Cost for the month.");
   });
 
   test("shows a placeholder for an objective with no observations yet", async ({ page }) => {
@@ -762,8 +792,8 @@ test.describe("Operator Dashboard", () => {
 
     const started = panel.locator('#activitiesStartedBody .activity-row[data-activity-id="submit-vat"]');
     await expect(started.locator("td").nth(0)).toHaveText("Submit VAT (HMRC)");
-    await expect(started.locator("td").nth(1)).toHaveText("1"); // last 1 hour
-    await expect(started.locator("td").nth(2)).toHaveText("3"); // last 1 day
+    await expect(started.locator("td").nth(1)).toHaveText("1"); // today
+    await expect(started.locator("td").nth(2)).toHaveText("3"); // previous day
     await expect(started.locator("td").nth(3)).toHaveText("12"); // last 7 days
     await expect(started.locator("td").nth(4)).toHaveText("40"); // last 30
     await expect(started.locator("td").nth(5)).toHaveText("↑ 10.0%"); // trend
@@ -1089,7 +1119,7 @@ test.describe("Operator Dashboard", () => {
       await eachObservationsTableFitsItsCard(page);
       const scrollsSideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
       expect(scrollsSideways).toBe(false);
-      await expect(page.locator("#activitiesStartedBody .activity-row td").nth(1)).toHaveAttribute("data-label", "Last 1 hour");
+      await expect(page.locator("#activitiesStartedBody .activity-row td").nth(1)).toHaveAttribute("data-label", "Today");
       await page.screenshot({ path: "target/dashboard-390.png", fullPage: true });
     });
   });
