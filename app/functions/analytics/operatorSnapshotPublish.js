@@ -1857,7 +1857,11 @@ export async function buildSnapshot({ workGroup, database, context }) {
 
 export const DAILY_CHART_DAYS = 90;
 
+export const HOURLY_CHART_HOURS = 168;
+
 const dailyWindowFilter = (dayColumn) => `${dayColumn} > date_add('day', -${DAILY_CHART_DAYS}, current_date)`;
+const hourlyWindowFilter = (hourColumn) =>
+  `${hourColumn} > date_add('hour', -${HOURLY_CHART_HOURS}, date_trunc('hour', cast(current_timestamp AS timestamp)))`;
 
 const VISITOR_KIND_LABELS = {
   "operator": "Operator",
@@ -1886,6 +1890,17 @@ function longFormSql({ dayExpression, componentExpression, valueExpression, view
   const conditions = [dailyWindowFilter(dayColumn), ...(where ? [where] : [])].join(" AND ");
   return (
     `SELECT cast(${dayExpression} AS varchar) AS day, ${componentExpression} AS component, ` +
+    `cast(sum(${valueExpression}) AS double) AS value\n` +
+    `FROM   ${view}\nWHERE  ${conditions}\nGROUP  BY 1, 2`
+  );
+}
+
+// One query over an hourly view for the 168 hours to now. The hour comes back as an ISO key in the
+// "day" column so buildChartSeries reads it like a daily row.
+function hourlyLongFormSql({ componentExpression, valueExpression, view, where }) {
+  const conditions = [hourlyWindowFilter("hour"), ...(where ? [where] : [])].join(" AND ");
+  return (
+    `SELECT date_format(hour, '%Y-%m-%dT%H:00:00Z') AS day, ${componentExpression} AS component, ` +
     `cast(sum(${valueExpression}) AS double) AS value\n` +
     `FROM   ${view}\nWHERE  ${conditions}\nGROUP  BY 1, 2`
   );
@@ -1961,6 +1976,11 @@ export function buildDailyChartDefinitions() {
             view: "v_activity_started_daily",
             dayColumn: "day",
           }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "activity",
+            valueExpression: "starts",
+            view: "v_activity_started_hourly",
+          }),
         },
         {
           id: "completed",
@@ -1975,6 +1995,11 @@ export function buildDailyChartDefinitions() {
             valueExpression: "completions",
             view: "v_submissions_by_activity_daily",
             dayColumn: "day",
+          }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "activity",
+            valueExpression: "completions",
+            view: "v_submissions_by_activity_hourly",
           }),
         },
       ],
@@ -2417,8 +2442,15 @@ export function buildDailyChartDefinitions() {
           label: "Visitors",
           total: null,
           componentOrder: ["operator", "authenticated", "human", "synthetic", "bot"],
+          hourlyComponentOrder: ["operator", "authenticated", "human"],
           labelOf: (id) => VISITOR_KIND_LABELS[id] ?? id,
           descriptionOf: (id) => VISITOR_KIND_DESCRIPTIONS[id],
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "visitor_kind",
+            valueExpression: "sessions",
+            view: "v_visitors_by_kind_hourly",
+            where: "visitor_kind IN ('operator', 'authenticated', 'human')",
+          }),
           sql:
             `SELECT cast(day AS varchar) AS day, visitor_kind AS component, cast(sum(sessions) AS double) AS value\n` +
             `FROM   v_visitors_by_kind_daily\nWHERE  ${dailyWindowFilter("day")} AND visitor_kind IN ('operator', 'authenticated', 'human')\nGROUP  BY 1, 2\n` +
@@ -2508,6 +2540,19 @@ export function dailyChartDays(endDay, count = DAILY_CHART_DAYS) {
 }
 
 /**
+ * The last `count` UTC hours ending on the hour that contains `now`, oldest first, as ISO keys
+ * like `2026-09-08T14:00:00Z`: the hours the hourly charts' `hour > now_hour - 168 hours` filter returns.
+ */
+export function hourlyChartHours(now, count = HOURLY_CHART_HOURS) {
+  const end = new Date(now);
+  end.setUTCMinutes(0, 0, 0);
+  return Array.from({ length: count }, (_, index) => {
+    const hour = new Date(end.getTime() - (count - 1 - index) * 3600000);
+    return hour.toISOString().slice(0, 13) + ":00:00Z";
+  });
+}
+
+/**
  * Turns long-form rows (day, component, value) into one series per component with a value for
  * every day (zero where the query returned nothing), ordered by `componentOrder` or by the
  * window total, largest first; optionally folds the smallest into "Other"; and adds the total
@@ -2569,10 +2614,11 @@ export function buildChartSeries({ days, rows, mode }) {
  * query fails leaves its chart out and is returned in `failedChartIds`, so one missing view does
  * not stop the other charts publishing.
  *
- * @returns {Promise<{dailyCharts: {days: string[], charts: object[]}, failedChartIds: string[]}>}
+ * @returns {Promise<{dailyCharts: {days: string[], hours: string[], charts: object[]}, failedChartIds: string[]}>}
  */
-export async function buildDailyCharts({ workGroup, database, endDay = new Date().toISOString().slice(0, 10) }) {
+export async function buildDailyCharts({ workGroup, database, endDay = new Date().toISOString().slice(0, 10), now = new Date() }) {
   const days = dailyChartDays(endDay);
+  const hours = hourlyChartHours(now);
   const definitions = buildDailyChartDefinitions();
   const failedChartIds = new Set();
 
@@ -2582,6 +2628,27 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
     async ({ definition, mode }) => {
       try {
         const rows = await runAthenaQuery({ workGroup, database, sql: mode.sql });
+        let hourly = null;
+        if (mode.hourlySql) {
+          try {
+            const hourlyRows = await runAthenaQuery({ workGroup, database, sql: mode.hourlySql });
+            hourly = {
+              series: buildChartSeries({
+                days: hours,
+                rows: hourlyRows,
+                mode: { ...mode, componentOrder: mode.hourlyComponentOrder ?? mode.componentOrder },
+              }),
+            };
+          } catch (error) {
+            failedChartIds.add(`${definition.id}-hourly`);
+            logger.warn({
+              message: "Hourly chart query failed, publishing the chart without its hourly series",
+              chartId: definition.id,
+              mode: mode.id,
+              error: error.message,
+            });
+          }
+        }
         return {
           chartId: definition.id,
           mode: {
@@ -2589,6 +2656,7 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
             label: mode.label,
             ...(mode.unit ? { unit: mode.unit } : {}),
             series: buildChartSeries({ days, rows, mode }),
+            ...(hourly ? { hourly } : {}),
           },
         };
       } catch (error) {
@@ -2632,7 +2700,7 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
       });
     }
   }
-  return { dailyCharts: { days, charts }, failedChartIds: [...failedChartIds] };
+  return { dailyCharts: { days, hours, charts }, failedChartIds: [...failedChartIds] };
 }
 
 export const COST_DRIVER_DAYS = 30;

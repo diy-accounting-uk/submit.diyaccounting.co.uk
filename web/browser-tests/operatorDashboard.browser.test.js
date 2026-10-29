@@ -304,6 +304,15 @@ const CHART_DAYS = Array.from({ length: 90 }, (_, index) => {
   return day.toISOString().slice(0, 10);
 });
 
+const CHART_HOURS = Array.from(
+  { length: 168 },
+  (_, index) => new Date(Date.UTC(2026, 8, 8, 3) - (167 - index) * 3600000).toISOString().slice(0, 13) + ":00:00Z",
+);
+
+function hourlySeries(id, label, scale, extra = {}) {
+  return { id, label, values: CHART_HOURS.map((_, index) => Math.round(scale * (1 + Math.sin(index / 5 + scale)) * 100) / 100), ...extra };
+}
+
 function chartSeries(id, label, scale, extra = {}) {
   return { id, label, values: CHART_DAYS.map((_, index) => Math.round(scale * (1 + Math.sin(index / 7 + scale)) * 100) / 100), ...extra };
 }
@@ -323,6 +332,7 @@ function chartWithSeries(id, objectiveId, title, unit, seriesLabels, extra = {})
 
 const FIXTURE_DAILY_CHARTS = {
   days: CHART_DAYS,
+  hours: CHART_HOURS,
   charts: [
     {
       ...chartWithSeries(
@@ -336,6 +346,7 @@ const FIXTURE_DAILY_CHARTS = {
         {
           id: "started",
           label: "Started",
+          hourly: { series: [hourlySeries("total", "All activities", 2, { isTotal: true }), hourlySeries("a0", "Submit VAT (HMRC)", 1)] },
           series: [
             chartSeries("total", "All activities", 20, { isTotal: true }),
             ...Array.from({ length: 12 }, (_, index) => chartSeries(`a${index}`, `Activity number ${index + 1}`, 2 + index)),
@@ -398,13 +409,23 @@ const FIXTURE_DAILY_CHARTS = {
       ["Submitters", "Returning submitters", "Renewals", "Cancellations", "Passes issued"],
       { note: "The 90-day windows roll.", reconciliation: "Last 90 days, customers: 12 distinct submitters made 90 completions." },
     ),
-    chartWithSeries("visitors", "conversion-to-submission", "Visitors", "count", [
-      "Operator",
-      "Authenticated user",
-      "Human",
-      "Synthetic",
-      "Bot",
-    ]),
+    (() => {
+      const visitors = chartWithSeries("visitors", "conversion-to-submission", "Visitors", "count", [
+        "Operator",
+        "Authenticated user",
+        "Human",
+        "Synthetic",
+        "Bot",
+      ]);
+      visitors.modes[0].hourly = {
+        series: [
+          hourlySeries("operator", "Operator", 1),
+          hourlySeries("authenticated", "Authenticated user", 2),
+          hourlySeries("human", "Human", 3),
+        ],
+      };
+      return visitors;
+    })(),
   ],
 };
 
@@ -679,7 +700,7 @@ test.describe("Operator Dashboard", () => {
     await setupRoutes(page);
     await loadDashboard(page);
 
-    const headers = page.locator("#visitorsTable thead th");
+    const headers = page.locator("#visitorsTable thead tr:not(.last-updated) th");
     await expect(headers).toHaveText(["Kind", "Today", "Previous day", "Last 7 days", "Last 30 days", "30 day trend", "Last 90 days"]);
     await expect(headers.nth(2)).not.toHaveAttribute("title", /.+/);
 
@@ -894,6 +915,31 @@ test.describe("Operator Dashboard", () => {
     await expect(page.locator("#companyAccountsPanel")).toBeHidden();
   });
 
+  test("puts a Last updated subtitle under the hourly and the daily columns of every windowed table", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const tables = page.locator("table.observations:has(tr.last-updated)");
+    await expect(tables).toHaveCount(5);
+    const uptime = page.locator('section[data-objective-id="uptime"] tr.last-updated');
+    await expect(uptime.locator('[data-reading="hourly"]')).toHaveText("Last updated 03:15 UTC");
+    await expect(uptime.locator('[data-reading="hourly"]')).toHaveAttribute("colspan", "2");
+    await expect(uptime.locator('[data-reading="daily"]')).toHaveText("Last updated 8 Sept 2026");
+    await expect(uptime.locator('[data-reading="daily"]')).toHaveAttribute("colspan", "4");
+    await expect(page.locator("#visitorsTable tr.last-updated")).toHaveCount(1);
+    await expect(page.locator("#activitiesStartedTable tr.last-updated")).toHaveCount(1);
+    await expect(page.locator("#activitiesCompletedTable tr.last-updated")).toHaveCount(1);
+    await expect(page.locator("#reserveTable tr.last-updated")).toHaveCount(0);
+  });
+
+  test("names the day a source reports for itself in the daily subtitle", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await expect(page.locator("#visitorsTable tr.last-updated [data-reading='daily']")).toHaveText("Last updated 28 Oct 2026");
+    await expect(page.locator("#visitorsTable tr.last-updated [data-reading='hourly']")).toHaveText("Last updated 03:15 UTC");
+  });
+
   test("shows one row per activity, with the started and completed windows and trend", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
@@ -1040,6 +1086,57 @@ test.describe("Operator Dashboard", () => {
       await expect(activities.locator("polyline.chart-line")).toHaveCount(13);
       await activities.locator('.chart-mode[data-mode-id="completed"]').click();
       await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+    });
+
+    test("switches a chart with hourly data between 90 days by day and 7 days by hour", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const visitors = page.locator('.chart-card[data-chart-id="visitors"]');
+      const daily = visitors.locator('.chart-range-option[data-range="daily"]');
+      const hourly = visitors.locator('.chart-range-option[data-range="hourly"]');
+      await expect(daily).toHaveText("90 days, by day");
+      await expect(hourly).toHaveText("7 days, by hour");
+      await expect(daily).toHaveAttribute("aria-pressed", "true");
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(6);
+
+      await hourly.click();
+      await expect(hourly).toHaveAttribute("aria-pressed", "true");
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(3);
+      const points = await visitors.locator("polyline.chart-line").first().getAttribute("points");
+      expect(points.trim().split(" ")).toHaveLength(168);
+      await expect(visitors.locator(".chart-readout")).toContainText("8 Sept 03:00");
+      await expect(visitors.locator(".chart-legend-item")).toHaveText(["Operator", "Authenticated user", "Human"]);
+      await expect(visitors.locator("svg")).toHaveAttribute("aria-label", /hourly over the last 168 hours/);
+
+      await visitors.locator('.chart-legend-control[data-action="hide-all"]').click();
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(0);
+      await visitors.locator('.chart-legend-control[data-action="show-all"]').click();
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(3);
+
+      await daily.click();
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(6);
+      await expect(visitors.locator(".chart-readout")).toContainText("8 Sept");
+    });
+
+    test("shows the range switch only on a mode with an hourly source", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const activities = page.locator('.chart-card[data-chart-id="activity-started-and-completed"]');
+      await expect(activities.locator(".chart-range")).toBeVisible();
+      await activities.locator('.chart-range-option[data-range="hourly"]').click();
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+      await activities.locator('.chart-mode[data-mode-id="completed"]').click();
+      await expect(activities.locator(".chart-range")).toBeHidden();
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+      const points = await activities.locator("polyline.chart-line").first().getAttribute("points");
+      expect(points.trim().split(" ")).toHaveLength(90);
+
+      for (const id of ["retention", "low-running-cost", "conversion-to-paid", "conversion-to-submission"]) {
+        await expect(page.locator(`.chart-card[data-chart-id="${id}"] .chart-range`)).toBeHidden();
+        await expect(page.locator(`.chart-card[data-chart-id="${id}"] .chart-range-option`)).toHaveCount(2);
+      }
     });
 
     test("reads a ratio mode as a percentage", async ({ page }) => {
@@ -1220,7 +1317,7 @@ test.describe("Operator Dashboard", () => {
       await setupRoutes(page);
       await loadDashboard(page);
 
-      const headerCells = page.locator(".activities-table thead th");
+      const headerCells = page.locator(".activities-table thead tr:not(.last-updated) th");
       const count = await headerCells.count();
       for (let i = 0; i < count; i++) {
         const cell = headerCells.nth(i);

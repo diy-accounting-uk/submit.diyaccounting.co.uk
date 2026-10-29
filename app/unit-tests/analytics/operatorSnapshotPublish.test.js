@@ -59,6 +59,7 @@ import {
   buildChartSeries,
   buildDailyChartDefinitions,
   buildDailyCharts,
+  hourlyChartHours,
   buildCostDrivers,
   buildPaidSubscribers,
   shortResourceName,
@@ -911,6 +912,95 @@ describe("operatorSnapshotPublish", () => {
       }
       const activities = dailyCharts.charts[0];
       expect(activities.modes.map((mode) => mode.id)).toEqual(["started", "completed"]);
+    });
+
+    test("hourlyChartHours lists 168 UTC hours ending on the hour of now, oldest first", () => {
+      const hours = hourlyChartHours(new Date("2026-10-29T14:37:12.000Z"));
+      expect(hours).toHaveLength(168);
+      expect(hours[0]).toBe("2026-10-22T15:00:00Z");
+      expect(hours.at(-1)).toBe("2026-10-29T14:00:00Z");
+    });
+
+    test("only the modes read from an hourly view carry an hourly query, one over each view for 168 hours", () => {
+      const withHourly = buildDailyChartDefinitions().flatMap((definition) =>
+        definition.modes.filter((mode) => mode.hourlySql).map((mode) => `${definition.id}/${mode.id}`),
+      );
+      expect(withHourly).toEqual([
+        "activity-started-and-completed/started",
+        "activity-started-and-completed/completed",
+        "visitors/sessions",
+      ]);
+      for (const definition of buildDailyChartDefinitions()) {
+        for (const mode of definition.modes.filter((candidate) => candidate.hourlySql)) {
+          expect(mode.hourlySql).toContain("date_add('hour', -168,");
+          expect(mode.hourlySql).toMatch(/FROM\s+v_[a-z_]+_hourly/);
+          expect(mode.hourlySql).toMatch(/AS day/);
+        }
+      }
+    });
+
+    test("buildDailyCharts publishes 168 hourly points on the hourly modes and none elsewhere, with three extra queries", async () => {
+      const queries = [];
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            queries.push(command.input.QueryString);
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({
+              ResultSet: resultSetOfRows(["day", "component", "value"], [["2026-10-29T14:00:00Z", "human", "3"]]),
+            });
+        }
+      });
+
+      const now = new Date("2026-10-29T14:37:00.000Z");
+      const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY, now });
+
+      expect(failedChartIds).toEqual([]);
+      expect(dailyCharts.hours).toHaveLength(168);
+      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(3);
+      const hourlyModes = dailyCharts.charts.flatMap((chart) =>
+        chart.modes.filter((mode) => mode.hourly).map((mode) => `${chart.id}/${mode.id}`),
+      );
+      expect(hourlyModes).toEqual([
+        "activity-started-and-completed/started",
+        "activity-started-and-completed/completed",
+        "visitors/sessions",
+      ]);
+      const visitors = dailyCharts.charts.find((chart) => chart.id === "visitors").modes[0];
+      expect(visitors.hourly.series.map((line) => line.id)).toEqual(["operator", "authenticated", "human"]);
+      for (const line of visitors.hourly.series) expect(line.values).toHaveLength(168);
+      expect(visitors.hourly.series[2].values.at(-1)).toBe(3);
+    });
+
+    test("a failing hourly query leaves the chart without its hourly series and counts as a failure", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand": {
+            const failing = command.input.QueryString.includes("v_visitors_by_kind_hourly");
+            return Promise.resolve({ QueryExecutionId: failing ? "failing-1" : "q" });
+          }
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({
+              QueryExecution: {
+                Status: command.input.QueryExecutionId.startsWith("failing")
+                  ? { State: "FAILED", StateChangeReason: "TABLE_NOT_FOUND" }
+                  : { State: "SUCCEEDED" },
+              },
+            });
+          default:
+            return Promise.resolve({ ResultSet: resultSetOfRows(["day", "component", "value"], []) });
+        }
+      });
+
+      const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY });
+
+      expect(failedChartIds).toEqual(["visitors-hourly"]);
+      const visitors = dailyCharts.charts.find((chart) => chart.id === "visitors");
+      expect(visitors.modes[0].hourly).toBeUndefined();
+      expect(visitors.modes[0].series.length).toBeGreaterThan(0);
     });
 
     test("a chart whose query fails is left out and reported, and the others still publish", async () => {

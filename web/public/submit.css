@@ -5494,6 +5494,17 @@ table.observations th {
   }
 }
 
+/* The "Last updated" subtitles under the window columns. */
+table.observations thead tr.last-updated th.last-updated-cell,
+#objectivesContainer table.observations thead tr.last-updated th.last-updated-cell {
+  padding-top: 0;
+  font-size: var(--step--1);
+  font-weight: normal;
+  color: var(--c-ink-muted);
+  text-align: left;
+  white-space: normal;
+}
+
 .trend-flat,
 .trend-unknown {
   color: var(--c-ink-muted);
@@ -5559,7 +5570,7 @@ table.observations th {
 }
 
 #visitorsPanel {
-  min-height: 410px;
+  min-height: 440px;
 }
 
 #experimentsPanel {
@@ -5572,7 +5583,7 @@ table.observations th {
   }
 
   #visitorsPanel {
-    min-height: 480px;
+    min-height: 510px;
   }
 
   #experimentsPanel {
@@ -5591,7 +5602,7 @@ table.observations th {
   }
 
   #visitorsPanel {
-    min-height: 520px;
+    min-height: 560px;
   }
 
   #experimentsPanel {
@@ -5711,8 +5722,19 @@ table.observations th {
 
 .chart-legend-controls {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
   margin-bottom: var(--space-2);
+}
+
+.chart-range {
+  display: inline-flex;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.chart-range[hidden] {
+  display: none;
 }
 
 .chart-legend {

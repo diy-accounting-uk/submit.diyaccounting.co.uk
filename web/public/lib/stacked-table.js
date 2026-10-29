@@ -13,9 +13,10 @@
 
   function columnLabels(table) {
     const head = table.tHead;
-    if (!head || head.rows.length === 0) return [];
+    const headingRows = head ? [...head.rows].filter((row) => !row.classList.contains("last-updated")) : [];
+    if (headingRows.length === 0) return [];
     const labels = [];
-    for (const cell of head.rows[head.rows.length - 1].cells) {
+    for (const cell of headingRows[headingRows.length - 1].cells) {
       for (let span = 0; span < cell.colSpan; span++) labels.push(cell.textContent.trim());
     }
     return labels;
