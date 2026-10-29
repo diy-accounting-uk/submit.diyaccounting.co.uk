@@ -383,13 +383,14 @@ test("Click through: File a Foreign Property Quarterly Update with HMRC", async 
   /*  AMEND THE TOTAL, LIST THE PERIODS AND VIEW THE TOTAL */
   /* ***************************************************** */
 
+  // These pages send HMRC's named retrieve scenario for a synthetic account themselves.
   // 2025-26 has no submission ID: the amendment replaces the year's running total, so it loads
   // that total, corrects one figure and sends every entry again.
   const amendedRent = 1200;
   await initItsaForeignPropertyPeriodAmend(page, screenshotPath);
   const amendEntries = await loadItsaForeignPropertyPeriodForAmend(
     page,
-    { hmrcNino: testNino, businessId, taxYear, testScenario: storeScenario, runFraudPreventionHeaderValidation },
+    { hmrcNino: testNino, businessId, taxYear, runFraudPreventionHeaderValidation },
     screenshotPath,
   );
   expect(amendEntries).toBeGreaterThan(0);
@@ -399,13 +400,13 @@ test("Click through: File a Foreign Property Quarterly Update with HMRC", async 
 
   const listedEntries = await listItsaForeignPropertyPeriods(
     page,
-    { hmrcNino: testNino, businessId, taxYear, testScenario: storeScenario, runFraudPreventionHeaderValidation },
+    { hmrcNino: testNino, businessId, taxYear, runFraudPreventionHeaderValidation },
     screenshotPath,
   );
   expect(listedEntries).toBeGreaterThan(0);
   await viewItsaForeignPropertyCurrentTotal(
     page,
-    { hmrcNino: testNino, businessId, taxYear, testScenario: storeScenario, runFraudPreventionHeaderValidation },
+    { hmrcNino: testNino, businessId, taxYear, runFraudPreventionHeaderValidation },
     screenshotPath,
   );
 
