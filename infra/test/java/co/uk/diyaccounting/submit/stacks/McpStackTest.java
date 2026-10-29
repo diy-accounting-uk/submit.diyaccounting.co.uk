@@ -295,7 +295,13 @@ class McpStackTest {
         assertEquals("docs-env-mcp-sessions", variables.get("MCP_SESSIONS_DYNAMODB_TABLE_NAME"));
         assertEquals(sharedNames.baseUrl, variables.get("DIY_SUBMIT_BASE_URL"));
         assertTrue(variables.containsKey("MCP_OAUTH_BLOB_KEY_SECRET_ARN"));
+        assertEquals(sharedNames.practiceClientsTableName, variables.get("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME"));
         var statements = iamStatementsForFunction(template, stack.mcpCodesEntryLambdaProps.ingestFunctionName());
+        assertTrue(
+                statements.stream()
+                        .anyMatch(statement -> actionsOf(statement).contains("dynamodb:GetItem")
+                                && String.valueOf(statement.get("Resource")).contains("practice-clients")),
+                "expected the codes entry function to read the practice clients table");
         assertTrue(
                 statements.stream()
                         .anyMatch(statement -> actionsOf(statement).contains("dynamodb:PutItem")
