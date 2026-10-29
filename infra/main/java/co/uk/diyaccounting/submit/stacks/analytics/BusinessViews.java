@@ -270,7 +270,23 @@ public class BusinessViews extends Construct {
                     "v_ads_performance_daily",
                     "Google Ads impressions, clicks, cost, click-through rate and cost per click each day",
                     List.of("v_ads_cost_daily"),
-                    List.of("v_ads_cost_daily")));
+                    List.of("v_ads_cost_daily")),
+            new ViewDefinition(
+                    "v_spreadsheets_downloads_daily",
+                    "Spreadsheet downloads each day, by product, from the GA4 download events",
+                    List.of("downloads_by_product_daily")),
+            new ViewDefinition(
+                    "v_submit_referrals_daily",
+                    "Submit sessions each day that came from the spreadsheets site and from the gateway site",
+                    List.of("sessions_by_host_source_daily")),
+            new ViewDefinition(
+                    "v_active_customers_7d_daily",
+                    "Distinct customers active each day and over the 7 days to it, by app client and for all clients",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_ga4_landing_pages_daily",
+                    "GA4 sessions each day by landing page, and how many of them signed in",
+                    List.of("ga4_bq_events")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<CustomResource> viewResources = new ArrayList<>();

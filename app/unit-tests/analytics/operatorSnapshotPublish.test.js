@@ -518,6 +518,82 @@ describe("operatorSnapshotPublish", () => {
       expect(betterDirection("charges-without-activation")).toBe("down");
     });
 
+    test("the funnel starts at the spreadsheets site and the signup observations carry a weighted share", () => {
+      const submission = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "conversion-to-submission");
+      const byId = (id) => submission.observations.find((observation) => observation.id === id);
+
+      expect(byId("spreadsheets-downloads")).toMatchObject({ view: "v_spreadsheets_downloads_daily", valueExpr: "downloads" });
+      expect(byId("sessions-from-spreadsheets")).toMatchObject({ view: "v_submit_referrals_daily", where: "origin = 'spreadsheets'" });
+      expect(byId("sessions-from-www")).toMatchObject({ view: "v_submit_referrals_daily", where: "origin = 'www'" });
+      expect(byId("active-customers-7d")).toMatchObject({
+        view: "v_active_customers_7d_daily",
+        valueExpr: "active_users_7d",
+        where: "app_client = 'all'",
+      });
+      expect(byId("new-accounts-submitted-share")).toMatchObject({
+        view: "v_signup_to_first_submission",
+        valueExpr: "submitted",
+        denominatorExpr: "new_accounts",
+        aggregation: "ratio",
+        unit: "ratio",
+      });
+      expect(byId("median-hours-to-first-submission")).toMatchObject({ unit: "hours", valueExpr: "median_hours_to_first_submission" });
+      const retention = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "retention");
+      for (const id of ["retention-active-customers-7d", "retention-new-accounts", "retention-new-accounts-submitted-share"]) {
+        expect(retention.observations.map((observation) => observation.id)).toContain(id);
+      }
+      for (const observation of [...submission.observations, ...retention.observations].filter((o) =>
+        /spreadsheet|from-www|active-customers|submitted|median-hours|retention-new/.test(o.id),
+      )) {
+        expect(observation.description.length, observation.id).toBeGreaterThan(20);
+      }
+      expect(measureDescription(byId("new-accounts-submitted-share"))).toBe("total of submitted over total of new_accounts");
+
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "conversion-to-submission");
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["funnel", "active-customers", "active-customers-7d"]);
+      const funnel = chart.modes[0];
+      expect(funnel.componentOrder.slice(0, 3)).toEqual(["spreadsheet-downloads", "sessions-from-spreadsheets", "sessions-from-www"]);
+      for (const id of funnel.componentOrder) expect(funnel.descriptionOf(id), id).toBeTruthy();
+      expect(chart.modes[1].sql).toContain("FROM   v_active_customers_7d_daily");
+      expect(chart.modes[2].labelOf("all")).toBe("All clients");
+    });
+
+    test("the Visitors chart reads sessions by landing page, the sign-in rate and sessions by country with AI agents apart", () => {
+      const visitors = buildDailyChartDefinitions().find((definition) => definition.id === "visitors");
+
+      expect(visitors.modes.map((mode) => mode.id)).toEqual([
+        "sessions",
+        "landing-page",
+        "landing-page-sign-in",
+        "country",
+        "ai-agent-country",
+      ]);
+      expect(visitors.modes[1].label).toBe("By landing page");
+      expect(visitors.modes[1].sql).toContain("FROM   v_ga4_landing_pages_daily");
+      expect(visitors.modes[2].unit).toBe("ratio");
+      expect(visitors.modes[2].sql).toContain("sum(sign_ins)");
+      expect(visitors.modes[3].sql).toContain("human_sessions");
+      expect(visitors.modes[4].sql).toContain("ai_agent_sessions");
+      for (const mode of visitors.modes.slice(1)) {
+        expect(mode.descriptionOf("/pricing"), mode.id).toBeTruthy();
+        if (mode.total) expect(mode.totalDescription, mode.id).toBeTruthy();
+      }
+    });
+
+    test("a ratio observation divides the window's total by the window's total of its denominator", () => {
+      const sql = buildWindowedBatchSql({
+        view: "v_signup_to_first_submission",
+        dayColumn: "signup_day",
+        observations: [{ valueExpr: "submitted", denominatorExpr: "new_accounts", aggregation: "ratio" }],
+      });
+
+      expect(sql).toContain(
+        "cast(sum(CASE WHEN signup_day > date_add('day', -30, current_date) THEN submitted END) AS double) / nullif(sum(CASE WHEN signup_day > date_add('day', -30, current_date) THEN new_accounts END), 0) AS o0_last_30",
+      );
+      const empty = toObservationWindows({ first_day: "2026-01-01", last_30: null }, "ratio", new Date("2026-10-29T12:00:00Z"));
+      expect(empty.last30).toEqual({ value: null, trend: null, noEvents: true });
+    });
+
     test("the Conversion to paid chart draws contribution and the Ads campaigns, each line described", () => {
       const paid = buildDailyChartDefinitions().find((definition) => definition.id === "conversion-to-paid");
 

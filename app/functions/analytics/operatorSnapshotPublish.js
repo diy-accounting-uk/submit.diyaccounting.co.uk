@@ -252,6 +252,106 @@ export const OBJECTIVE_DEFINITIONS = [
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
+        id: "spreadsheets-downloads",
+        label: "Spreadsheet downloads",
+        description:
+          "Downloads of a spreadsheet from the spreadsheets site, from the GA4 download events, added over the days. The first step of the path to a first filing. GA4 reports whole days two days late.",
+        unit: "count",
+        view: "v_spreadsheets_downloads_daily",
+        dayColumn: "day",
+        valueExpr: "downloads",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "sessions-from-spreadsheets",
+        label: "Submit sessions from the spreadsheets site",
+        description:
+          "Sessions on the Submit site whose source is the spreadsheets site, from GA4, added over the days. Counts visitors who accepted analytics.",
+        unit: "count",
+        view: "v_submit_referrals_daily",
+        dayColumn: "day",
+        valueExpr: "sessions",
+        aggregation: "sum",
+        where: "origin = 'spreadsheets'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "sessions-from-www",
+        label: "Submit sessions from the gateway site",
+        description:
+          "Sessions on the Submit site whose source is the gateway site (www.diyaccounting.co.uk), from GA4, added over the days. Counts visitors who accepted analytics.",
+        unit: "count",
+        view: "v_submit_referrals_daily",
+        dayColumn: "day",
+        valueExpr: "sessions",
+        aggregation: "sum",
+        where: "origin = 'www'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "active-customers-daily",
+        label: "Active customers, per day",
+        description: "Distinct signed-in customers who made a call on a day, all app clients together, averaged over the days.",
+        unit: "count",
+        view: "v_active_customers_7d_daily",
+        dayColumn: "day",
+        valueExpr: "active_users_1d",
+        aggregation: "avg",
+        where: "app_client = 'all'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "active-customers-7d",
+        label: "Active customers, per 7 days",
+        description:
+          "Distinct signed-in customers who made a call in the 7 days to each day, all app clients together, averaged over the days. Each customer counts once however many days they came.",
+        unit: "count",
+        view: "v_active_customers_7d_daily",
+        dayColumn: "day",
+        valueExpr: "active_users_7d",
+        aggregation: "avg",
+        where: "app_client = 'all'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "new-accounts-submitted",
+        label: "New accounts that submitted",
+        description:
+          "Of the accounts opened in the window, the ones that have made a submission since, added over the days. A recent account may not have submitted yet.",
+        unit: "count",
+        view: "v_signup_to_first_submission",
+        dayColumn: "signup_day",
+        valueExpr: "submitted",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "new-accounts-submitted-share",
+        label: "New accounts that submitted, share",
+        description:
+          "The accounts opened in the window that have submitted, as a share of all the accounts opened in it. A recent account may not have submitted yet.",
+        unit: "ratio",
+        view: "v_signup_to_first_submission",
+        dayColumn: "signup_day",
+        valueExpr: "submitted",
+        aggregation: "ratio",
+        denominatorExpr: "new_accounts",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "median-hours-to-first-submission",
+        label: "Median hours to first submission",
+        description:
+          "For the accounts opened each day, the median hours from opening to the first submission, averaged over the days. A day with no submitting account has no figure.",
+        unit: "hours",
+        view: "v_signup_to_first_submission",
+        dayColumn: "signup_day",
+        valueExpr: "median_hours_to_first_submission",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
         id: "submission-failure-rate",
         label: "VAT submissions that failed",
         description: "The share of VAT returns sent to HMRC that failed, averaged over the days. A day with no submissions has no rate.",
@@ -727,6 +827,43 @@ export const OBJECTIVE_DEFINITIONS = [
         deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
       },
       {
+        id: "retention-active-customers-7d",
+        label: "Active customers, per 7 days",
+        description:
+          "Distinct signed-in customers who made a call in the 7 days to each day, all app clients together, averaged over the days. The base the retained submitters come from.",
+        unit: "count",
+        view: "v_active_customers_7d_daily",
+        dayColumn: "day",
+        valueExpr: "active_users_7d",
+        aggregation: "avg",
+        where: "app_client = 'all'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "retention-new-accounts",
+        label: "New accounts",
+        description: "Accounts opened, added over the days.",
+        unit: "count",
+        view: "v_signup_to_first_submission",
+        dayColumn: "signup_day",
+        valueExpr: "new_accounts",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "retention-new-accounts-submitted-share",
+        label: "New accounts that submitted, share",
+        description:
+          "The accounts opened in the window that have submitted, as a share of all the accounts opened in it. A recent account may not have submitted yet.",
+        unit: "ratio",
+        view: "v_signup_to_first_submission",
+        dayColumn: "signup_day",
+        valueExpr: "submitted",
+        aggregation: "ratio",
+        denominatorExpr: "new_accounts",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
         id: "retention-passes-issued",
         label: "Passes issued",
         unit: "count",
@@ -1051,6 +1188,16 @@ const BETTER_UP_IDS = [
   "ads-impressions",
   "ads-clicks",
   "ads-ctr",
+  "spreadsheets-downloads",
+  "sessions-from-spreadsheets",
+  "sessions-from-www",
+  "active-customers-daily",
+  "active-customers-7d",
+  "new-accounts-submitted",
+  "new-accounts-submitted-share",
+  "retention-active-customers-7d",
+  "retention-new-accounts",
+  "retention-new-accounts-submitted-share",
 ];
 const BETTER_DOWN_IDS = [
   "alarms-fired",
@@ -1088,6 +1235,7 @@ const BETTER_DOWN_IDS = [
   "company-net-monthly-burn-gbp",
   "ads-cost-per-click-gbp",
   "charges-without-activation",
+  "median-hours-to-first-submission",
 ];
 
 export function betterDirection(observationId) {
@@ -1103,6 +1251,7 @@ export function measureDescription(observation) {
   const periods = PERIOD_NAME_BY_DAY_COLUMN[observation.dayColumn] ?? "days";
   if (observation.aggregation === "sum") return `total of the ${periods}`;
   if (observation.aggregation === "avg") return `average of the ${periods}`;
+  if (observation.aggregation === "ratio") return `total of ${observation.valueExpr} over total of ${observation.denominatorExpr}`;
   if (observation.aggregation === "max") return "highest in the window";
   if (observation.aggregation === "latest") return "latest day in the window";
   return "count of rows";
@@ -1333,6 +1482,8 @@ export const LATEST_READING_VIEWS = new Set([
   "v_company_runway",
   "v_contribution_daily",
   "v_ads_performance_daily",
+  "v_spreadsheets_downloads_daily",
+  "v_submit_referrals_daily",
 ]);
 
 // A view with one row per month or quarter has no Today or Previous day.
@@ -1359,6 +1510,9 @@ function caseFilter(where) {
  * newest day up to today and `o<i>_today_as_of` is that day. A view with one row per month or
  * quarter has no Today or Previous day, so those columns are left out.
  *
+ * An observation with aggregation "ratio" divides the window's total of `valueExpr` by its total
+ * of `denominatorExpr`, so a share is weighted by the days' sizes rather than averaged.
+ *
  * `reportDataSince` adds `o<i>_data_since`, the earliest day the view holds rows for that
  * observation, so a window longer than the data reads as "since <day>" on the page rather than
  * as a full window.
@@ -1366,13 +1520,13 @@ function caseFilter(where) {
  * Each query lists every partition prefix its view's tables project and reads their objects, so
  * every run makes one query per view rather than one per observation.
  *
- * @param {{view: string, dayColumn: string, observations: Array<{valueExpr: string, aggregation: string, where?: string, reportDataSince?: boolean}>}} group
+ * @param {{view: string, dayColumn: string, observations: Array<{valueExpr: string, denominatorExpr?: string, aggregation: string, where?: string, reportDataSince?: boolean}>}} group
  * @returns {string}
  */
 export function buildWindowedBatchSql({ view, dayColumn, observations }) {
   const latestReading = LATEST_READING_VIEWS.has(view);
   const periodic = isPeriodicDayColumn(dayColumn);
-  const columns = observations.flatMap(({ valueExpr, aggregation, where, reportDataSince }, index) => {
+  const columns = observations.flatMap(({ valueExpr, denominatorExpr, aggregation, where, reportDataSince }, index) => {
     const prefix = observationColumnPrefix(index);
     const filter = caseFilter(where);
     // "latest" reads the value on the newest day inside the window, for a balance that a
@@ -1384,6 +1538,10 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
         if (aggregation === "latest" || newestDay) {
           const window = newestDay ? `${dayColumn} <= ${UK_TODAY}` : condition(dayColumn);
           return `max_by(${valueExpr}, ${dayColumn}) FILTER (WHERE ${window}${filter}) AS ${prefix}${alias}`;
+        }
+        if (aggregation === "ratio") {
+          const inWindow = `CASE WHEN ${condition(dayColumn)}${filter}`;
+          return `cast(sum(${inWindow} THEN ${valueExpr} END) AS double) / nullif(sum(${inWindow} THEN ${denominatorExpr} END), 0) AS ${prefix}${alias}`;
         }
         return `${aggregation}(CASE WHEN ${condition(dayColumn)}${filter} THEN ${valueExpr} END) AS ${prefix}${alias}`;
       },
@@ -1528,7 +1686,7 @@ function readWindow(row, column, aggregation, today) {
   const windowEndDay = column === "today" || column === "prev_1" ? ukDayFormat.format(windowEnd) : windowEnd.toISOString().slice(0, 10);
   if (row.first_day.slice(0, 10) > windowEndDay) return { value };
   if (aggregation === "sum") return { value: 0 };
-  return aggregation === "avg" ? { value, noEvents: true } : { value };
+  return aggregation === "avg" || aggregation === "ratio" ? { value, noEvents: true } : { value };
 }
 
 // Today for a source that reports whole days is its latest reading, whatever day that was: no
@@ -1883,7 +2041,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Conversion to submission",
       unit: "count",
-      note: "Steps, left to right: human sessions, customers active that day, those who submitted within 7 days. The last few days have not had their 7 days yet.",
+      note: "Steps, left to right: spreadsheet downloads, Submit sessions that came from the spreadsheets and gateway sites, human sessions, customers active that day, those who submitted within 7 days. Google Analytics reports whole days two days late. The last few days have not had their 7 days yet. Active customers shows each app client's customers per day and over 7 days.",
       modes: [
         {
           id: "funnel",
@@ -1891,19 +2049,39 @@ export function buildDailyChartDefinitions() {
           total: null,
           descriptionOf: (id) =>
             ({
+              "spreadsheet-downloads": "Spreadsheets downloaded from the spreadsheets site, from the GA4 download events.",
+              "sessions-from-spreadsheets": "Sessions on the Submit site whose source is the spreadsheets site, from Google Analytics.",
+              "sessions-from-www":
+                "Sessions on the Submit site whose source is the gateway site (www.diyaccounting.co.uk), from Google Analytics.",
               "human-sessions": "Sessions of visitors classed as human, from Google Analytics; counts visitors who accepted analytics.",
               "active-customers": "Customers who signed in on the day.",
               "submitted-within-7-days": "Of those who signed in on the day, the customers who made a submission within 7 days.",
             })[id],
-          componentOrder: ["human-sessions", "active-customers", "submitted-within-7-days"],
+          componentOrder: [
+            "spreadsheet-downloads",
+            "sessions-from-spreadsheets",
+            "sessions-from-www",
+            "human-sessions",
+            "active-customers",
+            "submitted-within-7-days",
+          ],
           labelOf: (id) =>
             ({
+              "spreadsheet-downloads": "Spreadsheet downloads",
+              "sessions-from-spreadsheets": "Submit sessions from the spreadsheets site",
+              "sessions-from-www": "Submit sessions from the gateway site",
               "human-sessions": "Human sessions",
               "active-customers": "Active customers",
               "submitted-within-7-days": "Submitted within 7 days",
             })[id] ?? id,
           sql:
-            `SELECT cast(day AS varchar) AS day, 'human-sessions' AS component, cast(sum(sessions) AS double) AS value\n` +
+            `SELECT cast(day AS varchar) AS day, 'spreadsheet-downloads' AS component, cast(sum(downloads) AS double) AS value\n` +
+            `FROM   v_spreadsheets_downloads_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'sessions-from-' || origin, cast(sum(sessions) AS double)\n` +
+            `FROM   v_submit_referrals_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'human-sessions', cast(sum(sessions) AS double)\n` +
             `FROM   v_visitors_by_kind_daily\nWHERE  ${dailyWindowFilter("day")} AND visitor_kind = 'human'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(cohort_day AS varchar), 'active-customers', cast(sum(logged_in) AS double)\n` +
@@ -1911,6 +2089,32 @@ export function buildDailyChartDefinitions() {
             `UNION ALL\n` +
             `SELECT cast(cohort_day AS varchar), 'submitted-within-7-days', cast(sum(submitted_within_7d) AS double)\n` +
             `FROM   v_login_to_submission_funnel\nWHERE  ${dailyWindowFilter("cohort_day")}\nGROUP  BY 1`,
+        },
+        {
+          id: "active-customers",
+          label: "Active customers by app client",
+          total: null,
+          labelOf: (id) => (id === "all" ? "All clients" : id),
+          descriptionOf: (id) =>
+            id === "all"
+              ? "Distinct signed-in customers who made a call on the day, all app clients together."
+              : `Distinct signed-in customers who made a call on the day through the ${id} app client.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, app_client AS component, cast(sum(active_users_1d) AS double) AS value\n` +
+            `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+        },
+        {
+          id: "active-customers-7d",
+          label: "Active customers over 7 days",
+          total: null,
+          labelOf: (id) => (id === "all" ? "All clients" : id),
+          descriptionOf: (id) =>
+            id === "all"
+              ? "Distinct signed-in customers who made a call in the 7 days to the day, all app clients together."
+              : `Distinct signed-in customers who made a call in the 7 days to the day through the ${id} app client.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, app_client AS component, cast(sum(active_users_7d) AS double) AS value\n` +
+            `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
         },
       ],
     },
@@ -2136,7 +2340,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "retention",
       title: "Retention",
       unit: "count",
-      note: "The 90-day windows roll: each day counts the customers who submitted in the 90 days up to it, so a figure falls when a submission leaves the window. A returning submitter also submitted in the 90 days before that; the table above reads the same line on its latest day. Passes issued are a count per day.",
+      note: "The 90-day windows roll: each day counts the customers who submitted in the 90 days up to it, so a figure falls when a submission leaves the window. A returning submitter also submitted in the 90 days before that; the table above reads the same line on its latest day. Active customers over 7 days and New accounts are the bases the submitters come from. Passes issued are a count per day.",
       reconciliation: {
         sql:
           `SELECT actor_group, cast(sum(submissions) AS varchar) AS submissions, cast(count(DISTINCT hashed_sub) AS varchar) AS submitters\n` +
@@ -2155,8 +2359,18 @@ export function buildDailyChartDefinitions() {
               "renewals": "Subscriptions renewed on the day.",
               "cancellations": "Subscriptions cancelled on the day.",
               "passes-issued": "Passes issued on the day, of every pass type.",
+              "active-customers-7d": "Distinct signed-in customers who made a call in the 7 days to the day.",
+              "new-accounts": "Accounts opened on the day, test and operator accounts apart.",
             })[id],
-          componentOrder: ["submitters-90d", "returning-submitters-90d", "renewals", "cancellations", "passes-issued"],
+          componentOrder: [
+            "active-customers-7d",
+            "new-accounts",
+            "submitters-90d",
+            "returning-submitters-90d",
+            "renewals",
+            "cancellations",
+            "passes-issued",
+          ],
           labelOf: (id) =>
             ({
               "passes-issued": "Passes issued",
@@ -2164,8 +2378,16 @@ export function buildDailyChartDefinitions() {
               "returning-submitters-90d": "Returning submitters, 90 days to this day",
               "renewals": "Subscription renewals",
               "cancellations": "Subscription cancellations",
+              "active-customers-7d": "Active customers, 7 days to this day",
+              "new-accounts": "New accounts",
             })[id] ?? id,
           sql:
+            `SELECT cast(day AS varchar) AS day, 'active-customers-7d' AS component, cast(sum(active_users_7d) AS double) AS value\n` +
+            `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")} AND app_client = 'all'\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(signup_day AS varchar), 'new-accounts', cast(sum(new_accounts) AS double)\n` +
+            `FROM   v_signup_to_first_submission\nWHERE  ${dailyWindowFilter("signup_day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
             `SELECT cast(day AS varchar) AS day, 'submitters-90d' AS component, cast(sum(submitters_90d) AS double) AS value\n` +
             `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
             `UNION ALL\n` +
@@ -2188,7 +2410,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Visitors",
       unit: "count",
-      note: "Operator, authenticated user and human count Google Analytics sessions, so only visitors who accepted analytics. Synthetic and bot count distinct visitors each day from the CloudFront access log, which Google Analytics cannot see; a visitor is a salted hash of the client address that changes every day, so one visitor is counted once a day and never followed across days.",
+      note: "Operator, authenticated user and human count Google Analytics sessions, so only visitors who accepted analytics. Synthetic and bot count distinct visitors each day from the CloudFront access log, which Google Analytics cannot see; a visitor is a salted hash of the client address that changes every day, so one visitor is counted once a day and never followed across days. By landing page counts the Google Analytics sessions that began on each page; By country counts the activity events' new sessions, with AI agents apart.",
       modes: [
         {
           id: "sessions",
@@ -2203,6 +2425,68 @@ export function buildDailyChartDefinitions() {
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), visitor_kind, cast(sum(visitors) AS double)\n` +
             `FROM   v_visitors_cloudfront_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+        },
+        {
+          id: "landing-page",
+          label: "By landing page",
+          total: "All landing pages",
+          totalDescription: "Sessions of every landing page added together.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Google Analytics sessions that began on ${id}.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "landing_page",
+            valueExpression: "sessions",
+            view: "v_ga4_landing_pages_daily",
+            dayColumn: "day",
+          }),
+        },
+        {
+          id: "landing-page-sign-in",
+          label: "Sign-in rate by landing page",
+          unit: "ratio",
+          total: null,
+          labelOf: (id) => id,
+          descriptionOf: (id) =>
+            `The share of sessions that began on ${id} and went on to sign in. The ten landing pages with most sessions in the window.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, landing_page AS component, cast(sum(sign_ins) AS double) / sum(sessions) AS value\n` +
+            `FROM   v_ga4_landing_pages_daily\nWHERE  ${dailyWindowFilter("day")} AND landing_page IN (\n` +
+            `  SELECT landing_page FROM v_ga4_landing_pages_daily WHERE ${dailyWindowFilter("day")}\n` +
+            `  GROUP BY 1 ORDER BY sum(sessions) DESC LIMIT 10)\nGROUP  BY 1, 2\nHAVING sum(sessions) > 0`,
+        },
+        {
+          id: "country",
+          label: "By country",
+          total: "All countries",
+          totalDescription: "Sessions of every country added together, AI agents apart.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Sessions from ${id} that are not AI agents, from the activity events.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "country",
+            valueExpression: "human_sessions",
+            view: "v_traffic_by_country_daily",
+            dayColumn: "day",
+          }),
+        },
+        {
+          id: "ai-agent-country",
+          label: "AI agents by country",
+          total: "All AI-agent sessions",
+          totalDescription: "Sessions by AI agents from every country added together.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Sessions by AI agents from ${id}, from the activity events.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "country",
+            valueExpression: "ai_agent_sessions",
+            view: "v_traffic_by_country_daily",
+            dayColumn: "day",
+          }),
         },
       ],
     },

@@ -727,6 +727,16 @@ public class AnalyticsStack extends Stack {
         businessViews.viewResourcesByName.get("v_usd_gbp_daily").getNode().addDependency(fxRateTables.ratesTable);
         businessViews
                 .viewResourcesByName
+                .get("v_spreadsheets_downloads_daily")
+                .getNode()
+                .addDependency(ga4DailyTables.downloadsByProductTable);
+        businessViews
+                .viewResourcesByName
+                .get("v_submit_referrals_daily")
+                .getNode()
+                .addDependency(ga4DailyTables.sessionsByHostSourceTable);
+        businessViews
+                .viewResourcesByName
                 .get("v_company_runway")
                 .getNode()
                 .addDependency(companyBookTables.companyAccountsTable);

@@ -371,6 +371,17 @@ const FIXTURE_DAILY_CHARTS = {
           series: [chartSeries("subscriptions", "Subscriptions", 5), chartSeries("stripe-donations", "Stripe donations", 3)],
         },
         { id: "passes", label: "Passes issued", unit: "count", series: [chartSeries("passes-issued", "Passes issued", 4)] },
+        {
+          id: "ads-ctr",
+          label: "Ads click-through rate by campaign",
+          unit: "ratio",
+          series: [
+            {
+              ...chartSeries("search-mtd-vat", "Search: MTD VAT", 0.04),
+              description: "The campaign's clicks over its impressions in a day.",
+            },
+          ],
+        },
       ],
     },
     chartWithSeries("low-running-cost", "low-running-cost", "AWS costs", "usd", [
@@ -1029,6 +1040,20 @@ test.describe("Operator Dashboard", () => {
       await expect(activities.locator("polyline.chart-line")).toHaveCount(13);
       await activities.locator('.chart-mode[data-mode-id="completed"]').click();
       await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+    });
+
+    test("reads a ratio mode as a percentage", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const paid = page.locator('.chart-card[data-chart-id="conversion-to-paid"]');
+      await paid.locator('.chart-mode[data-mode-id="ads-ctr"]').click();
+      await expect(paid.locator('.chart-legend-item[data-series-id="search-mtd-vat"]')).toHaveAttribute(
+        "title",
+        /clicks over its impressions/,
+      );
+      await expect(paid.locator(".chart-readout")).toContainText("%");
+      await expect(paid.locator(".chart-readout")).not.toContainText("£");
     });
 
     test("shows all, hides all, isolates one line on a double-click and restores on a second", async ({ page }) => {
