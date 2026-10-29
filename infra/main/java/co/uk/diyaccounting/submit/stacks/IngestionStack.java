@@ -875,6 +875,57 @@ public class IngestionStack extends Stack {
         }
 
         // ============================================================================
+        // FX rate pull job: the European Central Bank's euro reference rates for the last 90
+        // working days into the lake, so the operator dashboard converts the dollar AWS bill to
+        // pounds. The feed is public and needs no credential, so the job exists in every
+        // environment.
+        // ============================================================================
+        var fxRatePullFunctionName = prefix + "-fx-rate-pull";
+        var fxRatePullEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName);
+
+        IRepository fxRatePullRepository = Repository.fromRepositoryAttributes(
+                this,
+                prefix + "-FxRatePull-EcrRepo",
+                RepositoryAttributes.builder()
+                        .repositoryArn(sharedNames.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .build());
+
+        var fxRatePullLogGroup = ensureLogGroupWithDependency(
+                this, prefix + "-FxRatePullLogGroup", "/aws/lambda/" + fxRatePullFunctionName);
+
+        Function fxRatePullLambda = DockerImageFunction.Builder.create(this, prefix + "-FxRatePullFn")
+                .functionName(fxRatePullFunctionName)
+                .code(DockerImageCode.fromEcr(
+                        fxRatePullRepository,
+                        EcrImageCodeProps.builder()
+                                .tagOrDigest(props.baseImageTag())
+                                .cmd(List.of("app/functions/analytics/fxRatePull.handler"))
+                                .build()))
+                .timeout(Duration.minutes(2))
+                .memorySize(256)
+                .architecture(Architecture.ARM_64)
+                .environment(fxRatePullEnv)
+                .logGroup(fxRatePullLogGroup.logGroup())
+                .build();
+        fxRatePullLambda.getNode().addDependency(fxRatePullLogGroup.ensureResource());
+
+        // Own prefix only: the rates carry no customer identity.
+        fxRatePullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:PutObject"))
+                .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/fx/*"))
+                .build());
+
+        registerIngestionJob(
+                "FxRatePull",
+                fxRatePullFunctionName,
+                fxRatePullLambda,
+                "Pull the European Central Bank's euro reference rates into the analytics lake");
+
+        // ============================================================================
         // Nightly orchestration: one Step Functions state machine, one EventBridge Scheduler
         // schedule, replacing the five independent rules and DLQs the jobs used before this
         // machine existed
@@ -906,6 +957,7 @@ public class IngestionStack extends Stack {
                         .companyBookPullLambda(Optional.ofNullable(companyBookPullLambda))
                         .paypalDonationsPullLambda(Optional.ofNullable(paypalDonationsPullLambda))
                         .adsCostPullLambda(Optional.ofNullable(adsCostPullLambda))
+                        .fxRatePullLambda(fxRatePullLambda)
                         .dataQualityRunLambda(dataQualityRunLambda)
                         .metricsPublishLambda(metricsPublishLambda)
                         .rawExportPublishLambda(rawExportPublishLambda)

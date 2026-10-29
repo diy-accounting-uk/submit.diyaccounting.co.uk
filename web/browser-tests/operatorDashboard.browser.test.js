@@ -182,6 +182,30 @@ const FIXTURE_SNAPSHOT = {
           last30: { value: 37000, trend: 0.15 },
           last90: { value: 37000, trend: 0.15 },
         },
+        {
+          id: "company-contribution-gbp",
+          label: "Contribution",
+          description: "Revenue less the AWS bill in pounds less Google Ads cost.",
+          unit: "gbp",
+          last30: { value: -42.5, trend: null },
+          last90: { value: -90, trend: null },
+        },
+        {
+          id: "company-net-monthly-burn-gbp",
+          label: "Net monthly burn",
+          description: "The period's costs less its turnover, per month.",
+          unit: "gbp",
+          last30: { value: 1250, trend: null },
+          last90: { value: 1250, trend: null },
+        },
+        {
+          id: "company-runway-months",
+          label: "Runway",
+          description: "Cash less creditors due within a year, over the net monthly burn.",
+          unit: "months",
+          last30: { value: 14.25, trend: null },
+          last90: { value: 14.25, trend: null },
+        },
       ],
     },
     {
@@ -386,9 +410,18 @@ const FIXTURE_COST_DRIVERS = {
   ],
 };
 
+const FIXTURE_PAID_SUBSCRIBERS = {
+  month: "2026-10-01",
+  rows: [
+    { source: "google-ads", bundleId: "resident-vat", subscribers: 3, mrrGbp: 27, arrGbp: 324 },
+    { source: "unknown", bundleId: "resident-pro", subscribers: 1, mrrGbp: 19, arrGbp: 228 },
+  ],
+  totals: { subscribers: 4, mrrGbp: 46, arrGbp: 552 },
+};
+
 const FIXTURE_SNAPSHOT_WITH_CHARTS = { ...FIXTURE_SNAPSHOT, dailyCharts: FIXTURE_DAILY_CHARTS };
 
-const SAMPLE_VALUE_BY_UNIT = { count: 1234, gbp: 12345.67, usd: 123.45, ratio: 0.987, hours: 12.5, runs: 42 };
+const SAMPLE_VALUE_BY_UNIT = { count: 1234, gbp: 12345.67, usd: 123.45, ratio: 0.987, hours: 12.5, runs: 42, months: 14.25 };
 
 // Every observation the publisher defines, each with a value in every column, which is the
 // most the page ever renders; the layout tests size the page's reserved heights against it.
@@ -423,6 +456,7 @@ function fullShapeSnapshot() {
       })),
     })),
     costDrivers: FIXTURE_COST_DRIVERS,
+    paidSubscribers: FIXTURE_PAID_SUBSCRIBERS,
     failedObservationCount: 0,
   };
 }
@@ -743,6 +777,39 @@ test.describe("Operator Dashboard", () => {
 
     const capitalAndReservesRow = panel.locator('.company-accounts-row[data-observation-id="company-capital-and-reserves"]');
     await expect(capitalAndReservesRow.locator("td").nth(1)).toHaveText("£37,000.00");
+  });
+
+  test("shows contribution, burn and runway with their tooltips on the company accounts panel", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const panel = page.locator("#companyContributionTable");
+    const contribution = panel.locator('.company-accounts-row[data-observation-id="company-contribution-gbp"]');
+    await expect(contribution.locator("td").nth(1)).toHaveText("-£42.50");
+    await expect(contribution.locator("td").nth(0)).toHaveAttribute("title", /Revenue less the AWS bill/);
+    await expect(panel.locator('.company-accounts-row[data-observation-id="company-net-monthly-burn-gbp"] td').nth(1)).toHaveText(
+      "£1,250.00",
+    );
+    await expect(panel.locator('.company-accounts-row[data-observation-id="company-runway-months"] td').nth(1)).toHaveText("14.25 months");
+  });
+
+  test("lists paying subscribers by channel and bundle under Conversion to paid, or says none are published", async ({ page }) => {
+    await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, paidSubscribers: FIXTURE_PAID_SUBSCRIBERS } });
+    await loadDashboard(page);
+
+    const section = page.locator('.objective[data-objective-id="conversion-to-paid"]');
+    await expect(section.locator(".paid-subscribers h3")).toHaveText("Paying subscribers by channel and bundle, 2026-10");
+    await expect(section.locator(".paid-subscribers h3")).toHaveAttribute("title", /Customers with a paid subscription charge/);
+    const rows = section.locator("tr.paid-subscribers-row");
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0).locator("td")).toHaveText(["google-ads", "resident-vat", "3", "£27.00", "£324.00"]);
+    await expect(section.locator("tr.paid-subscribers-total td")).toHaveText(["All channels", "All bundles", "4", "£46.00", "£552.00"]);
+
+    await setupRoutes(page);
+    await loadDashboard(page);
+    await expect(page.locator('.objective[data-objective-id="conversion-to-paid"] .paid-subscribers')).toContainText(
+      "No paying subscribers published yet.",
+    );
   });
 
   test("shows the reinvestment fraction, trailing 30-day income and the budget", async ({ page }) => {

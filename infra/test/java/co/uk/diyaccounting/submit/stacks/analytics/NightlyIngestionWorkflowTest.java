@@ -69,6 +69,7 @@ class NightlyIngestionWorkflowTest {
                 .ga4EventExportPullLambda(ga4EventExportPullLambda)
                 .ga4DailyPullLambda(ga4DailyPullLambda)
                 .operatorEffortPullLambda(operatorEffortPullLambda)
+                .fxRatePullLambda(testLambda(stack, "FxRatePullLambda", "docs-env-fx-rate-pull"))
                 .dataQualityRunLambda(dataQualityRunLambda)
                 .metricsPublishLambda(metricsPublishLambda)
                 .rawExportPublishLambda(rawExportPublishLambda)
@@ -165,6 +166,7 @@ class NightlyIngestionWorkflowTest {
         assertEquals(1, countOccurrences(parallelBranchSlice, "\"GA4 event export pull\":{"));
         assertEquals(1, countOccurrences(parallelBranchSlice, "\"GA4 daily aggregate pull\":{"));
         assertEquals(1, countOccurrences(parallelBranchSlice, "\"operator effort pull\":{"));
+        assertEquals(1, countOccurrences(parallelBranchSlice, "\"FX rate pull\":{"));
 
         assertTrue(definitionText.contains("\"Type\":\"Parallel\""), "expected a Parallel state");
         assertTrue(definitionText.contains("\"Type\":\"Succeed\""), "expected a Succeed state");
@@ -177,11 +179,11 @@ class NightlyIngestionWorkflowTest {
 
         var definitionText = joinedDefinitionString(template);
 
-        // Nine tasks, one States.TaskFailed retry shape each (interval 60 is unique to this
+        // Ten tasks, one States.TaskFailed retry shape each (interval 60 is unique to this
         // retry: retryOnServiceExceptions adds its own separate retry, interval 2, for AWS
         // Lambda service errors, which every LambdaInvoke task carries in addition to this one).
         assertEquals(
-                9,
+                10,
                 countOccurrences(
                         definitionText,
                         "\"ErrorEquals\":[\"States.TaskFailed\"],\"IntervalSeconds\":60,\"MaxAttempts\":2,\"BackoffRate\":2"),
@@ -310,6 +312,7 @@ class NightlyIngestionWorkflowTest {
             "company book pull",
             "PayPal donations pull",
             "Ads cost pull",
+            "FX rate pull",
             "company book pull failed, recorded",
             "PayPal donations pull failed, recorded",
             "Ads cost pull failed, recorded",

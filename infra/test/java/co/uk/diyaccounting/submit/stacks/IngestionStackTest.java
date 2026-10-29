@@ -162,7 +162,7 @@ class IngestionStackTest {
         // adding one more Lambda function: the shared create-if-missing/retention singleton
         // provider.
         template.resourceCountIs("AWS::S3::Bucket", 0);
-        template.resourceCountIs("AWS::Lambda::Function", 6);
+        template.resourceCountIs("AWS::Lambda::Function", 7);
 
         // No per-job schedule, DLQ or DLQ-depth alarm any more: NightlyIngestionWorkflow's one
         // state machine and one scheduler schedule replace them. Five job Errors alarms plus
@@ -170,7 +170,7 @@ class IngestionStackTest {
         // so a non-prod envName ("docs") gives six alarms, not seven.
         template.resourceCountIs("AWS::Events::Rule", 0);
         template.resourceCountIs("AWS::SQS::Queue", 0);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 6);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 7);
         template.resourceCountIs("AWS::StepFunctions::StateMachine", 1);
         template.resourceCountIs("AWS::Scheduler::Schedule", 1);
 
@@ -329,7 +329,7 @@ class IngestionStackTest {
 
         // Five pre-existing job alarms plus the state machine's ExecutionsFailed alarm plus
         // this test's own job alarm.
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 7);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 8);
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
         for (Map<String, Object> alarm : alarms.values()) {
             @SuppressWarnings("unchecked")
@@ -357,7 +357,7 @@ class IngestionStackTest {
         // Same blank property id, non-prod envName: synth succeeds, matching the ci-deploys-fine-
         // before-the-operator-creates-the-service-account guarantee the design calls for.
         Template template = Template.fromStack(synthIngestionStack("docs", null, null, null));
-        template.resourceCountIs("AWS::Lambda::Function", 6);
+        template.resourceCountIs("AWS::Lambda::Function", 7);
     }
 
     @Test
@@ -370,7 +370,7 @@ class IngestionStackTest {
         // Same blank project id, non-prod envName: synth succeeds, matching the ci-deploys-fine-
         // before-the-operator-grants-BigQuery-access guarantee the design calls for.
         Template template = Template.fromStack(synthIngestionStack("docs", null, null, "999000111", null, null, null));
-        template.resourceCountIs("AWS::Lambda::Function", 6);
+        template.resourceCountIs("AWS::Lambda::Function", 7);
     }
 
     @Test
@@ -579,7 +579,7 @@ class IngestionStackTest {
     void adsCostPullJobExistsOnlyWhenAdsCostPullIsEnabled() {
         Template disabled = Template.fromStack(synthIngestionStackWithAds("disabled", false));
 
-        disabled.resourceCountIs("AWS::Lambda::Function", 6);
+        disabled.resourceCountIs("AWS::Lambda::Function", 7);
         assertEquals(
                 0,
                 disabled.findResources(
@@ -592,7 +592,7 @@ class IngestionStackTest {
 
         Template enabled = Template.fromStack(synthIngestionStackWithAds("enabled", true));
 
-        enabled.resourceCountIs("AWS::Lambda::Function", 7);
+        enabled.resourceCountIs("AWS::Lambda::Function", 8);
         assertEquals(
                 1,
                 enabled.findResources(
@@ -638,6 +638,18 @@ class IngestionStackTest {
                 lambdaEnvironment.get("ADS_REFRESH_TOKEN_SECRET_ARN"));
     }
 
+    @Test
+    void fxRatePullExistsInEveryEnvironmentAndCanOnlyPutUnderCuratedFx() {
+        Template template = Template.fromStack(synthIngestionStack());
+
+        template.hasResourceProperties(
+                "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", "docs-env-fx-rate-pull")));
+        assertTrue(
+                actionResources(template, "s3:PutObject").stream()
+                        .anyMatch(resource -> resource.endsWith("/curated/fx/*")),
+                "expected an s3:PutObject statement scoped to .../curated/fx/*");
+    }
+
     private static IngestionStack synthIngestionStackWithPaypal(String testId, boolean paypalPullEnabled) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
@@ -666,7 +678,7 @@ class IngestionStackTest {
     void paypalDonationsPullJobExistsOnlyWhenPaypalPullIsEnabled() {
         Template disabled = Template.fromStack(synthIngestionStackWithPaypal("disabled", false));
 
-        disabled.resourceCountIs("AWS::Lambda::Function", 6);
+        disabled.resourceCountIs("AWS::Lambda::Function", 7);
         assertEquals(
                 0,
                 disabled.findResources(
@@ -679,7 +691,7 @@ class IngestionStackTest {
 
         Template enabled = Template.fromStack(synthIngestionStackWithPaypal("enabled", true));
 
-        enabled.resourceCountIs("AWS::Lambda::Function", 7);
+        enabled.resourceCountIs("AWS::Lambda::Function", 8);
         assertEquals(
                 1,
                 enabled.findResources(
@@ -720,7 +732,7 @@ class IngestionStackTest {
     void companyBookPullJobAndDiyaGlGrantExistOnlyWhenBothValuesAreConfigured() {
         Template unconfigured = Template.fromStack(synthIngestionStackWithCompanyBook("unconfigured", null, null));
 
-        unconfigured.resourceCountIs("AWS::Lambda::Function", 6);
+        unconfigured.resourceCountIs("AWS::Lambda::Function", 7);
         assertEquals(
                 0,
                 unconfigured
@@ -738,7 +750,7 @@ class IngestionStackTest {
         Template configured = Template.fromStack(
                 synthIngestionStackWithCompanyBook("configured", COMPANY_BOOK_ID, COMPANY_BOOK_OWNER_PREFIX));
 
-        configured.resourceCountIs("AWS::Lambda::Function", 7);
+        configured.resourceCountIs("AWS::Lambda::Function", 8);
         assertEquals(
                 1,
                 configured

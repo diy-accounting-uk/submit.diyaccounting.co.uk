@@ -21,10 +21,12 @@ function formatDay(isoDay) {
 }
 
 function formatAxisValue(unit, value) {
+  if (unit === "ratio") return axisNumberFormat.format(value * 100) + "%";
   return (UNIT_PREFIX[unit] || "") + axisNumberFormat.format(value);
 }
 
 function formatReadoutValue(unit, value) {
+  if (unit === "ratio") return readoutNumberFormat.format(value * 100) + "%";
   return (UNIT_PREFIX[unit] || "") + readoutNumberFormat.format(value);
 }
 

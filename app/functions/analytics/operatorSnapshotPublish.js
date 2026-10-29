@@ -454,6 +454,74 @@ export const OBJECTIVE_DEFINITIONS = [
         aggregation: "avg",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
+      {
+        id: "contribution-gbp",
+        label: "Contribution",
+        description:
+          "Revenue less the AWS bill in pounds less Google Ads cost, added over the days. The AWS bill is in dollars and is converted at the European Central Bank rate of each day.",
+        unit: "gbp",
+        view: "v_contribution_daily",
+        dayColumn: "day",
+        valueExpr: "contribution_gbp",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ads-impressions",
+        label: "Ads impressions",
+        description: "Times a Google Ads advertisement was shown, added over the days.",
+        unit: "count",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "impressions",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ads-clicks",
+        label: "Ads clicks",
+        description: "Clicks on Google Ads advertisements, added over the days.",
+        unit: "count",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "clicks",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ads-ctr",
+        label: "Ads click-through rate",
+        description: "Clicks divided by impressions for the day, averaged over the days. A day with no impressions has no rate.",
+        unit: "ratio",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "ctr",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ads-cost-per-click-gbp",
+        label: "Ads cost per click",
+        description: "The day's Google Ads cost divided by the day's clicks, averaged over the days. A day with no clicks has no figure.",
+        unit: "gbp",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_click_gbp",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "charges-without-activation",
+        label: "Charges with no activation",
+        description:
+          "Days' Stripe paid charges that have no subscription-activated event, added over the days. Above zero means a customer paid and may have no bundle.",
+        unit: "count",
+        view: "v_purchase_reconciliation_daily",
+        dayColumn: "day",
+        valueExpr: "greatest(-activity_minus_stripe, 0)",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
     ],
   },
   {
@@ -900,6 +968,42 @@ export const OBJECTIVE_DEFINITIONS = [
         aggregation: "max",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
+      {
+        id: "company-contribution-gbp",
+        label: "Contribution",
+        description:
+          "Revenue less the AWS bill in pounds less Google Ads cost, added over the days. The AWS bill is in dollars and is converted at the European Central Bank rate of each day.",
+        unit: "gbp",
+        view: "v_contribution_daily",
+        dayColumn: "day",
+        valueExpr: "contribution_gbp",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "company-net-monthly-burn-gbp",
+        label: "Net monthly burn",
+        description:
+          "The period's costs less its turnover in the latest company book, spread over the months of the accounting period. Zero or below means the book made a profit.",
+        unit: "gbp",
+        view: "v_company_runway",
+        dayColumn: "dt",
+        valueExpr: "net_monthly_burn_gbp",
+        aggregation: "latest",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "company-runway-months",
+        label: "Runway",
+        description:
+          "Cash at bank less creditors due within one year, divided by the net monthly burn, in months. Not shown while the book makes a profit.",
+        unit: "months",
+        view: "v_company_runway",
+        dayColumn: "dt",
+        valueExpr: "runway_months",
+        aggregation: "latest",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
     ],
   },
   {
@@ -941,6 +1045,12 @@ const BETTER_UP_IDS = [
   "subscription-renewals",
   "company-turnover",
   "company-profit",
+  "contribution-gbp",
+  "company-contribution-gbp",
+  "company-runway-months",
+  "ads-impressions",
+  "ads-clicks",
+  "ads-ctr",
 ];
 const BETTER_DOWN_IDS = [
   "alarms-fired",
@@ -975,6 +1085,9 @@ const BETTER_DOWN_IDS = [
   "accessibility-open-findings",
   "fraud-header-open-findings",
   "company-costs",
+  "company-net-monthly-burn-gbp",
+  "ads-cost-per-click-gbp",
+  "charges-without-activation",
 ];
 
 export function betterDirection(observationId) {
@@ -1217,6 +1330,9 @@ export const LATEST_READING_VIEWS = new Set([
   "v_operator_interventions_daily",
   "v_compliance_status",
   "company_accounts",
+  "v_company_runway",
+  "v_contribution_daily",
+  "v_ads_performance_daily",
 ]);
 
 // A view with one row per month or quarter has no Today or Previous day.
@@ -1622,6 +1738,14 @@ const STRIPE_DONATION_COMPONENT_CASE =
   `WHEN ${PAYPAL_DONATION_PRODUCT_FILTER} THEN 'paypal-donations' ` +
   `WHEN product LIKE 'paypal-%' THEN 'paypal-other' ELSE 'subscriptions' END`;
 
+// The v_contribution_daily column behind each line of the Contribution chart mode, in drawing order.
+const CONTRIBUTION_COLUMNS = {
+  "revenue": "revenue_gbp",
+  "aws-cost": "aws_cost_gbp",
+  "ads-cost": "ads_cost_gbp",
+  "contribution": "contribution_gbp",
+};
+
 const plural = (count, singular, pluralForm) => `${count} ${Number(count) === 1 ? singular : pluralForm}`;
 
 /**
@@ -1838,6 +1962,77 @@ export function buildDailyChartDefinitions() {
             view: "v_pass_redemptions_daily",
             dayColumn: "day",
           }),
+        },
+        {
+          id: "contribution",
+          label: "Contribution",
+          total: null,
+          componentOrder: Object.keys(CONTRIBUTION_COLUMNS),
+          labelOf: (id) =>
+            ({ "revenue": "Revenue", "aws-cost": "AWS cost", "ads-cost": "Ads cost", "contribution": "Contribution" })[id] ?? id,
+          descriptionOf: (id) =>
+            ({
+              "revenue": "Stripe and PayPal revenue of the day, in pounds.",
+              "aws-cost":
+                "The day's AWS bill across every account, converted from dollars to pounds at the European Central Bank rate of the day.",
+              "ads-cost": "The day's Google Ads cost, in pounds.",
+              "contribution": "Revenue less AWS cost less Ads cost.",
+            })[id],
+          sql: Object.entries(CONTRIBUTION_COLUMNS)
+            .map(
+              ([component, column]) =>
+                `SELECT cast(day AS varchar) AS day, '${component}' AS component, cast(${column} AS double) AS value\n` +
+                `FROM   v_contribution_daily\nWHERE  ${dailyWindowFilter("day")} AND contribution_gbp IS NOT NULL`,
+            )
+            .join("\nUNION ALL\n"),
+        },
+        {
+          id: "ads-impressions",
+          label: "Ads impressions by campaign",
+          unit: "count",
+          total: "All campaigns",
+          totalDescription: "Impressions of every campaign added together.",
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Times the ${id} campaign's advertisements were shown in a day.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, campaign_name AS component, cast(sum(impressions) AS double) AS value\n` +
+            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+        },
+        {
+          id: "ads-clicks",
+          label: "Ads clicks by campaign",
+          unit: "count",
+          total: "All campaigns",
+          totalDescription: "Clicks on every campaign added together.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Clicks on the ${id} campaign's advertisements in a day.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, campaign_name AS component, cast(sum(clicks) AS double) AS value\n` +
+            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+        },
+        {
+          id: "ads-ctr",
+          label: "Ads click-through rate by campaign",
+          unit: "ratio",
+          total: null,
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `The ${id} campaign's clicks divided by its impressions in a day.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, campaign_name AS component, cast(sum(clicks) AS double) / sum(impressions) AS value\n` +
+            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2\nHAVING sum(impressions) > 0`,
+        },
+        {
+          id: "ads-cpc",
+          label: "Ads cost per click by campaign",
+          unit: "gbp",
+          total: null,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `The ${id} campaign's cost divided by its clicks in a day, in pounds.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, campaign_name AS component, sum(cost_gbp) / sum(clicks) AS value\n` +
+            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2\nHAVING sum(clicks) > 0`,
         },
       ],
     },
@@ -2196,6 +2391,40 @@ export async function buildCostDrivers({ workGroup, database }) {
 }
 
 /**
+ * The paying subscribers of the latest month with a charge, each row an acquisition
+ * channel and bundle with its active subscribers, monthly recurring revenue and annualised
+ * recurring revenue, and the three figures added over every row. A subscriber with no recorded
+ * channel reads "unknown". The totals add the rows, so a customer paying for two bundles counts
+ * once in each.
+ *
+ * @returns {Promise<{month: string|null, rows: Array<{source: string, bundleId: string, subscribers: number, mrrGbp: number, arrGbp: number}>, totals: {subscribers: number, mrrGbp: number, arrGbp: number}}>}
+ */
+export async function buildPaidSubscribers({ workGroup, database }) {
+  const rows = await runAthenaQuery({
+    workGroup,
+    database,
+    sql:
+      `SELECT cast(month AS varchar) AS month, source, bundle_id, cast(active_subscribers AS double) AS subscribers,\n` +
+      `       cast(mrr_gbp AS double) AS mrr_gbp, cast(arr_gbp AS double) AS arr_gbp\n` +
+      `FROM   v_paid_subscribers_by_channel\n` +
+      `WHERE  month = (SELECT max(month) FROM v_paid_subscribers_by_channel)\nORDER  BY mrr_gbp DESC, source, bundle_id`,
+  });
+  const entries = rows.map((row) => ({
+    source: row.source,
+    bundleId: row.bundle_id,
+    subscribers: Number(row.subscribers),
+    mrrGbp: Number(row.mrr_gbp),
+    arrGbp: Number(row.arr_gbp),
+  }));
+  const total = (key) => entries.reduce((sum, entry) => sum + entry[key], 0);
+  return {
+    month: rows[0]?.month ?? null,
+    rows: entries,
+    totals: { subscribers: total("subscribers"), mrrGbp: total("mrrGbp"), arrGbp: total("arrGbp") },
+  };
+}
+
+/**
  * Writes the snapshot to its latest pointer and a dated copy alongside it, so the page always
  * reads the same key while a historical run stays available under its own date.
  *
@@ -2256,11 +2485,20 @@ export async function handler() {
     failedCostDrivers = 1;
     logger.warn({ message: "Cost drivers query failed, publishing none", error: error.message });
   }
+  let paidSubscribers = null;
+  let failedPaidSubscribers = 0;
+  try {
+    paidSubscribers = await buildPaidSubscribers({ workGroup, database });
+  } catch (error) {
+    failedPaidSubscribers = 1;
+    logger.warn({ message: "Paid subscribers query failed, publishing none", error: error.message });
+  }
   const snapshot = {
     ...built,
     dailyCharts,
     ...(costDrivers ? { costDrivers } : {}),
-    failedObservationCount: built.failedObservationCount + failedChartIds.length + failedCostDrivers,
+    ...(paidSubscribers ? { paidSubscribers } : {}),
+    failedObservationCount: built.failedObservationCount + failedChartIds.length + failedCostDrivers + failedPaidSubscribers,
   };
   await writeSnapshot({ bucket: lakeBucket, envName, snapshot });
 

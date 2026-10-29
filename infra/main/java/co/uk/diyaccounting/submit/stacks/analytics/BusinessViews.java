@@ -251,7 +251,26 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_paid_subscribers_by_channel",
                     "Live paid subscribers each month by acquisition source and bundle: active base, MRR and ARR",
-                    List.of("stripe_charges", "stripe_subscriptions", "dynamo_subscriptions", "dynamo_bundles")));
+                    List.of("stripe_charges", "stripe_subscriptions", "dynamo_subscriptions", "dynamo_bundles")),
+            new ViewDefinition(
+                    "v_usd_gbp_daily",
+                    "Pounds per dollar on each day from the European Central Bank reference rate, carried over"
+                            + " days the bank does not publish",
+                    List.of("fx_rates")),
+            new ViewDefinition(
+                    "v_contribution_daily",
+                    "Revenue less the AWS bill in pounds less Google Ads cost, each day",
+                    List.of("v_revenue_daily", "v_cost_daily", "v_ads_cost_daily", "v_usd_gbp_daily"),
+                    List.of("v_revenue_daily", "v_cost_daily", "v_ads_cost_daily", "v_usd_gbp_daily")),
+            new ViewDefinition(
+                    "v_company_runway",
+                    "Net monthly burn and the months of runway from the company book's cash and creditors",
+                    List.of("company_accounts")),
+            new ViewDefinition(
+                    "v_ads_performance_daily",
+                    "Google Ads impressions, clicks, cost, click-through rate and cost per click each day",
+                    List.of("v_ads_cost_daily"),
+                    List.of("v_ads_cost_daily")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<CustomResource> viewResources = new ArrayList<>();

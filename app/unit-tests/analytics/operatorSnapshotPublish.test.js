@@ -60,6 +60,7 @@ import {
   buildDailyChartDefinitions,
   buildDailyCharts,
   buildCostDrivers,
+  buildPaidSubscribers,
   shortResourceName,
   vatSubmissionReconciliationText,
   toObservationWindows,
@@ -472,6 +473,106 @@ describe("operatorSnapshotPublish", () => {
         expect(betterDirection(id)).toBe("down");
       }
       expect(betterDirection("agent-cost-per-accepted-pr-usd")).toBe("down");
+    });
+
+    test("money in and money out: contribution, runway, Ads performance and unactivated charges are described rows", () => {
+      const byId = (objectiveId, id) =>
+        OBJECTIVE_DEFINITIONS.find((objective) => objective.id === objectiveId).observations.find((observation) => observation.id === id);
+
+      expect(byId("conversion-to-paid", "contribution-gbp")).toMatchObject({
+        view: "v_contribution_daily",
+        valueExpr: "contribution_gbp",
+        unit: "gbp",
+      });
+      expect(byId("company-accounts", "company-contribution-gbp")).toMatchObject({ view: "v_contribution_daily", aggregation: "sum" });
+      expect(byId("company-accounts", "company-runway-months")).toMatchObject({
+        view: "v_company_runway",
+        valueExpr: "runway_months",
+        unit: "months",
+        aggregation: "latest",
+      });
+      expect(byId("company-accounts", "company-net-monthly-burn-gbp")).toMatchObject({ view: "v_company_runway", unit: "gbp" });
+      expect(byId("conversion-to-paid", "ads-ctr")).toMatchObject({ view: "v_ads_performance_daily", valueExpr: "ctr", unit: "ratio" });
+      expect(byId("conversion-to-paid", "charges-without-activation")).toMatchObject({
+        view: "v_purchase_reconciliation_daily",
+        valueExpr: "greatest(-activity_minus_stripe, 0)",
+        aggregation: "sum",
+      });
+      for (const id of [
+        "contribution-gbp",
+        "ads-impressions",
+        "ads-clicks",
+        "ads-ctr",
+        "ads-cost-per-click-gbp",
+        "charges-without-activation",
+      ]) {
+        expect(byId("conversion-to-paid", id).description.length, id).toBeGreaterThan(20);
+      }
+      for (const id of ["company-contribution-gbp", "company-net-monthly-burn-gbp", "company-runway-months"]) {
+        expect(byId("company-accounts", id).description.length, id).toBeGreaterThan(20);
+      }
+      expect(betterDirection("contribution-gbp")).toBe("up");
+      expect(betterDirection("company-runway-months")).toBe("up");
+      expect(betterDirection("company-net-monthly-burn-gbp")).toBe("down");
+      expect(betterDirection("ads-cost-per-click-gbp")).toBe("down");
+      expect(betterDirection("charges-without-activation")).toBe("down");
+    });
+
+    test("the Conversion to paid chart draws contribution and the Ads campaigns, each line described", () => {
+      const paid = buildDailyChartDefinitions().find((definition) => definition.id === "conversion-to-paid");
+
+      expect(paid.modes.map((mode) => mode.id)).toEqual([
+        "revenue",
+        "passes",
+        "contribution",
+        "ads-impressions",
+        "ads-clicks",
+        "ads-ctr",
+        "ads-cpc",
+      ]);
+      const contribution = paid.modes.find((mode) => mode.id === "contribution");
+      expect(contribution.componentOrder).toEqual(["revenue", "aws-cost", "ads-cost", "contribution"]);
+      expect(contribution.sql).toContain("FROM   v_contribution_daily");
+      expect(contribution.sql).toContain("aws_cost_gbp");
+      for (const id of contribution.componentOrder) expect(contribution.descriptionOf(id)).toBeTruthy();
+      for (const id of ["ads-impressions", "ads-clicks", "ads-ctr", "ads-cpc"]) {
+        const mode = paid.modes.find((candidate) => candidate.id === id);
+        expect(mode.sql, id).toContain("campaign_name AS component");
+        expect(mode.descriptionOf("Search: MTD VAT"), id).toContain("Search: MTD VAT");
+      }
+      expect(paid.modes.find((mode) => mode.id === "ads-ctr").unit).toBe("ratio");
+      expect(paid.modes.find((mode) => mode.id === "ads-cpc").unit).toBe("gbp");
+    });
+
+    test("buildPaidSubscribers reads the latest month by channel and bundle and adds the totals", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({
+              ResultSet: resultSetOfRows(
+                ["month", "source", "bundle_id", "subscribers", "mrr_gbp", "arr_gbp"],
+                [
+                  ["2026-10-01", "google-ads", "resident-vat", "3", "27", "324"],
+                  ["2026-10-01", "unknown", "resident-pro", "1", "19", "228"],
+                ],
+              ),
+            });
+        }
+      });
+
+      const result = await buildPaidSubscribers({ workGroup: "wg", database: "db" });
+
+      const sql = mockAthenaSend.mock.calls.find(([command]) => command.constructor.name === "StartQueryExecutionCommand")[0].input
+        .QueryString;
+      expect(sql).toContain("FROM   v_paid_subscribers_by_channel");
+      expect(sql).toContain("SELECT max(month)");
+      expect(result.month).toBe("2026-10-01");
+      expect(result.rows[0]).toEqual({ source: "google-ads", bundleId: "resident-vat", subscribers: 3, mrrGbp: 27, arrGbp: 324 });
+      expect(result.totals).toEqual({ subscribers: 4, mrrGbp: 46, arrGbp: 552 });
     });
 
     test("shortResourceName drops the partition, service, region and account from an ARN", () => {
@@ -1238,7 +1339,7 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const companyAccounts = snapshot.objectives.find((o) => o.id === "company-accounts");
-      expect(companyAccounts.observations).toHaveLength(11);
+      expect(companyAccounts.observations).toHaveLength(14);
 
       const byId = Object.fromEntries(companyAccounts.observations.map((o) => [o.id, o]));
       expect(byId["company-cash-at-bank"].last30.value).toBe(3500.5);
@@ -1254,7 +1355,10 @@ describe("operatorSnapshotPublish", () => {
 
     test("the company-accounts observation set answers every value as null while the book pull job is off", async () => {
       mockQueries({
-        windowedRowFor: (line, sql) => (sql.includes("FROM   company_accounts") ? [null, null, null, null] : ["1", "1", "1", "1"]),
+        windowedRowFor: (line, sql) =>
+          sql.includes("FROM   company_accounts") || sql.includes("FROM   v_company_runway")
+            ? [null, null, null, null]
+            : ["1", "1", "1", "1"],
       });
 
       const context = {
@@ -1267,8 +1371,8 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const companyAccounts = snapshot.objectives.find((o) => o.id === "company-accounts");
-      expect(companyAccounts.observations).toHaveLength(11);
-      for (const observation of companyAccounts.observations) {
+      expect(companyAccounts.observations).toHaveLength(14);
+      for (const observation of companyAccounts.observations.filter((o) => o.source !== "v_contribution_daily")) {
         expect(observation.last30).toEqual({ value: null, trend: null });
         expect(observation.last90).toEqual({ value: null, trend: null });
       }

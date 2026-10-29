@@ -126,6 +126,9 @@ public class NightlyIngestionWorkflow {
          */
         Optional<IFunction> adsCostPullLambda();
 
+        /** The ECB reference rate pull job's Lambda, built in every environment. */
+        IFunction fxRatePullLambda();
+
         /** Imported by name from {@code AnalyticsStack}: {@code DataQuality.runLambda}. */
         IFunction dataQualityRunLambda();
 
@@ -194,6 +197,8 @@ public class NightlyIngestionWorkflow {
         props.adsCostPullLambda()
                 .ifPresent(adsCostPullLambda -> ingestionParallel.branch(buildOptionalTask(
                         scope, prefix + "-Nightly-AdsCostPull", "Ads cost pull", "adsCostPull", adsCostPullLambda)));
+        ingestionParallel.branch(
+                buildTask(scope, prefix + "-Nightly-FxRatePull", "FX rate pull", props.fxRatePullLambda()));
 
         var dataQualityTask =
                 buildTask(scope, prefix + "-Nightly-DataQuality", "data quality run", props.dataQualityRunLambda());
