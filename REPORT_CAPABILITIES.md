@@ -392,6 +392,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation: use when one month's Stripe balance transactions and payouts must be pulled and staged for accounts reconciliation.
     - [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths: use when a finance script must find the shared staging tree, or label a month by UK accounting year-end.
     - [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines: use when staged Stripe transactions or payouts must become validated diya-gl bookkeeping lines.
+    - [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account) Read and forecast the Microsoft Advertising account: use when a task asks what the Microsoft Advertising (Bing) account holds, what it has spent or what its keywords and budget would buy.
+    - [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data) Answer Microsoft Advertising questions from live data: use when asked how the Bing account is doing, what a Bing budget would buy, or what to change in it.
 - **[MCP and tools](#mcp-and-tools-mcp)**
   - [Server and CLI](#server-and-cli-mcp)
     - [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools: use when a session needs the submission MCP's tool set, over stdio or one call across every practice client.
@@ -3673,7 +3675,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
 - [Google Ads data and paid landing tracking](#google-ads-data-and-paid-landing-tracking-data): [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs) Count paid landings from CloudFront access logs · [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake) Pull Google Ads daily cost into the lake
 - [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads · [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
-- [Finance staging and reconciliation](#finance-staging-and-reconciliation-data): [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation) Stage PayPal transactions for reconciliation · [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation · [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths · [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines
+- [Finance staging and reconciliation](#finance-staging-and-reconciliation-data): [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation) Stage PayPal transactions for reconciliation · [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation · [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths · [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines · [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account) Read and forecast the Microsoft Advertising account · [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data) Answer Microsoft Advertising questions from live data
 <!-- /generated:area DATA -->
 
 ### Lake ingestion (DATA)
@@ -4337,6 +4339,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation
 - [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths
 - [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines
+- [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account) Read and forecast the Microsoft Advertising account
+- [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data) Answer Microsoft Advertising questions from live data
 <!-- /generated:group finance-staging-and-reconciliation-data -->
 
 #### DATA-48 Stage PayPal transactions for reconciliation
@@ -4379,6 +4383,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** diya-gl lines, stripe gross fee split, credit note, bank line, arrival_date, stripe reconciliation, validateLines
 - **Related:** DATA-49
 
+
+#### DATA-62 Read and forecast the Microsoft Advertising account
+
+- **Use when:** a task asks what the Microsoft Advertising (Bing) account holds, what it has spent or what its keywords and budget would buy.
+- **Does:** msads.js is a read-only client for the Bing Ads API v13 REST endpoints, signed in with Google OAuth and the IdentityProvider header. It reads the user, customer and account, the full campaign inventory with spend to date, a campaign report by date range, and Ad Insight traffic estimates. It has no write call. The consent mode stores the Google refresh token in Secrets Manager.
+- **Run:** `npm run msads:consent`; `npm run msads:whoami`; `npm run msads:inventory`; `npm run msads:forecast`; `npm run msads:report -- --from 2026-10-29 --to 2026-11-12`
+- **Entry:** `infra/microsoft/ads/msads.js:main`
+- **Files:** infra/microsoft/ads/msads.js, infra/microsoft/ads/msads.toml, app/unit-tests/scripts/msads.test.js
+- **Keywords:** microsoft advertising, bing ads, msads, bing forecast, ad insight, traffic estimates, identityprovider google, developer token
+- **Related:** DATA-33, DATA-34, DATA-35, DATA-63
+
+#### DATA-63 Answer Microsoft Advertising questions from live data
+
+- **Use when:** asked how the Bing account is doing, what a Bing budget would buy, or what to change in it.
+- **Does:** the microsoft-ads skill, the twin of ads-advisor, says how to read the account, report, forecast and propose changes with the msads commands.
+- **Run:** `/microsoft-ads`
+- **Entry:** `.claude/skills/microsoft-ads/SKILL.md`
+- **Files:** .claude/skills/microsoft-ads/SKILL.md
+- **Keywords:** microsoft advertising skill, bing advisor, bing performance, bing budget
+- **Related:** DATA-62, DATA-36
 ## MCP and tools (MCP)
 
 <!-- generated:area MCP -->
@@ -5980,6 +6004,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - activity_events_all: [DATA-27](#data-27-sql-views-activity-and-traffic)
 - actor class: [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - ad group performance: [DATA-34](#data-34-report-google-ads-campaign-performance)
+- ad insight: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - add-bundle: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
 - add-references command: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - add_client: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
@@ -6143,6 +6168,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - billing portal: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal)
 - billing stack: [BILL-37](#bill-37-cdk-billing-app-stack)
 - billion laughs: [CH-11](#ch-11-parse-xml-safely)
+- bing ads: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
+- bing advisor: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
+- bing budget: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
+- bing forecast: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
+- bing performance: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
 - blast radius: [SS-42](#ss-42-route-tests-by-blast-radius)
 - blind crawl: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - blocked requests: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
@@ -6585,6 +6615,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - developer hub: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - developer mode: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - developer onboarding: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
+- developer token: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - developer_token_not_approved: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - device id: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
 - digital pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
@@ -7031,6 +7062,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - identity pool: [SS-34](#ss-34-configure-cloudwatch-rum)
 - identity-sandbox: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - identity.toml: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
+- identityprovider google: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - image diff: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - import from clicks: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - import prior year: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
@@ -7256,6 +7288,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mfa context: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - micro-entity: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - micro-entity accounts: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
+- microsoft advertising: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
+- microsoft advertising skill: [DATA-63](#data-63-answer-microsoft-advertising-questions-from-live-data)
 - migration: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
 - migration runner: [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - mileage: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
@@ -7282,6 +7316,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - move book: [BILL-15](#bill-15-move-a-book-to-a-client)
 - move_book_to_client: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - movebooktoclient: [BILL-15](#bill-15-move-a-book-to-a-client)
+- msads: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - mtd calendar: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - mtd enrolment: [HMRC-11](#hmrc-11-retrieve-itsa-status)
 - mtd for itsa: [HMRC-10](#hmrc-10-retrieve-itsa-obligations)
@@ -8083,6 +8118,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - trackevent: [SS-33](#ss-33-send-diya-gl-ga4-events)
 - trademarks: [SITE-20](#site-20-document-business-governance-and-positioning)
 - traffic by country: [DATA-27](#data-27-sql-views-activity-and-traffic)
+- traffic estimates: [DATA-62](#data-62-read-and-forecast-the-microsoft-advertising-account)
 - traffic report: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - traffic sources: [DATA-27](#data-27-sql-views-activity-and-traffic)
 - traffic views: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
