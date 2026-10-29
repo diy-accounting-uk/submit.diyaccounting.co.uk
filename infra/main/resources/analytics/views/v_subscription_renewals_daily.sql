@@ -13,5 +13,5 @@ SELECT date(event_ts) AS day,
        count(*) AS renewals
 FROM   activity_events_all
 WHERE  event = 'subscription-renewed'
-  AND  coalesce(actor, 'customer') NOT IN ('test-user', 'probe', 'synthetic')
+  AND  coalesce(actor, 'customer') NOT IN ('test-user', 'probe', 'synthetic', 'operator')
 GROUP  BY 1, 2

@@ -7,6 +7,7 @@ import { v4 as uuidv4 } from "uuid";
 import { createLogger, context, sanitiseString, sanitiseData } from "./logger.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
 import { fetchWithTimeout } from "./httpFetch.js";
+import { warmOperators } from "./operators.js";
 
 const logger = createLogger({ source: "app/lib/httpResponseHelper.js" });
 
@@ -391,7 +392,11 @@ export function extractUserFromAuthorizerContext(event) {
       context.set("userSub", ctx.sub);
       const signInName = ctx["cognito:username"] || ctx.username || "";
       const classifiableEmail = ctx.email || (signInName.includes("@") ? signInName : "");
-      if (classifiableEmail) context.set("userEmail", classifiableEmail);
+      if (classifiableEmail) {
+        context.set("userEmail", classifiableEmail);
+        // Load the operator list now so it is ready when a submission is classified later
+        warmOperators();
+      }
     }
     return {
       sub: ctx.sub,

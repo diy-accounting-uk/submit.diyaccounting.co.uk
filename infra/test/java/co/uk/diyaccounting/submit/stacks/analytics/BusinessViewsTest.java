@@ -170,6 +170,26 @@ class BusinessViewsTest {
     }
 
     @Test
+    void operatorActorIsAGroupOfItsOwnAndNotACustomer() {
+        Template template = synthBusinessViews();
+
+        var bySubmitter = sqlForView(template, "v_vat_submissions_by_actor_daily");
+        assertTrue(
+                bySubmitter.contains("WHEN actor = 'operator' THEN 'operator'"),
+                "expected the submissions view to group operators apart from customers and test accounts: "
+                        + bySubmitter);
+        for (var view : java.util.List.of(
+                "v_subscription_renewals_daily",
+                "v_subscription_cancellations_daily",
+                "v_signup_to_first_submission",
+                "v_pass_redemptions_daily")) {
+            assertTrue(
+                    sqlForView(template, view).contains("'operator'"),
+                    "expected " + view + " to leave operator accounts out of customer figures");
+        }
+    }
+
+    @Test
     void subscriptionCancellationsViewExcludesTestAndProbeActors() {
         Template template = synthBusinessViews();
 

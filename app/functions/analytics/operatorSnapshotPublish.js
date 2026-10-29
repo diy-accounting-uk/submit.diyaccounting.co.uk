@@ -1603,7 +1603,7 @@ const plural = (count, singular, pluralForm) => `${count} ${Number(count) === 1 
 /**
  * The line under the Retention graph that lets the graph's submitters be checked against the
  * Submit VAT (HMRC) completions in the activities table: the same window's distinct submitters
- * and completions from the activity events, customers apart from test accounts, beside the
+ * and completions from the activity events, customers apart from operators and test accounts, beside the
  * graph's own Submitters line on its latest day (read from receipts).
  *
  * @param {{rows: Array<{actor_group: string, submissions: string, submitters: string}>, series: Array<{id: string, values: number[]}>, days: number}} params
@@ -1612,14 +1612,16 @@ const plural = (count, singular, pluralForm) => `${count} ${Number(count) === 1 
 export function vatSubmissionReconciliationText({ rows, series, days }) {
   const group = (name) => rows.find((row) => row.actor_group === name) ?? { submissions: "0", submitters: "0" };
   const customer = group("customer");
+  const operator = group("operator");
   const test = group("test");
   const receiptSubmitters = series.find((line) => line.id === "submitters-90d")?.values.at(-1) ?? 0;
   return (
     `Last ${days} days, customers: ${plural(customer.submitters, "distinct submitter", "distinct submitters")} in the activity events ` +
     `made ${plural(customer.submissions, "Submit VAT (HMRC) completion", "Submit VAT (HMRC) completions")}; ` +
     `the Submitters line reads ${receiptSubmitters} on its latest day, counted from receipts. ` +
+    `Operators apart: ${plural(operator.submitters, "account", "accounts")} made ${plural(operator.submissions, "completion", "completions")}. ` +
     `Test accounts apart: ${plural(test.submitters, "account", "accounts")} made ${plural(test.submissions, "completion", "completions")}. ` +
-    `Completions include failed attempts. The lake does not mark an operator's own account, so operator submissions are in the customer figures.`
+    `Completions include failed attempts.`
   );
 }
 

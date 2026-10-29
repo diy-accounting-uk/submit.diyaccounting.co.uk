@@ -47,7 +47,7 @@ redeemed AS (
          count(*) AS passes_redeemed
   FROM   pass_history
   WHERE  change_type = 'MODIFY' AND previous_use_count IS NOT NULL AND use_count > previous_use_count
-    AND  coalesce(actor, 'customer') NOT IN ('test-user', 'probe', 'synthetic')
+    AND  coalesce(actor, 'customer') NOT IN ('test-user', 'probe', 'synthetic', 'operator')
   GROUP  BY 1, 2)
 SELECT coalesce(issued.day, redeemed.day) AS day,
        coalesce(issued.pass_type_id, redeemed.pass_type_id) AS pass_type_id,

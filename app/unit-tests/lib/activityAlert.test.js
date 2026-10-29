@@ -33,9 +33,65 @@ import {
 import { context } from "@app/lib/logger.js";
 import { extractUserFromAuthorizerContext } from "@app/lib/httpResponseHelper.js";
 import { initializeSalt, hashSub } from "@app/services/subHasher.js";
+import { _clearOperatorsCache, warmOperators } from "@app/lib/operators.js";
 
 describe("lib/activityAlert", () => {
   describe("classifyActor", () => {
+    describe("operators", () => {
+      beforeEach(() => {
+        _clearOperatorsCache();
+        process.env.OPERATOR_EMAILS = "Boss@Example.com, second@example.com";
+      });
+      afterEach(() => {
+        delete process.env.OPERATOR_EMAILS;
+        _clearOperatorsCache();
+      });
+
+      test("returns 'operator' for a listed email once the operator list is loaded, case-insensitively", async () => {
+        await warmOperators();
+        expect(classifyActor("boss@example.com")).toBe("operator");
+        expect(classifyActor("SECOND@example.com")).toBe("operator");
+        expect(classifyActor("alice@example.com")).toBe("customer");
+      });
+
+      test("reads a listed email as a customer while the operator list is not loaded", () => {
+        expect(classifyActor("boss@example.com")).toBe("customer");
+      });
+
+      test("test-user and probe patterns take priority over the operator list", async () => {
+        process.env.OPERATOR_EMAILS = "probe-boss@example.com,boss@test.diyaccounting.co.uk";
+        await warmOperators();
+        expect(classifyActor("probe-boss@example.com")).toBe("probe");
+        expect(classifyActor("boss@test.diyaccounting.co.uk")).toBe("test-user");
+      });
+
+      test("an operator's later event with no email keeps the operator class", async () => {
+        resetRememberedActors();
+        await warmOperators();
+        await context.run(new Map(), async () => {
+          context.set("requestId", "abc-123");
+          context.set("userEmail", "boss@example.com");
+          expect(resolveActorClass(undefined, "hash-op")).toBe("operator");
+        });
+        await context.run(new Map(), async () => {
+          context.set("requestId", "def-456");
+          expect(resolveActorClass(undefined, "hash-op")).toBe("operator");
+        });
+      });
+
+      test("publishActivityEvent carries the operator class on the event", async () => {
+        process.env.ACTIVITY_BUS_NAME = "bus";
+        mockSend.mockClear();
+        await context.run(new Map(), async () => {
+          context.set("userEmail", "boss@example.com");
+          await publishActivityEvent({ event: "vat-return-submitted", summary: "s" });
+        });
+        delete process.env.ACTIVITY_BUS_NAME;
+        const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+        expect(detail.actor).toBe("operator");
+      });
+    });
+
     test("returns 'customer' for normal email addresses", () => {
       expect(classifyActor("user@example.com")).toBe("customer");
       expect(classifyActor("alice@gmail.com")).toBe("customer");

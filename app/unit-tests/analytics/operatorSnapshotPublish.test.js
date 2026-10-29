@@ -608,6 +608,32 @@ describe("operatorSnapshotPublish", () => {
       expect(text).toContain("3 accounts made 40 completions");
     });
 
+    test("the reconciliation line shows operator submissions apart from customers and test accounts", () => {
+      const text = vatSubmissionReconciliationText({
+        rows: [
+          { actor_group: "customer", submissions: "90", submitters: "12" },
+          { actor_group: "operator", submissions: "7", submitters: "1" },
+          { actor_group: "test", submissions: "40", submitters: "3" },
+        ],
+        series: [{ id: "submitters-90d", values: [1, 11] }],
+        days: 90,
+      });
+
+      expect(text).toContain("12 distinct submitters");
+      expect(text).toContain("Operators apart: 1 account made 7 completions");
+      expect(text).toContain("3 accounts made 40 completions");
+    });
+
+    test("the reconciliation line reads zero operators when the lake has none", () => {
+      const text = vatSubmissionReconciliationText({
+        rows: [{ actor_group: "customer", submissions: "5", submitters: "2" }],
+        series: [],
+        days: 30,
+      });
+
+      expect(text).toContain("Operators apart: 0 accounts made 0 completions");
+    });
+
     test("buildDailyCharts attaches the Retention reconciliation line", async () => {
       mockAthenaSend.mockImplementation((command) => {
         switch (command.constructor.name) {
