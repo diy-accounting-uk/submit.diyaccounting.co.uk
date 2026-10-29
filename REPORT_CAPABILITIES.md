@@ -25,6 +25,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest: use when a signed-in user clicks the homepage join button to register feedback interest.
     - [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon: use when the site needs to record a visit or logout as an activity event, filtered for crawlers.
     - [SITE-05](#site-05-submit-support-tickets) Submit support tickets: use when a visitor needs to send a support request from the site.
+    - [SITE-24](#site-24-change-an-account-setting) Change an account setting: use when a signed-in user changes a preference that belongs to the account, such as pass generation, and it must follow them to every browser.
   - [Server and API plumbing](#server-and-api-plumbing-site)
     - [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes: use when a Lambda-style apiEndpoint handler needs to run behind the local Express dev server.
     - [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors: use when a Lambda function needs a standard JSON response, or Express needs a JSON error page.
@@ -192,6 +193,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions: use when the live ci-/prod- DNS records under submit need listing, or a CloudFront distribution ID needs finding for an origin.
     - [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs: use when a script or test needs a named stack's output values, such as a URL, table name or ARN.
     - [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup: use when every user in a Cognito user pool needs exporting with their attributes to CSV or JSON.
+    - [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap: use when a deployed web root must not list pages for activities that the environment does not list, such as preview pages on prod.
   - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops)
     - [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot: use when a branch needs a registered ci host, or a slot must be freed or checked before a sweep.
     - [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order: use when a CI branch deploy must not race another deploy, destroy or video-capture run for the same slot.
@@ -548,7 +550,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area SITE -->
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
-- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets
+- [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets · [SITE-24](#site-24-change-an-account-setting) Change an account setting
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
 - [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes · [SITE-23](#site-23-render-a-submission-record-in-the-house-style) Render a submission record in the house style
@@ -588,6 +590,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest
 - [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon
 - [SITE-05](#site-05-submit-support-tickets) Submit support tickets
+- [SITE-24](#site-24-change-an-account-setting) Change an account setting
 <!-- /generated:group account-and-engagement-apis-site -->
 
 #### SITE-03 Capture feedback interest
@@ -619,6 +622,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/support/supportTicketPost.js, web/public/lib/support-api.js, app/unit-tests/functions/supportTicketPost.test.js, app/unit-tests/supportIssueFormCategories.test.js
 - **Keywords:** support ticket, github issue, github app, rate limit, unverified issue, help page form
 - **Related:** SITE-13
+
+#### SITE-24 Change an account setting
+
+- **Use when:** a signed-in user changes a preference that belongs to the account, such as pass generation, and it must follow them to every browser.
+- **Does:** accountSettingsPut.js validates the named settings against app/lib/accountSettings.js. It merges them into one settings item in the user's own partition of the bundles table. getUserBundles leaves that item out of the bundle list. bundleGet.js returns the settings with the bundles. settings.page.js and viewer-settings.js call the route.
+- **Run:** `PUT /api/v1/account/settings`
+- **Entry:** `app/functions/account/accountSettingsPut.js:ingestHandler`; `web/public/lib/services/viewer-settings.js:updateAccountSetting`
+- **Files:** app/functions/account/accountSettingsPut.js, app/lib/accountSettings.js, app/data/dynamoDbBundleRepository.js, app/functions/account/bundleGet.js, web/public/settings.html, web/public/settings.page.js, web/public/lib/services/viewer-settings.js, app/unit-tests/functions/accountSettings.test.js, app/unit-tests/lib/accountSettings.test.js, web/browser-tests/settings.browser.test.js
+- **Keywords:** account settings, settings page, pass generation, preview features, operator features, settings cog, viewer settings
+- **Related:** SITE-05
 
 ### Server and API plumbing (SITE)
 
@@ -2107,7 +2120,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Operations and CI (OPS)
 
 <!-- generated:area OPS -->
-- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup
+- [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
@@ -2140,6 +2153,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions
 - [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs
 - [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup
+- [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap
 <!-- /generated:group deploy-pipeline-ops -->
 
 #### OPS-01 Cancel superseded push-triggered deploys
@@ -2299,6 +2313,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/export-cognito-users.sh
 - **Keywords:** cognito export, user pool, csv export, json export, user attributes
 - **Related:** OPS-110
+
+#### OPS-143 Remove unlisted pages from the published sitemap
+
+- **Use when:** a deployed web root must not list pages for activities that the environment does not list, such as preview pages on prod.
+- **Does:** publish-sitemap.mjs reads submit.catalogue.toml and videos/publish.json. filterSitemap removes the url entries for pages of unlisted activities and for videos pages whose videos are all unlisted. It rewrites sitemap.xml in the built web root. web/public/sitemap.xml keeps the full list. deploy.yml, deploy-app.yml and deploy-app.js run it.
+- **Run:** `node scripts/publish-sitemap.mjs <web-root> <environment-name>`
+- **Entry:** `scripts/publish-sitemap.mjs:filterSitemap`
+- **Files:** scripts/publish-sitemap.mjs, app/unit-tests/scripts/publishSitemap.test.js, scripts/deploy-app.js, .github/workflows/deploy.yml, .github/workflows/deploy-app.yml
+- **Keywords:** sitemap, publish sitemap, unlisted pages, preview pages, seo, catalogue environments
+- **Related:** OPS-01
 
 ### ci slot pool and sweep (OPS)
 
@@ -5935,6 +5959,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - account migration: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - account policies: [BILL-31](#bill-31-configure-stripe-account-policies)
 - account separation: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
+- account settings: [SITE-24](#site-24-change-an-account-setting)
 - account stack: [BILL-36](#bill-36-cdk-account-stack)
 - accounting year-end: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - accounts data product: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does)
@@ -6217,6 +6242,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - captions: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [OPS-92](#ops-92-redact-secrets-from-video-artefacts), [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
 - cash account: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - catalogue: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
+- catalogue environments: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
 - catalogue sync: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
 - catalogue.toml: [SS-09](#ss-09-build-package-zips-and-the-catalogue), [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - cdk: [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [BILL-36](#bill-36-cdk-account-stack), [BILL-37](#bill-37-cdk-billing-app-stack), [BILL-38](#bill-38-cdk-billing-webhook-stack), [BILL-39](#bill-39-cdk-diya-gl-stack)
@@ -7349,6 +7375,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - operator dashboard page: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - operator dashboard route: [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api)
 - operator effort: [DATA-07](#data-07-pull-github-operator-effort-data)
+- operator features: [SITE-24](#site-24-change-an-account-setting)
 - operator interventions: [DATA-07](#data-07-pull-github-operator-effort-data), [DATA-31](#data-31-sql-views-dora-and-operations)
 - operator match: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request)
 - operator objective: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs), [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
@@ -7395,7 +7422,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - partition projection: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - partition registration: [DATA-11](#data-11-run-glue-data-quality-checks)
 - pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
-- pass generation: [SITE-19](#site-19-generate-qr-codes)
+- pass generation: [SITE-24](#site-24-change-an-account-setting), [SITE-19](#site-19-generate-qr-codes)
 - pass link: [BILL-10](#bill-10-redeem-a-pass)
 - pass redemptions: [DATA-28](#data-28-sql-views-revenue-and-subscription)
 - passes: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
@@ -7495,7 +7522,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pretest: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - pretooluse hook: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - prettier: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
+- preview features: [SITE-24](#site-24-change-an-account-setting)
 - preview merge: [SS-52](#ss-52-preview-what-auto-merge-would-do)
+- preview pages: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
 - price: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
 - price id: [BILL-24](#bill-24-create-a-stripe-checkout-session)
 - price sync: [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue)
@@ -7545,6 +7574,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - publish artifacts: [OPS-51](#ops-51-publish-build-artifacts-and-documentation)
 - publish diya-gl: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - publish filter: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
+- publish sitemap: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
 - publish stack: [OPS-120](#ops-120-provision-the-publish-stack)
 - publish video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - publish.json: [OPS-93](#ops-93-publish-demo-videos-to-youtube), [DEV-41](#dev-41-publish-videos-to-the-youtube-channel)
@@ -7815,7 +7845,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - send day: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - sensitive fields: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - sensitivepathscan: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
-- seo: [SS-25](#ss-25-generate-sitemaps)
+- seo: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
 - sequential commits: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - service worker: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - session beacon: [SITE-04](#site-04-track-visits-via-session-beacon)
@@ -7826,6 +7856,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - session-report skill: [SS-56](#ss-56-write-the-session-report)
 - sessions by host source: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - set origins: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
+- settings cog: [SITE-24](#site-24-change-an-account-setting)
+- settings page: [SITE-24](#site-24-change-an-account-setting)
 - settle in-flight work: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
 - setup guide: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
 - sha256: [SITE-17](#site-17-trace-and-secure-client-requests)
@@ -7848,7 +7880,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - site map: [SITE-12](#site-12-map-the-site-structure)
 - site screenshots: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - site-video-capture: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy)
-- sitemap: [SS-25](#ss-25-generate-sitemaps)
+- sitemap: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap), [SS-25](#ss-25-generate-sitemaps)
 - sitemap.xml: [SS-25](#ss-25-generate-sitemaps)
 - skip_libreoffice: [SS-42](#ss-42-route-tests-by-blast-radius)
 - slot pool: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
@@ -8092,6 +8124,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - unit tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
 - unlimited sentinel: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - unlisted: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
+- unlisted pages: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
 - unlisted to public: [DEV-41](#dev-41-publish-videos-to-the-youtube-channel)
 - unrecognised identity: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
 - unset iam session: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
@@ -8166,6 +8199,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - view vat return: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return)
 - view_item_list: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - viewer request: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
+- viewer settings: [SITE-24](#site-24-change-an-account-setting)
 - visibility: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
 - visitor classification: [SITE-04](#site-04-track-visits-via-session-beacon)
 - visitor kind: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
