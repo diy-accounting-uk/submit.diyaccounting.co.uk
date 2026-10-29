@@ -274,7 +274,7 @@
             "role": "heading",
             "name": "Director identity verification"
           },
-          "text": "MIDDLENAME",
+          "text": "JANE",
           "clear": true,
           "caption": "Each director's other forenames and personal code are needed.",
           "headline": "Verify each director",
@@ -283,20 +283,20 @@
         {
           "action": "type",
           "target": "#directorPersonalCode-0",
-          "text": "CWMPS832223",
+          "text": "KJHLP471925",
           "clear": true,
           "secret": true
         },
         {
           "action": "type",
           "target": "#directorOtherForenames-1",
-          "text": "MIDDLENAME",
+          "text": "OLIVER",
           "clear": true
         },
         {
           "action": "type",
           "target": "#directorPersonalCode-1",
-          "text": "CWMPS832223",
+          "text": "WMRTB508264",
           "clear": true,
           "secret": true
         },

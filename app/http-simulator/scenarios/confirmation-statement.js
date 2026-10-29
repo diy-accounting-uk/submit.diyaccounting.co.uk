@@ -89,8 +89,8 @@ export const FIXTURE_COMPANY = {
   registeredEmailAddress: "confirmation-statement@example.com",
   sicCodes: ["69201", "69202"],
   officers: [
-    { role: "director", forename: "ALICE", surname: "EXAMPLE", dob: "1970-01-01", appointmentDate: "2015-01-01" },
-    { role: "director", forename: "BOB", surname: "SAMPLE", dob: "1975-02-02", appointmentDate: "2015-01-01" },
+    { role: "director", forename: "ELEANOR", surname: "BRAMWELL", dob: "1970-01-01", appointmentDate: "2015-01-01" },
+    { role: "director", forename: "MARCUS", surname: "TENNANT", dob: "1975-02-02", appointmentDate: "2015-01-01" },
   ],
   statementOfCapital: {
     totalAmountUnpaid: "0",
@@ -100,8 +100,8 @@ export const FIXTURE_COMPANY = {
     shares: [{ shareClass: "ORDINARY", prescribedParticulars: "ORDINARY SHARES", numShares: "100", aggregateNominalValue: "100" }],
   },
   shareholdings: [
-    { shareClass: "ORDINARY", numberHeld: "50", shareholders: [{ surname: "EXAMPLE", forename: "ALICE" }] },
-    { shareClass: "ORDINARY", numberHeld: "50", shareholders: [{ surname: "SAMPLE", forename: "BOB" }] },
+    { shareClass: "ORDINARY", numberHeld: "50", shareholders: [{ surname: "BRAMWELL", forename: "ELEANOR" }] },
+    { shareClass: "ORDINARY", numberHeld: "50", shareholders: [{ surname: "TENNANT", forename: "MARCUS" }] },
   ],
 };
 
