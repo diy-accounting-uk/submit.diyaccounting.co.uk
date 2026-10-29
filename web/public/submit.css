@@ -858,6 +858,10 @@ header h1 {
     border-color 150ms;
 }
 
+.main-nav a[hidden] {
+  display: none;
+}
+
 .main-nav a:hover {
   color: var(--c-brand);
   border-bottom-color: var(--c-rule);

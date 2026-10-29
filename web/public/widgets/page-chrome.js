@@ -111,7 +111,7 @@
     { label: "Activities", target: "" },
     { label: "Receipts", target: "hmrc/receipt/receipts.html" },
     { label: "Bundles", target: "bundles.html" },
-    { label: "Practice", target: "practice.html" },
+    { label: "Practice", target: "practice.html", activity: "practice" },
     { label: "Spreadsheets", target: "spreadsheets.html" },
     { label: "MTD calendar", target: "mtd-calendar.html" },
     { label: "Tax rates", target: "rates.html" },
@@ -179,7 +179,8 @@
     const links = NAV_LINKS.map(function (link) {
       const href = link.target === "" ? homeHref : rootPrefix + link.target;
       const active = isActiveTarget(link.target, pathname) ? ' class="active" aria-current="page"' : "";
-      return '<a href="' + href + '"' + active + ">" + link.label + "</a>";
+      const gated = link.activity ? ' data-activity="' + link.activity + '" hidden' : "";
+      return '<a href="' + href + '"' + active + gated + ">" + link.label + "</a>";
     });
     return '<nav class="main-nav" aria-label="Main navigation">' + links.join("") + "</nav>";
   }
@@ -252,6 +253,42 @@
     }
   }
 
+  function loadTomlParser(rootPrefix) {
+    if (window.TOML) return Promise.resolve();
+    return new Promise(function (resolve, reject) {
+      const script = document.createElement("script");
+      script.src = rootPrefix + "lib/toml-parser.js";
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  // A nav link that names a catalogue activity shows only where the catalogue lists that activity
+  // in this environment. It starts hidden, so a page that cannot read the catalogue shows no link.
+  async function revealListedNavLinks(header, rootPrefix) {
+    const gated = header.querySelectorAll(".main-nav a[data-activity]");
+    if (gated.length === 0) return;
+    try {
+      await loadTomlParser(rootPrefix);
+      const service = await import("/lib/services/catalog-service.js");
+      const [catalogResponse, environmentName] = await Promise.all([
+        fetch(new URL(rootPrefix + "submit.catalogue.toml", window.location.href).href),
+        service.fetchCurrentEnvironmentName(new URL(rootPrefix + "submit.environment-name.txt", window.location.href).href),
+      ]);
+      if (!catalogResponse.ok) return;
+      const catalog = window.TOML.parse(await catalogResponse.text());
+      gated.forEach(function (anchor) {
+        const activity = (catalog.activities || []).find(function (entry) {
+          return entry.id === anchor.dataset.activity;
+        });
+        if (activity && service.isActivityListedInEnvironment(activity, environmentName)) anchor.hidden = false;
+      });
+    } catch (err) {
+      console.warn("page-chrome: could not read the catalogue for the nav", err);
+    }
+  }
+
   function renderFooter(footer, rootPrefix) {
     footer.innerHTML = buildFooterHtml(rootPrefix);
   }
@@ -267,6 +304,7 @@
     if (header) {
       try {
         renderHeader(header, rootPrefix);
+        revealListedNavLinks(header, rootPrefix);
       } catch (err) {
         console.error("page-chrome: failed to render header, leaving static fallback in place", err);
       }

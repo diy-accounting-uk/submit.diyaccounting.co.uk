@@ -58,6 +58,32 @@ export const HOSTED_TOOL_NAMES = [
   "run_for_clients",
 ];
 
+// Prod offers the VAT read tools, VAT filing and the books tools. The sandbox filing tools, the
+// Income Tax tools and the practice tools register in every other environment.
+const PROD_HOSTED_TOOL_NAMES = [
+  "list_books",
+  "open_book",
+  "derive_vat_return",
+  "request_hmrc_authorisation",
+  "list_vat_obligations",
+  "list_vat_liabilities",
+  "list_vat_payments",
+  "list_vat_penalties",
+  "get_vat_return",
+  "submit_vat_return",
+  "get_vat_receipt",
+  "list_vat_receipts",
+];
+
+/**
+ * The tool names the hosted endpoint registers in an environment.
+ * @param {string|undefined} environmentName
+ * @returns {string[]}
+ */
+export function hostedToolNames(environmentName) {
+  return (environmentName || "").toLowerCase() === "prod" ? PROD_HOSTED_TOOL_NAMES : HOSTED_TOOL_NAMES;
+}
+
 export const HOSTED_OVERRIDES = {
   open_book: {
     description:

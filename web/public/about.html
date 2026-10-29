@@ -35,20 +35,7 @@
           <strong>Status of each feature.</strong> Sandbox and preview features file nothing real.
           <a href="mtd-calendar.html#availability">See the availability table</a>.
         </p>
-        <ul>
-          <li>
-            <span class="status-tag" data-status="production">Production</span> for real use: HMRC VAT, company lookup, registered office
-            and registered email.
-          </li>
-          <li>
-            <span class="status-tag" data-status="sandbox">Sandbox</span> against a test service: HMRC Income Tax (MTD), HMRC Assist for
-            Income Tax, the Companies House confirmation statement, PSC verification statement and accounts.
-          </li>
-          <li>
-            <span class="status-tag" data-status="preview">Preview</span> on our simulator only: HMRC Company Tax Return (CT600) and HMRC
-            Assist for VAT.
-          </li>
-        </ul>
+        <ul data-feature-status-list="auto"></ul>
       </div>
       <section class="about-intro">
         <h2>Submit your VAT returns direct to HMRC</h2>
@@ -139,6 +126,7 @@
     <script src="./developer-mode.js"></script>
     <script src="./lib/request-cache.js"></script>
     <script src="./lib/toml-parser.js"></script>
+    <script src="widgets/feature-status.js"></script>
     <script src="widgets/entitlement-status.js"></script>
     <script src="widgets/auth-status.js"></script>
     <script type="module" src="widgets/view-source-link.js"></script>

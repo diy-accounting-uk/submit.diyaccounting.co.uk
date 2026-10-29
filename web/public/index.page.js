@@ -231,38 +231,14 @@ function activityItem({ buttonClass, label, href, disabled, note, noteClass }) {
   return item;
 }
 
-const STATUS_WORDS = { production: "Production", sandbox: "Sandbox", preview: "Preview" };
-const STATUS_MEANINGS = {
-  production: "for real use",
-  sandbox: "against a test service",
-  preview: "on our simulator only",
-};
-
-function joinWithAnd(items) {
-  if (items.length <= 1) return items.join("");
-  return `${items.slice(0, -1).join(", ")} and ${items[items.length - 1]}`;
-}
-
 // The status box and the subtitle say what the catalogue lists for this environment.
 function renderFeatureStatus(catalog, environmentName) {
   const list = document.getElementById("featureStatusList");
   const subtitle = document.getElementById("homeSubtitle");
   const { groups, filings } = window.featureStatusSummary(catalog, environmentName);
-  if (list) {
-    list.replaceChildren(
-      ...groups.map(({ status, labels }) => {
-        const item = document.createElement("li");
-        const tag = document.createElement("span");
-        tag.className = "status-tag";
-        tag.dataset.status = status;
-        tag.textContent = STATUS_WORDS[status];
-        item.append(tag, ` ${STATUS_MEANINGS[status]}: ${joinWithAnd(labels)}.`);
-        return item;
-      }),
-    );
-  }
+  if (list) window.renderFeatureStatusList(list, groups);
   if (subtitle && filings.length > 0) {
-    subtitle.textContent = `Submit ${joinWithAnd(filings)} to HMRC and Companies House`;
+    subtitle.textContent = `Submit ${window.joinWithAnd(filings)} to HMRC and Companies House`;
   }
 }
 

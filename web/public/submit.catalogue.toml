@@ -143,7 +143,7 @@ hidden = false
 allocation = "on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
-listedInEnvironments = ["ci", "prod"]
+listedInEnvironments = ["ci"]
 
 # prices
 # ======
@@ -211,6 +211,7 @@ levelName = "Pro"
 enable = "always"
 hidden = false
 allocation = "on-subscription"
+listedInEnvironments = ["local", "test", "simulator", "proxy", "ci"]
 # tokensGranted = "unlimited" is the sentinel productCatalog.js's isUnlimitedTokenGrant()
 # recognises - the token enforcement and refresh paths treat this bundle as exempt from the
 # token count rather than assigning it a large numeric cap.
@@ -541,7 +542,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "diya-gl-storage"
-name = "Save diya-gl books"
+name = "Save diya-gl books (sandbox)"
 display = "on-entitlement"
 bundles = ["resident"]
 metered = false
@@ -552,6 +553,18 @@ metered = false
 # narrowing this to diya-gl only would stop this entry recognising traffic on the older prefix,
 # which the spreadsheets site's cloud.js still calls.
 paths = ["^/api/v1/(books|diya-gl).*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
+id = "practice"
+name = "Practice clients (HMRC agent, sandbox)"
+display = "never"
+bundles = ["default"]
+metered = false
+# The handlers check the practice licence themselves, so a signed-in visitor without it still sees
+# the licence-needed state; the activity asks for the automatic bundle and gates by environment.
+paths = ["practice.html", "^/api/v1/practice.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
 id = "my-receipts"

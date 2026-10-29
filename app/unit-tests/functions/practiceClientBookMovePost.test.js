@@ -4,6 +4,11 @@
 import { describe, test, expect, beforeEach, vi } from "vitest";
 import { buildJwtAuthorizerContext, buildLambdaEvent } from "../../test-helpers/eventBuilders.js";
 
+vi.mock("@app/services/bundleManagement.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  enforceBundles: vi.fn().mockResolvedValue({ userSub: "practice-sub", bundleIds: ["default"], client: null }),
+}));
+
 vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
   getClient: vi.fn(),
 }));

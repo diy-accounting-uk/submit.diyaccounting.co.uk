@@ -123,6 +123,24 @@ describe("mcpHttp ingestHandler", () => {
     expect(await options.session.credentials.idToken()).toBeNull();
   });
 
+  it("hands the transport the prod tool list in prod and the full list elsewhere", async () => {
+    const saved = process.env.ENVIRONMENT_NAME;
+    mockCreateMcpSession.mockResolvedValue({ sessionId: "session-abc" });
+    try {
+      process.env.ENVIRONMENT_NAME = "prod";
+      await ingestHandler(mcpEvent({ body: INITIALIZE }));
+      expect(mockHandleMcpRequest.mock.calls[0][1].toolNames).toContain("submit_vat_return");
+      expect(mockHandleMcpRequest.mock.calls[0][1].toolNames).not.toContain("submit_itsa_quarterly_update");
+
+      process.env.ENVIRONMENT_NAME = "ci";
+      await ingestHandler(mcpEvent({ body: INITIALIZE }));
+      expect(mockHandleMcpRequest.mock.calls[1][1].toolNames).toContain("submit_itsa_quarterly_update");
+    } finally {
+      if (saved === undefined) delete process.env.ENVIRONMENT_NAME;
+      else process.env.ENVIRONMENT_NAME = saved;
+    }
+  });
+
   it("answers 400 when a non-initialize POST has no Mcp-Session-Id", async () => {
     const result = await ingestHandler(mcpEvent({ body: TOOLS_CALL }));
     expect(result.statusCode).toBe(400);
