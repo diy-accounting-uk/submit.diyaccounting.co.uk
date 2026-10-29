@@ -111,7 +111,14 @@ export const AVAILABILITY = [
     filing: "HMRC Income Tax (MTD)",
     web: "hmrc/itsa/dashboard.html",
     video: "H1LRSZG984Q",
-    cells: [["sandbox"], ["sandbox"], ["sandbox"], NOT_OFFERED, ["sandbox", "figures only"], NOT_OFFERED],
+    cells: [
+      ["sandbox", "self-employment, UK and foreign property"],
+      ["sandbox"],
+      ["sandbox"],
+      NOT_OFFERED,
+      ["sandbox", "figures only"],
+      NOT_OFFERED,
+    ],
   },
   {
     filing: "HMRC Company Tax Return (CT600)",

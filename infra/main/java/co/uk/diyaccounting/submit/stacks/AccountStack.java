@@ -652,7 +652,7 @@ public class AccountStack extends Stack {
         this.practiceClientsListGetLambda = practiceClientsListGetApiLambda.ingestLambda;
         this.practiceClientsListGetLambdaLogGroup = practiceClientsListGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.practiceClientsListGetLambdaProps);
-        practiceClientsTable.grant(this.practiceClientsListGetLambda, "dynamodb:Query");
+        practiceClientsTable.grant(this.practiceClientsListGetLambda, "dynamodb:Query", "dynamodb:GetItem");
         // The list answers whether the caller holds the practice licence, from their bundles.
         bundlesTable.grant(this.practiceClientsListGetLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.practiceClientsListGetLambda, region, account, props.envName());

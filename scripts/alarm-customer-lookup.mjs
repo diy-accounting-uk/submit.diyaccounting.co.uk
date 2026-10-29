@@ -70,6 +70,10 @@ const FAILURE_EVENTS = {
   "itsa-submission-failure": [
     "itsa-annual-submission-failed",
     "itsa-final-declaration-failed",
+    "itsa-foreign-property-annual-submission-failed",
+    "itsa-foreign-property-details-create-failed",
+    "itsa-foreign-property-details-update-failed",
+    "itsa-foreign-property-period-failed",
     "itsa-losses-and-claims-deletion-failed",
     "itsa-losses-and-claims-failed",
     "itsa-self-employment-period-failed",

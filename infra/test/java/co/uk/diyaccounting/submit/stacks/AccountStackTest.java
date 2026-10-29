@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.util.List;
@@ -197,6 +198,34 @@ class AccountStackTest {
         boolean deletesSessionItem = statementsForRole.stream()
                 .anyMatch(statement -> String.valueOf(statement.get("Action")).contains("dynamodb:DeleteItem"));
         assertEquals(true, deletesSessionItem, "the sign-out Lambda must be able to delete the session item");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void practiceClientsListGetLambdaCanGetAndQueryThePracticeClientsTable() {
+        Template template = Template.fromStack(synthAccountStack(null));
+
+        var functions = template.findResources("AWS::Lambda::Function").values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .filter(properties ->
+                        String.valueOf(properties.get("FunctionName")).contains("practice-clients-list-get"))
+                .toList();
+        assertEquals(1, functions.size(), "expected exactly one practice-clients-list-get Lambda");
+        var roleRef = (Map<String, Object>) functions.get(0).get("Role");
+        var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+
+        var practiceClientsActions = template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                        .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> String.valueOf(statement.get("Resource")).contains("practice-clients"))
+                .map(statement -> String.valueOf(statement.get("Action")))
+                .toList();
+
+        assertTrue(practiceClientsActions.stream().anyMatch(a -> a.contains("dynamodb:GetItem")));
+        assertTrue(practiceClientsActions.stream().anyMatch(a -> a.contains("dynamodb:Query")));
     }
 
     // Every Secrets Manager read this stack grants on a GitHub token; the salt and email-hash

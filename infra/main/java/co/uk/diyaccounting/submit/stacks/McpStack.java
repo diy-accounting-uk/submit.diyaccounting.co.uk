@@ -248,10 +248,13 @@ public class McpStack extends Stack {
         // page reads and fills it by its id (no authoriser on the item routes). The codes are
         // sealed under a key derived from the blob key before they reach the sessions table.
         // ============================================================================
+        ITable practiceClientsTable =
+                Table.fromTableName(this, "PracticeClientsTable", sharedNames.practiceClientsTableName);
         var mcpCodesEntryEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("DIY_SUBMIT_BASE_URL", sharedNames.baseUrl)
                 .with("MCP_SESSIONS_DYNAMODB_TABLE_NAME", mcpSessionsTable.getTableName())
+                .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
                 .with("MCP_OAUTH_BLOB_KEY_SECRET_ARN", this.oauthBlobKeySecret.getSecretArn());
         var mcpCodesEntryApiLambda = new ApiLambda(
                 this,
@@ -288,6 +291,7 @@ public class McpStack extends Stack {
                     .build());
         }
         mcpSessionsTable.grantReadWriteData(this.mcpCodesEntryLambda);
+        practiceClientsTable.grant(this.mcpCodesEntryLambda, "dynamodb:GetItem");
         this.oauthBlobKeySecret.grantRead(this.mcpCodesEntryLambda);
         SubHashSaltHelper.grantSaltAccess(this.mcpCodesEntryLambda, region, account, props.envName());
         infof(
