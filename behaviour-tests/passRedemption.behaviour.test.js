@@ -33,6 +33,7 @@ import {
   verifySubscriptionManagement,
 } from "./steps/behaviour-bundle-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
+import { getCatalogBundleById, isBundleListedInEnvironment, loadCatalogFromRoot } from "@app/services/productCatalog.js";
 import {
   appendTraceparentTxt,
   appendUserSubTxt,
@@ -427,6 +428,10 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
 });
 
 test("Click through: Resident-pro subscribes directly, no pass required (on-subscription)", async ({ page }, testInfo) => {
+  test.skip(
+    !isBundleListedInEnvironment(getCatalogBundleById(loadCatalogFromRoot(), "resident-pro"), envName),
+    `the catalogue does not list resident-pro in ${envName}`,
+  );
   const testUrl = baseUrl;
 
   addOnPageLogging(page);
