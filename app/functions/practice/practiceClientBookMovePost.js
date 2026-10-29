@@ -17,6 +17,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { practiceEnforcementResponse } from "../../lib/practiceEnforcement.js";
 import { resolveAppClient } from "../../lib/appClientResolver.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
@@ -45,6 +46,9 @@ export async function ingestHandler(event) {
   if (!user) {
     return http401UnauthorizedResponse({ request, headers: responseHeaders, message: "Authentication required" });
   }
+
+  const denied = await practiceEnforcementResponse(event, request, responseHeaders);
+  if (denied) return denied;
 
   const clientId = event.pathParameters?.clientId;
   const bookId = event.pathParameters?.bookId;

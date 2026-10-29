@@ -294,7 +294,7 @@ describe("productCatalogHelper", () => {
     expect(bundleIds).toEqual(["resident", "resident-pro", "resident-vat"]);
   });
 
-  it("resident carries the annual and monthly prices, annual default, and is listed in ci and prod", () => {
+  it("resident carries the annual and monthly prices, annual default, and is listed in ci only", () => {
     const catalog = parseCatalog(tomlText);
     const resident = getCatalogBundleById(catalog, "resident");
     expect(resident).toMatchObject({
@@ -305,7 +305,7 @@ describe("productCatalogHelper", () => {
       tokensGranted: 100,
       tokenRefreshInterval: "P1M",
     });
-    expect(resident.listedInEnvironments).toEqual(["ci", "prod"]);
+    expect(resident.listedInEnvironments).toEqual(["ci"]);
     expect(getBundlePrices(resident)).toEqual([
       { interval: "year", amount: 3900, currency: "gbp", default: true },
       { interval: "month", amount: 399, currency: "gbp", default: false },

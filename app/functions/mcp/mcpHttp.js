@@ -19,6 +19,7 @@ import {
   updateMcpSessionHmrcGrant,
 } from "../../data/dynamoDbMcpSessionRepository.js";
 import { handleMcpRequest } from "../../../mcp/lib/http.js";
+import { hostedToolNames } from "../../../mcp/lib/hosted-tools.js";
 import { createSession, restoreCloudBook } from "../../../mcp/lib/book-tools.js";
 
 const logger = createLogger({ source: "app/functions/mcp/mcpHttp.js" });
@@ -204,7 +205,10 @@ export async function ingestHandler(event) {
     }
   }
 
-  const response = await handleMcpRequest(buildRequest(event, host, httpMethod, bodyText), { session });
+  const response = await handleMcpRequest(buildRequest(event, host, httpMethod, bodyText), {
+    session,
+    toolNames: hostedToolNames(process.env.ENVIRONMENT_NAME),
+  });
   const result = await mapResponse(response, extraHeaders);
 
   if (stored && session.cloud && !samePointer(session.cloud, stored.cloud)) {

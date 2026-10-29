@@ -37,10 +37,27 @@ const FIGURES = {
 const COUNTRY_SUMMARY = {
   metadata: { calculationId: "c1", summaryStatus: "valid" },
   adjustableSummaryCalculation: {
-    ...FIGURES,
+    totalIncome: 12000,
+    income: { totalRentsReceived: 11000, premiumsOfLeaseGrant: 0, otherPropertyIncome: 1000 },
+    totalExpenses: 1300,
+    expenses: { premisesRunningCosts: 500, repairsAndMaintenance: 500, consolidatedExpenses: 300 },
+    netProfit: 10700,
+    totalDeductions: 4200,
+    deductions: { costOfReplacingDomesticItems: 1200, otherCapitalAllowance: 3000 },
+    taxableProfit: 6500,
     countryLevelDetail: [
       { countryCode: "FRA", ...FIGURES },
-      { countryCode: "ESP", ...FIGURES, totalIncome: 2000, income: { totalRentsReceived: 2000 }, expenses: { consolidatedExpenses: 300 } },
+      {
+        countryCode: "ESP",
+        totalIncome: 2000,
+        income: { totalRentsReceived: 2000 },
+        totalExpenses: 300,
+        expenses: { consolidatedExpenses: 300 },
+        netProfit: 1700,
+        totalDeductions: 200,
+        deductions: { costOfReplacingDomesticItems: 200 },
+        taxableProfit: 1500,
+      },
     ],
   },
 };

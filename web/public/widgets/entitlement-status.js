@@ -231,9 +231,47 @@
   }
 
   /**
+   * Put the not-available panel in place of the page's content when the page's activity is not
+   * listed in the current environment. Nothing the page was going to show remains to be used.
+   * @returns {Promise<boolean>} True when the panel replaced the page's content
+   */
+  async function guardUnlistedActivity() {
+    const main = document.querySelector("main");
+    if (!main) return false;
+    const catalog = await fetchCatalog();
+    const activity = findMatchingActivity(catalog, window.location.pathname);
+    if (!activity) return false;
+    const service = await import("/lib/services/catalog-service.js");
+    const environmentName = await service.fetchCurrentEnvironmentName();
+    if (service.isActivityListedInEnvironment(activity, environmentName)) return false;
+
+    const panel = document.createElement("section");
+    panel.className = "signed-out-panel";
+    panel.id = "activityUnavailablePanel";
+    const heading = document.createElement("h2");
+    heading.textContent = "Not available here yet";
+    const text = document.createElement("p");
+    text.textContent =
+      "This part of DIY Accounting Submit is not open on this site yet. Nothing has been sent and nothing has been charged.";
+    const link = document.createElement("a");
+    link.className = "btn";
+    link.href = "/mtd-calendar.html#availability";
+    link.textContent = "See what is available";
+    panel.append(heading, text, link);
+    main.replaceChildren(panel);
+    document.body.dataset.activityUnavailable = activity.id;
+    return true;
+  }
+
+  /**
    * Update entitlement status display in header
    */
   async function updateEntitlementStatus() {
+    try {
+      await guardUnlistedActivity();
+    } catch (err) {
+      console.warn("Failed to check the activity environment:", err);
+    }
     const statusElement = document.querySelector(".entitlement-status");
     if (!statusElement) {
       return; // Element not found, skip
@@ -274,6 +312,7 @@
       fetchCatalog,
       fetchUserBundles,
       findMatchingActivity,
+      guardUnlistedActivity,
       getAutomaticBundles,
       getBundleNames,
     };

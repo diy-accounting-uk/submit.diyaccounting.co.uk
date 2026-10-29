@@ -19,7 +19,7 @@ import {
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { putReceipt } from "../data/dynamoDbReceiptRepository.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
-import { jointFilingFields, amendedFields } from "./jointFiling.js";
+import { jointFilingFields, amendedFields, formRequestFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
 
 const logger = createLogger({ source: "app/services/hmrcCtSubmissionStatus.js" });
@@ -109,7 +109,8 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
     successMessage: parsed.successMessage,
   };
   // The filed figures and documents stay with the receipt so the customer's copy shows what was filed.
-  await putReceipt(userSub, receiptId, pending.filed ? { ...accepted, filed: pending.filed } : accepted, resolveActorClass());
+  const receipt = { ...accepted, ...(pending.filed ? { filed: pending.filed } : {}), ...formRequestFields(pending.formRequest) };
+  await putReceipt(userSub, receiptId, receipt, resolveActorClass());
   const data = { ...accepted, receiptId };
   await putAsyncRequest(userSub, correlationId, "completed", data, asyncRequestsTableName);
   await deleteFromTransactionEngine({ pollUrl, correlationId, gatewayTest, messageClass, extraHeaders });

@@ -622,6 +622,7 @@ public class AccountStack extends Stack {
         // bundleGet above. Each reads or writes only the caller's own hashedSub partition.
         var practiceClientsLambdaEnv = new PopulatedMap<String, String>()
                 .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ENVIRONMENT_NAME", props.envName());
 
         var practiceClientsListGetApiLambda = new ApiLambda(
@@ -687,6 +688,7 @@ public class AccountStack extends Stack {
         this.practiceClientsPostLambdaLogGroup = practiceClientsPostApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.practiceClientsPostLambdaProps);
         practiceClientsTable.grant(this.practiceClientsPostLambda, "dynamodb:PutItem");
+        bundlesTable.grant(this.practiceClientsPostLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.practiceClientsPostLambda, region, account, props.envName());
         infof(
                 "Created API Lambda %s for creating a practice client with ingestHandler %s",
@@ -719,6 +721,7 @@ public class AccountStack extends Stack {
         this.practiceClientGetLambdaLogGroup = practiceClientGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.practiceClientGetLambdaProps);
         practiceClientsTable.grant(this.practiceClientGetLambda, "dynamodb:GetItem");
+        bundlesTable.grant(this.practiceClientGetLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.practiceClientGetLambda, region, account, props.envName());
         infof(
                 "Created API Lambda %s for reading a practice client with ingestHandler %s",
@@ -751,6 +754,7 @@ public class AccountStack extends Stack {
         this.practiceClientDeleteLambdaLogGroup = practiceClientDeleteApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.practiceClientDeleteLambdaProps);
         practiceClientsTable.grant(this.practiceClientDeleteLambda, "dynamodb:UpdateItem");
+        bundlesTable.grant(this.practiceClientDeleteLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.practiceClientDeleteLambda, region, account, props.envName());
         infof(
                 "Created API Lambda %s for archiving a practice client with ingestHandler %s",
@@ -800,6 +804,7 @@ public class AccountStack extends Stack {
                 "dynamodb:GetItem",
                 "dynamodb:PutItem",
                 "dynamodb:UpdateItem");
+        bundlesTable.grant(this.practiceClientAuthorisationInvitePostLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(
                 this.practiceClientAuthorisationInvitePostLambda, region, account, props.envName());
         infof(
@@ -835,6 +840,7 @@ public class AccountStack extends Stack {
         this.lambdaFunctionProps.add(this.practiceClientAuthorisationGetLambdaProps);
         practiceClientsTable.grant(
                 this.practiceClientAuthorisationGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        bundlesTable.grant(this.practiceClientAuthorisationGetLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.practiceClientAuthorisationGetLambda, region, account, props.envName());
         infof(
                 "Created API Lambda %s for reading a practice client's authorisation with ingestHandler %s",
@@ -874,6 +880,7 @@ public class AccountStack extends Stack {
         this.lambdaFunctionProps.add(this.practiceClientAuthorisationInviteDeleteLambdaProps);
         practiceClientsTable.grant(
                 this.practiceClientAuthorisationInviteDeleteLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        bundlesTable.grant(this.practiceClientAuthorisationInviteDeleteLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(
                 this.practiceClientAuthorisationInviteDeleteLambda, region, account, props.envName());
         infof(

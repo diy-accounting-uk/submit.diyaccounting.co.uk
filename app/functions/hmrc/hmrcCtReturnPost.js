@@ -38,7 +38,7 @@ import {
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
-import { readJointFilingId, jointFilingFields, amendedFields } from "../../services/jointFiling.js";
+import { readJointFilingId, jointFilingFields, amendedFields, sanitiseFormRequest, formRequestFields } from "../../services/jointFiling.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcCtReturnPost.js" });
 
@@ -86,7 +86,9 @@ export async function ingestHandler(event) {
 
   const errorMessages = [];
   const returnRequest = extractAndValidateCtReturnParameters(event, errorMessages);
-  const jointFilingId = readJointFilingId(parseRequestBody(event), errorMessages);
+  const requestBody = parseRequestBody(event);
+  const jointFilingId = readJointFilingId(requestBody, errorMessages);
+  const formRequest = sanitiseFormRequest(requestBody);
   if (errorMessages.length === 0) await fillRegisteredOffice(returnRequest.accounts, errorMessages);
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
@@ -174,6 +176,7 @@ export async function ingestHandler(event) {
         messageClass: CT600_CLASS,
         ...jointFilingFields(jointFilingId),
         ...amendedFields(returnRequest.amended),
+        ...formRequestFields(formRequest),
         filed: {
           boxes: documents.boxes,
           computationsIxbrl: documents.computationsIxbrl,

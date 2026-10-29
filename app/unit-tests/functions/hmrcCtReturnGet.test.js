@@ -278,6 +278,16 @@ describe("hmrcCtReturnGet ingestHandler", () => {
     expect(response.statusCode).toBe(403);
   });
 
+  test("copies the form request of the pending request into the receipt and not into the response", async () => {
+    const formRequest = { company: { companyNumber: "00001A", companyName: "Example Ltd" }, values: { turnover: "1000" } };
+    storedRecord = pendingRecord({ data: { formRequest } });
+    engineReturns(SUCCESS, DELETE_RESPONSE);
+    const response = await hmrcCtReturnGetHandler(buildEvent());
+    expect(parseResponseBody(response)).not.toHaveProperty("formRequest");
+    const [receipt] = await commands("PutCommand");
+    expect(receipt.input.Item.receipt.formRequest).toEqual(formRequest);
+  });
+
   describe("a return sent as half of a pair", () => {
     const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
 

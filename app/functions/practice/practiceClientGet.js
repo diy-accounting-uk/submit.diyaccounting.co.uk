@@ -16,6 +16,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { practiceEnforcementResponse } from "../../lib/practiceEnforcement.js";
 import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 
 const logger = createLogger({ source: "app/functions/practice/practiceClientGet.js" });
@@ -41,6 +42,9 @@ export async function ingestHandler(event) {
       message: "Authentication required",
     });
   }
+
+  const denied = await practiceEnforcementResponse(event, request, responseHeaders);
+  if (denied) return denied;
 
   const clientId = event.pathParameters?.clientId;
   if (!clientId) {

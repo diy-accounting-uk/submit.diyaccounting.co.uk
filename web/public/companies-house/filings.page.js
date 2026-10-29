@@ -29,6 +29,15 @@ async function mountFilingCopy(container, receipt, receiptName) {
   container.querySelectorAll("iframe.filed-document").forEach(fitFrameToDocument);
 }
 
+// A Company Tax Return that carries the answers it was made from can be amended: the filing page
+// refills the form from them.
+function showAmendLink(receipt, receiptName) {
+  const link = element("amendFilingLink");
+  const amendable = receipt.kind === "company-tax-return" && receipt.statusCode === "ACCEPT" && Boolean(receipt.formRequest);
+  link.style.display = amendable ? "inline-block" : "none";
+  if (amendable) link.href = `fileCompanyTaxReturn.html?amend=${encodeURIComponent(receiptName)}`;
+}
+
 async function showFiling(receiptName) {
   const res = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(receiptName)}`, {});
   if (!res.ok) {
@@ -42,6 +51,7 @@ async function showFiling(receiptName) {
     return;
   }
   await mountFilingCopy(element("filingContent"), receipt, receiptName);
+  showAmendLink(receipt, receiptName);
   element("filingActions").style.display = "flex";
 }
 

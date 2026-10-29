@@ -387,6 +387,16 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       expect(receipt.input.Item.receipt).toMatchObject({ kind: "companies-house-accounts", jointFilingId: JOINT_FILING_ID, amended: true });
     });
 
+    test("copies the form request of the pending request into the receipt and not into the response", async () => {
+      const formRequest = { company: { companyNumber: "00001A", companyName: "Example Ltd" }, values: { turnover: "1000" } };
+      storePendingRequest({ filedDocument: "<html/>", chargeActivityId: "file-small-company-accounts", formRequest });
+      gatewayAnswers("ACCEPT");
+      const response = await companiesHouseAccountsGetHandler(buildEvent());
+      expect(parseResponseBody(response)).not.toHaveProperty("formRequest");
+      const [receipt] = await puts();
+      expect(receipt.input.Item.receipt.formRequest).toEqual(formRequest);
+    });
+
     test("an original filing writes no amended mark", async () => {
       storePendingRequest({ filedDocument: "<html/>", chargeActivityId: "file-small-company-accounts", jointFilingId: JOINT_FILING_ID });
       gatewayAnswers("ACCEPT");

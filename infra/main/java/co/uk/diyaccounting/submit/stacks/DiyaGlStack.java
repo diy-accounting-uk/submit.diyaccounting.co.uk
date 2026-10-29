@@ -361,7 +361,8 @@ public class DiyaGlStack extends Stack {
                         .urlPath(props.sharedNames().practiceClientBookMovePostLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().practiceClientBookMovePostLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().practiceClientBookMovePostLambdaCustomAuthorizer)
-                        .environment(commonEnv)
+                        .environment(new PopulatedMap<String, String>(commonEnv)
+                                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName()))
                         .build());
         this.practiceClientBookMovePostLambdaProps = practiceClientBookMovePostApiLambda.apiProps;
         this.practiceClientBookMovePostLambda = practiceClientBookMovePostApiLambda.ingestLambda;
@@ -378,6 +379,7 @@ public class DiyaGlStack extends Stack {
                 .resources(List.of(booksObjectsArnPattern))
                 .build());
         practiceClientsTable.grant(this.practiceClientBookMovePostLambda, "dynamodb:GetItem");
+        bundlesTable.grant(this.practiceClientBookMovePostLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.practiceClientBookMovePostLambda, region, account, props.envName());
         grantAppClientIdParameterAccess(this.practiceClientBookMovePostLambda, region, account, props.envName());
         infof(

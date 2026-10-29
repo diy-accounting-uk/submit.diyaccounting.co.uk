@@ -97,6 +97,7 @@ export const AVAILABILITY = [
   {
     filing: "HMRC VAT return",
     web: "hmrc/vat/submitVat.html",
+    activity: "submit-vat",
     video: "XUt2gdYxR1g",
     cells: [
       ["production"],
@@ -110,6 +111,7 @@ export const AVAILABILITY = [
   {
     filing: "HMRC Income Tax (MTD)",
     web: "hmrc/itsa/dashboard.html",
+    activity: "self-employed",
     video: "H1LRSZG984Q",
     cells: [
       ["sandbox", "self-employment, UK and foreign property"],
@@ -123,24 +125,28 @@ export const AVAILABILITY = [
   {
     filing: "HMRC Company Tax Return (CT600)",
     web: "companies-house/fileCompanyTaxReturn.html",
+    activity: "file-company-tax-return",
     video: "jMIOZrQir2M",
     cells: [["preview"], ["preview", "book export file"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
   {
     filing: "HMRC Assist check on a VAT return",
     web: "hmrc/vat/submitVat.html",
+    activity: "vat-assist-check",
     video: "cyOZsF9qe28",
     cells: [["preview"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
   {
     filing: "Companies House accounts (micro-entity, small company, dormant)",
     web: "companies-house/fileMicroEntityAccounts.html",
+    activity: "file-micro-entity-accounts",
     video: "yPSpvLKrTJU",
     cells: [["sandbox"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["sandbox", "micro-entity"], NOT_OFFERED],
   },
   {
     filing: "Companies House confirmation statement",
     web: "companies-house/fileConfirmationStatement.html",
+    activity: "file-confirmation-statement",
     video: "P0aG_mLfhZI",
     cells: [["sandbox"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, ["sandbox"], NOT_OFFERED],
   },
@@ -152,12 +158,14 @@ export const AVAILABILITY = [
   {
     filing: "Companies House registered office and registered email",
     web: "companies-house/changeRegisteredOffice.html",
+    activity: "change-registered-office",
     video: "sN_FhTnAqF4",
     cells: [["production"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
   {
     filing: "Accounts at Companies House and CT600 at HMRC together",
     web: "companies-house/fileCompanyTaxReturn.html",
+    activity: "file-company-tax-return",
     cells: [["preview"], ["preview", "book export file"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
 ];
@@ -287,7 +295,7 @@ function cellHtml([status, note]) {
 function availabilityHtml() {
   const rows = AVAILABILITY.map((row) => {
     const links = [
-      row.web ? `<a href="${row.web}">Web form</a>` : "",
+      row.web ? `<a href="${row.web}" data-activity="${row.activity}">Web form</a>` : "",
       `<a href="guide.html">Guide</a>`,
       row.video ? `<a href="https://www.youtube.com/watch?v=${row.video}" rel="noopener">Video</a>` : "",
     ]
@@ -417,6 +425,7 @@ export function renderCalendarHtml(sources) {
     <script src="widgets/entitlement-status.js"></script>
     <script src="widgets/auth-status.js"></script>
     <script type="module" src="widgets/view-source-link.js"></script>
+    <script src="mtd-calendar.page.js"></script>
   </body>
 </html>
 `;

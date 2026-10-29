@@ -19,7 +19,7 @@ import {
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { putReceipt } from "../data/dynamoDbReceiptRepository.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
-import { jointFilingFields, amendedFields } from "./jointFiling.js";
+import { jointFilingFields, amendedFields, formRequestFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
 
 const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
@@ -99,7 +99,7 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
     // The accounts document is kept with the receipt so the customer's copy shows what was filed.
     const filedDocument = persistedRequest.data?.filedDocument;
     const receipt = filedDocument
-      ? { ...status, kind: ACCOUNTS_RECEIPT_KIND, filedDocument, ...jointFiling }
+      ? { ...status, kind: ACCOUNTS_RECEIPT_KIND, filedDocument, ...jointFiling, ...formRequestFields(persistedRequest.data?.formRequest) }
       : { ...status, ...jointFiling };
     await putReceipt(userSub, receiptId, receipt, resolveActorClass());
     const data = { ...status, ...jointFiling, receiptId };

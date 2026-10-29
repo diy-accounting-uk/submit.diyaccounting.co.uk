@@ -4,7 +4,7 @@
 import { describe, expect, it } from "vitest";
 
 import { createSession } from "../lib/book-tools.js";
-import { HOSTED_OVERRIDES, HOSTED_TOOL_NAMES } from "../lib/hosted-tools.js";
+import { HOSTED_OVERRIDES, HOSTED_TOOL_NAMES, hostedToolNames } from "../lib/hosted-tools.js";
 import { ITSA_TOOLS } from "../lib/itsa-tools.js";
 import { createServer, TOOLS } from "../lib/server.js";
 
@@ -57,5 +57,21 @@ describe("the hosted tool set", () => {
 
   it("refuses a tool name it does not know", () => {
     expect(() => createServer(createSession(), { toolNames: ["no_such_tool"] })).toThrow(/Unknown tool/);
+  });
+
+  it("offers every hosted tool outside prod", () => {
+    for (const environmentName of ["ci", "simulator", "proxy", undefined]) {
+      expect(hostedToolNames(environmentName)).toEqual(HOSTED_TOOL_NAMES);
+    }
+  });
+
+  it("offers only the VAT, books and authorisation tools in prod, all of them registered", () => {
+    const prodNames = hostedToolNames("prod");
+    expect(prodNames).toEqual(expect.arrayContaining(["submit_vat_return", "list_vat_obligations", "list_books", "open_book"]));
+    expect(
+      prodNames.filter((name) => /sandbox|itsa|uk_property|client|company|confirmation|accounts|poll_submission|move_book/.test(name)),
+    ).toEqual([]);
+    const server = createServer(createSession(), { toolNames: prodNames, overrides: HOSTED_OVERRIDES });
+    expect(Object.keys(server._registeredTools).sort()).toEqual([...prodNames].sort());
   });
 });
