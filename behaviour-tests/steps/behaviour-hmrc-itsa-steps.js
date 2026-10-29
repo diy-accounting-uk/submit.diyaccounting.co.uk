@@ -1376,3 +1376,327 @@ export async function verifyItsaForeignPropertyAnnualSaveResults(page, screensho
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-foreign-property-annual-saved.png`, readerView: true });
   });
 }
+
+// Amend: the foreign property period amend page. A 2025-26 or later amendment replaces the year's
+// running total, so it loads the current total first and sends every entry again.
+export async function initItsaForeignPropertyPeriodAmend(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the amend a foreign property period page", async () => {
+    const origin = new URL(page.url()).origin;
+    await page.goto(`${origin}/hmrc/itsa/foreignPropertyPeriodAmend.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-foreign-property-period-amend.png`, readerView: true });
+    await expect(page.locator("#itsaForeignPropertyPeriodAmendForm")).toBeVisible();
+  });
+}
+
+/**
+ * Fills the amend form's identifiers and presses "Load from HMRC". Returns the number of entries loaded.
+ * query: { hmrcNino, businessId, taxYear, submissionId, testScenario, runFraudPreventionHeaderValidation }
+ */
+export async function loadItsaForeignPropertyPeriodForAmend(page, query = {}, screenshotPath = defaultScreenshotPath) {
+  return await test.step("The user loads the period HMRC holds to amend it", async () => {
+    const { hmrcNino, businessId, taxYear, submissionId, testScenario, runFraudPreventionHeaderValidation } = query;
+    await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
+    await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
+    await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
+    if (submissionId) await loggedFill(page, "#submissionId", submissionId, "Entering submission ID", { screenshotPath });
+    await enableForeignPropertyDeveloperOptions(page, { testScenario, runFraudPreventionHeaderValidation }, screenshotPath);
+    await Promise.all([page.waitForURL(/.*/, { timeout: 15000 }), loggedClick(page, "#loadBtn", "Loading the period", { screenshotPath })]);
+    await page.waitForLoadState("domcontentloaded");
+    const entries = page.locator(".foreign-property-entry-list > fieldset");
+    await entries
+      .first()
+      .waitFor({ state: "visible", timeout: 60_000 })
+      .catch(() => {});
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-foreign-property-period-amend-loaded.png`, readerView: true });
+    return await entries.count();
+  });
+}
+
+// Changes the rental income of the entry at the given position (0 is the first fieldset).
+export async function changeItsaForeignPropertyAmendRent(page, position, rentAmount, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user changes the rental income of entry ${position + 1}`, async () => {
+    const prefix = await page.locator(".foreign-property-entry-list > fieldset").nth(position).getAttribute("id");
+    await loggedFill(page, `#${prefix}-rentAmount`, String(rentAmount), "Entering the corrected rental income", { screenshotPath });
+  });
+}
+
+export async function submitItsaForeignPropertyPeriodAmendForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the foreign property period amendment", async () => {
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-foreign-property-period-amend-submit.png`, readerView: true });
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#submitBtn", "Submitting the foreign property period amendment", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaForeignPropertyPeriodAmendResults(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the foreign property period amended", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#periodAmendResults",
+      description: "Foreign property period amend result",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#periodAmendResults")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-foreign-property-period-amended.png`, readerView: true });
+  });
+}
+
+// The periods list page. A 2025-26 or later year shows the running total in a table; an earlier
+// year lists the filed submissions, and "Use this period" remembers one for the view and amend pages.
+export async function listItsaForeignPropertyPeriods(page, query = {}, screenshotPath = defaultScreenshotPath) {
+  return await test.step("The user lists the foreign property period summaries", async () => {
+    const { hmrcNino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation } = query;
+    const origin = new URL(page.url()).origin;
+    await page.goto(`${origin}/hmrc/itsa/foreignPropertyPeriods.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
+    await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
+    await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
+    await enableForeignPropertyDeveloperOptions(page, { testScenario, runFraudPreventionHeaderValidation }, screenshotPath);
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#retrieveBtn", "Listing the periods", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await waitForSuccessOrError(page, {
+      successSelector: "#periodsResults",
+      description: "Foreign property period summaries",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#periodsResults")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-06-foreign-property-periods.png`, readerView: true });
+    return await page.locator("#periodsTable tbody tr").count();
+  });
+}
+
+// Presses "Use this period" on the first listed submission and returns to nothing else.
+export async function useFirstListedForeignPropertyPeriod(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user chooses the first listed period", async () => {
+    await page.locator("#periodsTable tbody tr").first().getByRole("button").click();
+    await expect(page.locator("#periodNextSteps")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-07-foreign-property-period-chosen.png`, readerView: true });
+  });
+}
+
+// The period view page, reached from the list through its link so the submission ID is carried.
+export async function viewItsaForeignPropertyPeriodFromList(page, query = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user views the chosen foreign property period", async () => {
+    await page.locator('#periodNextSteps a[href="foreignPropertyPeriodView.html"]').click();
+    await page.waitForLoadState("domcontentloaded");
+    await enableForeignPropertyDeveloperOptions(page, query, screenshotPath);
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#retrieveBtn", "Retrieving the period", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await waitForSuccessOrError(page, {
+      successSelector: "#periodViewResults",
+      description: "Foreign property period view",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#periodViewResults")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-foreign-property-period-view.png`, readerView: true });
+  });
+}
+
+// The period view page for a tax year that reports one running total (no submission ID).
+export async function viewItsaForeignPropertyCurrentTotal(page, query = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user views the foreign property current total", async () => {
+    const { hmrcNino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation } = query;
+    const origin = new URL(page.url()).origin;
+    await page.goto(`${origin}/hmrc/itsa/foreignPropertyPeriodView.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
+    await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
+    await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
+    await enableForeignPropertyDeveloperOptions(page, { testScenario, runFraudPreventionHeaderValidation }, screenshotPath);
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#retrieveBtn", "Retrieving the total", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await waitForSuccessOrError(page, {
+      successSelector: "#periodViewResults",
+      description: "Foreign property current total view",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#periodViewResults")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-08-foreign-property-total-view.png`, readerView: true });
+  });
+}
+
+// Property details (2026-27 on): load the list for the tax year.
+export async function loadItsaForeignPropertyDetails(page, query = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user opens the foreign property details page", async () => {
+    const { hmrcNino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation } = query;
+    const origin = new URL(page.url()).origin;
+    await page.goto(`${origin}/hmrc/itsa/foreignPropertyDetails.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
+    await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
+    await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
+    await enableForeignPropertyDeveloperOptions(page, { testScenario, runFraudPreventionHeaderValidation }, screenshotPath);
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#loadBtn", "Showing the properties", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await expect(page.locator("#propertiesPanel")).toBeVisible({ timeout: 60_000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-foreign-property-details.png`, readerView: true });
+  });
+}
+
+// Adds one property through the details page: { propertyName, countryCode }. Waits for the saved list.
+export async function addItsaForeignProperty(page, property, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user adds the property ${property.propertyName}`, async () => {
+    await loggedClick(page, "#addPropertyBtn", "Add a property", { screenshotPath });
+    await loggedFill(page, "#propertyName", property.propertyName, "Entering the property name", { screenshotPath });
+    await loggedSelectOption(page, "#propertyCountry", property.countryCode, "the country", { screenshotPath });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-foreign-property-details-add.png`, readerView: true });
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#savePropertyBtn", "Save property", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await expect(page.locator("#propertiesTable tbody tr", { hasText: property.propertyName })).toBeVisible({ timeout: 60_000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-foreign-property-details-added.png`, readerView: true });
+  });
+}
+
+// Ends the property at the given name through the details page's Change form.
+export async function endItsaForeignProperty(page, { propertyName, endDate, endReason }, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user ends the property ${propertyName}`, async () => {
+    await page
+      .locator("#propertiesTable tbody tr", { hasText: propertyName })
+      .getByRole("button", { name: /Change/ })
+      .click();
+    await page.locator("#propertyEnded").check();
+    await loggedFill(page, "#propertyEndDate", endDate, "Entering the end date", { screenshotPath });
+    await loggedSelectOption(page, "#propertyEndReason", endReason, "the end reason", { screenshotPath });
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#savePropertyBtn", "Save property", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await expect(page.locator("#propertiesTable tbody tr", { hasText: propertyName })).toContainText("Ended on", { timeout: 60_000 });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-foreign-property-details-ended.png`, readerView: true });
+  });
+}
+
+// Loads the properties on the period page (2026-27 on) and fills a rent for each by property name.
+// rents: { [propertyName]: rentAmount }
+export async function loadAndFillItsaForeignPropertyPropertyRents(page, rents, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user loads the properties and enters the rental income for each", async () => {
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#loadPropertiesBtn", "Loading the properties", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    const entries = page.locator(".foreign-property-entry-list > fieldset");
+    await entries.first().waitFor({ state: "visible", timeout: 60_000 });
+    for (const [propertyName, rentAmount] of Object.entries(rents)) {
+      const prefix = await entries.filter({ hasText: propertyName }).first().getAttribute("id");
+      await loggedFill(page, `#${prefix}-rentAmount`, String(rentAmount), `Entering rental income for ${propertyName}`, { screenshotPath });
+    }
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-foreign-property-period-properties.png`, readerView: true });
+  });
+}
+
+// Foreign property year-end summary (BSAS) and adjustments page.
+export async function initItsaForeignPropertyAdjustments(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the foreign property adjustments page", async () => {
+    const origin = new URL(page.url()).origin;
+    await page.goto(`${origin}/hmrc/itsa/foreignPropertyAdjustments.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-foreign-property-adjustments.png`, readerView: true });
+    await expect(page.locator("#itsaForeignBsasTriggerForm")).toBeVisible();
+  });
+}
+
+export async function requestItsaForeignPropertyYearEndSummary(page, query = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user requests the foreign property year-end summary", async () => {
+    const {
+      hmrcNino,
+      businessId,
+      taxYear,
+      accountingPeriodStartDate,
+      accountingPeriodEndDate,
+      testScenario,
+      runFraudPreventionHeaderValidation,
+    } = query;
+    await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
+    await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
+    await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
+    await loggedFill(page, "#accountingPeriodStartDate", accountingPeriodStartDate, "Entering the accounting period start", {
+      screenshotPath,
+    });
+    await loggedFill(page, "#accountingPeriodEndDate", accountingPeriodEndDate, "Entering the accounting period end", { screenshotPath });
+    await enableForeignPropertyDeveloperOptions(page, { testScenario, runFraudPreventionHeaderValidation }, screenshotPath);
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#triggerBtn", "Request year-end summary", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaForeignPropertyYearEndSummary(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the foreign property year-end summary", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#summaryContainer",
+      description: "Foreign property year-end summary",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#summaryContainer")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-foreign-property-year-end-summary.png`, readerView: true });
+  });
+}
+
+// Fills the adjustment fields of the entry at the given position: { totalRentsReceived, premisesRunningCosts, ... }.
+export async function fillInItsaForeignPropertyAdjustment(page, position, figures, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user enters an adjustment for entry ${position + 1}`, async () => {
+    const prefix = `adjust-${position + 1}`;
+    const expenseFields = Object.keys(figures).filter(
+      (field) => !["totalRentsReceived", "premiumsOfLeaseGrant", "otherPropertyIncome"].includes(field),
+    );
+    if (expenseFields.length > 0) await page.locator(`#${prefix}-expenses > summary`).click();
+    for (const [field, value] of Object.entries(figures)) {
+      await loggedFill(page, `#${prefix}-${field}`, String(value), `Entering ${field}`, { screenshotPath });
+    }
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-foreign-property-adjustment-filled.png`, readerView: true });
+  });
+}
+
+export async function submitItsaForeignPropertyAdjustment(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the foreign property adjustment", async () => {
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#submitAdjustmentBtn", "Submit adjustment", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaForeignPropertyAdjustmentResults(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the foreign property adjustment submitted", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#adjustmentResults",
+      description: "Foreign property adjustment result",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#adjustmentResults")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-foreign-property-adjustment-submitted.png`, readerView: true });
+  });
+}

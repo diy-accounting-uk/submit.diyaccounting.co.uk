@@ -28,15 +28,28 @@ import {
 } from "./steps/behaviour-login-steps.js";
 import { ensureBundleViaPassApi } from "./steps/behaviour-bundle-steps.js";
 import {
+  addItsaForeignProperty,
+  changeItsaForeignPropertyAmendRent,
+  endItsaForeignProperty,
   fillInItsaBusinessDetails,
   fillInItsaForeignPropertyPeriod,
   initItsaBusinessDetails,
   initItsaForeignPropertyPeriod,
+  initItsaForeignPropertyPeriodAmend,
+  listItsaForeignPropertyPeriods,
+  loadAndFillItsaForeignPropertyPropertyRents,
   loadItsaForeignPropertyCurrentTotal,
+  loadItsaForeignPropertyDetails,
+  loadItsaForeignPropertyPeriodForAmend,
   submitItsaBusinessDetailsForm,
+  submitItsaForeignPropertyPeriodAmendForm,
   submitItsaForeignPropertyPeriodForm,
+  useFirstListedForeignPropertyPeriod,
   verifyItsaBusinessDetailsResults,
+  verifyItsaForeignPropertyPeriodAmendResults,
   verifyItsaForeignPropertyPeriodResults,
+  viewItsaForeignPropertyCurrentTotal,
+  viewItsaForeignPropertyPeriodFromList,
 } from "./steps/behaviour-hmrc-itsa-steps.js";
 import {
   acceptCookiesHmrc,
@@ -366,6 +379,36 @@ test("Click through: File a Foreign Property Quarterly Update with HMRC", async 
   console.log(`[Foreign property] The current total loaded ${loadedEntries} entries`);
   expect(loadedEntries).toBeGreaterThan(0);
 
+  /* ***************************************************** */
+  /*  AMEND THE TOTAL, LIST THE PERIODS AND VIEW THE TOTAL */
+  /* ***************************************************** */
+
+  // 2025-26 has no submission ID: the amendment replaces the year's running total, so it loads
+  // that total, corrects one figure and sends every entry again.
+  const amendedRent = 1200;
+  await initItsaForeignPropertyPeriodAmend(page, screenshotPath);
+  const amendEntries = await loadItsaForeignPropertyPeriodForAmend(
+    page,
+    { hmrcNino: testNino, businessId, taxYear, testScenario: storeScenario, runFraudPreventionHeaderValidation },
+    screenshotPath,
+  );
+  expect(amendEntries).toBeGreaterThan(0);
+  await changeItsaForeignPropertyAmendRent(page, 0, amendedRent, screenshotPath);
+  await submitItsaForeignPropertyPeriodAmendForm(page, screenshotPath);
+  await verifyItsaForeignPropertyPeriodAmendResults(page, screenshotPath);
+
+  const listedEntries = await listItsaForeignPropertyPeriods(
+    page,
+    { hmrcNino: testNino, businessId, taxYear, testScenario: storeScenario, runFraudPreventionHeaderValidation },
+    screenshotPath,
+  );
+  expect(listedEntries).toBeGreaterThan(0);
+  await viewItsaForeignPropertyCurrentTotal(
+    page,
+    { hmrcNino: testNino, businessId, taxYear, testScenario: storeScenario, runFraudPreventionHeaderValidation },
+    screenshotPath,
+  );
+
   /* *********************************************** */
   /*  SANDBOX PROBES: COUNTRY CODES AND OMITTED ENTRY */
   /* *********************************************** */
@@ -420,6 +463,57 @@ test("Click through: File a Foreign Property Quarterly Update with HMRC", async 
     await verifyItsaForeignPropertyPeriodResults(page, screenshotPath);
   }
 
+  // The dated period just filed is listed, chosen and viewed by its submission ID.
+  if (usingHttpSimulator) {
+    const datedListed = await listItsaForeignPropertyPeriods(
+      page,
+      { hmrcNino: testNino, businessId, taxYear: "2024-25", runFraudPreventionHeaderValidation },
+      screenshotPath,
+    );
+    expect(datedListed).toBeGreaterThan(0);
+    await useFirstListedForeignPropertyPeriod(page, screenshotPath);
+    await viewItsaForeignPropertyPeriodFromList(page, { runFraudPreventionHeaderValidation }, screenshotPath);
+  }
+
+  /* ***************************************************************** */
+  /*  2026-27: ADD TWO PROPERTIES, FILE ONE UPDATE FOR BOTH, END ONE   */
+  /* ***************************************************************** */
+
+  // From 2026-27 HMRC keys the entries by property, so the properties are added first on the
+  // details page. The sandbox year this business was created for holds no 2026-27 obligation,
+  // so only the simulator runs it.
+  const propertyYear = "2026-27";
+  const properties = [
+    { propertyName: "Lyon apartment", countryCode: "FRA" },
+    { propertyName: "Malaga villa", countryCode: "ESP" },
+  ];
+  const endedProperty = { propertyName: "Malaga villa", endDate: "2026-12-31", endReason: "disposal" };
+  if (usingHttpSimulator) {
+    await loadItsaForeignPropertyDetails(
+      page,
+      { hmrcNino: testNino, businessId, taxYear: propertyYear, runFraudPreventionHeaderValidation },
+      screenshotPath,
+    );
+    for (const property of properties) await addItsaForeignProperty(page, property, screenshotPath);
+
+    await initItsaForeignPropertyPeriod(page, screenshotPath);
+    await fillInItsaForeignPropertyPeriod(
+      page,
+      { hmrcNino: testNino, businessId, taxYear: propertyYear, runFraudPreventionHeaderValidation },
+      screenshotPath,
+    );
+    await loadAndFillItsaForeignPropertyPropertyRents(page, { "Lyon apartment": 2000, "Malaga villa": 750 }, screenshotPath);
+    await submitItsaForeignPropertyPeriodForm(page, screenshotPath);
+    await verifyItsaForeignPropertyPeriodResults(page, screenshotPath);
+
+    await loadItsaForeignPropertyDetails(
+      page,
+      { hmrcNino: testNino, businessId, taxYear: propertyYear, runFraudPreventionHeaderValidation },
+      screenshotPath,
+    );
+    await endItsaForeignProperty(page, endedProperty, screenshotPath);
+  }
+
   /* ****************** */
   /*  Extract user sub  */
   /* ****************** */
@@ -447,6 +541,10 @@ test("Click through: File a Foreign Property Quarterly Update with HMRC", async 
       { url: "/api/v1/hmrc/itsa/foreign-property/period", method: "PUT" },
       { url: "/api/v1/hmrc/itsa/foreign-property/period", method: "GET" },
       { url: "/api/v1/hmrc/itsa/foreign-property/period", method: "POST" },
+      { url: "/api/v1/hmrc/itsa/uk-property/periods", method: "GET" },
+      { url: "/api/v1/hmrc/itsa/foreign-property/details", method: "GET" },
+      { url: "/api/v1/hmrc/itsa/foreign-property/details", method: "POST" },
+      { url: "/api/v1/hmrc/itsa/foreign-property/details", method: "PUT" },
       { url: "/test/fraud-prevention-headers/validate", method: "GET" },
     ],
     env: {
@@ -563,6 +661,12 @@ test("Click through: File a Foreign Property Quarterly Update with HMRC", async 
     const formRequest = sentBodies.find(({ body }) =>
       body.foreignProperty.some((entry) => entry.countryCode === "ESP" && entry.expenses?.consolidatedExpenses === 100),
     );
+    const amendRequest = sentBodies.find(({ body }) =>
+      body.foreignProperty.some((entry) => entry.income?.rentIncome?.rentAmount === amendedRent),
+    );
+    expect(amendRequest, "the amendment's cumulative update").toBeDefined();
+    expect(amendRequest.body.foreignProperty).toHaveLength(amendEntries);
+    expect(countHmrcApiRequestValues(amendRequest.cumulativeRequest, { "httpResponse.statusCode": 204 })).toBe(1);
     expect(formRequest, "the form's cumulative update").toBeDefined();
     const formEntries = Object.fromEntries(formRequest.body.foreignProperty.map((entry) => [entry.countryCode, entry]));
     expect(Object.keys(formEntries).sort()).toEqual(["ESP", "FRA"]);
@@ -588,6 +692,52 @@ test("Click through: File a Foreign Property Quarterly Update with HMRC", async 
       expect(datedBody.foreignFhlEea.expenses.premisesRunningCosts).toBe(100);
       expect(datedBody.foreignNonFhlProperty.map((entry) => entry.countryCode)).toEqual(["DEU"]);
       expect(countHmrcApiRequestValues(datedRequests[0], { "httpResponse.statusCode": 201 })).toBe(1);
+    }
+
+    if (usingHttpSimulator) {
+      const businessPath = `/individuals/business/property/foreign/${testNino}/${businessId}`;
+      const addRequests = assertHmrcApiRequestExists(
+        hmrcApiRequestsFile,
+        "POST",
+        `${businessPath}/details/${propertyYear}`,
+        "ITSA foreign property details create",
+      );
+      expect(addRequests.map((request) => JSON.parse(request.httpRequest.body).propertyName).sort()).toEqual(
+        properties.map((property) => property.propertyName).sort(),
+      );
+      addRequests.forEach((request, index) => {
+        assertEssentialFraudPreventionHeadersPresent(request, `POST foreign property details request ${index + 1}`);
+      });
+      const propertyIds = addRequests.map((request) => JSON.parse(request.httpResponse.body).propertyId);
+      expect(propertyIds.every(Boolean)).toBe(true);
+
+      const propertyYearRequests = assertHmrcApiRequestExists(
+        hmrcApiRequestsFile,
+        "PUT",
+        `${businessPath}/cumulative/${propertyYear}`,
+        "ITSA foreign property cumulative update by property",
+      );
+      expect(propertyYearRequests).toHaveLength(1);
+      assertEssentialFraudPreventionHeadersPresent(propertyYearRequests[0], "PUT foreign property cumulative request for 2026-27");
+      const propertyBody = JSON.parse(propertyYearRequests[0].httpRequest.body);
+      expect(propertyBody.foreignProperty.map((entry) => entry.propertyId).sort()).toEqual([...propertyIds].sort());
+      expect(propertyBody.foreignProperty.map((entry) => entry.income.rentIncome.rentAmount).sort((a, b) => a - b)).toEqual([750, 2000]);
+      expect(propertyBody.foreignProperty.every((entry) => entry.countryCode === undefined)).toBe(true);
+
+      const malagaId = propertyIds[properties.findIndex((property) => property.propertyName === endedProperty.propertyName)];
+      const endRequests = assertHmrcApiRequestExists(
+        hmrcApiRequestsFile,
+        "PUT",
+        `/individuals/business/property/foreign/${testNino}/details/${malagaId}/${propertyYear}`,
+        "ITSA foreign property details end",
+      );
+      assertEssentialFraudPreventionHeadersPresent(endRequests[0], "PUT foreign property details request");
+      expect(JSON.parse(endRequests[0].httpRequest.body)).toMatchObject({
+        propertyName: endedProperty.propertyName,
+        endDate: endedProperty.endDate,
+        endReason: endedProperty.endReason,
+      });
+      expect(countHmrcApiRequestValues(endRequests[0], { "httpResponse.statusCode": 204 })).toBe(1);
     }
 
     if (runFraudPreventionHeaderValidation) {
