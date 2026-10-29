@@ -65,7 +65,7 @@ export async function publishActivityEvent({
   const requestId = context.get("requestId") || null;
   const effectiveUserSub = userSub || context.get("userSub") || null;
   const hashedSub = hashSubForEvent(effectiveUserSub);
-  const effectiveActor = resolveActorClass(actor);
+  const effectiveActor = resolveActorClass(actor, hashedSub);
   const effectiveFlow = flow || (effectiveUserSub ? "user-journey" : "unknown");
 
   try {
@@ -121,15 +121,35 @@ export async function publishActivityEvent({
  * caller (username like Google_<id>) has no email on an access token and falls through to
  * the requestId prefix.
  *
+ * The class belongs to the account, not to one event: once an event of a warm container shows an
+ * account is a test user or probe, every later event of that account in the container carries the
+ * same class, including events that arrive without an email.
+ *
  * @param {string} [explicitActor] - Overrides the derived class when supplied
+ * @param {string|null} [hashedSub] - Hashed sub of the account the event belongs to
  * @returns {"customer"|"test-user"|"probe"|"system"}
  */
-export function resolveActorClass(explicitActor) {
+export function resolveActorClass(explicitActor, hashedSub = null) {
   if (explicitActor) return explicitActor;
   const email = context.get("userEmail") || null;
-  if (email) return classifyActor(email);
+  if (email) {
+    const actor = classifyActor(email);
+    if (hashedSub && actor !== "customer") nonCustomerActorBySub.set(hashedSub, actor);
+    return actor;
+  }
+  const remembered = hashedSub ? nonCustomerActorBySub.get(hashedSub) : null;
+  if (remembered) return remembered;
   const requestId = context.get("requestId") || null;
-  return requestId?.startsWith("test_") ? "test-user" : "customer";
+  const actor = requestId?.startsWith("test_") ? "test-user" : "customer";
+  if (hashedSub && actor !== "customer") nonCustomerActorBySub.set(hashedSub, actor);
+  return actor;
+}
+
+const nonCustomerActorBySub = new Map();
+
+/** Forget the accounts remembered as non-customers (for tests). */
+export function resetRememberedActors() {
+  nonCustomerActorBySub.clear();
 }
 
 /**

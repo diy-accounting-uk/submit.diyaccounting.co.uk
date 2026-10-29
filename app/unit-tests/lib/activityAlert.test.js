@@ -28,6 +28,7 @@ import {
   publishActivityFailureEvent,
   resolveActivityBusRegion,
   resolveActorClass,
+  resetRememberedActors,
 } from "@app/lib/activityAlert.js";
 import { context } from "@app/lib/logger.js";
 import { extractUserFromAuthorizerContext } from "@app/lib/httpResponseHelper.js";
@@ -361,6 +362,34 @@ describe("lib/activityAlert", () => {
         context.set("requestId", "abc-123");
         context.set("userEmail", "synthetic-local@test.diyaccounting.co.uk");
         expect(resolveActorClass()).toBe("test-user");
+      });
+    });
+
+    describe("account memory", () => {
+      beforeEach(() => resetRememberedActors());
+
+      test("an event with no email keeps the test-user class an earlier event of the account showed", async () => {
+        await context.run(new Map(), async () => {
+          context.set("requestId", "abc-123");
+          context.set("userEmail", "synthetic-local@test.diyaccounting.co.uk");
+          expect(resolveActorClass(undefined, "hash-a")).toBe("test-user");
+        });
+        await context.run(new Map(), async () => {
+          context.set("requestId", "def-456");
+          expect(resolveActorClass(undefined, "hash-a")).toBe("test-user");
+        });
+      });
+
+      test("an account never shown to be a test user stays a customer", async () => {
+        await context.run(new Map(), async () => {
+          context.set("requestId", "abc-123");
+          context.set("userEmail", "synthetic-local@test.diyaccounting.co.uk");
+          resolveActorClass(undefined, "hash-a");
+        });
+        await context.run(new Map(), async () => {
+          context.set("requestId", "def-456");
+          expect(resolveActorClass(undefined, "hash-b")).toBe("customer");
+        });
       });
     });
 
