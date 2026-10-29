@@ -409,6 +409,32 @@ describe("operatorSnapshotPublish", () => {
       );
     });
 
+    test("every chart carries a note and every mode describes its lines", () => {
+      for (const definition of buildDailyChartDefinitions()) {
+        expect(definition.note, definition.id).toBeTruthy();
+        for (const mode of definition.modes) {
+          expect(mode.descriptionOf, `${definition.id}/${mode.id}`).toBeTypeOf("function");
+          if (mode.total) expect(mode.totalDescription, `${definition.id}/${mode.id}`).toBeTruthy();
+        }
+      }
+    });
+
+    test("buildChartSeries gives each line, the total and Other a description", () => {
+      const days = dailyChartDays(END_DAY);
+      const rows = ["a", "b", "c"].map((component, index) => ({ day: END_DAY, component, value: String(3 - index) }));
+      const mode = {
+        total: "All",
+        totalDescription: "Everything.",
+        maxComponents: 2,
+        labelOf: (id) => id,
+        descriptionOf: (id) => `Line ${id}.`,
+      };
+
+      const series = buildChartSeries({ days, rows, mode });
+
+      expect(series.map((line) => line.description)).toEqual(["Everything.", "Line a.", "Line b.", "The 1 smaller lines added together."]);
+    });
+
     test("every chart mode asks for the last 90 days and answers day, component and value", () => {
       for (const definition of buildDailyChartDefinitions()) {
         for (const mode of definition.modes) {

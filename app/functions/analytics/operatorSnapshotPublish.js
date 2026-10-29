@@ -1351,6 +1351,14 @@ const VISITOR_KIND_LABELS = {
   "(unclassified)": "Unclassified",
 };
 
+const VISITOR_KIND_DESCRIPTIONS = {
+  "human": "Sessions of visitors who are not signed in and are not flagged as a bot, an operator or a test.",
+  "operator": "Sessions of the operator, flagged when the operator signs in.",
+  "bot": "Sessions whose user agent matches a known crawler or automated client.",
+  "synthetic": "Sessions of the behaviour tests.",
+  "(unclassified)": "Sessions with no visitor kind recorded.",
+};
+
 function activityLabels() {
   const catalog = loadCatalogFromRoot();
   return Object.fromEntries((catalog.activities || []).map((activity) => [activity.id, activity.name]));
@@ -1384,12 +1392,15 @@ export function buildDailyChartDefinitions() {
       objectiveId: "activity-started-and-completed",
       title: "Activity started and completed",
       unit: "count",
+      note: "Days are UTC. Started counts people opening an activity; Completed counts activities that reached their end. Only activities listed on prod appear.",
       modes: [
         {
           id: "started",
           label: "Started",
           total: "All activities",
+          totalDescription: "Starts of every activity added together.",
           labelOf: (id) => labels[id] ?? id,
+          descriptionOf: (id) => `Times ${labels[id] ?? id} was started in a day.`,
           sql: longFormSql({
             dayExpression: "day",
             componentExpression: "activity",
@@ -1402,7 +1413,9 @@ export function buildDailyChartDefinitions() {
           id: "completed",
           label: "Completed",
           total: "All activities",
+          totalDescription: "Completions of every activity added together.",
           labelOf: (id) => labels[id] ?? id,
+          descriptionOf: (id) => `Times ${labels[id] ?? id} was completed in a day.`,
           sql: longFormSql({
             dayExpression: "day",
             componentExpression: "activity",
@@ -1424,6 +1437,12 @@ export function buildDailyChartDefinitions() {
           id: "funnel",
           label: "Funnel",
           total: null,
+          descriptionOf: (id) =>
+            ({
+              "human-sessions": "Sessions of visitors classed as human, from Google Analytics; counts visitors who accepted analytics.",
+              "active-customers": "Customers who signed in on the day.",
+              "submitted-within-7-days": "Of those who signed in on the day, the customers who made a submission within 7 days.",
+            })[id],
           componentOrder: ["human-sessions", "active-customers", "submitted-within-7-days"],
           labelOf: (id) =>
             ({
@@ -1448,11 +1467,20 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-paid",
       title: "Conversion to paid",
       unit: "gbp",
+      note: "Revenue per day in pounds, by where the money came from. Each day is a UTC day.",
       modes: [
         {
           id: "revenue",
           label: "Revenue",
           total: "All revenue",
+          totalDescription: "Revenue from every source added together, in pounds.",
+          descriptionOf: (id) =>
+            ({
+              "subscriptions": "Stripe charges for bundles and subscriptions.",
+              "stripe-donations": "Stripe charges from the four donation Payment Links.",
+              "paypal-donations": "PayPal donation receipts.",
+              "paypal-other": "PayPal receipts that are not donations.",
+            })[id],
           labelOf: (id) =>
             ({
               "subscriptions": "Subscriptions",
@@ -1481,8 +1509,10 @@ export function buildDailyChartDefinitions() {
           id: "cost",
           label: "Cost",
           total: "All services",
+          totalDescription: "Every service in every account added together, in dollars.",
           maxComponents: 12,
           labelOf: (id) => id,
+          descriptionOf: (id) => `Dollars billed for ${id} across all accounts.`,
           sql: longFormSql({
             dayExpression: "day",
             componentExpression: "service_name",
@@ -1495,7 +1525,9 @@ export function buildDailyChartDefinitions() {
           id: "account",
           label: "By account",
           total: "All accounts",
+          totalDescription: "Every account added together, in dollars.",
           labelOf: (id) => AWS_ACCOUNT_NAMES_BY_ID[id] ?? id,
+          descriptionOf: (id) => `Dollars billed in the ${AWS_ACCOUNT_NAMES_BY_ID[id] ?? "unnamed"} account (${id}).`,
           sql: longFormSql({
             dayExpression: "day",
             componentExpression: "sub_account_id",
@@ -1508,8 +1540,13 @@ export function buildDailyChartDefinitions() {
           id: "deployment",
           label: "By deployment",
           total: "All deployments",
+          totalDescription: "Every deployment added together, in dollars.",
           maxComponents: 12,
           labelOf: (id) => id,
+          descriptionOf: (id) =>
+            id === "untagged"
+              ? "Dollars billed for charges with no deployment tag."
+              : `Dollars billed for resources tagged with deployment ${id}.`,
           sql: longFormSql({
             dayExpression: "day",
             componentExpression: "deployment",
@@ -1531,6 +1568,13 @@ export function buildDailyChartDefinitions() {
           id: "retention",
           label: "Retention",
           total: null,
+          descriptionOf: (id) =>
+            ({
+              "submitters-90d": "Distinct customers with a VAT submission in the 90 days up to the day.",
+              "returning-submitters-90d": "Of those, the customers who also submitted in the 90 days before that.",
+              "renewals": "Subscriptions renewed on the day.",
+              "cancellations": "Subscriptions cancelled on the day.",
+            })[id],
           componentOrder: ["submitters-90d", "returning-submitters-90d", "renewals", "cancellations"],
           labelOf: (id) =>
             ({
@@ -1559,12 +1603,15 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Visitors",
       unit: "count",
+      note: "Sessions per day by kind of visitor, from Google Analytics. Bots and synthetic test traffic are mostly invisible to it.",
       modes: [
         {
           id: "sessions",
           label: "Sessions",
           total: "All visitors",
+          totalDescription: "Sessions of every kind added together.",
           labelOf: (id) => VISITOR_KIND_LABELS[id] ?? id,
+          descriptionOf: (id) => VISITOR_KIND_DESCRIPTIONS[id],
           sql: longFormSql({
             dayExpression: "day",
             componentExpression: "visitor_kind",
@@ -1609,11 +1656,17 @@ export function buildChartSeries({ days, rows, mode }) {
   }
 
   const sum = (values) => values.reduce((total, value) => total + value, 0);
-  let components = [...valuesByComponent.entries()].map(([id, values]) => ({ id, label: mode.labelOf(id), values }));
+  const describe = (id) => (mode.descriptionOf ? { description: mode.descriptionOf(id) } : {});
+  let components = [...valuesByComponent.entries()].map(([id, values]) => ({ id, label: mode.labelOf(id), ...describe(id), values }));
   if (mode.componentOrder) {
     components = mode.componentOrder.map(
       (id) =>
-        components.find((component) => component.id === id) ?? { id, label: mode.labelOf(id), values: new Array(days.length).fill(0) },
+        components.find((component) => component.id === id) ?? {
+          id,
+          label: mode.labelOf(id),
+          ...describe(id),
+          values: new Array(days.length).fill(0),
+        },
     );
   } else {
     components.sort((a, b) => sum(b.values) - sum(a.values) || a.label.localeCompare(b.label));
@@ -1621,7 +1674,12 @@ export function buildChartSeries({ days, rows, mode }) {
   if (mode.maxComponents && components.length > mode.maxComponents) {
     const kept = components.slice(0, mode.maxComponents);
     const folded = components.slice(mode.maxComponents);
-    kept.push({ id: "other", label: "Other", values: days.map((_, index) => sum(folded.map((component) => component.values[index]))) });
+    kept.push({
+      id: "other",
+      label: "Other",
+      description: `The ${folded.length} smaller lines added together.`,
+      values: days.map((_, index) => sum(folded.map((component) => component.values[index]))),
+    });
     components = kept;
   }
 
@@ -1630,6 +1688,7 @@ export function buildChartSeries({ days, rows, mode }) {
     series.unshift({
       id: "total",
       label: mode.total,
+      ...(mode.totalDescription ? { description: mode.totalDescription } : {}),
       isTotal: true,
       values: days.map((_, index) => Math.round(sum(components.map((component) => component.values[index])) * 100) / 100),
     });

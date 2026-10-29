@@ -281,7 +281,9 @@ function chartSeries(id, label, scale, extra = {}) {
 }
 
 function chartWithSeries(id, objectiveId, title, unit, seriesLabels, extra = {}) {
-  const components = seriesLabels.map((label, index) => chartSeries(`${id}-${index}`, label, 3 + index * 2));
+  const components = seriesLabels.map((label, index) =>
+    chartSeries(`${id}-${index}`, label, 3 + index * 2, { description: `What ${label} measures.` }),
+  );
   const total = {
     id: "total",
     label: "Total",
@@ -852,6 +854,39 @@ test.describe("Operator Dashboard", () => {
       await expect(activities.locator("polyline.chart-line")).toHaveCount(13);
       await activities.locator('.chart-mode[data-mode-id="completed"]').click();
       await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+    });
+
+    test("shows all, hides all, isolates one line on a double-click and restores on a second", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const card = page.locator('.chart-card[data-chart-id="retention"]');
+      const lines = card.locator("polyline.chart-line");
+      await expect(lines).toHaveCount(5);
+
+      await card.locator('[data-action="hide-all"]').click();
+      await expect(lines).toHaveCount(0);
+      await card.locator('[data-action="show-all"]').click();
+      await expect(lines).toHaveCount(5);
+
+      await card.locator(".chart-legend-item", { hasText: "Renewals" }).click();
+      await expect(lines).toHaveCount(4);
+      await card.locator(".chart-legend-item", { hasText: "Renewals" }).click();
+      await expect(lines).toHaveCount(5);
+
+      await card.locator(".chart-legend-item", { hasText: "Cancellations" }).dblclick();
+      await expect(lines).toHaveCount(1);
+      await expect(card.locator('.chart-legend-item[aria-pressed="true"]')).toHaveCount(1);
+      await card.locator(".chart-legend-item", { hasText: "Cancellations" }).dblclick();
+      await expect(lines).toHaveCount(5);
+    });
+
+    test("describes each line in its legend tooltip", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const card = page.locator('.chart-card[data-chart-id="retention"]');
+      await expect(card.locator(".chart-legend-item", { hasText: "Renewals" })).toHaveAttribute("title", "What Renewals measures.");
     });
 
     test("reads one day under the chart as the pointer moves over it", async ({ page }) => {

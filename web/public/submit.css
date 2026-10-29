@@ -5552,6 +5552,25 @@ table.observations th {
   font-variant-numeric: tabular-nums;
 }
 
+.chart-plot {
+  position: relative;
+}
+
+/* Over the plot, so hiding every line does not move the legend under the pointer. */
+.chart-plot .chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  pointer-events: none;
+}
+
+.chart-plot .chart-empty[hidden] {
+  display: none;
+}
+
 .chart-empty,
 .chart-note {
   margin: var(--space-2) 0;
@@ -5586,6 +5605,12 @@ table.observations th {
 .chart-legend-item[aria-pressed="false"] {
   color: var(--c-ink-muted);
   text-decoration: line-through;
+}
+
+.chart-legend-controls {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
 }
 
 .chart-legend {
