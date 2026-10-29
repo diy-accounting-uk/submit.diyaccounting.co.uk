@@ -142,6 +142,22 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "itsaForeignPropertyPeriodBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/itsaForeignPropertyPeriod.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
+      name: "itsaForeignPropertyAnnualSubmissionBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/itsaForeignPropertyAnnualSubmission.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
       name: "itsaLossesAndClaimsBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/itsaLossesAndClaims.behaviour.test.js"],

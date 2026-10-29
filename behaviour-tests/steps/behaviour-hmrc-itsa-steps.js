@@ -1107,3 +1107,272 @@ export async function verifyItsaLossesSaveResults(page, screenshotPath = default
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-losses-saved.png`, readerView: true });
   });
 }
+
+// Foreign property: the quarterly update and the annual submission. A foreign property page holds
+// one fieldset for each country (2025-26 and before) or each property (2026-27 on), so the fill
+// steps take a list of entries.
+
+async function enableForeignPropertyDeveloperOptions(page, { testScenario, runFraudPreventionHeaderValidation }, screenshotPath) {
+  if (!testScenario && !runFraudPreventionHeaderValidation) return;
+  if (isSyntheticMode()) {
+    await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
+  }
+  await page.evaluate(() => {
+    sessionStorage.setItem("showDeveloperOptions", "true");
+    document.body.classList.add("developer-mode");
+    window.dispatchEvent(new CustomEvent("developer-mode-changed", { detail: { enabled: true } }));
+  });
+  await expect(page.locator("#developerSection")).toBeVisible({ timeout: 5000 });
+  if (testScenario) {
+    await loggedSelectOption(page, "#testScenario", String(testScenario), "a developer test scenario", { screenshotPath });
+  }
+  if (runFraudPreventionHeaderValidation) {
+    await page.locator("#runFraudPreventionHeaderValidation").check();
+  }
+}
+
+// Adds a country fieldset through the "Add a country" button and returns its id prefix.
+async function addForeignPropertyCountry(page, addButtonSelector, countryCode) {
+  await page.locator(addButtonSelector).click();
+  const prefix = await page.locator(".foreign-property-entry-list > fieldset").last().getAttribute("id");
+  await page.locator(`#${prefix}-country`).selectOption(countryCode);
+  return prefix;
+}
+
+export async function initItsaForeignPropertyPeriod(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the File a foreign property quarterly update page and sees the period form", async () => {
+    const origin = new URL(page.url()).origin;
+    await page.goto(`${origin}/hmrc/itsa/foreignPropertyPeriod.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-foreign-property-period.png`, readerView: true });
+    await expect(page.locator("#itsaForeignPropertyPeriodForm")).toBeVisible();
+  });
+}
+
+/**
+ * Fills the foreign property quarterly update form.
+ * entries: [{ countryCode, rentAmount, premisesRunningCosts, consolidatedExpenses }] - a
+ * consolidatedExpenses figure switches that entry to "One total for all expenses".
+ * fhl: { rentAmount, premisesRunningCosts } for the 2024-25 furnished holiday lettings section.
+ */
+export async function fillInItsaForeignPropertyPeriod(page, periodQuery = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user fills in the foreign property quarterly update form", async () => {
+    const {
+      hmrcNino,
+      businessId,
+      taxYear,
+      fromDate,
+      toDate,
+      entries = [],
+      fhl,
+      testScenario,
+      runFraudPreventionHeaderValidation,
+    } = periodQuery || {};
+    await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
+    await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
+    await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
+    if (fromDate) await loggedFill(page, "#fromDate", fromDate, "Entering period start date", { screenshotPath });
+    if (toDate) await loggedFill(page, "#toDate", toDate, "Entering period end date", { screenshotPath });
+
+    if (fhl) {
+      if (fhl.rentAmount !== undefined)
+        await loggedFill(page, "#fhl-rentAmount", String(fhl.rentAmount), "Entering FHL rental income", { screenshotPath });
+      if (fhl.premisesRunningCosts !== undefined) {
+        await loggedFill(page, "#fhl-premisesRunningCosts", String(fhl.premisesRunningCosts), "Entering FHL running costs", {
+          screenshotPath,
+        });
+      }
+    }
+
+    for (const entry of entries) {
+      const prefix = await addForeignPropertyCountry(page, "#fp-add", entry.countryCode);
+      if (entry.rentAmount !== undefined) {
+        await loggedFill(page, `#${prefix}-rentAmount`, String(entry.rentAmount), `Entering rental income for ${entry.countryCode}`, {
+          screenshotPath,
+        });
+      }
+      if (entry.consolidatedExpenses !== undefined) {
+        await page.locator(`#${prefix}-expenseBasisTotal`).check();
+        await loggedFill(
+          page,
+          `#${prefix}-consolidatedExpenses`,
+          String(entry.consolidatedExpenses),
+          `Entering total expenses for ${entry.countryCode}`,
+          { screenshotPath },
+        );
+      } else if (entry.premisesRunningCosts !== undefined) {
+        await loggedFill(
+          page,
+          `#${prefix}-premisesRunningCosts`,
+          String(entry.premisesRunningCosts),
+          `Entering running costs for ${entry.countryCode}`,
+          { screenshotPath },
+        );
+      }
+    }
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-foreign-property-period-fill-in.png`, readerView: true });
+
+    await enableForeignPropertyDeveloperOptions(page, { testScenario, runFraudPreventionHeaderValidation }, screenshotPath);
+    await loggedFocus(page, "#submitBtn", "Submit button", { screenshotPath });
+    await expect(page.locator("#submitBtn")).toBeVisible();
+  });
+}
+
+export async function submitItsaForeignPropertyPeriodForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the foreign property quarterly update form", async () => {
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-foreign-property-period-submit.png`, readerView: true });
+    // Clicking submit may trigger the HMRC OAuth redirect when the token lacks the scope.
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#submitBtn", "Submitting foreign property quarterly update form", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaForeignPropertyPeriodResults(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the foreign property quarterly update filing result", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#foreignPropertyPeriodResults",
+      description: "Foreign property quarterly update result",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#foreignPropertyPeriodResults")).toBeVisible();
+    await expect(page.locator("#submissionIdResult")).not.toHaveText("");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-04-foreign-property-period-results.png`, readerView: true });
+  });
+}
+
+// Presses "Load current total from HMRC" on the filled-in identifiers and waits for the entries.
+export async function loadItsaForeignPropertyCurrentTotal(page, screenshotPath = defaultScreenshotPath) {
+  return await test.step("The user loads the current total from HMRC", async () => {
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#loadCurrentTotalBtn", "Loading the current total", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    // The load is asynchronous: the entries appear when HMRC has answered. A total HMRC does not
+    // hold yet leaves the list empty, so a timeout here is an answer, not a failure.
+    const entries = page.locator(".foreign-property-entry-list > fieldset");
+    await entries
+      .first()
+      .waitFor({ state: "visible", timeout: 60_000 })
+      .catch(() => {});
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-05-foreign-property-period-loaded.png`, readerView: true });
+    return await entries.count();
+  });
+}
+
+export async function initItsaForeignPropertyAnnualSubmission(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user navigates to the Foreign Property Annual Submission page and sees the load form", async () => {
+    const origin = new URL(page.url()).origin;
+    await page.goto(`${origin}/hmrc/itsa/foreignPropertyAnnualSubmission.html`, { waitUntil: "domcontentloaded", timeout: 30_000 });
+    await page.waitForTimeout(500);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-foreign-property-annual-submission.png`, readerView: true });
+    await expect(page.locator("#itsaForeignAnnualLoadForm")).toBeVisible();
+  });
+}
+
+export async function fillInItsaForeignPropertyAnnualLoad(page, annualQuery = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user fills in the Foreign Property Annual Submission load form", async () => {
+    const { hmrcNino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation } = annualQuery || {};
+    await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
+    await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
+    await loggedSelectOption(page, "#taxYear", taxYear, "the tax year", { screenshotPath });
+    await enableForeignPropertyDeveloperOptions(page, { testScenario, runFraudPreventionHeaderValidation }, screenshotPath);
+    await loggedFocus(page, "#loadBtn", "Load button", { screenshotPath });
+    await expect(page.locator("#loadBtn")).toBeVisible();
+  });
+}
+
+export async function submitItsaForeignPropertyAnnualLoadForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user submits the Foreign Property Annual Submission load form", async () => {
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#loadBtn", "Submitting Foreign Property Annual Submission load form", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaForeignPropertyAnnualLoadResults(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the Foreign Property Annual Submission edit form", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#annualEditForm",
+      description: "Foreign Property Annual Submission edit form",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#annualEditForm")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-foreign-property-annual-loaded.png`, readerView: true });
+  });
+}
+
+/**
+ * Adds one country to the annual submission and fills its adjustments and allowances.
+ * annualEdit: { countryCode, balancingCharge, allowanceType: "itemised" | "propertyIncome" | "none",
+ * annualInvestmentAllowance, propertyIncomeAllowance, sbaClaim: { amount, qualifyingDate,
+ * qualifyingAmountExpenditure, buildingName, buildingNumber, postcode } }
+ */
+export async function fillInItsaForeignPropertyAnnualEdits(page, annualEdit = {}, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user enters adjustments and allowances for ${annualEdit.countryCode}`, async () => {
+    const { countryCode, balancingCharge, allowanceType, annualInvestmentAllowance, propertyIncomeAllowance, sbaClaim } = annualEdit;
+    const prefix = await addForeignPropertyCountry(page, "#fa-add", countryCode);
+    if (balancingCharge !== undefined) {
+      await loggedFill(page, `#${prefix}-balancingCharge`, String(balancingCharge), "Entering balancing charge", { screenshotPath });
+    }
+    if (allowanceType === "itemised") {
+      await page.locator(`#${prefix}-allowanceTypeItemised`).check();
+      if (annualInvestmentAllowance !== undefined) {
+        await loggedFill(
+          page,
+          `#${prefix}-annualInvestmentAllowance`,
+          String(annualInvestmentAllowance),
+          "Entering annual investment allowance",
+          {
+            screenshotPath,
+          },
+        );
+      }
+      if (sbaClaim) {
+        await page.locator(`#${prefix}-sba-add`).click();
+        for (const [field, value] of Object.entries(sbaClaim)) {
+          await loggedFill(page, `#${prefix}-sba-1-${field}`, String(value), `Entering building claim ${field}`, { screenshotPath });
+        }
+      }
+    } else if (allowanceType === "propertyIncome") {
+      await page.locator(`#${prefix}-allowanceTypePropertyIncome`).check();
+      await loggedFill(page, `#${prefix}-propertyIncomeAllowance`, String(propertyIncomeAllowance), "Entering property income allowance", {
+        screenshotPath,
+      });
+    }
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-foreign-property-annual-edits-filled.png`, readerView: true });
+  });
+}
+
+export async function submitItsaForeignPropertyAnnualSaveForm(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user saves the Foreign Property Annual Submission", async () => {
+    await Promise.all([
+      page.waitForURL(/.*/, { timeout: 15000 }),
+      loggedClick(page, "#saveBtn", "Saving the Foreign Property Annual Submission", { screenshotPath }),
+    ]);
+    await page.waitForLoadState("domcontentloaded");
+    await page.waitForTimeout(500);
+  });
+}
+
+export async function verifyItsaForeignPropertyAnnualSaveResults(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the Foreign Property Annual Submission saved", async () => {
+    await waitForSuccessOrError(page, {
+      successSelector: "#annualSubmissionResults",
+      description: "Foreign Property Annual Submission saved result",
+      timeout: 450_000,
+      screenshotPath,
+    });
+    await expect(page.locator("#annualSubmissionResults")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-foreign-property-annual-saved.png`, readerView: true });
+  });
+}

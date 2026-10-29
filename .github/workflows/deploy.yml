@@ -3396,6 +3396,64 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-itsa-foreign-property-period-synthetic:
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-foreign-property-period-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    name: 'itsaForeignPropertyPeriodBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - select-jobs
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'itsaForeignPropertyPeriodBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+  web-test-itsa-foreign-property-annual-synthetic:
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-foreign-property-annual-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    name: 'itsaForeignPropertyAnnualSubmissionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - select-jobs
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'itsaForeignPropertyAnnualSubmissionBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
   web-test-itsa-losses-and-claims-synthetic:
     # Gated to non-prod environments until examined.
     if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-losses-and-claims-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
@@ -3573,6 +3631,8 @@ jobs:
       - web-test-itsa-self-employment-period-synthetic
       - web-test-itsa-uk-property-period-synthetic
       - web-test-itsa-uk-property-annual-synthetic
+      - web-test-itsa-foreign-property-period-synthetic
+      - web-test-itsa-foreign-property-annual-synthetic
       - web-test-itsa-losses-and-claims-synthetic
       - web-test-itsa-annual-submission-synthetic
       - web-test-itsa-final-declaration-synthetic

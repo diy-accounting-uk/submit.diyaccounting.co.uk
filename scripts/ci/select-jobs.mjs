@@ -110,6 +110,11 @@ export const SKIPPABLE_JOBS = [
     id: "behaviour-test-simulator-itsa-uk-property-annual-submission",
     description: "ITSA UK property annual submission behaviour, simulator.",
   },
+  { id: "behaviour-test-simulator-itsa-foreign-property-period", description: "ITSA foreign property period behaviour, simulator." },
+  {
+    id: "behaviour-test-simulator-itsa-foreign-property-annual-submission",
+    description: "ITSA foreign property annual submission behaviour, simulator.",
+  },
   { id: "behaviour-test-simulator-itsa-losses-and-claims", description: "ITSA losses and claims behaviour, simulator." },
   { id: "behaviour-test-simulator-itsa-final-declaration", description: "ITSA final declaration behaviour, simulator." },
   {
@@ -187,6 +192,14 @@ export const DEPLOY_SKIPPABLE_JOBS = [
   {
     id: "web-test-itsa-uk-property-annual-synthetic",
     description: "ITSA UK property annual submission behaviour against the deployed environment.",
+  },
+  {
+    id: "web-test-itsa-foreign-property-period-synthetic",
+    description: "ITSA foreign property period behaviour against the deployed environment.",
+  },
+  {
+    id: "web-test-itsa-foreign-property-annual-synthetic",
+    description: "ITSA foreign property annual submission behaviour against the deployed environment.",
   },
   { id: "web-test-itsa-losses-and-claims-synthetic", description: "ITSA losses and claims behaviour against the deployed environment." },
   {
