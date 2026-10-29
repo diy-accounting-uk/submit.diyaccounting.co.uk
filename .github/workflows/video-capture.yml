@@ -70,6 +70,7 @@ on:
           - 'itsa-carry-back-adjustments'
           - 'itsa-self-employment-amend'
           - 'itsa-uk-property-year'
+          - 'itsa-foreign-property-year'
           - 'itsa-annual-from-book'
           - 'itsa-in-year-estimate'
           - 'vat-from-books'

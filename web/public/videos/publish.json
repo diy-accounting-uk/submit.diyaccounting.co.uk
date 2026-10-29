@@ -8288,6 +8288,21 @@
           "fullHeight": 1080
         }
       ]
+    },
+    {
+      "id": "itsa-foreign-property-year",
+      "group": "itsa",
+      "publish": false,
+      "pipelineVersion": 10,
+      "sourceRun": null,
+      "sourceArtifact": null,
+      "videoFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos-sq1i/itsa-foreign-property-year.mp4",
+      "captionFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos-sq1i/itsa-foreign-property-year.vtt",
+      "activity": "self-employed",
+      "title": "DIY Accounting Submit: a foreign property year, France and Spain (sandbox)",
+      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax for a foreign property business: sign in, take out Resident, save the annual submission for two countries, France and Spain, then read the year-end summary HMRC works out and adjust it. This is a sandbox example, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
+      "categoryId": "27"
     }
   ]
 }
