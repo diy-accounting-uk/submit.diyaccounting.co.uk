@@ -86,8 +86,8 @@ class SubmitEnvironmentCdkResourceTest {
         // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
         // Streams: receipts, bundles, passes, subscriptions (one UpdateTable to enable, one
         //      DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 113);
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 54);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 129);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 62);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
         // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.
@@ -222,7 +222,7 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
         analytics.resourceCountIs("AWS::Glue::Table", 31);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 38);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 39);
         // The lake and the Athena results bucket
         analytics.resourceCountIs("AWS::S3::Bucket", 2);
 
@@ -452,6 +452,11 @@ class SubmitEnvironmentCdkResourceTest {
     private static void assertAlarmTriageResources(Template observability) {
         observability.hasResourceProperties(
                 "AWS::IAM::Role", Match.objectLike(Map.of("RoleName", "test-env-alarm-triage-role")));
+        observability.hasResourceProperties(
+                "AWS::IAM::Role", Match.objectLike(Map.of("RoleName", "test-env-support-acceptance-role")));
+        for (String sid : List.of("ListSupportDrafts", "ReadSupportDrafts", "WriteSupportDraftAcceptance")) {
+            assertFalse(findPolicyStatementsContainingSid(observability, sid).isEmpty(), sid);
+        }
 
         List<Map<String, Object>> statements = findPolicyStatementsContainingSid(observability, "DenyCustomerData");
 

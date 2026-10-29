@@ -87,6 +87,7 @@ App and installation ids come from the GitHub App settings pages (the agent App 
 | `SUBMIT_ACTIONS_ROLE_ARN` | every workflow that signs in to AWS |
 | `SUBMIT_DEPLOY_ROLE_ARN` | every workflow that then deploys or reads |
 | `SUBMIT_ALARM_TRIAGE_ROLE_ARN` | `alarm-triage.yml`, `alarm-remedy-close.yml`, `support-triage.yml`, `security-review.yml`, `agentic-lib-*.yml`, `deploy.yml`, `test.yml` |
+| `SUBMIT_SUPPORT_ACCEPTANCE_ROLE_ARN` | `support-mail-intake.yml` (the `acceptance` job); the `<env>-env-support-acceptance-role` stack output `SupportAcceptanceRoleArn` of `ObservabilityStack` |
 | `SUBMIT_CERTIFICATE_ARN` | `deploy-environment.yml` |
 | `SUBMIT_REGIONAL_CERTIFICATE_ARN` | `deploy-environment.yml`, `deploy.yml`, `promote-ci-apex.yml` |
 | `SUBMIT_HOLDING_CERTIFICATE_ARN` | `deploy-environment.yml`, `deploy-cdk-stack.yml` |

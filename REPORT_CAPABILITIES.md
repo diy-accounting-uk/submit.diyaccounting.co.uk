@@ -349,6 +349,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow: use when a new ingestion job must join the nightly chain, or the chain's failure behaviour must be checked.
     - [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch: use when a night of the analytics nightly did not run or failed, and it must run again for an explicit date.
   - [Site-side analytics and RUM](#site-side-analytics-and-rum-data)
+    - [DATA-61](#data-61-intake-support-email-as-private-issues) Intake support email as private issues: use when a customer email to support@ must become a `support` and `maintainer-review` issue in the private repository, or the mailbox read scope is in question.
     - [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic: use when a Lambda, RUM script or GA4 tag must agree on human, bot or synthetic.
     - [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages: use when a site page must load gtag.js with the correct measurement id, consent state and cross-domain linking.
     - [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM: use when a page's RUM telemetry must read its app monitor config and respect consent.
@@ -471,6 +472,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server: use when the playwright MCP server needs the ci lane's test user already signed in, or the state file has expired.
     - [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role: use when the operator asks to explore ci, for an exploratory or judgement pass, or for a human-eye review of the site.
     - [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday: use when you need every page's status, console errors, failed requests, broken images, sideways or text overflow, page weight and raw identifiers, as the visitor and the signed-in customer, with a contact sheet per role, viewport and theme; or when a review needs the week's crawl output.
+    - [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page: use when you must compare this week's exploratory crawl with the last, or find which pages changed in look between two crawl folders.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -825,9 +827,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** a growth experiment needs recording so the operator dashboard can annotate its metrics.
 - **Does:** experiments.toml is a log of growth experiments. Each entry has an id, objective, hypothesis, lever, metric, start and end dates, and a result. It carries no API credentials or sync configuration.
-- **Run:** no command; see Does and Entry
+- **Run:** `node scripts/publish-experiments.mjs web/public` (the deploy workflow and `scripts/deploy-app.js` run it to serve the file at `/experiments.toml`)
 - **Entry:** `experiments.toml`
-- **Files:** experiments.toml
+- **Files:** experiments.toml, scripts/publish-experiments.mjs
 - **Keywords:** growth experiments, experiment log, operator dashboard annotations, ab test log, hypothesis lever metric
 - **Related:** SITE-20
 
@@ -2407,10 +2409,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-18 Run alarm and support triage
 
 - **Use when:** an [ALARM] or support issue needs an automated first-pass triage.
-- **Does:** run-triage-agent executes claude -p against Bedrock, Haiku with Sonnet escalation for complex cases. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue. support-triage.yml polls the private repository every 10 minutes and handles a support issue only after the operator approves it: scripts/maintainer-review-gate.mjs requires that the operator, and no bot, removed the `maintainer-review` label last. The handling agent reads scripts/support-handling-input.mjs's output (the reader's checked fields and the operator's comments, never the ticket) and the job posts the drafted reply on the private issue. When a dispatch names a Gmail thread and SUPPORT_GMAIL_DRAFT_KEY is set, it also puts the drafted reply into the support mailbox as an unsent draft with scripts/support-gmail-draft.mjs. Neither support workflow prints ticket or reply text to the public log. For alarm issues, a gate job runs scripts/issue-agent-allowlist.mjs first, so an issue event starts an agent only when the issue's author and the event's sender are on its allow list. alarm-triage.yml posts its reasoning on a mirror issue in private.diyaccounting.co.uk and one status line with the link on the public issue. When the Haiku first pass is unusable or unsure, the run holds instead of calling Sonnet: the quarantine reader summarises the first-pass result, the checked summary goes on the mirror issue, and `maintainer-review` is added to the alarm issue. The operator removes the label to run Sonnet on scripts/alarm-escalation-input.mjs's output.
+- **Does:** run-triage-agent executes claude -p against Bedrock, Haiku with Sonnet escalation for complex cases. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue. support-triage.yml polls the private repository every 10 minutes and handles a support issue only after the operator approves it: scripts/maintainer-review-gate.mjs requires that the operator, and no bot, removed the `maintainer-review` label last. The handling agent reads scripts/support-handling-input.mjs's output (the reader's checked fields and the operator's comments, never the ticket) and the job posts the drafted reply on the private issue. When a dispatch names a Gmail thread and SUPPORT_GMAIL_DRAFT_KEY is set, it also puts the drafted reply into the support mailbox as an unsent draft with scripts/support-gmail-draft.mjs. Neither support workflow prints ticket or reply text to the public log. For alarm issues, a gate job runs scripts/issue-agent-allowlist.mjs first, so an issue event starts an agent only when the issue's author and the event's sender are on its allow list. alarm-triage.yml posts its reasoning on a mirror issue in private.diyaccounting.co.uk and one status line with the link on the public issue. When the Haiku first pass is unusable or unsure, the run holds instead of calling Sonnet: the quarantine reader summarises the first-pass result, the checked summary goes on the mirror issue, and `maintainer-review` is added to the alarm issue. The operator removes the label to run Sonnet on scripts/alarm-escalation-input.mjs's output. When the handling agent's `## Resolution` line reads `fix`, the `fix-pr` job opens a draft PR labelled `origin:support` with one `support/<n>-<category>.md` row built by scripts/support-fix-pr.mjs from the reader's checked fields and the operator's comments only, and comments the link on the private issue.
 - **Run:** `gh workflow run alarm-triage.yml`; `gh workflow run support-triage.yml`; security-review.yml runs it too (OPS-31)
 - **Entry:** `.github/actions/run-triage-agent/action.yml`
-- **Files:** .github/actions/run-triage-agent/action.yml, .github/workflows/alarm-triage.yml, .github/workflows/support-triage.yml, app/unit-tests/supportTriageWorkflow.test.js, scripts/support-gmail-draft.mjs, app/unit-tests/scripts/supportGmailDraft.test.js, scripts/issue-agent-allowlist.mjs, app/unit-tests/scripts/issueAgentAllowlist.test.js, scripts/maintainer-review-gate.mjs, app/unit-tests/scripts/maintainerReviewGate.test.js, scripts/support-handling-input.mjs, app/unit-tests/scripts/supportHandlingInput.test.js, prompts/support-triage.md, prompts/alarm-triage.md, prompts/alarm-reader.md, scripts/alarm-escalation-input.mjs, app/unit-tests/scripts/alarmEscalationInput.test.js, app/unit-tests/alarmTriageWorkflow.test.js
+- **Files:** .github/actions/run-triage-agent/action.yml, .github/workflows/alarm-triage.yml, .github/workflows/support-triage.yml, app/unit-tests/supportTriageWorkflow.test.js, scripts/support-gmail-draft.mjs, app/unit-tests/scripts/supportGmailDraft.test.js, scripts/issue-agent-allowlist.mjs, app/unit-tests/scripts/issueAgentAllowlist.test.js, scripts/maintainer-review-gate.mjs, app/unit-tests/scripts/maintainerReviewGate.test.js, scripts/support-handling-input.mjs, app/unit-tests/scripts/supportHandlingInput.test.js, prompts/support-triage.md, prompts/alarm-triage.md, prompts/alarm-reader.md, scripts/alarm-escalation-input.mjs, app/unit-tests/scripts/alarmEscalationInput.test.js, app/unit-tests/alarmTriageWorkflow.test.js, scripts/support-fix-pr.mjs
 - **Keywords:** triage agent, alarm triage, support triage, claude -p, bedrock, haiku, sonnet escalation
 - **Related:** OPS-17, OPS-19, OPS-20, OPS-23, OPS-142
 
@@ -3617,7 +3619,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake · [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake
 - [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
 - [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow · [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch) Replay one analytics nightly by dispatch
-- [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
+- [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-61](#data-61-intake-support-email-as-private-issues) Intake support email as private issues · [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
 - [Google Ads data and paid landing tracking](#google-ads-data-and-paid-landing-tracking-data): [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs) Count paid landings from CloudFront access logs · [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake) Pull Google Ads daily cost into the lake
@@ -3927,12 +3929,23 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ### Site-side analytics and RUM (DATA)
 
 <!-- generated:group site-side-analytics-and-rum-data -->
+- [DATA-61](#data-61-intake-support-email-as-private-issues) Intake support email as private issues
 - [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic
 - [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages
 - [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM
 - [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 <!-- /generated:group site-side-analytics-and-rum-data -->
 
+
+#### DATA-61 Intake support email as private issues
+
+- **Use when:** a customer email to support@ must become a `support` and `maintainer-review` issue in the private repository, or the mailbox read scope is in question.
+- **Does:** support-mail-intake.yml (every 10 minutes and on dispatch) runs support-mail-intake.mjs, which reads the support inbox through the `gmail.readonly` service account `support-gmail-read` (identity.toml), skips our own and automated senders and threads already filed, and opens one issue per new customer thread with the thread id, sender and Message-ID and the text fenced as data. It prints counts only, and exits 0 while SUPPORT_GMAIL_READ_KEY is unset. The same workflow's daily `acceptance` job syncs the draft rows from `curated/support-drafts/`, runs support-draft-acceptance.mjs (accepted, edited, rejected, pending per draft older than seven days, by comparing the sent body's digest with the row's) and writes the summary row to `curated/support-draft-acceptance/`.
+- **Run:** `gh workflow run support-mail-intake.yml -f dry-run=true`
+- **Entry:** `scripts/support-mail-intake.mjs:`
+- **Files:** scripts/support-mail-intake.mjs, scripts/support-draft-acceptance.mjs, .github/workflows/support-mail-intake.yml, app/unit-tests/scripts/supportDraftAcceptance.test.js, app/unit-tests/scripts/supportMailIntake.test.js, app/unit-tests/fixtures/supportMailIntake/, infra/google/gcp/identity.toml
+- **Keywords:** support mail intake, gmail readonly, domain-wide delegation, support issues, maintainer-review, private repository
+- **Related:** OPS-56, DATA-42
 #### DATA-23 Classify visitor kind as human, bot or synthetic
 
 - **Use when:** a Lambda, RUM script or GA4 tag must agree on human, bot or synthetic.
@@ -4480,7 +4493,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** request_hmrc_authorisation posts to `/api/v1/mcp/hmrc-grants` and answers HMRC's authorisation link, whose state is `mcp.<grantId>.<secret>`; the grant id stays on the MCP session. HMRC returns the user to activities/submitVatCallback.html, which sees the `mcp.` state and posts the code and state to `/api/v1/mcp/hmrc-grants/callback` (no sign-in in that browser). mcpHmrcGrant.js checks the state's hash, lets one callback claim the grant, exchanges the code, and seals the access and refresh tokens with AES-256-GCM under a key derived from the MCP blob key (`hmrc-grant` purpose in codesSeal.js). The grant item lives in the mcp-sessions table under `hmrc-grant:<grantId>`: ten minutes pending, 24 hours granted. `GET /api/v1/mcp/hmrc-grants/{grantId}` answers the access token to the owner only and uses HMRC's refresh_token grant when it is within five minutes of expiry. The hosted endpoint copies the grant id to and from the session item. No route or tool answers a token to the chat.
 - **Run:** `npm run test:mcpHmrcGrantBehaviour-simulator` walks the whole grant on the simulator lane; `npm --prefix mcp run test:system` starts a grant and files a return against the simulator.
 - **Entry:** `app/functions/mcp/mcpHmrcGrant.js`; `app/data/dynamoDbHmrcGrantRepository.js`; `mcp/lib/submit-tools.js:requestHmrcAuthorisation`; `mcp/lib/submit-tools.js:hmrcAccessTokenFor`
-- **Files:** app/functions/mcp/mcpHmrcGrant.js, app/data/dynamoDbHmrcGrantRepository.js, app/data/dynamoDbMcpSessionRepository.js, app/lib/codesSeal.js, app/functions/hmrc/hmrcTokenPost.js, app/functions/mcp/mcpHttp.js, web/public/activities/submitVatCallback.page.js, mcp/lib/submit-tools.js, mcp/lib/server.js, mcp/lib/hosted-tools.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, behaviour-tests/mcpHmrcGrant.behaviour.test.js, app/unit-tests/functions/mcpHmrcGrant.test.js, mcp/test/hmrc-grant.test.js, PLAN_MCP.md
+- **Files:** app/functions/mcp/mcpHmrcGrant.js, app/data/dynamoDbHmrcGrantRepository.js, app/data/dynamoDbMcpSessionRepository.js, app/lib/codesSeal.js, app/functions/hmrc/hmrcTokenPost.js, app/functions/mcp/mcpHttp.js, web/public/activities/submitVatCallback.page.js, mcp/lib/submit-tools.js, mcp/lib/server.js, mcp/lib/hosted-tools.js, infra/main/java/co/uk/diyaccounting/submit/stacks/McpStack.java, behaviour-tests/mcpHmrcGrant.behaviour.test.js, app/unit-tests/functions/mcpHmrcGrant.test.js, mcp/test/hmrc-grant.test.js, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_MCP.md
 - **Keywords:** hmrc grant, request_hmrc_authorisation, mcp hmrc token, hmrc oauth mcp, hmrc-grants, mcp state, hmrc refresh token, submitVatCallback
 - **Related:** MCP-07, MCP-18, MCP-20
 
@@ -4590,7 +4603,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -4913,6 +4926,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server
 - [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role
 - [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday
+- [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -5161,6 +5175,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/exploratory-crawl.mjs, app/unit-tests/scripts/exploratoryCrawl.test.js, .github/workflows/test.yml (job `exploratory-crawl`), PLAN_EXPLORATORY_QA.md
 - **Keywords:** exploratory crawl, blind crawl, weekly crawl, contact sheet, findings.json, console errors, failed requests, overflow, raw identifiers, Sunday job
 - **Related:** DEV-46, DEV-49, DEV-50
+
+#### DEV-52 Diff two weekly crawls page by page
+
+- **Use when:** you must compare this week's exploratory crawl with the last, or find which pages changed in look between two crawl folders.
+- **Does:** `scripts/exploratory-diff.mjs` pairs the PNGs of two crawl folders by lane, role, viewport, theme and page name. It compares each pair with the pixelmatch comparator of Playwright. It writes `target/exploratory-diff/contact-sheet.html` with before, diff and after for each pair that differs, and `summary.json` with the counts.
+- **Run:** `npm run exploratory:diff -- --before <old-crawl-dir> --after <new-crawl-dir>`; fetch a crawl with `gh run download <run-id> -n exploratory-crawl -D <dir>`
+- **Entry:** `scripts/exploratory-diff.mjs:runDiff`
+- **Files:** scripts/exploratory-diff.mjs, app/unit-tests/scripts/exploratoryDiff.test.js
+- **Keywords:** crawl diff, week on week, image diff, pixelmatch, screenshot comparison, regression, contact sheet
+- **Related:** DEV-51, DEV-46
 
 
 ## Spreadsheets and diya-gl (SS)
@@ -6324,7 +6348,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - console errors: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page), [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - console links: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation), [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
 - consume token: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
-- contact sheet: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
+- contact sheet: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday), [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - context: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - continuous backups: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - contrast: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
@@ -6362,6 +6386,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - coverage thresholds: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - cowork: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - cpc: [DATA-34](#data-34-report-google-ads-campaign-performance)
+- crawl diff: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - crawler: [SITE-04](#site-04-track-visits-via-session-beacon)
 - create or replace view: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - create-secrets: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
@@ -6539,6 +6564,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - domain cutover: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - domain url: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - domain-scoped agent: [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas)
+- domain-wide delegation: [DATA-61](#data-61-intake-support-email-as-private-issues)
 - donate: [SS-22](#ss-22-take-stripe-and-paypal-donations)
 - donate button: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
 - donate event: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
@@ -6798,6 +6824,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - glue data quality: [DATA-11](#data-11-run-glue-data-quality-checks)
 - glue database: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
 - glue table: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
+- gmail readonly: [DATA-61](#data-61-intake-support-email-as-private-issues)
 - google ads conversion upload: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - google ads cost: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - google ads forecast: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
@@ -6932,6 +6959,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - identity pool: [SS-34](#ss-34-configure-cloudwatch-rum)
 - identity-sandbox: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - identity.toml: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
+- image diff: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - import from clicks: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - import prior year: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
 - impressions clicks: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
@@ -7104,7 +7132,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mail index search: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - mail-antony: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - main deploy in progress: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
-- maintainer-review: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine)
+- maintainer-review: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine), [DATA-61](#data-61-intake-support-email-as-private-issues)
 - maintenance page: [SS-30](#ss-30-serve-the-holding-page-and-failover)
 - making tax digital: [HMRC-11](#hmrc-11-retrieve-itsa-status), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
 - manage subscription: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal)
@@ -7359,6 +7387,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pitr: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy), [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack)
 - pitr restore: [OPS-50](#ops-50-drill-and-test-pitr-database-restoration)
 - pitr status: [OPS-48](#ops-48-verify-backup-health-daily)
+- pixelmatch: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - pkce: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito), [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - plain english: [DEV-38](#dev-38-write-plain-human-prose)
 - plain prose: [DEV-38](#dev-38-write-plain-human-prose)
@@ -7426,7 +7455,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - privacy banner: [SITE-15](#site-15-show-and-persist-cookie-consent)
 - private issue: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine)
 - private report: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
-- private repository: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
+- private repository: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DATA-61](#data-61-intake-support-email-as-private-issues)
 - probe failure: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - probe issue: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
 - probe metrics: [OPS-25](#ops-25-record-dora-and-probe-metrics)
@@ -7542,6 +7571,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - registered email: [CH-06](#ch-06-file-a-change-of-registered-email-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - registered office: [CH-05](#ch-05-file-a-change-of-registered-office-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - registerlambdaroute: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
+- regression: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - regulatory checklist: [OPS-42](#ops-42-guide-icogdpr-compliance)
 - reinvestment ceiling: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - relationships endpoint: [BILL-13](#bill-13-check-a-clients-authorisation-status)
@@ -7686,6 +7716,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - screen reader: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - screenshot: [CH-16](#ch-16-check-an-accounts-ixbrl-document-as-a-reader-sees-it)
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
+- screenshot comparison: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - screenshot review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - screenshots: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video), [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - scripted chat: [MCP-19](#mcp-19-demonstrate-the-submission-mcp-in-a-scripted-chat-harness)
@@ -7881,6 +7912,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - supplier invoices: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - supply chain: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - support alarms: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm)
+- support issues: [DATA-61](#data-61-intake-support-email-as-private-issues)
+- support mail intake: [DATA-61](#data-61-intake-support-email-as-private-issues)
 - support reader: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine)
 - support ticket: [SITE-05](#site-05-submit-support-tickets)
 - support ticket lookup: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
@@ -8116,6 +8149,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - webhooks: [OPS-60](#ops-60-guide-github-repository-configuration)
 - webp: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - webvtt: [OPS-90](#ops-90-encode-captured-video-frames-and-captions)
+- week on week: [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page)
 - weekly crawl: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - weekly review: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - weekly schedule: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)

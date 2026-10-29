@@ -38,50 +38,82 @@ async function fetchReceipts() {
     empty.style.display = "none";
     table.style.display = "table";
     exportControls.style.display = "block";
-    for (const it of items) {
+    for (const group of groupByJointFiling(items)) {
       const tr = document.createElement("tr");
 
       // Date cell
       const dateCell = document.createElement("td");
-      dateCell.textContent = HmrcDisplayFormat.formatDateTime(it.timestamp);
+      dateCell.textContent = HmrcDisplayFormat.formatDateTime(group[0].timestamp);
       dateCell.className = "date-column";
       dateCell.setAttribute("data-label", "Date");
 
-      // Receipt cell with clickable label and download icon
+      // Receipt cell: one clickable label and download icon for each receipt of the filing
       const receiptCell = document.createElement("td");
       receiptCell.className = "receipt-cell";
       receiptCell.setAttribute("data-label", "Receipt");
-      const receiptLabel = document.createElement("a");
-      receiptLabel.className = "receipt-label";
-      receiptLabel.textContent = it.formBundleNumber || it.name || "Unnamed receipt";
-      if (FILING_KINDS.has(it.kind)) {
-        receiptLabel.href = `../../companies-house/filings.html?receipt=${encodeURIComponent(it.name)}`;
-      } else {
-        receiptLabel.href = "#";
-        receiptLabel.onclick = (e) => {
-          e.preventDefault();
-          viewReceipt(it.name);
-        };
-      }
-
-      const downloadIcon = document.createElement("a");
-      downloadIcon.className = "download-icon";
-      downloadIcon.href = "#";
-      downloadIcon.innerHTML = "⬇";
-      downloadIcon.title = "Download receipt";
-      downloadIcon.onclick = (e) => {
-        e.preventDefault();
-        downloadReceipt(it.name);
-      };
-
-      receiptCell.appendChild(receiptLabel);
-      receiptCell.appendChild(downloadIcon);
+      for (const it of group) receiptCell.appendChild(receiptEntry(it, group.length > 1));
 
       tr.appendChild(dateCell);
       tr.appendChild(receiptCell);
       tbody.appendChild(tr);
     }
   }
+}
+
+// The accounts and the Company Tax Return filed together share a jointFilingId and show as one entry.
+function groupByJointFiling(items) {
+  const groups = [];
+  const byJointFilingId = new Map();
+  for (const it of items) {
+    const existing = it.jointFilingId ? byJointFilingId.get(it.jointFilingId) : undefined;
+    if (existing) {
+      existing.push(it);
+      continue;
+    }
+    const group = [it];
+    groups.push(group);
+    if (it.jointFilingId) byJointFilingId.set(it.jointFilingId, group);
+  }
+  return groups;
+}
+
+const JOINT_RECEIPT_TITLES = { "companies-house-accounts": "Accounts", "company-tax-return": "Company Tax Return" };
+
+function receiptEntry(it, inJointFiling) {
+  const entry = document.createElement("div");
+  entry.className = "receipt-entry";
+  if (inJointFiling && JOINT_RECEIPT_TITLES[it.kind]) {
+    const title = document.createElement("span");
+    title.className = "receipt-kind";
+    title.textContent = `${JOINT_RECEIPT_TITLES[it.kind]}: `;
+    entry.appendChild(title);
+  }
+  const receiptLabel = document.createElement("a");
+  receiptLabel.className = "receipt-label";
+  receiptLabel.textContent = it.formBundleNumber || it.name || "Unnamed receipt";
+  if (FILING_KINDS.has(it.kind)) {
+    receiptLabel.href = `../../companies-house/filings.html?receipt=${encodeURIComponent(it.name)}`;
+  } else {
+    receiptLabel.href = "#";
+    receiptLabel.onclick = (e) => {
+      e.preventDefault();
+      viewReceipt(it.name);
+    };
+  }
+
+  const downloadIcon = document.createElement("a");
+  downloadIcon.className = "download-icon";
+  downloadIcon.href = "#";
+  downloadIcon.innerHTML = "⬇";
+  downloadIcon.title = "Download receipt";
+  downloadIcon.onclick = (e) => {
+    e.preventDefault();
+    downloadReceipt(it.name);
+  };
+
+  entry.appendChild(receiptLabel);
+  entry.appendChild(downloadIcon);
+  return entry;
 }
 
 async function viewReceipt(name) {

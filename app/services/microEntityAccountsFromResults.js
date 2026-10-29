@@ -61,6 +61,21 @@ export function linesFromPublishedBalanceSheet(sheet) {
   };
 }
 
+// The trial balance's closing cells for the bank nominal accounts 1200 current, 1210 savings,
+// 1220 cash and 1230 credit card.
+const BANK_CLOSING_CELLS = ["EJ22", "EJ23", "EJ25", "EJ24"];
+
+/**
+ * Pounds held across the bank nominal accounts (1200 to 1230) at the book's last transaction, to
+ * the penny, from the engine's trial balance.
+ * @param {Object} results - calculatedResultsFor output
+ */
+export function cashAtBankFromResults(results) {
+  const trialBalance = results.TrialBalance;
+  if (!trialBalance) throw new Error("The book's product carries no trial balance; only a Company (ltd) book answers a cash balance");
+  return pence(BANK_CLOSING_CELLS.reduce((total, cell) => total + (trialBalance[cell] ?? 0), 0));
+}
+
 function sumValues(object) {
   return Object.values(object || {}).reduce((total, value) => total + (value || 0), 0);
 }

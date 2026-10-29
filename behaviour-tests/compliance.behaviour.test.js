@@ -250,7 +250,7 @@ test.describe("HMRC MTD Compliance - Privacy and Terms", () => {
     console.log("\n📋 Checking Terms of Use HMRC requirements...");
     const termsContent = await page.content();
 
-    expect(termsContent).toContain("Service Description");
+    expect(termsContent).toContain("What the Service does");
     expect(termsContent).toContain("Making Tax Digital");
     console.log("✅ Service description present");
 

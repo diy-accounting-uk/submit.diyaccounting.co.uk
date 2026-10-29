@@ -18,6 +18,7 @@ import {
   qname,
   buildContexts,
   formatMonetary,
+  formatNominalValue,
   displayDate,
   previousDay,
   periodEndedPhrase,
@@ -35,14 +36,19 @@ import {
   approvalHtml,
   renderAccountsDocument,
   renderProductionSoftwareFacts,
+  renderReportHeaderFacts,
   buildOfficerContext,
+  accountsStatusMember,
+  accountantsReportPage,
+  renderControllingPartyFacts,
+  controllingPartyNote,
   renderSigningDirectorFact,
   renderCompanyDescriptionFacts,
   companyInformationNote,
   principalActivitySentence,
   shareNoun,
 } from "./accountsIxbrlCommon.js";
-import { recordFigure, recordTable } from "../lib/submissionRecord.js";
+import { recordAmount, recordFigure, recordTable } from "../lib/submissionRecord.js";
 import { SHARE_CLASS_LABEL, sharesIssuedFor } from "./microEntityAccountsIxbrl.js";
 
 const SMALL_COMPANY_FRAMEWORK_COMPLIANCE =
@@ -60,6 +66,80 @@ export const SMALL_COMPANY_BALANCE_SHEET_LINES = [
   "calledUpShareCapital",
   "profitAndLossAccount",
   "capitalAndReserves",
+];
+
+// Lines a balance sheet may leave out; an absent line is 0.
+export const SMALL_COMPANY_OPTIONAL_BALANCE_SHEET_LINES = [
+  "bankLoansOverdrafts",
+  "taxationSocialSecurity",
+  "accruals",
+  "bankLoansAfterOneYear",
+  "tradeDebtors",
+  "otherDebtors",
+  "prepayments",
+  "provisionsForLiabilities",
+  "amountsOwedToDirectors",
+  "amountsOwedToGroupUndertakings",
+];
+
+// A year that shows any of these splits `debtors`: the three lines then add up to it.
+export const SMALL_COMPANY_DEBTORS_SPLIT_LINES = ["tradeDebtors", "otherDebtors", "prepayments"];
+
+// The lines that split `creditorsAfterOneYear`; the rest of the total is other creditors.
+export const SMALL_COMPANY_AFTER_ONE_YEAR_SPLIT_LINES = [
+  "bankLoansAfterOneYear",
+  "amountsOwedToDirectors",
+  "amountsOwedToGroupUndertakings",
+];
+
+/**
+ * The balance sheet breakdown rules a year's figures must hold, as messages; empty when they hold.
+ * An absent optional line is 0, so a year without these lines has no problem.
+ * @param {object} figures - the lines of SMALL_COMPANY_BALANCE_SHEET_LINES and the optional lines
+ * @returns {string[]}
+ */
+export function balanceSheetBreakdownProblems(figures) {
+  const problems = [];
+  const sum = (lines) => lines.reduce((total, line) => total + (figures[line] ?? 0), 0);
+  const debtorsSplit = sum(SMALL_COMPANY_DEBTORS_SPLIT_LINES);
+  if (debtorsSplit !== 0 && debtorsSplit !== figures.debtors) {
+    problems.push(`tradeDebtors, otherDebtors and prepayments (${debtorsSplit}) must add up to debtors (${figures.debtors})`);
+  }
+  const afterOneYearSplit = sum(SMALL_COMPANY_AFTER_ONE_YEAR_SPLIT_LINES);
+  if ((figures.bankLoansAfterOneYear ?? 0) <= figures.creditorsAfterOneYear && afterOneYearSplit > figures.creditorsAfterOneYear) {
+    problems.push(
+      `bankLoansAfterOneYear, amountsOwedToDirectors and amountsOwedToGroupUndertakings (${afterOneYearSplit}) must not be more than creditorsAfterOneYear (${figures.creditorsAfterOneYear})`,
+    );
+  }
+  return problems;
+}
+
+// The optional policy texts of the accounting policies note, in the order the note prints them.
+export const SMALL_COMPANY_POLICY_FIELDS = [
+  { field: "goingConcernStatement", heading: "Going concern", conceptKey: "descriptionGoingConcernStatus" },
+  { field: "revenueRecognitionPolicy", heading: "Turnover", conceptKey: "revenueRecognitionPolicy" },
+  { field: "tangibleFixedAssetsPolicy", heading: "Tangible fixed assets", conceptKey: "propertyPlantEquipmentMeasurementBasis" },
+  { field: "propertyPlantEquipmentPolicy", heading: "Tangible fixed assets", conceptKey: "propertyPlantEquipmentPolicy" },
+  { field: "depreciationMethodPolicy", heading: "Tangible fixed assets", conceptKey: "depreciationMethodPolicy" },
+  { field: "intangibleAssetsPolicy", heading: "Intangible assets", conceptKey: "intangibleAssetsPolicy" },
+  { field: "impairmentPolicy", heading: "Impairment", conceptKey: "impairmentPolicy" },
+  { field: "inventoriesPolicy", heading: "Stocks", conceptKey: "inventoriesPolicy" },
+  { field: "cashCashEquivalentsPolicy", heading: "Cash and cash equivalents", conceptKey: "cashCashEquivalentsPolicy" },
+  { field: "financialInstrumentsPolicy", heading: "Financial instruments", conceptKey: "financialInstrumentsPolicy" },
+  {
+    field: "financialInstrumentsClassificationPolicy",
+    heading: "Financial instruments",
+    conceptKey: "financialInstrumentsClassificationPolicy",
+  },
+  { field: "employeeBenefitsPolicy", heading: "Employee benefits", conceptKey: "employeeBenefitsPolicy" },
+  { field: "definedContributionPensionsPolicy", heading: "Employee benefits", conceptKey: "definedContributionPensionsPolicy" },
+  { field: "foreignCurrencyTranslationPolicy", heading: "Foreign currency", conceptKey: "foreignCurrencyTranslationPolicy" },
+  { field: "functionalPresentationCurrencyPolicy", heading: "Foreign currency", conceptKey: "functionalPresentationCurrencyPolicy" },
+  { field: "leasesPolicy", heading: "Leases", conceptKey: "leasesPolicy" },
+  { field: "taxPolicy", heading: "Taxation", conceptKey: "taxPolicy" },
+  { field: "currentIncomeTaxPolicy", heading: "Taxation", conceptKey: "currentIncomeTaxPolicy" },
+  { field: "deferredTaxPolicy", heading: "Taxation", conceptKey: "deferredTaxPolicy" },
+  { field: "dividendPolicy", heading: "Dividends", conceptKey: "dividendPolicy" },
 ];
 
 export const SMALL_COMPANY_PROFIT_AND_LOSS_LINES = [
@@ -91,6 +171,26 @@ export const SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES = [
   "tax",
   "profit",
 ];
+
+export const INTANGIBLE_ASSET_FIELDS = [
+  "costAtStart",
+  "additions",
+  "disposals",
+  "amortisationAtStart",
+  "amortisationCharge",
+  "amortisationOnDisposals",
+];
+
+/**
+ * The intangible assets note's closing figures, derived from its movements.
+ * @param {object} figures - the INTANGIBLE_ASSET_FIELDS
+ * @returns {{costAtEnd: number, amortisationAtEnd: number, netBookValue: number}}
+ */
+export function intangibleAssetClosingFigures(figures) {
+  const costAtEnd = figures.costAtStart + figures.additions - figures.disposals;
+  const amortisationAtEnd = figures.amortisationAtStart + figures.amortisationCharge - figures.amortisationOnDisposals;
+  return { costAtEnd, amortisationAtEnd, netBookValue: costAtEnd - amortisationAtEnd };
+}
 
 export const FIXED_ASSET_CLASSES = ["landBuildings", "plantMachinery", "furnitureFittings", "computerEquipment", "motorVehicles"];
 
@@ -214,7 +314,13 @@ export function withBalanceSheetTotals(figures) {
   return {
     ...figures,
     currentAssets: figures.stocks + figures.debtors + figures.cashAtBank,
-    creditorsWithinOneYear: figures.tradeCreditors + figures.corporationTax + figures.otherCreditors,
+    creditorsWithinOneYear:
+      (figures.bankLoansOverdrafts ?? 0) +
+      figures.tradeCreditors +
+      figures.corporationTax +
+      (figures.taxationSocialSecurity ?? 0) +
+      figures.otherCreditors +
+      (figures.accruals ?? 0),
   };
 }
 
@@ -291,6 +397,10 @@ export function fixedAssetNoteNetBookValue(fixedAssetNote) {
   return Object.values(fixedAssetNote).reduce((total, classFigures) => total + fixedAssetClosingFigures(classFigures).netBookValue, 0);
 }
 
+function intangibleNetBookValue(intangibleAssetNote) {
+  return intangibleAssetNote ? intangibleAssetClosingFigures(intangibleAssetNote).netBookValue : 0;
+}
+
 function money(conceptKey, contextRef, value) {
   return renderMonetaryFact(conceptKey, contextRef, "GBP", value);
 }
@@ -360,17 +470,25 @@ const CURRENT_ASSET_SUB_LINES = [
   ["Cash at bank and in hand", "cashBankOnHand", "cashAtBank"],
 ];
 
+// Sub-lines marked optional show only when some year's figure is not 0.
 const CREDITOR_SUB_LINES = [
+  ["Bank loans and overdrafts", "bankBorrowingsOverdrafts", "bankLoansOverdrafts", true],
   ["Trade creditors", "tradeCreditors", "tradeCreditors"],
   ["Corporation tax", "corporationTaxPayable", "corporationTax"],
+  ["Taxation and social security", "taxationSocialSecurityPayable", "taxationSocialSecurity", true],
   ["Other creditors", "otherCreditors", "otherCreditors"],
+  ["Accruals", "accruedLiabilities", "accruals", true, "-accruals"],
 ];
 
 function subLineRows(lines, yearFigures, contextRefs, contextSuffix) {
-  return lines.map(([label, conceptKey, field]) => ({
+  const shown = lines.filter(([, , field, optional]) => !optional || yearFigures.some((figures) => (figures[field] ?? 0) !== 0));
+  return shown.map(([label, conceptKey, field, , ownContextSuffix]) => ({
     label,
     cells: yearFigures.map((figures, index) =>
-      recordFigure(money(conceptKey, `${contextRefs[index]}${contextSuffix}`, figures[field]), figures[field]),
+      recordFigure(
+        money(conceptKey, `${contextRefs[index]}${ownContextSuffix ?? contextSuffix}`, figures[field] ?? 0),
+        figures[field] ?? 0,
+      ),
     ),
   }));
 }
@@ -451,6 +569,130 @@ function fixedAssetNoteTable({ refs, fixedAssetNote, entityIdentifierXml, period
   });
 }
 
+/**
+ * The intangible assets note as printed: one column with the cost and amortisation movements and
+ * the net book values at both balance sheet dates, tagged against the undimensioned contexts.
+ */
+function intangibleAssetNoteTable({ refs, intangibleAssetNote }) {
+  const figures = { ...intangibleAssetNote, ...intangibleAssetClosingFigures(intangibleAssetNote) };
+  const row = (label, conceptKey, contextRef, value, options = {}) => ({
+    label,
+    indent: options.indent,
+    style: options.style,
+    cells: [recordFigure(money(conceptKey, contextRef, value), value, { deduction: options.deduction })],
+  });
+  const startLabel = `At ${displayDate(refs.periodStartDate)}`;
+  const endLabel = `At ${displayDate(refs.periodEndDate)}`;
+  const priorEndLabel = `At ${displayDate(previousDay(refs.periodStartDate))}`;
+  return recordTable({
+    columns: ["Intangible assets"],
+    rows: [
+      { label: "Cost", style: "heading" },
+      row(startLabel, "intangibleAssetsGrossCost", refs.priorInstant, figures.costAtStart, { indent: true }),
+      row("Additions", "additionsIntangibleAssets", refs.current, figures.additions, { indent: true }),
+      row("Disposals", "disposalsIntangibleAssets", refs.current, figures.disposals, { indent: true, deduction: true }),
+      row(endLabel, "intangibleAssetsGrossCost", refs.currentInstant, figures.costAtEnd, { indent: true, style: "subtotal" }),
+      { label: "Amortisation", style: "heading" },
+      row(startLabel, "accumulatedAmortisationIntangibleAssets", refs.priorInstant, figures.amortisationAtStart, { indent: true }),
+      row("Charge for the year", "amortisationChargeIntangibleAssets", refs.current, figures.amortisationCharge, { indent: true }),
+      row("On disposals", "amortisationDisposalsIntangibleAssets", refs.current, figures.amortisationOnDisposals, {
+        indent: true,
+        deduction: true,
+      }),
+      row(endLabel, "accumulatedAmortisationIntangibleAssets", refs.currentInstant, figures.amortisationAtEnd, {
+        indent: true,
+        style: "subtotal",
+      }),
+      { label: "Net book value", style: "heading" },
+      row(endLabel, "intangibleAssets", refs.currentInstant, figures.netBookValue, { indent: true, style: "total" }),
+      row(priorEndLabel, "intangibleAssets", refs.priorInstant, figures.costAtStart - figures.amortisationAtStart, { indent: true }),
+    ],
+  });
+}
+
+// The after one year line splits into the bank loans and the rest when any year owes a bank.
+const AFTER_ONE_YEAR_SPLIT_ROWS = [
+  ["Bank loans", "bankBorrowingsOverdrafts", "bankLoansAfterOneYear"],
+  ["Amounts owed to directors", "amountsOwedToDirectors", "amountsOwedToDirectors"],
+  ["Amounts owed to group undertakings", "amountsOwedToGroupUndertakings", "amountsOwedToGroupUndertakings"],
+];
+
+function creditorAfterOneYearLines(yearFigures, contextRefs) {
+  const shownSplits = AFTER_ONE_YEAR_SPLIT_ROWS.filter(([, , field]) => yearFigures.some((figures) => (figures[field] ?? 0) !== 0));
+  if (shownSplits.length === 0) return undefined;
+  const cells = (conceptKey, valueOf) =>
+    yearFigures.map((figures, index) => {
+      const value = valueOf(figures);
+      return recordFigure(money(conceptKey, `${contextRefs[index]}-after-one-year`, value), value);
+    });
+  const splitTotal = (figures) => SMALL_COMPANY_AFTER_ONE_YEAR_SPLIT_LINES.reduce((total, field) => total + (figures[field] ?? 0), 0);
+  return [
+    ...shownSplits.map(([label, conceptKey, field]) => ({ label, cells: cells(conceptKey, (figures) => figures[field] ?? 0) })),
+    {
+      label: "Other creditors",
+      cells: cells("otherCreditors", (figures) => figures.creditorsAfterOneYear - splitTotal(figures)),
+    },
+  ];
+}
+
+function refuseBreakdownProblems(label, figures) {
+  if (!figures) return;
+  const problems = balanceSheetBreakdownProblems(figures);
+  if (problems.length > 0) throw new Error(`balanceSheet.${label}: ${problems.join("; ")}`);
+}
+
+// The provisions heading shows in every year once any year carries a figure; otherwise it is absent.
+function showProvisionsInEveryYearOrNone(yearFigures) {
+  const anyYearHasProvisions = yearFigures.some((figures) => (figures.provisionsForLiabilities ?? 0) !== 0);
+  for (const figures of yearFigures) {
+    if (anyYearHasProvisions) figures.provisionsForLiabilities ??= 0;
+    else delete figures.provisionsForLiabilities;
+  }
+}
+
+function hasDebtorsSplit(yearFigures) {
+  return yearFigures.some((figures) => SMALL_COMPANY_DEBTORS_SPLIT_LINES.some((field) => (figures[field] ?? 0) !== 0));
+}
+
+const DEBTORS_NOTE_ROWS = [
+  ["Trade debtors", "tradeDebtors", "tradeDebtors"],
+  ["Other debtors", "otherDebtors", "otherDebtors"],
+  ["Prepayments and accrued income", "prepaymentsInDebtors", "prepayments"],
+];
+
+// The debtors note shows the lines of the split that some year carries, above the total debtors.
+function debtorsNoteTable({ balanceSheetYears, balanceSheetRefs, columns }) {
+  const shownRows = DEBTORS_NOTE_ROWS.filter(([, , field]) => balanceSheetYears.some((figures) => (figures[field] ?? 0) !== 0));
+  const cells = (valueOf, conceptKey) =>
+    balanceSheetYears.map((figures, index) => {
+      const value = valueOf(figures);
+      return conceptKey ? recordFigure(money(conceptKey, balanceSheetRefs[index], value), value) : recordAmount(value);
+    });
+  return recordTable({
+    columns: columns.slice(0, balanceSheetYears.length),
+    rows: [
+      ...shownRows.map(([label, conceptKey, field]) => ({ label, cells: cells((figures) => figures[field] ?? 0, conceptKey) })),
+      { label: "Total debtors", style: "subtotal", cells: cells((figures) => figures.debtors) },
+    ],
+  });
+}
+
+function accountingPoliciesNote({ input, refs }) {
+  const policies = SMALL_COMPANY_POLICY_FIELDS.filter(({ field }) => input[field]);
+  const subheading = (text) => (policies.length > 0 ? `\n<h4>${text}</h4>` : "");
+  const parts = [
+    `<p>${renderTextFact("statementComplianceWithReportingFramework", refs.current, SMALL_COMPANY_FRAMEWORK_COMPLIANCE)}</p>`,
+    `${subheading("Basis of preparation")}\n<p>${renderTextFact("generalDescriptionBasisMeasurement", refs.current, input.accountingPolicies)}</p>`,
+  ];
+  let previousHeading;
+  for (const { field, heading, conceptKey } of policies) {
+    const fact = `<p>${renderTextFact(conceptKey, refs.current, input[field])}</p>`;
+    parts.push(heading === previousHeading ? `\n${fact}` : `${subheading(heading)}\n${fact}`);
+    previousHeading = heading;
+  }
+  return { title: "Accounting policies", html: parts.join("").replace(/^\n/, "") };
+}
+
 function shareCapitalNoteHtml({ shareCapital, calledUpShareCapital, refs, entityIdentifierXml, periodXml, additionalContexts }) {
   const sharesIssued = sharesIssuedFor(calledUpShareCapital, shareCapital.nominalValue);
   const dimensionXml = dimensionMemberXml(DIMENSIONS.entityShareClasses, MEMBERS[shareCapital.shareClass]);
@@ -460,7 +702,7 @@ function shareCapitalNoteHtml({ shareCapital, calledUpShareCapital, refs, entity
   const instantContext = classContext(refs.currentInstant, `${refs.currentInstant}-share-class`);
   const description = `<ix:nonNumeric name="${qname(CONCEPTS.descriptionShareType)}" contextRef="${durationContext}">${escapeXmlText(SHARE_CLASS_LABEL[shareCapital.shareClass])}</ix:nonNumeric>`;
   const count = `<ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${instantContext}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction>`;
-  const parValue = `<ix:nonFraction name="${qname(CONCEPTS.parValueShare)}" contextRef="${durationContext}" unitRef="pure" decimals="INF">${shareCapital.nominalValue}</ix:nonFraction>`;
+  const parValue = `<ix:nonFraction name="${qname(CONCEPTS.parValueShare)}" contextRef="${durationContext}" unitRef="pure" decimals="INF">${formatNominalValue(shareCapital.nominalValue)}</ix:nonFraction>`;
   return `<p>Allotted, called up and fully paid: ${count} ${description} ${shareNoun(sharesIssued)} of £${parValue} each.</p>`;
 }
 
@@ -488,7 +730,7 @@ ${principalActivitySentence(input.principalActivity, refs)}
  * @param {object} input
  * @param {string} input.companyNumber
  * @param {string} input.companyName
- * @param {string} input.registeredOffice - the registered office address on one line
+ * @param {object} input.registeredOffice - addressLine1, and optionally addressLine2, addressLine3, cityOrTown, countyRegion, postalCode and country
  * @param {string} input.periodStart - ISO date
  * @param {string} input.periodEnd - ISO date
  * @param {string} [input.priorBalanceSheetDate] - ISO date; defaults to the day before periodStart
@@ -504,7 +746,10 @@ ${principalActivitySentence(input.principalActivity, refs)}
  * @param {1|2} [input.profitAndLossFormat] - 1 (by function, the default) or 2 (by nature)
  * @param {{current: object, prior?: object}} input.profitAndLoss - the lines of the format: SMALL_COMPANY_PROFIT_AND_LOSS_LINES or SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES
  * @param {Record<string, object>} [input.fixedAssetNote] - FIXED_ASSET_CLASSES to FIXED_ASSET_CLASS_FIELDS
- * @param {string} [input.taxPolicy] - plain text for the tax policy, tagged in the accounting policies note
+ * @param {object} [input.intangibleAssetNote] - INTANGIBLE_ASSET_FIELDS of the one intangible assets note; its net book value is part of fixed assets
+ * @param {string} [input.goingConcernStatement] - SMALL_COMPANY_POLICY_FIELDS texts (going concern, turnover, tangible fixed assets and depreciation, impairment, stocks, cash, financial instruments, employee benefits, foreign currency, leases, tax, current and deferred tax, dividends), each tagged in the accounting policies note under its subheading
+ * @param {{accountantsName: string, statement: string}} [input.accountantsReport] - adds the accountants' report page and the audit exempt with accountants' report status
+ * @param {{ultimate: boolean, name?: string}} [input.controllingParty] - adds the controlling party note; an ultimate party needs a name; without a name the note states that the company has no ultimate controlling party
  * @param {{shareClass: string, nominalValue: number}} [input.shareCapital] - adds a share capital note; the shares issued are the called up share capital over the nominal value
  * @returns {string} the XHTML document
  */
@@ -512,8 +757,23 @@ export function buildSmallCompanyAccounts(input) {
   const profitAndLossFormat = input.profitAndLossFormat ?? 1;
   if (!PROFIT_AND_LOSS_FORMATS.includes(profitAndLossFormat)) throw new Error("profitAndLossFormat must be 1 or 2");
   const priorBalanceSheet = input.balanceSheet.prior;
+  for (const [label, figures] of [
+    ["current", input.balanceSheet.current],
+    ["prior", priorBalanceSheet],
+  ]) {
+    if ((figures?.bankLoansAfterOneYear ?? 0) > figures?.creditorsAfterOneYear) {
+      throw new Error(`balanceSheet.${label}.bankLoansAfterOneYear exceeds creditorsAfterOneYear`);
+    }
+    refuseBreakdownProblems(label, figures);
+  }
+  if (input.controllingParty?.ultimate && !input.controllingParty.name) {
+    throw new Error("controllingParty.name is required when the controlling party is ultimate");
+  }
   const priorProfitAndLoss = input.profitAndLoss.prior;
+  // The request carries no deferred tax, so the profit and loss tax charge is the current tax of the period.
+  const showsTaxNote = [input.profitAndLoss.current, priorProfitAndLoss].some((figures) => (figures?.tax ?? 0) !== 0);
   const hasFixedAssetNote = Boolean(input.fixedAssetNote) && Object.keys(input.fixedAssetNote).length > 0;
+  const hasIntangibleNote = Boolean(input.intangibleAssetNote);
   const {
     xml: contextsXml,
     refs,
@@ -521,8 +781,10 @@ export function buildSmallCompanyAccounts(input) {
     periodXml,
   } = buildContexts(input, {
     // The fixed asset note's opening balances sit at the prior balance sheet date.
-    includePriorInstant: Boolean(priorBalanceSheet) || hasFixedAssetNote,
-    includePriorPeriod: Boolean(priorProfitAndLoss) && !input.filleted,
+    includePriorInstant: Boolean(priorBalanceSheet) || hasFixedAssetNote || hasIntangibleNote,
+    includePriorPeriod: Boolean(priorProfitAndLoss) && (!input.filleted || showsTaxNote),
+    // A filleted set has no profit and loss account, so its prior year duration carries only the tax note's dimensioned fact.
+    priorPeriodFactsAreDimensioned: Boolean(input.filleted),
   });
   const additionalContexts = [];
   const hiddenFacts = [];
@@ -534,9 +796,11 @@ export function buildSmallCompanyAccounts(input) {
       : []),
   ];
   if (problems.length > 0) throw new Error(problems.join("; "));
-  if (input.fixedAssetNote && fixedAssetNoteNetBookValue(input.fixedAssetNote) !== input.balanceSheet.current.fixedAssets) {
+  const noteNetBookValue =
+    (input.fixedAssetNote ? fixedAssetNoteNetBookValue(input.fixedAssetNote) : 0) + intangibleNetBookValue(input.intangibleAssetNote);
+  if ((input.fixedAssetNote || hasIntangibleNote) && noteNetBookValue !== input.balanceSheet.current.fixedAssets) {
     throw new Error(
-      `The fixed asset note's net book value (${fixedAssetNoteNetBookValue(input.fixedAssetNote)}) does not equal fixed assets (${input.balanceSheet.current.fixedAssets})`,
+      `The fixed asset notes' net book value (${noteNetBookValue}) does not equal fixed assets (${input.balanceSheet.current.fixedAssets})`,
     );
   }
 
@@ -552,6 +816,7 @@ export function buildSmallCompanyAccounts(input) {
   });
   hiddenFacts.push(
     ...renderProductionSoftwareFacts(refs.current),
+    ...renderReportHeaderFacts({ refs, entityIdentifierXml, periodXml, additionalContexts }),
     ...renderCompanyDescriptionFacts({ companyNumber: input.companyNumber, refs, entityIdentifierXml, periodXml, additionalContexts }),
     signingDirectorFact,
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
@@ -570,7 +835,7 @@ export function buildSmallCompanyAccounts(input) {
   }
 
   for (const [conceptKey, dimension, member, id] of [
-    ["accountsStatusAuditedOrUnaudited", DIMENSIONS.accountsStatus, MEMBERS.auditExemptNoAccountantsReport, "accounts-status"],
+    ["accountsStatusAuditedOrUnaudited", DIMENSIONS.accountsStatus, accountsStatusMember(input), "accounts-status"],
     ["accountsType", DIMENSIONS.accountsType, input.filleted ? MEMBERS.filletedAccounts : MEMBERS.fullAccounts, "accounts-type"],
     ["accountingStandardsApplied", DIMENSIONS.accountingStandards, MEMBERS.smallEntities, "accounting-standards"],
     ["applicableLegislation", DIMENSIONS.applicableLegislation, MEMBERS.smallCompaniesRegimeForAccounts, "applicable-legislation"],
@@ -591,8 +856,11 @@ export function buildSmallCompanyAccounts(input) {
     balanceSheetYears.push(withBalanceSheetTotals(priorBalanceSheet));
     balanceSheetRefs.push(refs.priorInstant);
   }
+  showProvisionsInEveryYearOrNone(balanceSheetYears);
+  const anyYearHasAccruals = balanceSheetYears.some((figures) => (figures.accruals ?? 0) !== 0);
   const years = balanceSheetYears.map((figures, index) =>
     balanceSheetFacts({
+      withAccrualsContext: anyYearHasAccruals,
       contextRef: balanceSheetRefs[index],
       entityIdentifierXml,
       periodXml: periodXml[balanceSheetRefs[index]],
@@ -602,6 +870,22 @@ export function buildSmallCompanyAccounts(input) {
     }),
   );
   const columns = [input.periodEnd.slice(0, 4), (input.priorBalanceSheetDate || previousDay(input.periodStart)).slice(0, 4)];
+
+  let controllingPartyContextRef;
+  if (input.controllingParty) {
+    const controllingPartyFacts = renderControllingPartyFacts({
+      controllingParty: input.controllingParty,
+      refs,
+      entityIdentifierXml,
+      periodXml,
+      additionalContexts,
+    });
+    controllingPartyContextRef = controllingPartyFacts.contextRef;
+    hiddenFacts.push(...controllingPartyFacts.facts);
+  }
+  if (input.goingConcernStatement) {
+    hiddenFacts.push(renderTextFact("preparedOnGoingConcernBasis", refs.current, "true"));
+  }
 
   const statementKeys = input.filleted
     ? [...SMALL_COMPANY_STATEMENT_KEYS, "statementProfitAndLossNotDelivered"]
@@ -614,19 +898,17 @@ export function buildSmallCompanyAccounts(input) {
         principalActivityShown: input.filleted ? input.principalActivity : undefined,
       },
       refs,
+      { entityIdentifierXml, periodXml, additionalContexts },
     ),
-    {
-      title: "Accounting policies",
-      html: `<p>${renderTextFact("statementComplianceWithReportingFramework", refs.current, SMALL_COMPANY_FRAMEWORK_COMPLIANCE)}</p>
-<p>${renderTextFact("generalDescriptionBasisMeasurement", refs.current, input.accountingPolicies)}</p>${
-        input.taxPolicy ? `\n<p>${renderTextFact("taxPolicy", refs.current, input.taxPolicy)}</p>` : ""
-      }`,
-    },
+    accountingPoliciesNote({ input, refs }),
     {
       title: "Employees",
       html: `<p>The average number of employees during the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd).split(" ")[0])} was <ix:nonFraction name="${qname(CONCEPTS.averageNumberEmployeesDuringPeriod)}" contextRef="${refs.current}" unitRef="pure" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(input.averageNumberOfEmployees)}</ix:nonFraction>.</p>`,
     },
   ];
+  if (input.controllingParty) {
+    notes.push(controllingPartyNote({ controllingParty: input.controllingParty, contextRef: controllingPartyContextRef }));
+  }
   if (input.shareCapital) {
     notes.push({
       title: "Called up share capital",
@@ -640,7 +922,7 @@ export function buildSmallCompanyAccounts(input) {
       }),
     });
   }
-  let fixedAssetNoteNumber;
+  const fixedAssetNoteNumbers = [];
   if (hasFixedAssetNote) {
     notes.push({
       title: "Tangible fixed assets",
@@ -652,7 +934,7 @@ export function buildSmallCompanyAccounts(input) {
         additionalContexts,
       }),
     });
-    fixedAssetNoteNumber = notes.length;
+    fixedAssetNoteNumbers.push(notes.length);
     const depreciationCharge = Object.values(input.fixedAssetNote).reduce(
       (total, classFigures) => total + classFigures.depreciationCharge,
       0,
@@ -666,6 +948,48 @@ export function buildSmallCompanyAccounts(input) {
             html: `<p>Operating profit is stated after charging depreciation of tangible assets of £${depreciationFact}.</p>`,
           },
     );
+  }
+
+  if (hasIntangibleNote) {
+    notes.push({
+      title: "Intangible assets",
+      html: intangibleAssetNoteTable({
+        refs: { ...refs, periodStartDate: input.periodStart, periodEndDate: input.periodEnd },
+        intangibleAssetNote: input.intangibleAssetNote,
+      }),
+    });
+    fixedAssetNoteNumbers.push(notes.length);
+  }
+  const fixedAssetNoteRef = fixedAssetNoteNumbers.join(", ");
+
+  let debtorsNoteNumber;
+  if (hasDebtorsSplit(balanceSheetYears)) {
+    notes.push({ title: "Debtors", html: debtorsNoteTable({ balanceSheetYears, balanceSheetRefs, columns }) });
+    debtorsNoteNumber = notes.length;
+  }
+
+  if (showsTaxNote) {
+    const taxYears = [
+      { figures: input.profitAndLoss.current, periodRef: refs.current },
+      ...(priorProfitAndLoss ? [{ figures: priorProfitAndLoss, periodRef: refs.prior }] : []),
+    ];
+    const cells = taxYears.map(({ figures, periodRef }) => {
+      const contextRef = buildDimensionedContext({
+        additionalContexts,
+        entityIdentifierXml,
+        periodXml: periodXml[periodRef],
+        dimensionXml: dimensionMemberXml(DIMENSIONS.taxJurisdiction, MEMBERS.ukTax),
+        id: `${periodRef}-uk-tax`,
+      });
+      return recordFigure(money("currentTaxForPeriod", contextRef, figures.tax), figures.tax);
+    });
+    notes.push({
+      title: "Tax on profit",
+      html: recordTable({
+        columns: columns.slice(0, taxYears.length),
+        rows: [{ label: "UK corporation tax: current tax on profit for the year", cells }],
+      }),
+    });
   }
 
   const period = escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd));
@@ -682,6 +1006,17 @@ export function buildSmallCompanyAccounts(input) {
       periodEnd: input.periodEnd,
     }),
   ];
+  const accountantsPage = input.accountantsReport
+    ? accountantsReportPage({
+        heading: heading(
+          "Accountants' report",
+          `to the board of directors of ${escapeXmlText(input.companyName)} on the unaudited financial statements for the ${period}`,
+        ),
+        accountantsReport: input.accountantsReport,
+        refs,
+      })
+    : undefined;
+  if (accountantsPage && input.filleted) pages.push(accountantsPage);
   if (!input.filleted) {
     pages.push(
       directorsReportPage({
@@ -692,6 +1027,7 @@ export function buildSmallCompanyAccounts(input) {
         entityIdentifierXml,
         periodXml,
       }),
+      ...(accountantsPage ? [accountantsPage] : []),
       profitAndLossPage({
         heading: heading("Profit and loss account", `for the ${period}`),
         refs,
@@ -705,12 +1041,15 @@ export function buildSmallCompanyAccounts(input) {
   pages.push(`<div class="page">
 ${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${recordTable({
     columns: columns.slice(0, years.length),
-    notes: Boolean(fixedAssetNoteNumber),
+    notes: Boolean(fixedAssetNoteRef) || Boolean(debtorsNoteNumber),
     rows: balanceSheetRows({
       years,
-      currentAssetLines: subLineRows(CURRENT_ASSET_SUB_LINES, balanceSheetYears, balanceSheetRefs, ""),
+      currentAssetLines: subLineRows(CURRENT_ASSET_SUB_LINES, balanceSheetYears, balanceSheetRefs, "").map((line) =>
+        line.label === "Debtors" && debtorsNoteNumber ? { ...line, note: debtorsNoteNumber } : line,
+      ),
       creditorLines: subLineRows(CREDITOR_SUB_LINES, balanceSheetYears, balanceSheetRefs, "-within-one-year"),
-      notes: { fixedAssets: fixedAssetNoteNumber },
+      creditorAfterOneYearLines: creditorAfterOneYearLines(balanceSheetYears, balanceSheetRefs),
+      notes: { fixedAssets: fixedAssetNoteRef || undefined },
     }),
   })}
 ${statementKeys.map((key) => `<p>${renderStatement(key, refs.current)}</p>`).join("\n")}

@@ -222,20 +222,47 @@ test.describe("ITSA Dashboard", () => {
     await expect(page.locator("#step7Link")).toHaveAttribute("href", "ukPropertyAnnualSubmission.html");
     await expect(page.locator("#step8Link")).toHaveAttribute("href", "ukPropertyAdjustments.html");
 
-    await expect(page.locator("#foreignPropertyDiversionNote")).not.toBeVisible();
+    await expect(page.locator("#otherBusinessDiversionNote")).not.toBeVisible();
   });
 
-  test("shows the diversion note and hides steps 3 to 8 once a foreign-property business is picked", async ({ page }) => {
+  test("routes the quarterly-update-family step links to foreign property pages once a foreign-property business is picked", async ({
+    page,
+  }) => {
     await setupRoutes(page);
     await loadDashboard(page);
 
     await page.evaluate(() => {
-      window.displayBusinessPicker([{ businessId: "XAIS12345678901", typeOfBusiness: "foreign-property", tradingName: "Overseas let" }]);
+      window.displayBusinessPicker([
+        { businessId: "XAIS12345678901", typeOfBusiness: "self-employment", tradingName: "A Sole Trade" },
+        { businessId: "XAIS12345678903", typeOfBusiness: "foreign-property", tradingName: "Overseas let" },
+      ]);
     });
 
-    await expect(page.locator("#foreignPropertyDiversionNote")).toBeVisible();
-    await expect(page.locator("#foreignPropertyDiversionNote")).toContainText("does not yet handle foreign property");
-    await expect(page.locator("#foreignPropertyDiversionNote a")).toHaveAttribute(
+    await page.locator("#businessPickerList input[type=radio]").nth(1).check();
+
+    await expect(page.locator("#step3Link")).toHaveAttribute("href", "foreignPropertyPeriod.html");
+    await expect(page.locator("#step4Link")).toHaveAttribute("href", "foreignPropertyPeriods.html");
+    await expect(page.locator("#step5Link")).toHaveAttribute("href", "foreignPropertyPeriodView.html");
+    await expect(page.locator("#step6Link")).toHaveAttribute("href", "foreignPropertyPeriodAmend.html");
+    await expect(page.locator("#step7Link")).toHaveAttribute("href", "foreignPropertyAnnualSubmission.html");
+    await expect(page.locator("#step8Link")).toHaveAttribute("href", "foreignPropertyAdjustments.html");
+    for (const id of ["#step3Link", "#step4Link", "#step5Link", "#step6Link", "#step7Link", "#step8Link"]) {
+      await expect(page.locator(id)).toBeVisible();
+    }
+    await expect(page.locator("#otherBusinessDiversionNote")).not.toBeVisible();
+  });
+
+  test("shows the diversion note and hides steps 3 to 8 once a business of another type is picked", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await page.evaluate(() => {
+      window.displayBusinessPicker([{ businessId: "XAIS12345678901", typeOfBusiness: "property-unspecified", tradingName: "Other let" }]);
+    });
+
+    await expect(page.locator("#otherBusinessDiversionNote")).toBeVisible();
+    await expect(page.locator("#otherBusinessDiversionNote")).toContainText("does not yet handle this type of business");
+    await expect(page.locator("#otherBusinessDiversionNote a")).toHaveAttribute(
       "href",
       "https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax",
     );
@@ -244,20 +271,20 @@ test.describe("ITSA Dashboard", () => {
     }
   });
 
-  test("keeps the diversion note visible when foreign-property is listed even after picking a different business", async ({ page }) => {
+  test("keeps the diversion note visible when another type is listed even after picking a different business", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
 
     await page.evaluate(() => {
       window.displayBusinessPicker([
         { businessId: "XAIS12345678901", typeOfBusiness: "self-employment", tradingName: "A Sole Trade" },
-        { businessId: "XAIS12345678902", typeOfBusiness: "foreign-property", tradingName: "Overseas let" },
+        { businessId: "XAIS12345678902", typeOfBusiness: "property-unspecified", tradingName: "Other let" },
       ]);
     });
 
     await page.locator("#businessPickerList input[type=radio]").nth(0).check();
 
-    await expect(page.locator("#foreignPropertyDiversionNote")).toBeVisible();
+    await expect(page.locator("#otherBusinessDiversionNote")).toBeVisible();
     await expect(page.locator("#step3Link")).toBeVisible();
     await expect(page.locator("#step3Link")).toHaveAttribute("href", "selfEmploymentPeriod.html");
   });

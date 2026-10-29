@@ -24,9 +24,7 @@ import {
   SECTIONS,
   STATEMENT_FIELDS,
   TEXT_BOXES,
-  accountsFormEntries,
   accountsFromValues,
-  applyFormEntries,
   balanceSheetId,
   boxRow,
   changeTargetFor,
@@ -43,8 +41,10 @@ import {
   targetOfModelProblem,
 } from "../lib/ct600-fields.js";
 
-const FILED_ACCOUNTS_STORAGE_KEY = "filedSmallCompanyAccounts";
+const JOINT_STORAGE_KEY = "jointFiling";
 const MAX_POLLS = 60;
+const MAX_COMPANIES_HOUSE_POLLS = 8;
+const COMPANY_AUTH_CODE_LENGTH = { min: 6, max: 8 };
 const WORKED_TAX_ID = "workedTax";
 const SUMMARY_ID = "ct600-error-summary";
 const PLACEHOLDER_UTR = "0000000000";
@@ -58,6 +58,7 @@ const COMPUTATION_LINES = [
   { field: "depreciation", meaning: "Add: depreciation" },
   { field: "amortisation", meaning: "Add: amortisation" },
   { field: "entertaining", meaning: "Add: entertaining" },
+  { field: "donations", meaning: "Add: donations" },
   { field: "adjustedProfitBeforeCapitalAllowances", meaning: "Adjusted profit before capital allowances", style: "subtotal" },
   { field: "totalCapitalAllowances", meaning: "Less: total capital allowances", deduction: true },
   { field: "adjustedProfit", meaning: "Adjusted profit", style: "total" },
@@ -73,6 +74,11 @@ let reviewedPreview = null;
 let currentView = "companyView";
 let reviewReached = false;
 let changing = null;
+let companiesHousePollWindow = 0;
+
+// What the customer chose to send and how far each filing has got. companiesHouse holds the
+// accounts submission once it is sent; its statusCode is PENDING, PARKED, ACCEPT or REJECT.
+const sending = { mode: "hmrc", copy: "full", jointFilingId: null, companiesHouse: null, taxReturnSent: false, taxReturnAccepted: false };
 
 // bundle and taxData fill in once the books bundle has loaded; touched holds the error targets whose
 // field the customer has left; edited holds the ids the customer typed in, so a default stops following.
@@ -369,6 +375,79 @@ function accountsTextGroup({ id, label, type }) {
   return textGroup({ id, label, type, hint: "" });
 }
 
+// Where the accounts go: HMRC with the return, or Companies House first and then HMRC.
+function sendToSection() {
+  const radio = (id, value, text, checked) =>
+    choiceRow(
+      create("input", {
+        "type": "radio",
+        id,
+        "name": "sendTo",
+        value,
+        "data-error-target": "sendTo",
+        "aria-describedby": "sendTo-hint",
+        ...(checked ? { checked: "" } : {}),
+      }),
+      create("label", { for: id }, text),
+    );
+  return create(
+    "section",
+    { id: "section-sendTo", class: "form-section" },
+    create("h3", {}, "Where the accounts go"),
+    create(
+      "div",
+      { class: "form-group" },
+      create("p", { id: "sendTo", class: "field-label", tabindex: "-1" }, "Where are you sending these accounts?"),
+      create(
+        "p",
+        { id: "sendTo-hint", class: "hint" },
+        "To file at both, Companies House gets the accounts first. When it accepts them, the Company Tax Return goes to HMRC with the same figures.",
+      ),
+      errorHost("sendTo"),
+      radio("sendToHmrc", "hmrc", "To HMRC with the Company Tax Return", true),
+      radio("sendToBoth", "both", "To Companies House and to HMRC with the Company Tax Return", false),
+    ),
+  );
+}
+
+// Companies House can take the accounts in full or filleted; HMRC always takes the full accounts.
+function companiesHouseCopyGroup() {
+  const radio = (id, value, text, checked) =>
+    choiceRow(
+      create("input", {
+        "type": "radio",
+        id,
+        "name": "companiesHouseCopy",
+        value,
+        "data-error-target": "companiesHouseCopy",
+        "aria-describedby": "companiesHouseCopy-hint",
+        ...(checked ? { checked: "" } : {}),
+      }),
+      create("label", { for: id }, text),
+    );
+  return create(
+    "div",
+    { id: "companiesHouseCopyGroup", class: "form-group", hidden: "" },
+    create("p", { id: "companiesHouseCopy", class: "field-label", tabindex: "-1" }, "Which copy goes to Companies House?"),
+    create(
+      "p",
+      { id: "companiesHouseCopy-hint", class: "hint" },
+      "Companies House publishes what it receives. Filleted accounts leave the profit and loss account and the directors' report out of the public copy. HMRC gets the full accounts either way.",
+    ),
+    errorHost("companiesHouseCopy"),
+    radio("copyFull", "full", "Full accounts", true),
+    radio("copyFilleted", "filleted", "Filleted accounts", false),
+  );
+}
+
+function companiesHouseMicroNote() {
+  return create(
+    "p",
+    { id: "companiesHouseMicroNote", class: "hint", hidden: "" },
+    "Companies House receives the micro-entity balance sheet and notes. The profit and loss account goes to HMRC only.",
+  );
+}
+
 // Which accounts the return carries. The card picks the regime from the size of the company in the book.
 function regimeGroup() {
   return create(
@@ -421,6 +500,8 @@ function accountsSection() {
       "HMRC takes the full accounts with the return, so they are part of this form. Enter whole pounds, for example 600 or 1,200.",
     ),
     regimeGroup(),
+    companiesHouseCopyGroup(),
+    companiesHouseMicroNote(),
     checkboxGroup("includeComparatives", "Include last year's figures"),
     forRegime(
       "small",
@@ -462,8 +543,42 @@ function workedTaxPanel() {
   );
 }
 
+// The capital allowance boxes in the order of the CT600, grouped by the class of asset they claim for.
+const ALLOWANCE_CLASSES = [
+  { title: "Annual investment allowance", ids: ["annualInvestmentAllowance", "annualInvestmentAllowanceOutsideTrade"] },
+  { title: "Main pool", ids: ["mainPoolAllowances", "mainPoolBalancingCharges"] },
+  { title: "Full expensing", ids: ["fullExpensingAllowances", "fullExpensingBalancingCharges"] },
+  {
+    title: "Special rate allowance",
+    ids: ["specialRateAllowances", "specialRateBalancingCharges", "specialRateAllowanceExpenditure"],
+  },
+  {
+    title: "Special rate pool",
+    ids: ["specialRatePoolAllowances", "specialRatePoolAnnualInvestmentAllowance", "specialRatePoolBalancingCharges"],
+  },
+  { title: "First year allowance and other plant", ids: ["firstYearAllowanceExpenditure", "otherMachineryAndPlantExpenditure"] },
+];
+
+// Each class gets a heading and its boxes side by side where the width allows, so the section reads as six groups.
+function allowanceClasses(fields) {
+  const byId = new Map(
+    fields.map((group, index) => [CT600_FORM_FIELDS.filter((field) => field.section === "allowances")[index].id, group]),
+  );
+  const grouped = ALLOWANCE_CLASSES.flatMap(({ title, ids }) => [
+    create("h4", {}, title),
+    create(
+      "div",
+      { style: "display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); column-gap: 1.5rem" },
+      ...ids.map((id) => byId.get(id)),
+    ),
+  ]);
+  const ungrouped = [...byId].filter(([id]) => !ALLOWANCE_CLASSES.some(({ ids }) => ids.includes(id))).map(([, group]) => group);
+  return [...grouped, ...ungrouped];
+}
+
 function sectionBody(sectionId) {
   const fields = CT600_FORM_FIELDS.filter((field) => field.section === sectionId).map(fieldGroup);
+  if (sectionId === "allowances") return allowanceClasses(fields);
   if (sectionId === "accounts") return accountsSection();
   if (sectionId === "declaration") {
     return [
@@ -480,7 +595,7 @@ function sectionBody(sectionId) {
 }
 
 function renderForm() {
-  const sections = [];
+  const sections = [sendToSection()];
   for (const { id, title } of SECTIONS) {
     sections.push(create("section", { id: `section-${id}`, class: "form-section" }, create("h3", {}, title), ...sectionBody(id)));
     if (id === "reliefs") sections.push(workedTaxPanel());
@@ -498,8 +613,20 @@ function renderForm() {
 
 // The form shows the fields of the regime it holds; the other regime's answers stay in place.
 function applyRegime() {
-  const regime = regimeOf(readValues());
+  const values = readValues();
+  const regime = regimeOf(values);
   for (const node of element("formSections").querySelectorAll("[data-regime]")) node.hidden = node.dataset.regime !== regime;
+  const both = sendToOf(values) === "both";
+  element("companiesHouseCopyGroup").hidden = !(both && regime === "small");
+  element("companiesHouseMicroNote").hidden = !(both && regime === "micro");
+}
+
+function sendToOf(values) {
+  return values.sendTo === "both" ? "both" : "hmrc";
+}
+
+function copyOf(values) {
+  return values.companiesHouseCopy === "filleted" && regimeOf(values) === "small" ? "filleted" : "full";
 }
 
 function toggleSections() {
@@ -647,12 +774,12 @@ function renderWorkedTax(values) {
     create(
       "div",
       { class: "worked-tax__row" },
-      create("dt", {}, "Adjusted profit in the computation"),
+      create("dt", {}, "Adjusted profit or loss in the computation"),
       create("dd", {}, `£${formatPounds(derived.computationLines.adjustedProfit)}`),
       create(
         "dd",
         { class: "hint" },
-        "Profit per the accounts, less bank interest, plus depreciation, amortisation and entertaining, less capital allowances",
+        "Profit per the accounts, less bank interest, plus depreciation, amortisation, entertaining and donations, less capital allowances. A loss shows in brackets.",
       ),
     ),
   ];
@@ -666,6 +793,32 @@ function renderWorkedTax(values) {
         create("dt", {}, `Box ${row.box}: ${row.label}`),
         create("dd", {}, workedValue(row.box, derived.boxes[row.box])),
         create("dd", { class: "hint" }, row.rule),
+      ),
+    );
+  }
+  if (derived.losses.totalCarriedForward > 0) {
+    items.push(
+      create(
+        "div",
+        { class: "worked-tax__row", id: "workedCarriedForward" },
+        create("dt", {}, "Trading losses carried forward"),
+        create("dd", {}, `£${formatPounds(derived.losses.totalCarriedForward)}`),
+        create("dd", { class: "hint" }, "The loss of this period and the losses brought forward that no claim uses"),
+      ),
+    );
+  }
+  if (derived.carryBack) {
+    items.push(
+      create(
+        "div",
+        { class: "worked-tax__row", id: "workedCarryBack" },
+        create("dt", {}, "Corporation Tax repayable on the carry-back claim"),
+        create("dd", {}, `£${formatPounds(derived.carryBack.taxRepayable)}`),
+        create(
+          "dd",
+          { class: "hint" },
+          `Claimed against the period ${derived.carryBack.priorPeriodStart} to ${derived.carryBack.priorPeriodEnd}. That return carries the loss in box 275 with box 280 ticked.`,
+        ),
       ),
     );
   }
@@ -782,37 +935,14 @@ function handleFormLeave(event) {
 
 function handleFormChange(event) {
   if (event.target.id === "includeComparatives" || event.target.id === "includeFixedAssetNote") toggleSections();
-  if (event.target.name === "accountsRegime") applyRegime();
+  if (event.target.name === "accountsRegime" || event.target.name === "sendTo") applyRegime();
   if (markTouched(event.target)) {
     setDefaults();
     refresh();
   }
 }
 
-// --- The company, the filed accounts and the card -------------------------------------------
-
-function readFiledAccounts() {
-  try {
-    const stored = sessionStorage.getItem(FILED_ACCOUNTS_STORAGE_KEY);
-    return stored ? JSON.parse(stored) : null;
-  } catch {
-    return null;
-  }
-}
-
-function offerFiledAccounts() {
-  const filed = readFiledAccounts();
-  if (!filed) return;
-  element("filedAccountsCompany").textContent = `${filed.companyName} (${filed.companyNumber})`;
-  element("filedAccountsOffer").style.display = "block";
-}
-
-function useFiledAccounts() {
-  const filed = readFiledAccounts();
-  if (!filed) return;
-  const filledCount = applyFormEntries(accountsFormEntries(filed));
-  window.showStatus(`Filled ${filledCount} fields from the accounts Companies House accepted. Check them.`, "info");
-}
+// --- The company and the card -------------------------------------------
 
 function mountBooksCard() {
   window.booksImport.mount(element("booksImport"), {
@@ -859,32 +989,68 @@ function companyChangeLink() {
   return link;
 }
 
-function renderAnswers(values) {
-  const tables = reviewAnswers(values).map(({ id, title, rows }) => {
-    const body = rows.map((row) => {
-      const tr = tableRow(row.label, row.value, changeLink(row.id, row.label));
-      tr.id = `review-row-${row.id}`;
-      tr.tabIndex = -1;
-      return tr;
-    });
-    return create(
-      "section",
-      { id: `review-${id}` },
-      create("h4", {}, title),
-      create(
-        "table",
-        { class: "results-table review-table" },
-        create("colgroup", {}, ...["question", "answer", "change"].map((name) => create("col", { class: `review-table__${name}` }))),
-        create("thead", {}, create("tr", {}, ...["Question", "Answer", "Change"].map((text) => create("th", { scope: "col" }, text)))),
-        create("tbody", {}, ...body),
-      ),
-    );
+function reviewTable(id, title, rows) {
+  const body = rows.map((row) => {
+    const tr = tableRow(row.label, row.value, changeLink(row.id, row.label));
+    tr.id = `review-row-${row.id}`;
+    tr.tabIndex = -1;
+    return tr;
   });
-  element("reviewAnswers").replaceChildren(...tables);
+  return create(
+    "section",
+    { id: `review-${id}` },
+    create("h4", {}, title),
+    create(
+      "table",
+      { class: "results-table review-table" },
+      create("colgroup", {}, ...["question", "answer", "change"].map((name) => create("col", { class: `review-table__${name}` }))),
+      create("thead", {}, create("tr", {}, ...["Question", "Answer", "Change"].map((text) => create("th", { scope: "col" }, text)))),
+      create("tbody", {}, ...body),
+    ),
+  );
+}
+
+function renderAnswers(values) {
+  element("reviewAnswers").replaceChildren(...reviewAnswers(values).map(({ id, title, rows }) => reviewTable(id, title, rows)));
+}
+
+function companiesHouseCopyText(values) {
+  if (regimeOf(values) === "micro") return "The micro-entity balance sheet and notes. The profit and loss account goes to HMRC only.";
+  if (copyOf(values) === "filleted") {
+    return "Filleted accounts. The profit and loss account and the directors' report are left out of the copy on the public register.";
+  }
+  return "The full accounts, including the profit and loss account and the directors' report. Companies House publishes them.";
+}
+
+function renderSendTo(values) {
+  const both = sendToOf(values) === "both";
+  const rows = [
+    {
+      id: "sendTo",
+      label: "Sending the accounts to",
+      value: both ? "Companies House first, then HMRC with the Company Tax Return" : "HMRC with the Company Tax Return",
+    },
+  ];
+  if (both) {
+    rows.push(
+      {
+        id: regimeOf(values) === "small" ? "companiesHouseCopy" : "sendTo",
+        label: "What Companies House receives",
+        value: companiesHouseCopyText(values),
+      },
+      { id: "sendTo", label: "What HMRC receives", value: "The full accounts, with the Company Tax Return" },
+    );
+  }
+  const table = reviewTable("sendTo", "Where the accounts go", rows);
+  // The review rows share one id scheme, so a second row for the same answer carries a distinct id.
+  const [, , hmrcRow] = table.querySelectorAll("tbody tr");
+  if (hmrcRow) hmrcRow.id = "review-row-hmrcAccounts";
+  element("reviewSendTo").replaceChildren(table);
 }
 
 function renderReview(preview) {
   const values = readValues();
+  renderSendTo(values);
   renderAnswers(values);
   const boxRows = Object.keys(preview.boxes)
     .map(Number)
@@ -930,11 +1096,14 @@ async function handleReturnFormSubmit(event) {
       showSummary(state.problems);
       return;
     }
-    previewRequest = ct600RequestFromValues(readValues(), company, state.workingSheet);
+    const values = readValues();
+    previewRequest = ct600RequestFromValues(values, company, state.workingSheet);
     const preview = await window.previewCtReturn(previewRequest);
     renderReview(preview);
     reviewedPreview = preview;
     reviewReached = true;
+    chooseSending(values);
+    configureSendStep();
     element("previewBtn").textContent = RETURN_TO_REVIEW;
     showView("previewView");
     if (changing) {
@@ -1008,6 +1177,16 @@ function setOutcome(kind) {
   element("returnOutcome").className = kind ? `outcome outcome--${kind}` : "outcome";
 }
 
+// The HMRC heading and its box stay out of sight until the return has something to say.
+function showHmrcOutcomeWhenFilled() {
+  const hasResult = Boolean(element("returnResult").firstChild);
+  element("returnOutcome").style.display = hasResult ? "" : "none";
+  element("hmrcHeading").style.display = hasResult ? "" : "none";
+}
+
+new MutationObserver(showHmrcOutcomeWhenFilled).observe(element("returnResult"), { childList: true });
+showHmrcOutcomeWhenFilled();
+
 function outcomeTitle(text) {
   return create("h3", { class: "outcome__title" }, text);
 }
@@ -1046,6 +1225,10 @@ async function showOutcome(outcome) {
     );
     element("returnIrmark").style.display = "block";
     element("startAgainBtn").style.display = "inline-block";
+    sending.taxReturnAccepted = true;
+    if (sending.mode === "both") renderCompaniesHouse();
+    if (!sending.companiesHouse || companiesHouseAccepted()) forgetJoint();
+    else persistJoint();
     await renderReturnRecord(outcome);
     return;
   }
@@ -1054,6 +1237,8 @@ async function showOutcome(outcome) {
     element("returnResult").replaceChildren(outcomeTitle("HMRC rejected the Company Tax Return"));
     renderErrors(outcome);
     element("tryAgainBtn").style.display = "inline-block";
+    sending.taxReturnSent = false;
+    persistJoint();
     return;
   }
   setOutcome();
@@ -1068,41 +1253,386 @@ async function showOutcome(outcome) {
   );
 }
 
-async function handleSubmitReturn() {
-  const gatewayUserId = element("gatewayUserId").value.trim();
-  const gatewayPassword = element("gatewayPassword").value;
-  if (!gatewayUserId || !gatewayPassword) {
-    window.showStatus("Enter the Government Gateway user ID and password.", "error");
-    return;
-  }
+// --- Sending: Companies House first, then HMRC ------------------------------------------------
 
-  window.showLoading();
-  window.hideStatus();
+function companiesHouseAccepted() {
+  return sending.companiesHouse?.statusCode === "ACCEPT";
+}
+
+// The review opens one joint filing: both sends carry its id. Once the accounts are with Companies House
+// the choice is fixed, so a later review keeps it.
+function chooseSending(values) {
+  if (sending.companiesHouse) return;
+  sending.mode = sendToOf(values);
+  sending.copy = copyOf(values);
+  sending.jointFilingId = sending.mode === "both" ? (sending.jointFilingId ?? crypto.randomUUID()) : null;
+}
+
+// The accounts still need sending when none went yet or Companies House rejected the last send.
+function accountsStillToSend() {
+  return sending.mode === "both" && (!sending.companiesHouse || sending.companiesHouse.statusCode === "REJECT");
+}
+
+function configureSendStep() {
+  const accountsFirst = accountsStillToSend();
+  element("sendStepHeading").textContent = accountsFirst ? "Send to Companies House and HMRC" : "Send to HMRC";
+  const order = element("sendStepOrder");
+  order.style.display = sending.mode === "both" ? "block" : "none";
+  order.textContent = accountsFirst
+    ? "Companies House gets the accounts first. When it accepts them, the Company Tax Return goes to HMRC."
+    : "Companies House accepted the accounts. The Company Tax Return is the one filing left to send.";
+  element("companyAuthCodeGroup").style.display = accountsFirst ? "block" : "none";
+  element("submitReturnBtn").textContent = accountsFirst ? "Send to Companies House, then HMRC" : "Submit to HMRC";
+}
+
+function scenarioHeaders() {
+  const scenario = element("govTestScenario").value.trim();
+  return scenario ? { "Gov-Test-Scenario": scenario } : {};
+}
+
+function companiesHouseRequest(companyAuthCode) {
+  const smallCompany = previewRequest.smallCompany
+    ? { smallCompany: { ...previewRequest.smallCompany, filleted: sending.copy === "filleted" } }
+    : {};
+  return { ...previewRequest, ...smallCompany, companyAuthCode, jointFilingId: sending.jointFilingId };
+}
+
+function taxReturnRequest(gatewayUserId, gatewayPassword) {
+  return {
+    ...previewRequest,
+    reviewedBoxes: reviewedPreview.boxes,
+    gatewayUserId,
+    gatewayPassword,
+    ...(sending.jointFilingId ? { jointFilingId: sending.jointFilingId } : {}),
+  };
+}
+
+// The accounts are with Companies House, so the figures they came from cannot change here. The tax answers can.
+function lockAccounts() {
+  const locked = [
+    ...element("section-accounts").querySelectorAll("input, textarea"),
+    ...[...STATEMENT_FIELDS.map(({ id }) => id), MICRO_STATEMENT_FIELD.id, "periodStart", "periodEnd"].map(element),
+    ...document.querySelectorAll('input[name="sendTo"], input[name="companiesHouseCopy"]'),
+  ];
+  for (const control of locked) control.disabled = true;
+  element("booksImport").hidden = true;
+  element("accountsLockNote")?.remove();
+  const { submissionNumber } = sending.companiesHouse;
+  element("section-accounts")
+    .querySelector("h3")
+    .after(
+      create(
+        "p",
+        { id: "accountsLockNote", class: "hint", role: "status" },
+        `Filed at Companies House on ${todayText()}, submission ${submissionNumber}. The accounts cannot change here. Change the tax answers only.`,
+      ),
+    );
+}
+
+function todayText() {
+  return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
+
+function persistJoint() {
   try {
-    const scenario = element("govTestScenario").value.trim();
-    const scenarioHeaders = scenario ? { "Gov-Test-Scenario": scenario } : {};
-    const submission = await window.submitCtReturn(
-      { ...previewRequest, reviewedBoxes: reviewedPreview.boxes, gatewayUserId, gatewayPassword },
-      scenarioHeaders,
-    );
-    element("gatewayPassword").value = "";
-    setOutcome();
-    element("returnResult").replaceChildren(
-      paragraph("Return ", { strong: submission.correlationId }, " accepted by the gateway. Waiting for HMRC..."),
-    );
-    element("returnErrors").style.display = "none";
-    element("returnIrmark").style.display = "none";
-    element("tryAgainBtn").style.display = "none";
-    showView("resultView");
-    const outcome = await pollUntilSettled(submission.correlationId, submission.pollIntervalSeconds, scenarioHeaders);
-    await showOutcome(outcome);
+    sessionStorage.setItem(JOINT_STORAGE_KEY, JSON.stringify({ company, values: readValues(), sending }));
+  } catch {
+    // Storage can be unavailable; the filing carries on without a resume point.
+  }
+}
+
+function forgetJoint() {
+  try {
+    sessionStorage.removeItem(JOINT_STORAGE_KEY);
+  } catch {
+    // Nothing was stored.
+  }
+}
+
+function readSavedJoint() {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(JOINT_STORAGE_KEY));
+    return saved?.company && saved.values && saved.sending?.companiesHouse ? saved : null;
+  } catch {
+    return null;
+  }
+}
+
+function fillValues(values) {
+  for (const control of element("returnForm").querySelectorAll("input, textarea")) {
+    if (control.type === "radio") {
+      control.checked = values[control.name] === control.value;
+    } else if (control.type === "checkbox") {
+      control.checked = Boolean(values[control.id]);
+    } else if (typeof values[control.id] === "string") {
+      control.value = values[control.id];
+      state.edited.add(control.id);
+    }
+  }
+  toggleSections();
+  applyRegime();
+}
+
+// A reload mid-filing: refill the form, rebuild the review and show where the two filings stand.
+// The saved entry holds no codes and no password, so the customer types those again.
+async function resumeJoint() {
+  const saved = readSavedJoint();
+  if (!saved) return;
+  window.showLoading();
+  try {
+    company = saved.company;
+    Object.assign(sending, saved.sending);
+    element("formCompanyName").textContent = company.companyName;
+    element("formCompanyNumber").textContent = company.companyNumber;
+    fillValues(saved.values);
+    await ensureBundle();
+    refresh();
+    previewRequest = ct600RequestFromValues(saved.values, company, state.workingSheet);
+    reviewedPreview = await window.previewCtReturn(previewRequest);
+    renderReview(reviewedPreview);
+    reviewReached = true;
+    element("previewBtn").textContent = RETURN_TO_REVIEW;
+    if (companiesHouseAccepted()) lockAccounts();
+    configureSendStep();
+    if (companiesHouseAccepted()) {
+      showView("previewView", { push: false });
+      return;
+    }
+    showJointResult();
+    renderCompaniesHouse();
+    if (sending.companiesHouse.statusCode === "REJECT") element("tryAgainBtn").style.display = "inline-block";
   } catch (error) {
-    console.error("Company Tax Return submission failed:", error);
-    if (error.status === 409) showView("previewView");
-    window.showStatus(error.message || "Failed to file the Company Tax Return with HMRC.", "error");
+    console.error("Failed to resume the filing:", error);
+    window.showStatus(error.message || "Failed to resume the filing.", "error");
+    showView("formView", { push: false });
   } finally {
     window.hideLoading();
   }
+}
+
+function renderCompaniesHouse() {
+  const { statusCode, submissionNumber, rejections, receiptId } = sending.companiesHouse;
+  const outcome = element("companiesHouseOutcome");
+  const errors = element("companiesHouseErrors");
+  errors.style.display = "none";
+  element("sendCtNowBtn").style.display = "none";
+  element("waitForCompaniesHouseBtn").style.display = "none";
+  element("jointProgress").style.display = "block";
+  if (statusCode === "ACCEPT") {
+    outcome.className = "outcome outcome--ok";
+    const copyLink = receiptId
+      ? create(
+          "a",
+          { href: "filings.html?receipt=" + encodeURIComponent(receiptId + ".json"), id: "companiesHouseCopyLink" },
+          "See your copy",
+        )
+      : "";
+    outcome.replaceChildren(
+      outcomeTitle("Companies House accepted the accounts"),
+      paragraph("Submission ", { strong: submissionNumber }, ". "),
+      ...(copyLink ? [copyLink] : []),
+      ...(sending.taxReturnAccepted
+        ? [
+            create(
+              "p",
+              { id: "jointAccepted" },
+              "Both filings are accepted. Your receipts show them as one filing: ",
+              create("a", { href: "../hmrc/receipt/receipts.html" }, "Your receipts"),
+              ".",
+            ),
+          ]
+        : []),
+    );
+    return;
+  }
+  if (statusCode === "REJECT") {
+    outcome.className = "outcome outcome--error";
+    outcome.replaceChildren(
+      outcomeTitle("Companies House rejected the accounts"),
+      paragraph("Submission ", { strong: submissionNumber }, "."),
+    );
+    errors.style.display = "block";
+    errors.replaceChildren(
+      create("ul", {}, ...(rejections ?? []).map((entry) => create("li", {}, `${entry.rejectCode}: ${entry.description}`))),
+      create("p", {}, "Check the accounts, change them in the review, and send again. The Company Tax Return has not been sent."),
+    );
+    return;
+  }
+  outcome.className = "outcome";
+  outcome.replaceChildren(
+    paragraph(
+      "Companies House has not settled the accounts yet. Submission ",
+      { strong: submissionNumber },
+      " is ",
+      { strong: statusCode },
+      ".",
+    ),
+    ...(sending.taxReturnSent
+      ? []
+      : [
+          paragraph(
+            "You can send the Company Tax Return now, or wait for Companies House. If Companies House then rejects the accounts, a changed figure needs an amended return.",
+          ),
+        ]),
+  );
+  if (!sending.taxReturnSent) element("sendCtNowBtn").style.display = "inline-block";
+  element("waitForCompaniesHouseBtn").style.display = "inline-block";
+}
+
+function showJointResult() {
+  element("returnResult").replaceChildren();
+  element("returnRecord").replaceChildren();
+  element("returnErrors").style.display = "none";
+  element("returnIrmark").style.display = "none";
+  element("tryAgainBtn").style.display = "none";
+  element("startAgainBtn").style.display = "none";
+  setOutcome();
+  showView("resultView");
+}
+
+// Poll Companies House for one window. True once it accepts; otherwise the page says where the accounts stand.
+// Only the newest poll window may write the result, so an older window cannot overwrite it or send the return twice.
+async function waitForCompaniesHouse(headers) {
+  const pollWindow = ++companiesHousePollWindow;
+  const { submissionNumber, pollIntervalSeconds } = sending.companiesHouse;
+  for (let attempt = 0; attempt < MAX_COMPANIES_HOUSE_POLLS; attempt++) {
+    await waitSeconds(pollIntervalSeconds);
+    if (pollWindow !== companiesHousePollWindow) return false;
+    const result = await window.pollMicroEntityAccounts(submissionNumber, headers);
+    if (pollWindow !== companiesHousePollWindow) return false;
+    sending.companiesHouse = { ...sending.companiesHouse, ...result };
+    if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") break;
+  }
+  const { statusCode } = sending.companiesHouse;
+  renderCompaniesHouse();
+  if (statusCode === "ACCEPT") {
+    lockAccounts();
+    configureSendStep();
+  }
+  if (statusCode === "ACCEPT" && sending.taxReturnAccepted) forgetJoint();
+  else persistJoint();
+  if (statusCode === "REJECT") element("tryAgainBtn").style.display = "inline-block";
+  return statusCode === "ACCEPT";
+}
+
+async function sendAccountsToCompaniesHouse(headers, companyAuthCode) {
+  const submission = await window.submitMicroEntityAccounts(companiesHouseRequest(companyAuthCode), headers);
+  element("companyAuthCode").value = "";
+  sending.companiesHouse = {
+    submissionNumber: submission.submissionNumber,
+    statusCode: "PENDING",
+    pollIntervalSeconds: submission.pollInterval ?? 1,
+  };
+  sending.taxReturnSent = false;
+  persistJoint();
+  showJointResult();
+  renderCompaniesHouse();
+  return waitForCompaniesHouse(headers);
+}
+
+function companiesHouseErrorText(error) {
+  const gatewayErrors = error.body?.error?.errors;
+  const text = gatewayErrors?.length ? window.describeGovTalkErrors(gatewayErrors).join(" ") : error.message;
+  return `${text || "Failed to file the accounts with Companies House."} Nothing was filed. Check the answers and send again.`;
+}
+
+function readGatewayCredentials() {
+  const gatewayUserId = element("gatewayUserId").value.trim();
+  const gatewayPassword = element("gatewayPassword").value;
+  if (gatewayUserId && gatewayPassword) return { gatewayUserId, gatewayPassword };
+  showView("previewView");
+  window.showStatus("Enter the Government Gateway user ID and password.", "error");
+  return null;
+}
+
+async function sendCompanyTaxReturn(headers) {
+  const credentials = readGatewayCredentials();
+  if (!credentials) return;
+  const submission = await window.submitCtReturn(taxReturnRequest(credentials.gatewayUserId, credentials.gatewayPassword), headers);
+  element("gatewayPassword").value = "";
+  sending.taxReturnSent = true;
+  if (sending.mode === "both") renderCompaniesHouse();
+  persistJoint();
+  setOutcome();
+  element("returnResult").replaceChildren(
+    paragraph("Return ", { strong: submission.correlationId }, " accepted by the gateway. Waiting for HMRC..."),
+  );
+  element("returnErrors").style.display = "none";
+  element("returnIrmark").style.display = "none";
+  element("tryAgainBtn").style.display = "none";
+  showView("resultView");
+  const outcome = await pollUntilSettled(submission.correlationId, submission.pollIntervalSeconds, headers);
+  await showOutcome(outcome);
+}
+
+function companyAuthCodeProblem() {
+  const input = element("companyAuthCode");
+  const length = input.value.trim().length;
+  if (length >= COMPANY_AUTH_CODE_LENGTH.min && length <= COMPANY_AUTH_CODE_LENGTH.max) return null;
+  return { input, message: "Enter the 6 to 8 character company authentication code" };
+}
+
+async function runSend(send) {
+  window.showLoading();
+  window.hideStatus();
+  try {
+    await send();
+  } catch (error) {
+    console.error("Filing failed:", error);
+    if (error.status === 409) showView("previewView");
+    window.showStatus(error.message || "Failed to file with HMRC.", "error");
+  } finally {
+    window.hideLoading();
+  }
+}
+
+async function handleSubmitReturn() {
+  if (!element("gatewayUserId").value.trim() || !element("gatewayPassword").value) {
+    window.showStatus("Enter the Government Gateway user ID and password.", "error");
+    return;
+  }
+  const accountsFirst = accountsStillToSend();
+  if (accountsFirst) {
+    const problem = companyAuthCodeProblem();
+    if (problem) {
+      window.formErrors.showFormErrors([problem]);
+      return;
+    }
+    window.formErrors.clearFormErrors();
+  }
+  await runSend(async () => {
+    const headers = scenarioHeaders();
+    if (accountsFirst) {
+      let accepted;
+      try {
+        accepted = await sendAccountsToCompaniesHouse(headers, element("companyAuthCode").value.trim());
+      } catch (error) {
+        // The accounts never reached Companies House, so nothing is filed and the review stays open.
+        if (!sending.companiesHouse) {
+          showView("previewView");
+          window.showStatus(companiesHouseErrorText(error), "error");
+          return;
+        }
+        throw error;
+      }
+      if (!accepted) return;
+    }
+    await sendCompanyTaxReturn(headers);
+  });
+}
+
+// Companies House has not settled the accounts, so the customer sends the Company Tax Return now.
+async function handleSendCtNow() {
+  await runSend(() => sendCompanyTaxReturn(scenarioHeaders()));
+}
+
+// Keep asking Companies House. A return not yet sent follows once the accounts are accepted.
+async function handleWaitForCompaniesHouse() {
+  await runSend(async () => {
+    const headers = scenarioHeaders();
+    const accepted = await waitForCompaniesHouse(headers);
+    if (accepted && !sending.taxReturnSent) await sendCompanyTaxReturn(headers);
+  });
 }
 
 function updateGovTestScenarioVisibility() {
@@ -1111,11 +1641,25 @@ function updateGovTestScenarioVisibility() {
 }
 
 function startAgain() {
+  companiesHousePollWindow++;
   company = null;
   previewRequest = null;
   reviewedPreview = null;
   reviewReached = false;
   changing = null;
+  Object.assign(sending, {
+    mode: "hmrc",
+    copy: "full",
+    jointFilingId: null,
+    companiesHouse: null,
+    taxReturnSent: false,
+    taxReturnAccepted: false,
+  });
+  forgetJoint();
+  element("jointProgress").style.display = "none";
+  element("booksImport").hidden = false;
+  element("companyAuthCode").value = "";
+  configureSendStep();
   element("previewBtn").textContent = PREVIEW_THE_RETURN;
   element("returnResult").replaceChildren();
   element("returnRecord").replaceChildren();
@@ -1131,7 +1675,6 @@ function startAgain() {
 
 renderForm();
 mountBooksCard();
-offerFiledAccounts();
 updateGovTestScenarioVisibility();
 window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibility);
 
@@ -1141,15 +1684,21 @@ returnForm.addEventListener("change", handleFormChange);
 returnForm.addEventListener("focusout", handleFormLeave);
 element("companyForm").addEventListener("submit", handleCompanySubmit);
 returnForm.addEventListener("submit", handleReturnFormSubmit);
-element("useFiledAccountsBtn").addEventListener("click", useFiledAccounts);
 element("previewView").addEventListener("click", handleChangeClick);
 window.addEventListener("popstate", () => showView(viewForHistory(location.hash), { push: false }));
 history.replaceState({ view: currentView }, "", `#${VIEW_HASH[currentView]}`);
 element("backToFormBtn").addEventListener("click", () => showView("formView"));
 element("submitReturnBtn").addEventListener("click", handleSubmitReturn);
-element("tryAgainBtn").addEventListener("click", () => showView("previewView"));
+element("tryAgainBtn").addEventListener("click", () => {
+  configureSendStep();
+  showView("previewView");
+});
+element("sendCtNowBtn").addEventListener("click", handleSendCtNow);
+element("waitForCompaniesHouseBtn").addEventListener("click", handleWaitForCompaniesHouse);
 element("startAgainBtn").addEventListener("click", startAgain);
 element("changeCompanyLink").addEventListener("click", (event) => {
   event.preventDefault();
   showView("companyView");
 });
+
+resumeJoint();

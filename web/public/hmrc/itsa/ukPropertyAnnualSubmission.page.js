@@ -34,6 +34,23 @@ async function showSavedRecord(kind, annualDetails, correlationId) {
   document.getElementById("annualSubmissionResults").style.display = "block";
 }
 
+const structuredBuildingAllowance = window.structuredBuildingAllowanceRows.create(
+  document.getElementById("structuredBuildingAllowanceRows"),
+  {
+    idPrefix: "sba",
+    title: "Structures and Buildings Allowance",
+    intro: "One claim for each building. Cannot be used with the property income allowance.",
+  },
+);
+const enhancedStructuredBuildingAllowance = window.structuredBuildingAllowanceRows.create(
+  document.getElementById("enhancedStructuredBuildingAllowanceRows"),
+  {
+    idPrefix: "esba",
+    title: "Freeport Structures and Buildings Allowance",
+    intro: "One claim for each building in a freeport or investment zone. Cannot be used with the property income allowance.",
+  },
+);
+
 function initializePage() {
   const hmrcAccount = sessionStorage.getItem("hmrcAccount");
 
@@ -67,6 +84,8 @@ function updateAllowanceFieldsEnabled() {
   const itemisedFields = document.querySelectorAll("#itemisedAllowanceFields input");
   propertyIncomeFields.forEach((field) => (field.disabled = allowanceType !== "propertyIncome"));
   itemisedFields.forEach((field) => (field.disabled = allowanceType !== "itemised"));
+  structuredBuildingAllowance.setDisabled(allowanceType !== "itemised");
+  enhancedStructuredBuildingAllowance.setDisabled(allowanceType !== "itemised");
 }
 
 function numberOrUndefined(value) {
@@ -93,7 +112,11 @@ function readAllowances() {
     return { propertyIncomeAllowance: numberOrUndefined(document.getElementById("propertyIncomeAllowance").value) };
   }
   if (allowanceType === "itemised") {
+    const sba = structuredBuildingAllowance.read();
+    const enhancedSba = enhancedStructuredBuildingAllowance.read();
     return {
+      ...(sba.length > 0 && { structuredBuildingAllowance: sba }),
+      ...(enhancedSba.length > 0 && { enhancedStructuredBuildingAllowance: enhancedSba }),
       annualInvestmentAllowance: numberOrUndefined(document.getElementById("annualInvestmentAllowance").value),
       businessPremisesRenovationAllowance: numberOrUndefined(document.getElementById("businessPremisesRenovationAllowance").value),
       otherCapitalAllowance: numberOrUndefined(document.getElementById("otherCapitalAllowance").value),
@@ -130,7 +153,11 @@ function populateEditForm(annualSubmission) {
       const field = document.getElementById(key);
       if (field) field.value = allowances[key];
     });
+    structuredBuildingAllowance.set(allowances.structuredBuildingAllowance);
+    enhancedStructuredBuildingAllowance.set(allowances.enhancedStructuredBuildingAllowance);
   } else {
+    structuredBuildingAllowance.set([]);
+    enhancedStructuredBuildingAllowance.set([]);
     document.getElementById("allowanceTypeNone").checked = true;
   }
   updateAllowanceFieldsEnabled();
@@ -273,6 +300,11 @@ async function handleLoadFormSubmission(event) {
 
 async function handleSaveClick() {
   if (window.formErrors.reportMoneyProblems()) return;
+  const claimErrors = [...structuredBuildingAllowance.validate(), ...enhancedStructuredBuildingAllowance.validate()];
+  if (claimErrors.length > 0 && document.querySelector('input[name="allowanceType"]:checked')?.value === "itemised") {
+    window.formErrors.showFormErrors(claimErrors);
+    return;
+  }
   const annualDetails = {
     nino: loadedNino,
     businessId: loadedBusinessId,

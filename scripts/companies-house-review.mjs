@@ -46,7 +46,7 @@ import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "../app
 import { ixbrlStructureProblems } from "../app/lib/ixbrlStructure.js";
 import { readReviewFolder } from "./lib/companiesHouseReviewFolder.js";
 import { reconcile, reconciliationMarkdown } from "./lib/companiesHouseReviewReconcile.js";
-import { isoToday, sameBalanceSheetDateCriterion, substanceCriteria } from "./lib/companiesHouseReviewCriteria.js";
+import { isoToday, notCarriedFromInput, sameBalanceSheetDateCriterion, substanceCriteria } from "./lib/companiesHouseReviewCriteria.js";
 import {
   FIXTURE_PATH as FIXTURE_RELATIVE_PATH,
   fixtureLineOf,
@@ -170,23 +170,23 @@ const NOT_CARRIED_REASONS = {
     "OtherDebtors",
     "Prepayments",
     "TradeDebtorsTradeReceivables",
-    "TaxationSocialSecurityPayable",
     "AmountsOwedToRelatedParties",
   ],
   "the example company's own accounting policy or going concern statement": [
     "CashCashEquivalentsPolicy",
     "DescriptionDepreciationMethodForPropertyPlantEquipment",
-    "DescriptionMeasurementBasisForPropertyPlantEquipment",
     "InventoriesPolicy",
     "PropertyPlantEquipmentPolicy",
-    "RevenueRecognitionPolicy",
     "ShareCapitalPolicy",
     "TradePayablesPolicy",
     "TradeReceivablesPolicy",
-    "FinancialStatementsArePreparedOnGoing-concernBasisTruefalse",
     "EntityHasClaimedExemptionFromReportingDisclosureRelatedPartyTransactionsForWholly-ownedEntitiesTruefalse",
   ],
-  "registered office address, which the filing does not hold": ["AddressLine1", "PostalCodeZip", "PrincipalLocation-CityOrTown"],
+  "an accountants' report, which a company that prepares its own accounts does not have": [
+    "NameEntityAccountants",
+    "StatementOnScopeAccountantsReport",
+  ],
+  "an auditor's statement; the accounts are unaudited and audit exempt": ["DirectorsReportConsistentWithAccountsTruefalse"],
   "directors' report date, and a filleted set has no directors' report": ["DateSigningDirectorsReport"],
 };
 const NOT_CARRIED = new Map(
@@ -450,8 +450,8 @@ function judge(kind, ours, example, validator, structureProblems, { input, today
   else {
     const ourConcepts = new Set(ours.facts.map((fact) => fact.concept));
     const absent = [...new Set(example.facts.map((fact) => fact.concept))].filter((concept) => !ourConcepts.has(concept));
-    const missing = absent.filter((concept) => !NOT_CARRIED.has(concept));
-    const judged = absent.filter((concept) => NOT_CARRIED.has(concept));
+    const missing = absent.filter((concept) => !notCarriedReason(concept, input));
+    const judged = absent.filter((concept) => notCarriedReason(concept, input));
     const listed = (concepts) => `${concepts.slice(0, 8).join(", ")}${concepts.length > 8 ? ", ..." : ""}`;
     add(
       "Every fact the example carries is in ours",
@@ -537,7 +537,12 @@ function judge(kind, ours, example, validator, structureProblems, { input, today
   return rows;
 }
 
-function factComparison(ours, example, exampleSource) {
+// Why an example fact is not carried: a standing judgement, or a part of the company the input does not have.
+function notCarriedReason(concept, input) {
+  return NOT_CARRIED.get(concept) ?? notCarriedFromInput(concept, input);
+}
+
+function factComparison(ours, example, exampleSource, input) {
   const ourConcepts = new Set(ours.facts.map((fact) => fact.concept));
   const exampleConcepts = example ? [...new Set(example.facts.map((fact) => fact.concept))].sort() : [];
   const lines = [
@@ -553,7 +558,11 @@ function factComparison(ours, example, exampleSource) {
       .find((fact) => fact.concept === concept)
       .text.replaceAll("|", "/")
       .slice(0, 60);
-    const state = ourConcepts.has(concept) ? "present" : NOT_CARRIED.has(concept) ? `judged: ${NOT_CARRIED.get(concept)}` : "**missing**";
+    const state = ourConcepts.has(concept)
+      ? "present"
+      : notCarriedReason(concept, input)
+        ? `judged: ${notCarriedReason(concept, input)}`
+        : "**missing**";
     lines.push(`| ${concept} | ${value} | ${state} |`);
   }
   const extra = [...ourConcepts].filter((concept) => !exampleConcepts.includes(concept)).sort();
@@ -759,7 +768,7 @@ async function main() {
         }
         if (example.parseError) console.log("  the example is not well-formed XHTML; its screenshot shows the parse error");
       }
-      writeFileSync(join(caseDir, "fact-comparison.md"), factComparison(ours, example, exampleSource));
+      writeFileSync(join(caseDir, "fact-comparison.md"), factComparison(ours, example, exampleSource, testCase));
 
       const validator = args.skipValidator ? { output: "skipped\n", verdict: "skipped" } : runValidator(filedPath);
       writeFileSync(join(caseDir, "validator.txt"), validator.output);

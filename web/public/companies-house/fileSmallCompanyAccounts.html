@@ -30,8 +30,8 @@
 
     <main id="mainContent">
       <p class="hint" data-feature-status="sandbox">
-        <strong>Status: sandbox.</strong> This runs against Companies House's test service. Companies House rejected our first test
-        submission on 23 October 2026. The fixes are merged and we will resubmit. Nothing you file here reaches the live register.
+        <strong>Status: sandbox.</strong> You can build, preview and file these accounts against Companies House's test service. Nothing you
+        file here reaches the live register.
       </p>
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
@@ -72,7 +72,7 @@
       <div id="formView" class="form-container" style="display: none">
         <h2>Small company accounts</h2>
         <p>
-          Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). This is not the company you meant?
+          Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
           <a href="#" id="changeCompanyLink">Change company</a>.
         </p>
         <div id="booksImport"></div>
@@ -86,6 +86,38 @@
             <div class="form-group">
               <label for="periodEnd">Period end</label>
               <input type="date" id="periodEnd" name="periodEnd" required />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Registered office</h3>
+            <p id="officeHint" class="hint">Filled in from the company's record at Companies House. Change a part to correct it.</p>
+            <div class="form-group">
+              <label for="officeAddressLine1">Address line 1</label>
+              <input type="text" id="officeAddressLine1" name="officeAddressLine1" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeAddressLine2">Address line 2 (optional)</label>
+              <input type="text" id="officeAddressLine2" name="officeAddressLine2" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeAddressLine3">Address line 3 (optional)</label>
+              <input type="text" id="officeAddressLine3" name="officeAddressLine3" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeCityOrTown">Town or city</label>
+              <input type="text" id="officeCityOrTown" name="officeCityOrTown" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeCountyRegion">County or region (optional)</label>
+              <input type="text" id="officeCountyRegion" name="officeCountyRegion" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officePostalCode">Postcode</label>
+              <input type="text" id="officePostalCode" name="officePostalCode" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeCountry">Country (optional)</label>
+              <input type="text" id="officeCountry" name="officeCountry" autocomplete="off" />
             </div>
           </section>
           <section class="form-section">
@@ -501,6 +533,57 @@
                   </td>
                 </tr>
                 <tr>
+                  <th scope="row" class="ledger__part">Of which, trade debtors</th>
+                  <td class="ledger__figure">
+                    <label for="currentTradeDebtors" class="visually-hidden">Of which, trade debtors, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentTradeDebtors"
+                        name="currentTradeDebtors"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" class="ledger__part">Of which, other debtors</th>
+                  <td class="ledger__figure">
+                    <label for="currentOtherDebtors" class="visually-hidden">Of which, other debtors, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentOtherDebtors"
+                        name="currentOtherDebtors"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" class="ledger__part">Of which, prepayments and accrued income</th>
+                  <td class="ledger__figure">
+                    <label for="currentPrepayments" class="visually-hidden">Of which, prepayments and accrued income, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentPrepayments"
+                        name="currentPrepayments"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
                   <th scope="row">Cash at bank and in hand</th>
                   <td class="ledger__figure">
                     <label for="currentCashAtBank" class="visually-hidden">Cash at bank and in hand, this year</label>
@@ -515,6 +598,25 @@
                         inputmode="decimal"
                         data-money="whole-pounds"
                         data-required-message="Enter cash at bank and in hand this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Bank loans and overdrafts (due within one year)</th>
+                  <td class="ledger__figure">
+                    <label for="currentBankLoansOverdrafts" class="visually-hidden"
+                      >Bank loans and overdrafts (due within one year), this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentBankLoansOverdrafts"
+                        name="currentBankLoansOverdrafts"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
                       />
                     </div>
                   </td>
@@ -558,6 +660,42 @@
                   </td>
                 </tr>
                 <tr>
+                  <th scope="row">Taxation and social security (due within one year)</th>
+                  <td class="ledger__figure">
+                    <label for="currentTaxationSocialSecurity" class="visually-hidden"
+                      >Taxation and social security (due within one year), this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentTaxationSocialSecurity"
+                        name="currentTaxationSocialSecurity"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Accruals (due within one year)</th>
+                  <td class="ledger__figure">
+                    <label for="currentAccruals" class="visually-hidden">Accruals (due within one year), this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentAccruals"
+                        name="currentAccruals"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
                   <th scope="row">Other creditors (due within one year)</th>
                   <td class="ledger__figure">
                     <label for="currentOtherCreditors" class="visually-hidden">Other creditors (due within one year), this year</label>
@@ -594,6 +732,78 @@
                         inputmode="decimal"
                         data-money="whole-pounds"
                         data-required-message="Enter creditors: amounts falling due after more than one year this year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" class="ledger__part">Of which, bank loans</th>
+                  <td class="ledger__figure">
+                    <label for="currentBankLoansAfterOneYear" class="visually-hidden">Of which, bank loans, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentBankLoansAfterOneYear"
+                        name="currentBankLoansAfterOneYear"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" class="ledger__part">Of which, amounts owed to directors</th>
+                  <td class="ledger__figure">
+                    <label for="currentAmountsOwedToDirectors" class="visually-hidden"
+                      >Of which, amounts owed to directors, this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentAmountsOwedToDirectors"
+                        name="currentAmountsOwedToDirectors"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" class="ledger__part">Of which, amounts owed to group undertakings</th>
+                  <td class="ledger__figure">
+                    <label for="currentAmountsOwedToGroupUndertakings" class="visually-hidden"
+                      >Of which, amounts owed to group undertakings, this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentAmountsOwedToGroupUndertakings"
+                        name="currentAmountsOwedToGroupUndertakings"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Provisions for liabilities</th>
+                  <td class="ledger__figure">
+                    <label for="currentProvisionsForLiabilities" class="visually-hidden">Provisions for liabilities, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint2"
+                        type="text"
+                        id="currentProvisionsForLiabilities"
+                        name="currentProvisionsForLiabilities"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
                       />
                     </div>
                   </td>
@@ -1010,6 +1220,57 @@
                     </td>
                   </tr>
                   <tr>
+                    <th scope="row" class="ledger__part">Of which, trade debtors</th>
+                    <td class="ledger__figure">
+                      <label for="priorTradeDebtors" class="visually-hidden">Of which, trade debtors, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorTradeDebtors"
+                          name="priorTradeDebtors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="ledger__part">Of which, other debtors</th>
+                    <td class="ledger__figure">
+                      <label for="priorOtherDebtors" class="visually-hidden">Of which, other debtors, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorOtherDebtors"
+                          name="priorOtherDebtors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="ledger__part">Of which, prepayments and accrued income</th>
+                    <td class="ledger__figure">
+                      <label for="priorPrepayments" class="visually-hidden">Of which, prepayments and accrued income, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorPrepayments"
+                          name="priorPrepayments"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
                     <th scope="row">Cash at bank and in hand</th>
                     <td class="ledger__figure">
                       <label for="priorCashAtBank" class="visually-hidden">Cash at bank and in hand, last year</label>
@@ -1023,6 +1284,25 @@
                           inputmode="decimal"
                           data-money="whole-pounds"
                           data-required-message="Enter cash at bank and in hand last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Bank loans and overdrafts (due within one year)</th>
+                    <td class="ledger__figure">
+                      <label for="priorBankLoansOverdrafts" class="visually-hidden"
+                        >Bank loans and overdrafts (due within one year), last year</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorBankLoansOverdrafts"
+                          name="priorBankLoansOverdrafts"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
                         />
                       </div>
                     </td>
@@ -1064,6 +1344,42 @@
                     </td>
                   </tr>
                   <tr>
+                    <th scope="row">Taxation and social security (due within one year)</th>
+                    <td class="ledger__figure">
+                      <label for="priorTaxationSocialSecurity" class="visually-hidden"
+                        >Taxation and social security (due within one year), last year</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorTaxationSocialSecurity"
+                          name="priorTaxationSocialSecurity"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Accruals (due within one year)</th>
+                    <td class="ledger__figure">
+                      <label for="priorAccruals" class="visually-hidden">Accruals (due within one year), last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorAccruals"
+                          name="priorAccruals"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
                     <th scope="row">Other creditors (due within one year)</th>
                     <td class="ledger__figure">
                       <label for="priorOtherCreditors" class="visually-hidden">Other creditors (due within one year), last year</label>
@@ -1098,6 +1414,78 @@
                           inputmode="decimal"
                           data-money="whole-pounds"
                           data-required-message="Enter creditors: amounts falling due after more than one year last year"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="ledger__part">Of which, bank loans</th>
+                    <td class="ledger__figure">
+                      <label for="priorBankLoansAfterOneYear" class="visually-hidden">Of which, bank loans, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorBankLoansAfterOneYear"
+                          name="priorBankLoansAfterOneYear"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="ledger__part">Of which, amounts owed to directors</th>
+                    <td class="ledger__figure">
+                      <label for="priorAmountsOwedToDirectors" class="visually-hidden"
+                        >Of which, amounts owed to directors, last year</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorAmountsOwedToDirectors"
+                          name="priorAmountsOwedToDirectors"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row" class="ledger__part">Of which, amounts owed to group undertakings</th>
+                    <td class="ledger__figure">
+                      <label for="priorAmountsOwedToGroupUndertakings" class="visually-hidden"
+                        >Of which, amounts owed to group undertakings, last year</label
+                      >
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorAmountsOwedToGroupUndertakings"
+                          name="priorAmountsOwedToGroupUndertakings"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Provisions for liabilities</th>
+                    <td class="ledger__figure">
+                      <label for="priorProvisionsForLiabilities" class="visually-hidden">Provisions for liabilities, last year</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint4"
+                          type="text"
+                          id="priorProvisionsForLiabilities"
+                          name="priorProvisionsForLiabilities"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
                         />
                       </div>
                     </td>
@@ -1807,6 +2195,150 @@
             </div>
           </section>
           <section class="form-section">
+            <h3>Intangible assets note</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="checkbox"
+                  id="includeIntangibleAssetNote"
+                  name="includeIntangibleAssetNote"
+                  aria-describedby="includeIntangibleAssetNote-hint"
+                /><label for="includeIntangibleAssetNote">Include the intangible assets note (goodwill and other intangibles)</label>
+              </div>
+              <p id="includeIntangibleAssetNote-hint" class="hint">
+                The net book value of the intangible assets is part of the fixed assets above, with any tangible fixed assets note.
+              </p>
+            </div>
+            <div id="intangibleAssetNoteFields" style="display: none">
+              <p id="ledgerHint10" class="hint">Whole pounds. For example, £600 or £1,200.</p>
+              <table class="ledger ledger--one-year">
+                <thead>
+                  <tr>
+                    <th scope="col">Line</th>
+                    <th scope="col" class="ledger__figure">Amount (£)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <th scope="row">Cost at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="intangibleNoteCostAtStart" class="visually-hidden">Cost at the start of the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteCostAtStart"
+                          name="intangibleNoteCostAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter cost at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Additions</th>
+                    <td class="ledger__figure">
+                      <label for="intangibleNoteAdditions" class="visually-hidden">Additions</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteAdditions"
+                          name="intangibleNoteAdditions"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter additions"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Disposals (cost)</th>
+                    <td class="ledger__figure">
+                      <label for="intangibleNoteDisposals" class="visually-hidden">Disposals (cost)</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteDisposals"
+                          name="intangibleNoteDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter disposals (cost)"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Amortisation at the start of the period</th>
+                    <td class="ledger__figure">
+                      <label for="intangibleNoteAmortisationAtStart" class="visually-hidden">Amortisation at the start of the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteAmortisationAtStart"
+                          name="intangibleNoteAmortisationAtStart"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter amortisation at the start of the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Amortisation charge for the period</th>
+                    <td class="ledger__figure">
+                      <label for="intangibleNoteAmortisationCharge" class="visually-hidden">Amortisation charge for the period</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteAmortisationCharge"
+                          name="intangibleNoteAmortisationCharge"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter amortisation charge for the period"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <th scope="row">Amortisation on disposals</th>
+                    <td class="ledger__figure">
+                      <label for="intangibleNoteAmortisationOnDisposals" class="visually-hidden">Amortisation on disposals</label>
+                      <div class="input-prefix input-prefix--amount">
+                        <span class="prefix" aria-hidden="true">£</span
+                        ><input
+                          aria-describedby="ledgerHint10"
+                          type="text"
+                          id="intangibleNoteAmortisationOnDisposals"
+                          name="intangibleNoteAmortisationOnDisposals"
+                          value="0"
+                          inputmode="decimal"
+                          data-money="whole-pounds"
+                          data-required-message="Enter amortisation on disposals"
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+              <p id="intangibleAssetNoteTotals" class="hint"></p>
+            </div>
+          </section>
+          <section class="form-section">
             <h3>Directors and activity</h3>
             <div class="form-group">
               <label for="principalActivity">Principal activity</label>
@@ -1816,6 +2348,92 @@
               <label for="accountingPolicies">Accounting policies</label>
               <textarea id="accountingPolicies" name="accountingPolicies" rows="4" required></textarea>
             </div>
+            <details id="morePolicies">
+              <summary>More accounting policies (optional)</summary>
+              <p class="hint">
+                Each text appears in the accounting policies note under its own heading. Leave a box empty to leave it out.
+              </p>
+              <div class="form-group">
+                <label for="goingConcernStatement">Going concern</label>
+                <textarea id="goingConcernStatement" name="goingConcernStatement" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="revenueRecognitionPolicy">Turnover</label>
+                <textarea id="revenueRecognitionPolicy" name="revenueRecognitionPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="tangibleFixedAssetsPolicy">Tangible fixed assets</label>
+                <textarea id="tangibleFixedAssetsPolicy" name="tangibleFixedAssetsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="propertyPlantEquipmentPolicy">Tangible fixed assets: accounting policy</label>
+                <textarea id="propertyPlantEquipmentPolicy" name="propertyPlantEquipmentPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="depreciationMethodPolicy">Tangible fixed assets: depreciation method</label>
+                <textarea id="depreciationMethodPolicy" name="depreciationMethodPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="intangibleAssetsPolicy">Intangible assets</label>
+                <textarea id="intangibleAssetsPolicy" name="intangibleAssetsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="impairmentPolicy">Impairment</label>
+                <textarea id="impairmentPolicy" name="impairmentPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="inventoriesPolicy">Stocks</label>
+                <textarea id="inventoriesPolicy" name="inventoriesPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="cashCashEquivalentsPolicy">Cash and cash equivalents</label>
+                <textarea id="cashCashEquivalentsPolicy" name="cashCashEquivalentsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="financialInstrumentsPolicy">Financial instruments</label>
+                <textarea id="financialInstrumentsPolicy" name="financialInstrumentsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="financialInstrumentsClassificationPolicy">Financial instruments: classification</label>
+                <textarea id="financialInstrumentsClassificationPolicy" name="financialInstrumentsClassificationPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="employeeBenefitsPolicy">Employee benefits</label>
+                <textarea id="employeeBenefitsPolicy" name="employeeBenefitsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="definedContributionPensionsPolicy">Pension costs (defined contribution)</label>
+                <textarea id="definedContributionPensionsPolicy" name="definedContributionPensionsPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="foreignCurrencyTranslationPolicy">Foreign currency translation</label>
+                <textarea id="foreignCurrencyTranslationPolicy" name="foreignCurrencyTranslationPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="functionalPresentationCurrencyPolicy">Functional and presentation currency</label>
+                <textarea id="functionalPresentationCurrencyPolicy" name="functionalPresentationCurrencyPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="leasesPolicy">Leases</label>
+                <textarea id="leasesPolicy" name="leasesPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="taxPolicy">Taxation</label>
+                <textarea id="taxPolicy" name="taxPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="currentIncomeTaxPolicy">How current tax is calculated</label>
+                <textarea id="currentIncomeTaxPolicy" name="currentIncomeTaxPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="deferredTaxPolicy">Deferred tax</label>
+                <textarea id="deferredTaxPolicy" name="deferredTaxPolicy" rows="3"></textarea>
+              </div>
+              <div class="form-group">
+                <label for="dividendPolicy">Dividends</label>
+                <textarea id="dividendPolicy" name="dividendPolicy" rows="3"></textarea>
+              </div>
+            </details>
             <div class="form-group">
               <label for="averageEmployees">Average number of employees during the period</label>
               <input type="number" id="averageEmployees" name="averageEmployees" required step="1" min="0" />
@@ -1832,6 +2450,74 @@
             <div class="form-group">
               <label for="directorDateApproved">Date approved</label>
               <input type="date" id="directorDateApproved" name="directorDateApproved" required />
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Accountants' report</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="checkbox"
+                  id="includeAccountantsReport"
+                  name="includeAccountantsReport"
+                  aria-describedby="includeAccountantsReport-hint"
+                /><label for="includeAccountantsReport">An accountant compiled these accounts</label>
+              </div>
+              <p id="includeAccountantsReport-hint" class="hint">
+                The accounts gain a page for the accountants' report, and Companies House sees them as exempt from audit with an
+                accountants' report.
+              </p>
+            </div>
+            <div id="accountantsReportFields" style="display: none">
+              <div class="form-group">
+                <label for="accountantsName">Name of the accountancy firm</label>
+                <input type="text" id="accountantsName" name="accountantsName" />
+              </div>
+              <div class="form-group">
+                <label for="accountantsStatement">Statement of the scope of the report</label>
+                <textarea id="accountantsStatement" name="accountantsStatement" rows="6">
+In accordance with your instructions, we have compiled these unaudited financial statements from the accounting records and from information and explanations you have given us.</textarea>
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
+            <h3>Controlling party</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="controllingPartyNone" name="controllingParty" value="none" checked /><label
+                  for="controllingPartyNone"
+                  >Say nothing about a controlling party</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="controllingPartyNoUltimate" name="controllingParty" value="noUltimate" /><label
+                  for="controllingPartyNoUltimate"
+                  >Say the company has no ultimate controlling party</label
+                >
+              </div>
+            </div>
+            <div class="form-group">
+              <div class="choice">
+                <input type="radio" id="controllingPartyNamed" name="controllingParty" value="named" /><label for="controllingPartyNamed"
+                  >Name the controlling party</label
+                >
+              </div>
+            </div>
+            <div id="controllingPartyFields" style="display: none">
+              <div class="form-group">
+                <label for="controllingPartyName">Name of the controlling party</label>
+                <input type="text" id="controllingPartyName" name="controllingPartyName" />
+              </div>
+              <div class="form-group">
+                <div class="choice">
+                  <input type="checkbox" id="controllingPartyUltimate" name="controllingPartyUltimate" checked /><label
+                    for="controllingPartyUltimate"
+                    >This party is the ultimate controlling party</label
+                  >
+                </div>
+              </div>
             </div>
           </section>
           <section class="form-section">
@@ -1870,6 +2556,20 @@
                   companies regime.</label
                 >
               </div>
+            </div>
+            <div class="form-group calculated-field">
+              <label for="directorsReportConsistent">Directors' report consistent with the accounts</label>
+              <input
+                type="text"
+                id="directorsReportConsistent"
+                name="directorsReportConsistent"
+                value="Not applicable"
+                readonly
+                aria-describedby="directorsReportConsistent-hint"
+              />
+              <p id="directorsReportConsistent-hint" class="hint">
+                These accounts are unaudited, so this statement does not apply. Nothing is sent.
+              </p>
             </div>
           </section>
 
@@ -1920,10 +2620,6 @@
         <div id="filingResult"></div>
         <div id="rejections" style="display: none"></div>
         <p><a id="filingCopyLink" href="filings.html" style="display: none">See your copy of this filing</a></p>
-        <p id="taxReturnPrompt" style="display: none">
-          The accounts are filed. <a href="fileCompanyTaxReturn.html" id="fileCompanyTaxReturnLink">File the Company Tax Return</a> with
-          these accounts.
-        </p>
         <div class="button-group">
           <button type="button" id="startAgainBtn" class="secondary-button" style="display: none">Start a new filing</button>
         </div>
@@ -1945,6 +2641,7 @@
     <script src="../lib/form-errors.js"></script>
     <script src="../widgets/status-messages.js"></script>
     <script src="../widgets/signed-out-panel.js"></script>
+    <script src="../lib/accounts-form-sections.js"></script>
     <script src="../widgets/books-import.js"></script>
     <script src="fileSmallCompanyAccounts.page.js"></script>
   </body>

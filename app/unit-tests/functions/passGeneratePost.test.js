@@ -17,6 +17,12 @@ vi.mock("@app/services/tokenEnforcement.js", () => ({
   consumeTokenForActivity: (...args) => mockConsumeTokenForActivity(...args),
 }));
 
+// Mock the bundle repository: the pass route reads the user's bundles for the total balance
+const mockGetUserBundles = vi.fn();
+vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
+  getUserBundles: (...args) => mockGetUserBundles(...args),
+}));
+
 // Mock subHasher
 vi.mock("@app/services/subHasher.js", () => ({
   initializeSalt: vi.fn().mockResolvedValue(undefined),
@@ -49,6 +55,8 @@ describe("passGeneratePost", () => {
   beforeEach(() => {
     mockCreatePass.mockReset();
     mockConsumeTokenForActivity.mockReset();
+    mockGetUserBundles.mockReset();
+    mockGetUserBundles.mockResolvedValue([]);
     mockEventBridgeSend.mockClear();
     process.env.PASSES_DYNAMODB_TABLE_NAME = "test-passes";
     process.env.BUNDLE_DYNAMODB_TABLE_NAME = "test-bundles";
@@ -101,6 +109,7 @@ describe("passGeneratePost", () => {
 
   test("returns 200 with pass details on success (digital-pass)", async () => {
     mockConsumeTokenForActivity.mockResolvedValue({ consumed: true, tokensRemaining: 90, cost: 10 });
+    mockGetUserBundles.mockResolvedValue([{ bundleId: "resident", tokensGranted: 100, tokensConsumed: 10 }]);
     mockCreatePass.mockResolvedValue({
       code: "tiger-happy-mountain-silver",
       passTypeId: "digital-pass",
@@ -122,6 +131,41 @@ describe("passGeneratePost", () => {
     expect(body.tokensConsumed).toBe(10);
     expect(body.tokensRemaining).toBe(90);
     expect(body).not.toHaveProperty("url");
+  });
+
+  test("returns the balance across every bundle, not the one bucket that paid", async () => {
+    mockConsumeTokenForActivity.mockResolvedValue({ consumed: true, tokensRemaining: 90, cost: 10 });
+    mockGetUserBundles.mockResolvedValue([
+      { bundleId: "resident", tokensGranted: 100, tokensConsumed: 10 },
+      { bundleId: "day-guest", tokensGranted: 3, tokensConsumed: 0 },
+    ]);
+    mockCreatePass.mockResolvedValue({
+      code: "tiger-happy-mountain-silver",
+      passTypeId: "digital-pass",
+      bundleId: "day-guest",
+      validFrom: "2026-02-17T00:00:00.000Z",
+      validUntil: "2026-02-24T00:00:00.000Z",
+      maxUses: 20,
+    });
+
+    const result = await ingestHandler(buildEventWithToken(validToken, { passTypeId: "digital-pass" }));
+
+    expect(JSON.parse(result.body).tokensRemaining).toBe(93);
+  });
+
+  test("returns no balance for a holder of an unlimited grant", async () => {
+    mockConsumeTokenForActivity.mockResolvedValue({ consumed: true, cost: 10 });
+    mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-pro", tokensGranted: "unlimited" }]);
+    mockCreatePass.mockResolvedValue({
+      code: "tiger-happy-mountain-silver",
+      passTypeId: "digital-pass",
+      bundleId: "day-guest",
+      maxUses: 20,
+    });
+
+    const result = await ingestHandler(buildEventWithToken(validToken, { passTypeId: "digital-pass" }));
+
+    expect(JSON.parse(result.body)).not.toHaveProperty("tokensRemaining");
   });
 
   test("returns 200 with pass details on success (physical-pass)", async () => {

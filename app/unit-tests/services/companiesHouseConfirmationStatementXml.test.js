@@ -280,6 +280,18 @@ describe("services/companiesHouseConfirmationStatementXml", () => {
       });
     });
 
+    describe("transfers", () => {
+      test("throws when a shareholding carries more than two hundred transfers", () => {
+        const transfers = Array.from({ length: 201 }, () => ({ dateOfTransfer: "2020-01-01", numberSharesTransferred: "1" }));
+        expect(() =>
+          buildConfirmationStatementBody({
+            ...BASE_INPUT,
+            shareholdings: [{ shareClass: "ORDINARY", numberHeld: "201", transfers, shareholders: [{ surname: "A" }] }],
+          }),
+        ).toThrow("at most 200 transfers are allowed per shareholding");
+      });
+    });
+
     describe("joint holders", () => {
       test("carries every joint holder of a shareholding as its own Shareholders element", () => {
         const xml = buildConfirmationStatementBody({

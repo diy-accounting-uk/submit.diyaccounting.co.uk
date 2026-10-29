@@ -1,0 +1,150 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: support-mail-intake
+run-name: support mail intake
+
+# Opens one private issue per new customer thread in the support@diyaccounting.co.uk inbox. The
+# issue lands in private.diyaccounting.co.uk labelled `support` and `maintainer-review`, where
+# support-reader.yml reads it and the operator approves it.
+#
+# This repository is public, so its logs, step summaries and artifacts are public. The script
+# prints counts only: no subject, address, message text or thread id. One job holds everything,
+# so no mail text passes between jobs. The job holds the Gmail read key, which can read the
+# mailbox and nothing else, and a token that can only write issues in the private repository.
+
+on:
+  schedule:
+    - cron: '2-59/10 * * * *'
+    - cron: '17 5 * * *'
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: read the mailbox and count the new threads without opening any issue
+        required: false
+        type: boolean
+        default: false
+
+permissions: {}
+
+concurrency:
+  group: support-mail-intake
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  intake:
+    if: github.event.schedule != '17 5 * * *'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: prod
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+
+      - name: Generate a token that writes issues in the private repository
+        id: private-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: write
+
+      - name: Open an issue for each new customer thread
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+          SUPPORT_GMAIL_READ_KEY: ${{ secrets.SUPPORT_GMAIL_READ_KEY }}
+          DRY_RUN: ${{ inputs.dry-run }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPPORT_GMAIL_READ_KEY}" ]; then
+            echo "SUPPORT_GMAIL_READ_KEY is not set on the prod environment, so no mail is read"
+            exit 0
+          fi
+          ARGS=()
+          if [ "${DRY_RUN}" = "true" ]; then ARGS+=(--dry-run); fi
+          node scripts/support-mail-intake.mjs "${ARGS[@]}"
+
+  # The acceptance rate of the support reply drafts, once a day. The draft rows come from the lake;
+  # the mailbox is read with the same read key. The summary row goes back to the lake. The script
+  # prints counts only, as the intake does.
+  acceptance:
+    if: github.event_name != 'schedule' || github.event.schedule == '17 5 * * *'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      LAKE_BUCKET: 'prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+
+      # The dedicated role reads only the support draft rows and writes only the acceptance row.
+      # No chaining: the deployment and alarm triage roles are not involved.
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_SUPPORT_ACCEPTANCE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          retry-max-attempts: 3
+
+      - name: Fetch the draft rows from the lake
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/support-drafts
+          aws s3 sync "s3://${LAKE_BUCKET}/curated/support-drafts/" /tmp/support-drafts --only-show-errors
+
+      - name: Class each old draft and measure the acceptance rate
+        id: acceptance
+        env:
+          SUPPORT_GMAIL_READ_KEY: ${{ secrets.SUPPORT_GMAIL_READ_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPPORT_GMAIL_READ_KEY}" ]; then
+            echo "SUPPORT_GMAIL_READ_KEY is not set on the prod environment, so no mail is read"
+            exit 0
+          fi
+          node scripts/support-draft-acceptance.mjs --rows-dir /tmp/support-drafts --out /tmp/support-draft-acceptance.json
+          echo "row=$(cat /tmp/support-draft-acceptance.json)" >> "$GITHUB_OUTPUT"
+          echo "key=curated/support-draft-acceptance/dt=$(date -u +%F)/${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Write the acceptance row to the lake
+        if: steps.acceptance.outputs.row != ''
+        uses: ./.github/actions/dora-row
+        with:
+          bucket: ${{ env.LAKE_BUCKET }}
+          key: ${{ steps.acceptance.outputs.key }}
+          row: ${{ steps.acceptance.outputs.row }}

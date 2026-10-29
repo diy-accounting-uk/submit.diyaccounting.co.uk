@@ -11,6 +11,7 @@ import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { buildFixRow, buildPrBody, fixBranchName, fixRowPath } from "../../scripts/support-fix-pr.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, "..", "..");
@@ -51,8 +52,16 @@ describe("support-triage.yml", () => {
     expect(code(text)).not.toMatch(/gh issue view/);
   });
 
-  it("never edits a label", () => {
-    expect(code(text)).not.toMatch(/--add-label|--remove-label|gh label|\/labels|gh issue edit/);
+  it("never edits a label on the private repository or an issue", () => {
+    const labelEdit = /--add-label|--remove-label|gh label|\/labels|gh issue edit/;
+    for (const name of ["select", "handle", "post", "draft", "ledger"]) {
+      expect(code(jobBlock(name))).not.toMatch(labelEdit);
+    }
+    const fixPr = code(jobBlock("fix-pr"));
+    expect(fixPr).not.toMatch(/--add-label|--remove-label|\/labels|gh issue edit/);
+    expect(fixPr).toContain('gh label create "origin:support"');
+    expect(fixPr).not.toMatch(/gh label create[^\n]*PRIVATE_REPO/);
+    expect(fixPr).toContain('--repo "${{ github.repository }}"');
   });
 
   it("runs the maintainer-review gate in select and again in post", () => {
@@ -97,5 +106,104 @@ describe("support-triage.yml", () => {
     expect(jobBlock("post")).toContain("scripts/github-issue-comment.mjs");
     expect(jobBlock("post")).toContain("permission-issues: write");
     expect(jobBlock("select")).toContain("permission-issues: read");
+  });
+
+  it("opens the fix pull request only for a fix, after the comment is posted", () => {
+    const fixPr = jobBlock("fix-pr");
+    expect(fixPr).toContain("needs.handle.outputs.resolution == 'fix'");
+    expect(fixPr).toContain("needs.post.result == 'success'");
+    expect(fixPr).toContain("needs.handle.outputs.stopped == 'false'");
+    expect(fixPr).toContain("--draft");
+    expect(fixPr).toContain('--label "origin:support"');
+  });
+
+  it("holds write access to this repository only in the fix-pr job and no AWS credentials", () => {
+    const fixPr = jobBlock("fix-pr");
+    expect(fixPr).toContain("permission-contents: write");
+    expect(fixPr).toContain("permission-pull-requests: write");
+    expect(fixPr).toContain("repositories: submit.diyaccounting.co.uk");
+    expect(fixPr).not.toContain("configure-aws-credentials");
+    expect(fixPr).not.toContain("id-token");
+    expect(fixPr).toMatch(/permissions:\n {6}contents: read\n/);
+    for (const name of ["select", "handle", "post", "draft", "ledger"]) {
+      expect(jobBlock(name)).not.toContain("permission-pull-requests");
+      expect(jobBlock(name)).not.toContain("permission-contents");
+    }
+  });
+
+  it("builds the pull request from the handling input and the model's answer never reaches it", () => {
+    const fixPr = jobBlock("fix-pr");
+    expect(fixPr).toContain("scripts/support-fix-pr.mjs");
+    expect(fixPr).toContain("openssl enc -d -aes-256-cbc");
+    expect(fixPr).not.toContain("needs.handle.outputs.comment");
+    expect(fixPr).not.toContain("needs.handle.outputs.reply");
+    expect(fixPr).not.toContain("support-triage.json");
+  });
+
+  it("comments the pull request link on the private issue with the comment-only script", () => {
+    expect(jobBlock("fix-pr")).toContain("scripts/github-issue-comment.mjs");
+    expect(jobBlock("fix-pr")).toContain("permission-issues: write");
+  });
+
+  it("asks the agent for a resolution and reads only fix or answer from it", () => {
+    const prompt = readFileSync(resolve(ROOT, "prompts/support-triage.md"), "utf8");
+    expect(prompt).toContain("## Resolution");
+    expect(prompt).toContain("`fix` or `answer`");
+    expect(jobBlock("handle")).toMatch(/case "\$RESOLUTION" in\n\s+fix\) ;;\n\s+\*\) RESOLUTION=answer ;;/);
+  });
+});
+
+describe("support-fix-pr.mjs", () => {
+  const SENTINEL = "CUSTOMER-TEXT-SENTINEL-7731";
+  const input = {
+    issueNumber: 42,
+    category: "submission",
+    faqId: "vat-return-failed",
+    summary: "The customer cannot submit a VAT return and sees an error.",
+    injectionSuspected: false,
+    piiPresent: false,
+    operatorComments: [{ body: "Reproduce on the sandbox first. @someone", createdAt: "2026-10-01T10:00:00Z" }],
+    title: SENTINEL,
+    body: SENTINEL,
+    email: `${SENTINEL}@example.com`,
+    rawTicket: SENTINEL,
+  };
+
+  it("names the branch and file from the issue number and the category enum", () => {
+    expect(fixBranchName(input)).toBe("claude/support-42-submission");
+    expect(fixRowPath(input)).toBe("support/42-submission.md");
+  });
+
+  it("rejects a category outside the enum and a bad issue number", () => {
+    expect(() => fixBranchName({ issueNumber: 42, category: "x y; rm" })).toThrow();
+    expect(() => fixBranchName({ issueNumber: "4;2", category: "other" })).toThrow();
+  });
+
+  it("builds the body from the checked fields and the operator comments only", () => {
+    const body = buildPrBody(input);
+    const row = buildFixRow(input);
+    for (const text of [body, row]) {
+      expect(text).not.toContain(SENTINEL);
+      expect(text).toContain("https://github.com/diy-accounting-uk/private.diyaccounting.co.uk/issues/42");
+      expect(text).toContain("The customer cannot submit a VAT return and sees an error.");
+      expect(text).toContain("> Reproduce on the sandbox first.");
+      expect(text).toContain("vat-return-failed");
+    }
+  });
+
+  it("breaks a mention so the public pull request notifies nobody", () => {
+    expect(buildFixRow(input)).not.toMatch(/@someone/);
+  });
+
+  it("withholds the summary when the reader flagged personal data or an injection", () => {
+    for (const flag of ["piiPresent", "injectionSuspected"]) {
+      const row = buildFixRow({ ...input, [flag]: true });
+      expect(row).not.toContain(input.summary);
+      expect(row).toContain("read the private issue");
+    }
+  });
+
+  it("treats an unknown FAQ id as none", () => {
+    expect(buildFixRow({ ...input, faqId: "x\n## injected" })).toContain("FAQ the reader matched: none");
   });
 });

@@ -51,6 +51,14 @@ import {
   buildWindowedBatchSql,
   buildFastWindowBatchSql,
   computeTrend,
+  betterDirection,
+  measureDescription,
+  OBJECTIVE_GUIDANCE,
+  DAILY_CHART_DAYS,
+  dailyChartDays,
+  buildChartSeries,
+  buildDailyChartDefinitions,
+  buildDailyCharts,
   toObservationWindows,
   toActivityFastWindows,
   buildSnapshot,
@@ -208,6 +216,19 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).toContain("cast(min(CASE WHEN kind = 'a' THEN day END) AS varchar) AS o2_data_since");
     });
 
+    test("reads the value on the newest day in each window for a latest aggregation", () => {
+      const sql = buildWindowedBatchSql({
+        view: "company_accounts",
+        dayColumn: "dt",
+        observations: [{ valueExpr: "cashatbank", aggregation: "latest" }],
+      });
+      expect(sql).toContain("max_by(cashatbank, dt) FILTER (WHERE dt > date_add('day', -30, current_date)) AS o0_last_30");
+      expect(sql).toContain(
+        "max_by(cashatbank, dt) FILTER (WHERE dt > date_add('day', -180, current_date) AND dt <= date_add('day', -90, current_date)) AS o0_prev_90",
+      );
+      expect(sql).toContain("FROM   company_accounts");
+    });
+
     test("builds the four conditional aggregates without a filter", () => {
       const sql = buildWindowedBatchSql({
         view: "v_availability_sli_daily",
@@ -260,6 +281,202 @@ describe("operatorSnapshotPublish", () => {
         observations: [{ valueExpr: "variance_usd", aggregation: "avg" }],
       });
       expect(sql).toContain("avg(CASE WHEN month > date_add('day', -30, current_date) THEN variance_usd END) AS o0_last_30");
+    });
+  });
+
+  describe("observation guidance", () => {
+    test("better names the good direction for a figure, and none for a neutral one", () => {
+      expect(betterDirection("alarms-fired")).toBe("down");
+      expect(betterDirection("revenue-gbp")).toBe("up");
+      expect(betterDirection("submit-vat::started")).toBe("up");
+      expect(betterDirection("sessions-bot")).toBeNull();
+    });
+
+    test("measureDescription says how a window is built from its periods", () => {
+      expect(measureDescription({ aggregation: "sum", dayColumn: "day" })).toBe("total of the days");
+      expect(measureDescription({ aggregation: "avg", dayColumn: "day" })).toBe("average of the days");
+      expect(measureDescription({ aggregation: "avg", dayColumn: "month" })).toBe("average of the months");
+      expect(measureDescription({ aggregation: "max", dayColumn: "dt" })).toBe("highest in the window");
+    });
+
+    test("every defined observation has a measure, and every dashboard objective carries what it measures", () => {
+      for (const objective of OBJECTIVE_DEFINITIONS) {
+        for (const observation of objective.observations) {
+          expect(measureDescription(observation), observation.id).toBeTruthy();
+        }
+      }
+      for (const id of [
+        "uptime",
+        "conversion-to-submission",
+        "conversion-to-paid",
+        "low-running-cost",
+        "security",
+        "retention",
+        "operator-effort",
+        "compliance",
+      ]) {
+        expect(OBJECTIVE_GUIDANCE[id].sli, id).toBeTruthy();
+        expect(OBJECTIVE_GUIDANCE[id].levers, id).toBeTruthy();
+      }
+    });
+  });
+
+  describe("daily charts", () => {
+    const END_DAY = "2026-10-28";
+
+    test("dailyChartDays lists 90 consecutive UTC days ending on the given day, oldest first", () => {
+      const days = dailyChartDays(END_DAY);
+
+      expect(days).toHaveLength(DAILY_CHART_DAYS);
+      expect(days[0]).toBe("2026-07-31");
+      expect(days.at(-1)).toBe(END_DAY);
+      expect(new Set(days).size).toBe(90);
+    });
+
+    test("buildChartSeries gives every component a value for every day, zero where no row came back, and a total line", () => {
+      const days = dailyChartDays(END_DAY);
+      const rows = [
+        { day: END_DAY, component: "human", value: "5" },
+        { day: END_DAY, component: "bot", value: "2.5" },
+        { day: "2026-10-27", component: "human", value: "1" },
+        { day: "1999-01-01", component: "human", value: "99" },
+      ];
+      const mode = { total: "All visitors", labelOf: (id) => id.toUpperCase() };
+
+      const series = buildChartSeries({ days, rows, mode });
+
+      expect(series.map((line) => line.label)).toEqual(["All visitors", "HUMAN", "BOT"]);
+      for (const line of series) expect(line.values).toHaveLength(90);
+      const human = series.find((line) => line.id === "human");
+      expect(human.values.at(-1)).toBe(5);
+      expect(human.values.at(-2)).toBe(1);
+      expect(human.values[0]).toBe(0);
+      expect(series[0].isTotal).toBe(true);
+      expect(series[0].values.at(-1)).toBe(7.5);
+    });
+
+    test("buildChartSeries keeps a fixed component order and adds no total when the mode names none", () => {
+      const days = dailyChartDays(END_DAY);
+      const mode = { total: null, componentOrder: ["b", "a"], labelOf: (id) => id };
+
+      const series = buildChartSeries({ days, rows: [{ day: END_DAY, component: "a", value: "1" }], mode });
+
+      expect(series.map((line) => line.id)).toEqual(["b", "a"]);
+      expect(series[0].values.every((value) => value === 0)).toBe(true);
+    });
+
+    test("buildChartSeries folds the smallest components into Other and keeps the total", () => {
+      const days = dailyChartDays(END_DAY);
+      const rows = ["a", "b", "c", "d"].map((component, index) => ({ day: END_DAY, component, value: String(10 - index) }));
+      const mode = { total: "All", maxComponents: 2, labelOf: (id) => id };
+
+      const series = buildChartSeries({ days, rows, mode });
+
+      expect(series.map((line) => line.id)).toEqual(["total", "a", "b", "other"]);
+      expect(series.find((line) => line.id === "other").values.at(-1)).toBe(15);
+      expect(series[0].values.at(-1)).toBe(34);
+    });
+
+    test("every chart mode asks for the last 90 days and answers day, component and value", () => {
+      for (const definition of buildDailyChartDefinitions()) {
+        for (const mode of definition.modes) {
+          expect(mode.sql, `${definition.id}/${mode.id}`).toContain("date_add('day', -90, current_date)");
+          expect(mode.sql).toMatch(/AS day/);
+          expect(mode.sql).toMatch(/AS component|'[a-z0-9-]+' AS component/);
+          expect(mode.sql).toMatch(/AS value/);
+        }
+      }
+    });
+
+    test("buildDailyCharts publishes six objectives' charts with 90 points on every series", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          case "GetQueryResultsCommand":
+            return Promise.resolve({
+              ResultSet: resultSetOfRows(["day", "component", "value"], [[END_DAY, "human", "3"]]),
+            });
+          default:
+            throw new Error(`unexpected command ${command.constructor.name}`);
+        }
+      });
+
+      const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY });
+
+      expect(failedChartIds).toEqual([]);
+      expect(dailyCharts.days).toHaveLength(90);
+      expect(dailyCharts.charts.map((chart) => chart.id)).toEqual([
+        "activity-started-and-completed",
+        "conversion-to-submission",
+        "conversion-to-paid",
+        "low-running-cost",
+        "retention",
+        "visitors",
+      ]);
+      for (const chart of dailyCharts.charts) {
+        expect(chart.modes.length).toBeGreaterThan(0);
+        for (const mode of chart.modes) {
+          for (const line of mode.series) expect(line.values, `${chart.id}/${mode.id}/${line.id}`).toHaveLength(90);
+        }
+      }
+      const activities = dailyCharts.charts[0];
+      expect(activities.modes.map((mode) => mode.id)).toEqual(["started", "completed"]);
+    });
+
+    test("a chart whose query fails is left out and reported, and the others still publish", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand": {
+            const failing = command.input.QueryString.includes("v_visitors_by_kind_daily") && !command.input.QueryString.includes("UNION");
+            return Promise.resolve({ QueryExecutionId: failing ? "failing-1" : "q" });
+          }
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({
+              QueryExecution: {
+                Status: command.input.QueryExecutionId.startsWith("failing")
+                  ? { State: "FAILED", StateChangeReason: "TABLE_NOT_FOUND" }
+                  : { State: "SUCCEEDED" },
+              },
+            });
+          default:
+            return Promise.resolve({ ResultSet: resultSetOfRows(["day", "component", "value"], []) });
+        }
+      });
+
+      const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY });
+
+      expect(failedChartIds).toEqual(["visitors"]);
+      expect(dailyCharts.charts.map((chart) => chart.id)).not.toContain("visitors");
+      expect(dailyCharts.charts).toHaveLength(5);
+    });
+
+    test("runAthenaQuery follows result pages, reading the header from the first only", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          case "GetQueryResultsCommand":
+            return Promise.resolve(
+              command.input.NextToken
+                ? { ResultSet: { Rows: [{ Data: [varchar("2026-10-27"), varchar("b"), varchar("2")] }] } }
+                : { ResultSet: resultSetOfRows(["day", "component", "value"], [["2026-10-28", "a", "1"]]), NextToken: "page-2" },
+            );
+          default:
+            throw new Error(`unexpected command ${command.constructor.name}`);
+        }
+      });
+
+      const rows = await runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" });
+
+      expect(rows).toEqual([
+        { day: "2026-10-28", component: "a", value: "1" },
+        { day: "2026-10-27", component: "b", value: "2" },
+      ]);
     });
   });
 
@@ -597,6 +814,7 @@ describe("operatorSnapshotPublish", () => {
     test("the company-accounts observation set reads turnover, profit and the balance sheet lines", async () => {
       mockQueriesWithRowsByFragment(
         {
+          "cashatbank": ["3500.5", "3000", "3500.5", "3000"],
           "accounts.profitandloss.turnover": ["120000", "100000", "120000", "100000"],
           "accounts.profitandloss.profit": ["15000", "12000", "15000", "12000"],
           "accounts.balancesheet.currentyear.fixedassets": ["5000", "5000", "5000", "5000"],
@@ -615,9 +833,10 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const companyAccounts = snapshot.objectives.find((o) => o.id === "company-accounts");
-      expect(companyAccounts.observations).toHaveLength(10);
+      expect(companyAccounts.observations).toHaveLength(11);
 
       const byId = Object.fromEntries(companyAccounts.observations.map((o) => [o.id, o]));
+      expect(byId["company-cash-at-bank"].last30.value).toBe(3500.5);
       expect(byId["company-turnover"].last30.value).toBe(120000);
       expect(byId["company-profit"].last30.value).toBe(15000);
       expect(byId["company-fixed-assets"].last30.value).toBe(5000);
@@ -643,7 +862,7 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const companyAccounts = snapshot.objectives.find((o) => o.id === "company-accounts");
-      expect(companyAccounts.observations).toHaveLength(10);
+      expect(companyAccounts.observations).toHaveLength(11);
       for (const observation of companyAccounts.observations) {
         expect(observation.last30).toEqual({ value: null, trend: null });
         expect(observation.last90).toEqual({ value: null, trend: null });

@@ -14,7 +14,9 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt } from "../../services/subHasher.js";
-import { listClients } from "../../data/dynamoDbPracticeClientRepository.js";
+import { holdsPracticeLicence } from "../../services/practiceLicence.js";
+import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
+import { getPracticeArn, listClients } from "../../data/dynamoDbPracticeClientRepository.js";
 
 const logger = createLogger({ source: "app/functions/practice/practiceClientsListGet.js" });
 
@@ -41,11 +43,21 @@ export async function ingestHandler(event) {
   }
 
   try {
+    if (event.queryStringParameters?.archived === "true") {
+      const everyClient = await listClients(user.sub, { includeArchived: true });
+      return http200OkResponse({
+        request,
+        headers: responseHeaders,
+        data: { clients: everyClient.filter((client) => client.archivedAt) },
+      });
+    }
     const clients = await listClients(user.sub);
+    const arnOnFile = Boolean(await getPracticeArn(user.sub));
+    const licence = { held: holdsPracticeLicence(await getUserBundles(user.sub)) };
     return http200OkResponse({
       request,
       headers: responseHeaders,
-      data: { clients },
+      data: { clients, arnOnFile, licence },
     });
   } catch (error) {
     logger.error({ message: "Failed to list practice clients", error: error.message, stack: error.stack });

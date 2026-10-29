@@ -29,6 +29,7 @@ import {
   sharesIssuedFor,
 } from "../../services/microEntityAccountsIxbrl.js";
 import { buildSmallCompanyAccounts } from "../../services/smallCompanyAccountsIxbrl.js";
+import { REGISTERED_OFFICE_FIELDS } from "../../services/accountsIxbrlCommon.js";
 import { fillRegisteredOffice } from "../../services/registeredOfficeFill.js";
 import { extractAndValidateSmallCompany } from "../../services/smallCompanyAccountsRequest.js";
 import {
@@ -43,6 +44,7 @@ import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } 
 import { initializeSalt } from "../../services/subHasher.js";
 import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
 import { applyCodesEntry } from "../../services/companiesHouseCodesEntry.js";
+import { readJointFilingId, jointFilingFields } from "../../services/jointFiling.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
 
@@ -54,6 +56,14 @@ const AGENT_AUTHORISATION_SERVICE = "CH-ACCOUNTS";
 
 const MIN_COMPANY_AUTH_CODE_LENGTH = 6;
 const MAX_COMPANY_AUTH_CODE_LENGTH = 8;
+
+// Statutory micro format 1 headings a year may leave out; a figure given must be a number of pounds above zero.
+const OPTIONAL_BALANCE_SHEET_FIELDS = [
+  "calledUpShareCapitalNotPaid",
+  "prepaymentsAccruedIncome",
+  "provisionsForLiabilities",
+  "accrualsDeferredIncome",
+];
 
 const BALANCE_SHEET_FIELDS = [
   "fixedAssets",
@@ -78,6 +88,43 @@ export function buildAccountsIxbrl(accounts) {
   return accounts.regime === "small-company" ? buildSmallCompanyAccounts(accounts) : buildMicroEntityAccounts(accounts);
 }
 
+// The registered office is an object of address parts. Absent is allowed: the profile fills it.
+export function readRegisteredOffice(value, errorMessages) {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "object" || Array.isArray(value)) {
+    errorMessages.push("Invalid registeredOffice - must be an object of address parts");
+    return undefined;
+  }
+  const office = {};
+  for (const [field, raw] of Object.entries(value)) {
+    if (!REGISTERED_OFFICE_FIELDS.includes(field) || typeof raw !== "string") {
+      errorMessages.push(`Invalid registeredOffice.${field}`);
+    } else if (raw.trim()) {
+      office[field] = raw.trim();
+    }
+  }
+  if (!office.addressLine1 && Object.keys(office).length > 0) {
+    errorMessages.push("Missing registeredOffice.addressLine1");
+  }
+  return Object.keys(office).length > 0 ? office : undefined;
+}
+
+// The accountants' report is optional; when present it needs the firm's name and the statement.
+export function readAccountantsReport(value, errorMessages) {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "object" || Array.isArray(value)) {
+    errorMessages.push("Invalid accountantsReport - must be an object");
+    return undefined;
+  }
+  const report = {};
+  for (const field of ["accountantsName", "statement"]) {
+    const text = typeof value[field] === "string" ? value[field].trim() : "";
+    if (!text) errorMessages.push(`Missing accountantsReport.${field}`);
+    report[field] = text;
+  }
+  return report;
+}
+
 // Extracts and validates the accounts filing request. Shared with the render Lambda, which
 // never needs the company authentication code because it never reaches the gateway.
 export function extractAndValidateAccountsParameters(event, errorMessages, { requireCompanyAuthCode = true, clientId } = {}) {
@@ -86,6 +133,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     companyNumber,
     companyName,
     registeredOffice,
+    accountantsReport,
     companyAuthCode,
     periodStart,
     periodEnd,
@@ -115,7 +163,8 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
   if (!trimmedCompanyName) {
     errorMessages.push("Missing companyName");
   }
-  const trimmedRegisteredOffice = typeof registeredOffice === "string" ? registeredOffice.trim() : "";
+  const validRegisteredOffice = readRegisteredOffice(registeredOffice, errorMessages);
+  const validAccountantsReport = readAccountantsReport(accountantsReport, errorMessages);
 
   let trimmedCompanyAuthCode;
   if (requireCompanyAuthCode) {
@@ -172,7 +221,8 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
       regime: "small-company",
       companyNumber: normalisedCompanyNumber,
       companyName: trimmedCompanyName,
-      registeredOffice: trimmedRegisteredOffice,
+      registeredOffice: validRegisteredOffice,
+      ...(validAccountantsReport ? { accountantsReport: validAccountantsReport } : {}),
       ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
       periodStart,
       periodEnd,
@@ -205,7 +255,8 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     regime: "micro-entity",
     companyNumber: normalisedCompanyNumber,
     companyName: trimmedCompanyName,
-    registeredOffice: trimmedRegisteredOffice,
+    registeredOffice: validRegisteredOffice,
+    ...(validAccountantsReport ? { accountantsReport: validAccountantsReport } : {}),
     ...(requireCompanyAuthCode ? { companyAuthCode: trimmedCompanyAuthCode } : {}),
     periodStart,
     periodEnd,
@@ -237,6 +288,17 @@ function validateDormantFiling({ currentYear, priorYear, dormantTradingStatus, s
     errorMessages.push("balanceSheet.currentYear.calledUpShareCapital is not a whole number of shares at the nominal value");
   }
   if (
+    currentYear.calledUpShareCapitalNotPaid > 0 &&
+    Number.isFinite(numericNominalValue) &&
+    numericNominalValue > 0 &&
+    (currentYear.calledUpShareCapitalNotPaid > currentYear.calledUpShareCapital ||
+      sharesIssuedFor(currentYear.calledUpShareCapital - currentYear.calledUpShareCapitalNotPaid, numericNominalValue) === null)
+  ) {
+    errorMessages.push(
+      "balanceSheet.currentYear.calledUpShareCapitalNotPaid must be a whole number of shares at the nominal value and no more than the called up share capital",
+    );
+  }
+  if (
     Number.isFinite(currentYear.profitAndLossAccount) &&
     Number.isFinite(priorYear.profitAndLossAccount) &&
     currentYear.profitAndLossAccount !== priorYear.profitAndLossAccount
@@ -255,6 +317,16 @@ function extractAndValidateBalanceSheetYear(yearValues, yearLabel, errorMessages
     }
     year[field] = numericValue;
   }
+  for (const field of OPTIONAL_BALANCE_SHEET_FIELDS) {
+    const rawValue = yearValues?.[field];
+    if (rawValue === undefined || rawValue === null || rawValue === "") continue;
+    const numericValue = Number(rawValue);
+    if (!Number.isFinite(numericValue) || numericValue < 0) {
+      errorMessages.push(`Invalid balanceSheet.${yearLabel}.${field} - must be a number of pounds, zero or more`);
+    } else {
+      year[field] = numericValue;
+    }
+  }
   return year;
 }
 
@@ -264,9 +336,13 @@ function validateBalanceSheetAddsUp(year, yearLabel, errorMessages) {
   if (BALANCE_SHEET_FIELDS.some((field) => !Number.isFinite(year[field]))) {
     return; // Already reported as missing/invalid above.
   }
-  const netCurrentAssets = year.currentAssets - year.creditorsWithinOneYear;
-  const totalAssetsLessCurrentLiabilities = year.fixedAssets + netCurrentAssets;
-  const netAssets = totalAssetsLessCurrentLiabilities - year.creditorsAfterOneYear;
+  const netCurrentAssets = year.currentAssets + (year.prepaymentsAccruedIncome ?? 0) - year.creditorsWithinOneYear;
+  const totalAssetsLessCurrentLiabilities = (year.calledUpShareCapitalNotPaid ?? 0) + year.fixedAssets + netCurrentAssets;
+  const netAssets =
+    totalAssetsLessCurrentLiabilities -
+    year.creditorsAfterOneYear -
+    (year.provisionsForLiabilities ?? 0) -
+    (year.accrualsDeferredIncome ?? 0);
   if (netAssets !== year.capitalAndReserves) {
     errorMessages.push(`balanceSheet.${yearLabel}.capitalAndReserves does not equal net assets (${netAssets})`);
   }
@@ -345,6 +421,7 @@ export async function ingestHandler(event) {
 
   const errorMessages = [];
   const accounts = extractAndValidateAccountsParameters(filingEvent, errorMessages, { clientId });
+  const jointFilingId = readJointFilingId(parseRequestBody(filingEvent), errorMessages);
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
@@ -376,7 +453,17 @@ export async function ingestHandler(event) {
     submissionNumber = await allocateSubmissionNumber();
     const { presenterId, presenterCode } = await resolvePresenterCredentials();
 
-    await putAsyncRequest(userSub, submissionNumber, "pending", { filedDocument: ixbrl }, asyncRequestsTableName);
+    await putAsyncRequest(
+      userSub,
+      submissionNumber,
+      "pending",
+      {
+        filedDocument: ixbrl,
+        chargeActivityId: accounts.regime === "small-company" ? "file-small-company-accounts" : "file-micro-entity-accounts",
+        ...jointFilingFields(jointFilingId),
+      },
+      asyncRequestsTableName,
+    );
 
     const submissionXml = buildAccountsSubmission({
       presenterId,
@@ -395,7 +482,13 @@ export async function ingestHandler(event) {
     const parsed = parseGatewayResponse(gatewayResponse.data);
 
     if (parsed.errors?.length) {
-      await putAsyncRequest(userSub, submissionNumber, "failed", parsed, asyncRequestsTableName);
+      await putAsyncRequest(
+        userSub,
+        submissionNumber,
+        "failed",
+        { ...parsed, ...jointFilingFields(jointFilingId) },
+        asyncRequestsTableName,
+      );
       await recordSubmissionFailure({
         failure: "gateway-rejected-envelope",
         summary: "Companies House accounts submission rejected by the gateway",

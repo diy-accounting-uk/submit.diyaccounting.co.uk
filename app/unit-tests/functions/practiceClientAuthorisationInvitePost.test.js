@@ -69,7 +69,11 @@ describe("practiceClientAuthorisationInvitePost", () => {
       }),
     );
     expect(setPracticeArn).not.toHaveBeenCalled();
-    expect(setClientAuthorisation).toHaveBeenCalledWith("practice-sub", "c1", "MTD-VAT", { status: "pending", invitationId: "inv-1" });
+    expect(setClientAuthorisation).toHaveBeenCalledWith("practice-sub", "c1", "MTD-VAT", {
+      status: "pending",
+      invitationId: "inv-1",
+      knownFact: "2020-01-01",
+    });
   });
 
   test("stores a newly supplied ARN before inviting", async () => {

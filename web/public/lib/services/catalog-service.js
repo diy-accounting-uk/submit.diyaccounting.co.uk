@@ -62,6 +62,86 @@ export function isActivityListedInEnvironment(activity, environmentName) {
 }
 
 /**
+ * The page an activity's home button opens: the first `.html` entry in its catalogue `paths`.
+ * An activity with no page has no button on the home page.
+ * @param {object} activity - An activity entry from the parsed catalog
+ * @returns {string|null} The page path, or null when the activity has no page
+ */
+export function activityPagePath(activity) {
+  return activity?.paths?.find((entry) => entry.includes(".html")) ?? null;
+}
+
+/**
+ * The home page group of an activity, taken from the directory of its page path.
+ * @param {string} pagePath - The path from activityPagePath
+ * @returns {"VAT"|"Income Tax"|"Companies House"|"Passes"|"More"}
+ */
+export function activityArea(pagePath) {
+  if (pagePath.startsWith("hmrc/vat")) return "VAT";
+  if (pagePath.startsWith("hmrc/itsa")) return "Income Tax";
+  if (pagePath.startsWith("companies-house")) return "Companies House";
+  if (pagePath.startsWith("passes")) return "Passes";
+  return "More";
+}
+
+/**
+ * The features the home status box and subtitle name, in display order. `activity` is the
+ * catalogue activity id that decides whether the feature is listed and with which status;
+ * `filing` is the kind of filing the subtitle names, absent for a feature that files nothing.
+ */
+export const STATUS_FEATURES = [
+  { activity: "submit-vat", label: "HMRC VAT", filing: "VAT returns" },
+  { activity: "self-employed", label: "HMRC Income Tax (MTD)", filing: "Income Tax updates" },
+  { activity: "vat-assist-check", label: "HMRC Assist for VAT" },
+  { activity: "file-company-tax-return", label: "HMRC Company Tax Return (CT600)", filing: "Company Tax Returns" },
+  { activity: "company-lookup", label: "company lookup" },
+  { activity: "change-registered-office", label: "registered office", filing: "Companies House filings" },
+  { activity: "change-registered-email", label: "registered email", filing: "Companies House filings" },
+  { activity: "file-confirmation-statement", label: "Companies House confirmation statement", filing: "Companies House filings" },
+  { activity: "file-psc-verification-statement", label: "PSC verification statement", filing: "Companies House filings" },
+  { activity: "file-micro-entity-accounts", label: "Companies House accounts", filing: "Companies House filings" },
+  { activity: "file-small-company-accounts", label: "Companies House accounts", filing: "Companies House filings" },
+];
+
+/**
+ * The status word of an activity: "production" when it is listed in prod or lists no
+ * environments, otherwise the "sandbox" or "preview" its catalogue name carries.
+ * @param {object} activity - An activity entry from the parsed catalog
+ * @returns {"production"|"sandbox"|"preview"|null} The status, or null when the name carries none
+ */
+export function activityStatus(activity) {
+  const listed = activity?.environments;
+  if (!Array.isArray(listed) || listed.length === 0 || listed.includes("prod")) return "production";
+  const word = /\b(sandbox|preview)\b/i.exec(activity?.name ?? "");
+  return word ? word[1].toLowerCase() : null;
+}
+
+/**
+ * What the home page says about the features listed in an environment: the labels under each
+ * status, and the kinds of filing for the subtitle. A feature the catalogue does not list in
+ * the environment appears in neither.
+ * @param {object} catalog - The parsed catalog
+ * @param {string|null} environmentName - The current environment name
+ * @returns {{groups: {status: string, labels: string[]}[], filings: string[]}}
+ */
+export function featureStatusSummary(catalog, environmentName) {
+  const byStatus = { production: [], sandbox: [], preview: [] };
+  const filings = [];
+  for (const feature of STATUS_FEATURES) {
+    const activity = (catalog?.activities ?? []).find((candidate) => candidate.id === feature.activity);
+    if (!activity || !isActivityListedInEnvironment(activity, environmentName)) continue;
+    const status = activityStatus(activity);
+    if (!status) continue;
+    if (!byStatus[status].includes(feature.label)) byStatus[status].push(feature.label);
+    if (feature.filing && !filings.includes(feature.filing)) filings.push(feature.filing);
+  }
+  const groups = Object.entries(byStatus)
+    .filter(([, labels]) => labels.length > 0)
+    .map(([status, labels]) => ({ status, labels }));
+  return { groups, filings };
+}
+
+/**
  * Fetch the current environment's name as recorded at deploy time.
  * @param {string} url - URL to fetch (default "/submit.environment-name.txt")
  * @returns {Promise<string|null>} The environment name, or null if it could not be read
@@ -84,5 +164,8 @@ if (typeof window !== "undefined") {
   window.isActivityAvailable = isActivityAvailable;
   window.fetchCatalogText = fetchCatalogText;
   window.isActivityListedInEnvironment = isActivityListedInEnvironment;
+  window.activityPagePath = activityPagePath;
+  window.activityArea = activityArea;
   window.fetchCurrentEnvironmentName = fetchCurrentEnvironmentName;
+  window.featureStatusSummary = featureStatusSummary;
 }

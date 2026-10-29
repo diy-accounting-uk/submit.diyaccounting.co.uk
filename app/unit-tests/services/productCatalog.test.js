@@ -73,6 +73,16 @@ describe("productCatalogHelper", () => {
     expect(isActivityAvailable(catalog, "self-employed", "resident-vat")).toBe(false);
   });
 
+  it("self-employed carries the foreign property quarterly update and its amendment, and not the list or the view", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "self-employed");
+    expect(activity.paths).toEqual(
+      expect.arrayContaining(["hmrc/itsa/foreignPropertyPeriod.html", "hmrc/itsa/foreignPropertyPeriodAmend.html"]),
+    );
+    expect(activity.paths).not.toContain("hmrc/itsa/foreignPropertyPeriods.html");
+    expect(activity.paths).not.toContain("hmrc/itsa/foreignPropertyPeriodView.html");
+  });
+
   it("self-employed costs a token and does not carry the read-only pages, the annual submission or the adjustable summary", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "self-employed");
@@ -97,11 +107,27 @@ describe("productCatalogHelper", () => {
       "hmrc/itsa/selfEmploymentPeriodView.html",
       "hmrc/itsa/ukPropertyPeriods.html",
       "hmrc/itsa/ukPropertyPeriodView.html",
+      "hmrc/itsa/foreignPropertyPeriods.html",
+      "hmrc/itsa/foreignPropertyPeriodView.html",
     ]);
     // Same entitlement rules as self-employed - a read is still gated on an ITSA bundle, it
     // just spends nothing from it.
     expect(bundlesForActivity(catalog, "self-employed-read")).toEqual(bundlesForActivity(catalog, "self-employed"));
     expect(activity.hmrcScopesRequired).toEqual(["read:self-assessment"]);
+  });
+
+  it("self-employed-property-details carries the foreign property details page at no token cost with write scope, outside prod", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "self-employed-property-details");
+    expect(activity).toBeTruthy();
+    expect(activity.tokenCost).toBe(0);
+    expect(activity.metered).toBe(true);
+    expect(activity.paths).toEqual(["hmrc/itsa/foreignPropertyDetails.html"]);
+    expect(bundlesForActivity(catalog, "self-employed-property-details")).toEqual(bundlesForActivity(catalog, "self-employed"));
+    expect(activity.hmrcScopesRequired).toEqual(["write:self-assessment", "read:self-assessment"]);
+    const selfEmployed = catalog.activities.find((a) => a.id === "self-employed");
+    expect(activity.environments).toEqual(selfEmployed.environments);
+    expect(activity.environments).not.toContain("prod");
   });
 
   it("self-employed-year-end carries the annual submission, the adjustable summary, losses and claims, and tax liability adjustments at a token each", () => {
@@ -115,6 +141,8 @@ describe("productCatalogHelper", () => {
       "hmrc/itsa/adjustments.html",
       "hmrc/itsa/ukPropertyAnnualSubmission.html",
       "hmrc/itsa/ukPropertyAdjustments.html",
+      "hmrc/itsa/foreignPropertyAnnualSubmission.html",
+      "hmrc/itsa/foreignPropertyAdjustments.html",
       "hmrc/itsa/lossesAndClaims.html",
       "hmrc/itsa/taxLiabilityAdjustments.html",
     ]);

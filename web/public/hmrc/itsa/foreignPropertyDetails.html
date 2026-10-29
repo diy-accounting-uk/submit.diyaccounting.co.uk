@@ -1,0 +1,189 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Foreign property details - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
+      <h1>Foreign property details</h1>
+      <p class="subtitle">Add, rename and end the properties you let abroad</p>
+    </header>
+
+    <main id="mainContent">
+      <p class="hint" data-feature-status="sandbox">
+        <strong>Status: sandbox.</strong> This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits
+        on HMRC's recognition of our software after its 2027 update.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Load criteria -->
+      <div
+        id="loadCriteriaForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to manage your foreign properties"
+        data-sign-in-text="Log in to list the foreign properties HMRC holds for a tax year, add a property, change its name, or end it."
+      >
+        <h2>Show your foreign properties</h2>
+        <p class="hint">
+          From the 2026-27 tax year, HMRC keeps a record of each foreign property. You report income and expenses for each property by the
+          name you give it here.
+        </p>
+        <form id="foreignPropertyLoadForm" novalidate>
+          <div class="form-group">
+            <label for="nino">National Insurance number</label>
+            <p id="nino-hint" class="hint">
+              This is two letters, six numbers and a final letter, for example QQ 12 34 56 C. You can find it on your National Insurance
+              card, payslip or P60.
+            </p>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              maxlength="13"
+              spellcheck="false"
+              autocapitalize="characters"
+              aria-describedby="nino-hint"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="businessId">Business ID</label>
+            <p id="businessId-hint" class="hint">
+              Filled in when you pick a business on the Income Tax dashboard. Otherwise copy it from Business details, for example
+              XAIS12345678910.
+            </p>
+            <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
+          </div>
+
+          <div class="form-group">
+            <label for="taxYear">Tax year</label>
+            <p id="taxYear-hint" class="hint">Choose 2026-27 or a later tax year.</p>
+            <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+            <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios</p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+              <option value="">Default</option>
+              <option value="STATEFUL">Stateful (a property you add is listed)</option>
+              <option value="NOT_FOUND">Not Found</option>
+              <option value="DUPLICATE_PROPERTY_NAME">Duplicate property name</option>
+              <option value="PROPERTY_BUSINESS_CEASED">Property business ceased</option>
+              <option value="OUTSIDE_AMENDMENT_WINDOW">Outside the amendment window</option>
+            </select>
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                for="runFraudPreventionHeaderValidation"
+                >Validate fraud prevention headers</label
+              >
+            </div>
+          </div>
+
+          <button type="submit" id="loadBtn" class="btn">Show properties</button>
+        </form>
+      </div>
+
+      <!-- The property list and the add or change form, shown once the list has loaded -->
+      <div id="propertiesPanel" class="results-container" style="display: none">
+        <h2>Your foreign properties for <span id="propertiesTaxYear"></span></h2>
+        <div id="propertiesTable"></div>
+        <div class="button-group">
+          <button type="button" id="addPropertyBtn" class="btn">Add a property</button>
+          <button type="button" id="newSearchBtn" class="secondary-button">Choose another tax year</button>
+        </div>
+
+        <form id="propertyForm" class="form-container" novalidate style="display: none">
+          <h2 id="propertyFormTitle" tabindex="-1">Add a property</h2>
+          <div class="form-group">
+            <label for="propertyName">Property name</label>
+            <p id="propertyName-hint" class="hint">
+              Up to 105 characters, for example Lyon apartment. Each property in a country needs its own name.
+            </p>
+            <input type="text" id="propertyName" name="propertyName" required maxlength="105" aria-describedby="propertyName-hint" />
+          </div>
+
+          <div class="form-group" id="propertyCountryGroup">
+            <label for="propertyCountry">Country or territory</label>
+            <p id="propertyCountry-hint" class="hint">Where the property is. You cannot change this after you add the property.</p>
+            <select id="propertyCountry" name="propertyCountry" required aria-describedby="propertyCountry-hint"></select>
+          </div>
+
+          <div class="choice">
+            <input type="checkbox" id="propertyEnded" name="propertyEnded" aria-controls="propertyEndFields" />
+            <label for="propertyEnded">I have stopped letting this property</label>
+          </div>
+          <div id="propertyEndFields" hidden>
+            <div class="form-group">
+              <label for="propertyEndDate">Date you stopped letting it</label>
+              <p id="propertyEndDate-hint" class="hint">For example, 31 12 2026.</p>
+              <input type="date" id="propertyEndDate" name="propertyEndDate" aria-describedby="propertyEndDate-hint" />
+            </div>
+            <div class="form-group">
+              <label for="propertyEndReason">Why you stopped</label>
+              <select id="propertyEndReason" name="propertyEndReason">
+                <option value="">Choose a reason</option>
+                <option value="disposal">I sold it or gave it away</option>
+                <option value="no-longer-renting-property-out">I no longer let it</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="button-group">
+            <button type="submit" id="savePropertyBtn" class="btn">Save property</button>
+            <button type="button" id="cancelPropertyBtn" class="secondary-button">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/carried-identifiers.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../lib/itsaSubmissionModel.js"></script>
+    <script src="../../lib/country-codes.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="foreignPropertyDetails.page.js"></script>
+  </body>
+</html>

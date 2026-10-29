@@ -10,7 +10,12 @@ import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { servePageScripts } from "./hmrcFieldTableAssets.js";
-import { OBJECTIVE_DEFINITIONS } from "@app/functions/analytics/operatorSnapshotPublish.js";
+import {
+  OBJECTIVE_DEFINITIONS,
+  OBJECTIVE_GUIDANCE,
+  measureDescription,
+  betterDirection,
+} from "@app/functions/analytics/operatorSnapshotPublish.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -22,11 +27,16 @@ const FIXTURE_SNAPSHOT = {
     {
       id: "uptime",
       name: "Uptime",
+      sli: "Share of synthetic probe runs that pass.",
+      levers: "Fix the failing probe.",
       observations: [
         {
           id: "probe-pass-rate",
           label: "Probe pass rate",
           unit: "ratio",
+          source: "v_availability_sli_daily",
+          measure: "average of the days",
+          better: "up",
           last30: { value: 0.999, trend: 0.001 },
           last90: { value: 0.998, trend: null },
           deepLink: "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#dashboards:name=prod-env-operations",
@@ -35,6 +45,9 @@ const FIXTURE_SNAPSHOT = {
           id: "alarms-fired",
           label: "Alarms fired",
           unit: "count",
+          source: "v_alarm_state_changes_daily",
+          measure: "total of the days",
+          better: "down",
           last30: { value: 3, trend: -0.25 },
           last90: { value: 10, trend: 0.1 },
           deepLink: "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#alarmsV2:",
@@ -100,6 +113,13 @@ const FIXTURE_SNAPSHOT = {
       id: "company-accounts",
       name: "Company accounts",
       observations: [
+        {
+          id: "company-cash-at-bank",
+          label: "Cash at bank",
+          unit: "gbp",
+          last30: { value: 3500.5, trend: 0 },
+          last90: { value: 3500.5, trend: 0 },
+        },
         {
           id: "company-turnover",
           label: "Turnover",
@@ -250,6 +270,82 @@ const FIXTURE_EXPERIMENTS = {
   ],
 };
 
+const CHART_DAYS = Array.from({ length: 90 }, (_, index) => {
+  const day = new Date(Date.UTC(2026, 8, 8));
+  day.setUTCDate(day.getUTCDate() - (89 - index));
+  return day.toISOString().slice(0, 10);
+});
+
+function chartSeries(id, label, scale, extra = {}) {
+  return { id, label, values: CHART_DAYS.map((_, index) => Math.round(scale * (1 + Math.sin(index / 7 + scale)) * 100) / 100), ...extra };
+}
+
+function chartWithSeries(id, objectiveId, title, unit, seriesLabels, extra = {}) {
+  const components = seriesLabels.map((label, index) => chartSeries(`${id}-${index}`, label, 3 + index * 2));
+  const total = {
+    id: "total",
+    label: "Total",
+    isTotal: true,
+    values: CHART_DAYS.map((_, day) => components.reduce((sum, series) => sum + series.values[day], 0)),
+  };
+  return { id, objectiveId, title, unit, modes: [{ id: "main", label: "Main", series: [total, ...components] }], ...extra };
+}
+
+const FIXTURE_DAILY_CHARTS = {
+  days: CHART_DAYS,
+  charts: [
+    {
+      ...chartWithSeries(
+        "activity-started-and-completed",
+        "activity-started-and-completed",
+        "Activity started and completed",
+        "count",
+        Array.from({ length: 12 }, (_, index) => `Activity number ${index + 1}`),
+      ),
+      modes: [
+        {
+          id: "started",
+          label: "Started",
+          series: [
+            chartSeries("total", "All activities", 20, { isTotal: true }),
+            ...Array.from({ length: 12 }, (_, index) => chartSeries(`a${index}`, `Activity number ${index + 1}`, 2 + index)),
+          ],
+        },
+        {
+          id: "completed",
+          label: "Completed",
+          series: [chartSeries("total", "All activities", 9, { isTotal: true }), chartSeries("a0", "Submit VAT (HMRC)", 4)],
+        },
+      ],
+    },
+    chartWithSeries(
+      "conversion-to-submission",
+      "conversion-to-submission",
+      "Conversion to submission",
+      "count",
+      ["Human sessions", "Active customers", "Submitted within 7 days"],
+      {
+        note: "Steps, left to right.",
+      },
+    ),
+    chartWithSeries("conversion-to-paid", "conversion-to-paid", "Conversion to paid", "gbp", [
+      "Subscriptions",
+      "Stripe donations",
+      "PayPal donations",
+    ]),
+    chartWithSeries("low-running-cost", "low-running-cost", "Low running cost", "usd", [
+      "Amazon CloudFront",
+      "AWS Lambda",
+      "Amazon DynamoDB",
+      "Other services",
+    ]),
+    chartWithSeries("retention", "retention", "Retention", "count", ["Submitters", "Returning submitters", "Renewals", "Cancellations"]),
+    chartWithSeries("visitors", "conversion-to-submission", "Visitors", "count", ["Human", "Operator", "Bot", "Synthetic"]),
+  ],
+};
+
+const FIXTURE_SNAPSHOT_WITH_CHARTS = { ...FIXTURE_SNAPSHOT, dailyCharts: FIXTURE_DAILY_CHARTS };
+
 const SAMPLE_VALUE_BY_UNIT = { count: 1234, gbp: 12345.67, usd: 123.45, ratio: 0.987, hours: 12.5, runs: 42 };
 
 // Every observation the publisher defines, each with a value in every column, which is the
@@ -271,10 +367,14 @@ function fullShapeSnapshot() {
     objectives: OBJECTIVE_DEFINITIONS.map((objective) => ({
       id: objective.id,
       name: objective.name,
+      ...OBJECTIVE_GUIDANCE[objective.id],
       observations: objective.observations.map((observation) => ({
         id: observation.id,
         label: observation.label,
         unit: observation.unit,
+        source: observation.view,
+        measure: measureDescription(observation),
+        better: betterDirection(observation.id),
         ...windows(observation.unit),
         ...(observation.fastWindowView ? { last1h: { value: 12 }, last1d: { value: 123 }, last7d: { value: 1234 } } : {}),
         deepLink: observation.deepLink(context),
@@ -289,9 +389,7 @@ function fullShapeSnapshot() {
 // that handler's message so this fixture proves what the page does with the server's own words,
 // not a placeholder.
 const FORBIDDEN_BODY = {
-  message:
-    "Not authorised to view the operator dashboard. Ask an admin to issue you the operator pass " +
-    "(generate-pass.yml, pass-type=operator) restricted to your own sign-in email.",
+  message: "Not authorised to view the operator dashboard. Ask the operator to issue you the operator pass for your sign-in email.",
   code: "BUNDLE_ENTITLEMENT_REQUIRED",
 };
 
@@ -308,7 +406,10 @@ test.describe("Operator Dashboard", () => {
     submitCssContent = fs.readFileSync(path.join(process.cwd(), "web/public/submit.css"), "utf-8");
   });
 
-  async function setupRoutes(page, { snapshotStatus = 200, snapshotBody = FIXTURE_SNAPSHOT } = {}) {
+  async function setupRoutes(
+    page,
+    { snapshotStatus = 200, snapshotBody = FIXTURE_SNAPSHOT, experimentsStatus = 200, experimentsBody = FIXTURE_EXPERIMENTS } = {},
+  ) {
     await page.route("**/dashboard.html*", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: dashboardHtmlContent });
     });
@@ -320,7 +421,7 @@ test.describe("Operator Dashboard", () => {
       });
     });
     await page.route("**/experiments.toml*", async (route) => {
-      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(FIXTURE_EXPERIMENTS) });
+      await route.fulfill({ status: experimentsStatus, contentType: "application/json", body: JSON.stringify(experimentsBody) });
     });
     await page.route("**/auth/login.html*", async (route) => {
       await route.fulfill({ status: 200, contentType: "text/html", body: "<html><body>login stub</body></html>" });
@@ -334,6 +435,13 @@ test.describe("Operator Dashboard", () => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
     });
     await servePageScripts(page);
+    await page.route("**/dashboard.charts.js*", async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: "application/javascript",
+        body: fs.readFileSync(path.join(process.cwd(), "web/public/operator/dashboard.charts.js"), "utf-8"),
+      });
+    });
     await page.route("**/widgets/page-chrome.js*", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: pageChromeJsContent });
     });
@@ -381,6 +489,82 @@ test.describe("Operator Dashboard", () => {
     );
   });
 
+  test("colours a trend by whether the rise is good, and names its base", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const alarms = page.locator('.observation[data-observation-id="alarms-fired"]');
+    await expect(alarms.locator("td").nth(2)).toHaveText("↓ 25.0%");
+    await expect(alarms.locator("td").nth(2)).toHaveClass(/trend-good/);
+
+    const passRate = page.locator('.observation[data-observation-id="probe-pass-rate"]');
+    await expect(passRate.locator("td").nth(2)).toHaveClass(/trend-good/);
+
+    const bot = page.locator('#visitorsPanel tr.visitors-kind[data-kind="bot"]');
+    await expect(bot.locator("td").nth(5)).toHaveClass(/trend-flat/);
+
+    await expect(page.locator('.objective[data-objective-id="uptime"] thead th').nth(2)).toHaveText("vs previous 30 days");
+  });
+
+  test("states the source and how each window is built under the observation", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const row = page.locator('.observation[data-observation-id="alarms-fired"]');
+    await expect(row.locator(".observation-source")).toHaveText("Source: v_alarm_state_changes_daily, total of the days");
+  });
+
+  test("names each link by what it opens", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await expect(page.locator('.observation[data-observation-id="probe-pass-rate"] a.deep-link')).toHaveText(
+      "CloudWatch dashboard prod-env-operations",
+    );
+    await expect(page.locator('.observation[data-observation-id="alarms-fired"] a.deep-link')).toHaveText("CloudWatch alarms");
+    await expect(page.locator("#visitorsPanel")).toBeVisible();
+  });
+
+  test("shows the objective's measure and levers", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const guidance = page.locator('.objective[data-objective-id="uptime"] .objective-guidance');
+    await expect(guidance).toContainText("Share of synthetic probe runs that pass.");
+    await expect(guidance).toContainText("Fix the failing probe.");
+  });
+
+  test("writes the snapshot time in en-GB, and warns when it is over 36 hours old", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await expect(page.locator("#snapshotMeta")).toHaveText("Generated 8 Sept 2026, 03:15 UTC for prod.");
+    await expect(page.locator("#snapshotAge")).toBeVisible();
+    await expect(page.locator("#snapshotAge")).toContainText("hours old");
+  });
+
+  test("does not warn about a snapshot generated an hour ago", async ({ page }) => {
+    const recent = { ...FIXTURE_SNAPSHOT, generatedAt: new Date(Date.now() - 3600000).toISOString() };
+    await setupRoutes(page, { snapshotBody: recent });
+    await loadDashboard(page);
+
+    await expect(page.locator("#snapshotAge")).toBeHidden();
+  });
+
+  test("marks ci figures as test data and prod figures as customer figures", async ({ page }) => {
+    await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, environment: "ci" } });
+    await loadDashboard(page);
+
+    await expect(page.locator("#snapshotSource")).toContainText("ci test data");
+  });
+
+  test("groups thousands and names the currency in en-GB", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await expect(page.locator('.company-accounts-row[data-observation-id="company-turnover"]')).toContainText("£120,000.00");
+  });
+
   test("renders the visitors panel as one row per kind with the activity table's windows", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
@@ -406,14 +590,22 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     const headers = page.locator("#visitorsTable thead th");
-    await expect(headers).toHaveText(["Kind", "Last 1 hour", "Last 1 day", "Last 7 days", "Last 30 days", "Trend", "Last 90 days"]);
+    await expect(headers).toHaveText([
+      "Kind",
+      "Last 1 hour",
+      "Last 1 day",
+      "Last 7 days",
+      "Last 30 days",
+      "vs previous 30 days",
+      "Last 90 days",
+    ]);
     await expect(headers.nth(1)).not.toHaveAttribute("title", /.+/);
 
     const human = page.locator('#visitorsPanel tr.visitors-kind[data-kind="human"]');
     await expect(human.locator("td").nth(1)).not.toHaveAttribute("title", /.+/);
 
     const operator = page.locator('#visitorsPanel tr.visitors-kind[data-kind="operator"]');
-    await expect(operator.locator("td").nth(1)).toHaveText("—");
+    await expect(operator.locator("td").nth(1)).toHaveText("not measured");
     await expect(operator.locator("td").nth(1)).toHaveAttribute("title", /streaming export/);
     await expect(operator.locator("td").nth(4)).not.toHaveAttribute("title", /.+/);
   });
@@ -434,13 +626,13 @@ test.describe("Operator Dashboard", () => {
     await expect(panel).toBeVisible();
 
     const turnoverRow = panel.locator('.company-accounts-row[data-observation-id="company-turnover"]');
-    await expect(turnoverRow.locator("td").nth(1)).toHaveText("£120000.00");
+    await expect(turnoverRow.locator("td").nth(1)).toHaveText("£120,000.00");
 
     const profitRow = panel.locator('.company-accounts-row[data-observation-id="company-profit"]');
-    await expect(profitRow.locator("td").nth(1)).toHaveText("£25000.00");
+    await expect(profitRow.locator("td").nth(1)).toHaveText("£25,000.00");
 
     const capitalAndReservesRow = panel.locator('.company-accounts-row[data-observation-id="company-capital-and-reserves"]');
-    await expect(capitalAndReservesRow.locator("td").nth(1)).toHaveText("£37000.00");
+    await expect(capitalAndReservesRow.locator("td").nth(1)).toHaveText("£37,000.00");
   });
 
   test("shows the reinvestment fraction, trailing 30-day income and the budget", async ({ page }) => {
@@ -462,6 +654,51 @@ test.describe("Operator Dashboard", () => {
     await expect(page.locator("#reinvestmentPanel")).toBeHidden();
   });
 
+  test("shows cash at bank against the reserve floor with the headroom", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const panel = page.locator("#reservePanel");
+    await expect(panel).toBeVisible();
+    await expect(panel.locator('tr[data-figure-id="reserve-cash-at-bank"] td').nth(1)).toHaveText("£3,500.50");
+    await expect(panel.locator('tr[data-figure-id="reserve-floor"] td').nth(1)).toHaveText("£2,000.00");
+    await expect(panel.locator('tr[data-figure-id="reserve-headroom"] td').nth(1)).toHaveText("£1,500.50");
+    await expect(panel.locator("#reserveState")).toHaveAttribute("data-state", "above-floor");
+  });
+
+  test("marks the reserve block when cash at bank is below the floor", async ({ page }) => {
+    const belowFloor = {
+      ...FIXTURE_SNAPSHOT,
+      objectives: FIXTURE_SNAPSHOT.objectives.map((objective) =>
+        objective.id === "company-accounts"
+          ? {
+              ...objective,
+              observations: objective.observations.map((observation) =>
+                observation.id === "company-cash-at-bank" ? { ...observation, last30: { value: 1200, trend: null } } : observation,
+              ),
+            }
+          : objective,
+      ),
+    };
+    await setupRoutes(page, { snapshotBody: belowFloor });
+    await loadDashboard(page);
+
+    const panel = page.locator("#reservePanel");
+    await expect(panel.locator("#reserveState")).toHaveAttribute("data-state", "below-floor");
+    await expect(panel.locator("#reserveState")).toHaveText("Below the reserve floor.");
+    await expect(panel.locator('tr[data-figure-id="reserve-headroom"] td').nth(1)).toHaveText("-£800.00");
+  });
+
+  test("says no book snapshot exists yet in the reserve block while the book pull job is off", async ({ page }) => {
+    await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_NO_COMPANY_BOOK });
+    await loadDashboard(page);
+
+    const panel = page.locator("#reservePanel");
+    await expect(panel).toBeVisible();
+    await expect(panel.locator("#reserveState")).toHaveText("No book snapshot exists yet.");
+    await expect(panel.locator("#reserveTable")).toBeHidden();
+  });
+
   test("hides the company accounts panel while the book pull job is off", async ({ page }) => {
     await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_NO_COMPANY_BOOK });
     await loadDashboard(page);
@@ -476,22 +713,25 @@ test.describe("Operator Dashboard", () => {
     const panel = page.locator("#activitiesPanel");
     await expect(panel).toBeVisible();
 
-    const vatRow = panel.locator('.activity-row[data-activity-id="submit-vat"]');
-    await expect(vatRow.locator("td").nth(0)).toHaveText("Submit VAT (HMRC)");
-    await expect(vatRow.locator("td").nth(1)).toHaveText("1"); // started, last 1 hour
-    await expect(vatRow.locator("td").nth(2)).toHaveText("3"); // started, last 1 day
-    await expect(vatRow.locator("td").nth(3)).toHaveText("12"); // started, last 7 days
-    await expect(vatRow.locator("td").nth(4)).toHaveText("40"); // started, last 30
-    await expect(vatRow.locator("td").nth(5)).toHaveText("↑ 10.0%"); // started trend
-    await expect(vatRow.locator("td").nth(6)).toHaveText("110"); // started, last 90
-    await expect(vatRow.locator("td").nth(7)).toHaveText("0"); // completed, last 1 hour
-    await expect(vatRow.locator("td").nth(8)).toHaveText("2"); // completed, last 1 day
-    await expect(vatRow.locator("td").nth(9)).toHaveText("8"); // completed, last 7 days
-    await expect(vatRow.locator("td").nth(10)).toHaveText("22"); // completed, last 30
-    await expect(vatRow.locator("td").nth(11)).toHaveText("↓ 5.0%"); // completed trend
-    await expect(vatRow.locator("td").nth(12)).toHaveText("60"); // completed, last 90
+    const started = panel.locator('#activitiesStartedBody .activity-row[data-activity-id="submit-vat"]');
+    await expect(started.locator("td").nth(0)).toHaveText("Submit VAT (HMRC)");
+    await expect(started.locator("td").nth(1)).toHaveText("1"); // last 1 hour
+    await expect(started.locator("td").nth(2)).toHaveText("3"); // last 1 day
+    await expect(started.locator("td").nth(3)).toHaveText("12"); // last 7 days
+    await expect(started.locator("td").nth(4)).toHaveText("40"); // last 30
+    await expect(started.locator("td").nth(5)).toHaveText("↑ 10.0%"); // trend
+    await expect(started.locator("td").nth(6)).toHaveText("110"); // last 90
 
-    const bundleRow = panel.locator('.activity-row[data-activity-id="bundle"]');
+    const completed = panel.locator('#activitiesCompletedBody .activity-row[data-activity-id="submit-vat"]');
+    await expect(completed.locator("td").nth(0)).toHaveText("Submit VAT (HMRC)");
+    await expect(completed.locator("td").nth(1)).toHaveText("none");
+    await expect(completed.locator("td").nth(2)).toHaveText("2");
+    await expect(completed.locator("td").nth(3)).toHaveText("8");
+    await expect(completed.locator("td").nth(4)).toHaveText("22");
+    await expect(completed.locator("td").nth(5)).toHaveText("↓ 5.0%");
+    await expect(completed.locator("td").nth(6)).toHaveText("60");
+
+    const bundleRow = panel.locator('#activitiesStartedBody .activity-row[data-activity-id="bundle"]');
     await expect(bundleRow.locator("td").nth(0)).toHaveText("View and edit your bundles");
   });
 
@@ -499,7 +739,7 @@ test.describe("Operator Dashboard", () => {
     await setupRoutes(page);
     await loadDashboard(page);
 
-    const bundleRow = page.locator('#activitiesPanel .activity-row[data-activity-id="bundle"]');
+    const bundleRow = page.locator('#activitiesStartedBody .activity-row[data-activity-id="bundle"]');
     await expect(bundleRow.locator("td").nth(5)).toHaveText("new");
   });
 
@@ -514,8 +754,8 @@ test.describe("Operator Dashboard", () => {
     await setupRoutes(page);
     await loadDashboard(page);
 
-    await expect(page.locator("#activitiesTable thead th[colspan]").nth(0)).toHaveAttribute("title", /signed-in customer/);
-    await expect(page.locator("#activitiesTable thead th[colspan]").nth(1)).toHaveAttribute("title", /whether or not the customer clicked/);
+    await expect(page.locator("#activitiesStartedTable caption")).toHaveAttribute("title", /signed-in customer/);
+    await expect(page.locator("#activitiesCompletedTable caption")).toHaveAttribute("title", /whether or not the customer clicked/);
   });
 
   test("hides the activities panel when the snapshot carries no activity observations", async ({ page }) => {
@@ -525,12 +765,17 @@ test.describe("Operator Dashboard", () => {
     await expect(page.locator("#activitiesPanel")).toBeHidden();
   });
 
-  test("names the operator pass on a 403", async ({ page }) => {
+  test("leaves a 403 to the shared status message and draws no second notice", async ({ page }) => {
+    await page.addInitScript(() => {
+      window.shownFailures = [];
+      window.showFailure = (error) => window.shownFailures.push(error);
+    });
     await setupRoutes(page, { snapshotStatus: 403, snapshotBody: FORBIDDEN_BODY });
     await loadDashboard(page);
 
-    await expect(page.locator("#snapshotError")).toHaveText(/operator pass/);
-    await expect(page.locator("#snapshotError")).toHaveText(/pass-type=operator/);
+    await expect(page.locator("#snapshotError")).toHaveCount(0);
+    await expect(page.locator("#visitorsPanel")).toBeHidden();
+    await expect(page.locator(".objective[data-objective-id]")).toHaveCount(0);
   });
 
   test("shows the no-snapshot message on a 404", async ({ page }) => {
@@ -548,6 +793,114 @@ test.describe("Operator Dashboard", () => {
     await expect(experiment).toContainText("(no hypothesis yet)");
     await expect(experiment).toContainText("2026-09-01");
     await expect(experiment).toContainText("2026-09-30");
+  });
+
+  test("says no experiments are published when the file lists none", async ({ page }) => {
+    await setupRoutes(page, { experimentsBody: {} });
+    await loadDashboard(page);
+
+    await expect(page.locator("#experimentsPanel")).toBeVisible();
+    await expect(page.locator("#experimentsList")).toHaveText("No experiments published");
+  });
+
+  test("keeps the experiments panel and says so when the file does not load", async ({ page }) => {
+    await setupRoutes(page, { experimentsStatus: 404, experimentsBody: {} });
+    await loadDashboard(page);
+
+    await expect(page.locator("#experimentsPanel")).toBeVisible();
+    await expect(page.locator("#experimentsList")).toHaveText("Experiments did not load.");
+  });
+
+  test.describe("daily charts", () => {
+    test("draws one chart for each of the six objectives, with a line for every series", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      await expect(page.locator("#chartsPanel")).toBeVisible();
+      await expect(page.locator(".chart-card")).toHaveCount(6);
+      await expect(page.locator(".chart-card h3")).toHaveText([
+        "Activity started and completed",
+        "Conversion to submission",
+        "Conversion to paid",
+        "Low running cost",
+        "Retention",
+        "Visitors",
+      ]);
+      const visitors = page.locator('.chart-card[data-chart-id="visitors"]');
+      await expect(visitors.locator("polyline.chart-line")).toHaveCount(5);
+      const points = await visitors.locator("polyline.chart-line").first().getAttribute("points");
+      expect(points.trim().split(" ")).toHaveLength(90);
+    });
+
+    test("hides and shows a line from its legend button", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const retention = page.locator('.chart-card[data-chart-id="retention"]');
+      await retention.locator('.chart-legend-item[data-series-id="retention-0"]').click();
+      await expect(retention.locator("polyline.chart-line")).toHaveCount(4);
+      await expect(retention.locator('.chart-legend-item[data-series-id="retention-0"]')).toHaveAttribute("aria-pressed", "false");
+      await retention.locator('.chart-legend-item[data-series-id="retention-0"]').click();
+      await expect(retention.locator("polyline.chart-line")).toHaveCount(5);
+    });
+
+    test("switches the activities chart between started and completed", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const activities = page.locator('.chart-card[data-chart-id="activity-started-and-completed"]');
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(13);
+      await activities.locator('.chart-mode[data-mode-id="completed"]').click();
+      await expect(activities.locator("polyline.chart-line")).toHaveCount(2);
+    });
+
+    test("reads one day under the chart as the pointer moves over it", async ({ page }) => {
+      await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_WITH_CHARTS });
+      await loadDashboard(page);
+
+      const card = page.locator('.chart-card[data-chart-id="low-running-cost"]');
+      await expect(card.locator(".chart-readout")).toContainText("8 Sept");
+      await card.scrollIntoViewIfNeeded();
+      const box = await card.locator(".chart-overlay").boundingBox();
+      await page.mouse.move(box.x + 1, box.y + box.height / 2);
+      await expect(card.locator(".chart-readout")).toContainText("11 Jun");
+      await expect(card.locator(".chart-readout")).toContainText("$");
+    });
+
+    test("leaves out the charts panel when the snapshot carries no daily charts", async ({ page }) => {
+      await setupRoutes(page);
+      await loadDashboard(page);
+
+      await expect(page.locator("#chartsPanel")).toBeHidden();
+    });
+
+    for (const [width, height] of [
+      [390, 844],
+      [1280, 900],
+    ]) {
+      for (const colorScheme of ["light", "dark"]) {
+        test(`fits the page at ${width}px wide in ${colorScheme} mode and takes its line colours from the theme`, async ({ page }) => {
+          await page.setViewportSize({ width, height });
+          await page.emulateMedia({ colorScheme });
+          await setupRoutes(page, {
+            snapshotBody: { ...fullShapeSnapshot(), generatedAt: new Date().toISOString(), dailyCharts: FIXTURE_DAILY_CHARTS },
+          });
+          await loadDashboard(page);
+
+          await expect(page.locator(".chart-card")).toHaveCount(6);
+          const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+          expect(overflow).toBeLessThanOrEqual(0);
+          const cardRight = await page.evaluate(() =>
+            Math.max(...[...document.querySelectorAll(".chart-card svg")].map((svg) => svg.getBoundingClientRect().right)),
+          );
+          expect(cardRight).toBeLessThanOrEqual(width);
+          const firstColour = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--chart-1").trim());
+          expect(firstColour).toBe(colorScheme === "dark" ? "#56b4e9" : "#0072b2");
+          await page.locator("#chartsPanel").screenshot({ path: `target/rook-screenshots/dash/charts-${width}-${colorScheme}.png` });
+          await page.screenshot({ path: `target/rook-screenshots/dash/dashboard-${width}-${colorScheme}.png`, fullPage: true });
+        });
+      }
+    }
   });
 
   test.describe("reserved heights", () => {
@@ -600,9 +953,7 @@ test.describe("Operator Dashboard", () => {
       await setupRoutes(page);
       await loadDashboard(page);
 
-      // Excludes the rowspan="2" Activity header: it spans both header rows by design, so its
-      // own height is naturally about double a single-row header's, unrelated to wrapping.
-      const headerCells = page.locator("#activitiesTable thead th:not([rowspan])");
+      const headerCells = page.locator(".activities-table thead th");
       const count = await headerCells.count();
       for (let i = 0; i < count; i++) {
         const cell = headerCells.nth(i);
@@ -624,6 +975,9 @@ test.describe("Operator Dashboard", () => {
       await loadDashboard(page);
 
       await eachObservationsTableFitsItsCard(page);
+      const scrollsSideways = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+      expect(scrollsSideways).toBe(false);
+      await expect(page.locator("#activitiesStartedBody .activity-row td").nth(1)).toHaveAttribute("data-label", "Last 1 hour");
       await page.screenshot({ path: "target/dashboard-390.png", fullPage: true });
     });
   });

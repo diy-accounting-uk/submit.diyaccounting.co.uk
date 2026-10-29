@@ -52,7 +52,7 @@ const SMALL_BALANCE_SHEET_LABELS = [
 export const SMALL_COMPANY_CASE_INPUT = {
   companyNumber: "04549236",
   companyName: "MORGAN TECHNICAL LIMITED",
-  registeredOffice: "Unit 4 Morgan Court, Cardiff, CF10 1AA",
+  registeredOffice: { addressLine1: "Unit 4 Morgan Court", cityOrTown: "Cardiff", postalCode: "CF10 1AA" },
   periodStart: "2025-04-01",
   periodEnd: "2026-03-31",
   averageNumberOfEmployees: 4,
@@ -130,6 +130,30 @@ export const SMALL_COMPANY_CASE_INPUT = {
       depreciationAtStart: 1500,
       depreciationCharge: 500,
       depreciationOnDisposals: 0,
+    },
+  },
+};
+
+export const SMALL_COMPANY_BANK_LINES_CASE_INPUT = {
+  ...SMALL_COMPANY_CASE_INPUT,
+  balanceSheet: {
+    current: {
+      ...SMALL_COMPANY_CASE_INPUT.balanceSheet.current,
+      bankLoansOverdrafts: 300,
+      taxationSocialSecurity: 200,
+      accruals: 400,
+      bankLoansAfterOneYear: 1200,
+      profitAndLossAccount: 19000,
+      capitalAndReserves: 19100,
+    },
+    prior: {
+      ...SMALL_COMPANY_CASE_INPUT.balanceSheet.prior,
+      bankLoansOverdrafts: 200,
+      taxationSocialSecurity: 150,
+      accruals: 250,
+      bankLoansAfterOneYear: 700,
+      profitAndLossAccount: 14300,
+      capitalAndReserves: 14400,
     },
   },
 };
@@ -269,6 +293,7 @@ export function computationsDocumentCase() {
       depreciation: 500,
       amortisation: 0,
       entertaining: 0,
+      donations: 0,
       adjustedProfitBeforeCapitalAllowances: 5500,
       totalCapitalAllowances: 1000,
       adjustedProfit: 4500,

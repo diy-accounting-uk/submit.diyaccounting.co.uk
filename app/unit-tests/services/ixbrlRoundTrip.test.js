@@ -8,7 +8,7 @@ import { readFileSync } from "node:fs";
 import { describe, test, expect } from "vitest";
 import { mapIxbrlAccounts } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-accounts.js";
 import { readIxbrl } from "@diy-accounting-uk/diya-gl/dist/app/lib/ixbrl-reader.js";
-import { SMALL_COMPANY_FORMAT_2_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
+import { SMALL_COMPANY_BANK_LINES_CASE_INPUT, SMALL_COMPANY_FORMAT_2_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
 import {
   buildSmallCompanyAccounts,
   SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES,
@@ -122,6 +122,40 @@ describe("the builders' accounts read back through the diya-gl reader", () => {
         const { name } = CONCEPTS[FORMAT_2_PROFIT_AND_LOSS_CONCEPT_KEY[line]];
         expect(valueOf(name, periodEnd), `${year} ${line}`).toBe(SMALL_COMPANY_FORMAT_2_CASE_INPUT.profitAndLoss[year][line]);
       }
+    }
+  });
+
+  test("a Format 2 small company document maps to the Format 2 line set for both years", () => {
+    const mapped = mapIxbrlAccounts(buildSmallCompanyAccounts(SMALL_COMPANY_FORMAT_2_CASE_INPUT), {
+      regime: "small",
+      companyNumber: SMALL_COMPANY_FORMAT_2_CASE_INPUT.companyNumber,
+    });
+
+    expect(mapped.profitAndLoss.format).toBe(2);
+    for (const [year, builtYear] of [
+      ["currentYear", "current"],
+      ["priorYear", "prior"],
+    ]) {
+      const built = SMALL_COMPANY_FORMAT_2_CASE_INPUT.profitAndLoss[builtYear];
+      expect(figuresOf(mapped.profitAndLoss[year], SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES), year).toEqual(
+        Object.fromEntries(SMALL_COMPANY_FORMAT_2_PROFIT_AND_LOSS_LINES.map((line) => [line, built[line]])),
+      );
+    }
+  });
+
+  test("a small company document with bank, tax and accruals lines reads back all four figures for both years", () => {
+    const mapped = mapIxbrlAccounts(buildSmallCompanyAccounts(SMALL_COMPANY_BANK_LINES_CASE_INPUT), {
+      regime: "small",
+      companyNumber: SMALL_COMPANY_BANK_LINES_CASE_INPUT.companyNumber,
+    });
+    const lines = ["bankLoansOverdrafts", "bankLoansAfterOneYear", "taxationSocialSecurity", "accruals"];
+
+    for (const [year, builtYear] of [
+      ["currentYear", "current"],
+      ["priorYear", "prior"],
+    ]) {
+      const built = SMALL_COMPANY_BANK_LINES_CASE_INPUT.balanceSheet[builtYear];
+      expect(figuresOf(mapped.balanceSheet[year], lines), year).toEqual(Object.fromEntries(lines.map((line) => [line, built[line]])));
     }
   });
 });

@@ -19,9 +19,9 @@ vi.mock("@diy-accounting-uk/diya-gl/dist/app/lib/products.js", () => ({
   PRODUCTS: { ltd: {} },
 }));
 
-const mockDeriveMicroEntityAccounts = vi.fn();
+const mockDeriveCompanyBookFigures = vi.fn();
 vi.mock("@app/services/microEntityAccounts.js", () => ({
-  deriveMicroEntityAccounts: (...args) => mockDeriveMicroEntityAccounts(...args),
+  deriveCompanyBookFigures: (...args) => mockDeriveCompanyBookFigures(...args),
 }));
 
 const mockS3Send = vi.fn();
@@ -50,7 +50,7 @@ function stubBook({ retention = "resident", latestVersion = 3 } = {}) {
   mockReadMetadata.mockResolvedValue({ metadata: { retention, latestVersion }, metaETag: "meta-etag" });
   mockGetVersion.mockResolvedValue({ bytes: Buffer.from("zip-bytes"), etag: "version-etag" });
   mockReadBookSource.mockResolvedValue({ product: "ltd", book: BOOK, lines: LINES });
-  mockDeriveMicroEntityAccounts.mockResolvedValue(ACCOUNTS);
+  mockDeriveCompanyBookFigures.mockResolvedValue({ accounts: ACCOUNTS, cashAtBank: 3500.5 });
 }
 
 describe("companyBookPull", () => {
@@ -58,7 +58,7 @@ describe("companyBookPull", () => {
     mockReadMetadata.mockReset();
     mockGetVersion.mockReset();
     mockReadBookSource.mockReset();
-    mockDeriveMicroEntityAccounts.mockReset();
+    mockDeriveCompanyBookFigures.mockReset();
     mockS3Send.mockReset();
     mockS3Send.mockResolvedValue({});
 
@@ -90,11 +90,11 @@ describe("companyBookPull", () => {
     expect(mockGetVersion).not.toHaveBeenCalled();
   });
 
-  test("throws when the book's retention is sandbox", async () => {
+  test("reads a sandbox book the same as a resident one", async () => {
     stubBook({ retention: "sandbox" });
 
-    await expect(handler({ date: "2026-09-25" })).rejects.toThrow(/retention/);
-    expect(mockGetVersion).not.toHaveBeenCalled();
+    await handler({ date: "2026-09-25" });
+    expect(mockGetVersion).toHaveBeenCalled();
   });
 
   test("throws when COMPANY_BOOK_ID is blank", async () => {
@@ -134,6 +134,7 @@ describe("companyBookPull", () => {
     expect(observation.latestVersion).toBe(5);
     expect(observation.latestETag).toBe("version-etag");
     expect(observation.accounts).toEqual(ACCOUNTS);
+    expect(observation.cashAtBank).toBe(3500.5);
 
     expect(result.key).toBe("curated/finance/dt=2026-09-25/company-accounts.json");
     expect(result.latestVersion).toBe(5);

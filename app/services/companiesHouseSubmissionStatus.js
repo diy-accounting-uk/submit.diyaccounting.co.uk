@@ -19,6 +19,8 @@ import {
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { putReceipt } from "../data/dynamoDbReceiptRepository.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
+import { jointFilingFields } from "./jointFiling.js";
+import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
 
 const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
 
@@ -82,8 +84,10 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
   // one submission number always answers with exactly one.
   const status = parsed.statuses[0];
 
+  const jointFiling = jointFilingFields(persistedRequest.data?.jointFilingId);
+
   if (status.statusCode === "REJECT") {
-    await putAsyncRequest(userSub, submissionNumber, "failed", { ...status, kind }, asyncRequestsTableName);
+    await putAsyncRequest(userSub, submissionNumber, "failed", { ...status, kind, ...jointFiling }, asyncRequestsTableName);
     return { data: status };
   }
 
@@ -91,11 +95,17 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
     const receiptId = `${new Date().toISOString()}-${submissionNumber}`;
     // The accounts document is kept with the receipt so the customer's copy shows what was filed.
     const filedDocument = persistedRequest.data?.filedDocument;
-    const receipt = filedDocument ? { ...status, kind: ACCOUNTS_RECEIPT_KIND, filedDocument } : status;
+    const receipt = filedDocument
+      ? { ...status, kind: ACCOUNTS_RECEIPT_KIND, filedDocument, ...jointFiling }
+      : { ...status, ...jointFiling };
     await putReceipt(userSub, receiptId, receipt, resolveActorClass());
-    const data = { ...status, receiptId };
+    const data = { ...status, ...jointFiling, receiptId };
     await putAsyncRequest(userSub, submissionNumber, "completed", { ...data, kind }, asyncRequestsTableName);
     await publishActivityEvent({ event: acceptedEvent, summary: acceptedSummary, userSub });
+    // A filing sent as half of a pair costs its own token; the pair costs two.
+    if (jointFiling.jointFilingId && persistedRequest.data?.chargeActivityId) {
+      await chargeTokenOnSuccess(userSub, persistedRequest.data.chargeActivityId);
+    }
     return { data };
   }
 

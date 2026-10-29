@@ -64,6 +64,19 @@ export function serveSelfEmploymentExpenses(page) {
   return serveFile(page, "**/lib/self-employment-expenses.js", "lib/self-employment-expenses.js", "application/javascript");
 }
 
+// The real UK property period field module, for the quarterly update and amend pages.
+export function serveUkPropertyPeriodFields(page) {
+  return serveFile(page, "**/lib/uk-property-period-fields.js", "lib/uk-property-period-fields.js", "application/javascript");
+}
+
+// The real country list, foreign property entry fields, entry list and period form, for the foreign property pages.
+export async function serveForeignPropertyScripts(page) {
+  await serveFile(page, "**/lib/country-codes.js", "lib/country-codes.js", "application/javascript");
+  await serveFile(page, "**/lib/foreign-property-fields.js", "lib/foreign-property-fields.js", "application/javascript");
+  await serveFile(page, "**/widgets/foreign-property-entries.js", "widgets/foreign-property-entries.js", "application/javascript");
+  await serveFile(page, "**/lib/foreign-property-period-form.js", "lib/foreign-property-period-form.js", "application/javascript");
+}
+
 export function serveFormErrors(page) {
   return serveFile(page, "**/lib/form-errors.js", "lib/form-errors.js", "application/javascript");
 }
@@ -76,6 +89,9 @@ export function serveCarriedIdentifiers(page) {
 export async function servePageScripts(page) {
   await serveFile(page, "**/lib/hmrc-display-format.js", "lib/hmrc-display-format.js", "application/javascript");
   await serveFile(page, "**/lib/pending-request.js", "lib/pending-request.js", "application/javascript");
+  await serveFile(page, "**/lib/accounts-form-sections.js", "lib/accounts-form-sections.js", "application/javascript");
+  await serveFile(page, "**/lib/companies-house-labels.js", "lib/companies-house-labels.js", "application/javascript");
+  await serveFile(page, "**/lib/stacked-table.js", "lib/stacked-table.js", "application/javascript");
   await serveFormErrors(page);
   return page.route("**/*.page.js", async (route) => {
     const pathname = decodeURIComponent(new URL(route.request().url()).pathname);
@@ -91,6 +107,16 @@ export async function serveItsaPageScripts(page) {
   await serveFile(page, "**/lib/submission-record.js", "lib/submission-record.js", "application/javascript");
   await serveFile(page, "**/lib/itsa-calculation-record.js", "lib/itsa-calculation-record.js", "application/javascript");
   await serveFile(page, "**/lib/itsa-submission-record.js", "lib/itsa-submission-record.js", "application/javascript");
+  await serveSelfEmploymentExpenses(page);
+  await serveUkPropertyPeriodFields(page);
+  await serveItsaSubmissionModel(page);
+  await serveForeignPropertyScripts(page);
+  await serveFile(
+    page,
+    "**/lib/structured-building-allowance-rows.js",
+    "lib/structured-building-allowance-rows.js",
+    "application/javascript",
+  );
   await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
   return page.route("**/hmrc/itsa/*.page.js", async (route) => {
     const fileName = path.basename(new URL(route.request().url()).pathname);

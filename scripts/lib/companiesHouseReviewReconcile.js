@@ -19,10 +19,69 @@ const BALANCE_SHEET = {
   capitalAndReserves: ["Equity", ""],
   stocks: ["TotalInventories", ""],
   debtors: ["Debtors", ""],
+  tradeDebtors: ["TradeDebtorsTradeReceivables", ""],
+  otherDebtors: ["OtherDebtors", ""],
+  prepayments: ["PrepaymentsAccruedIncome", ""],
+  amountsOwedToDirectors: ["AmountsOwedToDirectors", "-after-one-year"],
+  amountsOwedToGroupUndertakings: ["AmountsOwedToGroupUndertakings", "-after-one-year"],
   cashAtBank: ["CashBankOnHand", ""],
   tradeCreditors: ["TradeCreditorsTradePayables", "-within-one-year"],
   corporationTax: ["CorporationTaxPayable", "-within-one-year"],
   otherCreditors: ["OtherCreditors", "-within-one-year"],
+  bankLoansOverdrafts: ["BankBorrowingsOverdrafts", "-within-one-year"],
+  taxationSocialSecurity: ["TaxationSocialSecurityPayable", "-within-one-year"],
+  accruals: ["AccruedLiabilities", "-accruals"],
+  bankLoansAfterOneYear: ["BankBorrowingsOverdrafts", "-after-one-year"],
+  calledUpShareCapitalNotPaid: ["CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset", ""],
+  prepaymentsAccruedIncome: ["PrepaymentsAccruedIncomeNotExpressedWithinCurrentAssetSubtotal", ""],
+  provisionsForLiabilities: ["ProvisionsForLiabilitiesBalanceSheetSubtotal", ""],
+  accrualsDeferredIncome: ["AccruedLiabilitiesNotExpressedWithinCreditorsSubtotal", ""],
+};
+const NOT_PAID = BALANCE_SHEET.calledUpShareCapitalNotPaid[0];
+const PREPAYMENTS = BALANCE_SHEET.prepaymentsAccruedIncome[0];
+const PROVISIONS = BALANCE_SHEET.provisionsForLiabilities[0];
+const ACCRUALS_DEFERRED = BALANCE_SHEET.accrualsDeferredIncome[0];
+// Lines checked only when the input carries a figure for them.
+const OPTIONAL_BALANCE_SHEET_LINES = new Set([
+  "bankLoansOverdrafts",
+  "taxationSocialSecurity",
+  "accruals",
+  "bankLoansAfterOneYear",
+  "calledUpShareCapitalNotPaid",
+  "prepaymentsAccruedIncome",
+  "provisionsForLiabilities",
+  "accrualsDeferredIncome",
+]);
+// Small company lines that split debtors and creditors after one year, checked only when the input carries a figure.
+const SMALL_SPLIT_LINES = new Set([
+  "tradeDebtors",
+  "otherDebtors",
+  "prepayments",
+  "amountsOwedToDirectors",
+  "amountsOwedToGroupUndertakings",
+]);
+// Policy input field -> concept, all on the current period context.
+const POLICIES = {
+  goingConcernStatement: "DescriptionGoing-concernStatus",
+  revenueRecognitionPolicy: "RevenueRecognitionPolicy",
+  tangibleFixedAssetsPolicy: "DescriptionMeasurementBasisForPropertyPlantEquipment",
+  propertyPlantEquipmentPolicy: "PropertyPlantEquipmentPolicy",
+  depreciationMethodPolicy: "DescriptionDepreciationMethodForPropertyPlantEquipment",
+  impairmentPolicy: "ImpairmentNon-financialAssetsPolicy",
+  inventoriesPolicy: "InventoriesPolicy",
+  cashCashEquivalentsPolicy: "CashCashEquivalentsPolicy",
+  financialInstrumentsPolicy: "FinancialInstrumentsRecognitionMeasurementPolicy",
+  financialInstrumentsClassificationPolicy: "FinancialInstrumentsClassificationPolicy",
+  employeeBenefitsPolicy: "EmployeeBenefitsPolicy",
+  definedContributionPensionsPolicy: "DefinedContributionPensionsPolicy",
+  foreignCurrencyTranslationPolicy: "ForeignCurrencyTranslationOperationsPolicy",
+  functionalPresentationCurrencyPolicy: "FunctionalPresentationCurrencyPolicy",
+  leasesPolicy: "LeasesPolicy",
+  taxPolicy: "TaxPolicy",
+  currentIncomeTaxPolicy: "CurrentIncomeTaxPolicy",
+  deferredTaxPolicy: "DeferredTaxPolicy",
+  intangibleAssetsPolicy: "IntangibleAssetsPolicy",
+  dividendPolicy: "DividendPolicy",
 };
 const PROFIT_AND_LOSS = {
   turnover: "TurnoverRevenue",
@@ -34,6 +93,15 @@ const PROFIT_AND_LOSS = {
   profitBeforeTax: "ProfitLossOnOrdinaryActivitiesBeforeTax",
   tax: "TaxTaxCreditOnProfitOrLossOnOrdinaryActivities",
   profit: "ProfitLoss",
+};
+// Intangible assets note field -> [concept, context kind (e = balance sheet date, y = the period), year offset].
+const INTANGIBLE_ASSET_NOTE = {
+  costAtStart: ["IntangibleAssetsGrossCost", "e", -1],
+  additions: ["AdditionsOtherThanThroughBusinessCombinationsIntangibleAssets", "y", 0],
+  disposals: ["DisposalsIntangibleAssets", "y", 0],
+  amortisationAtStart: ["AccumulatedAmortisationImpairmentIntangibleAssets", "e", -1],
+  amortisationCharge: ["IncreaseFromAmortisationChargeForYearIntangibleAssets", "y", 0],
+  amortisationOnDisposals: ["DisposalsDecreaseInAmortisationImpairmentIntangibleAssets", "y", 0],
 };
 // Fixed asset note field -> [concept, context kind (e = balance sheet date, y = the period), year offset].
 const FIXED_ASSET_NOTE = {
@@ -65,6 +133,15 @@ export function formatFigure(value) {
   return typeof value === "number" && Number.isInteger(value) ? value.toLocaleString("en-GB") : String(value);
 }
 
+const REGISTERED_OFFICE_TAGS = [
+  ["addressLine1", "AddressLine1"],
+  ["addressLine2", "AddressLine2"],
+  ["addressLine3", "AddressLine3"],
+  ["cityOrTown", "PrincipalLocation-CityOrTown"],
+  ["countyRegion", "CountyRegion"],
+  ["postalCode", "PostalCodeZip"],
+];
+
 export function reconcile(input, ours) {
   const { facts, visibleText: visible } = ours;
   const year = Number(input.periodEnd.slice(0, 4));
@@ -77,7 +154,7 @@ export function reconcile(input, ours) {
   };
 
   const rows = [];
-  const check = (field, value, concept, context, isNumber = true) => {
+  const check = (field, value, concept, context, isNumber = true, hidden = false) => {
     const fact = find(concept, context);
     const tagged = fact ? fact.text : null;
     let ok;
@@ -87,7 +164,7 @@ export function reconcile(input, ours) {
       shown = value !== 0 ? visible.includes(formatFigure(value)) : true;
     } else {
       ok = fact !== null && tagged.trim() === String(value).trim();
-      shown = visible.includes(String(value));
+      shown = hidden || visible.includes(String(value));
     }
     rows.push({
       field,
@@ -113,6 +190,16 @@ export function reconcile(input, ours) {
     false,
   );
 
+  for (const [field, concept] of REGISTERED_OFFICE_TAGS) {
+    if (input.registeredOffice?.[field])
+      check(`registeredOffice.${field}`, input.registeredOffice[field], concept, `y${current}-registered-office`, false);
+  }
+
+  if (input.accountantsReport) {
+    check("accountantsReport.accountantsName", input.accountantsReport.accountantsName, "NameEntityAccountants", `y${current}`, false);
+    check("accountantsReport.statement", input.accountantsReport.statement, "StatementOnScopeAccountantsReport", `y${current}`, false);
+  }
+
   const small = input.smallCompany;
   const balanceSheet = small ? small.balanceSheet : input.balanceSheet;
   for (const [yearKey, y] of [
@@ -120,15 +207,38 @@ export function reconcile(input, ours) {
     ["priorYear", prior],
   ]) {
     for (const [key, value] of Object.entries(balanceSheet[yearKey])) {
-      if (key in BALANCE_SHEET) {
+      if (key in BALANCE_SHEET && (value !== 0 || !(OPTIONAL_BALANCE_SHEET_LINES.has(key) || SMALL_SPLIT_LINES.has(key)))) {
         const [concept, suffix] = BALANCE_SHEET[key];
         check(`balanceSheet.${yearKey}.${key}`, value, concept, `e${y}${suffix}`);
       }
     }
   }
   if (small) {
+    for (const [field, concept] of Object.entries(POLICIES)) {
+      if (small[field]) check(`smallCompany.${field}`, small[field], concept, `y${current}`, false);
+    }
+    if (small.controllingParty) {
+      const context = `y${current}-controlling-party-1`;
+      check(
+        "smallCompany.controllingParty.ultimate",
+        String(small.controllingParty.ultimate),
+        "ControllingPartyUltimateControllingPartyTruefalse",
+        context,
+        false,
+        true,
+      );
+      if (small.controllingParty.name)
+        check("smallCompany.controllingParty.name", small.controllingParty.name, "NameControllingParty", context, false);
+    }
     if (small.principalActivity) {
       check("smallCompany.principalActivity", small.principalActivity, "DescriptionPrincipalActivities", `y${current}`, false);
+    }
+    for (const [yearKey, y] of [
+      ["currentYear", current],
+      ["priorYear", prior],
+    ]) {
+      const tax = small.profitAndLoss[yearKey]?.tax;
+      if (tax) check(`smallCompany.currentTax.${yearKey}`, tax, "CurrentTaxForPeriod", `y${y}-uk-tax`);
     }
     if (!small.filleted) {
       for (const [yearKey, y] of [
@@ -139,6 +249,10 @@ export function reconcile(input, ours) {
           if (key in PROFIT_AND_LOSS) check(`profitAndLoss.${yearKey}.${key}`, value, PROFIT_AND_LOSS[key], `y${y}`);
         }
       }
+    }
+    for (const [key, value] of Object.entries(small.intangibleAssetNote ?? {})) {
+      const [concept, kind, offset] = INTANGIBLE_ASSET_NOTE[key];
+      check(`intangibleAssetNote.${key}`, value, concept, `${kind}${year + offset}`);
     }
     for (const [assetClass, note] of Object.entries(small.fixedAssetNote ?? {})) {
       for (const [key, value] of Object.entries(note)) {
@@ -169,35 +283,47 @@ export function reconcile(input, ours) {
         currentAssets,
         sum(valueOf("TotalInventories", `e${y}`), valueOf("Debtors", `e${y}`), valueOf("CashBankOnHand", `e${y}`)),
       );
+      const debtorsSplit = ["TradeDebtorsTradeReceivables", "OtherDebtors", "PrepaymentsAccruedIncome"].map((concept) =>
+        valueOf(concept, `e${y}`),
+      );
+      if (debtorsSplit.some((value) => value)) {
+        add(`Debtors ${y}`, "trade debtors + other debtors + prepayments", valueOf("Debtors", `e${y}`), sum(...debtorsSplit));
+      }
       add(
         `Creditors within one year ${y}`,
-        "trade + corporation tax + other",
+        "bank loans and overdrafts + trade + corporation tax + taxation and social security + other + accruals",
         valueOf("Creditors", `e${y}-within-one-year`),
         sum(
+          valueOf("BankBorrowingsOverdrafts", `e${y}-within-one-year`),
           valueOf("TradeCreditorsTradePayables", `e${y}-within-one-year`),
           valueOf("CorporationTaxPayable", `e${y}-within-one-year`),
+          valueOf("TaxationSocialSecurityPayable", `e${y}-within-one-year`),
           valueOf("OtherCreditors", `e${y}-within-one-year`),
+          valueOf("AccruedLiabilities", `e${y}-accruals`),
         ),
       );
     }
     const within = valueOf("Creditors", `e${y}-within-one-year`) || 0;
     add(
       `Net current assets ${y}`,
-      "current assets − creditors within one year",
+      "current assets + prepayments and accrued income − creditors within one year",
       valueOf("NetCurrentAssetsLiabilities", `e${y}`),
-      (currentAssets || 0) - within,
+      (currentAssets || 0) + (valueOf(PREPAYMENTS, `e${y}`) || 0) - within,
     );
     add(
       `Total assets less current liabilities ${y}`,
-      "fixed assets + net current assets",
+      "called up share capital not paid + fixed assets + net current assets",
       valueOf("TotalAssetsLessCurrentLiabilities", `e${y}`),
-      sum(valueOf("FixedAssets", `e${y}`), valueOf("NetCurrentAssetsLiabilities", `e${y}`)),
+      sum(valueOf(NOT_PAID, `e${y}`), valueOf("FixedAssets", `e${y}`), valueOf("NetCurrentAssetsLiabilities", `e${y}`)),
     );
     add(
       `Net assets ${y}`,
-      "total assets less current liabilities − creditors after one year",
+      "total assets less current liabilities − creditors after one year − provisions − accruals and deferred income",
       valueOf("NetAssetsLiabilities", `e${y}`),
-      (valueOf("TotalAssetsLessCurrentLiabilities", `e${y}`) || 0) - (valueOf("Creditors", `e${y}-after-one-year`) || 0),
+      (valueOf("TotalAssetsLessCurrentLiabilities", `e${y}`) || 0) -
+        (valueOf("Creditors", `e${y}-after-one-year`) || 0) -
+        (valueOf(PROVISIONS, `e${y}`) || 0) -
+        (valueOf(ACCRUALS_DEFERRED, `e${y}`) || 0),
     );
     add(
       `Capital and reserves ${y}`,
@@ -241,6 +367,31 @@ export function reconcile(input, ours) {
       );
     }
   }
+  if (small?.intangibleAssetNote) {
+    const concept = (key) => INTANGIBLE_ASSET_NOTE[key][0];
+    add(
+      `Intangible assets: cost at ${current} end`,
+      "cost at start + additions − disposals",
+      valueOf("IntangibleAssetsGrossCost", `e${current}`),
+      (valueOf(concept("costAtStart"), `e${prior}`) || 0) +
+        (valueOf(concept("additions"), `y${current}`) || 0) -
+        (valueOf(concept("disposals"), `y${current}`) || 0),
+    );
+    add(
+      `Intangible assets: amortisation at ${current} end`,
+      "at start + charge − on disposals",
+      valueOf(concept("amortisationAtStart"), `e${current}`),
+      (valueOf(concept("amortisationAtStart"), `e${prior}`) || 0) +
+        (valueOf(concept("amortisationCharge"), `y${current}`) || 0) -
+        (valueOf(concept("amortisationOnDisposals"), `y${current}`) || 0),
+    );
+    add(
+      `Intangible assets: net book value ${current}`,
+      "cost − amortisation",
+      valueOf("IntangibleAssets", `e${current}`),
+      (valueOf("IntangibleAssetsGrossCost", `e${current}`) || 0) - (valueOf(concept("amortisationAtStart"), `e${current}`) || 0),
+    );
+  }
   if (small?.fixedAssetNote) {
     for (const assetClass of Object.keys(small.fixedAssetNote)) {
       const context = (kind, y) => `${kind}${y}-ppe-${assetClass}`;
@@ -271,9 +422,16 @@ export function reconcile(input, ours) {
     }
     add(
       `Fixed assets ${current}`,
-      "total net book value of the classes = balance sheet fixed assets",
+      "total net book value of the classes and the intangible assets = balance sheet fixed assets",
       valueOf("FixedAssets", `e${current}`),
-      valueOf("PropertyPlantEquipment", `e${current}`),
+      sum(valueOf("PropertyPlantEquipment", `e${current}`), valueOf("IntangibleAssets", `e${current}`)),
+    );
+  } else if (small?.intangibleAssetNote) {
+    add(
+      `Fixed assets ${current}`,
+      "net book value of the intangible assets = balance sheet fixed assets",
+      valueOf("FixedAssets", `e${current}`),
+      valueOf("IntangibleAssets", `e${current}`),
     );
   }
 

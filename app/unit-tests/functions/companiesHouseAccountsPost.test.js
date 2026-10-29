@@ -92,7 +92,11 @@ vi.mock("@app/services/companiesHouseXmlGateway.js", () => ({
   resolvePresenterCredentials: (...args) => mockResolvePresenterCredentials(...args),
 }));
 
-import { ingestHandler as companiesHouseAccountsPostHandler } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
+import {
+  ingestHandler as companiesHouseAccountsPostHandler,
+  readRegisteredOffice,
+  readAccountantsReport,
+} from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -100,7 +104,7 @@ function buildAccountsBody(overrides = {}) {
   return {
     companyNumber: "00000001",
     companyName: "SIMULATOR EXAMPLE COMPANY LIMITED",
-    registeredOffice: "1 Test Street, London, EC1A 1AA",
+    registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
     companyAuthCode: "AB12CD",
     periodStart: "2025-01-01",
     periodEnd: "2025-12-31",
@@ -302,6 +306,34 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  test("accepts the optional balance sheet headings when they enter the totals", async () => {
+    const body = buildAccountsBody();
+    body.balanceSheet.currentYear.prepaymentsAccruedIncome = 300;
+    body.balanceSheet.currentYear.accrualsDeferredIncome = 100;
+    body.balanceSheet.currentYear.provisionsForLiabilities = "50";
+    body.balanceSheet.currentYear.calledUpShareCapitalNotPaid = 10;
+    body.balanceSheet.currentYear.capitalAndReserves = 4160;
+    body.balanceSheet.currentYear.profitAndLossAccount = 4060;
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+    expect(response.statusCode).toBe(201);
+  });
+
+  test("rejects an optional balance sheet heading that is negative or not a number", async () => {
+    for (const value of [-5, "abc"]) {
+      const body = buildAccountsBody();
+      body.balanceSheet.currentYear.accrualsDeferredIncome = value;
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+      expect(response.statusCode).toBe(400);
+    }
+  });
+
+  test("rejects capital and reserves that ignore an optional heading", async () => {
+    const body = buildAccountsBody();
+    body.balanceSheet.currentYear.provisionsForLiabilities = 100;
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+    expect(response.statusCode).toBe(400);
+  });
+
   test("marks the submission failed and returns 500 when the gateway rejects the envelope", async () => {
     mockParseGatewayResponse.mockReturnValue({
       errors: [{ raisedBy: "Gateway", number: "502", type: "fatal", text: "Authentication Failure", location: "" }],
@@ -313,6 +345,15 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
   });
 
   describe("dormant filings", () => {
+    test("rejects unpaid share capital that is not a whole number of shares or exceeds the called up capital", async () => {
+      for (const unpaid of [0.5, 101]) {
+        const body = buildDormantBody();
+        body.balanceSheet.currentYear.calledUpShareCapitalNotPaid = unpaid;
+        const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+        expect(response.statusCode).toBe(400);
+      }
+    });
+
     test("passes the dormant flag, trading status, share class and nominal value to the generator", async () => {
       const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildDormantBody() }));
       expect(response.statusCode).toBe(201);
@@ -372,6 +413,42 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     const response = await companiesHouseAccountsPostHandler(buildEvent());
     expect(response.statusCode).toBe(403);
     expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  describe("a filing sent as half of a pair", () => {
+    const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
+
+    async function pendingData() {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const updates = mockSend.mock.calls.map(([cmd]) => cmd).filter((cmd) => cmd instanceof lib.UpdateCommand);
+      return updates.find((cmd) => cmd.input.ExpressionAttributeValues[":status"] === "pending").input.ExpressionAttributeValues[":data"];
+    }
+
+    test("stores the jointFilingId and the activity to charge with the pending request", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ jointFilingId: JOINT_FILING_ID }) }));
+      expect(response.statusCode).toBe(201);
+      expect(await pendingData()).toMatchObject({ jointFilingId: JOINT_FILING_ID, chargeActivityId: "file-micro-entity-accounts" });
+    });
+
+    test("charges the small company activity for a small company filing", async () => {
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildSmallCompanyBody({ jointFilingId: JOINT_FILING_ID }) }),
+      );
+      expect(response.statusCode).toBe(201);
+      expect(await pendingData()).toMatchObject({ jointFilingId: JOINT_FILING_ID, chargeActivityId: "file-small-company-accounts" });
+    });
+
+    test("stores no jointFilingId for a filing sent alone", async () => {
+      await companiesHouseAccountsPostHandler(buildEvent());
+      expect(await pendingData()).not.toHaveProperty("jointFilingId");
+    });
+
+    test("refuses a jointFilingId that is not a UUID and sends nothing", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ jointFilingId: "not-a-uuid" }) }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("Invalid jointFilingId");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
   });
 
   test("returns 200 with an empty object for a HEAD request", async () => {
@@ -681,5 +758,53 @@ describe("companiesHouseAccountsPost client-scoped requests", () => {
       await companiesHouseAccountsPostHandler(buildEvent());
       expect(mockBuildMicroEntityAccounts).toHaveBeenCalledTimes(1);
     });
+  });
+});
+
+describe("readRegisteredOffice", () => {
+  test("trims the parts and leaves an absent office absent", () => {
+    const errors = [];
+    expect(readRegisteredOffice({ addressLine1: " 1 High Street ", cityOrTown: "Leeds", postalCode: "" }, errors)).toEqual({
+      addressLine1: "1 High Street",
+      cityOrTown: "Leeds",
+    });
+    expect(readRegisteredOffice(undefined, errors)).toBeUndefined();
+    expect(errors).toEqual([]);
+  });
+
+  test("refuses a field outside the address parts, a non-string value, a missing addressLine1 and a string office", () => {
+    const unknownField = [];
+    readRegisteredOffice({ addressLine1: "1 High Street", street: "x" }, unknownField);
+    expect(unknownField).toEqual(["Invalid registeredOffice.street"]);
+    const notString = [];
+    readRegisteredOffice({ addressLine1: 4 }, notString);
+    expect(notString).toContain("Invalid registeredOffice.addressLine1");
+    const missing = [];
+    readRegisteredOffice({ cityOrTown: "Leeds" }, missing);
+    expect(missing).toEqual(["Missing registeredOffice.addressLine1"]);
+    const text = [];
+    readRegisteredOffice("1 High Street, Leeds", text);
+    expect(text).toEqual(["Invalid registeredOffice - must be an object of address parts"]);
+  });
+});
+
+describe("readAccountantsReport", () => {
+  test("trims both fields and leaves an absent report absent", () => {
+    const errors = [];
+    expect(readAccountantsReport({ accountantsName: " Test Firm LLP ", statement: " We compiled these. " }, errors)).toEqual({
+      accountantsName: "Test Firm LLP",
+      statement: "We compiled these.",
+    });
+    expect(readAccountantsReport(undefined, errors)).toBeUndefined();
+    expect(errors).toEqual([]);
+  });
+
+  test("refuses a missing field and a non-object", () => {
+    const errors = [];
+    readAccountantsReport({ accountantsName: "Test Firm LLP" }, errors);
+    expect(errors).toEqual(["Missing accountantsReport.statement"]);
+    const text = [];
+    readAccountantsReport("Test Firm LLP", text);
+    expect(text).toEqual(["Invalid accountantsReport - must be an object"]);
   });
 });

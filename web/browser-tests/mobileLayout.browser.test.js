@@ -137,19 +137,39 @@ test.describe("Mobile layout - specific findings", () => {
     expect(box.x + box.width).toBeLessThanOrEqual(375);
   });
 
-  test("privacy.html's wide table scrolls inside its own container, not the page", async ({ page }) => {
+  test("privacy.html's tables stack into label and value pairs at 375px", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await serveRealSite(page);
     await page.goto("http://localhost:3000/privacy.html", { waitUntil: "domcontentloaded" });
     await delay(300);
 
-    const table = page.locator("table").first();
+    const table = page.locator("table.data-table").first();
     await expect(table).toBeVisible();
-    const overflowX = await table.evaluate((el) => getComputedStyle(el).overflowX);
-    expect(overflowX).toBe("auto");
+    expect(await table.evaluate((el) => getComputedStyle(el).display)).toBe("block");
+    const firstCell = table.locator("tbody td").first();
+    await expect(firstCell).toHaveAttribute("data-label", /\S/);
 
     expect(await hasRealHorizontalScroll(page)).toBe(false);
   });
+});
+
+test.describe("Feedback banner", () => {
+  for (const [width, position] of [
+    [390, "static"],
+    [1000, "sticky"],
+  ]) {
+    test(`is ${position} at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 800 });
+      await serveRealSite(page);
+      await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+      await delay(300);
+
+      const banner = page.locator("#feedbackEngagementBanner");
+      await banner.evaluate((el) => el.removeAttribute("hidden"));
+      await expect(banner).toBeVisible();
+      expect(await banner.evaluate((el) => getComputedStyle(el).position)).toBe(position);
+    });
+  }
 });
 
 test.describe("Header account line truncates, the brand stays whole", () => {
@@ -257,4 +277,98 @@ test.describe("Header account line truncates, the brand stays whole", () => {
       await page.locator(".header-nav").screenshot({ path: `target/header-text/header-long-${width}.png` });
     });
   }
+});
+
+test.describe("Filing page status banners say what the reader can do", () => {
+  const BANNERS = [
+    [
+      "companies-house/fileMicroEntityAccounts.html",
+      /You can build, preview and file these accounts against Companies House's test service/,
+    ],
+    [
+      "companies-house/fileSmallCompanyAccounts.html",
+      /You can build, preview and file these accounts against Companies House's test service/,
+    ],
+    ["companies-house/fileCompanyTaxReturn.html", /You can prepare the return and preview its boxes here/],
+  ];
+
+  for (const [pagePath, wording] of BANNERS) {
+    test(`${pagePath} states what the status lets the reader do and fits at 390px`, async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 800 });
+      await serveRealSite(page);
+      await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "domcontentloaded" });
+      await delay(300);
+
+      const banner = await page.locator("[data-feature-status]").first().textContent();
+      expect(banner).toMatch(wording);
+      expect(banner).not.toMatch(/rejected|await|credentials|TPVS/i);
+      expect(await hasRealHorizontalScroll(page)).toBe(false);
+    });
+  }
+});
+
+async function clippedCells(page) {
+  return page.evaluate(() => {
+    const viewport = document.documentElement.clientWidth;
+    return [...document.querySelectorAll("table td, table th")]
+      .filter((cell) => cell.closest("thead")?.getBoundingClientRect().width !== 1)
+      .filter((cell) => !cell.closest("table.observations:not(.activities-table)"))
+      .filter((cell) => cell.getBoundingClientRect().width > 2)
+      .filter((cell) => cell.getBoundingClientRect().right > viewport + 0.5 || cell.scrollWidth > cell.clientWidth + 1)
+      .slice(0, 5)
+      .map((cell) => `${cell.tagName.toLowerCase()} ${(cell.textContent || "").trim().slice(0, 30)}`);
+  });
+}
+
+test.describe("Wide tables read at 390px and 1280px without sideways scroll", () => {
+  const TABLE_PAGES = [
+    "rates.html",
+    "privacy.html",
+    "accessibility.html",
+    "usage.html",
+    "practice.html",
+    "mtd-calendar.html",
+    "companies-house/companySearch.html",
+    "companies-house/fileConfirmationStatement.html",
+    "operator/dashboard.html",
+  ];
+
+  for (const width of [390, 1280]) {
+    for (const pagePath of TABLE_PAGES) {
+      test(`${pagePath} at ${width}px has no sideways scroll and no clipped cell`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await serveRealSite(page);
+        await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "domcontentloaded" });
+        await delay(500);
+
+        expect(await hasRealHorizontalScroll(page)).toBe(false);
+        expect(await clippedCells(page)).toEqual([]);
+      });
+    }
+  }
+
+  test("rates.html stacks its tables with every cell labelled at 390px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/rates.html", { waitUntil: "domcontentloaded" });
+    await delay(500);
+
+    const table = page.locator("#rates-income-tax");
+    expect(await table.evaluate((el) => getComputedStyle(el).display)).toBe("block");
+    expect(await table.evaluate((el) => getComputedStyle(el.querySelector("caption")).display)).toBe("block");
+    const unlabelled = await table.locator("tbody td:not([data-label])").count();
+    expect(unlabelled).toBe(0);
+  });
+
+  test("the calendar's deadline caption is a block inside a stacked table at 390px", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/mtd-calendar.html", { waitUntil: "domcontentloaded" });
+    await delay(500);
+
+    const captionDisplays = await page.evaluate(() =>
+      [...document.querySelectorAll(".stacked-table caption")].map((caption) => getComputedStyle(caption).display),
+    );
+    for (const display of captionDisplays) expect(display).toBe("block");
+  });
 });

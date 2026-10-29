@@ -603,6 +603,7 @@ export function renderRatesHtml(sources) {
     <footer></footer>
 
     <script src="widgets/page-chrome.js"></script>
+    <script src="lib/stacked-table.js"></script>
     <script src="lib/env-loader.js"></script>
     <script type="module" src="./submit.js"></script>
     <script src="./developer-mode.js"></script>

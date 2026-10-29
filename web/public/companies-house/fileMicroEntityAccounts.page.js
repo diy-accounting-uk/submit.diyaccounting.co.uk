@@ -15,6 +15,14 @@ const BALANCE_SHEET_FIELDS = [
   "capitalAndReserves",
 ];
 
+// Statutory headings left blank unless the company has the figure.
+const OPTIONAL_BALANCE_SHEET_FIELDS = [
+  "calledUpShareCapitalNotPaid",
+  "prepaymentsAccruedIncome",
+  "provisionsForLiabilities",
+  "accrualsDeferredIncome",
+];
+
 let company = null;
 
 function views() {
@@ -39,28 +47,39 @@ function readYear(prefix) {
     const inputId = prefix + field.charAt(0).toUpperCase() + field.slice(1);
     year[field] = window.parseMoneyInput(document.getElementById(inputId).value, { wholePounds: true }) ?? 0;
   });
+  OPTIONAL_BALANCE_SHEET_FIELDS.forEach((field) => {
+    const inputId = prefix + field.charAt(0).toUpperCase() + field.slice(1);
+    const value = window.parseMoneyInput(document.getElementById(inputId).value, { wholePounds: true });
+    if (value !== null && value !== undefined) year[field] = value;
+  });
   return year;
 }
 
 function netAssetsOf(year) {
-  const netCurrentAssets = year.currentAssets - year.creditorsWithinOneYear;
-  const totalAssetsLessCurrentLiabilities = year.fixedAssets + netCurrentAssets;
-  return totalAssetsLessCurrentLiabilities - year.creditorsAfterOneYear;
+  const netCurrentAssets = year.currentAssets + (year.prepaymentsAccruedIncome ?? 0) - year.creditorsWithinOneYear;
+  const totalAssetsLessCurrentLiabilities = (year.calledUpShareCapitalNotPaid ?? 0) + year.fixedAssets + netCurrentAssets;
+  return (
+    totalAssetsLessCurrentLiabilities -
+    year.creditorsAfterOneYear -
+    (year.provisionsForLiabilities ?? 0) -
+    (year.accrualsDeferredIncome ?? 0)
+  );
 }
 
-function renderYearTotals(elementId, year) {
-  const netAssets = netAssetsOf(year);
-  const element = document.getElementById(elementId);
-  element.textContent = `Net assets: ${netAssets}. ${
-    netAssets === year.capitalAndReserves
-      ? "Matches capital and reserves."
-      : `Does not match capital and reserves (${year.capitalAndReserves}) - correct this before previewing.`
-  }`;
+function renderYearTotals(current, prior) {
+  const currentNetAssets = netAssetsOf(current);
+  const priorNetAssets = netAssetsOf(prior);
+  const mismatches = [];
+  if (currentNetAssets !== current.capitalAndReserves) mismatches.push(`this year (capital and reserves ${current.capitalAndReserves})`);
+  if (priorNetAssets !== prior.capitalAndReserves) mismatches.push(`last year (capital and reserves ${prior.capitalAndReserves})`);
+  const verdict = mismatches.length
+    ? `Does not match capital and reserves for ${mismatches.join(" and ")} - correct this before previewing.`
+    : "Matches capital and reserves.";
+  document.getElementById("yearTotals").textContent = `Net assets: ${currentNetAssets} this year, ${priorNetAssets} last year. ${verdict}`;
 }
 
 function refreshYearTotals() {
-  renderYearTotals("currentYearTotals", readYear("current"));
-  renderYearTotals("priorYearTotals", readYear("prior"));
+  renderYearTotals(readYear("current"), readYear("prior"));
 }
 
 async function handleCompanySubmit(event) {
@@ -72,7 +91,8 @@ async function handleCompanySubmit(event) {
   hideStatus();
   try {
     const profile = await window.getCompanyProfile(companyNumber);
-    company = { companyNumber: profile.companyNumber, companyName: profile.companyName, registeredOffice: profile.registeredOffice };
+    company = { companyNumber: profile.companyNumber, companyName: profile.companyName };
+    window.accountsFormSections.fillRegisteredOffice(profile.registeredOffice);
     document.getElementById("formCompanyName").textContent = company.companyName;
     document.getElementById("formCompanyNumber").textContent = company.companyNumber;
     showView("formView");
@@ -107,11 +127,14 @@ function dormantPayload() {
 }
 
 function buildAccountsPayload() {
+  const registeredOffice = window.accountsFormSections.readRegisteredOffice();
+  const accountantsReport = window.accountsFormSections.readAccountantsReport();
   return {
     ...dormantPayload(),
     companyNumber: company.companyNumber,
     companyName: company.companyName,
-    registeredOffice: company.registeredOffice,
+    ...(registeredOffice ? { registeredOffice } : {}),
+    ...(accountantsReport ? { accountantsReport } : {}),
     periodStart: document.getElementById("periodStart").value,
     periodEnd: document.getElementById("periodEnd").value,
     balanceSheet: {
@@ -160,6 +183,7 @@ async function handleAccountsFormSubmit(event) {
     document.getElementById("previewIxbrl").textContent = preview.ixbrl;
     document.getElementById("previewRendered").srcdoc = preview.ixbrl;
     showView("previewView");
+    document.getElementById("previewView").scrollIntoView();
   } catch (error) {
     console.error("Failed to render the accounts preview:", error);
     showStatus(error.message || "Failed to render the accounts preview.", "error");
@@ -291,6 +315,7 @@ function startAgain() {
   document.getElementById("companyForm").reset();
   document.getElementById("accountsForm").reset();
   toggleDormantFields();
+  window.accountsFormSections.showAccountantsReportFields();
   document.getElementById("rejections").style.display = "none";
   document.getElementById("startAgainBtn").style.display = "none";
   hideStatus();
@@ -301,6 +326,7 @@ document.getElementById("companyForm").addEventListener("submit", handleCompanyS
 document.getElementById("accountsForm").addEventListener("submit", handleAccountsFormSubmit);
 document.getElementById("accountsForm").addEventListener("input", refreshYearTotals);
 document.getElementById("dormant").addEventListener("change", toggleDormantFields);
+document.getElementById("includeAccountantsReport").addEventListener("change", window.accountsFormSections.showAccountantsReportFields);
 document.getElementById("backToFormBtn").addEventListener("click", () => showView("formView"));
 document.getElementById("submitFilingBtn").addEventListener("click", handleSubmitFiling);
 document.getElementById("startAgainBtn").addEventListener("click", startAgain);

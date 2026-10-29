@@ -9,7 +9,7 @@ import { loadCatalogFromRoot, isActivityListedInEnvironment } from "./productCat
 import * as dynamoDbBundleStore from "../data/dynamoDbBundleRepository.js";
 import { getUserBundles } from "../data/dynamoDbBundleRepository.js";
 import { isOperatorEmail } from "../lib/operators.js";
-import { hasActiveResidentProBundle } from "./diyaGlEntitlement.js";
+import { holdsPracticeLicence } from "./practiceLicence.js";
 import { getClient } from "../data/dynamoDbPracticeClientRepository.js";
 
 const logger = createLogger({ source: "app/services/bundleEnforcement.js" });
@@ -198,12 +198,11 @@ export async function enforceBundles(event, options = {}) {
     matchedBundleIds,
   });
 
-  // A client-scoped request needs the practice's own active resident-pro subscription, and the
-  // client row must exist under this same practice and not be archived - the same rule
-  // diyaGlEntitlement.js applies to a client's book set, reused here rather than duplicated.
+  // A client-scoped request needs the practice licence (an active resident-pro subscription or a
+  // resident-pro-comp pass), and the client row must exist under this same practice and not be archived.
   let client = null;
   if (clientId) {
-    if (!hasActiveResidentProBundle(subscribedBundles)) {
+    if (!holdsPracticeLicence(subscribedBundles)) {
       const errorDetails = { code: "CLIENT_SCOPE_FORBIDDEN", clientId, userSub, path: requestPath };
       const message = "Forbidden: a client-scoped request requires an active resident-pro subscription";
       logger.warn({ message, ...errorDetails });
@@ -272,7 +271,7 @@ function matchesSimplePath(path, normalizedPath) {
   return normalizedPath === normalizedActivityPath || normalizedPath.endsWith("/" + normalizedActivityPath);
 }
 
-function findMatchingActivitiesForUrlPath(catalog, currentPath) {
+export function findMatchingActivitiesForUrlPath(catalog, currentPath) {
   if (!catalog?.activities) return [];
 
   // Keep both variants: with and without query

@@ -20,8 +20,9 @@ run-name: support reader
 # Three jobs hold different powers. `select` and `post` hold a GitHub App token for the private
 # repository and no AWS credentials. `read` holds AWS credentials for the quarantine reader role
 # (Bedrock invoke on one model, the guardrail and three SSM parameters) and a token that can only
-# read issues. A poll every ten minutes starts it, so no public endpoint and no cross-repository
-# write credential exist.
+# read issues. The form Lambda asks for a run with a workflow dispatch right after it files a ticket.
+# GitHub's scheduler runs the ten-minute poll only a few times a day, so the poll is the fallback
+# for a dispatch that failed.
 
 on:
   schedule:

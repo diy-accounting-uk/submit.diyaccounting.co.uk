@@ -67,7 +67,7 @@ npm --prefix mcp test
 npm --prefix mcp run test:system
 ```
 
-`test:system` starts `npm run start:simulator` from the repository root, grants a bundle, starts an HMRC grant with `request_hmrc_authorisation` and completes it as the callback page would, then runs `list_vat_obligations`, `submit_vat_return` and `get_vat_receipt` against it, using whichever open obligation the simulator answers. `npm run test:mcpHmrcGrantBehaviour-simulator` (from the repository root) walks the same grant through HMRC's consent pages in a browser. The design is in `PLAN_MCP.md`.
+`test:system` starts `npm run start:simulator` from the repository root, grants a bundle, starts an HMRC grant with `request_hmrc_authorisation` and completes it as the callback page would, then runs `list_vat_obligations`, `submit_vat_return` and `get_vat_receipt` against it, using whichever open obligation the simulator answers. `npm run test:mcpHmrcGrantBehaviour-simulator` (from the repository root) walks the same grant through HMRC's consent pages in a browser. The design is in `../../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_MCP.md`.
 
 The tests open the BrickWork Pro Ltd and Precision Code Ltd example books under `test/fixtures/`
 (copies of the spreadsheets repository's `examples/`) and round-trip each through the three

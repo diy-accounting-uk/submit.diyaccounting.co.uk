@@ -74,3 +74,136 @@ describe("services/smallCompanyAccountsRequest profit and loss format", () => {
     expect(errors.some((message) => message.includes("operatingProfit must equal turnover plus"))).toBe(true);
   });
 });
+
+describe("services/smallCompanyAccountsRequest optional lines, policies and controlling party", () => {
+  const withYear = (extra) => {
+    const section = sectionFrom(SMALL_COMPANY_CASE_INPUT);
+    section.balanceSheet = { ...section.balanceSheet, currentYear: { ...section.balanceSheet.currentYear, ...extra } };
+    return section;
+  };
+
+  test("an absent bank or taxation line reads as 0", () => {
+    const { result, errors } = validate(sectionFrom(SMALL_COMPANY_CASE_INPUT));
+    expect(errors).toEqual([]);
+    expect(result.balanceSheet.current).toMatchObject({
+      bankLoansOverdrafts: 0,
+      taxationSocialSecurity: 0,
+      accruals: 0,
+      bankLoansAfterOneYear: 0,
+    });
+  });
+
+  test("a negative or fractional line is refused", () => {
+    expect(validate(withYear({ bankLoansOverdrafts: -5 })).errors.join(" ")).toContain("bankLoansOverdrafts");
+    expect(validate(withYear({ taxationSocialSecurity: 1.5 })).errors.join(" ")).toContain("taxationSocialSecurity");
+  });
+
+  test("bank loans after one year above the creditors after one year are refused", () => {
+    const { errors } = validate(withYear({ bankLoansAfterOneYear: 2500 }));
+    expect(errors).toContain("smallCompany.balanceSheet.currentYear.bankLoansAfterOneYear must not be more than creditorsAfterOneYear");
+  });
+
+  test("a debtors split that does not add up to the debtors is refused and one that does is kept", () => {
+    const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
+    const wrong = validate(withYear({ tradeDebtors: 1 })).errors.join(" ");
+    expect(wrong).toContain(`tradeDebtors, otherDebtors and prepayments (1) must add up to debtors (${base.debtors})`);
+    const { result, errors } = validate(withYear({ tradeDebtors: base.debtors - 100, otherDebtors: 60, prepayments: 40 }));
+    expect(errors).toEqual([]);
+    expect(result.balanceSheet.current).toMatchObject({ tradeDebtors: base.debtors - 100, otherDebtors: 60, prepayments: 40 });
+  });
+
+  test("the directors loan and group balances stay within the creditors after one year", () => {
+    const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
+    const { errors } = validate(withYear({ amountsOwedToDirectors: base.creditorsAfterOneYear + 1 }));
+    expect(errors.join(" ")).toContain("must not be more than creditorsAfterOneYear");
+    const kept = validate(withYear({ amountsOwedToDirectors: 1, amountsOwedToGroupUndertakings: 2 }));
+    expect(kept.errors).toEqual([]);
+    expect(kept.result.balanceSheet.current).toMatchObject({ amountsOwedToDirectors: 1, amountsOwedToGroupUndertakings: 2 });
+  });
+
+  test("provisions for liabilities enter the net assets check", () => {
+    const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
+    const { errors } = validate(withYear({ provisionsForLiabilities: 100 }));
+    expect(errors).toContain(
+      `smallCompany.balanceSheet.currentYear.capitalAndReserves does not equal net assets (${base.capitalAndReserves - 100})`,
+    );
+    const matched = validate(
+      withYear({
+        provisionsForLiabilities: 100,
+        profitAndLossAccount: base.profitAndLossAccount - 100,
+        capitalAndReserves: base.capitalAndReserves - 100,
+      }),
+    );
+    expect(matched.errors).toEqual([]);
+  });
+
+  test("a negative or fractional accruals line is refused and a figure is kept", () => {
+    expect(validate(withYear({ accruals: -5 })).errors.join(" ")).toContain("accruals");
+    expect(validate(withYear({ accruals: 2.5 })).errors.join(" ")).toContain("accruals");
+    const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
+    const { result, errors } = validate(withYear({ accruals: 100, otherCreditors: base.otherCreditors - 100 }));
+    expect(errors).toEqual([]);
+    expect(result.balanceSheet.current.accruals).toBe(100);
+  });
+
+  test("an intangible assets note is kept and its net book value is held against the fixed assets", () => {
+    const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
+    const note = {
+      costAtStart: base.fixedAssets,
+      additions: 0,
+      disposals: 0,
+      amortisationAtStart: 0,
+      amortisationCharge: 0,
+      amortisationOnDisposals: 0,
+    };
+    const kept = validate({ ...withYear({}), fixedAssetNote: undefined, intangibleAssetNote: note });
+    expect(kept.errors).toEqual([]);
+    expect(kept.result.intangibleAssetNote).toEqual(note);
+    const refused = validate({ ...withYear({}), fixedAssetNote: undefined, intangibleAssetNote: { ...note, amortisationCharge: 1 } });
+    expect(refused.errors.join(" ")).toContain("intangibleAssetNote net book value");
+    const negative = validate({ ...withYear({}), fixedAssetNote: undefined, intangibleAssetNote: { ...note, additions: -1 } });
+    expect(negative.errors.join(" ")).toContain("intangibleAssetNote.additions must not be negative");
+    expect(validate(withYear({})).result).not.toHaveProperty("intangibleAssetNote");
+  });
+
+  test("the net assets check includes the new lines", () => {
+    const base = SMALL_COMPANY_CASE_INPUT.balanceSheet.current;
+    const { errors } = validate(withYear({ taxationSocialSecurity: 100 }));
+    expect(errors).toContain(
+      `smallCompany.balanceSheet.currentYear.capitalAndReserves does not equal net assets (${base.capitalAndReserves - 100})`,
+    );
+  });
+
+  test("keeps the policies as trimmed text and drops empty ones", () => {
+    const { result, errors } = validate(
+      sectionFrom(SMALL_COMPANY_CASE_INPUT, {
+        goingConcernStatement: " Going on. ",
+        impairmentPolicy: "  ",
+        leasesPolicy: " Leases are operating leases. ",
+        deferredTaxPolicy: " No deferred tax. ",
+        taxPolicy: "Tax.",
+        currentIncomeTaxPolicy: " Current. ",
+        dividendPolicy: " Dividends. ",
+      }),
+    );
+    expect(errors).toEqual([]);
+    expect(result.goingConcernStatement).toBe("Going on.");
+    expect(result.leasesPolicy).toBe("Leases are operating leases.");
+    expect(result.deferredTaxPolicy).toBe("No deferred tax.");
+    expect(result).not.toHaveProperty("impairmentPolicy");
+    expect(result.taxPolicy).toBe("Tax.");
+    expect(result.currentIncomeTaxPolicy).toBe("Current.");
+    expect(result.dividendPolicy).toBe("Dividends.");
+    expect(validate(sectionFrom(SMALL_COMPANY_CASE_INPUT, { revenueRecognitionPolicy: 5 })).errors).toContain(
+      "Invalid smallCompany.revenueRecognitionPolicy - must be text",
+    );
+  });
+
+  test("reads the controlling party and refuses a missing ultimate flag or an ultimate party without a name", () => {
+    const party = (controllingParty) => validate(sectionFrom(SMALL_COMPANY_CASE_INPUT, { controllingParty }));
+    expect(party({ ultimate: false }).result.controllingParty).toEqual({ ultimate: false });
+    expect(party({ name: "Pat Lee", ultimate: true }).result.controllingParty).toEqual({ name: "Pat Lee", ultimate: true });
+    expect(party({ name: "Pat Lee" }).errors).toContain("Invalid smallCompany.controllingParty.ultimate - must be true or false");
+    expect(party({ ultimate: true }).errors).toContain("Missing smallCompany.controllingParty.name");
+  });
+});

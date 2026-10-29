@@ -113,6 +113,7 @@ on:
       - 'app/services/**'
       - 'infra/main/**'
       - 'web/public/**'
+      - 'experiments.toml'
       - '.env.ci'
       - '.env.prod'
       - '**/cdk.json'
@@ -657,7 +658,7 @@ jobs:
       # keep the two lists in step.
       DEPLOY_PATHSPECS: >-
         :(glob)app/data/** :(glob)app/functions/** :(glob)app/lib/** :(glob)app/services/**
-        :(glob)infra/main/** :(glob)web/public/** .env.ci .env.prod :(glob)**/cdk.json
+        :(glob)infra/main/** :(glob)web/public/** experiments.toml .env.ci .env.prod :(glob)**/cdk.json
         Dockerfile LICENSE package.json package-lock.json pom.xml
         web/public/submit.catalogue.toml :(glob).github/actions/** .github/workflows/deploy.yml
         .github/workflows/deploy-cdk-stack.yml .github/workflows/destroy-prod.yml
@@ -1958,6 +1959,11 @@ jobs:
           COGNITO_CLIENT_ID: ${{ needs.names.outputs.cognito-client-id }}
           COGNITO_DIYA_GL_CLIENT_ID: ${{ needs.names.outputs.cognito-diya-gl-client-id }}
           COGNITO_MCP_CLIENT_ID: ${{ needs.names.outputs.cognito-mcp-client-id }}
+          # ApiStack builds its routes from the AccountStack's Lambda list, and AccountStack
+          # builds the support ticket Lambda only when the diya-ops GitHub App id is set, so this
+          # synth needs the same two values deploy-cdk-stack.yml gives AccountStack.
+          GITHUB_APP_ID: ${{ vars.OPS_APP_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.OPS_APP_INSTALLATION_ID }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-api.json | jq '.'
 
@@ -2221,6 +2227,10 @@ jobs:
           GOOGLE_DRIVE_CLIENT_ID=${GOOGLE_DRIVE_CLIENT_ID}
           GOOGLE_DRIVE_PICKER_API_KEY=${GOOGLE_DRIVE_PICKER_API_KEY:-${{ vars.GOOGLE_DRIVE_PICKER_API_KEY }}}
           EOF'
+
+      - name: Publish experiments.toml into the web root
+        shell: bash
+        run: node scripts/publish-experiments.mjs web/public
 
       - name: Compute hash of static website content
         id: publish-hash

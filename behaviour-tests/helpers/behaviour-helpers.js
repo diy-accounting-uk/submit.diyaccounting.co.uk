@@ -689,7 +689,8 @@ export async function findReaderViewDefects(page, options = {}) {
       const type = input.tagName === "INPUT" ? (input.getAttribute("type") || "text").toLowerCase() : input.tagName.toLowerCase();
       if (input.tagName === "INPUT" && !textInputTypes.has(type)) continue;
       if (isIgnored(input) || !isVisible(input)) continue;
-      const group = input.closest("form") || document.body;
+      // A control in a table is sized to its column, so it is measured against its own table.
+      const group = input.closest("table") || input.closest("form") || document.body;
       if (!groups.has(group)) groups.set(group, []);
       groups.get(group).push(input);
     }
@@ -698,7 +699,9 @@ export async function findReaderViewDefects(page, options = {}) {
       const widths = inputs.map((input) => input.offsetWidth).sort((a, b) => a - b);
       const median = widths[Math.floor(widths.length / 2)];
       for (const input of inputs) {
-        if (input.offsetWidth < median / 2) {
+        // A control that fills its own box (a ledger cell, one of a pair of dates) is styled, however narrow.
+        const box = input.parentElement ? input.parentElement.clientWidth : 0;
+        if (input.offsetWidth < median / 2 && input.offsetWidth < box / 2) {
           defects.push({
             rule: "unstyled-control",
             detail: `${describe(input)} is ${input.offsetWidth}px wide, the median control is ${median}px`,
@@ -755,6 +758,7 @@ export function timestamp() {
  * @param {string} hmrcClientSecret - HMRC application client secret
  * @param {Object} options - Additional options
  * @param {string[]} options.serviceNames - Service names to enroll (default: ["mtd-vat"])
+ * @param {"organisations"|"agents"} [options.userKind] - the kind of test user HMRC creates (default: "organisations")
  * @param {string} [options.scope] - Optional OAuth2 scope for the client credentials request
  * @returns {Promise<Object>} Test user details including userId, password, and vrn (and nino
  *   when serviceNames includes "mtd-income-tax")
@@ -763,7 +767,7 @@ export async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options
   const serviceNames = options.serviceNames || ["mtd-vat"];
   // Use HMRC_SANDBOX_BASE_URI if set (e.g., in simulator mode), otherwise fall back to real HMRC
   const baseUrl = process.env.HMRC_SANDBOX_BASE_URI || "https://test-api.service.hmrc.gov.uk";
-  const endpoint = "/create-test-user/organisations";
+  const endpoint = `/create-test-user/${options.userKind || "organisations"}`;
   const url = `${baseUrl}${endpoint}`;
   const tokenUrl = `${baseUrl}/oauth/token`;
 
@@ -990,6 +994,22 @@ export async function createHmrcTestUser(hmrcClientId, hmrcClientSecret, options
       throw error;
     }
   }
+}
+
+/**
+ * Create an HMRC sandbox test agent (service `agent-services`). Its `arn` is the agent services
+ * account number a practice test sends as its agent reference number.
+ *
+ * @param {string} hmrcClientId
+ * @param {string} hmrcClientSecret
+ * @returns {Promise<Object>} the test agent: userId, password and arn
+ */
+export async function createHmrcTestAgent(hmrcClientId, hmrcClientSecret) {
+  const agent = await createHmrcTestUser(hmrcClientId, hmrcClientSecret, { userKind: "agents", serviceNames: ["agent-services"] });
+  if (!agent.agentServicesAccountNumber) {
+    throw new Error("HMRC created a test agent without an agentServicesAccountNumber");
+  }
+  return { ...agent, arn: agent.agentServicesAccountNumber };
 }
 
 /**

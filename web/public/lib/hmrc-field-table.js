@@ -170,6 +170,34 @@
     "netLoss": SUMMARY_TOTALS.netLoss,
   };
 
+  // Keyed by the field's path under one entry of the adjustable summary (a country, or a property
+  // from 2026-27) and under the summary as a whole. An optional field shows only when HMRC returned
+  // it, so an entry lists the figures it holds, not every figure the summary could hold.
+  const FOREIGN_PROPERTY_SUMMARY_FIELDS = {
+    "totalIncome": SUMMARY_TOTALS.totalIncome,
+    "income.totalRentsReceived": UK_PROPERTY_SUMMARY_FIELDS["income.totalRentsReceived"],
+    "income.premiumsOfLeaseGrant": { label: "Premiums for the grant of a lease", optional: true },
+    "income.otherPropertyIncome": { ...UK_PROPERTY_SUMMARY_FIELDS["income.otherPropertyIncome"], optional: true },
+    "totalExpenses": { ...SUMMARY_TOTALS.totalExpenses, optional: true },
+    "expenses.consolidatedExpenses": { label: "Expenses entered as one total", optional: true },
+    "expenses.premisesRunningCosts": { label: "Rent, rates, insurance and ground rents", optional: true },
+    "expenses.repairsAndMaintenance": { label: "Repairs and maintenance", optional: true },
+    "expenses.financialCosts": { label: "Loan interest and other financial costs", optional: true },
+    "expenses.professionalFees": { label: "Legal, management and other professional fees", optional: true },
+    "expenses.costOfServices": { label: "Costs of services provided, including wages", optional: true },
+    "expenses.travelCosts": { label: "Travel costs", optional: true },
+    "expenses.other": { label: "Other property expenses", optional: true },
+    "expenses.residentialFinancialCost": { label: "Residential property finance costs", optional: true },
+    "totalDeductions": { ...SUMMARY_TOTALS.totalDeductions, optional: true },
+    "deductions.costOfReplacingDomesticItems": { ...UK_PROPERTY_SUMMARY_FIELDS["deductions.costOfReplacingDomesticItems"], optional: true },
+    "deductions.otherCapitalAllowance": { label: "Other capital allowance", optional: true },
+    "deductions.zeroEmissionsCarAllowance": { label: "Zero emissions car allowance", optional: true },
+    "deductions.propertyAllowance": { label: "Property income allowance", optional: true },
+    "netProfit": SUMMARY_TOTALS.netProfit,
+    "netLoss": SUMMARY_TOTALS.netLoss,
+    "taxableProfit": { label: "Taxable profit", optional: true },
+  };
+
   // The nine boxes of a VAT Return, keyed by HMRC's VAT API field name. Each definition quotes
   // the box's own section of VAT Notice 700/12.
   const VAT_RETURN_BOXES = [
@@ -352,6 +380,15 @@
     return summaryRows(summaryCalculation, UK_PROPERTY_SUMMARY_FIELDS);
   }
 
+  // One entry of a foreign property summary (or the summary as a whole): the catalogued figures
+  // HMRC returned, with the totals and the profit or loss always shown.
+  function foreignPropertySummaryRows(summaryCalculation) {
+    const data = summaryCalculation || {};
+    return summaryRows(summaryCalculation, FOREIGN_PROPERTY_SUMMARY_FIELDS).filter(
+      (row) => !FOREIGN_PROPERTY_SUMMARY_FIELDS[row.field].optional || isAmount(valueAt(data, row.field)),
+    );
+  }
+
   function sourceLink(sourceKey, { anchor, text } = {}) {
     const source = SOURCES[sourceKey];
     const href = anchor ? `${source.url}#${anchor}` : source.url;
@@ -452,6 +489,7 @@
     ALLOWANCE_FIELDS,
     SELF_EMPLOYMENT_SUMMARY_FIELDS,
     UK_PROPERTY_SUMMARY_FIELDS,
+    FOREIGN_PROPERTY_SUMMARY_FIELDS,
     TAX_CALCULATION_FIELDS,
     escapeHtml,
     formatIsoDate,
@@ -460,6 +498,7 @@
     taxCalculationRows,
     selfEmploymentSummaryRows,
     ukPropertySummaryRows,
+    foreignPropertySummaryRows,
     sourceLink,
     renderFieldTable,
     mountFieldTable,

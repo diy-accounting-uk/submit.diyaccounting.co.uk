@@ -611,6 +611,16 @@ export const OBJECTIVE_DEFINITIONS = [
     name: "Company accounts",
     observations: [
       {
+        id: "company-cash-at-bank",
+        label: "Cash at bank",
+        unit: "gbp",
+        view: "company_accounts",
+        dayColumn: "dt",
+        valueExpr: "cashatbank",
+        aggregation: "latest",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
         id: "company-turnover",
         label: "Turnover",
         unit: "gbp",
@@ -722,6 +732,111 @@ export const OBJECTIVE_DEFINITIONS = [
   },
 ];
 
+// Which way a figure should move for the business: "up" when a rise is good, "down" when a
+// fall is good. An observation not listed has no preferred direction and its trend is not
+// coloured. Every activity's started and completed pair counts as "up".
+const BETTER_UP_IDS = [
+  "probe-pass-rate",
+  "error-budget-remaining-runs",
+  "deploy-frequency",
+  "agent-posted-rate",
+  "agent-pr-accepted-rate",
+  "login-to-submission-conversion",
+  "completions-by-activity",
+  "new-accounts",
+  "sessions-by-channel",
+  "sessions-human",
+  "revenue-gbp",
+  "revenue-donations-gbp",
+  "donations-count",
+  "revenue-paypal-donations-gbp",
+  "paypal-donations-count",
+  "revenue-subscriptions-gbp",
+  "passes-issued",
+  "passes-redeemed",
+  "paid-landings",
+  "returning-submitters",
+  "subscription-renewals",
+  "company-turnover",
+  "company-profit",
+];
+const BETTER_DOWN_IDS = [
+  "alarms-fired",
+  "deploy-failure-rate",
+  "agent-median-hours-to-close",
+  "monthly-cost-usd",
+  "cost-variance-vs-target-usd",
+  "cost-per-completion-usd",
+  "ads-cost-gbp",
+  "ads-cost-per-paid-landing-gbp",
+  "security-hub-open-findings",
+  "security-hub-critical-findings",
+  "guardduty-open-findings",
+  "github-open-alerts",
+  "subscription-cancellations",
+  "operator-interventions-total",
+  "operator-manual-dispatches",
+  "operator-authored-commits",
+  "accessibility-open-findings",
+  "fraud-header-open-findings",
+  "company-costs",
+];
+
+export function betterDirection(observationId) {
+  if (observationId.includes("::") || BETTER_UP_IDS.includes(observationId)) return "up";
+  if (BETTER_DOWN_IDS.includes(observationId)) return "down";
+  return null;
+}
+
+const PERIOD_NAME_BY_DAY_COLUMN = { month: "months", quarter: "quarters" };
+
+// How a window's figure is built from the days, months or quarters inside it.
+export function measureDescription(observation) {
+  const periods = PERIOD_NAME_BY_DAY_COLUMN[observation.dayColumn] ?? "days";
+  if (observation.aggregation === "sum") return `total of the ${periods}`;
+  if (observation.aggregation === "avg") return `average of the ${periods}`;
+  if (observation.aggregation === "max") return "highest in the window";
+  if (observation.aggregation === "latest") return "latest day in the window";
+  return "count of rows";
+}
+
+// What each objective measures (its SLI), the target where one is set, and what moves it.
+export const OBJECTIVE_GUIDANCE = {
+  "uptime": {
+    sli: "Share of synthetic probe runs that pass.",
+    levers: "Fix the failing probe, add capacity to the slow dependency, roll back a bad deploy.",
+  },
+  "conversion-to-submission": {
+    sli: "Share of signed-in visitors who go on to submit.",
+    levers: "Sign-in friction, the first screen after sign-in, guide and video content, search and ad landing pages.",
+  },
+  "conversion-to-paid": {
+    sli: "Revenue and paid conversions from donations, subscriptions and passes.",
+    levers: "Price, the bundle page, the donation prompt after a submission, pass campaigns.",
+  },
+  "low-running-cost": {
+    sli: "AWS spend per month and per completed submission, and paid-advertising spend per landing.",
+    target: "AWS spend of $64.77 a month.",
+    levers: "Retire idle stacks, shorten log retention, cut provisioned concurrency, set the ads daily budget.",
+  },
+  "security": {
+    sli: "Open findings in Security Hub, GuardDuty and GitHub.",
+    levers: "Patch the dependency or fix the configuration each finding names.",
+  },
+  "retention": {
+    sli: "Customers who submit again, renew, or cancel.",
+    levers: "Reminders before each deadline, renewal prompts, cancellation follow-up.",
+  },
+  "operator-effort": {
+    sli: "Hand-run workflows and operator-authored commits.",
+    levers: "Automate the repeated hand-run workflow; move the commit to a sub-agent.",
+  },
+  "compliance": {
+    sli: "Open accessibility and fraud-prevention header findings.",
+    levers: "Fix the finding the compliance workflow reports.",
+  },
+};
+
 let cachedAthenaClient = null;
 let cachedS3Client = null;
 
@@ -766,18 +881,34 @@ export async function pollUntilTerminal(athenaClient, queryExecutionId) {
   throw new Error(`Athena query ${queryExecutionId} did not reach a terminal state after ${maxAttempts} polls`);
 }
 
+function recordOf(header, row) {
+  const record = {};
+  header.forEach((columnName, index) => {
+    record[columnName] = row.Data?.[index]?.VarCharValue ?? null;
+  });
+  return record;
+}
+
 export function parseResultSet(resultSet) {
   const rows = resultSet?.Rows ?? [];
   if (rows.length === 0) return [];
 
   const header = rows[0].Data.map((cell) => cell.VarCharValue);
-  return rows.slice(1).map((row) => {
-    const record = {};
-    header.forEach((columnName, index) => {
-      record[columnName] = row.Data?.[index]?.VarCharValue ?? null;
-    });
-    return record;
-  });
+  return rows.slice(1).map((row) => recordOf(header, row));
+}
+
+// Athena returns up to 1000 rows a page and only the first page carries the header row.
+async function readAllResultPages(athenaClient, queryExecutionId) {
+  const first = await athenaClient.send(new GetQueryResultsCommand({ QueryExecutionId: queryExecutionId }));
+  const records = parseResultSet(first.ResultSet);
+  const header = (first.ResultSet?.Rows?.[0]?.Data ?? []).map((cell) => cell.VarCharValue);
+  let nextToken = first.NextToken;
+  while (nextToken) {
+    const page = await athenaClient.send(new GetQueryResultsCommand({ QueryExecutionId: queryExecutionId, NextToken: nextToken }));
+    records.push(...(page.ResultSet?.Rows ?? []).map((row) => recordOf(header, row)));
+    nextToken = page.NextToken;
+  }
+  return records;
 }
 
 // Athena marks HIVE_S3_THROTTLING as not retryable, but it is S3 refusing the listing rate of
@@ -811,8 +942,7 @@ export async function runAthenaQuery({ workGroup, database, sql }) {
       throw error;
     }
 
-    const { ResultSet } = await athenaClient.send(new GetQueryResultsCommand({ QueryExecutionId }));
-    return parseResultSet(ResultSet);
+    return readAllResultPages(athenaClient, QueryExecutionId);
   }
 }
 
@@ -859,8 +989,12 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
   const columns = observations.flatMap(({ valueExpr, aggregation, where, reportDataSince }, index) => {
     const prefix = observationColumnPrefix(index);
     const filter = caseFilter(where);
-    const windowColumns = WINDOWED_COLUMNS.map(
-      ([alias, condition]) => `${aggregation}(CASE WHEN ${condition(dayColumn)}${filter} THEN ${valueExpr} END) AS ${prefix}${alias}`,
+    // "latest" reads the value on the newest day inside the window, for a balance that a
+    // sum, average or highest-day figure would misstate.
+    const windowColumns = WINDOWED_COLUMNS.map(([alias, condition]) =>
+      aggregation === "latest"
+        ? `max_by(${valueExpr}, ${dayColumn}) FILTER (WHERE ${condition(dayColumn)}${filter}) AS ${prefix}${alias}`
+        : `${aggregation}(CASE WHEN ${condition(dayColumn)}${filter} THEN ${valueExpr} END) AS ${prefix}${alias}`,
     );
     if (reportDataSince) {
       const earliest = where ? `min(CASE WHEN ${where} THEN ${dayColumn} END)` : `min(${dayColumn})`;
@@ -1091,6 +1225,9 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
         last30: windows.last30,
         last90: windows.last90,
         deepLink: observation.deepLink(context),
+        source: observation.view,
+        measure: measureDescription(observation),
+        better: betterDirection(observation.id),
         ...(fast.resultsById.get(observation.id) ?? {}),
       };
       if (windows.dataSince) {
@@ -1098,7 +1235,7 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
       }
       return observationResult;
     });
-    return { id: objective.id, name: objective.name, observations };
+    return { id: objective.id, name: objective.name, ...OBJECTIVE_GUIDANCE[objective.id], observations };
   });
 
   return {
@@ -1108,6 +1245,330 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
     ...(fastWindowOnly ? {} : { reinvestment: buildReinvestment(objectives) }),
     failedObservationCount: failedIds.size,
   };
+}
+
+// ---------------------------------------------------------------------------------------------
+// Daily charts: one chart per objective the dashboard draws over the last 90 days, one point per
+// day, a line per component and (where the parts add up) a total line. Each chart mode runs one
+// query that answers long-form rows: day, component, value. Retention reads
+// v_returning_submitters_rolling_daily because its quarterly source has no daily grain: the
+// daily measure is the customers who submitted in the 90 days up to each day.
+// ---------------------------------------------------------------------------------------------
+
+export const DAILY_CHART_DAYS = 90;
+
+const dailyWindowFilter = (dayColumn) => `${dayColumn} > date_add('day', -${DAILY_CHART_DAYS}, current_date)`;
+
+const VISITOR_KIND_LABELS = {
+  "human": "Human",
+  "operator": "Operator",
+  "bot": "Bot",
+  "synthetic": "Synthetic",
+  "(unclassified)": "Unclassified",
+};
+
+function activityLabels() {
+  const catalog = loadCatalogFromRoot();
+  return Object.fromEntries((catalog.activities || []).map((activity) => [activity.id, activity.name]));
+}
+
+function longFormSql({ dayExpression, componentExpression, valueExpression, view, dayColumn, where }) {
+  const conditions = [dailyWindowFilter(dayColumn), ...(where ? [where] : [])].join(" AND ");
+  return (
+    `SELECT cast(${dayExpression} AS varchar) AS day, ${componentExpression} AS component, ` +
+    `cast(sum(${valueExpression}) AS double) AS value\n` +
+    `FROM   ${view}\nWHERE  ${conditions}\nGROUP  BY 1, 2`
+  );
+}
+
+const STRIPE_DONATION_COMPONENT_CASE =
+  `CASE WHEN ${STRIPE_DONATION_PRODUCT_FILTER} THEN 'stripe-donations' ` +
+  `WHEN ${PAYPAL_DONATION_PRODUCT_FILTER} THEN 'paypal-donations' ` +
+  `WHEN product LIKE 'paypal-%' THEN 'paypal-other' ELSE 'subscriptions' END`;
+
+/**
+ * The charts the dashboard draws. A mode is one set of lines; a chart with two modes (activities:
+ * started and completed) shows one at a time. `total` names the sum-of-components line, or is
+ * null where the components are steps or measures that do not add up. `maxComponents` folds the
+ * smallest components into "Other".
+ */
+export function buildDailyChartDefinitions() {
+  const labels = activityLabels();
+  return [
+    {
+      id: "activity-started-and-completed",
+      objectiveId: "activity-started-and-completed",
+      title: "Activity started and completed",
+      unit: "count",
+      modes: [
+        {
+          id: "started",
+          label: "Started",
+          total: "All activities",
+          labelOf: (id) => labels[id] ?? id,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "activity",
+            valueExpression: "starts",
+            view: "v_activity_started_daily",
+            dayColumn: "day",
+          }),
+        },
+        {
+          id: "completed",
+          label: "Completed",
+          total: "All activities",
+          labelOf: (id) => labels[id] ?? id,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "activity",
+            valueExpression: "completions",
+            view: "v_submissions_by_activity_daily",
+            dayColumn: "day",
+          }),
+        },
+      ],
+    },
+    {
+      id: "conversion-to-submission",
+      objectiveId: "conversion-to-submission",
+      title: "Conversion to submission",
+      unit: "count",
+      note: "Steps, left to right: human sessions, customers active that day, those who submitted within 7 days. The last few days have not had their 7 days yet.",
+      modes: [
+        {
+          id: "funnel",
+          label: "Funnel",
+          total: null,
+          componentOrder: ["human-sessions", "active-customers", "submitted-within-7-days"],
+          labelOf: (id) =>
+            ({
+              "human-sessions": "Human sessions",
+              "active-customers": "Active customers",
+              "submitted-within-7-days": "Submitted within 7 days",
+            })[id] ?? id,
+          sql:
+            `SELECT cast(day AS varchar) AS day, 'human-sessions' AS component, cast(sum(sessions) AS double) AS value\n` +
+            `FROM   v_visitors_by_kind_daily\nWHERE  ${dailyWindowFilter("day")} AND visitor_kind = 'human'\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(cohort_day AS varchar), 'active-customers', cast(sum(logged_in) AS double)\n` +
+            `FROM   v_login_to_submission_funnel\nWHERE  ${dailyWindowFilter("cohort_day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(cohort_day AS varchar), 'submitted-within-7-days', cast(sum(submitted_within_7d) AS double)\n` +
+            `FROM   v_login_to_submission_funnel\nWHERE  ${dailyWindowFilter("cohort_day")}\nGROUP  BY 1`,
+        },
+      ],
+    },
+    {
+      id: "conversion-to-paid",
+      objectiveId: "conversion-to-paid",
+      title: "Conversion to paid",
+      unit: "gbp",
+      modes: [
+        {
+          id: "revenue",
+          label: "Revenue",
+          total: "All revenue",
+          labelOf: (id) =>
+            ({
+              "subscriptions": "Subscriptions",
+              "stripe-donations": "Stripe donations",
+              "paypal-donations": "PayPal donations",
+              "paypal-other": "Other PayPal receipts",
+            })[id] ?? id,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: STRIPE_DONATION_COMPONENT_CASE,
+            valueExpression: "revenue_gbp",
+            view: "v_revenue_daily",
+            dayColumn: "day",
+          }),
+        },
+      ],
+    },
+    {
+      id: "low-running-cost",
+      objectiveId: "low-running-cost",
+      title: "Low running cost",
+      unit: "usd",
+      note: "AWS cost across every account in the organisation, by service.",
+      modes: [
+        {
+          id: "cost",
+          label: "Cost",
+          total: "All services",
+          maxComponents: 6,
+          labelOf: (id) => id,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "service_name",
+            valueExpression: "billed_cost_usd",
+            view: "v_cost_daily",
+            dayColumn: "day",
+          }),
+        },
+      ],
+    },
+    {
+      id: "retention",
+      objectiveId: "retention",
+      title: "Retention",
+      unit: "count",
+      note: "Submitters and returning submitters cover the 90 days up to each day; a returning submitter also submitted in the 90 days before that.",
+      modes: [
+        {
+          id: "retention",
+          label: "Retention",
+          total: null,
+          componentOrder: ["submitters-90d", "returning-submitters-90d", "renewals", "cancellations"],
+          labelOf: (id) =>
+            ({
+              "submitters-90d": "Submitters, 90 days to this day",
+              "returning-submitters-90d": "Returning submitters, 90 days to this day",
+              "renewals": "Subscription renewals",
+              "cancellations": "Subscription cancellations",
+            })[id] ?? id,
+          sql:
+            `SELECT cast(day AS varchar) AS day, 'submitters-90d' AS component, cast(sum(submitters_90d) AS double) AS value\n` +
+            `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'returning-submitters-90d', cast(sum(returning_submitters_90d) AS double)\n` +
+            `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'renewals', cast(sum(renewals) AS double)\n` +
+            `FROM   v_subscription_renewals_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'cancellations', cast(sum(cancellations) AS double)\n` +
+            `FROM   v_subscription_cancellations_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
+        },
+      ],
+    },
+    {
+      id: "visitors",
+      objectiveId: "conversion-to-submission",
+      title: "Visitors",
+      unit: "count",
+      modes: [
+        {
+          id: "sessions",
+          label: "Sessions",
+          total: "All visitors",
+          labelOf: (id) => VISITOR_KIND_LABELS[id] ?? id,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "visitor_kind",
+            valueExpression: "sessions",
+            view: "v_visitors_by_kind_daily",
+            dayColumn: "day",
+          }),
+        },
+      ],
+    },
+  ];
+}
+
+/**
+ * The last `count` UTC calendar days ending on `endDay` (an ISO date), oldest first. Athena's
+ * current_date is UTC, so these are the days its `day > date_add('day', -90, current_date)`
+ * filter returns.
+ */
+export function dailyChartDays(endDay, count = DAILY_CHART_DAYS) {
+  const end = new Date(`${endDay}T00:00:00.000Z`);
+  return Array.from({ length: count }, (_, index) => {
+    const day = new Date(end);
+    day.setUTCDate(end.getUTCDate() - (count - 1 - index));
+    return day.toISOString().slice(0, 10);
+  });
+}
+
+/**
+ * Turns long-form rows (day, component, value) into one series per component with a value for
+ * every day (zero where the query returned nothing), ordered by `componentOrder` or by the
+ * window total, largest first; optionally folds the smallest into "Other"; and adds the total
+ * line when the mode names one.
+ */
+export function buildChartSeries({ days, rows, mode }) {
+  const dayIndex = new Map(days.map((day, index) => [day, index]));
+  const valuesByComponent = new Map();
+  for (const row of rows) {
+    const index = dayIndex.get(row.day);
+    if (index === undefined || row.component === null || row.component === undefined) continue;
+    if (!valuesByComponent.has(row.component)) valuesByComponent.set(row.component, new Array(days.length).fill(0));
+    valuesByComponent.get(row.component)[index] += Number(row.value ?? 0);
+  }
+
+  const sum = (values) => values.reduce((total, value) => total + value, 0);
+  let components = [...valuesByComponent.entries()].map(([id, values]) => ({ id, label: mode.labelOf(id), values }));
+  if (mode.componentOrder) {
+    components = mode.componentOrder.map(
+      (id) =>
+        components.find((component) => component.id === id) ?? { id, label: mode.labelOf(id), values: new Array(days.length).fill(0) },
+    );
+  } else {
+    components.sort((a, b) => sum(b.values) - sum(a.values) || a.label.localeCompare(b.label));
+  }
+  if (mode.maxComponents && components.length > mode.maxComponents) {
+    const kept = components.slice(0, mode.maxComponents);
+    const folded = components.slice(mode.maxComponents);
+    kept.push({ id: "other", label: "Other", values: days.map((_, index) => sum(folded.map((component) => component.values[index]))) });
+    components = kept;
+  }
+
+  const series = components.map((component) => ({ ...component, values: component.values.map((value) => Math.round(value * 100) / 100) }));
+  if (mode.total) {
+    series.unshift({
+      id: "total",
+      label: mode.total,
+      isTotal: true,
+      values: days.map((_, index) => Math.round(sum(components.map((component) => component.values[index])) * 100) / 100),
+    });
+  }
+  return series;
+}
+
+/**
+ * Runs each chart mode's query and assembles the daily charts for the snapshot. A mode whose
+ * query fails leaves its chart out and is returned in `failedChartIds`, so one missing view does
+ * not stop the other charts publishing.
+ *
+ * @returns {Promise<{dailyCharts: {days: string[], charts: object[]}, failedChartIds: string[]}>}
+ */
+export async function buildDailyCharts({ workGroup, database, endDay = new Date().toISOString().slice(0, 10) }) {
+  const days = dailyChartDays(endDay);
+  const definitions = buildDailyChartDefinitions();
+  const failedChartIds = new Set();
+
+  const modeResults = await mapInOrderWithConcurrency(
+    definitions.flatMap((definition) => definition.modes.map((mode) => ({ definition, mode }))),
+    OBSERVATION_QUERY_CONCURRENCY,
+    async ({ definition, mode }) => {
+      try {
+        const rows = await runAthenaQuery({ workGroup, database, sql: mode.sql });
+        return { chartId: definition.id, mode: { id: mode.id, label: mode.label, series: buildChartSeries({ days, rows, mode }) } };
+      } catch (error) {
+        failedChartIds.add(definition.id);
+        logger.warn({
+          message: "Daily chart query failed, publishing no chart for it",
+          chartId: definition.id,
+          mode: mode.id,
+          error: error.message,
+        });
+        return null;
+      }
+    },
+  );
+
+  const charts = definitions
+    .filter((definition) => !failedChartIds.has(definition.id))
+    .map(({ id, objectiveId, title, unit, note }) => ({
+      id,
+      objectiveId,
+      title,
+      unit,
+      ...(note ? { note } : {}),
+      modes: modeResults.filter((result) => result && result.chartId === id).map((result) => result.mode),
+    }));
+  return { dailyCharts: { days, charts }, failedChartIds: [...failedChartIds] };
 }
 
 /**
@@ -1207,6 +1668,8 @@ export async function handler(event) {
   let snapshot;
   if (mode === "full") {
     snapshot = await buildSnapshot({ workGroup, database, context });
+    const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup, database });
+    snapshot = { ...snapshot, dailyCharts, failedObservationCount: snapshot.failedObservationCount + failedChartIds.length };
   } else {
     const existing = await readLatestSnapshot();
     if (!existing) {

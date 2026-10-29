@@ -139,4 +139,40 @@ test.describe("VAT submission OAuth callback error persistence", () => {
     await page.waitForURL("**/hmrc/vat/submitVat.html", { timeout: 5000 });
     expect(page.url()).toContain("submitVat.html");
   });
+
+  const GRANT_ID = "0a1b2c3d-0a1b-4a1b-8a1b-0a1b2c3d4e5f";
+  const MCP_STATE = `mcp.${GRANT_ID}.secret`;
+
+  test("returns a practice's agent grant to the practice page with the connected message", async ({ page }) => {
+    await page.addInitScript((grantId) => sessionStorage.setItem("practiceHmrcGrantId", grantId), GRANT_ID);
+    await setupRoutes(page);
+    await page.route("**/api/v1/mcp/hmrc-grants/callback", async (route) => {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ state: "granted" }) });
+    });
+    await page.route("**/practice.html", async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>practice</title>" });
+    });
+
+    await page.goto(`http://localhost:3000/activities/submitVatCallback.html?code=test-code&state=${MCP_STATE}`, {
+      waitUntil: "domcontentloaded",
+    });
+
+    await expect(page.locator(".status-message")).toContainText("Connected to HMRC as an agent.");
+    await page.waitForURL("**/practice.html", { timeout: 5000 });
+  });
+
+  test("keeps the chat message for an MCP grant the practice page did not start", async ({ page }) => {
+    await setupRoutes(page);
+    await page.route("**/api/v1/mcp/hmrc-grants/callback", async (route) => {
+      await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ state: "granted" }) });
+    });
+
+    await page.goto(`http://localhost:3000/activities/submitVatCallback.html?code=test-code&state=${MCP_STATE}`, {
+      waitUntil: "domcontentloaded",
+    });
+
+    await expect(page.locator(".status-message")).toContainText("HMRC access granted. Go back to your chat to carry on.");
+    await delay(1800);
+    expect(page.url()).toContain("submitVatCallback.html");
+  });
 });

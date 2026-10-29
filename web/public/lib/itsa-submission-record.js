@@ -48,12 +48,28 @@ const FIELD_LABELS = {
   "zeroEmissionsCarAllowance": "Zero emissions car allowance",
   "otherCapitalAllowance": "Other capital allowance",
   "costOfReplacingDomesticItems": "Cost of replacing domestic items",
+  "zeroEmissionsGoodsVehicleAllowance": "Zero emissions goods vehicle allowance",
+  "electricChargePointAllowance": "Electric charge point allowance",
+  "periodOfGraceAdjustment": "Period of grace adjustment",
+  "structuredBuildingAllowance": "Structures and Buildings Allowance",
+  "enhancedStructuredBuildingAllowance": "Freeport Structures and Buildings Allowance",
+  "firstYear: qualifyingDate": "Date the building first qualified",
+  "firstYear: qualifyingAmountExpenditure": "Qualifying expenditure",
   // Non-financial details
   "class4NicsExemptionReason": "Class 4 National Insurance exemption reason",
   // Period income
   "turnover": "Turnover",
   "periodAmount": "Rental income",
   "otherIncome": "Other property income",
+  // Foreign property period income
+  "rentIncome: rentAmount": "Rental income",
+  "rentAmount": "Rental income",
+  "otherPropertyIncome": "Other property income",
+  "premiumsOfLeaseGrant": "Premiums for the grant of a lease",
+  "foreignTaxPaidOrDeducted": "Foreign tax taken off or paid",
+  "specialWithholdingTaxOrUkTaxPaid": "UK tax taken off",
+  "foreignTaxCreditRelief": "Claim foreign tax credit relief",
+  "broughtFwdResidentialFinancialCost": "Unused residential finance costs brought forward",
   // Period expenses
   "consolidatedExpenses": "Total expenses",
   "costOfGoods": "Cost of goods",
@@ -91,6 +107,9 @@ const FIELD_LABELS = {
   "carryBackLossesDecrease: class4": "Class 4 National Insurance decreased",
   "carryBackLossesDecrease: capitalGainsTax": "Capital gains tax decreased",
 };
+
+// The building a Structures and Buildings Allowance claim names: text, not a figure.
+const BUILDING_TEXT_KEYS = ["name", "number", "postcode"];
 
 const CLAIM_ORDER_LABELS = {
   "carry-sideways": "Carry sideways first",
@@ -164,6 +183,9 @@ function collectEntries(group, path = []) {
   return Object.entries(group).flatMap(([key, value]) => {
     if (value === undefined) return [];
     if (isRecordObject(value)) return collectEntries(value, [...path, key]);
+    if (Array.isArray(value) && value.length > 0 && value.every(isRecordObject)) {
+      return value.flatMap((item, index) => collectEntries(item, [...path, key, `Claim ${index + 1}`]));
+    }
     return [{ path: [...path, key], value }];
   });
 }
@@ -182,6 +204,7 @@ function valueCell(entry) {
   }
   if (leaf === "applyFirst" && nonEmptyText(value)) return textCell(CLAIM_ORDER_LABELS[value.trim()] || humanise(value));
   if (typeof value === "string" && formatLongDate(value)) return textCell(formatLongDate(value));
+  if (BUILDING_TEXT_KEYS.includes(leaf) && nonEmptyText(value)) return textCell(value.trim());
   return textCell(ABSENT);
 }
 
@@ -210,6 +233,47 @@ function referenceLines({ nino, businessId, correlationId }) {
   return lines;
 }
 
+// One adjustments table and one allowances table for each entry of a foreign property annual
+// submission: the EEA furnished holiday lettings (2024-25 and before) and each country or property.
+function foreignAnnualSections(entries, columnHeading, recordHead) {
+  if (entries.length === 0) {
+    return [
+      {
+        heading: "Adjustments and allowances",
+        explanation: "These are the adjustments and allowances you sent.",
+        recordHtml: `${recordHead}<p class="no-data">You sent no adjustments or allowances for this year.</p>`,
+      },
+    ];
+  }
+  const table = (group, idPrefix, none) => {
+    const rows = collectEntries(group);
+    return rows.length > 0 ? entriesTable(columnHeading, rows, idPrefix) : `<p class="no-data">${escapeRecordText(none)}</p>`;
+  };
+  return entries.flatMap((entry, index) => {
+    const name = entry.name;
+    return [
+      {
+        heading: `${name}: adjustments`,
+        explanation:
+          index === 0
+            ? "These are the adjustments to the year's profit that you sent, one table for each country or property. A figure you left at 0 was not sent, so it does not appear."
+            : "",
+        recordHtml:
+          (index === 0 ? recordHead : "") +
+          table(entry.adjustments, `annual-${entry.id}-adjustments`, `You sent no adjustments for ${name}.`),
+      },
+      {
+        heading: `${name}: allowances`,
+        explanation:
+          index === 0
+            ? "These are the allowances you claimed for the year. HMRC accepts the property income allowance or the itemised allowances, but not both."
+            : "",
+        recordHtml: table(entry.allowances, `annual-${entry.id}-allowances`, `You sent no allowances for ${name}.`),
+      },
+    ];
+  });
+}
+
 /**
  * The customer copy of an annual submission as saved: the adjustments, allowances and other
  * details that were sent, the business and the date HMRC accepted them. HMRC answers a save
@@ -217,13 +281,14 @@ function referenceLines({ nino, businessId, correlationId }) {
  * when it sent one, is the second reference line.
  *
  * @param {object} input
- * @param {"self-employment"|"uk-property"} input.kind
+ * @param {"self-employment"|"uk-property"|"foreign-property"} input.kind
  * @param {string} [input.nino]
  * @param {string} [input.businessId]
  * @param {string} [input.taxYear] - e.g. "2024-25"
  * @param {string} [input.savedAt] - ISO timestamp of the save
  * @param {string|null} [input.correlationId] - HMRC's X-CorrelationId for the save
- * @param {{adjustments?: object, allowances?: object, nonFinancials?: object}} [input.sent]
+ * @param {{adjustments?: object, allowances?: object, nonFinancials?: object, entries?: {id: string, name: string, adjustments?: object, allowances?: object}[]}} [input.sent]
+ *   a foreign property submission sends entries: one for each country, property or EEA furnished holiday letting section
  * @param {{href: string, text: string}[]} [input.links]
  * @returns {string}
  */
@@ -241,18 +306,22 @@ export function annualCopyHtml({ kind, nino, businessId, taxYear, savedAt, corre
     subtitleHtml: escapeRecordText(saved ? `Saved with HMRC on ${saved}` : "Saved with HMRC"),
   });
 
-  const sections = ANNUAL_SECTIONS.map((section, index) => {
-    const entries = collectEntries(groups[section.key]);
-    const body =
-      entries.length > 0
-        ? entriesTable(columnHeading, entries, `annual-${section.key}`)
-        : `<p class="no-data">You sent no ${section.heading.toLowerCase()} for this year.</p>`;
-    return {
-      heading: section.heading,
-      explanation: section.explanation,
-      recordHtml: (index === 0 ? recordHead : "") + body,
-    };
-  });
+  const foreignEntries = Array.isArray(groups.entries) ? groups.entries : [];
+  const sections =
+    kind === "foreign-property"
+      ? foreignAnnualSections(foreignEntries, columnHeading, recordHead)
+      : ANNUAL_SECTIONS.map((section, index) => {
+          const entries = collectEntries(groups[section.key]);
+          const body =
+            entries.length > 0
+              ? entriesTable(columnHeading, entries, `annual-${section.key}`)
+              : `<p class="no-data">You sent no ${section.heading.toLowerCase()} for this year.</p>`;
+          return {
+            heading: section.heading,
+            explanation: section.explanation,
+            recordHtml: (index === 0 ? recordHead : "") + body,
+          };
+        });
 
   return customerCopyHtml({
     title: year
@@ -299,16 +368,79 @@ const INCOME_LABEL_OVERRIDES = {
   "uk-property": {},
 };
 
+const PROPERTY_EXPENSE_LABELS = {
+  premisesRunningCosts: "Rent, rates, insurance and ground rent",
+  financialCosts: "Loan interest and other financial costs",
+  professionalFees: "Legal, management and other professional fees",
+  costOfServices: "Costs of services provided, including wages",
+  other: "Other property expenses",
+};
+
 const EXPENSE_LABEL_OVERRIDES = {
-  "uk-property": {
-    premisesRunningCosts: "Rent, rates, insurance and ground rent",
-    financialCosts: "Loan interest and other financial costs",
-    professionalFees: "Legal, management and other professional fees",
-    costOfServices: "Costs of services provided, including wages",
-    other: "Other property expenses",
-  },
+  "foreign-property": PROPERTY_EXPENSE_LABELS,
+  "uk-property": PROPERTY_EXPENSE_LABELS,
   "self-employment": {},
 };
+
+// The entries of a foreign property period summary: the EEA furnished holiday lettings (2024-25
+// and before) and one entry for each country or property, as HMRC returns them in its dated and
+// cumulative shapes.
+function foreignPeriodEntries(period) {
+  if (!isRecordObject(period)) return [];
+  const entries = [];
+  if (isRecordObject(period.foreignFhlEea)) {
+    entries.push({ id: "fhl", name: "Furnished holiday lettings in the EEA", ...period.foreignFhlEea });
+  }
+  const list = [period.foreignNonFhlProperty, period.foreignProperty].find(Array.isArray) || [];
+  list.forEach((entry, index) => {
+    if (!isRecordObject(entry)) return;
+    let name = `Entry ${index + 1}`;
+    if (nonEmptyText(entry.countryCode)) name = globalThis.countryCodes?.countryName(entry.countryCode) ?? entry.countryCode;
+    else if (nonEmptyText(entry.propertyId)) name = `Property ${entry.propertyId}`;
+    entries.push({ id: String(index + 1), name, income: entry.income, expenses: entry.expenses });
+  });
+  return entries;
+}
+
+// One income table and one expenses table for each entry of a foreign property period.
+function foreignPeriodSections(period, columnHeading, firstSectionPrefix) {
+  const entries = foreignPeriodEntries(period);
+  if (entries.length === 0) {
+    return [
+      {
+        heading: "Income",
+        explanation: "This is the income and expenses HMRC holds for the period.",
+        recordHtml: `${firstSectionPrefix}<p class="no-data">HMRC holds no figures for this period.</p>`,
+      },
+    ];
+  }
+  return entries.flatMap((entry, index) => {
+    const incomeEntries = collectEntries(entry.income);
+    const expenseEntries = collectEntries(entry.expenses);
+    return [
+      {
+        heading: `${entry.name}: income`,
+        explanation:
+          index === 0
+            ? "This is the income HMRC holds for the period, one table for each country or property. A cumulative year shows the running total from the start of the tax year."
+            : "",
+        recordHtml:
+          (index === 0 ? firstSectionPrefix : "") +
+          (incomeEntries.length > 0
+            ? periodTable(columnHeading, incomeEntries, `period-${entry.id}-income`, {})
+            : `<p class="no-data">HMRC holds no income for ${escapeRecordText(entry.name)}.</p>`),
+      },
+      {
+        heading: `${entry.name}: expenses`,
+        explanation: index === 0 ? "HMRC holds either one total or the itemised costs for each country or property." : "",
+        recordHtml:
+          expenseEntries.length > 0
+            ? periodTable(columnHeading, expenseEntries, `period-${entry.id}-expenses`, PROPERTY_EXPENSE_LABELS)
+            : `<p class="no-data">HMRC holds no expenses for ${escapeRecordText(entry.name)}.</p>`,
+      },
+    ];
+  });
+}
 
 function withKnownKeys(group, keys) {
   const source = isRecordObject(group) ? group : {};
@@ -336,7 +468,7 @@ function periodTable(columnHeading, entries, idPrefix, overrides) {
  * tax year.
  *
  * @param {object} input
- * @param {"self-employment"|"uk-property"} input.kind
+ * @param {"self-employment"|"uk-property"|"foreign-property"} input.kind
  * @param {object} input.period - HMRC's period summary
  * @param {string} [input.nino]
  * @param {string} [input.businessId]
@@ -369,6 +501,18 @@ export function periodCopyHtml({ kind, period, nino, businessId, taxYear, period
   });
 
   const columnHeading = periodLine || year || "Amount";
+
+  if (kind === "foreign-property") {
+    return customerCopyHtml({
+      title: periodLine ? `Your copy of the foreign property update for ${periodLine}` : "Your copy of the foreign property update",
+      reference: { label: nonEmptyText(periodId) ? idLabel : "Reporting", value: reference },
+      status: { kind: "accepted", text: "Held by HMRC" },
+      date: retrieved ? `Retrieved ${retrieved}` : "Not recorded",
+      sections: foreignPeriodSections(period, columnHeading, recordHead),
+      links,
+    });
+  }
+
   const expenseEntries = collectEntries(expenses);
 
   return customerCopyHtml({

@@ -68,7 +68,10 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
   },
 }));
 
-import { ingestHandler as companiesHouseCompanyGetHandler } from "@app/functions/companies-house/companiesHouseCompanyGet.js";
+import {
+  ingestHandler as companiesHouseCompanyGetHandler,
+  registeredOfficeFromAddress,
+} from "@app/functions/companies-house/companiesHouseCompanyGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -210,5 +213,50 @@ describe("companiesHouseCompanyGet ingestHandler", () => {
     expect(body.confirmationStatementNextMadeUpTo).toBe("2026-04-16");
     expect(body.sicCodes).toEqual(["62012"]);
     expect(body.registeredOfficeAddress).toEqual(EXAMPLE_COMPANY_PROFILE.registered_office_address);
+  });
+});
+
+describe("registeredOfficeFromAddress", () => {
+  test("maps the register address to the parts the accounts tag", () => {
+    expect(
+      registeredOfficeFromAddress({
+        address_line_1: "37 Sutherland Avenue",
+        locality: "Leeds",
+        region: "West Yorkshire",
+        postal_code: "LS8 1BY",
+        country: "England",
+      }),
+    ).toEqual({
+      addressLine1: "37 Sutherland Avenue",
+      cityOrTown: "Leeds",
+      countyRegion: "West Yorkshire",
+      postalCode: "LS8 1BY",
+      country: "England",
+    });
+  });
+
+  test("puts care of, PO box and premises on their own lines and drops premises that line 1 repeats", () => {
+    expect(
+      registeredOfficeFromAddress({
+        care_of: "A Trustee",
+        po_box: "12",
+        premises: "Unit 4",
+        address_line_1: "Morgan Court",
+        address_line_2: "Cardiff Gate",
+        locality: "Cardiff",
+      }),
+    ).toEqual({
+      addressLine1: "c/o A Trustee",
+      addressLine2: "PO Box 12",
+      addressLine3: "Unit 4 Morgan Court, Cardiff Gate",
+      cityOrTown: "Cardiff",
+    });
+    expect(registeredOfficeFromAddress({ premises: "Unit 4", address_line_1: "Unit 4 Morgan Court" }).addressLine1).toBe(
+      "Unit 4 Morgan Court",
+    );
+  });
+
+  test("gives an empty office for no address", () => {
+    expect(registeredOfficeFromAddress(undefined)).toEqual({});
   });
 });

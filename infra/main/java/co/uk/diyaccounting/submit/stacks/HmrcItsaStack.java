@@ -55,6 +55,18 @@ public class HmrcItsaStack extends Stack {
     public Function hmrcItsaUkPropertyPeriodPutLambda;
     public ILogGroup hmrcItsaUkPropertyPeriodPutLambdaLogGroup;
 
+    public AbstractApiLambdaProps hmrcItsaForeignPropertyPeriodPostLambdaProps;
+    public Function hmrcItsaForeignPropertyPeriodPostLambda;
+    public ILogGroup hmrcItsaForeignPropertyPeriodPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaForeignPropertyPeriodGetLambdaProps;
+    public Function hmrcItsaForeignPropertyPeriodGetLambda;
+    public ILogGroup hmrcItsaForeignPropertyPeriodGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaForeignPropertyPeriodPutLambdaProps;
+    public Function hmrcItsaForeignPropertyPeriodPutLambda;
+    public ILogGroup hmrcItsaForeignPropertyPeriodPutLambdaLogGroup;
+
     public AbstractApiLambdaProps hmrcItsaUkPropertyAnnualGetLambdaProps;
     public Function hmrcItsaUkPropertyAnnualGetLambda;
     public ILogGroup hmrcItsaUkPropertyAnnualGetLambdaLogGroup;
@@ -62,6 +74,26 @@ public class HmrcItsaStack extends Stack {
     public AbstractApiLambdaProps hmrcItsaUkPropertyAnnualPutLambdaProps;
     public Function hmrcItsaUkPropertyAnnualPutLambda;
     public ILogGroup hmrcItsaUkPropertyAnnualPutLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaForeignPropertyAnnualGetLambdaProps;
+    public Function hmrcItsaForeignPropertyAnnualGetLambda;
+    public ILogGroup hmrcItsaForeignPropertyAnnualGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaForeignPropertyAnnualPutLambdaProps;
+    public Function hmrcItsaForeignPropertyAnnualPutLambda;
+    public ILogGroup hmrcItsaForeignPropertyAnnualPutLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaForeignPropertyDetailsGetLambdaProps;
+    public Function hmrcItsaForeignPropertyDetailsGetLambda;
+    public ILogGroup hmrcItsaForeignPropertyDetailsGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaForeignPropertyDetailsPostLambdaProps;
+    public Function hmrcItsaForeignPropertyDetailsPostLambda;
+    public ILogGroup hmrcItsaForeignPropertyDetailsPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaForeignPropertyDetailsPutLambdaProps;
+    public Function hmrcItsaForeignPropertyDetailsPutLambda;
+    public ILogGroup hmrcItsaForeignPropertyDetailsPutLambdaLogGroup;
 
     public AbstractApiLambdaProps hmrcItsaBsasUkPropertyGetLambdaProps;
     public Function hmrcItsaBsasUkPropertyGetLambda;
@@ -209,6 +241,21 @@ public class HmrcItsaStack extends Stack {
                 "ImportedHmrcItsaUkPropertyPeriodPutAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName);
 
+        // Lookup existing DynamoDB HMRC ITSA Foreign Property Period POST async request table
+        ITable hmrcItsaForeignPropertyPeriodPostAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaForeignPropertyPeriodPostAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaForeignPropertyPeriodPostAsyncRequestsTableName);
+        // Lookup existing DynamoDB HMRC ITSA Foreign Property Period GET (retrieve one) async request table
+        ITable hmrcItsaForeignPropertyPeriodGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaForeignPropertyPeriodGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaForeignPropertyPeriodGetAsyncRequestsTableName);
+        // Lookup existing DynamoDB HMRC ITSA Foreign Property Period PUT (amend) async request table
+        ITable hmrcItsaForeignPropertyPeriodPutAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaForeignPropertyPeriodPutAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaForeignPropertyPeriodPutAsyncRequestsTableName);
         // Lookup existing DynamoDB HMRC ITSA UK Property Annual GET (retrieve) async request table
         ITable hmrcItsaUkPropertyAnnualGetAsyncRequestsTable = Table.fromTableName(
                 this,
@@ -220,6 +267,34 @@ public class HmrcItsaStack extends Stack {
                 this,
                 "ImportedHmrcItsaUkPropertyAnnualPutAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA Foreign Property Annual GET (retrieve) async request table
+        ITable hmrcItsaForeignPropertyAnnualGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaForeignPropertyAnnualGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName);
+        // Lookup existing DynamoDB HMRC ITSA Foreign Property Annual PUT (create and amend) async request table
+        ITable hmrcItsaForeignPropertyAnnualPutAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaForeignPropertyAnnualPutAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName);
+        // Lookup existing DynamoDB HMRC ITSA Foreign Property Details GET async request table
+        ITable hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaForeignPropertyDetailsGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA Foreign Property Details POST async request table
+        ITable hmrcItsaForeignPropertyDetailsPostAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaForeignPropertyDetailsPostAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaForeignPropertyDetailsPostAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA Foreign Property Details PUT async request table
+        ITable hmrcItsaForeignPropertyDetailsPutAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaForeignPropertyDetailsPutAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaForeignPropertyDetailsPutAsyncRequestsTableName);
 
         // Lookup existing DynamoDB HMRC ITSA business source adjustable summary (UK property) retrieve async request
         // table
@@ -651,6 +726,283 @@ public class HmrcItsaStack extends Stack {
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcItsaUkPropertyPeriodPutLambda.getFunctionName());
 
+        // ITSA Foreign Property Period POST (create)
+        var itsaForeignPropertyPeriodPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with(
+                        "HMRC_ITSA_FOREIGN_PROPERTY_PERIOD_POST_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaForeignPropertyPeriodPostAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            itsaForeignPropertyPeriodPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
+        var hmrcItsaForeignPropertyPeriodPostLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaForeignPropertyPeriodPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyPeriodPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(props.sharedNames().hmrcItsaForeignPropertyPeriodPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaForeignPropertyPeriodPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyPeriodPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyPeriodPostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaForeignPropertyPeriodPostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaForeignPropertyPeriodPostWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyPeriodPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaForeignPropertyPeriodPostLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaForeignPropertyPeriodPostLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaForeignPropertyPeriodPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaForeignPropertyPeriodPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaForeignPropertyPeriodPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaForeignPropertyPeriodPostLambdaCustomAuthorizer)
+                        .environment(itsaForeignPropertyPeriodPostLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaForeignPropertyPeriodPostLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaForeignPropertyPeriodPostLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaForeignPropertyPeriodPostLambdaProps = hmrcItsaForeignPropertyPeriodPostLambdaUrlOrigin.apiProps;
+        this.hmrcItsaForeignPropertyPeriodPostLambda = hmrcItsaForeignPropertyPeriodPostLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaForeignPropertyPeriodPostLambdaLogGroup =
+                hmrcItsaForeignPropertyPeriodPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaForeignPropertyPeriodPostLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA foreign property period with ingestHandler %s and worker %s",
+                this.hmrcItsaForeignPropertyPeriodPostLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaForeignPropertyPeriodPostIngestLambdaHandler,
+                props.sharedNames().hmrcItsaForeignPropertyPeriodPostWorkerLambdaHandler);
+
+        // Grant the ITSA foreign property period Lambda and its worker permission to access DynamoDB Bundles Table
+        List.of(
+                        this.hmrcItsaForeignPropertyPeriodPostLambda,
+                        hmrcItsaForeignPropertyPeriodPostLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaForeignPropertyPeriodPostAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaForeignPropertyPeriodPostLambda.getFunctionName());
+
+        // ITSA Foreign Property Period GET (retrieve one)
+        var itsaForeignPropertyPeriodGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_FOREIGN_PROPERTY_PERIOD_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaForeignPropertyPeriodGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            itsaForeignPropertyPeriodGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
+        var hmrcItsaForeignPropertyPeriodGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaForeignPropertyPeriodGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyPeriodGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(props.sharedNames().hmrcItsaForeignPropertyPeriodGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaForeignPropertyPeriodGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyPeriodGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyPeriodGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaForeignPropertyPeriodGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaForeignPropertyPeriodGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaForeignPropertyPeriodGetLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaForeignPropertyPeriodGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaForeignPropertyPeriodGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaForeignPropertyPeriodGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaForeignPropertyPeriodGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaForeignPropertyPeriodGetLambdaCustomAuthorizer)
+                        .environment(itsaForeignPropertyPeriodGetLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaForeignPropertyPeriodGetLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaForeignPropertyPeriodGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaForeignPropertyPeriodGetLambdaProps = hmrcItsaForeignPropertyPeriodGetLambdaUrlOrigin.apiProps;
+        this.hmrcItsaForeignPropertyPeriodGetLambda = hmrcItsaForeignPropertyPeriodGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaForeignPropertyPeriodGetLambdaLogGroup = hmrcItsaForeignPropertyPeriodGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaForeignPropertyPeriodGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA foreign property period retrieval with ingestHandler %s and worker %s",
+                this.hmrcItsaForeignPropertyPeriodGetLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaForeignPropertyPeriodGetIngestLambdaHandler,
+                props.sharedNames().hmrcItsaForeignPropertyPeriodGetWorkerLambdaHandler);
+
+        // Grant the ITSA foreign property period retrieval Lambda and its worker permission to access DynamoDB Bundles
+        // Table
+        List.of(
+                        this.hmrcItsaForeignPropertyPeriodGetLambda,
+                        hmrcItsaForeignPropertyPeriodGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaForeignPropertyPeriodGetAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaForeignPropertyPeriodGetLambda.getFunctionName());
+
+        // ITSA Foreign Property Period PUT (amend)
+        var itsaForeignPropertyPeriodPutLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with(
+                        "HMRC_ITSA_FOREIGN_PROPERTY_PERIOD_PUT_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaForeignPropertyPeriodPutAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            itsaForeignPropertyPeriodPutLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
+        var hmrcItsaForeignPropertyPeriodPutLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaForeignPropertyPeriodPutIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyPeriodPutIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(props.sharedNames().hmrcItsaForeignPropertyPeriodPutIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaForeignPropertyPeriodPutIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyPeriodPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyPeriodPutWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaForeignPropertyPeriodPutWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaForeignPropertyPeriodPutWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaForeignPropertyPeriodPutLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaForeignPropertyPeriodPutLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaForeignPropertyPeriodPutLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaForeignPropertyPeriodPutLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaForeignPropertyPeriodPutLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaForeignPropertyPeriodPutLambdaCustomAuthorizer)
+                        .environment(itsaForeignPropertyPeriodPutLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaForeignPropertyPeriodPutLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaForeignPropertyPeriodPutLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaForeignPropertyPeriodPutLambdaProps = hmrcItsaForeignPropertyPeriodPutLambdaUrlOrigin.apiProps;
+        this.hmrcItsaForeignPropertyPeriodPutLambda = hmrcItsaForeignPropertyPeriodPutLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaForeignPropertyPeriodPutLambdaLogGroup = hmrcItsaForeignPropertyPeriodPutLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaForeignPropertyPeriodPutLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA foreign property period amendment with ingestHandler %s and worker %s",
+                this.hmrcItsaForeignPropertyPeriodPutLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaForeignPropertyPeriodPutIngestLambdaHandler,
+                props.sharedNames().hmrcItsaForeignPropertyPeriodPutWorkerLambdaHandler);
+
+        // Grant the ITSA foreign property period amendment Lambda and its worker permission to access DynamoDB Bundles
+        // Table
+        List.of(
+                        this.hmrcItsaForeignPropertyPeriodPutLambda,
+                        hmrcItsaForeignPropertyPeriodPutLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaForeignPropertyPeriodPutAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaForeignPropertyPeriodPutLambda.getFunctionName());
+
         // ITSA UK Property Annual GET (retrieve)
         var itsaUkPropertyAnnualGetLambdaEnv = new PopulatedMap<String, String>()
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
@@ -824,6 +1176,466 @@ public class HmrcItsaStack extends Stack {
         infof(
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcItsaUkPropertyAnnualPutLambda.getFunctionName());
+
+        // ITSA Foreign Property Annual GET (retrieve)
+        var itsaForeignPropertyAnnualGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_FOREIGN_PROPERTY_ANNUAL_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaForeignPropertyAnnualGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            itsaForeignPropertyAnnualGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
+        var hmrcItsaForeignPropertyAnnualGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaForeignPropertyAnnualGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyAnnualGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(props.sharedNames().hmrcItsaForeignPropertyAnnualGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaForeignPropertyAnnualGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyAnnualGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyAnnualGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaForeignPropertyAnnualGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaForeignPropertyAnnualGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyAnnualGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaForeignPropertyAnnualGetLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaForeignPropertyAnnualGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaForeignPropertyAnnualGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaForeignPropertyAnnualGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaForeignPropertyAnnualGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaForeignPropertyAnnualGetLambdaCustomAuthorizer)
+                        .environment(itsaForeignPropertyAnnualGetLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaForeignPropertyAnnualGetLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaForeignPropertyAnnualGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaForeignPropertyAnnualGetLambdaProps = hmrcItsaForeignPropertyAnnualGetLambdaUrlOrigin.apiProps;
+        this.hmrcItsaForeignPropertyAnnualGetLambda = hmrcItsaForeignPropertyAnnualGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaForeignPropertyAnnualGetLambdaLogGroup = hmrcItsaForeignPropertyAnnualGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaForeignPropertyAnnualGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA foreign property annual submission retrieval with ingestHandler %s and worker %s",
+                this.hmrcItsaForeignPropertyAnnualGetLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaForeignPropertyAnnualGetIngestLambdaHandler,
+                props.sharedNames().hmrcItsaForeignPropertyAnnualGetWorkerLambdaHandler);
+
+        // Grant the ITSA foreign property annual retrieval Lambda and its worker permission to access DynamoDB Bundles
+        // Table
+        List.of(
+                        this.hmrcItsaForeignPropertyAnnualGetLambda,
+                        hmrcItsaForeignPropertyAnnualGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaForeignPropertyAnnualGetAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaForeignPropertyAnnualGetLambda.getFunctionName());
+
+        // ITSA Foreign Property Annual PUT (create and amend)
+        var itsaForeignPropertyAnnualPutLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with(
+                        "HMRC_ITSA_FOREIGN_PROPERTY_ANNUAL_PUT_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaForeignPropertyAnnualPutAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            itsaForeignPropertyAnnualPutLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
+        var hmrcItsaForeignPropertyAnnualPutLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaForeignPropertyAnnualPutIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyAnnualPutIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(props.sharedNames().hmrcItsaForeignPropertyAnnualPutIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaForeignPropertyAnnualPutIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyAnnualPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyAnnualPutWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaForeignPropertyAnnualPutWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaForeignPropertyAnnualPutWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyAnnualPutWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaForeignPropertyAnnualPutLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaForeignPropertyAnnualPutLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaForeignPropertyAnnualPutLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaForeignPropertyAnnualPutLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaForeignPropertyAnnualPutLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaForeignPropertyAnnualPutLambdaCustomAuthorizer)
+                        .environment(itsaForeignPropertyAnnualPutLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaForeignPropertyAnnualPutLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaForeignPropertyAnnualPutLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaForeignPropertyAnnualPutLambdaProps = hmrcItsaForeignPropertyAnnualPutLambdaUrlOrigin.apiProps;
+        this.hmrcItsaForeignPropertyAnnualPutLambda = hmrcItsaForeignPropertyAnnualPutLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaForeignPropertyAnnualPutLambdaLogGroup = hmrcItsaForeignPropertyAnnualPutLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaForeignPropertyAnnualPutLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA foreign property annual submission with ingestHandler %s and worker %s",
+                this.hmrcItsaForeignPropertyAnnualPutLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaForeignPropertyAnnualPutIngestLambdaHandler,
+                props.sharedNames().hmrcItsaForeignPropertyAnnualPutWorkerLambdaHandler);
+
+        // Grant the ITSA foreign property annual submission Lambda and its worker permission to access DynamoDB Bundles
+        // Table
+        List.of(
+                        this.hmrcItsaForeignPropertyAnnualPutLambda,
+                        hmrcItsaForeignPropertyAnnualPutLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaForeignPropertyAnnualPutAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaForeignPropertyAnnualPutLambda.getFunctionName());
+
+        // ITSA Foreign Property Details GET (retrieve)
+        var itsaForeignPropertyDetailsGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_FOREIGN_PROPERTY_DETAILS_GET_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            itsaForeignPropertyDetailsGetLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
+        var hmrcItsaForeignPropertyDetailsGetLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaForeignPropertyDetailsGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsGetIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(props.sharedNames().hmrcItsaForeignPropertyDetailsGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaForeignPropertyDetailsGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyDetailsGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsGetWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaForeignPropertyDetailsGetWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaForeignPropertyDetailsGetWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyDetailsGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaForeignPropertyDetailsGetLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsGetLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaForeignPropertyDetailsGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaForeignPropertyDetailsGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaForeignPropertyDetailsGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaForeignPropertyDetailsGetLambdaCustomAuthorizer)
+                        .environment(itsaForeignPropertyDetailsGetLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaForeignPropertyDetailsGetLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaForeignPropertyDetailsGetLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaForeignPropertyDetailsGetLambdaProps = hmrcItsaForeignPropertyDetailsGetLambdaUrlOrigin.apiProps;
+        this.hmrcItsaForeignPropertyDetailsGetLambda = hmrcItsaForeignPropertyDetailsGetLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaForeignPropertyDetailsGetLambdaLogGroup =
+                hmrcItsaForeignPropertyDetailsGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaForeignPropertyDetailsGetLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA foreign property details retrieval with ingestHandler %s and worker %s",
+                this.hmrcItsaForeignPropertyDetailsGetLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaForeignPropertyDetailsGetIngestLambdaHandler,
+                props.sharedNames().hmrcItsaForeignPropertyDetailsGetWorkerLambdaHandler);
+
+        // Grant the ITSA foreign property details retrieval Lambda and its worker permission to access DynamoDB Bundles
+        // Table
+        List.of(
+                        this.hmrcItsaForeignPropertyDetailsGetLambda,
+                        hmrcItsaForeignPropertyDetailsGetLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaForeignPropertyDetailsGetLambda.getFunctionName());
+
+        // ITSA Foreign Property Details POST (create)
+        var itsaForeignPropertyDetailsPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_FOREIGN_PROPERTY_DETAILS_POST_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaForeignPropertyDetailsPostAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            itsaForeignPropertyDetailsPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
+        var hmrcItsaForeignPropertyDetailsPostLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaForeignPropertyDetailsPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsPostIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(props.sharedNames().hmrcItsaForeignPropertyDetailsPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaForeignPropertyDetailsPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyDetailsPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsPostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaForeignPropertyDetailsPostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaForeignPropertyDetailsPostWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyDetailsPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaForeignPropertyDetailsPostLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsPostLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaForeignPropertyDetailsPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaForeignPropertyDetailsPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaForeignPropertyDetailsPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaForeignPropertyDetailsPostLambdaCustomAuthorizer)
+                        .environment(itsaForeignPropertyDetailsPostLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaForeignPropertyDetailsPostLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaForeignPropertyDetailsPostLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaForeignPropertyDetailsPostLambdaProps = hmrcItsaForeignPropertyDetailsPostLambdaUrlOrigin.apiProps;
+        this.hmrcItsaForeignPropertyDetailsPostLambda = hmrcItsaForeignPropertyDetailsPostLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaForeignPropertyDetailsPostLambdaLogGroup =
+                hmrcItsaForeignPropertyDetailsPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaForeignPropertyDetailsPostLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA foreign property details creation with ingestHandler %s and worker %s",
+                this.hmrcItsaForeignPropertyDetailsPostLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaForeignPropertyDetailsPostIngestLambdaHandler,
+                props.sharedNames().hmrcItsaForeignPropertyDetailsPostWorkerLambdaHandler);
+
+        // Grant the ITSA foreign property details creation Lambda and its worker permission to access DynamoDB Bundles
+        // Table
+        List.of(
+                        this.hmrcItsaForeignPropertyDetailsPostLambda,
+                        hmrcItsaForeignPropertyDetailsPostLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaForeignPropertyDetailsPostAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaForeignPropertyDetailsPostLambda.getFunctionName());
+
+        // ITSA Foreign Property Details PUT (update)
+        var itsaForeignPropertyDetailsPutLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with(
+                        "HMRC_ITSA_FOREIGN_PROPERTY_DETAILS_PUT_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaForeignPropertyDetailsPutAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            itsaForeignPropertyDetailsPutLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
+        var hmrcItsaForeignPropertyDetailsPutLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaForeignPropertyDetailsPutIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsPutIngestLambdaFunctionName)
+                        .callsExternalApi(true)
+                        .ingestHandler(props.sharedNames().hmrcItsaForeignPropertyDetailsPutIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaForeignPropertyDetailsPutIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyDetailsPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsPutWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaForeignPropertyDetailsPutWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaForeignPropertyDetailsPutWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaForeignPropertyDetailsPutWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaForeignPropertyDetailsPutLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaForeignPropertyDetailsPutLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaForeignPropertyDetailsPutLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaForeignPropertyDetailsPutLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaForeignPropertyDetailsPutLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaForeignPropertyDetailsPutLambdaCustomAuthorizer)
+                        .environment(itsaForeignPropertyDetailsPutLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaForeignPropertyDetailsPutLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaForeignPropertyDetailsPutLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaForeignPropertyDetailsPutLambdaProps = hmrcItsaForeignPropertyDetailsPutLambdaUrlOrigin.apiProps;
+        this.hmrcItsaForeignPropertyDetailsPutLambda = hmrcItsaForeignPropertyDetailsPutLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaForeignPropertyDetailsPutLambdaLogGroup =
+                hmrcItsaForeignPropertyDetailsPutLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaForeignPropertyDetailsPutLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA foreign property details update with ingestHandler %s and worker %s",
+                this.hmrcItsaForeignPropertyDetailsPutLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaForeignPropertyDetailsPutIngestLambdaHandler,
+                props.sharedNames().hmrcItsaForeignPropertyDetailsPutWorkerLambdaHandler);
+
+        // Grant the ITSA foreign property details update Lambda and its worker permission to access DynamoDB Bundles
+        // Table
+        List.of(
+                        this.hmrcItsaForeignPropertyDetailsPutLambda,
+                        hmrcItsaForeignPropertyDetailsPutLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaForeignPropertyDetailsPutAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaForeignPropertyDetailsPutLambda.getFunctionName());
 
         // ITSA business source adjustable summary (UK property) retrieve
         var itsaBsasUkPropertyGetLambdaEnv = new PopulatedMap<String, String>()
@@ -1898,8 +2710,16 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaUkPropertyPeriodsGetLambdaUrlOrigin,
                         hmrcItsaUkPropertyPeriodGetLambdaUrlOrigin,
                         hmrcItsaUkPropertyPeriodPutLambdaUrlOrigin,
+                        hmrcItsaForeignPropertyPeriodPostLambdaUrlOrigin,
+                        hmrcItsaForeignPropertyPeriodGetLambdaUrlOrigin,
+                        hmrcItsaForeignPropertyPeriodPutLambdaUrlOrigin,
                         hmrcItsaUkPropertyAnnualGetLambdaUrlOrigin,
                         hmrcItsaUkPropertyAnnualPutLambdaUrlOrigin,
+                        hmrcItsaForeignPropertyAnnualGetLambdaUrlOrigin,
+                        hmrcItsaForeignPropertyAnnualPutLambdaUrlOrigin,
+                        hmrcItsaForeignPropertyDetailsGetLambdaUrlOrigin,
+                        hmrcItsaForeignPropertyDetailsPostLambdaUrlOrigin,
+                        hmrcItsaForeignPropertyDetailsPutLambdaUrlOrigin,
                         hmrcItsaBsasUkPropertyGetLambdaUrlOrigin,
                         hmrcItsaBsasUkPropertyAdjustPostLambdaUrlOrigin,
                         hmrcItsaLossesAndClaimsGetLambdaUrlOrigin,

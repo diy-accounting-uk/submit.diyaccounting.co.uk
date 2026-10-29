@@ -41,12 +41,19 @@
       <div id="loadingSpinner" class="spinner" hidden></div>
 
       <div class="form-container">
-        <div id="currentBundlesSection" class="bundles-section" hidden>
-          <h2>Your current bundles</h2>
-          <div id="currentBundles"></div>
-        </div>
+        <div
+          class="bundles-block"
+          data-requires-sign-in
+          data-sign-in-title="Log in to add bundles"
+          data-sign-in-text="Your bundles and tokens are kept with your account. Log in to see what you hold and to add more. If you have a pass, enter it below first."
+        >
+          <div id="currentBundlesSection" class="bundles-section" hidden>
+            <h2>Your current bundles</h2>
+            <div id="currentBundles"></div>
+          </div>
 
-        <div class="bundles-list" id="catalogBundles"></div>
+          <div class="bundles-list" id="catalogBundles"></div>
+        </div>
 
         <div class="bundles-section">
           <h2>Have a pass?</h2>
@@ -73,9 +80,7 @@
           <h2>My generated passes</h2>
           <p class="hint">Passes you have generated for others to use.</p>
           <div id="generatedPassesList"></div>
-          <p id="generatedPassesEmpty" class="hint" hidden>
-            You haven't generated any passes yet. Generate one from the home page activities.
-          </p>
+          <p id="generatedPassesEmpty" class="hint" hidden></p>
           <div id="generatedPassesLoadMore" hidden>
             <button type="button" id="loadMorePassesBtn" class="btn btn-small btn-secondary">Load more</button>
           </div>
@@ -118,6 +123,7 @@
     <script src="widgets/entitlement-status.js"></script>
     <script src="widgets/auth-status.js"></script>
     <script src="widgets/status-messages.js"></script>
+    <script src="widgets/signed-out-panel.js"></script>
     <script src="widgets/loading-spinner.js"></script>
     <script type="module" src="widgets/view-source-link.js"></script>
 

@@ -233,6 +233,50 @@ describe("supportTicketPost", () => {
       expect(data).not.toHaveProperty("issueNumber");
     });
 
+    test("asks for a reader run with an actions-write token scoped to the repository that holds the workflow", async () => {
+      global.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ number: 10 }) });
+
+      const response = await ingestHandler(
+        requestEvent({ subject: "s", description: "d", category: "other" }, { "x-forwarded-for": "203.0.113.5" }),
+      );
+
+      expect(response.statusCode).toBe(200);
+      const [url, options] = global.fetch.mock.calls[1];
+      expect(url).toBe(
+        "https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/actions/workflows/support-reader.yml/dispatches",
+      );
+      expect(JSON.parse(options.body)).toEqual({ ref: "main" });
+      expect(mockGetInstallationAccessToken).toHaveBeenCalledWith(
+        expect.objectContaining({ repositories: ["submit.diyaccounting.co.uk"], permissions: { actions: "write" } }),
+      );
+    });
+
+    test("keeps the ticket filed when the reader dispatch is refused", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ number: 11 }) })
+        .mockResolvedValueOnce({ ok: false, status: 403 });
+
+      const response = await ingestHandler(
+        requestEvent({ subject: "s", description: "d", category: "other" }, { "x-forwarded-for": "203.0.113.5" }),
+      );
+
+      expect(response.statusCode).toBe(200);
+    });
+
+    test("keeps the ticket filed when the reader dispatch throws", async () => {
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ number: 12 }) })
+        .mockRejectedValueOnce(new Error("network down"));
+
+      const response = await ingestHandler(
+        requestEvent({ subject: "s", description: "d", category: "other" }, { "x-forwarded-for": "203.0.113.5" }),
+      );
+
+      expect(response.statusCode).toBe(200);
+    });
+
     test("carries the shared automation disclosure so the issue does not read as a person's words", async () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,

@@ -115,7 +115,8 @@ function splitTitle(raw) {
     note = title.slice(open + 1, -1);
     title = title.slice(0, open).trim();
   }
-  return { title: title.charAt(0).toUpperCase() + title.slice(1), note };
+  const startsWithProductName = title.startsWith("diya-gl");
+  return { title: startsWithProductName ? title : title.charAt(0).toUpperCase() + title.slice(1), note };
 }
 
 function copyLinkControl(stepId) {

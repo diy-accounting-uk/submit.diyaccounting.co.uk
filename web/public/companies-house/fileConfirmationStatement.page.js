@@ -107,7 +107,7 @@ function renderPublicOfficers(officers) {
         tableRow(
           officerDisplayName(officer),
           slugOrDash(officer.officerRole),
-          textOrDash(officer.appointedOn),
+          textOrDash(window.companiesHouseLabels.formatCompanyDate(officer.appointedOn)),
           officer.identityVerificationDetails ? "Verified" : "Not verified",
         ),
       ),
@@ -120,7 +120,11 @@ function renderPublicPscs(pscs) {
     ...(pscs || [])
       .filter((psc) => !psc.ceasedOn)
       .map((psc) =>
-        tableRow(textOrDash(psc.name), textOrDash((psc.naturesOfControl || []).map(slugLabel).join(", ")), textOrDash(psc.notifiedOn)),
+        tableRow(
+          textOrDash(psc.name),
+          textOrDash((psc.naturesOfControl || []).map(slugLabel).join(", ")),
+          textOrDash(window.companiesHouseLabels.formatCompanyDate(psc.notifiedOn)),
+        ),
       ),
   );
 }
@@ -151,8 +155,12 @@ async function lookUpCompany(companyNumber) {
     currentPscs = (pscsResult.pscs || []).filter((psc) => !psc.ceasedOn);
     document.getElementById("authCompanyName").textContent = company.companyName;
     document.getElementById("authCompanyNumber").textContent = company.companyNumber;
-    document.getElementById("authNextDue").textContent = textOrDash(company.confirmationStatementNextDue);
-    document.getElementById("authNextMadeUpTo").textContent = textOrDash(company.confirmationStatementNextMadeUpTo);
+    document.getElementById("authNextDue").textContent = textOrDash(
+      window.companiesHouseLabels.formatCompanyDate(company.confirmationStatementNextDue),
+    );
+    document.getElementById("authNextMadeUpTo").textContent = textOrDash(
+      window.companiesHouseLabels.formatCompanyDate(company.confirmationStatementNextMadeUpTo),
+    );
     renderPublicOfficers(officersResult.officers);
     renderPublicPscs(pscsResult.pscs);
     showView("authView");
@@ -211,6 +219,30 @@ function addShareClassRow(share = {}) {
 }
 
 const MAX_JOINT_HOLDERS_PER_SHAREHOLDING = 10;
+const MAX_TRANSFERS_PER_SHAREHOLDING = 200;
+
+function buildTransferRow(holdingIndex, transferIndex, transfer = {}) {
+  const suffix = `${holdingIndex}-${transferIndex}`;
+  return element(
+    "div",
+    { "class": "form-group", "data-transfer-row": suffix },
+    element("label", { for: `transferDate-${suffix}` }, `Transfer ${transferIndex + 1} date`),
+    element("input", { type: "date", id: `transferDate-${suffix}`, value: transfer.dateOfTransfer || "" }),
+    element("label", { for: `transferShares-${suffix}` }, `Transfer ${transferIndex + 1} number of shares`),
+    element("input", {
+      type: "number",
+      id: `transferShares-${suffix}`,
+      step: "any",
+      min: "0",
+      value: transfer.numberSharesTransferred || "",
+    }),
+    element(
+      "button",
+      { "type": "button", "class": "btn-small remove-transfer-row", "data-holding-index": holdingIndex },
+      "Remove transfer",
+    ),
+  );
+}
 
 function buildJointHolderRow(holdingIndex, shareholderIndex, shareholder = {}) {
   const address = shareholder.address || {};
@@ -221,7 +253,9 @@ function buildJointHolderRow(holdingIndex, shareholderIndex, shareholder = {}) {
     ["holderAmalgamatedName", "Or amalgamated name (used instead of surname/forename)", shareholder.amalgamatedName],
     ["holderPremise", "Premise", address.premise],
     ["holderStreet", "Street", address.street],
+    ["holderThoroughfare", "Thoroughfare", address.thoroughfare],
     ["holderPostTown", "Post town", address.postTown],
+    ["holderCounty", "County", address.county],
     ["holderPostcode", "Postcode", address.postcode],
     ["holderCountry", "Country", address.country],
   ].flatMap(([idPrefix, labelText, value]) => [
@@ -256,6 +290,18 @@ function buildShareholdingRow(index, holding = {}) {
       { class: "hint" },
       `A holding held jointly carries every joint holder below, up to ${MAX_JOINT_HOLDERS_PER_SHAREHOLDING}.`,
     ),
+    element("h4", {}, "Share transfers"),
+    element(
+      "p",
+      { class: "hint" },
+      `Each transfer of shares since the last statement: its date and the number of shares, up to ${MAX_TRANSFERS_PER_SHAREHOLDING}.`,
+    ),
+    element(
+      "div",
+      { "class": "transfers-container", "data-holding-index": index },
+      ...(holding.transfers || []).map((transfer, transferIndex) => buildTransferRow(index, transferIndex, transfer)),
+    ),
+    element("button", { "type": "button", "class": "btn-small add-transfer-row", "data-holding-index": index }, "Add transfer"),
     element(
       "div",
       { "class": "joint-holders-container", "data-holding-index": index },
@@ -417,7 +463,9 @@ function readJointHolders(holdingIndex) {
       const address = {
         premise: document.getElementById(`holderPremise-${suffix}`).value.trim(),
         street: document.getElementById(`holderStreet-${suffix}`).value.trim(),
+        thoroughfare: document.getElementById(`holderThoroughfare-${suffix}`).value.trim(),
         postTown: document.getElementById(`holderPostTown-${suffix}`).value.trim(),
+        county: document.getElementById(`holderCounty-${suffix}`).value.trim(),
         postcode: document.getElementById(`holderPostcode-${suffix}`).value.trim(),
         country: document.getElementById(`holderCountry-${suffix}`).value.trim(),
       };
@@ -426,12 +474,26 @@ function readJointHolders(holdingIndex) {
   );
 }
 
+function readTransfers(holdingIndex) {
+  return Array.from(document.querySelectorAll(`.transfers-container[data-holding-index="${holdingIndex}"] [data-transfer-row]`)).map(
+    (row) => {
+      const suffix = row.getAttribute("data-transfer-row");
+      return {
+        dateOfTransfer: document.getElementById(`transferDate-${suffix}`).value,
+        numberSharesTransferred: Number(document.getElementById(`transferShares-${suffix}`).value || 0),
+      };
+    },
+  );
+}
+
 function readShareholdings() {
   return Array.from(document.querySelectorAll("[data-shareholding-row]")).map((row) => {
     const index = row.getAttribute("data-shareholding-row");
+    const transfers = readTransfers(index);
     return {
       shareClass: document.getElementById(`holdingShareClass-${index}`).value.trim(),
       numberHeld: Number(document.getElementById(`holdingNumberHeld-${index}`).value || 0),
+      ...(transfers.length > 0 ? { transfers } : {}),
       shareholders: readJointHolders(index),
     };
   });
@@ -519,6 +581,23 @@ function longDate(isoDate) {
   return date.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 }
 
+function describeShareholder(shareholder) {
+  const name = shareholder.amalgamatedName || [shareholder.forename, shareholder.surname].filter(Boolean).join(" ");
+  const address = shareholder.address || {};
+  const addressLine = [
+    address.premise,
+    address.street,
+    address.thoroughfare,
+    address.postTown,
+    address.county,
+    address.postcode,
+    address.country,
+  ]
+    .filter(Boolean)
+    .join(", ");
+  return addressLine ? `${name} (${addressLine})` : name;
+}
+
 function renderPreviewSummary(payload) {
   const rows = [
     ["Company", `${payload.companyName} (${payload.companyNumber})`],
@@ -533,7 +612,20 @@ function renderPreviewSummary(payload) {
   if (payload.sicCodes) rows.push(["Nature of business (SIC codes)", payload.sicCodes.join(", ")]);
   if (payload.registeredEmailAddress) rows.push(["Registered email address", payload.registeredEmailAddress]);
   if (payload.statementOfCapital) rows.push(["Statement of capital", "Changed from the register"]);
-  if (payload.shareholdings) rows.push(["Shareholders", "Changed from the register"]);
+  if (payload.shareholdings) {
+    rows.push(["Shareholders", "Changed from the register"]);
+    payload.shareholdings.forEach((holding, index) => {
+      const holders = (holding.shareholders || []).map(describeShareholder).join("; ");
+      const holdersSuffix = holders ? ": " + holders : "";
+      rows.push([`Shareholding ${index + 1}`, `${holding.shareClass}, ${holding.numberHeld} held${holdersSuffix}`]);
+      (holding.transfers || []).forEach((transfer, transferIndex) => {
+        rows.push([
+          `Shareholding ${index + 1} transfer ${transferIndex + 1}`,
+          `${transfer.numberSharesTransferred} shares on ${longDate(transfer.dateOfTransfer)}`,
+        ]);
+      });
+    });
+  }
   const summary = document.getElementById("previewSummary");
   summary.replaceChildren();
   for (const [label, value] of rows) {
@@ -792,7 +884,7 @@ function confirmedPscs() {
   return currentPscs.map((psc) => ({
     name: textOrDash(psc.name),
     control: textOrDash((psc.naturesOfControl || []).map(slugLabel).join(", ")),
-    notifiedOn: textOrDash(psc.notifiedOn),
+    notifiedOn: textOrDash(window.companiesHouseLabels.formatCompanyDate(psc.notifiedOn)),
   }));
 }
 
@@ -964,6 +1056,19 @@ document.getElementById("reviewForm").addEventListener("submit", handleReviewFor
 document.getElementById("addShareClassBtn").addEventListener("click", () => addShareClassRow());
 document.getElementById("addShareholdingBtn").addEventListener("click", () => addShareholdingRow());
 document.getElementById("shareholdingsContainer").addEventListener("click", (event) => {
+  if (event.target.classList.contains("add-transfer-row")) {
+    const holdingIndex = event.target.getAttribute("data-holding-index");
+    const transfersContainer = document.querySelector(`.transfers-container[data-holding-index="${holdingIndex}"]`);
+    const nextTransferIndex = transfersContainer.querySelectorAll("[data-transfer-row]").length;
+    if (nextTransferIndex >= MAX_TRANSFERS_PER_SHAREHOLDING) {
+      showStatus(`A shareholding may carry at most ${MAX_TRANSFERS_PER_SHAREHOLDING} transfers.`, "error");
+      return;
+    }
+    transfersContainer.append(buildTransferRow(holdingIndex, nextTransferIndex));
+  }
+  if (event.target.classList.contains("remove-transfer-row")) {
+    event.target.closest("[data-transfer-row]").remove();
+  }
   if (event.target.classList.contains("add-joint-holder-row")) {
     const holdingIndex = Number.parseInt(event.target.getAttribute("data-holding-index"), 10);
     if (!Number.isInteger(holdingIndex)) return;

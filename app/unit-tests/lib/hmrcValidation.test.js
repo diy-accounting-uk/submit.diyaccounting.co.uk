@@ -12,6 +12,8 @@ import {
   isValidDateRange,
   isValidTaxYear,
   resolveItsaSubmissionModel,
+  isValidCountryCode,
+  resolveForeignPropertyEntryKey,
   isValidVatMonetaryAmount,
   isValidNetVatDue,
   isValidVatWholeAmount,
@@ -251,6 +253,40 @@ describe("hmrcValidation", () => {
       const second = resolveItsaSubmissionModel("2024-25");
       expect(first).toBe(second);
       expect(first).toBe("dated");
+    });
+  });
+
+  describe("isValidCountryCode", () => {
+    test("accepts three upper-case letters", () => {
+      expect(isValidCountryCode("FRA")).toBe(true);
+      expect(isValidCountryCode("JEY")).toBe(true);
+    });
+
+    test("refuses lower case, wrong length and non-strings", () => {
+      expect(isValidCountryCode("fra")).toBe(false);
+      expect(isValidCountryCode("FR")).toBe(false);
+      expect(isValidCountryCode("FRAN")).toBe(false);
+      expect(isValidCountryCode("F1A")).toBe(false);
+      expect(isValidCountryCode(undefined)).toBe(false);
+      expect(isValidCountryCode(250)).toBe(false);
+    });
+  });
+
+  describe("resolveForeignPropertyEntryKey", () => {
+    test("keys an entry by country code up to 2025-26", () => {
+      expect(resolveForeignPropertyEntryKey("2023-24")).toBe("countryCode");
+      expect(resolveForeignPropertyEntryKey("2024-25")).toBe("countryCode");
+      expect(resolveForeignPropertyEntryKey("2025-26")).toBe("countryCode");
+    });
+
+    test("keys an entry by property id from 2026-27", () => {
+      expect(resolveForeignPropertyEntryKey("2026-27")).toBe("propertyId");
+      expect(resolveForeignPropertyEntryKey("2030-31")).toBe("propertyId");
+    });
+
+    test("throws on a malformed tax year", () => {
+      expect(() => resolveForeignPropertyEntryKey("2026-28")).toThrow(/Invalid taxYear format/);
+      expect(() => resolveForeignPropertyEntryKey(undefined)).toThrow(/Invalid taxYear format/);
     });
   });
 

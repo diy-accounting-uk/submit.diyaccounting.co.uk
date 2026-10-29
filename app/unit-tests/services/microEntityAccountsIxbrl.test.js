@@ -25,7 +25,7 @@ import { parseXmlDocument } from "@app/lib/xmlDom.js";
 const SAMPLE_INPUT = {
   companyNumber: "02706061",
   companyName: "TEST MICRO LIMITED",
-  registeredOffice: "1 Test Street, London, EC1A 1AA",
+  registeredOffice: { addressLine1: "1 Test Street", cityOrTown: "London", postalCode: "EC1A 1AA" },
   periodStart: "2025-07-01",
   periodEnd: "2026-06-30",
   averageNumberOfEmployees: 2,
@@ -267,9 +267,49 @@ describe("services/microEntityAccountsIxbrl", () => {
     test("states the company information in the first note", () => {
       for (const document of [xhtml, dormantXhtml]) {
         expect(document).toContain("is a private company limited by shares, registered in England and Wales, registered number");
-        expect(document).toContain("Its registered office is 1 Test Street, London, EC1A 1AA.");
+        expect(document).toContain(
+          'Its registered office is <ix:nonNumeric name="bus:AddressLine1" contextRef="y2026-registered-office">1 Test Street</ix:nonNumeric>, <ix:nonNumeric name="bus:PrincipalLocation-CityOrTown" contextRef="y2026-registered-office">London</ix:nonNumeric>, <ix:nonNumeric name="bus:PostalCodeZip" contextRef="y2026-registered-office">EC1A 1AA</ix:nonNumeric>.',
+        );
       }
-      expect(() => buildMicroEntityAccounts({ ...SAMPLE_INPUT, registeredOffice: "" })).toThrow(/registeredOffice/);
+      expect(() => buildMicroEntityAccounts({ ...SAMPLE_INPUT, registeredOffice: {} })).toThrow(/registeredOffice/);
+    });
+
+    test("tags every registered office part on the registered office context and omits an absent part", () => {
+      const document = buildMicroEntityAccounts({
+        ...SAMPLE_INPUT,
+        registeredOffice: {
+          addressLine1: "Unit 1",
+          addressLine2: "High Street",
+          cityOrTown: "Leeds",
+          countyRegion: "West Yorkshire",
+          postalCode: "LS1 1AA",
+          country: "England",
+        },
+      });
+      expect(document).toMatch(/<xbrli:context id="y2026-registered-office">.*bus:EntityContactTypeDimension">bus:RegisteredOffice</);
+      for (const [concept, value] of [
+        ["AddressLine1", "Unit 1"],
+        ["AddressLine2", "High Street"],
+        ["PrincipalLocation-CityOrTown", "Leeds"],
+        ["CountyRegion", "West Yorkshire"],
+        ["PostalCodeZip", "LS1 1AA"],
+      ]) {
+        expect(document).toContain(`name="bus:${concept}" contextRef="y2026-registered-office">${value}<`);
+      }
+      expect(document).toContain("</ix:nonNumeric>, England, <ix:nonNumeric");
+      expect(document).not.toContain("bus:AddressLine3");
+    });
+
+    test("states the report period, language and sterling currency on the contexts where they are not defaults", () => {
+      for (const document of [xhtml, dormantXhtml]) {
+        expect(document).toContain('<ix:nonNumeric name="bus:ReportPeriod" contextRef="y2026"></ix:nonNumeric>');
+        expect(document).toContain('<ix:nonNumeric name="bus:ReportPrincipalLanguage" contextRef="y2026"></ix:nonNumeric>');
+        expect(document).toContain(
+          '<ix:nonNumeric name="bus:PrincipalCurrencyUsedInBusinessReport" contextRef="y2026-currency"></ix:nonNumeric>',
+        );
+        expect(document).toMatch(/<xbrli:context id="y2026-currency">.*curr:CurrenciesDimension">curr:PoundSterling</);
+        expect(document).toContain('xmlns:curr="http://xbrl.frc.org.uk/cd/2026-01-01/currencies"');
+      }
     });
 
     test("prints the never-traded sentence only for a company that has never traded", () => {
@@ -417,13 +457,13 @@ describe("services/microEntityAccountsIxbrl", () => {
         /name="core:NumberSharesIssuedFullyPaid"[^>]*contextRef="e\d{4}-share-class"[^>]*unitRef="shares"[^>]*>200</,
       );
       expect(dormantXhtml).toMatch(
-        /name="core:NominalValueAllottedShareCapital"[^>]*contextRef="y\d{4}-share-class"[^>]*unitRef="GBP"[^>]*>0.5</,
+        /name="core:NominalValueAllottedShareCapital"[^>]*contextRef="y\d{4}-share-class"[^>]*unitRef="GBP"[^>]*>0.50</,
       );
       expect(dimensionNames(dormantXhtml)).toContainEqual({
         dimension: "bus:EntityShareClassesDimension",
         member: "bus:OrdinaryShareClass1",
       });
-      expect(dormantXhtml).toMatch(/>200<\/ix:nonFraction> ordinary shares of £<ix:nonFraction[^>]*>0.5<\/ix:nonFraction> each/);
+      expect(dormantXhtml).toMatch(/>200<\/ix:nonFraction> ordinary shares of £<ix:nonFraction[^>]*>0.50<\/ix:nonFraction> each/);
     });
 
     test("the share note uses the singular for one share", () => {
@@ -449,6 +489,100 @@ describe("services/microEntityAccountsIxbrl", () => {
       expect(names).not.toContain(`direp:${CONCEPTS.statementAuditExemptionSection480.name}`);
       expect(names).not.toContain("core:NumberSharesIssuedFullyPaid");
       expect(dimensionNames(xhtml).map((d) => d.dimension)).not.toContain("bus:EntityTradingStatusDimension");
+    });
+  });
+
+  describe("buildMicroEntityAccounts balance sheet headings", () => {
+    const withHeadings = {
+      ...SAMPLE_INPUT,
+      balanceSheet: {
+        current: {
+          calledUpShareCapitalNotPaid: 100,
+          fixedAssets: 10000,
+          currentAssets: 5000,
+          prepaymentsAccruedIncome: 400,
+          creditorsWithinOneYear: 3000,
+          creditorsAfterOneYear: 2000,
+          provisionsForLiabilities: 300,
+          accrualsDeferredIncome: 200,
+          calledUpShareCapital: 100,
+          profitAndLossAccount: 9900,
+          capitalAndReserves: 10000,
+        },
+        prior: { ...SAMPLE_INPUT.balanceSheet.prior, prepaymentsAccruedIncome: 50, accrualsDeferredIncome: 50 },
+      },
+    };
+    const xhtml = buildMicroEntityAccounts(withHeadings);
+
+    test("tags each heading with a taxonomy concept on both balance sheet dates", () => {
+      const concepts = loadFrcTaxonomyConcepts();
+      for (const key of ["calledUpShareCapitalNotPaid", "prepaymentsAccruedIncome", "provisionsForLiabilities", "accrualsDeferredIncome"]) {
+        const { prefix, name } = CONCEPTS[key];
+        expect(concepts.includes(`${prefix}:${name}`)).toBe(true);
+        expect(xhtml.match(new RegExp(`name="${prefix}:${name}"`, "g"))).toHaveLength(2);
+      }
+    });
+
+    test("a heading one year carries shows as nil in the other year", () => {
+      expect(xhtml).toMatch(/name="core:CalledUpShareCapitalNotPaidNotExpressedAsCurrentAsset"[^>]*>0</);
+    });
+
+    test("the headings enter net current assets, total assets less current liabilities and net assets", () => {
+      expect(xhtml).toMatch(/name="core:NetCurrentAssetsLiabilities"[^>]*>2,400</);
+      expect(xhtml).toMatch(/name="core:TotalAssetsLessCurrentLiabilities"[^>]*>12,500</);
+      expect(xhtml).toMatch(/name="core:NetAssetsLiabilities"[^>]*>10,000</);
+    });
+
+    test("refuses capital and reserves that ignore a heading", () => {
+      const input = structuredClone(withHeadings);
+      input.balanceSheet.current.accrualsDeferredIncome = 0;
+      expect(() => buildMicroEntityAccounts(input)).toThrow(/does not equal net assets/);
+    });
+
+    test("headings of zero in every year change no output", () => {
+      const zeroed = structuredClone(SAMPLE_INPUT);
+      for (const year of [zeroed.balanceSheet.current, zeroed.balanceSheet.prior]) {
+        Object.assign(year, {
+          calledUpShareCapitalNotPaid: 0,
+          prepaymentsAccruedIncome: 0,
+          provisionsForLiabilities: 0,
+          accrualsDeferredIncome: 0,
+        });
+      }
+      expect(buildMicroEntityAccounts(zeroed)).toBe(buildMicroEntityAccounts(SAMPLE_INPUT));
+    });
+
+    test("the share capital note calls shares fully paid only when no capital is unpaid", () => {
+      const paid = buildMicroEntityAccounts(DORMANT_INPUT);
+      expect(paid).toContain("Allotted, called up and fully paid:");
+      expect(paid).not.toContain("NumberSharesAllotted");
+    });
+
+    test("the share capital note splits allotted shares from fully paid shares when capital is unpaid", () => {
+      const prior = DORMANT_INPUT.balanceSheet.prior;
+      const input = {
+        ...DORMANT_INPUT,
+        balanceSheet: {
+          current: {
+            ...DORMANT_INPUT.balanceSheet.current,
+            calledUpShareCapitalNotPaid: 40,
+            capitalAndReserves: 8000 + 40,
+            profitAndLossAccount: 7900,
+          },
+          prior,
+        },
+      };
+      const unpaidXhtml = buildMicroEntityAccounts(input);
+      expect(unpaidXhtml).not.toContain("called up and fully paid");
+      expect(unpaidXhtml).toMatch(/Allotted and called up: <ix:nonFraction name="core:NumberSharesAllotted"[^>]*>200</);
+      expect(unpaidXhtml).toMatch(
+        /of which <ix:nonFraction name="core:NumberSharesIssuedFullyPaid"[^>]*>120<\/ix:nonFraction> are fully paid/,
+      );
+    });
+
+    test("a dormant set states it has not acted as an agent and a trading set does not", () => {
+      expect(hiddenText(buildMicroEntityAccounts(DORMANT_INPUT), "direp:CompanyHasActedAsAnAgentDuringPeriodTruefalse")).toBe("false");
+      expect(buildMicroEntityAccounts(SAMPLE_INPUT)).not.toContain("CompanyHasActedAsAnAgentDuringPeriodTruefalse");
     });
   });
 
@@ -509,5 +643,36 @@ describe("services/microEntityAccountsIxbrl", () => {
       const concept = CONCEPTS[key];
       expect(fragment).toContain(`name="${concept.prefix}:${concept.name}"`);
     });
+  });
+});
+
+describe("the accountants' report of a micro-entity", () => {
+  const accountantsReport = { accountantsName: "Test Firm LLP", statement: "We compiled these accounts." };
+
+  test("adds the page after the cover, tags the firm and statement and uses the with-accountants status member", () => {
+    for (const input of [SAMPLE_INPUT, DORMANT_INPUT]) {
+      const xhtml = buildMicroEntityAccounts({ ...input, accountantsReport });
+      expect(() => parseXmlDocument(xhtml)).not.toThrow();
+      expect(xhtml).toMatch(/name="bus:NameEntityAccountants" contextRef="y2026">Test Firm LLP</);
+      expect(xhtml).toMatch(/name="accrep:StatementOnScopeAccountantsReport" contextRef="y2026">We compiled these accounts\.</);
+      expect(xhtml.indexOf("Accountants' report")).toBeGreaterThan(xhtml.indexOf('class="page cover"'));
+      expect(xhtml.indexOf("Accountants' report")).toBeLessThan(
+        xhtml.indexOf("<h1>Balance sheet") === -1 ? xhtml.indexOf("Balance sheet") : xhtml.indexOf("<h1>Balance sheet"),
+      );
+      expect(dimensionNames(xhtml)).toContainEqual({
+        dimension: "bus:AccountsStatusDimension",
+        member: "bus:AuditExemptWithAccountantsReport",
+      });
+      expect(dimensionNames(xhtml)).not.toContainEqual({
+        dimension: "bus:AccountsStatusDimension",
+        member: "bus:AuditExempt-NoAccountantsReport",
+      });
+    }
+  });
+
+  test("a request without the report builds no accountants' facts", () => {
+    const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
+    expect(xhtml).not.toContain("NameEntityAccountants");
+    expect(xhtml).not.toContain("accrep:");
   });
 });

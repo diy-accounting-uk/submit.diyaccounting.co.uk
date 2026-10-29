@@ -48,6 +48,7 @@ let __userBundles = [];
 let __fullBundleData = []; // Full bundle objects from API (with token info, allocated flag, etc.)
 let __fetchBundlesController = null;
 let __catalogueData = null; // Catalogue TOML data (stored for re-renders)
+let __catalogueSettled = false; // True once the catalogue has loaded or failed to load
 let __currentEnv = null; // Current environment name
 
 const parseUserBundles = () => (Array.isArray(__userBundles) ? __userBundles : []);
@@ -143,7 +144,7 @@ function readStoredLandingAttribution() {
 }
 
 // --- request individual bundle
-async function requestBundle(bundleId, bundleName, qualifiers = {}, fireAndForget = true) {
+async function requestBundle(bundleId, bundleName, qualifiers = {}) {
   const idToken = getIdToken();
   if (!idToken) {
     showStatus("Please log in first to request bundles.", "warning");
@@ -160,7 +161,6 @@ async function requestBundle(bundleId, bundleName, qualifiers = {}, fireAndForge
       headers: {
         "Content-Type": "application/json",
       },
-      fireAndForget,
       body: JSON.stringify({ bundleId, qualifiers, acquisition: readStoredLandingAttribution() }),
     });
     const body = await r.json().catch(() => ({}));
@@ -260,11 +260,6 @@ const cardEl = (b) => {
       bundleButton("btn btn-outline service-btn", { "data-manage-subscription": "true" }, `Manage Subscription — ${name}`),
       noteEl("ok", "Active subscription"),
     );
-  const loginToSubscribeCard = (message) =>
-    serviceItemEl(
-      bundleButton("btn service-btn", { "data-disabled-reason": "login", "disabled": "" }, `Log in to subscribe — ${name}`, true),
-      noteEl("info", message),
-    );
   const hasActiveSubscription = () => __fullBundleData.some((fb) => fb.bundleId === b.id && fb.allocated && fb.stripeSubscriptionId);
 
   // on-pass without valid pass: disabled with reason on button
@@ -282,7 +277,6 @@ const cardEl = (b) => {
 
   // on-pass-on-subscription with valid pass: show Subscribe or Manage button
   if (allocation === "on-pass-on-subscription" && passCode) {
-    if (!getIdToken()) return loginToSubscribeCard("Log in to subscribe to this bundle");
     if (hasActiveSubscription()) return manageCard();
     return serviceItemEl(
       bundleButton("btn service-btn", { "data-subscribe": "true" }, `Subscribe £9.99/mo — ${name}`),
@@ -292,7 +286,6 @@ const cardEl = (b) => {
 
   // on-subscription allocation with always-visible: show Subscribe or Manage button
   if (allocation === "on-subscription" && enable === "always") {
-    if (!getIdToken()) return loginToSubscribeCard(b.description || "Log in to subscribe to this bundle");
     if (hasActiveSubscription()) return manageCard();
 
     // Two prices per bundle (annual and monthly): the annual (default) price is the
@@ -357,12 +350,6 @@ const cardEl = (b) => {
   // on-pass with valid pass: enabled, pass code attached
   if (enable === "on-pass" && passCode) {
     const passAttrs = { "data-pass-code": String(passCode) };
-    if (!getIdToken()) {
-      return serviceItemEl(
-        bundleButton("btn service-btn", { ...passAttrs, "data-disabled-reason": "login", "disabled": "" }, `Log in to add — ${name}`, true),
-        noteEl("info", "Log in to add this bundle"),
-      );
-    }
     return serviceItemEl(bundleButton("btn service-btn", passAttrs, `Request ${name}${tokenLabel}`, true));
   }
 
@@ -413,7 +400,7 @@ document.addEventListener("click", async (e) => {
   btn.textContent = "Requesting...";
   btn.disabled = true;
 
-  const success = await requestBundle(bundleId, bundleName, qualifiers, true);
+  const success = await requestBundle(bundleId, bundleName, qualifiers);
   if (success) {
     markGranted(btn, `Added ✓ ${bundleName}`);
   } else {
@@ -525,6 +512,13 @@ function updateBundleStatus() {
 
 const messageEl = (text) => domEl("p", { class: "service-description" }, text);
 
+function isListedInCurrentEnvironment(b) {
+  const listed = b?.listedInEnvironments;
+  if (!Array.isArray(listed) || listed.length === 0) return true;
+  if (!__currentEnv) return false;
+  return listed.includes(__currentEnv);
+}
+
 // --- render catalogue bundles (reusable, reads from __catalogueData)
 function renderCatalogueBundles() {
   const container = document.getElementById("catalogBundles");
@@ -547,12 +541,7 @@ function renderCatalogueBundles() {
       } catch {}
       return false;
     })
-    .filter((b) => {
-      const listed = b?.listedInEnvironments;
-      if (!Array.isArray(listed) || listed.length === 0) return true;
-      if (!__currentEnv) return false;
-      return listed.includes(__currentEnv);
-    })
+    .filter(isListedInCurrentEnvironment)
     .map(cardEl);
   container.replaceChildren(...(cards.length > 0 ? cards : [messageEl("No bundles available.")]));
   updateBundleStatus();
@@ -570,15 +559,19 @@ async function readEnvironment() {
   return null;
 }
 
+// The block holds room for the cards while they load; once both lists have arrived it hands the room back.
+function releaseReservedHeight() {
+  document.querySelector(".bundles-block")?.classList.add("bundles-settled");
+}
+
 // --- bootstrap: fetch catalog and render. The promise lets initPage wait for the catalogue
 // before it validates a ?pass= code, so the pass status names the bundle, not its id.
 const __catalogueReady = (async function () {
   const container = document.getElementById("catalogBundles");
   try {
     await fetchUserBundles();
-    try {
-      renderCurrentBundles();
-    } catch {}
+    // Rows take their place now with a blank name; the catalogue supplies the names.
+    renderCurrentBundles();
 
     const idToken = getIdToken();
     const headers = idToken ? { Authorization: `Bearer ${idToken}` } : undefined;
@@ -588,20 +581,26 @@ const __catalogueReady = (async function () {
     });
     if (!__catalogueData || !__catalogueData.bundles) {
       container.replaceChildren(messageEl("Catalog unavailable."));
+      __catalogueSettled = true;
+      renderCurrentBundles();
+      releaseReservedHeight();
       return;
     }
 
     __currentEnv = await readEnvironment();
     renderCatalogueBundles();
-    // Re-render current bundles now that catalogue names are available
-    try {
-      renderCurrentBundles();
-    } catch {}
+    __catalogueSettled = true;
+    renderCurrentBundles();
+    renderGeneratedPassesEmptyText();
+    releaseReservedHeight();
   } catch (err) {
     try {
       console.error("[bundles.html] Catalog bootstrap error:", err && (err.stack || err.message || err));
     } catch {}
     container.replaceChildren(messageEl("Failed to load catalog."));
+    __catalogueSettled = true;
+    renderCurrentBundles();
+    releaseReservedHeight();
   }
 })();
 
@@ -615,7 +614,8 @@ function renderCurrentBundles() {
 
     // Look up display name from catalogue
     const catBundle = __catalogueData?.bundles?.find((cb) => cb.id === bundleId);
-    const displayName = catBundle?.name || bundleId;
+    // Until the catalogue settles the name is blank, so an id is never shown.
+    const displayName = __catalogueSettled ? catBundle?.name || bundleId : "\u00a0";
 
     // Look up full bundle data for token info
     const fullData = __fullBundleData.find((b) => b.bundleId === bundleId && b.allocated);
@@ -682,6 +682,7 @@ function renderCurrentBundles() {
   if (section) {
     section.style.display = bundles.length > 0 ? "block" : "none";
   }
+  document.querySelector(".bundles-block")?.classList.toggle("holds-no-bundles", bundles.length === 0);
 }
 
 // --- click handler for remove buttons
@@ -952,11 +953,6 @@ document.getElementById("passInput")?.addEventListener("keydown", (e) => {
   }
 });
 
-// --- initialize current bundles display
-setTimeout(() => {
-  renderCurrentBundles();
-}, 100);
-
 // Feedback engagement section logic
 async function initFeedbackEngagementSection() {
   const section = document.getElementById("feedbackEngagementSection");
@@ -1014,6 +1010,31 @@ async function initFeedbackEngagementSection() {
 
 // --- My Generated Passes ---
 let __myPassesNextPageKey = null;
+let __noGeneratedPasses = false;
+
+const PASS_ACTIVITY_IDS = ["generate-pass-digital", "generate-pass-physical"];
+
+// The empty-list text says how to generate a pass when a held bundle allows it, and which
+// bundles allow it when none does. It waits for the catalogue, which holds both answers.
+function renderGeneratedPassesEmptyText() {
+  const emptyMsg = document.getElementById("generatedPassesEmpty");
+  if (!emptyMsg || !__noGeneratedPasses || !__catalogueData?.bundles) return;
+  const passActivities = (__catalogueData.activities || []).filter((a) => PASS_ACTIVITY_IDS.includes(a.id));
+  const allowedIds = new Set(passActivities.flatMap((a) => a.bundles || []));
+  const heldAllowed = parseUserBundles().some((entry) => allowedIds.has(typeof entry === "string" ? entry : entry.bundleId));
+  const prefix = "You haven't generated any passes yet. ";
+  if (heldAllowed) {
+    const names = passActivities.map((a) => a.name).join(" or ");
+    emptyMsg.textContent = `${prefix}Use ${names} in the activities list.`;
+  } else {
+    const offered = __catalogueData.bundles
+      .filter((b) => allowedIds.has(b.id) && !b.hidden && b.enable === "always")
+      .filter(isListedInCurrentEnvironment);
+    const names = offered.map((b) => b.name).join(", ");
+    emptyMsg.textContent = `${prefix}A pass is generated from a bundle that allows it: ${names}.`;
+  }
+  emptyMsg.style.display = "block";
+}
 
 async function fetchMyGeneratedPasses(append) {
   const idToken = getIdToken();
@@ -1039,11 +1060,13 @@ async function fetchMyGeneratedPasses(append) {
     if (!append) list.replaceChildren();
 
     if (data.passes.length === 0 && !append) {
-      emptyMsg.style.display = "block";
+      __noGeneratedPasses = true;
+      renderGeneratedPassesEmptyText();
       loadMore.style.display = "none";
       return;
     }
 
+    __noGeneratedPasses = false;
     emptyMsg.style.display = "none";
 
     data.passes.forEach((pass) => {

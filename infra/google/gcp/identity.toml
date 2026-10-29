@@ -88,6 +88,17 @@ display_name = "Support reply drafts"
 mailbox = "support@diyaccounting.co.uk"
 scopes = ["https://www.googleapis.com/auth/gmail.compose"]
 
+# The service account that reads the support mailbox so customer mail becomes private issues.
+# One account per scope: this one reads and cannot draft, support-gmail-draft drafts and cannot
+# read. It holds no project role. The Workspace admin console grants gmail.readonly to its client
+# ID (Security > API controls > Manage domain-wide delegation). The key goes to the prod GitHub
+# environment secret SUPPORT_GMAIL_READ_KEY; scripts/support-mail-intake.mjs reads it.
+[[delegated_service_account]]
+account_id = "support-gmail-read"
+display_name = "Support mail intake"
+mailbox = "support@diyaccounting.co.uk"
+scopes = ["https://www.googleapis.com/auth/gmail.readonly"]
+
 # An exposed service-account key must be disabled automatically, not just alerted on, so a leak
 # stops working before anyone reads the alert.
 [[org_policy]]

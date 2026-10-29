@@ -24,9 +24,23 @@
     return `${director.forename} ${director.surname}`;
   }
 
+  function showExpiry() {
+    const expires = new Date(entry.expiresAt);
+    if (Number.isNaN(expires.getTime())) return;
+    const time = expires.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+    document.getElementById("codesExpiry").textContent = `This link works until ${time}.`;
+  }
+
+  function clientLabel(client) {
+    return client.companyNumber ? `${client.displayName} (${client.companyNumber})` : client.displayName;
+  }
+
   function showClientRows() {
+    document.getElementById("codesUse").textContent = entry.clients.length === 1 ? "this filing" : "each client's filing";
     document.getElementById("codesIntro").textContent =
-      `Companies House filings for ${entry.clients.length} clients. Type each client's company authentication code below to let DIY Accounting Submit make the filings.`;
+      entry.clients.length === 1
+        ? "Companies House filing for 1 client. Type the client's company authentication code below to let DIY Accounting Submit make the filing."
+        : `Companies House filings for ${entry.clients.length} clients. Type each client's company authentication code below to let DIY Accounting Submit make the filings.`;
     const companyGroup = document.getElementById("companyAuthCodeGroup");
     companyGroup.style.display = "none";
     document.getElementById("companyAuthCode").required = false;
@@ -35,7 +49,7 @@
       group.className = "form-group";
       const label = document.createElement("label");
       label.htmlFor = `clientCode${index}`;
-      label.textContent = `Company authentication code for ${client.displayName}`;
+      label.textContent = `Company authentication code for ${clientLabel(client)}`;
       const input = document.createElement("input");
       input.type = "password";
       input.id = `clientCode${index}`;
@@ -51,6 +65,7 @@
   }
 
   function showForm() {
+    showExpiry();
     if (entry.clients && entry.clients.length > 0) return showClientRows();
     document.getElementById("codesIntro").textContent =
       `Companies House company ${entry.companyNumber}. Type the codes below to let DIY Accounting Submit make the filing.`;

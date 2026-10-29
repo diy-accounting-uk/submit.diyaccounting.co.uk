@@ -55,6 +55,32 @@ import software.amazon.awscdk.assertions.Template;
 class SubmitApplicationCdkResourceTest {
 
     @Test
+    @SetEnvironmentVariable(key = "GITHUB_APP_ID", value = "123456")
+    @SetEnvironmentVariable(key = "GITHUB_APP_INSTALLATION_ID", value = "78901234")
+    void shouldRouteTheSupportTicketPostWhenTheGithubAppIsConfigured() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+        var submitApplication = new SubmitApplication(app, appProps);
+        app.synth();
+
+        assertEquals(
+                1,
+                Template.fromStack(submitApplication.accountStack)
+                        .findResources(
+                                "AWS::Lambda::Function",
+                                Map.of(
+                                        "Properties",
+                                        Map.of("FunctionName", Match.stringLikeRegexp("support-ticket-post"))))
+                        .size());
+        List<Template> apiTemplates = List.of(
+                Template.fromStack(submitApplication.apiStack), Template.fromStack(submitApplication.apiRoutesStack));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/support/ticket"));
+    }
+
+    @Test
     void shouldCreateSubmitApplicationWithResources() throws IOException {
 
         Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
@@ -138,7 +164,7 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcItsaStack.getStackName());
         Template hmrcItsaStackTemplate = Template.fromStack(submitApplication.hmrcItsaStack);
-        hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 36);
+        hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 52);
         // The four assist functions call no external API and share the /api/v1/hmrc alarm.
         assertGroupedStackHealthAlarm(
                 hmrcItsaStackTemplate,
@@ -146,6 +172,14 @@ class SubmitApplicationCdkResourceTest {
                         "hmrc",
                         "hmrc-itsa-bsas-uk-property-adjust-post",
                         "hmrc-itsa-bsas-uk-property-get",
+                        "hmrc-itsa-foreign-property-annual-get",
+                        "hmrc-itsa-foreign-property-annual-put",
+                        "hmrc-itsa-foreign-property-details-get",
+                        "hmrc-itsa-foreign-property-details-post",
+                        "hmrc-itsa-foreign-property-details-put",
+                        "hmrc-itsa-foreign-property-period-get",
+                        "hmrc-itsa-foreign-property-period-post",
+                        "hmrc-itsa-foreign-property-period-put",
                         "hmrc-itsa-losses-and-claims-delete",
                         "hmrc-itsa-losses-and-claims-get",
                         "hmrc-itsa-losses-and-claims-put",
@@ -162,6 +196,14 @@ class SubmitApplicationCdkResourceTest {
                         outsideCallerQueueChecks(
                                 "hmrc-itsa-bsas-uk-property-adjust-post",
                                 "hmrc-itsa-bsas-uk-property-get",
+                                "hmrc-itsa-foreign-property-annual-get",
+                                "hmrc-itsa-foreign-property-annual-put",
+                                "hmrc-itsa-foreign-property-details-get",
+                                "hmrc-itsa-foreign-property-details-post",
+                                "hmrc-itsa-foreign-property-details-put",
+                                "hmrc-itsa-foreign-property-period-get",
+                                "hmrc-itsa-foreign-property-period-post",
+                                "hmrc-itsa-foreign-property-period-put",
                                 "hmrc-itsa-losses-and-claims-delete",
                                 "hmrc-itsa-losses-and-claims-get",
                                 "hmrc-itsa-losses-and-claims-put",
@@ -477,9 +519,13 @@ class SubmitApplicationCdkResourceTest {
         // the books routes get one), for 170 + 3 = 173. POST /api/v1/activity/started adds its own
         // route plus its own auto-HEAD route, for 173 + 2 = 175. The three Company Tax Return routes
         // each sit on their own unshared path, adding three primary routes and three auto-HEAD
-        // routes, for 187 + 6 = 193 in total.
+        // routes, for 187 + 6 = 193. GET, POST and PUT /api/v1/hmrc/itsa/foreign-property/details
+        // share one path, adding three primary routes and one auto-HEAD route, for 193 + 4 = 197.
+        // GET, POST and PUT /api/v1/hmrc/itsa/foreign-property/period share one path and add the
+        // same four, for 197 + 4 = 201. GET and PUT /api/v1/hmrc/itsa/foreign-property/annual share one
+        // path and add two primary routes and one auto-HEAD route, for 201 + 3 = 204 in total.
         assertEquals(
-                193,
+                204,
                 apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
                         + apiRoutesStackTemplate
                                 .findResources("AWS::ApiGatewayV2::Route")

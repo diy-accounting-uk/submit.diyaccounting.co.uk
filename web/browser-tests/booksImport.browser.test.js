@@ -17,6 +17,8 @@ import { PRODUCTS } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 import { savePackageZip } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import { deriveItsaQuarterlyUpdate, deriveVatReturn } from "@diy-accounting-uk/diya-gl";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { SMALL_COMPANY_BANK_LINES_CASE_INPUT, SMALL_COMPANY_FORMAT_2_CASE_INPUT } from "@app/test-helpers/accountsDocumentCases.js";
+import { buildSmallCompanyAccounts } from "@app/services/smallCompanyAccountsIxbrl.js";
 import { buildAccountsIxbrl, extractAndValidateAccountsParameters } from "@app/functions/companies-house/companiesHouseAccountsPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -325,9 +327,7 @@ test.describe("books import on the ITSA annual submission page", () => {
 });
 
 test.describe("books import on the UK property period page", () => {
-  test("fills the rental income and expense fields for the period dates and names the figures the form has no field for", async ({
-    page,
-  }) => {
+  test("fills the rental income and expense fields for the period dates", async ({ page }) => {
     await openPage(page, UK_PROPERTY_PERIOD_URL);
     await page.locator("#fromDate").fill("2025-04-06");
     await page.locator("#toDate").fill("2025-07-05");
@@ -335,13 +335,56 @@ test.describe("books import on the UK property period page", () => {
     await chooseFile(page, "landlord.diya-gl.zip", await zippedBook("landlord-uk-property"));
 
     await expect(page.locator("#booksImportStatus")).toHaveText(
-      "Filled 4 figures from landlord.diya-gl.zip for the period 2025-04-06 to 2025-07-05. Check them, then submit. " +
-        "The form has no field for these figures from the book: income.premiumsOfLeaseGrant £500, expenses.professionalFees £120.",
+      "Filled 6 figures from landlord.diya-gl.zip for the period 2025-04-06 to 2025-07-05. Check them, then submit.",
     );
+    await expect(page.locator("#premiumsOfLeaseGrant")).toHaveValue("500");
+    await expect(page.locator("#professionalFees")).toHaveValue("120");
     await expect(page.locator("#periodAmount")).toHaveValue("2000");
     await expect(page.locator("#otherIncome")).toHaveValue("75.50");
     await expect(page.locator("#repairsAndMaintenance")).toHaveValue("450.25");
     await expect(page.locator("#otherExpenses")).toHaveValue("15");
+  });
+
+  test("fills all thirteen income and expense fields a book can supply", async ({ page }) => {
+    await openPage(page, UK_PROPERTY_PERIOD_URL);
+    await page.locator("#fromDate").fill("2025-04-06");
+    await page.locator("#toDate").fill("2025-07-05");
+
+    await chooseFile(page, "landlord.diya-gl.zip", await zippedBook("landlord-uk-property-period-all-fields"));
+
+    await expect(page.locator("#booksImportStatus")).toHaveText(
+      "Filled 13 figures from landlord.diya-gl.zip for the period 2025-04-06 to 2025-07-05. Check them, then submit.",
+    );
+    const expected = {
+      periodAmount: "100",
+      premiumsOfLeaseGrant: "200",
+      reversePremiums: "300",
+      otherIncome: "400",
+      taxDeducted: "500",
+      repairsAndMaintenance: "10",
+      otherExpenses: "20",
+      premisesRunningCosts: "30",
+      financialCosts: "40",
+      professionalFees: "50",
+      costOfServices: "60",
+      residentialFinancialCost: "70",
+      travelCosts: "80",
+    };
+    for (const [id, value] of Object.entries(expected)) await expect(page.locator(`#${id}`), id).toHaveValue(value);
+    await expect(page.locator("#expenseBasisItemised")).toBeChecked();
+    await expect(page.locator("#consolidatedExpenses")).toHaveValue("");
+  });
+
+  test("a book with one total of expenses chooses the total", async ({ page }) => {
+    await openPage(page, UK_PROPERTY_PERIOD_URL);
+    await page.locator("#fromDate").fill("2025-04-06");
+    await page.locator("#toDate").fill("2025-07-05");
+
+    await chooseFile(page, "landlord.diya-gl.zip", await zippedBook("landlord-uk-property-period-total-expenses"));
+
+    await expect(page.locator("#expenseBasisTotal")).toBeChecked();
+    await expect(page.locator("#consolidatedExpenses")).toHaveValue("10");
+    await expect(page.locator("#repairsAndMaintenance")).toBeDisabled();
   });
 
   test("a book chosen before the dates asks for them, then fills once they are entered", async ({ page }) => {
@@ -877,8 +920,9 @@ test.describe("books import on the micro-entity accounts page", () => {
     await expect(page.locator("#priorCapitalAndReserves")).toHaveValue("180802");
     await expect(page.locator("#averageEmployees")).toHaveValue("3");
     await expect(page.locator("#directorName")).toHaveValue("Carol Smith");
-    await expect(page.locator("#currentYearTotals")).toContainText("Matches capital and reserves.");
-    await expect(page.locator("#priorYearTotals")).toContainText("Matches capital and reserves.");
+    await expect(page.locator("#yearTotals")).toContainText("Matches capital and reserves.");
+    await expect(page.locator("#yearTotals")).toContainText("this year, 180802 last year");
+    await expect(page.getByText("Net assets:")).toHaveCount(1);
     await expect(page.locator("#dormant")).not.toBeChecked();
     await expect(page.locator("#directorDateApproved")).toHaveValue("");
   });
@@ -925,6 +969,9 @@ test.describe("books import on the small company accounts page", () => {
     await expect(page.locator("#currentProfitAndLossTotals")).toContainText("Profit for the year: 142226.");
     await expect(page.locator("#currentFixedAssets")).toHaveValue("208990");
     await expect(page.locator("#currentCashAtBank")).toHaveValue("192995");
+    await expect(page.locator("#currentBankLoansOverdrafts")).toHaveValue("0");
+    await expect(page.locator("#currentTaxationSocialSecurity")).toHaveValue("8957");
+    await expect(page.locator("#currentAccruals")).toHaveValue("");
     await expect(page.locator("#currentProfitAndLossAccount")).toHaveValue("307928");
     await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Matches share capital plus the profit and loss reserve.");
     await expect(page.locator("#includeFixedAssetNote")).toBeChecked();
@@ -1009,6 +1056,62 @@ test.describe("books import of an iXBRL accounts document", () => {
     await expect(page.locator("#directorName")).toHaveValue("Antony Christopher Cartwright");
   });
 
+  test("a Format 2 small company document selects Format 2 and fills every Format 2 line for both years", async ({ page }) => {
+    const { profitAndLoss } = SMALL_COMPANY_FORMAT_2_CASE_INPUT;
+    const lines = [
+      "turnover",
+      "changeInStocks",
+      "ownWorkCapitalised",
+      "otherOperatingIncome",
+      "rawMaterialsConsumables",
+      "otherExternalCharges",
+      "staffCosts",
+      "depreciation",
+      "otherOperatingExpenses",
+      "interestReceivable",
+      "interestPayable",
+      "tax",
+    ];
+    await openAccountsPage(page, SMALL_URL, SMALL_COMPANY_FORMAT_2_CASE_INPUT.companyNumber);
+    await chooseFile(
+      page,
+      "format2.xhtml",
+      Buffer.from(buildSmallCompanyAccounts(SMALL_COMPANY_FORMAT_2_CASE_INPUT), "utf8"),
+      "application/xhtml+xml",
+    );
+
+    await expect(page.locator("#booksImportStatus")).toContainText("from format2.xhtml", { timeout: 60_000 });
+    await expect(page.locator("#profitAndLossFormat2")).toBeChecked();
+    await expect(page.locator("#includeComparatives")).toBeChecked();
+    for (const line of lines) {
+      const suffix = line[0].toUpperCase() + line.slice(1);
+      await expect(page.locator("#current" + suffix), `current ${line}`).toHaveValue(String(profitAndLoss.current[line]));
+      await expect(page.locator("#prior" + suffix), `prior ${line}`).toHaveValue(String(profitAndLoss.prior[line]));
+    }
+  });
+
+  test("a small company document fills the bank, tax and accruals lines for both years", async ({ page }) => {
+    await openAccountsPage(page, SMALL_URL, SMALL_COMPANY_BANK_LINES_CASE_INPUT.companyNumber);
+    await chooseFile(
+      page,
+      "bank-lines.xhtml",
+      Buffer.from(buildSmallCompanyAccounts(SMALL_COMPANY_BANK_LINES_CASE_INPUT), "utf8"),
+      "application/xhtml+xml",
+    );
+
+    await expect(page.locator("#booksImportStatus")).toContainText("from bank-lines.xhtml", { timeout: 60_000 });
+    await expect(page.locator("#includeComparatives")).toBeChecked();
+    for (const [line, current, prior] of [
+      ["BankLoansOverdrafts", "300", "200"],
+      ["TaxationSocialSecurity", "200", "150"],
+      ["Accruals", "400", "250"],
+      ["BankLoansAfterOneYear", "1200", "700"],
+    ]) {
+      await expect(page.locator("#current" + line), `current ${line}`).toHaveValue(current);
+      await expect(page.locator("#prior" + line), `prior ${line}`).toHaveValue(prior);
+    }
+  });
+
   test("a filleted small company document selects the filleted copy and leaves the profit and loss account empty", async ({ page }) => {
     await openAccountsPage(page, SMALL_URL, "06846849");
     await chooseFile(page, "filleted.xhtml", builtAccountsDocument("small-company-accounts-filleted"), "application/xhtml+xml");
@@ -1037,5 +1140,40 @@ test.describe("books import of an iXBRL accounts document", () => {
 
     await expect(page.locator("#booksImportStatus")).toContainText("this page takes a micro-entity's accounts", { timeout: 60_000 });
     await expect(page.locator("#currentFixedAssets")).toHaveValue("");
+  });
+});
+
+const SET_FIXTURES = path.join(process.cwd(), "web/browser-tests/fixtures");
+
+function setFiles(directory) {
+  return ["accounts-1.xhtml", "accounts-2.xhtml"].map((name) => ({
+    name,
+    mimeType: "application/xhtml+xml",
+    buffer: fs.readFileSync(path.join(SET_FIXTURES, directory, name)),
+  }));
+}
+
+test.describe("books import of an iXBRL document set", () => {
+  test("the two files of a set, chosen together, fill the small company form", async ({ page }) => {
+    await openAccountsPage(page, SMALL_URL, "03176906");
+    await page.locator("#booksImportFile").setInputFiles(setFiles("ixds-two-file"));
+
+    await expect(page.locator("#booksImportStatus")).toContainText("from accounts-1.xhtml, accounts-2.xhtml (FRS 102 2026 taxonomy)", {
+      timeout: 60_000,
+    });
+    await expect(page.locator("#currentTurnover")).toHaveValue("50000");
+    await expect(page.locator("#currentCostOfSales")).toHaveValue("20000");
+    await expect(page.locator("#currentFixedAssets")).not.toHaveValue("");
+  });
+
+  test("a set whose files state one fact with two values is refused with a title, a cause and a next step", async ({ page }) => {
+    await openAccountsPage(page, SMALL_URL, "03176906");
+    await page.locator("#booksImportFile").setInputFiles(setFiles("ixds-two-file-disagree"));
+
+    await expect(page.locator(".status-message-title")).toHaveText("Could not read the accounts files", { timeout: 60_000 });
+    await expect(page.locator(".status-message-cause")).toContainText("TurnoverRevenue");
+    await expect(page.locator(".status-message-next")).toHaveText("Choose the files again");
+    await expect(page.locator("#booksImportStatus")).toContainText("Nothing filled.");
+    await expect(page.locator("#currentTurnover")).toHaveValue("");
   });
 });

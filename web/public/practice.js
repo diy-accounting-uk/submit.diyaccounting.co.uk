@@ -35,12 +35,33 @@
     }
   }
 
+  // The agent's HMRC access token. It lives in this variable only: the browser keeps the id of the
+  // server-side grant, and the grant route answers the token to its owner.
+  let __hmrcAccessToken = null;
+
   function getHmrcAccessToken() {
+    return __hmrcAccessToken;
+  }
+
+  function readStored(key) {
     try {
-      return sessionStorage.getItem("hmrcAccessToken");
+      return sessionStorage.getItem(key);
     } catch {
       return null;
     }
+  }
+
+  function writeStored(key, value) {
+    try {
+      if (value == null) sessionStorage.removeItem(key);
+      else sessionStorage.setItem(key, value);
+    } catch {
+      // Storage is blocked: the connection then lasts only until the page navigates.
+    }
+  }
+
+  function hmrcAccountName() {
+    return readStored("hmrcAccount") === "synthetic" ? "synthetic" : "live";
   }
 
   // window.fetchWithIdToken and window.authorizedFetch are set by submit.js, a deferred module
@@ -56,6 +77,7 @@
   }
 
   function notify(message, type) {
+    if (typeof window.hideStatus === "function") window.hideStatus();
     if (typeof window.showStatus === "function") window.showStatus(message, type);
   }
 
@@ -64,6 +86,11 @@
     const headers = new Headers(init.headers || {});
     if (idToken) headers.set("Authorization", `Bearer ${idToken}`);
     return cognitoFetcher()(url, { ...init, headers });
+  }
+
+  // Every value placed in the markup passed here goes through escapeHtml first.
+  function setHtml(element, html) {
+    element.replaceChildren(...new DOMParser().parseFromString(html, "text/html").body.childNodes);
   }
 
   function escapeHtml(str) {
@@ -78,6 +105,88 @@
     } catch {
       return {};
     }
+  }
+
+  // --- HMRC agent connection ---
+
+  function renderConnection(connected) {
+    const line = document.getElementById("hmrcConnectionLine");
+    const button = document.getElementById("connectHmrcBtn");
+    if (line) {
+      line.textContent = connected
+        ? "Connected to HMRC as an agent."
+        : "Not connected to HMRC. Connect to invite clients and check their authorisation.";
+    }
+    if (button) button.hidden = connected;
+  }
+
+  // Reads the grant the page started, which refreshes the token near expiry. A 404 means the
+  // grant expired or is gone: the page then shows as not connected and the stored id is cleared.
+  async function loadConnection() {
+    const grantId = readStored("practiceHmrcGrantId");
+    __hmrcAccessToken = null;
+    if (!grantId || !getIdToken()) {
+      renderConnection(false);
+      return false;
+    }
+    try {
+      const response = await cognitoFetch(`/api/v1/mcp/hmrc-grants/${encodeURIComponent(grantId)}`, {});
+      if (response.status === 404) {
+        writeStored("practiceHmrcGrantId", null);
+      } else if (response.ok) {
+        const body = await readJsonSafely(response);
+        if (body.status === "granted" && body.accessToken) __hmrcAccessToken = body.accessToken;
+      }
+    } catch {
+      // The connection stays shown as not connected; the practice can connect again.
+    }
+    renderConnection(Boolean(__hmrcAccessToken));
+    return Boolean(__hmrcAccessToken);
+  }
+
+  async function connectToHmrc() {
+    if (!getIdToken()) {
+      notify("Please log in first.", "warning");
+      return;
+    }
+    try {
+      const response = await cognitoFetch("/api/v1/mcp/hmrc-grants", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ services: ["agent"], hmrcAccount: hmrcAccountName() }),
+      });
+      const body = await readJsonSafely(response);
+      if (!response.ok || !body.url || !body.grantId) {
+        notify(body.message || `Failed to start the HMRC connection (${response.status})`, "error");
+        return;
+      }
+      writeStored("practiceHmrcGrantId", body.grantId);
+      window.location.assign(body.url);
+    } catch (err) {
+      notify(`Failed to start the HMRC connection: ${err?.message || err}`, "error");
+    }
+  }
+
+  // Before an action, so the token is fresh and an expired grant is shown as such.
+  async function ensureConnection(message) {
+    if (await loadConnection()) return true;
+    renderClientsTable();
+    notify(message, "warning");
+    return false;
+  }
+
+  function renderLicence(licence) {
+    const el = document.getElementById("licenceLine");
+    if (!el || !licence) return;
+    if (licence.held) {
+      el.textContent = "Your practice holds the Resident Pro licence.";
+    } else {
+      setHtml(
+        el,
+        'Your practice does not hold the Resident Pro licence. You need it to file for clients. <a href="bundles.html">Get Resident Pro</a>',
+      );
+    }
+    el.hidden = false;
   }
 
   // --- clients list ---
@@ -118,6 +227,48 @@
     errorState.style.display = "none";
     __clients = Array.isArray(body.clients) ? body.clients : [];
     renderClientsTable();
+    renderArnOnFile(body.arnOnFile === true);
+    renderLicence(body.licence);
+  }
+
+  function renderArnOnFile(arnOnFile) {
+    const el = document.getElementById("arnOnFile");
+    if (el) el.hidden = !arnOnFile;
+  }
+
+  // --- archived clients ---
+
+  async function toggleArchivedClients() {
+    const section = document.getElementById("archivedClients");
+    const button = document.getElementById("toggleArchivedBtn");
+    if (!section.hidden) {
+      section.hidden = true;
+      button.textContent = "Show archived clients";
+      button.setAttribute("aria-expanded", "false");
+      return;
+    }
+    try {
+      const response = await cognitoFetch("/api/v1/practice/clients?archived=true", {});
+      const body = await readJsonSafely(response);
+      if (!response.ok) {
+        notify(body.message || `Failed to load archived clients (${response.status})`, "error");
+        return;
+      }
+      const archived = Array.isArray(body.clients) ? body.clients : [];
+      const list = document.getElementById("archivedClientsList");
+      setHtml(
+        list,
+        archived
+          .map((c) => `<li>${escapeHtml(c.displayName || c.clientId)} <span class="hint">${escapeHtml(identifiersLine(c))}</span></li>`)
+          .join(""),
+      );
+      document.getElementById("archivedClientsEmpty").hidden = archived.length > 0;
+      section.hidden = false;
+      button.textContent = "Hide archived clients";
+      button.setAttribute("aria-expanded", "true");
+    } catch (err) {
+      notify(`Failed to load archived clients: ${err?.message || err}`, "error");
+    }
   }
 
   function identifiersLine(client) {
@@ -141,16 +292,19 @@
     const status = auth?.status;
     const statusLabel = status ? STATUS_LABELS[status] || status : "Not invited";
     const hasAccessToken = !!getHmrcAccessToken();
+    // HMRC's status check needs the invitation, or the known fact given with it: a client never
+    // invited has nothing to check, so it offers Invite only.
+    const invited = Boolean(auth?.invitationId || auth?.knownFact);
 
     const buttons = [];
-    if (status === "pending") {
+    if (status === "pending" && invited) {
       buttons.push(
         `<button type="button" class="btn-small check-status-btn" data-client-id="${clientId}" data-service="${def.service}" ${hasAccessToken ? "" : "disabled"}>Check status</button>`,
       );
       buttons.push(
         `<button type="button" class="btn-small btn-danger cancel-invite-btn" data-client-id="${clientId}" data-service="${def.service}" ${hasAccessToken ? "" : "disabled"}>Cancel invitation</button>`,
       );
-    } else if (status === "authorised") {
+    } else if (status === "authorised" && invited) {
       buttons.push(
         `<button type="button" class="btn-small check-status-btn" data-client-id="${clientId}" data-service="${def.service}" ${hasAccessToken ? "" : "disabled"}>Check status</button>`,
       );
@@ -168,13 +322,48 @@
         <div class="auth-actions">${buttons.join("")}</div>
         ${hint}
         <div class="invite-panel" hidden>
-          <input type="text" class="invite-known-fact" aria-label="Known fact (VAT registration date or postcode)" autocomplete="off" />
+          <label class="invite-known-fact-label" for="knownFact-${clientId}-${def.service}">Known fact</label>
+          <p class="hint" id="knownFactHint-${clientId}-${def.service}">The VAT registration date as DD MM YYYY, or the client's postcode.</p>
+          <input type="text" class="invite-known-fact" id="knownFact-${clientId}-${def.service}" aria-describedby="knownFactHint-${clientId}-${def.service}" autocomplete="off" />
           <div class="auth-actions">
             <button type="button" class="btn-small invite-send-btn" data-client-id="${clientId}" data-service="${def.service}">Send invite</button>
             <button type="button" class="btn-small btn-secondary invite-cancel-panel-btn">Cancel</button>
           </div>
         </div>
       </div>`;
+  }
+
+  function archiveButtonHtml(client) {
+    const label = escapeHtml(client.displayName || client.clientId);
+    return `<button type="button" class="btn-small btn-danger archive-client-btn" data-client-id="${client.clientId}" aria-label="Archive ${label}">Archive</button>`;
+  }
+
+  function archiveConfirmHtml(client) {
+    const label = escapeHtml(client.displayName || client.clientId);
+    return `
+      <div class="archive-confirm" role="group" aria-label="Confirm archive of ${label}">
+        <p class="archive-confirm-text">Archive ${label}? You can still see them under archived clients.</p>
+        <div class="auth-actions">
+          <button type="button" class="btn-small btn-danger archive-confirm-btn" data-client-id="${client.clientId}">Yes, archive</button>
+          <button type="button" class="btn-small btn-secondary archive-keep-btn" data-client-id="${client.clientId}">Keep</button>
+        </div>
+      </div>`;
+  }
+
+  function showArchiveConfirm(clientId) {
+    const client = __clients.find((c) => c.clientId === clientId);
+    const cell = document.querySelector(`.archive-cell[data-client-id="${clientId}"]`);
+    if (!client || !cell) return;
+    setHtml(cell, archiveConfirmHtml(client));
+    cell.querySelector(".archive-confirm-btn")?.focus();
+  }
+
+  function hideArchiveConfirm(clientId) {
+    const client = __clients.find((c) => c.clientId === clientId);
+    const cell = document.querySelector(`.archive-cell[data-client-id="${clientId}"]`);
+    if (!client || !cell) return;
+    setHtml(cell, archiveButtonHtml(client));
+    cell.querySelector(".archive-client-btn")?.focus();
   }
 
   function clientRowHtml(client) {
@@ -185,7 +374,7 @@
         <td>${escapeHtml(identifiersLine(client))}</td>
         <td>${authCellHtml(client, SERVICES[0])}</td>
         <td>${authCellHtml(client, SERVICES[1])}</td>
-        <td><button type="button" class="btn-small btn-danger archive-client-btn" data-client-id="${client.clientId}">Archive</button></td>
+        <td class="archive-cell" data-client-id="${client.clientId}">${archiveButtonHtml(client)}</td>
       </tr>`;
   }
 
@@ -228,18 +417,51 @@
     };
   }
 
+  const FIELD_ERRORS = [
+    { pattern: /display ?name/i, inputId: "displayNameInput", message: "Enter the client name, up to 200 characters" },
+    { pattern: /VAT registration/i, inputId: "vrnInput", message: "The VAT registration number must be 9 numbers" },
+    { pattern: /National Insurance/i, inputId: "ninoInput", message: "Enter the National Insurance number like AB123456C" },
+    { pattern: /Unique Taxpayer|UTR/i, inputId: "utrInput", message: "The UTR must be 10 or 13 numbers" },
+    { pattern: /company number/i, inputId: "companyNumberInput", message: "The company number must be 8 characters" },
+  ];
+
+  // The API answers { message, errorMessages: [...] }. Each message that names a field marks that
+  // field; the rest are shown together above the button.
+  function showAddClientFailure(body, errorsEl) {
+    const messages =
+      Array.isArray(body.errorMessages) && body.errorMessages.length > 0 ? body.errorMessages : [body.message || "Failed to add client"];
+    const fieldErrors = [];
+    const otherMessages = [];
+    for (const text of messages) {
+      const match = FIELD_ERRORS.find((entry) => entry.pattern.test(text));
+      if (match && !fieldErrors.some((e) => e.input.id === match.inputId)) {
+        fieldErrors.push({ input: document.getElementById(match.inputId), message: match.message });
+      } else if (!match) {
+        otherMessages.push(text);
+      }
+    }
+    if (fieldErrors.length > 0) window.formErrors.showFormErrors(fieldErrors);
+    if (otherMessages.length > 0) {
+      errorsEl.textContent = otherMessages.join(" ");
+      errorsEl.style.display = "block";
+    }
+  }
+
   async function handleAddClientSubmit(e) {
     e.preventDefault();
     const errorsEl = document.getElementById("addClientErrors");
     const submitBtn = document.getElementById("addClientBtn");
     errorsEl.style.display = "none";
     errorsEl.textContent = "";
+    window.formErrors?.clearFormErrors();
 
     const idToken = getIdToken();
     if (!idToken) {
       notify("Please log in first to add a client.", "warning");
       return;
     }
+
+    if (!window.formErrors.requireFields(["displayNameInput"])) return;
 
     const fields = readAddClientForm();
     submitBtn.disabled = true;
@@ -254,9 +476,7 @@
       const body = await readJsonSafely(response);
 
       if (!response.ok) {
-        const messages = Array.isArray(body.error?.errorMessages) ? body.error.errorMessages : [body.message || "Failed to add client"];
-        errorsEl.textContent = messages.join(" ");
-        errorsEl.style.display = "block";
+        showAddClientFailure(body, errorsEl);
         return;
       }
 
@@ -292,6 +512,11 @@
       }
       __clients = __clients.filter((c) => c.clientId !== clientId);
       renderClientsTable();
+      const archivedSection = document.getElementById("archivedClients");
+      if (archivedSection && !archivedSection.hidden) {
+        archivedSection.hidden = true;
+        await toggleArchivedClients();
+      }
       notify("Client archived.", "success");
     } catch (err) {
       notify(`Failed to archive client: ${err?.message || err}`, "error");
@@ -314,11 +539,8 @@
       return;
     }
 
+    if (!(await ensureConnection("Connect to HMRC before sending an invitation."))) return;
     const accessToken = getHmrcAccessToken();
-    if (!accessToken) {
-      notify("Connect to HMRC before sending an invitation.", "warning");
-      return;
-    }
 
     const cell = document.querySelector(`.auth-cell[data-client-id="${clientId}"][data-service="${service}"]`);
     const knownFact = cell?.querySelector(".invite-known-fact")?.value.trim();
@@ -351,11 +573,8 @@
   }
 
   async function checkStatus(clientId, service) {
+    if (!(await ensureConnection("Connect to HMRC before checking authorisation status."))) return;
     const accessToken = getHmrcAccessToken();
-    if (!accessToken) {
-      notify("Connect to HMRC before checking authorisation status.", "warning");
-      return;
-    }
 
     try {
       const response = await hmrcFetcher()(
@@ -378,11 +597,8 @@
   }
 
   async function cancelInvitation(clientId, service) {
+    if (!(await ensureConnection("Connect to HMRC before cancelling an invitation."))) return;
     const accessToken = getHmrcAccessToken();
-    if (!accessToken) {
-      notify("Connect to HMRC before cancelling an invitation.", "warning");
-      return;
-    }
 
     try {
       const response = await hmrcFetcher()(
@@ -407,6 +623,11 @@
   // --- event delegation ---
 
   document.addEventListener("click", (e) => {
+    if (e.target.closest("#connectHmrcBtn")) {
+      connectToHmrc();
+      return;
+    }
+
     const inviteToggle = e.target.closest(".invite-toggle-btn");
     if (inviteToggle) {
       toggleInvitePanel(inviteToggle.getAttribute("data-client-id"), inviteToggle.getAttribute("data-service"), true);
@@ -443,8 +664,23 @@
 
     const archiveBtn = e.target.closest(".archive-client-btn");
     if (archiveBtn) {
-      archiveClient(archiveBtn.getAttribute("data-client-id"));
+      showArchiveConfirm(archiveBtn.getAttribute("data-client-id"));
+      return;
     }
+
+    const archiveConfirmBtn = e.target.closest(".archive-confirm-btn");
+    if (archiveConfirmBtn) {
+      archiveClient(archiveConfirmBtn.getAttribute("data-client-id"));
+      return;
+    }
+
+    const archiveKeepBtn = e.target.closest(".archive-keep-btn");
+    if (archiveKeepBtn) {
+      hideArchiveConfirm(archiveKeepBtn.getAttribute("data-client-id"));
+      return;
+    }
+
+    if (e.target.closest("#toggleArchivedBtn")) toggleArchivedClients();
   });
 
   document.getElementById("addClientForm")?.addEventListener("submit", handleAddClientSubmit);
@@ -457,7 +693,9 @@
   // may load after it in a stripped-down test page.
   function initPage() {
     if (typeof window.checkAuthStatus === "function") window.checkAuthStatus();
-    fetchClients();
+    loadConnection()
+      .then(fetchClients)
+      .catch(() => {});
   }
 
   if (document.readyState === "loading") {

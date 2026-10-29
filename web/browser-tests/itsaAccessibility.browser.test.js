@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // web/browser-tests/itsaAccessibility.browser.test.js
-// axe-core scans of the 19 ITSA pages in a populated state (form loaded, results rendered),
+// axe-core scans of the ITSA pages in a populated state (form loaded, results rendered),
 // reusing the route/stub pattern itsaDashboard.browser.test.js uses for the empty state and the
 // per-page display functions the other ITSA browser tests already exercise.
 
@@ -403,5 +403,94 @@ test.describe("ITSA pages - WCAG 2.1 AA (populated state)", () => {
       });
     });
     expectNoViolations(await runAxe(page), "ukPropertyPeriodView.html");
+  });
+
+  test("foreignPropertyPeriod.html: country fieldsets and the FHL section", async ({ page }) => {
+    await loadItsaPage(page, "foreignPropertyPeriod.html");
+    await page.locator("#taxYear").selectOption("2024-25");
+    await page.locator("#taxYear").dispatchEvent("input");
+    await page.locator("#fp-add").click();
+    await page.locator("#fp-add").click();
+    await page.locator("#fp-1-country").selectOption("FRA");
+    expectNoViolations(await runAxe(page), "foreignPropertyPeriod.html");
+  });
+
+  test("foreignPropertyPeriodAmend.html: a loaded cumulative total", async ({ page }) => {
+    await loadItsaPage(page, "foreignPropertyPeriodAmend.html");
+    await page.locator("#taxYear").selectOption("2025-26");
+    await page.locator("#taxYear").dispatchEvent("input");
+    await page.evaluate(() => {
+      figures.apply({ foreignProperty: [{ countryCode: "ESP", income: { rentIncome: { rentAmount: 5 } }, expenses: { other: 2 } }] });
+    });
+    expectNoViolations(await runAxe(page), "foreignPropertyPeriodAmend.html");
+  });
+
+  test("foreignPropertyAnnualSubmission.html: a loaded annual submission for two countries", async ({ page }) => {
+    await loadItsaPage(page, "foreignPropertyAnnualSubmission.html");
+    await page.evaluate(() => {
+      window.mountEntries("2025-26");
+      window.applySubmission(
+        {
+          foreignProperty: [
+            { countryCode: "FRA", adjustments: { balancingCharge: 5 }, allowances: { annualInvestmentAllowance: 9 } },
+            { countryCode: "ESP", allowances: { propertyIncomeAllowance: 100 } },
+          ],
+        },
+        "country",
+      );
+    });
+    await showContainer(page, "annualEditForm");
+    expectNoViolations(await runAxe(page), "foreignPropertyAnnualSubmission.html");
+  });
+
+  test("foreignPropertyAdjustments.html: a year-end summary for two countries", async ({ page }) => {
+    await loadItsaPage(page, "foreignPropertyAdjustments.html");
+    await showContainer(page, "summaryContainer");
+    await page.evaluate(() => {
+      const figures = {
+        totalIncome: 12000,
+        income: { totalRentsReceived: 12000 },
+        totalExpenses: 500,
+        expenses: { other: 500 },
+        netProfit: 11500,
+      };
+      window.displaySummary(
+        {
+          adjustableSummaryCalculation: {
+            ...figures,
+            countryLevelDetail: [
+              { countryCode: "FRA", ...figures },
+              { countryCode: "ESP", ...figures },
+            ],
+          },
+        },
+        "2025-26",
+      );
+    });
+    expectNoViolations(await runAxe(page), "foreignPropertyAdjustments.html");
+  });
+
+  test("foreignPropertyPeriods.html: a cumulative total table", async ({ page }) => {
+    await loadItsaPage(page, "foreignPropertyPeriods.html");
+    await showContainer(page, "periodsResults");
+    await page.evaluate(() => {
+      window.displayCurrentTotal({
+        toDate: "2025-07-05",
+        foreignProperty: [{ countryCode: "FRA", income: { rentIncome: { rentAmount: 5 } }, expenses: { other: 2 } }],
+      });
+    });
+    expectNoViolations(await runAxe(page), "foreignPropertyPeriods.html");
+  });
+
+  test("foreignPropertyPeriodView.html: a single period's detail", async ({ page }) => {
+    await loadItsaPage(page, "foreignPropertyPeriodView.html");
+    await showContainer(page, "periodViewResults");
+    await page.evaluate(() =>
+      window.displayPeriod({
+        toDate: "2025-07-05",
+        foreignProperty: [{ countryCode: "FRA", income: { rentIncome: { rentAmount: 5 } }, expenses: { other: 2 } }],
+      }),
+    );
+    expectNoViolations(await runAxe(page), "foreignPropertyPeriodView.html");
   });
 });

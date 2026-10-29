@@ -67,30 +67,10 @@
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>Activities</h1>
-      <p class="subtitle">Submit UK VAT returns to HMRC under Making Tax Digital (MTD)</p>
+      <p class="subtitle" id="homeSubtitle">Submit to HMRC and Companies House</p>
     </header>
 
     <main id="mainContent">
-      <div class="feature-status-summary" data-feature-status="summary">
-        <p>
-          <strong>Status of each feature.</strong> Sandbox and preview features file nothing real.
-          <a href="mtd-calendar.html#availability">See the availability table</a>.
-        </p>
-        <ul>
-          <li>
-            <span class="status-tag" data-status="production">Production</span> for real use: HMRC VAT, company lookup, registered office
-            and registered email.
-          </li>
-          <li>
-            <span class="status-tag" data-status="sandbox">Sandbox</span> against a test service: HMRC Income Tax (MTD), HMRC Assist for
-            Income Tax, the Companies House confirmation statement, PSC verification statement and accounts.
-          </li>
-          <li>
-            <span class="status-tag" data-status="preview">Preview</span> on our simulator only: HMRC Company Tax Return (CT600) and HMRC
-            Assist for VAT.
-          </li>
-        </ul>
-      </div>
       <div id="feedbackEngagementBanner" class="feedback-banner" role="complementary" aria-label="Feedback engagement" hidden>
         <span
           >We're actively improving this service and would love to hear from you. If you're willing to share feedback, let us know and we'll
@@ -105,6 +85,14 @@
 
       <div class="form-container">
         <div id="dynamicActivities" class="reserve-viewport-height"></div>
+      </div>
+
+      <div class="feature-status-summary" data-feature-status="summary">
+        <p>
+          <strong>Status of each feature.</strong> Sandbox and preview features file nothing real.
+          <a href="mtd-calendar.html#availability">See the availability table</a>.
+        </p>
+        <ul id="featureStatusList"></ul>
       </div>
 
       <aside class="proof-note" aria-label="Reviews and listing">

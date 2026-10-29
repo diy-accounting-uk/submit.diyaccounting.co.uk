@@ -62,6 +62,12 @@ vi.mock("@app/services/hmrcTransactionEngine.js", async (importOriginal) => ({
   postToTransactionEngine: (...args) => mockPostToTransactionEngine(...args),
 }));
 
+const mockChargeTokenOnSuccess = vi.fn();
+vi.mock("@app/services/tokenEnforcement.js", async (importOriginal) => ({
+  ...(await importOriginal()),
+  chargeTokenOnSuccess: (...args) => mockChargeTokenOnSuccess(...args),
+}));
+
 import { ingestHandler as hmrcCtReturnGetHandler } from "@app/functions/hmrc/hmrcCtReturnGet.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -270,6 +276,39 @@ describe("hmrcCtReturnGet ingestHandler", () => {
     process.env.ENVIRONMENT_NAME = "prod";
     const response = await hmrcCtReturnGetHandler(buildEvent());
     expect(response.statusCode).toBe(403);
+  });
+
+  describe("a return sent as half of a pair", () => {
+    const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
+
+    test("writes the jointFilingId into the receipt and the completed request, and charges one token", async () => {
+      storedRecord = pendingRecord({ data: { jointFilingId: JOINT_FILING_ID } });
+      engineReturns(SUCCESS, DELETE_RESPONSE);
+      const response = await hmrcCtReturnGetHandler(buildEvent());
+      expect(parseResponseBody(response)).toMatchObject({ statusCode: "ACCEPT", jointFilingId: JOINT_FILING_ID });
+      const [receipt] = await commands("PutCommand");
+      expect(receipt.input.Item.receipt).toMatchObject({ statusCode: "ACCEPT", jointFilingId: JOINT_FILING_ID });
+      const [update] = await commands("UpdateCommand");
+      expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({ jointFilingId: JOINT_FILING_ID });
+      expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+      expect(mockChargeTokenOnSuccess).toHaveBeenCalledWith(expect.any(String), "file-company-tax-return");
+    });
+
+    test("keeps the jointFilingId on a rejection and charges nothing", async () => {
+      storedRecord = pendingRecord({ data: { jointFilingId: JOINT_FILING_ID } });
+      engineReturns(IRMARK_ERROR, DELETE_RESPONSE);
+      const response = await hmrcCtReturnGetHandler(buildEvent());
+      expect(parseResponseBody(response)).toMatchObject({ statusCode: "REJECT", jointFilingId: JOINT_FILING_ID });
+      expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
+    });
+
+    test("a return sent alone writes no jointFilingId and charges nothing", async () => {
+      engineReturns(SUCCESS, DELETE_RESPONSE);
+      await hmrcCtReturnGetHandler(buildEvent());
+      const [receipt] = await commands("PutCommand");
+      expect(receipt.input.Item.receipt).not.toHaveProperty("jointFilingId");
+      expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
+    });
   });
 
   test("returns 200 with an empty object for a HEAD request", async () => {

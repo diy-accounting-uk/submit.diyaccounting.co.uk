@@ -642,7 +642,10 @@ public class AccountStack extends Stack {
                         .urlPath(props.sharedNames().practiceClientsListGetLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().practiceClientsListGetLambdaJwtAuthorizer)
                         .customAuthorizer(props.sharedNames().practiceClientsListGetLambdaCustomAuthorizer)
-                        .environment(practiceClientsLambdaEnv)
+                        .environment(new PopulatedMap<String, String>()
+                                .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
+                                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                                .with("ENVIRONMENT_NAME", props.envName()))
                         .build());
         healthCheckedFunctions.add(practiceClientsListGetApiLambda);
         this.practiceClientsListGetLambdaProps = practiceClientsListGetApiLambda.apiProps;
@@ -650,6 +653,8 @@ public class AccountStack extends Stack {
         this.practiceClientsListGetLambdaLogGroup = practiceClientsListGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.practiceClientsListGetLambdaProps);
         practiceClientsTable.grant(this.practiceClientsListGetLambda, "dynamodb:Query");
+        // The list answers whether the caller holds the practice licence, from their bundles.
+        bundlesTable.grant(this.practiceClientsListGetLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.practiceClientsListGetLambda, region, account, props.envName());
         infof(
                 "Created API Lambda %s for listing practice clients with ingestHandler %s",

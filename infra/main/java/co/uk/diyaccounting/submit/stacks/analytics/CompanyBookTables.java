@@ -143,6 +143,7 @@ public class CompanyBookTables {
                                         "bookid", "string",
                                         "latestversion", "bigint",
                                         "latestetag", "string",
+                                        "cashatbank", "double",
                                         "accounts", ACCOUNTS_TYPE))
                                 .build())
                         .build())

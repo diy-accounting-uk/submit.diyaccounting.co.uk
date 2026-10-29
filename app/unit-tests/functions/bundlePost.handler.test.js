@@ -213,6 +213,22 @@ describe("bundlePost ingestHandler", () => {
     expect(body.qualifier).toBe("unknownField");
   });
 
+  test.each(["synthetic", "stripeTestMode"])("returns 400 when a request sets the system qualifier %s", async (qualifier) => {
+    const token = makeIdToken(`user-system-qualifier-${qualifier}`);
+    const event = buildEventWithToken(token, {
+      bundleId: "day-guest",
+      qualifiers: { [qualifier]: true },
+    });
+    event.headers["x-wait-time-ms"] = "30000";
+
+    const response = await bundlePostHandler(event);
+
+    expect(response.statusCode).toBe(400);
+    const body = parseResponseBody(response);
+    expect(body.error).toBe("unknown_qualifier");
+    expect(body.qualifier).toBe(qualifier);
+  });
+
   test("returns 400 when qualifier mismatch occurs", async () => {
     const token = makeIdToken("user-qualifier-mismatch");
     // Test bundle may have specific qualifier requirements

@@ -75,6 +75,15 @@ test.describe("File small company accounts page", () => {
     await expect(page.locator("#comparativeFields")).toBeHidden();
   });
 
+  test("on a phone the format 2 lines stay out of sight in format 1", async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 900 });
+    await openFormView(page);
+    await page.addStyleTag({ path: "web/public/submit.css" });
+    await expect(page.locator("#currentTurnover")).toBeVisible();
+    await expect(page.locator("#currentChangeInStocks")).toBeHidden();
+    await expect(page.locator("#currentInterestPayable")).toBeHidden();
+  });
+
   test("the profit and loss subtotals and the balance sheet check follow what is typed", async ({ page }) => {
     await openFormView(page);
     await fillCurrentYear(page);
@@ -148,5 +157,218 @@ test.describe("File small company accounts page", () => {
       expect(entry.inLedger, entry.id).toBe(true);
       expect(entry.hint, entry.id).toContain("For example");
     }
+  });
+
+  test("bank loans, taxation and social security and bank loans after one year change the totals and the request", async ({ page }) => {
+    await openFormView(page);
+    await fillCurrentYear(page);
+    await page.fill("#currentCreditorsAfterOneYear", "800");
+    await page.fill("#currentBankLoansAfterOneYear", "500");
+    await page.fill("#currentBankLoansOverdrafts", "200");
+    await page.fill("#currentTaxationSocialSecurity", "150");
+    await page.fill("#currentProfitAndLossAccount", "2750");
+    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: 2850. Matches");
+    const year = await page.evaluate(() => buildAccountsPayload().smallCompany.balanceSheet.currentYear);
+    expect(year).toMatchObject({ bankLoansOverdrafts: 200, taxationSocialSecurity: 150, bankLoansAfterOneYear: 500 });
+    await page.fill("#currentBankLoansAfterOneYear", "900");
+    expect(await page.evaluate(() => formProblem())).toContain("Bank loans due after one year");
+  });
+
+  test("the new creditor lines sit in the balance sheet table in both years, next to the lines they split", async ({ page }) => {
+    await openFormView(page);
+    await page.check("#includeComparatives");
+    for (const prefix of ["current", "prior"]) {
+      const labels = await page
+        .locator(`#${prefix}BankLoansOverdrafts, #${prefix}TaxationSocialSecurity, #${prefix}BankLoansAfterOneYear`)
+        .evaluateAll((inputs) => inputs.map((input) => input.closest("tr").querySelector("th").textContent.trim()));
+      expect(labels).toEqual([
+        "Bank loans and overdrafts (due within one year)",
+        "Taxation and social security (due within one year)",
+        "Of which, bank loans",
+      ]);
+    }
+  });
+
+  test("the debtors split, the directors loan and the provisions change the totals and the request", async ({ page }) => {
+    await openFormView(page);
+    await fillCurrentYear(page);
+    await page.fill("#currentTradeDebtors", "1800");
+    await page.fill("#currentOtherDebtors", "400");
+    await page.fill("#currentPrepayments", "300");
+    await page.fill("#currentCreditorsAfterOneYear", "800");
+    await page.fill("#currentAmountsOwedToDirectors", "500");
+    await page.fill("#currentAmountsOwedToGroupUndertakings", "100");
+    await page.fill("#currentProvisionsForLiabilities", "250");
+    await page.fill("#currentProfitAndLossAccount", "2850");
+    await expect(page.locator("#currentBalanceSheetTotals")).toContainText("Net assets: 2950. Matches");
+    const year = await page.evaluate(() => buildAccountsPayload().smallCompany.balanceSheet.currentYear);
+    expect(year).toMatchObject({
+      tradeDebtors: 1800,
+      otherDebtors: 400,
+      prepayments: 300,
+      amountsOwedToDirectors: 500,
+      amountsOwedToGroupUndertakings: 100,
+      provisionsForLiabilities: 250,
+    });
+    expect(await page.evaluate(() => formProblem())).toBeNull();
+    await page.fill("#currentPrepayments", "200");
+    expect(await page.evaluate(() => formProblem())).toContain("must add up to the debtors");
+    await page.fill("#currentPrepayments", "300");
+    await page.fill("#currentAmountsOwedToGroupUndertakings", "400");
+    expect(await page.evaluate(() => formProblem())).toContain("amounts owed to group undertakings cannot be more than");
+  });
+
+  test("the debtors, creditors and provisions lines sit in the balance sheet table in both years, next to the lines they split", async ({
+    page,
+  }) => {
+    await openFormView(page);
+    await page.check("#includeComparatives");
+    for (const prefix of ["current", "prior"]) {
+      const labels = await page
+        .locator(
+          `#${prefix}TradeDebtors, #${prefix}OtherDebtors, #${prefix}Prepayments, #${prefix}AmountsOwedToDirectors, #${prefix}AmountsOwedToGroupUndertakings, #${prefix}ProvisionsForLiabilities`,
+        )
+        .evaluateAll((inputs) => inputs.map((input) => input.closest("tr").querySelector("th").textContent.trim()));
+      expect(labels).toEqual([
+        "Of which, trade debtors",
+        "Of which, other debtors",
+        "Of which, prepayments and accrued income",
+        "Of which, amounts owed to directors",
+        "Of which, amounts owed to group undertakings",
+        "Provisions for liabilities",
+      ]);
+    }
+  });
+
+  test("the intangible assets note shows when ticked, adds to the tangible note and reaches the request", async ({ page }) => {
+    await openFormView(page);
+    await fillCurrentYear(page);
+    await expect(page.locator("#intangibleAssetNoteFields")).toBeHidden();
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.intangibleAssetNote)).toBeUndefined();
+    await page.check("#includeIntangibleAssetNote");
+    await expect(page.locator("#intangibleAssetNoteFields")).toBeVisible();
+    await page.check("#includeFixedAssetNote");
+    await page.fill("#noteLandBuildingsCostAtStart", "700");
+    await page.fill("#intangibleNoteCostAtStart", "400");
+    await page.fill("#intangibleNoteAmortisationAtStart", "100");
+    await expect(page.locator("#intangibleAssetNoteTotals")).toContainText(
+      "Net book value: 300. With the tangible fixed assets note, matches",
+    );
+    expect(await page.evaluate(() => formProblem())).toBeNull();
+    const note = await page.evaluate(() => buildAccountsPayload().smallCompany.intangibleAssetNote);
+    expect(note).toMatchObject({ costAtStart: 400, amortisationAtStart: 100, additions: 0 });
+    await page.fill("#intangibleNoteAdditions", "50");
+    expect(await page.evaluate(() => formProblem())).toContain("net book value must equal the fixed assets");
+    await page.locator("#morePolicies summary").click();
+    await page.fill("#intangibleAssetsPolicy", "Goodwill is amortised over five years.");
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.intangibleAssetsPolicy)).toBe(
+      "Goodwill is amortised over five years.",
+    );
+  });
+
+  test("the registered office parts fill from the company record, can be edited and reach the request", async ({ page }) => {
+    await openFormView(page);
+    await page.evaluate(() =>
+      window.accountsFormSections.fillRegisteredOffice({
+        addressLine1: "Unit 4 Morgan Court",
+        cityOrTown: "Cardiff",
+        postalCode: "CF10 1AA",
+      }),
+    );
+    await expect(page.locator("#officeAddressLine1")).toHaveValue("Unit 4 Morgan Court");
+    await page.fill("#officeCountry", "Wales");
+    const office = await page.evaluate(() => buildAccountsPayload().registeredOffice);
+    expect(office).toEqual({ addressLine1: "Unit 4 Morgan Court", cityOrTown: "Cardiff", postalCode: "CF10 1AA", country: "Wales" });
+  });
+
+  test("the accountants' report fields show only when ticked", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("#accountantsReportFields")).toBeHidden();
+    expect(await page.evaluate(() => buildAccountsPayload().accountantsReport)).toBeUndefined();
+    await page.check("#includeAccountantsReport");
+    await expect(page.locator("#accountantsReportFields")).toBeVisible();
+    await page.fill("#accountantsName", "Calder Brook Accountants LLP");
+    const report = await page.evaluate(() => buildAccountsPayload().accountantsReport);
+    expect(report.accountantsName).toBe("Calder Brook Accountants LLP");
+    expect(report.statement).toContain("compiled these unaudited financial statements");
+  });
+
+  test("the policy boxes sit under a closed disclosure and only the filled ones reach the request", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("#morePolicies")).not.toHaveAttribute("open", "");
+    await expect(page.locator("#morePolicies summary")).toHaveText("More accounting policies (optional)");
+    expect(
+      await page.evaluate(() => Object.keys(buildAccountsPayload().smallCompany).filter((key) => /Policy|Statement/.test(key))),
+    ).toEqual([]);
+    await page.locator("#morePolicies summary").click();
+    await page.fill("#goingConcernStatement", "  The company is a going concern.  ");
+    await page.fill("#impairmentPolicy", "Assets are reviewed for impairment each year.");
+    const smallCompany = await page.evaluate(() => buildAccountsPayload().smallCompany);
+    expect(smallCompany.goingConcernStatement).toBe("The company is a going concern.");
+    expect(smallCompany.impairmentPolicy).toBe("Assets are reviewed for impairment each year.");
+    expect(smallCompany.revenueRecognitionPolicy).toBeUndefined();
+    await page.fill("#propertyPlantEquipmentPolicy", "Cost less depreciation.");
+    await page.fill("#depreciationMethodPolicy", "Straight line over four years.");
+    await page.fill("#deferredTaxPolicy", "Deferred tax is not provided.");
+    await page.fill("#functionalPresentationCurrencyPolicy", "Pounds sterling.");
+    const second = await page.evaluate(() => buildAccountsPayload().smallCompany);
+    expect(second).toMatchObject({
+      propertyPlantEquipmentPolicy: "Cost less depreciation.",
+      depreciationMethodPolicy: "Straight line over four years.",
+      deferredTaxPolicy: "Deferred tax is not provided.",
+      functionalPresentationCurrencyPolicy: "Pounds sterling.",
+    });
+    expect(await page.locator("#morePolicies textarea").evaluateAll((boxes) => boxes.map((box) => box.id))).toEqual([
+      "goingConcernStatement",
+      "revenueRecognitionPolicy",
+      "tangibleFixedAssetsPolicy",
+      "propertyPlantEquipmentPolicy",
+      "depreciationMethodPolicy",
+      "intangibleAssetsPolicy",
+      "impairmentPolicy",
+      "inventoriesPolicy",
+      "cashCashEquivalentsPolicy",
+      "financialInstrumentsPolicy",
+      "financialInstrumentsClassificationPolicy",
+      "employeeBenefitsPolicy",
+      "definedContributionPensionsPolicy",
+      "foreignCurrencyTranslationPolicy",
+      "functionalPresentationCurrencyPolicy",
+      "leasesPolicy",
+      "taxPolicy",
+      "currentIncomeTaxPolicy",
+      "deferredTaxPolicy",
+      "dividendPolicy",
+    ]);
+  });
+
+  test("the controlling party is none by default, can state there is no ultimate party, or can name one", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("#controllingPartyFields")).toBeHidden();
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.controllingParty)).toBeUndefined();
+    await page.check("#controllingPartyNoUltimate");
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.controllingParty)).toEqual({ ultimate: false });
+    await page.check("#controllingPartyNamed");
+    await expect(page.locator("#controllingPartyFields")).toBeVisible();
+    await page.fill("#controllingPartyName", "Jo Director");
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.controllingParty)).toEqual({
+      name: "Jo Director",
+      ultimate: true,
+    });
+    await page.uncheck("#controllingPartyUltimate");
+    expect(await page.evaluate(() => buildAccountsPayload().smallCompany.controllingParty)).toEqual({
+      name: "Jo Director",
+      ultimate: false,
+    });
+  });
+
+  test("the directors' report consistency flag says not applicable, read only, explained and sent nowhere", async ({ page }) => {
+    await openFormView(page);
+    await expect(page.locator("#directorsReportConsistent")).toHaveValue("Not applicable");
+    await expect(page.locator("#directorsReportConsistent")).toHaveJSProperty("readOnly", true);
+    await expect(page.locator("#directorsReportConsistent-hint")).toContainText(
+      "These accounts are unaudited, so this statement does not apply",
+    );
+    expect(JSON.stringify(await page.evaluate(() => buildAccountsPayload()))).not.toContain("onsistent");
   });
 });

@@ -883,6 +883,272 @@
         }
       }
     },
+    "/hmrc/itsa/foreign-property/period" : {
+      "post" : {
+        "summary" : "File an ITSA foreign property quarterly update",
+        "description" : "Creates a foreign property period summary, or sends the running total from 2025-26, for the given business and tax year",
+        "operationId" : "postItsaForeignPropertyPeriod",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "fromDate",
+          "in" : "body",
+          "required" : true,
+          "description" : "Start of the period, format YYYY-MM-DD, optional from 2025-26",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "toDate",
+          "in" : "body",
+          "required" : true,
+          "description" : "End of the period, format YYYY-MM-DD, optional from 2025-26",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignFhlEea",
+          "in" : "body",
+          "required" : false,
+          "description" : "FHL in the EEA income and expenses, up to 2024-25",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignNonFhlProperty",
+          "in" : "body",
+          "required" : false,
+          "description" : "List of country entries with income and expenses, up to 2024-25",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignProperty",
+          "in" : "body",
+          "required" : false,
+          "description" : "List of entries with income and expenses, keyed by countryCode in 2025-26 and propertyId from 2026-27",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      },
+      "get" : {
+        "summary" : "Retrieve an ITSA foreign property period summary",
+        "description" : "Retrieves one foreign property period summary by tax year and submission id",
+        "operationId" : "getItsaForeignPropertyPeriod",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "submissionId",
+          "in" : "query",
+          "required" : false,
+          "description" : "The submission id from a listed period summary, needed up to 2024-25",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      },
+      "put" : {
+        "summary" : "Amend an ITSA foreign property period summary",
+        "description" : "Amends a foreign property period summary, or sends a corrected running total from 2025-26",
+        "operationId" : "putItsaForeignPropertyPeriod",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "submissionId",
+          "in" : "body",
+          "required" : false,
+          "description" : "The submission id from a listed period summary, needed up to 2024-25",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "fromDate",
+          "in" : "body",
+          "required" : false,
+          "description" : "Start of the period, from 2025-26",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "toDate",
+          "in" : "body",
+          "required" : false,
+          "description" : "End of the period, from 2025-26",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignFhlEea",
+          "in" : "body",
+          "required" : false,
+          "description" : "FHL in the EEA income and expenses, up to 2024-25",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignNonFhlProperty",
+          "in" : "body",
+          "required" : false,
+          "description" : "List of country entries with income and expenses, up to 2024-25",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignProperty",
+          "in" : "body",
+          "required" : false,
+          "description" : "List of entries with income and expenses, keyed by countryCode in 2025-26 and propertyId from 2026-27",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
     "/companies-house/accounts/{submissionNumber}" : {
       "get" : {
         "summary" : "Poll a micro-entity accounts filing",
@@ -897,6 +1163,13 @@
             "type" : "string"
           }
         } ]
+      }
+    },
+    "/companies-house/accounts/render" : {
+      "post" : {
+        "summary" : "Render a micro-entity accounts filing for review",
+        "description" : "Renders the FRS 105 micro-entity iXBRL from the balance sheet without submitting it",
+        "operationId" : "renderCompaniesHouseAccounts"
       }
     },
     "/diya-gl" : {
@@ -1402,6 +1675,232 @@
           "in" : "body",
           "required" : true,
           "description" : "self-employment or uk-property, from the picked business",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      }
+    },
+    "/hmrc/itsa/foreign-property/details" : {
+      "get" : {
+        "summary" : "Retrieve ITSA foreign property details",
+        "description" : "Lists the foreign properties of a foreign property business for a tax year, from 2026-27",
+        "operationId" : "getItsaForeignPropertyDetails",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      },
+      "post" : {
+        "summary" : "Create ITSA foreign property details",
+        "description" : "Adds a foreign property to a foreign property business and returns its property id, from 2026-27",
+        "operationId" : "postItsaForeignPropertyDetails",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "propertyName",
+          "in" : "body",
+          "required" : true,
+          "description" : "Property name, 1 to 105 characters, unique in a country",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "countryCode",
+          "in" : "body",
+          "required" : true,
+          "description" : "ISO 3166-1 alpha-3 country code",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "body",
+          "required" : false,
+          "description" : "Date the property stopped being let, YYYY-MM-DD",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "endReason",
+          "in" : "body",
+          "required" : false,
+          "description" : "Reason the property stopped being let, needs endDate",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      },
+      "put" : {
+        "summary" : "Update ITSA foreign property details",
+        "description" : "Changes the name, or ends the letting, of a foreign property, from 2026-27",
+        "operationId" : "putItsaForeignPropertyDetails",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "propertyId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The property id from Create or Retrieve Foreign Property Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "propertyName",
+          "in" : "body",
+          "required" : false,
+          "description" : "Property name, 1 to 105 characters, unique in a country",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "endDate",
+          "in" : "body",
+          "required" : false,
+          "description" : "Date the property stopped being let, YYYY-MM-DD",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "endReason",
+          "in" : "body",
+          "required" : false,
+          "description" : "Reason the property stopped being let, needs endDate",
           "schema" : {
             "type" : "string"
           }
@@ -2319,18 +2818,18 @@
         }
       }
     },
+    "/companies-house/confirmation-statement/render" : {
+      "post" : {
+        "summary" : "Render a confirmation statement filing for review",
+        "description" : "Renders the ConfirmationAndVerificationStatement body from the form's answers without submitting it",
+        "operationId" : "renderCompaniesHouseConfirmationStatement"
+      }
+    },
     "/interest" : {
       "post" : {
         "summary" : "Register feedback engagement",
         "description" : "Publishes the authenticated user's email to an SNS topic for feedback engagement",
         "operationId" : "registerInterest"
-      }
-    },
-    "/companies-house/accounts/render" : {
-      "post" : {
-        "summary" : "Render a micro-entity accounts filing for review",
-        "description" : "Renders the FRS 105 micro-entity iXBRL from the balance sheet without submitting it",
-        "operationId" : "renderCompaniesHouseAccounts"
       }
     },
     "/hmrc/vat/obligation" : {
@@ -2906,6 +3405,136 @@
             "type" : "string"
           }
         } ]
+      }
+    },
+    "/hmrc/itsa/foreign-property/annual" : {
+      "get" : {
+        "summary" : "Retrieve an ITSA foreign property annual submission",
+        "description" : "Retrieves the adjustments and allowances submitted for a foreign property business for a tax year, by country or by property",
+        "operationId" : "getItsaForeignPropertyAnnual",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "query",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "query",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "query",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
+      },
+      "put" : {
+        "summary" : "Create or amend an ITSA foreign property annual submission",
+        "description" : "Submits the adjustments and allowances for a foreign property business for a tax year in one call, one entry per country (up to 2025-26) or per property (from 2026-27)",
+        "operationId" : "putItsaForeignPropertyAnnual",
+        "parameters" : [ {
+          "name" : "nino",
+          "in" : "body",
+          "required" : true,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "businessId",
+          "in" : "body",
+          "required" : true,
+          "description" : "The business id from Business Details",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "taxYear",
+          "in" : "body",
+          "required" : true,
+          "description" : "Tax year in the format YYYY-YY",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignFhlEea",
+          "in" : "body",
+          "required" : false,
+          "description" : "FHL in the EEA adjustments and allowances, up to 2024-25",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "foreignProperty",
+          "in" : "body",
+          "required" : false,
+          "description" : "List of entries with adjustments and allowances, keyed by countryCode up to 2025-26 and by propertyId from 2026-27",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "Gov-Test-Scenario",
+          "in" : "query",
+          "required" : false,
+          "description" : "HMRC sandbox test scenario",
+          "schema" : {
+            "type" : "string",
+            "example" : "QUARTERLY_ONE_MET"
+          }
+        }, {
+          "name" : "runFraudPreventionHeaderValidation",
+          "in" : "query",
+          "required" : false,
+          "description" : "When true, validates HMRC Fraud Prevention Headers",
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "tags" : [ "HMRC" ],
+        "security" : [ {
+          "CognitoAuth" : [ ]
+        } ],
+        "responses" : {
+          "200" : {
+            "description" : "Request completed successfully"
+          }
+        }
       }
     },
     "/billing/checkout/{id}" : {
@@ -3546,13 +4175,6 @@
             "description" : "Request completed successfully"
           }
         }
-      }
-    },
-    "/companies-house/confirmation-statement/render" : {
-      "post" : {
-        "summary" : "Render a confirmation statement filing for review",
-        "description" : "Renders the ConfirmationAndVerificationStatement body from the form's answers without submitting it",
-        "operationId" : "renderCompaniesHouseConfirmationStatement"
       }
     }
   },

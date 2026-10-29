@@ -25,6 +25,7 @@ describe("books-bundle.js", () => {
       "mapIxbrlAccounts",
       "microEntityAccountsFromBook",
       "readBookSource",
+      "readBookSources",
       "smallCompanyAccountsFromBook",
       "validateCt600Figures",
     ]);

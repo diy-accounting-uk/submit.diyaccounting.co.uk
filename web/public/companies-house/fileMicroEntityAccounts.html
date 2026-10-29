@@ -30,8 +30,8 @@
 
     <main id="mainContent">
       <p class="hint" data-feature-status="sandbox">
-        <strong>Status: sandbox.</strong> This runs against Companies House's test service. Companies House rejected our first test
-        submission on 23 October 2026. The fixes are merged and we will resubmit. Nothing you file here reaches the live register.
+        <strong>Status: sandbox.</strong> You can build, preview and file these accounts against Companies House's test service. Nothing you
+        file here reaches the live register.
       </p>
       <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
 
@@ -72,7 +72,7 @@
       <div id="formView" class="form-container" style="display: none">
         <h2>Micro-entity accounts</h2>
         <p>
-          Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). This is not the company you meant?
+          Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>).
           <a href="#" id="changeCompanyLink">Change company</a>.
         </p>
         <div id="booksImport"></div>
@@ -89,6 +89,38 @@
             </div>
           </section>
           <section class="form-section">
+            <h3>Registered office</h3>
+            <p id="officeHint" class="hint">Filled in from the company's record at Companies House. Change a part to correct it.</p>
+            <div class="form-group">
+              <label for="officeAddressLine1">Address line 1</label>
+              <input type="text" id="officeAddressLine1" name="officeAddressLine1" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeAddressLine2">Address line 2 (optional)</label>
+              <input type="text" id="officeAddressLine2" name="officeAddressLine2" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeAddressLine3">Address line 3 (optional)</label>
+              <input type="text" id="officeAddressLine3" name="officeAddressLine3" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeCityOrTown">Town or city</label>
+              <input type="text" id="officeCityOrTown" name="officeCityOrTown" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeCountyRegion">County or region (optional)</label>
+              <input type="text" id="officeCountyRegion" name="officeCountyRegion" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officePostalCode">Postcode</label>
+              <input type="text" id="officePostalCode" name="officePostalCode" autocomplete="off" />
+            </div>
+            <div class="form-group">
+              <label for="officeCountry">Country (optional)</label>
+              <input type="text" id="officeCountry" name="officeCountry" autocomplete="off" />
+            </div>
+          </section>
+          <section class="form-section">
             <h3>Balance sheet</h3>
             <p id="ledgerHint1" class="hint">Whole pounds. For example, £600 or £1,200. Both years are needed.</p>
             <table class="ledger">
@@ -100,6 +132,41 @@
                 </tr>
               </thead>
               <tbody>
+                <tr>
+                  <th scope="row">Called up share capital not paid (optional)</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentCalledUpShareCapitalNotPaid" class="visually-hidden"
+                      >Called up share capital not paid, this year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentCalledUpShareCapitalNotPaid"
+                        name="currentCalledUpShareCapitalNotPaid"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorCalledUpShareCapitalNotPaid" class="visually-hidden"
+                      >Called up share capital not paid, last year</label
+                    >
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorCalledUpShareCapitalNotPaid"
+                        name="priorCalledUpShareCapitalNotPaid"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
                 <tr>
                   <th scope="row">Fixed assets</th>
                   <td class="ledger__figure" data-column="This year">
@@ -166,6 +233,37 @@
                         inputmode="decimal"
                         data-money="whole-pounds"
                         data-required-message="Enter current assets for last year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Prepayments and accrued income (optional)</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentPrepaymentsAccruedIncome" class="visually-hidden">Prepayments and accrued income, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentPrepaymentsAccruedIncome"
+                        name="currentPrepaymentsAccruedIncome"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorPrepaymentsAccruedIncome" class="visually-hidden">Prepayments and accrued income, last year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorPrepaymentsAccruedIncome"
+                        name="priorPrepaymentsAccruedIncome"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
                       />
                     </div>
                   </td>
@@ -246,6 +344,68 @@
                         inputmode="decimal"
                         data-money="whole-pounds"
                         data-required-message="Enter creditors: amounts falling due after more than one year for last year"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Provisions for liabilities (optional)</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentProvisionsForLiabilities" class="visually-hidden">Provisions for liabilities, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentProvisionsForLiabilities"
+                        name="currentProvisionsForLiabilities"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorProvisionsForLiabilities" class="visually-hidden">Provisions for liabilities, last year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorProvisionsForLiabilities"
+                        name="priorProvisionsForLiabilities"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row">Accruals and deferred income (optional)</th>
+                  <td class="ledger__figure" data-column="This year">
+                    <label for="currentAccrualsDeferredIncome" class="visually-hidden">Accruals and deferred income, this year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="currentAccrualsDeferredIncome"
+                        name="currentAccrualsDeferredIncome"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
+                      />
+                    </div>
+                  </td>
+                  <td class="ledger__figure" data-column="Prior year">
+                    <label for="priorAccrualsDeferredIncome" class="visually-hidden">Accruals and deferred income, last year</label>
+                    <div class="input-prefix input-prefix--amount">
+                      <span class="prefix" aria-hidden="true">£</span
+                      ><input
+                        aria-describedby="ledgerHint1"
+                        type="text"
+                        id="priorAccrualsDeferredIncome"
+                        name="priorAccrualsDeferredIncome"
+                        inputmode="decimal"
+                        data-money="whole-pounds"
                       />
                     </div>
                   </td>
@@ -357,8 +517,7 @@
                 </tr>
               </tbody>
             </table>
-            <p id="currentYearTotals" class="hint"></p>
-            <p id="priorYearTotals" class="hint"></p>
+            <p id="yearTotals" class="hint"></p>
           </section>
           <section class="form-section">
             <h3>Employees and director</h3>
@@ -419,6 +578,34 @@
             </div>
           </section>
           <section class="form-section">
+            <h3>Accountants' report</h3>
+            <div class="form-group">
+              <div class="choice">
+                <input
+                  type="checkbox"
+                  id="includeAccountantsReport"
+                  name="includeAccountantsReport"
+                  aria-describedby="includeAccountantsReport-hint"
+                /><label for="includeAccountantsReport">An accountant compiled these accounts</label>
+              </div>
+              <p id="includeAccountantsReport-hint" class="hint">
+                The accounts gain a page for the accountants' report, and Companies House sees them as exempt from audit with an
+                accountants' report.
+              </p>
+            </div>
+            <div id="accountantsReportFields" style="display: none">
+              <div class="form-group">
+                <label for="accountantsName">Name of the accountancy firm</label>
+                <input type="text" id="accountantsName" name="accountantsName" />
+              </div>
+              <div class="form-group">
+                <label for="accountantsStatement">Statement of the scope of the report</label>
+                <textarea id="accountantsStatement" name="accountantsStatement" rows="6">
+In accordance with your instructions, we have compiled these unaudited financial statements from the accounting records and from information and explanations you have given us.</textarea>
+              </div>
+            </div>
+          </section>
+          <section class="form-section">
             <h3>Statements</h3>
             <div class="form-group">
               <div class="choice">
@@ -455,6 +642,20 @@
                   companies regime and in accordance with the provisions available to micro-entities.</label
                 >
               </div>
+            </div>
+            <div class="form-group calculated-field">
+              <label for="directorsReportConsistent">Directors' report consistent with the accounts</label>
+              <input
+                type="text"
+                id="directorsReportConsistent"
+                name="directorsReportConsistent"
+                value="Not applicable"
+                readonly
+                aria-describedby="directorsReportConsistent-hint"
+              />
+              <p id="directorsReportConsistent-hint" class="hint">
+                These accounts are unaudited, so this statement does not apply. Nothing is sent.
+              </p>
             </div>
           </section>
 
@@ -526,6 +727,7 @@
     <script src="../lib/form-errors.js"></script>
     <script src="../widgets/status-messages.js"></script>
     <script src="../widgets/signed-out-panel.js"></script>
+    <script src="../lib/accounts-form-sections.js"></script>
     <script src="../widgets/books-import.js"></script>
     <script src="fileMicroEntityAccounts.page.js"></script>
   </body>
