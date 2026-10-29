@@ -126,7 +126,7 @@ export const AVAILABILITY = [
     filing: "HMRC Company Tax Return (CT600)",
     web: "companies-house/fileCompanyTaxReturn.html",
     activity: "file-company-tax-return",
-    video: "jMIOZrQir2M",
+    video: "ZoUTlFPvUes",
     cells: [["preview"], ["preview", "book export file"], NOT_OFFERED, NOT_OFFERED, NOT_OFFERED, NOT_OFFERED],
   },
   {

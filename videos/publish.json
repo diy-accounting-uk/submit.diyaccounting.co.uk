@@ -3592,14 +3592,14 @@
       "pipelineVersion": 10,
       "sourceRun": null,
       "sourceArtifact": null,
-      "videoFile": "target/videos/file-company-tax-return-book-sim/file-company-tax-return-book.mp4",
-      "captionFile": "target/videos/file-company-tax-return-book-sim/file-company-tax-return-book.vtt",
+      "videoFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos-wren/file-company-tax-return-book/file-company-tax-return-book.mp4",
+      "captionFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos-wren/file-company-tax-return-book/file-company-tax-return-book.vtt",
       "activity": "file-company-tax-return",
       "title": "DIY Accounting Submit: Company Tax Return from a book (preview)",
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video files a Company Tax Return from a diya-gl book: sign in, take out Resident, look up a company, drop the book on the form, check the figures it fills, preview the CT600, file it, and end on your copy of the filed return. This is a preview, recorded against a local simulator of HMRC's test service, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:06 Resident\n00:16 Which company?\n00:46 Fill from a book\n01:18 Complete the answers\n01:46 Review the return\n02:14 File it\n02:39 The outcome",
       "tags": ["DIY Accounting", "Company Tax Return", "CT600", "HMRC", "sandbox"],
       "categoryId": "27",
-      "videoId": "jMIOZrQir2M",
+      "videoId": "ZoUTlFPvUes",
       "walkthrough": [
         {
           "scene": "company-lookup",
@@ -3841,14 +3841,14 @@
       "pipelineVersion": 10,
       "sourceRun": null,
       "sourceArtifact": null,
-      "videoFile": "target/videos/file-company-tax-return-typed-sim/file-company-tax-return-typed.mp4",
-      "captionFile": "target/videos/file-company-tax-return-typed-sim/file-company-tax-return-typed.vtt",
+      "videoFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos-wren/file-company-tax-return-typed/file-company-tax-return-typed.mp4",
+      "captionFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos-wren/file-company-tax-return-typed/file-company-tax-return-typed.vtt",
       "activity": "file-company-tax-return",
       "title": "DIY Accounting Submit: type a Company Tax Return (preview)",
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video types a Company Tax Return by hand. A live check catches a wrong figure as you leave the field, and the message clears once you correct it. Then it previews the CT600, files it, and ends on your copy of the filed return with HMRC’s receipt. This is a preview, recorded against a local simulator of HMRC's test service, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:02 Sign in\n00:07 Resident\n00:16 Which company?\n00:44 The period\n01:00 The figures\n01:47 The details\n02:22 Review the return\n02:50 File it\n03:14 The outcome",
       "tags": ["DIY Accounting", "Company Tax Return", "CT600", "HMRC", "sandbox"],
       "categoryId": "27",
-      "videoId": "Nf1guAvG2Wo",
+      "videoId": "tLEHujmk_RM",
       "walkthrough": [
         {
           "scene": "company-lookup",
@@ -8292,17 +8292,18 @@
     {
       "id": "itsa-foreign-property-year",
       "group": "itsa",
-      "publish": false,
+      "publish": true,
       "pipelineVersion": 10,
       "sourceRun": null,
       "sourceArtifact": null,
-      "videoFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos-sq1i/itsa-foreign-property-year.mp4",
-      "captionFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos-sq1i/itsa-foreign-property-year.vtt",
+      "videoFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos-wren/itsa-foreign-property-year/itsa-foreign-property-year.mp4",
+      "captionFile": "/Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk/target/videos-wren/itsa-foreign-property-year/itsa-foreign-property-year.vtt",
       "activity": "self-employed",
       "title": "DIY Accounting Submit: a foreign property year, France and Spain (sandbox)",
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax for a foreign property business: sign in, take out Resident, save the annual submission for two countries, France and Spain, then read the year-end summary HMRC works out and adjust it. This is a sandbox example, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "XKLhr0err0g"
     }
   ]
 }
