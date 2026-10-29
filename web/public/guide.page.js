@@ -152,6 +152,8 @@ function frameStep(scene, stepId) {
   const open = el("button", "guide-thumb");
   open.type = "button";
   open.dataset.full = scene.full;
+  open.dataset.fullWidth = scene.fullWidth;
+  open.dataset.fullHeight = scene.fullHeight;
   open.setAttribute("aria-label", `View full size: ${scene.headline}`);
   const image = document.createElement("img");
   image.src = scene.thumb;
@@ -259,6 +261,8 @@ function setUpLightbox(container) {
   const show = (target) => {
     index = Math.max(0, Math.min(frames.length - 1, target));
     const thumb = frames[index];
+    lightboxImg.width = Number(thumb.dataset.fullWidth);
+    lightboxImg.height = Number(thumb.dataset.fullHeight);
     lightboxImg.src = thumb.dataset.full;
     lightboxImg.alt = thumb.querySelector("img").alt;
     position.textContent = `${index + 1} of ${frames.length}`;

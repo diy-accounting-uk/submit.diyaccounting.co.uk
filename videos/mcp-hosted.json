@@ -90,7 +90,7 @@
         },
         {
           "action": "await",
-          "until": "text=Connected (",
+          "until": "text=\"Connected\"",
           "timeoutMs": 90000,
           "label": "the connection to come up",
           "caption": "Signed in and connected. The server just listed the tools it offers.",
