@@ -126,6 +126,13 @@ public class NightlyIngestionWorkflow {
          */
         Optional<IFunction> adsCostPullLambda();
 
+        /**
+         * The Microsoft Advertising cost pull job's Lambda, present only when {@code IngestionStack}
+         * built it (prod, where the Microsoft account is). Its branch is added to the parallel state
+         * only when this is present.
+         */
+        Optional<IFunction> msAdsCostPullLambda();
+
         /** The ECB reference rate pull job's Lambda, built in every environment. */
         IFunction fxRatePullLambda();
 
@@ -197,6 +204,13 @@ public class NightlyIngestionWorkflow {
         props.adsCostPullLambda()
                 .ifPresent(adsCostPullLambda -> ingestionParallel.branch(buildOptionalTask(
                         scope, prefix + "-Nightly-AdsCostPull", "Ads cost pull", "adsCostPull", adsCostPullLambda)));
+        props.msAdsCostPullLambda()
+                .ifPresent(msAdsCostPullLambda -> ingestionParallel.branch(buildOptionalTask(
+                        scope,
+                        prefix + "-Nightly-MsAdsCostPull",
+                        "Microsoft Ads cost pull",
+                        "msAdsCostPull",
+                        msAdsCostPullLambda)));
         ingestionParallel.branch(
                 buildTask(scope, prefix + "-Nightly-FxRatePull", "FX rate pull", props.fxRatePullLambda()));
 

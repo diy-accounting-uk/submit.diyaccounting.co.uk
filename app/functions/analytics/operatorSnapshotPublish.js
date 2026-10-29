@@ -526,7 +526,8 @@ export const OBJECTIVE_DEFINITIONS = [
       },
       {
         id: "paid-landings",
-        label: "Paid landings",
+        label: "Paid landings, Google (gclid)",
+        description: "Page requests that arrived with a Google Ads click id (gclid), added over the days.",
         unit: "count",
         view: "v_paid_landings_daily",
         dayColumn: "day",
@@ -536,29 +537,31 @@ export const OBJECTIVE_DEFINITIONS = [
       },
       {
         id: "ads-cost-gbp",
-        label: "Ads cost",
+        label: "Google Ads cost",
         unit: "gbp",
         view: "v_ads_cost_daily",
         dayColumn: "day",
         valueExpr: "cost_gbp",
         aggregation: "sum",
+        where: "platform = 'google'",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
         id: "ads-cost-per-paid-landing-gbp",
-        label: "Ads cost per paid landing",
+        label: "Google Ads cost per paid landing",
         unit: "gbp",
         view: "v_ads_cost_per_paid_landing_daily",
         dayColumn: "day",
         valueExpr: "cost_per_paid_landing_gbp",
         aggregation: "avg",
+        where: "platform = 'google'",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
         id: "contribution-gbp",
         label: "Contribution",
         description:
-          "Revenue less the AWS bill in pounds less Google Ads cost, added over the days. The AWS bill is in dollars and is converted at the European Central Bank rate of each day.",
+          "Revenue less the AWS bill in pounds less Ads cost (Google and Microsoft), added over the days. The AWS bill is in dollars and is converted at the European Central Bank rate of each day.",
         unit: "gbp",
         view: "v_contribution_daily",
         dayColumn: "day",
@@ -568,46 +571,147 @@ export const OBJECTIVE_DEFINITIONS = [
       },
       {
         id: "ads-impressions",
-        label: "Ads impressions",
+        label: "Google Ads impressions",
         description: "Times a Google Ads advertisement was shown, added over the days.",
         unit: "count",
         view: "v_ads_performance_daily",
         dayColumn: "day",
         valueExpr: "impressions",
         aggregation: "sum",
+        where: "platform = 'google'",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
         id: "ads-clicks",
-        label: "Ads clicks",
+        label: "Google Ads clicks",
         description: "Clicks on Google Ads advertisements, added over the days.",
         unit: "count",
         view: "v_ads_performance_daily",
         dayColumn: "day",
         valueExpr: "clicks",
         aggregation: "sum",
+        where: "platform = 'google'",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
         id: "ads-ctr",
-        label: "Ads click-through rate",
+        label: "Google Ads click-through rate",
         description: "Clicks divided by impressions for the day, averaged over the days. A day with no impressions has no rate.",
         unit: "ratio",
         view: "v_ads_performance_daily",
         dayColumn: "day",
         valueExpr: "ctr",
         aggregation: "avg",
+        where: "platform = 'google'",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
         id: "ads-cost-per-click-gbp",
-        label: "Ads cost per click",
+        label: "Google Ads cost per click",
         description: "The day's Google Ads cost divided by the day's clicks, averaged over the days. A day with no clicks has no figure.",
         unit: "gbp",
         view: "v_ads_performance_daily",
         dayColumn: "day",
         valueExpr: "cost_per_click_gbp",
         aggregation: "avg",
+        where: "platform = 'google'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-cost-gbp",
+        label: "Microsoft Ads cost",
+        description: "Microsoft Advertising spend in pounds, added over the days.",
+        unit: "gbp",
+        view: "v_ads_cost_daily",
+        dayColumn: "day",
+        valueExpr: "cost_gbp",
+        aggregation: "sum",
+        where: "platform = 'microsoft'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-impressions",
+        label: "Microsoft Ads impressions",
+        description: "Times a Microsoft Advertising advertisement was shown, added over the days.",
+        unit: "count",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "impressions",
+        aggregation: "sum",
+        where: "platform = 'microsoft'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-clicks",
+        label: "Microsoft Ads clicks",
+        description: "Clicks on Microsoft Advertising advertisements, added over the days.",
+        unit: "count",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "clicks",
+        aggregation: "sum",
+        where: "platform = 'microsoft'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-ctr",
+        label: "Microsoft Ads click-through rate",
+        description: "Clicks divided by impressions for the day, averaged over the days. A day with no impressions has no rate.",
+        unit: "ratio",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "ctr",
+        aggregation: "avg",
+        where: "platform = 'microsoft'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-cost-per-click-gbp",
+        label: "Microsoft Ads cost per click",
+        description:
+          "The day's Microsoft Advertising cost divided by the day's clicks, averaged over the days. A day with no clicks has no figure.",
+        unit: "gbp",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_click_gbp",
+        aggregation: "avg",
+        where: "platform = 'microsoft'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-paid-landings",
+        label: "Paid landings, Microsoft (msclkid)",
+        description: "Page requests that arrived with a Microsoft Advertising click id (msclkid), added over the days.",
+        unit: "count",
+        view: "v_paid_landings_daily",
+        dayColumn: "day",
+        valueExpr: "msclkid_landings",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-cost-per-paid-landing-gbp",
+        label: "Microsoft Ads cost per paid landing",
+        description:
+          "The day's Microsoft Advertising cost divided by the day's msclkid landings, averaged over the days. A day with no landing has no figure.",
+        unit: "gbp",
+        view: "v_ads_cost_per_paid_landing_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_paid_landing_gbp",
+        aggregation: "avg",
+        where: "platform = 'microsoft'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-conversions",
+        label: "Microsoft Ads conversions",
+        description: "Conversions Microsoft Advertising counts, added over the days.",
+        unit: "count",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "conversions",
+        aggregation: "sum",
+        where: "platform = 'microsoft'",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
@@ -1109,7 +1213,7 @@ export const OBJECTIVE_DEFINITIONS = [
         id: "company-contribution-gbp",
         label: "Contribution",
         description:
-          "Revenue less the AWS bill in pounds less Google Ads cost, added over the days. The AWS bill is in dollars and is converted at the European Central Bank rate of each day.",
+          "Revenue less the AWS bill in pounds less Ads cost (Google and Microsoft), added over the days. The AWS bill is in dollars and is converted at the European Central Bank rate of each day.",
         unit: "gbp",
         view: "v_contribution_daily",
         dayColumn: "day",
@@ -1188,6 +1292,10 @@ const BETTER_UP_IDS = [
   "ads-impressions",
   "ads-clicks",
   "ads-ctr",
+  "ms-ads-impressions",
+  "ms-ads-clicks",
+  "ms-ads-ctr",
+  "ms-ads-conversions",
   "spreadsheets-downloads",
   "sessions-from-spreadsheets",
   "sessions-from-www",
@@ -1234,6 +1342,9 @@ const BETTER_DOWN_IDS = [
   "company-costs",
   "company-net-monthly-burn-gbp",
   "ads-cost-per-click-gbp",
+  "ms-ads-cost-gbp",
+  "ms-ads-cost-per-click-gbp",
+  "ms-ads-cost-per-paid-landing-gbp",
   "charges-without-activation",
   "median-hours-to-first-submission",
 ];
@@ -1268,7 +1379,7 @@ export const OBJECTIVE_GUIDANCE = {
     levers: "Sign-in friction, the first screen after sign-in, guide and video content, search and ad landing pages.",
   },
   "conversion-to-paid": {
-    sli: "Revenue and paid conversions from donations, subscriptions and passes, and the Google Ads spend and paid landings that lead to them.",
+    sli: "Revenue and paid conversions from donations, subscriptions and passes, and the Google and Microsoft Ads spend and paid landings that lead to them.",
     levers: "Price, the bundle page, the donation prompt after a submission, pass campaigns, the ads daily budget.",
   },
   "low-running-cost": {
@@ -1919,6 +2030,11 @@ const CONTRIBUTION_COLUMNS = {
   "contribution": "contribution_gbp",
 };
 
+// A campaign line carries its platform, so a Google and a Microsoft campaign never share a line.
+const CAMPAIGN_COMPONENT = `CASE platform WHEN 'microsoft' THEN 'Microsoft: ' ELSE 'Google: ' END || campaign_name`;
+
+const PLATFORM_LABELS = { google: "Google", microsoft: "Microsoft" };
+
 const plural = (count, singular, pluralForm) => `${count} ${Number(count) === 1 ? singular : pluralForm}`;
 
 /**
@@ -2204,7 +2320,7 @@ export function buildDailyChartDefinitions() {
               "revenue": "Stripe and PayPal revenue of the day, in pounds.",
               "aws-cost":
                 "The day's AWS bill across every account, converted from dollars to pounds at the European Central Bank rate of the day.",
-              "ads-cost": "The day's Google Ads cost, in pounds.",
+              "ads-cost": "The day's Ads cost on Google and Microsoft together, in pounds.",
               "contribution": "Revenue less AWS cost less Ads cost.",
             })[id],
           sql: Object.entries(CONTRIBUTION_COLUMNS)
@@ -2224,7 +2340,7 @@ export function buildDailyChartDefinitions() {
           labelOf: (id) => id,
           descriptionOf: (id) => `Times the ${id} campaign's advertisements were shown in a day.`,
           sql:
-            `SELECT cast(day AS varchar) AS day, campaign_name AS component, cast(sum(impressions) AS double) AS value\n` +
+            `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, cast(sum(impressions) AS double) AS value\n` +
             `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
         },
         {
@@ -2237,7 +2353,7 @@ export function buildDailyChartDefinitions() {
           labelOf: (id) => id,
           descriptionOf: (id) => `Clicks on the ${id} campaign's advertisements in a day.`,
           sql:
-            `SELECT cast(day AS varchar) AS day, campaign_name AS component, cast(sum(clicks) AS double) AS value\n` +
+            `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, cast(sum(clicks) AS double) AS value\n` +
             `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
         },
         {
@@ -2249,7 +2365,7 @@ export function buildDailyChartDefinitions() {
           labelOf: (id) => id,
           descriptionOf: (id) => `The ${id} campaign's clicks divided by its impressions in a day.`,
           sql:
-            `SELECT cast(day AS varchar) AS day, campaign_name AS component, cast(sum(clicks) AS double) / sum(impressions) AS value\n` +
+            `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, cast(sum(clicks) AS double) / sum(impressions) AS value\n` +
             `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2\nHAVING sum(impressions) > 0`,
         },
         {
@@ -2260,8 +2376,62 @@ export function buildDailyChartDefinitions() {
           labelOf: (id) => id,
           descriptionOf: (id) => `The ${id} campaign's cost divided by its clicks in a day, in pounds.`,
           sql:
-            `SELECT cast(day AS varchar) AS day, campaign_name AS component, sum(cost_gbp) / sum(clicks) AS value\n` +
+            `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, sum(cost_gbp) / sum(clicks) AS value\n` +
             `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2\nHAVING sum(clicks) > 0`,
+        },
+        {
+          id: "ads-cost",
+          label: "Ads cost by platform",
+          unit: "gbp",
+          total: "All platforms",
+          totalDescription: "Google and Microsoft Ads cost added together, in pounds.",
+          componentOrder: ["google", "microsoft"],
+          labelOf: (id) => PLATFORM_LABELS[id] ?? id,
+          descriptionOf: (id) => `The day's ${PLATFORM_LABELS[id] ?? id} Ads cost, in pounds.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, platform AS component, cast(sum(cost_gbp) AS double) AS value\n` +
+            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+        },
+        {
+          id: "ads-paid-landings",
+          label: "Paid landings by platform",
+          unit: "count",
+          total: "All platforms",
+          totalDescription: "Landings with a Google or Microsoft click id added together.",
+          componentOrder: ["google", "microsoft"],
+          labelOf: (id) => PLATFORM_LABELS[id] ?? id,
+          descriptionOf: (id) =>
+            `Page requests in a day that arrived with a ${id === "microsoft" ? "Microsoft Advertising click id (msclkid)" : "Google Ads click id (gclid)"}.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, 'google' AS component, cast(sum(paid_landings) AS double) AS value\n` +
+            `FROM   v_paid_landings_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'microsoft', cast(sum(msclkid_landings) AS double)\n` +
+            `FROM   v_paid_landings_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
+        },
+        {
+          id: "ads-cost-per-paid-landing",
+          label: "Cost per paid landing by platform",
+          unit: "gbp",
+          total: null,
+          componentOrder: ["google", "microsoft"],
+          labelOf: (id) => PLATFORM_LABELS[id] ?? id,
+          descriptionOf: (id) => `The day's ${PLATFORM_LABELS[id] ?? id} Ads cost divided by its paid landings, in pounds.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, platform AS component, cast(cost_per_paid_landing_gbp AS double) AS value\n` +
+            `FROM   v_ads_cost_per_paid_landing_daily\nWHERE  ${dailyWindowFilter("day")} AND cost_per_paid_landing_gbp IS NOT NULL`,
+        },
+        {
+          id: "ads-conversions",
+          label: "Ads conversions by platform",
+          unit: "count",
+          total: null,
+          componentOrder: ["google", "microsoft"],
+          labelOf: (id) => PLATFORM_LABELS[id] ?? id,
+          descriptionOf: (id) => `Conversions ${PLATFORM_LABELS[id] ?? id} Ads counts in a day. The Google pull does not read conversions.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, platform AS component, cast(conversions AS double) AS value\n` +
+            `FROM   v_ads_performance_daily\nWHERE  ${dailyWindowFilter("day")} AND conversions IS NOT NULL`,
         },
       ],
     },

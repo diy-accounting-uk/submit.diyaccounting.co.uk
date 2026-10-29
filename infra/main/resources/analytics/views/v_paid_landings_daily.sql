@@ -1,12 +1,12 @@
 -- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 -- Copyright (C) 2006-2026 DIY Accounting Limited
 
--- Page requests each day whose query string carries an advertising click id (gclid) or a
--- utm_source, by landing page, utm_source and utm_campaign. The query string is read from
--- the CloudFront access log's own record of the request; nothing is stored on the visitor's
--- device, so consent does not gate the count. The click id itself is never selected, so no
--- value from this view can be uploaded to Google. Only successful GET requests for a page
--- count; crawlers, AI agents, scanners, the probe monitor, headless browsers and the
+-- Page requests each day whose query string carries an advertising click id (gclid for Google,
+-- msclkid for Microsoft) or a utm_source, by landing page, utm_source and utm_campaign. The
+-- query string is read from the CloudFront access log's own record of the request; nothing is
+-- stored on the visitor's device, so consent does not gate the count. The click id itself is
+-- never selected, so no value from this view can be uploaded to Google or Microsoft. Only
+-- successful GET requests for a page count; crawlers, AI agents, scanners, the probe monitor, headless browsers and the
 -- behaviour tests' marked user agent are left out. The client address is personal data and is
 -- not read, so the count is page requests, not distinct visitors.
 CREATE OR REPLACE VIEW v_paid_landings_daily AS
@@ -24,6 +24,7 @@ tagged AS (
   SELECT request_day,
          landing_page,
          regexp_like(query, '(^|&)gclid=[^&]+') AS has_gclid,
+         regexp_like(query, '(^|&)msclkid=[^&]+') AS has_msclkid,
          regexp_like(query, '(^|&)utm_source=[^&]+') AS has_utm_source,
          coalesce(lower(url_decode(nullif(regexp_extract(query, '(^|&)utm_source=([^&]*)', 2), ''))), '') AS utm_source,
          coalesce(lower(url_decode(nullif(regexp_extract(query, '(^|&)utm_campaign=([^&]*)', 2), ''))), '') AS utm_campaign
@@ -47,7 +48,8 @@ SELECT CAST(request_day AS date) AS day,
        utm_source,
        utm_campaign,
        count_if(has_gclid) AS paid_landings,
+       count_if(has_msclkid) AS msclkid_landings,
        count_if(has_utm_source) AS utm_landings
 FROM   tagged
-WHERE  has_gclid OR has_utm_source
+WHERE  has_gclid OR has_msclkid OR has_utm_source
 GROUP  BY 1, 2, 3, 4

@@ -584,15 +584,30 @@ class IngestionStackTest {
                 0,
                 disabled.findResources(
                                 "AWS::Lambda::Function",
+                                Map.of("Properties", Map.of("FunctionName", "docs-env-ms-ads-cost-pull")))
+                        .size());
+        assertEquals(
+                0,
+                disabled.findResources(
+                                "AWS::Lambda::Function",
                                 Map.of("Properties", Map.of("FunctionName", "docs-env-ads-cost-pull")))
                         .size());
         assertFalse(
                 joinedDefinitionString(disabled).contains("\"Ads cost pull\":{"),
                 "a disabled Ads cost pull should leave the workflow without its branch");
+        assertFalse(
+                joinedDefinitionString(disabled).contains("\"Microsoft Ads cost pull\":{"),
+                "a disabled Ads cost pull should leave the workflow without the Microsoft branch");
 
         Template enabled = Template.fromStack(synthIngestionStackWithAds("enabled", true));
 
-        enabled.resourceCountIs("AWS::Lambda::Function", 8);
+        enabled.resourceCountIs("AWS::Lambda::Function", 9);
+        assertEquals(
+                1,
+                enabled.findResources(
+                                "AWS::Lambda::Function",
+                                Map.of("Properties", Map.of("FunctionName", "docs-env-ms-ads-cost-pull")))
+                        .size());
         assertEquals(
                 1,
                 enabled.findResources(
@@ -602,6 +617,9 @@ class IngestionStackTest {
         assertTrue(
                 joinedDefinitionString(enabled).contains("\"Ads cost pull\":{"),
                 "an enabled Ads cost pull should add its branch to the workflow");
+        assertTrue(
+                joinedDefinitionString(enabled).contains("\"Microsoft Ads cost pull\":{"),
+                "an enabled Ads cost pull should add the Microsoft branch to the workflow");
     }
 
     @Test
@@ -621,12 +639,17 @@ class IngestionStackTest {
                 .filter(statement -> "secretsmanager:GetSecretValue".equals(statement.get("Action")))
                 .filter(statement -> statement.get("Resource") instanceof List)
                 .toList();
-        assertEquals(1, secretStatements.size());
-        assertEquals(
-                List.of(
-                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/youtube/oauth_client-*",
-                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/google/ads/refresh_token-*"),
-                secretStatements.get(0).get("Resource"));
+        assertEquals(2, secretStatements.size());
+        assertTrue(
+                secretStatements.stream()
+                        .anyMatch(
+                                statement -> statement
+                                        .get("Resource")
+                                        .equals(
+                                                List.of(
+                                                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/youtube/oauth_client-*",
+                                                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/google/ads/refresh_token-*"))),
+                "the Google Ads pull reads its two secrets");
 
         var lambdaEnvironment = environmentVariablesOf(template.findResources(
                 "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-ads-cost-pull"))));
@@ -636,6 +659,33 @@ class IngestionStackTest {
         assertEquals(
                 "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/google/ads/refresh_token",
                 lambdaEnvironment.get("ADS_REFRESH_TOKEN_SECRET_ARN"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void msAdsCostPullReadsOnlyTheThreeMicrosoftAdsSecretsAndPutsUnderCuratedAds() {
+        Template template = Template.fromStack(synthIngestionStackWithAds("ms-scoped", true));
+
+        var secretStatements = template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> "secretsmanager:GetSecretValue".equals(statement.get("Action")))
+                .filter(statement -> statement.get("Resource") instanceof List)
+                .filter(statement -> ((List<String>) statement.get("Resource")).size() == 3)
+                .toList();
+        assertEquals(1, secretStatements.size());
+        assertEquals(
+                List.of(
+                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/microsoft-ads/developer_token-*",
+                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/microsoft-ads/google_refresh_token-*",
+                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/youtube/oauth_client-*"),
+                secretStatements.get(0).get("Resource"));
+
+        var lambdaEnvironment = environmentVariablesOf(template.findResources(
+                "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-ms-ads-cost-pull"))));
+        assertTrue(lambdaEnvironment.containsKey("ANALYTICS_LAKE_BUCKET_NAME"));
+        assertFalse(lambdaEnvironment.keySet().stream().anyMatch(key -> key.endsWith("_SECRET_ARN")));
     }
 
     @Test

@@ -57,5 +57,7 @@ COPY secrets-rotation.toml secrets-rotation.toml
 COPY infra/stripe/stripe.toml infra/stripe/stripe.toml
 # adsCostPull.js reads the Ads customer id and API version from here.
 COPY infra/google/ads/ads.toml infra/google/ads/ads.toml
+# msAdsCostPull.js reads the Microsoft Advertising account and secret names from here.
+COPY infra/microsoft/ads/msads.toml infra/microsoft/ads/msads.toml
 
 # Lambda will use CMD override from CDK EcrImageCodeProps

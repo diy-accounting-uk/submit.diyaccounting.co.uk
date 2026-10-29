@@ -595,6 +595,42 @@ describe("operatorSnapshotPublish", () => {
       expect(empty.last30).toEqual({ value: null, trend: null, noEvents: true });
     });
 
+    test("each Google Ads row reads the google platform and has a Microsoft twin that reads the microsoft platform", () => {
+      const paid = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "conversion-to-paid").observations;
+      const byId = (id) => paid.find((observation) => observation.id === id);
+
+      for (const id of [
+        "ads-cost-gbp",
+        "ads-impressions",
+        "ads-clicks",
+        "ads-ctr",
+        "ads-cost-per-click-gbp",
+        "ads-cost-per-paid-landing-gbp",
+      ]) {
+        const twin = byId(`ms-${id}`);
+        expect(byId(id).where, id).toBe("platform = 'google'");
+        expect(twin, id).toBeTruthy();
+        expect(twin.where, id).toBe("platform = 'microsoft'");
+        expect({ view: twin.view, valueExpr: twin.valueExpr, unit: twin.unit, aggregation: twin.aggregation }, id).toEqual({
+          view: byId(id).view,
+          valueExpr: byId(id).valueExpr,
+          unit: byId(id).unit,
+          aggregation: byId(id).aggregation,
+        });
+        expect(twin.label, id).toMatch(/^Microsoft Ads/);
+        expect(twin.description.length, id).toBeGreaterThan(20);
+      }
+      expect(byId("ms-paid-landings")).toMatchObject({ view: "v_paid_landings_daily", valueExpr: "msclkid_landings", unit: "count" });
+      expect(byId("ms-ads-conversions")).toMatchObject({
+        view: "v_ads_performance_daily",
+        valueExpr: "conversions",
+        where: "platform = 'microsoft'",
+      });
+      expect(betterDirection("ms-ads-cost-gbp")).toBe("down");
+      expect(betterDirection("ms-ads-ctr")).toBe("up");
+      expect(betterDirection("ms-ads-conversions")).toBe("up");
+    });
+
     test("the Conversion to paid chart draws contribution and the Ads campaigns, each line described", () => {
       const paid = buildDailyChartDefinitions().find((definition) => definition.id === "conversion-to-paid");
 
@@ -606,6 +642,10 @@ describe("operatorSnapshotPublish", () => {
         "ads-clicks",
         "ads-ctr",
         "ads-cpc",
+        "ads-cost",
+        "ads-paid-landings",
+        "ads-cost-per-paid-landing",
+        "ads-conversions",
       ]);
       const contribution = paid.modes.find((mode) => mode.id === "contribution");
       expect(contribution.componentOrder).toEqual(["revenue", "aws-cost", "ads-cost", "contribution"]);
@@ -614,9 +654,18 @@ describe("operatorSnapshotPublish", () => {
       for (const id of contribution.componentOrder) expect(contribution.descriptionOf(id)).toBeTruthy();
       for (const id of ["ads-impressions", "ads-clicks", "ads-ctr", "ads-cpc"]) {
         const mode = paid.modes.find((candidate) => candidate.id === id);
-        expect(mode.sql, id).toContain("campaign_name AS component");
+        expect(mode.sql, id).toContain("|| campaign_name AS component");
+        expect(mode.sql, id).toContain("'Microsoft: '");
         expect(mode.descriptionOf("Search: MTD VAT"), id).toContain("Search: MTD VAT");
       }
+      for (const id of ["ads-cost", "ads-paid-landings", "ads-cost-per-paid-landing", "ads-conversions"]) {
+        const mode = paid.modes.find((candidate) => candidate.id === id);
+        expect(mode.componentOrder, id).toEqual(["google", "microsoft"]);
+        expect(mode.labelOf("microsoft"), id).toBe("Microsoft");
+        expect(mode.descriptionOf("microsoft"), id).toContain("Microsoft");
+      }
+      expect(paid.modes.find((mode) => mode.id === "ads-paid-landings").sql).toContain("sum(msclkid_landings)");
+      expect(paid.modes.find((mode) => mode.id === "ads-cost-per-paid-landing").unit).toBe("gbp");
       expect(paid.modes.find((mode) => mode.id === "ads-ctr").unit).toBe("ratio");
       expect(paid.modes.find((mode) => mode.id === "ads-cpc").unit).toBe("gbp");
     });

@@ -78,7 +78,8 @@ class NightlyIngestionWorkflowTest {
             props.companyBookPullLambda(testLambda(stack, "CompanyBookPullLambda", "docs-env-company-book-pull"))
                     .paypalDonationsPullLambda(
                             testLambda(stack, "PaypalDonationsPullLambda", "docs-env-paypal-donations-pull"))
-                    .adsCostPullLambda(testLambda(stack, "AdsCostPullLambda", "docs-env-ads-cost-pull"));
+                    .adsCostPullLambda(testLambda(stack, "AdsCostPullLambda", "docs-env-ads-cost-pull"))
+                    .msAdsCostPullLambda(testLambda(stack, "MsAdsCostPullLambda", "docs-env-ms-ads-cost-pull"));
         }
         new NightlyIngestionWorkflow(stack, props.build());
 
@@ -194,7 +195,8 @@ class NightlyIngestionWorkflowTest {
     void optionalJobsCatchAllErrorsAndCoreJobsDoNot() {
         var definitionText = joinedDefinitionString(synthWorkflow("prod", true));
 
-        for (String key : List.of("company book pull", "PayPal donations pull", "Ads cost pull")) {
+        for (String key :
+                List.of("company book pull", "PayPal donations pull", "Ads cost pull", "Microsoft Ads cost pull")) {
             var state = stateText(definitionText, key);
             assertTrue(
                     state.contains("\"Catch\":[{\"ErrorEquals\":[\"States.ALL\"]"),
@@ -204,7 +206,7 @@ class NightlyIngestionWorkflowTest {
                     definitionText.contains("\"" + key + " failed, recorded\":{\"Type\":\"Pass\""),
                     key + " should route to a Pass state");
         }
-        assertEquals(3, countOccurrences(definitionText, "\"Catch\":"), "only the three optional jobs catch");
+        assertEquals(4, countOccurrences(definitionText, "\"Catch\":"), "only the four optional jobs catch");
         for (String key : List.of(
                 "Stripe reconciliation",
                 "GA4 report pull",
@@ -312,10 +314,12 @@ class NightlyIngestionWorkflowTest {
             "company book pull",
             "PayPal donations pull",
             "Ads cost pull",
+            "Microsoft Ads cost pull",
             "FX rate pull",
             "company book pull failed, recorded",
             "PayPal donations pull failed, recorded",
             "Ads cost pull failed, recorded",
+            "Microsoft Ads cost pull failed, recorded",
             "data quality run",
             "metrics publish",
             "raw export publish",
