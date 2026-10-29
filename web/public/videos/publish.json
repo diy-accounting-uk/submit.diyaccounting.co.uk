@@ -3075,7 +3075,7 @@
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows a confirmation statement (CS01) from start to finish: sign in, take out Resident, look up a company, read its directors and persons with significant control from Companies House's register, review and verify, then file it. It runs against Companies House's test service, so nothing reaches the live register. It's a real recording of the product, not a mockup. Try it yourself at https://submit.diyaccounting.co.uk.\n\n00:00 Home\n00:01 Sign in\n00:07 Resident\n00:17 Which company?\n00:39 The register\n00:56 Review the statement\n01:22 Confirm the directors\n01:49 Preview\n02:04 The filing",
       "tags": ["DIY Accounting", "Companies House", "confirmation statement", "CS01"],
       "categoryId": "27",
-      "videoId": "GAwKKe0vP-E",
+      "videoId": "glt8DpvhsBw",
       "walkthrough": [
         {
           "scene": "company-lookup",
@@ -6283,7 +6283,7 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video drops a diya-gl book on the VAT return form instead of typing the figures, checks the nine boxes it fills, submits the return to HMRC's test service and shows the receipt. This is a sandbox recording against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "diya-gl"],
       "categoryId": "27",
-      "videoId": "zLtpkTuuyrc",
+      "videoId": "wSCE8uCZBOA",
       "walkthrough": [
         {
           "scene": "vat-form",
