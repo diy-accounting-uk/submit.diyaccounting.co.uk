@@ -1588,6 +1588,7 @@ public class SubmitSharedNames {
     public String publishStackId;
 
     public String alarmTriageRoleName;
+    public String supportAcceptanceRoleName;
     public String quarantineReaderRoleName;
     public String alarmTriageGuardrailName;
     public String alarmTriageGuardrailIdParameterName;
@@ -5885,6 +5886,7 @@ public class SubmitSharedNames {
                 "%s:%s".formatted(this.selfDestructLambdaArn, this.provisionedConcurrencyAliasName);
 
         this.alarmTriageRoleName = "%s-alarm-triage-role".formatted(this.envResourceNamePrefix);
+        this.supportAcceptanceRoleName = "%s-support-acceptance-role".formatted(this.envResourceNamePrefix);
         this.quarantineReaderRoleName = "%s-quarantine-reader-role".formatted(this.envResourceNamePrefix);
         this.alarmTriageGuardrailName = "%s-alarm-triage-guardrail".formatted(this.envResourceNamePrefix);
         this.alarmTriageGuardrailIdParameterName = "/submit/%s/alarm-triage/guardrail-id".formatted(props.envName);

@@ -18,6 +18,7 @@ import {
   qname,
   buildContexts,
   formatMonetary,
+  formatNominalValue,
   displayDate,
   previousDay,
   periodEndedPhrase,
@@ -701,7 +702,7 @@ function shareCapitalNoteHtml({ shareCapital, calledUpShareCapital, refs, entity
   const instantContext = classContext(refs.currentInstant, `${refs.currentInstant}-share-class`);
   const description = `<ix:nonNumeric name="${qname(CONCEPTS.descriptionShareType)}" contextRef="${durationContext}">${escapeXmlText(SHARE_CLASS_LABEL[shareCapital.shareClass])}</ix:nonNumeric>`;
   const count = `<ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${instantContext}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction>`;
-  const parValue = `<ix:nonFraction name="${qname(CONCEPTS.parValueShare)}" contextRef="${durationContext}" unitRef="pure" decimals="INF">${shareCapital.nominalValue}</ix:nonFraction>`;
+  const parValue = `<ix:nonFraction name="${qname(CONCEPTS.parValueShare)}" contextRef="${durationContext}" unitRef="pure" decimals="INF">${formatNominalValue(shareCapital.nominalValue)}</ix:nonFraction>`;
   return `<p>Allotted, called up and fully paid: ${count} ${description} ${shareNoun(sharesIssued)} of £${parValue} each.</p>`;
 }
 

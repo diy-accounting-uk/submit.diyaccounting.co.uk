@@ -452,6 +452,11 @@ class SubmitEnvironmentCdkResourceTest {
     private static void assertAlarmTriageResources(Template observability) {
         observability.hasResourceProperties(
                 "AWS::IAM::Role", Match.objectLike(Map.of("RoleName", "test-env-alarm-triage-role")));
+        observability.hasResourceProperties(
+                "AWS::IAM::Role", Match.objectLike(Map.of("RoleName", "test-env-support-acceptance-role")));
+        for (String sid : List.of("ListSupportDrafts", "ReadSupportDrafts", "WriteSupportDraftAcceptance")) {
+            assertFalse(findPolicyStatementsContainingSid(observability, sid).isEmpty(), sid);
+        }
 
         List<Map<String, Object>> statements = findPolicyStatementsContainingSid(observability, "DenyCustomerData");
 

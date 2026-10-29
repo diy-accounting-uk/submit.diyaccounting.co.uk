@@ -184,9 +184,13 @@ export function afterEpochSecondsFor({ issues, nowMs }) {
   return Math.floor(newest / 1000) - OVERLAP_SECONDS;
 }
 
-async function gmailGet(path, { getToken, fetchImpl }) {
+export async function gmailGet(path, { getToken, fetchImpl }) {
   const response = await fetchImpl(`${GMAIL_API}${path}`, { headers: { Authorization: `Bearer ${await getToken()}` } });
-  if (!response.ok) throw new Error(`Gmail answered ${response.status} for GET ${path.split("?")[0].replace(/\/[^/]+$/, "/<id>")}`);
+  if (!response.ok) {
+    throw Object.assign(new Error(`Gmail answered ${response.status} for GET ${path.split("?")[0].replace(/\/[^/]+$/, "/<id>")}`), {
+      status: response.status,
+    });
+  }
   return response.json();
 }
 
@@ -234,7 +238,7 @@ export async function runIntake({ getToken, githubToken, fetchImpl = fetch, nowM
   return counts;
 }
 
-function tokenGetterFromKey(keyJson) {
+export function tokenGetterFromKey(keyJson) {
   const key = JSON.parse(keyJson);
   const client = new JWT({ email: key.client_email, key: key.private_key, scopes: [GMAIL_READONLY_SCOPE], subject: MAILBOX });
   return async () => (await client.getAccessToken()).token;

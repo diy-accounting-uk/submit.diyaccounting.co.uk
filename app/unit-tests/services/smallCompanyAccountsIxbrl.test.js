@@ -646,6 +646,13 @@ describe("the share capital note and the tax policy of a small company", () => {
     expect(single).toMatch(/>1<\/ix:nonFraction> <ix:nonNumeric[^>]*>ordinary<\/ix:nonNumeric> share of £/);
   });
 
+  test("prints 500 ordinary shares of £0.20 each for a £100 share capital", () => {
+    const fifty = buildSmallCompanyAccounts({ ...input, shareCapital: { shareClass: "ordinaryShares", nominalValue: 0.2 } });
+    expect(fifty).toMatch(/name="core:NumberSharesIssuedFullyPaid"[^>]*unitRef="shares"[^>]*>500</);
+    expect(fifty).toMatch(/name="core:ParValueShare"[^>]*decimals="INF"[^>]*>0\.20</);
+    expect(parseXmlDocument(fifty).getElementsByTagName("body")[0].textContent).toContain("500 ordinary shares of £0.20 each");
+  });
+
   test("tags the tax policy in the accounting policies note", () => {
     expect(xhtml).toMatch(/name="core:TaxPolicy" contextRef="y\d{4}">The tax expense for the year comprises current tax/);
   });

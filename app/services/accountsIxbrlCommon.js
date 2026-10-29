@@ -402,6 +402,18 @@ export function formatMonetary(value) {
 }
 
 /**
+ * A nominal value per share as printed accounts write it: whole pounds plain, otherwise at least two decimals.
+ * @param {number} value - pounds per share
+ * @returns {string} e.g. "1", "0.20", "0.001"
+ */
+export function formatNominalValue(value) {
+  if (Number.isInteger(value)) return String(value);
+  const text = String(value);
+  const decimals = text.includes(".") ? text.split(".")[1].length : 0;
+  return value.toFixed(Math.max(2, decimals));
+}
+
+/**
  * An ISO date as printed accounts write it, the form ixt2:datedaymonthyearen reads back.
  * @param {string} isoDate
  * @returns {string} e.g. "31 December 2025"
