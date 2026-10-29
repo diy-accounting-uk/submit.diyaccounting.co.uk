@@ -66,6 +66,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary) Submit and manage the self-employment annual summary: use when the year-end self-employment allowances and adjustments summary must be read or filed.
     - [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates) Submit and manage UK property periodic updates: use when quarterly or cumulative UK property rental income and expense updates must be filed or read.
     - [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary) Submit and manage the UK property annual summary: use when the year-end UK property annual summary must be read or filed.
+    - [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details) Submit and manage foreign property periodic updates and property details: use when quarterly or cumulative foreign property income and expense updates, or the foreign properties of a business, must be filed, read or changed.
+    - [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments) Submit and manage the foreign property annual summary and its adjustments: use when the year-end foreign property annual summary must be read or filed, or a foreign property BSAS must be read or adjusted.
   - [ITSA year-end processing](#itsa-year-end-processing-hmrc)
     - [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary) Trigger and adjust the Business Source Adjustable Summary: use when a year-end BSAS calculation must be triggered, read or adjusted for a business.
     - [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims) Manage ITSA losses and claims: use when losses or relief claims must be read, submitted or deleted against HMRC.
@@ -838,7 +840,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:area HMRC -->
 - [VAT filing](#vat-filing-hmrc): [HMRC-01](#hmrc-01-submit-a-vat-return) Submit a VAT return · [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return) Retrieve a submitted VAT return · [HMRC-03](#hmrc-03-retrieve-vat-obligations) Retrieve VAT obligations · [HMRC-04](#hmrc-04-retrieve-vat-liabilities) Retrieve VAT liabilities · [HMRC-05](#hmrc-05-retrieve-vat-payments) Retrieve VAT payments · [HMRC-06](#hmrc-06-retrieve-vat-penalties) Retrieve VAT penalties · [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data) Build and validate 9-box VAT return data · [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file) Parse VAT returns from a bulk CSV file
 - [ITSA business and obligations](#itsa-business-and-obligations-hmrc): [HMRC-09](#hmrc-09-retrieve-itsa-business-details) Retrieve ITSA business details · [HMRC-10](#hmrc-10-retrieve-itsa-obligations) Retrieve ITSA obligations · [HMRC-11](#hmrc-11-retrieve-itsa-status) Retrieve ITSA status
-- [ITSA periodic and annual submissions](#itsa-periodic-and-annual-submissions-hmrc): [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates) Submit and manage self-employment periodic updates · [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary) Submit and manage the self-employment annual summary · [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates) Submit and manage UK property periodic updates · [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary) Submit and manage the UK property annual summary
+- [ITSA periodic and annual submissions](#itsa-periodic-and-annual-submissions-hmrc): [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates) Submit and manage self-employment periodic updates · [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary) Submit and manage the self-employment annual summary · [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates) Submit and manage UK property periodic updates · [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary) Submit and manage the UK property annual summary · [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details) Submit and manage foreign property periodic updates and property details · [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments) Submit and manage the foreign property annual summary and its adjustments
 - [ITSA year-end processing](#itsa-year-end-processing-hmrc): [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary) Trigger and adjust the Business Source Adjustable Summary · [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims) Manage ITSA losses and claims · [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments) Manage ITSA tax liability adjustments · [HMRC-19](#hmrc-19-calculate-itsa-tax-liability) Calculate ITSA tax liability · [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations) Retrieve ITSA crystallisation obligations · [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration) Submit the ITSA final declaration
 - [Receipts and HMRC authentication](#receipts-and-hmrc-authentication-hmrc): [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts) Store and retrieve HMRC submission receipts · [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token) Exchange an HMRC OAuth code for a token · [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client) Verify HMRC agent authorisation for a client
 - [HMRC API plumbing](#hmrc-api-plumbing-hmrc): [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers) Build HMRC fraud-prevention headers · [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance) Monitor HMRC fraud-prevention header compliance · [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts) Validate HMRC identifiers, dates and amounts · [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations) Format and match HMRC obligations · [HMRC-29](#hmrc-29-call-the-hmrc-api) Call the HMRC API · [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state) Persist async HMRC API request state
@@ -983,6 +985,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary) Submit and manage the self-employment annual summary
 - [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates) Submit and manage UK property periodic updates
 - [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary) Submit and manage the UK property annual summary
+- [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details) Submit and manage foreign property periodic updates and property details
+- [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments) Submit and manage the foreign property annual summary and its adjustments
 <!-- /generated:group itsa-periodic-and-annual-submissions-hmrc -->
 
 #### HMRC-12 Submit and manage self-employment periodic updates
@@ -1025,6 +1029,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** uk property annual, year-end summary, rental property, itsa annual submission, property income allowance
 - **Related:** HMRC-13, HMRC-14
 
+#### HMRC-39 Submit and manage foreign property periodic updates and property details
+
+- **Use when:** quarterly or cumulative foreign property income and expense updates, or the foreign properties of a business, must be filed, read or changed.
+- **Does:** Three Lambdas create, read and amend foreign property periodic updates. Three more list, add and change the foreign properties of a business from 2026-27. foreignPropertyPeriod.html sends one entry per country.
+- **Run:** `POST /api/v1/hmrc/itsa/foreign-property/period`; `GET /api/v1/hmrc/itsa/foreign-property/period`; `PUT /api/v1/hmrc/itsa/foreign-property/period`; `GET /api/v1/hmrc/itsa/foreign-property/details`; `POST /api/v1/hmrc/itsa/foreign-property/details`; `PUT /api/v1/hmrc/itsa/foreign-property/details`; `npm run test:itsaForeignPropertyPeriodBehaviour-simulator`
+- **Entry:** `app/functions/hmrc/hmrcItsaForeignPropertyPeriodPost.js:ingestHandler`; `app/functions/hmrc/hmrcItsaForeignPropertyPeriodPut.js:ingestHandler`; `app/functions/hmrc/hmrcItsaForeignPropertyDetailsPost.js:ingestHandler`
+- **Files:** app/functions/hmrc/hmrcItsaForeignPropertyPeriodPost.js, app/functions/hmrc/hmrcItsaForeignPropertyPeriodGet.js, app/functions/hmrc/hmrcItsaForeignPropertyPeriodPut.js, app/functions/hmrc/hmrcItsaForeignPropertyDetailsGet.js, app/functions/hmrc/hmrcItsaForeignPropertyDetailsPost.js, app/functions/hmrc/hmrcItsaForeignPropertyDetailsPut.js, app/lib/foreignPropertyBody.js, app/unit-tests/lib/foreignPropertyBody.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyPeriodPost.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyPeriodPost.activity.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyPeriodGet.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyPeriodPut.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyPeriodPut.activity.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyDetailsGet.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyDetailsPost.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyDetailsPut.test.js, web/public/hmrc/itsa/foreignPropertyPeriod.html, web/public/hmrc/itsa/foreignPropertyPeriodAmend.html, web/public/hmrc/itsa/foreignPropertyPeriods.html, web/public/hmrc/itsa/foreignPropertyPeriodView.html, web/public/hmrc/itsa/foreignPropertyDetails.html, web/browser-tests/foreignPropertyEntries.browser.test.js, web/browser-tests/foreignPropertyPeriodFields.browser.test.js, web/browser-tests/foreignPropertyDetails.browser.test.js, behaviour-tests/itsaForeignPropertyPeriod.behaviour.test.js
+- **Keywords:** foreign property period, overseas rental income, country code, foreign property details, property id, cumulative update, itsa foreign property
+- **Related:** HMRC-14, HMRC-40
+
+#### HMRC-40 Submit and manage the foreign property annual summary and its adjustments
+
+- **Use when:** the year-end foreign property annual summary must be read or filed, or a foreign property BSAS must be read or adjusted.
+- **Does:** hmrcItsaForeignPropertyAnnualGet.js and hmrcItsaForeignPropertyAnnualPut.js read and submit the annual summary. The BSAS Lambdas read HMRC's figures and send an adjustment. The page always sends every country entry.
+- **Run:** `GET /api/v1/hmrc/itsa/foreign-property/annual`; `PUT /api/v1/hmrc/itsa/foreign-property/annual`; `GET /api/v1/hmrc/itsa/bsas/foreign-property`; `POST /api/v1/hmrc/itsa/bsas/foreign-property/adjust`; `npm run test:itsaForeignPropertyAnnualSubmissionBehaviour-simulator`
+- **Entry:** `app/functions/hmrc/hmrcItsaForeignPropertyAnnualPut.js:ingestHandler`; `app/functions/hmrc/hmrcItsaBsasForeignPropertyAdjustPost.js:ingestHandler`
+- **Files:** app/functions/hmrc/hmrcItsaForeignPropertyAnnualGet.js, app/functions/hmrc/hmrcItsaForeignPropertyAnnualPut.js, app/functions/hmrc/hmrcItsaBsasForeignPropertyGet.js, app/functions/hmrc/hmrcItsaBsasForeignPropertyAdjustPost.js, app/unit-tests/functions/hmrcItsaForeignPropertyAnnualGet.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyAnnualPut.test.js, app/unit-tests/functions/hmrcItsaForeignPropertyAnnualPut.activity.test.js, app/unit-tests/functions/hmrcItsaBsasForeignPropertyGet.test.js, app/unit-tests/functions/hmrcItsaBsasForeignPropertyAdjustPost.test.js, web/public/hmrc/itsa/foreignPropertyAnnualSubmission.html, web/public/hmrc/itsa/foreignPropertyAdjustments.html, web/browser-tests/foreignPropertyAnnual.browser.test.js, web/browser-tests/foreignPropertyAdjustments.browser.test.js, behaviour-tests/itsaForeignPropertyAnnualSubmission.behaviour.test.js
+- **Keywords:** foreign property annual, foreign property bsas, foreign property adjustments, overseas property, year-end summary, itsa foreign property
+- **Related:** HMRC-15, HMRC-16, HMRC-39
+
 ### ITSA year-end processing (HMRC)
 
 <!-- generated:group itsa-year-end-processing-hmrc -->
@@ -1039,8 +1063,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### HMRC-16 Trigger and adjust the Business Source Adjustable Summary
 
 - **Use when:** a year-end BSAS calculation must be triggered, read or adjusted for a business.
-- **Does:** hmrcItsaBsasTriggerPost.js triggers HMRC's BSAS calculation for either income type. The get and adjust-post Lambdas per income type read HMRC's figures and submit an adjustment.
-- **Run:** `POST /api/v1/hmrc/itsa/bsas/trigger`; `GET /api/v1/hmrc/itsa/bsas/self-employment`; `POST /api/v1/hmrc/itsa/bsas/self-employment/adjust`; `GET /api/v1/hmrc/itsa/bsas/uk-property`; `POST /api/v1/hmrc/itsa/bsas/uk-property/adjust`
+- **Does:** hmrcItsaBsasTriggerPost.js triggers HMRC's BSAS calculation for either income type. The get and adjust-post Lambdas per income type (self-employment, UK property, foreign property) read HMRC's figures and submit an adjustment.
+- **Run:** `POST /api/v1/hmrc/itsa/bsas/trigger`; `GET /api/v1/hmrc/itsa/bsas/self-employment`; `POST /api/v1/hmrc/itsa/bsas/self-employment/adjust`; `GET /api/v1/hmrc/itsa/bsas/uk-property`; `POST /api/v1/hmrc/itsa/bsas/uk-property/adjust`; `GET /api/v1/hmrc/itsa/bsas/foreign-property`; `POST /api/v1/hmrc/itsa/bsas/foreign-property/adjust`
 - **Entry:** `app/functions/hmrc/hmrcItsaBsasTriggerPost.js:ingestHandler`; `app/functions/hmrc/hmrcItsaBsasSelfEmploymentAdjustPost.js:ingestHandler`; `app/functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js:ingestHandler`
 - **Files:** app/functions/hmrc/hmrcItsaBsasTriggerPost.js, app/functions/hmrc/hmrcItsaBsasSelfEmploymentGet.js, app/functions/hmrc/hmrcItsaBsasSelfEmploymentAdjustPost.js, app/functions/hmrc/hmrcItsaBsasUkPropertyGet.js, app/functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js, app/unit-tests/functions/hmrcItsaBsasTriggerPost.test.js, app/unit-tests/functions/hmrcItsaBsasSelfEmploymentGet.test.js, app/unit-tests/functions/hmrcItsaBsasSelfEmploymentAdjustPost.test.js, app/unit-tests/functions/hmrcItsaBsasUkPropertyGet.test.js, app/unit-tests/functions/hmrcItsaBsasUkPropertyAdjustPost.test.js, web/public/hmrc/itsa/adjustments.html, web/public/hmrc/itsa/ukPropertyAdjustments.html, web/browser-tests/adjustments.browser.test.js
 - **Keywords:** bsas, business source adjustable summary, typeofbusiness, adjustments, year-end calculation, self-employment bsas, uk property bsas
@@ -6383,6 +6407,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cost-copy role: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - countactiveallocations: [BILL-05](#bill-05-reconcile-bundle-capacity-counters)
 - country change: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
+- country code: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details)
 - coverage thresholds: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - cowork: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - cpc: [DATA-34](#data-34-report-google-ads-campaign-performance)
@@ -6420,6 +6445,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ct600: [CH-15](#ch-15-file-a-company-tax-return-with-hmrc)
 - ctr: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - cumulative model: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
+- cumulative update: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details)
 - curated ads: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - curated cost: [DATA-08](#data-08-copy-the-aws-focus-cost-export)
 - curated finance: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
@@ -6741,6 +6767,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - focus cost export: [DATA-08](#data-08-copy-the-aws-focus-cost-export), [DATA-30](#data-30-sql-views-cost)
 - focus format: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - force logout: [OPS-64](#ops-64-runbook-information-security-operations), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident)
+- foreign property adjustments: [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments)
+- foreign property annual: [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments)
+- foreign property bsas: [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments)
+- foreign property details: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details)
+- foreign property period: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details)
 - form bundle number: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - form layouts: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - format specification: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
@@ -7007,6 +7038,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - itsa annual submission: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary), [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
 - itsa business details: [HMRC-09](#hmrc-09-retrieve-itsa-business-details)
 - itsa calculation: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability)
+- itsa foreign property: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details), [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments)
 - itsa journeys: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
 - itsa liability: [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration)
 - itsa losses: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
@@ -7322,6 +7354,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - overflow: [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday)
 - overlay: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
 - overloaded batch: [DEV-35](#dev-35-cool-down-an-overloaded-batch)
+- overseas property: [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments)
+- overseas rental income: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details)
 - owasp: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - ownership check: [BILL-18](#bill-18-delete-a-diya-gl-book)
 - p&l: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
@@ -7479,6 +7513,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - prompt injection: [OPS-142](#ops-142-read-a-support-ticket-in-quarantine)
 - prompt library: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
 - proof: [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition)
+- property id: [HMRC-39](#hmrc-39-submit-and-manage-foreign-property-periodic-updates-and-property-details)
 - property income allowance: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
 - protected resource: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - provision secrets: [BILL-32](#bill-32-provision-stripe-secrets)
@@ -8197,7 +8232,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - year-end: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
 - year-end calculation: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
 - year-end sequence: [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules)
-- year-end summary: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
+- year-end summary: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary), [HMRC-40](#hmrc-40-submit-and-manage-the-foreign-property-annual-summary-and-its-adjustments)
 - youtube channel config: [DATA-46](#data-46-configure-the-youtube-channel-as-code)
 - youtube check: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
 - youtube client secret: [DATA-44](#data-44-assert-google-oauth-client-configuration)
