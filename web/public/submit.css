@@ -811,6 +811,14 @@ header::after {
   margin-bottom: var(--space-4);
 }
 
+.settings-group:last-child {
+  margin-bottom: 0;
+}
+
+.settings-group .setting-row:last-child {
+  margin-bottom: 0;
+}
+
 .setting-switch {
   position: relative;
   display: inline-flex;
