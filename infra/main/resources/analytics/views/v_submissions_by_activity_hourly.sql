@@ -18,6 +18,7 @@ FROM  (SELECT date_trunc('hour', event_ts) AS hour, hashed_sub, client_id,
                 WHEN event = 'vat-payments-queried'                               THEN 'vat-payments'
                 WHEN event = 'vat-penalties-queried'                              THEN 'vat-penalties'
                 WHEN event = 'vat-return-queried'                                 THEN 'view-vat-return'
+                WHEN event = 'receipts-viewed'                                    THEN 'my-receipts'
                 WHEN event = 'company-profile-viewed'                            THEN 'company-lookup'
                 WHEN event = 'companies-house-registered-office-address-filed'   THEN 'change-registered-office'
                 WHEN event = 'companies-house-registered-email-address-filed'    THEN 'change-registered-email'

@@ -1102,6 +1102,9 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
         ? `max_by(${valueExpr}, ${dayColumn}) FILTER (WHERE ${condition(dayColumn)}${filter}) AS ${prefix}${alias}`
         : `${aggregation}(CASE WHEN ${condition(dayColumn)}${filter} THEN ${valueExpr} END) AS ${prefix}${alias}`,
     );
+    // The view's earliest day, whatever the observation's filter: a window that ends on or after
+    // it was covered by the source, so an empty window there is a measured zero.
+    windowColumns.push(`cast(min(${dayColumn}) AS varchar) AS ${prefix}first_day`);
     if (reportDataSince) {
       const earliest = where ? `min(CASE WHEN ${where} THEN ${dayColumn} END)` : `min(${dayColumn})`;
       windowColumns.push(`cast(${earliest} AS varchar) AS ${prefix}data_since`);
@@ -1129,10 +1132,13 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
 export function buildFastWindowBatchSql({ fastWindowView, fastWindowColumn, observations }) {
   const columns = observations.flatMap(({ valueExpr, aggregation, where }, index) => {
     const filter = caseFilter(where);
-    return FAST_WINDOW_COLUMNS.map(
-      ([alias, condition]) =>
-        `${aggregation}(CASE WHEN ${condition(fastWindowColumn)}${filter} THEN ${valueExpr} END) AS ${observationColumnPrefix(index)}${alias}`,
-    );
+    return [
+      ...FAST_WINDOW_COLUMNS.map(
+        ([alias, condition]) =>
+          `${aggregation}(CASE WHEN ${condition(fastWindowColumn)}${filter} THEN ${valueExpr} END) AS ${observationColumnPrefix(index)}${alias}`,
+      ),
+      `cast(min(${fastWindowColumn}) AS varchar) AS ${observationColumnPrefix(index)}first_hour`,
+    ];
   });
   return `SELECT ${columns.join(",\n       ")}\nFROM   ${fastWindowView}`;
 }
@@ -1170,7 +1176,9 @@ async function runObservationBatches({ workGroup, database, observations, groupK
     const sql = buildSql(groupObservations);
     try {
       const rows = await runAthenaQuery({ workGroup, database, sql });
-      groupObservations.forEach((observation, index) => resultsById.set(observation.id, toResult(observationRow(rows, index))));
+      groupObservations.forEach((observation, index) =>
+        resultsById.set(observation.id, toResult(observationRow(rows, index), observation)),
+      );
     } catch (error) {
       for (const observation of groupObservations) failedIds.add(observation.id);
       logger.warn({
@@ -1189,11 +1197,15 @@ function toNumberOrNull(value) {
   return Number(value);
 }
 
+// A fast window with no events reads zero once the hourly view holds any rows at all; a view
+// with no rows (a property with no streaming export) reports nothing, which stays null.
 export function toActivityFastWindows(row) {
+  const reported = row?.first_hour !== null && row?.first_hour !== undefined;
+  const fastValue = (value) => toNumberOrNull(value) ?? (reported ? 0 : null);
   return {
-    last1h: { value: toNumberOrNull(row?.last_1h) },
-    last1d: { value: toNumberOrNull(row?.last_1d) },
-    last7d: { value: toNumberOrNull(row?.last_7d) },
+    last1h: { value: fastValue(row?.last_1h) },
+    last1d: { value: fastValue(row?.last_1d) },
+    last7d: { value: fastValue(row?.last_7d) },
   };
 }
 
@@ -1213,14 +1225,40 @@ function newInWindowFlag(current, previous) {
   return current !== null && current > 0 && (previous === null || previous === 0) ? { isNew: true } : {};
 }
 
-export function toObservationWindows(row) {
-  const last30 = toNumberOrNull(row?.last_30);
-  const prev30 = toNumberOrNull(row?.prev_30);
-  const last90 = toNumberOrNull(row?.last_90);
-  const prev90 = toNumberOrNull(row?.prev_90);
+const WINDOW_END_DAYS_BACK = { last_30: 0, prev_30: 30, last_90: 0, prev_90: 90 };
+
+// A window the source covered but that held no rows: a sum is a measured zero; an average has
+// no figure to give but is flagged noEvents so the page says "none" rather than "not measured".
+// A window that ends before the source's first day stays null.
+function readWindow(row, column, aggregation, today) {
+  const value = toNumberOrNull(row?.[column]);
+  if (value !== null || !row?.first_day) return { value };
+  const windowEnd = new Date(today);
+  windowEnd.setUTCDate(windowEnd.getUTCDate() - WINDOW_END_DAYS_BACK[column]);
+  if (row.first_day.slice(0, 10) > windowEnd.toISOString().slice(0, 10)) return { value };
+  if (aggregation === "sum") return { value: 0 };
+  return aggregation === "avg" ? { value, noEvents: true } : { value };
+}
+
+export function toObservationWindows(row, aggregation, today = new Date()) {
+  const current30 = readWindow(row, "last_30", aggregation, today);
+  const previous30 = readWindow(row, "prev_30", aggregation, today);
+  const current90 = readWindow(row, "last_90", aggregation, today);
+  const previous90 = readWindow(row, "prev_90", aggregation, today);
+  const [last30, prev30, last90, prev90] = [current30, previous30, current90, previous90].map((window) => window.value);
   const windows = {
-    last30: { value: last30, trend: computeTrend(last30, prev30), ...newInWindowFlag(last30, prev30) },
-    last90: { value: last90, trend: computeTrend(last90, prev90), ...newInWindowFlag(last90, prev90) },
+    last30: {
+      value: last30,
+      trend: computeTrend(last30, prev30),
+      ...newInWindowFlag(last30, prev30),
+      ...(current30.noEvents ? { noEvents: true } : {}),
+    },
+    last90: {
+      value: last90,
+      trend: computeTrend(last90, prev90),
+      ...newInWindowFlag(last90, prev90),
+      ...(current90.noEvents ? { noEvents: true } : {}),
+    },
   };
   if (row?.data_since) windows.dataSince = row.data_since;
   return windows;
@@ -1309,7 +1347,7 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
       observations: fastWindowOnly ? [] : allObservations,
       groupKey: (observation) => `${observation.view}|${observation.dayColumn}`,
       buildSql: (observations) => buildWindowedBatchSql({ view: observations[0].view, dayColumn: observations[0].dayColumn, observations }),
-      toResult: toObservationWindows,
+      toResult: (row, observation) => toObservationWindows(row, observation.aggregation),
       failureMessage: "Windowed query failed, publishing null for its observations",
     }),
   ]);

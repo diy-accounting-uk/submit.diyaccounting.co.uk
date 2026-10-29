@@ -67,7 +67,13 @@ const timestampFormat = new Intl.DateTimeFormat("en-GB", {
   timeZone: "UTC",
 });
 
-// "not measured" is a figure the pipeline could not produce; "none" is a measured count of zero.
+// "not measured" is a figure the source did not report; "none" is a measured count of zero, or
+// a window the source covered in which nothing happened (the window carries noEvents).
+function formatWindowValue(unit, window) {
+  if (window && window.noEvents && (window.value === null || window.value === undefined)) return NONE;
+  return formatValue(unit, window && window.value);
+}
+
 function formatValue(unit, value) {
   if (value === null || value === undefined) return NOT_MEASURED;
   if (unit === "ratio") return percentFormat.format(value * 100) + "%";
@@ -139,7 +145,7 @@ function renderObservationRow(observation) {
   row.appendChild(label);
 
   const last30 = document.createElement("td");
-  last30.textContent = formatValue(observation.unit, observation.last30 && observation.last30.value);
+  last30.textContent = formatWindowValue(observation.unit, observation.last30);
   row.appendChild(last30);
 
   const trend30 = formatTrend(
@@ -153,7 +159,7 @@ function renderObservationRow(observation) {
   row.appendChild(trend30Cell);
 
   const last90 = document.createElement("td");
-  last90.textContent = formatValue(observation.unit, observation.last90 && observation.last90.value);
+  last90.textContent = formatWindowValue(observation.unit, observation.last90);
   row.appendChild(last90);
 
   const linkCell = document.createElement("td");
@@ -390,8 +396,9 @@ function renderReinvestment(snapshot) {
 
 function activityCountCell(observation, key, unavailableTitle) {
   const cell = document.createElement("td");
-  const value = observation && observation[key] && observation[key].value;
-  cell.textContent = formatValue("count", value);
+  const window = observation && observation[key];
+  const value = window && window.value;
+  cell.textContent = formatWindowValue("count", window);
   if (unavailableTitle && (value === null || value === undefined)) cell.title = unavailableTitle;
   return cell;
 }

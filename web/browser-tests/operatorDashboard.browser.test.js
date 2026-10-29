@@ -629,6 +629,25 @@ test.describe("Operator Dashboard", () => {
     await expect(operator.locator("td").nth(4)).not.toHaveAttribute("title", /.+/);
   });
 
+  test("says none for a window with no events and not measured for a figure the source did not report", async ({ page }) => {
+    const objectives = FIXTURE_SNAPSHOT.objectives.map((objective) =>
+      objective.id === "retention"
+        ? {
+            ...objective,
+            observations: [
+              { id: "quiet", label: "Quiet ratio", unit: "ratio", last30: { value: null, noEvents: true }, last90: { value: null } },
+            ],
+          }
+        : objective,
+    );
+    await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, objectives } });
+    await loadDashboard(page);
+
+    const row = page.locator('tr.observation[data-observation-id="quiet"]');
+    await expect(row.locator("td").nth(1)).toHaveText("none");
+    await expect(row.locator("td").nth(3)).toHaveText("not measured");
+  });
+
   test("shows a placeholder for an objective with no observations yet", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);

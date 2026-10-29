@@ -240,7 +240,8 @@ describe("operatorSnapshotPublish", () => {
         "SELECT avg(CASE WHEN day > date_add('day', -30, current_date) THEN pass_rate END) AS o0_last_30,\n" +
           "       avg(CASE WHEN day > date_add('day', -60, current_date) AND day <= date_add('day', -30, current_date) THEN pass_rate END) AS o0_prev_30,\n" +
           "       avg(CASE WHEN day > date_add('day', -90, current_date) THEN pass_rate END) AS o0_last_90,\n" +
-          "       avg(CASE WHEN day > date_add('day', -180, current_date) AND day <= date_add('day', -90, current_date) THEN pass_rate END) AS o0_prev_90\n" +
+          "       avg(CASE WHEN day > date_add('day', -180, current_date) AND day <= date_add('day', -90, current_date) THEN pass_rate END) AS o0_prev_90,\n" +
+          "       cast(min(day) AS varchar) AS o0_first_day\n" +
           "FROM   v_availability_sli_daily",
       );
     });
@@ -624,6 +625,43 @@ describe("operatorSnapshotPublish", () => {
   });
 
   describe("toObservationWindows", () => {
+    const TODAY = new Date("2026-10-29T12:00:00Z");
+
+    test("a sum over a window with no rows is a measured zero once the source began before the window ended", () => {
+      const windows = toObservationWindows(
+        { last_30: null, prev_30: null, last_90: null, prev_90: null, first_day: "2026-09-05" },
+        "sum",
+        TODAY,
+      );
+
+      expect(windows.last30.value).toBe(0);
+      expect(windows.last90.value).toBe(0);
+    });
+
+    test("a window that ends before the source's first day stays not measured", () => {
+      const windows = toObservationWindows(
+        { last_30: "4", prev_30: null, last_90: "4", prev_90: null, first_day: "2026-10-20" },
+        "sum",
+        TODAY,
+      );
+
+      expect(windows.last30.value).toBe(4);
+      expect(windows.last30.isNew).toBe(true);
+      expect(windows.last30.trend).toBeNull();
+    });
+
+    test("an average over a covered window with no rows is flagged noEvents, and a window with a figure is not", () => {
+      const windows = toObservationWindows({ last_30: null, last_90: "0.5", first_day: "2026-09-05" }, "avg", TODAY);
+
+      expect(windows.last30).toMatchObject({ value: null, noEvents: true });
+      expect(windows.last90.noEvents).toBeUndefined();
+      expect(toObservationWindows({ last_30: null, first_day: "2026-10-30" }, "avg", TODAY).last30.noEvents).toBeUndefined();
+    });
+
+    test("a source with no first day reports nothing", () => {
+      expect(toObservationWindows({ last_30: null, first_day: null }, "sum", TODAY).last30.value).toBeNull();
+    });
+
     test("reads all four columns and computes each window's trend", () => {
       const windows = toObservationWindows({ last_30: "110", prev_30: "100", last_90: "300", prev_90: "300" });
       expect(windows.last30.value).toBe(110);
@@ -1143,13 +1181,23 @@ describe("operatorSnapshotPublish", () => {
       expect(sql).toBe(
         "SELECT sum(CASE WHEN hour > date_add('hour', -1, current_timestamp) THEN sessions END) AS o0_last_1h,\n" +
           "       sum(CASE WHEN hour > date_add('day', -1, current_timestamp) THEN sessions END) AS o0_last_1d,\n" +
-          "       sum(CASE WHEN hour > date_add('day', -7, current_timestamp) THEN sessions END) AS o0_last_7d\n" +
+          "       sum(CASE WHEN hour > date_add('day', -7, current_timestamp) THEN sessions END) AS o0_last_7d,\n" +
+          "       cast(min(hour) AS varchar) AS o0_first_hour\n" +
           "FROM   v_visitors_by_kind_hourly",
       );
     });
   });
 
   describe("toActivityFastWindows", () => {
+    test("empty fast windows read zero when the hourly view holds rows and null when it holds none", () => {
+      expect(toActivityFastWindows({ last_1h: null, last_1d: "2", last_7d: "5", first_hour: "2026-10-22 10:00:00.000" })).toEqual({
+        last1h: { value: 0 },
+        last1d: { value: 2 },
+        last7d: { value: 5 },
+      });
+      expect(toActivityFastWindows({ last_1h: null, last_1d: null, last_7d: null, first_hour: null }).last1h.value).toBeNull();
+    });
+
     test("reads the three columns, each with no trend", () => {
       expect(toActivityFastWindows({ last_1h: "1", last_1d: "4", last_7d: "20" })).toEqual({
         last1h: { value: 1 },
