@@ -380,12 +380,20 @@ export function getBsasUkPropertyAdjustErrorForScenario(scenario) {
 
 const EXAMPLE_FOREIGN_PROPERTY_ID = "8e8b8450-dc1b-4360-8109-7067337b42cb";
 
+/** Multiply every number in a figures object, nested objects included, by the number of countries. */
+function scaleFigures(figures, factor) {
+  return Object.fromEntries(
+    Object.entries(figures).map(([key, value]) => [key, typeof value === "object" ? scaleFigures(value, factor) : value * factor]),
+  );
+}
+
 /**
  * Build the foreign property adjustable summary the FOREIGN_PROPERTY_PROFIT scenario returns. The
  * country level carries every figure and, from 2026-27, a property level inside it, as HMRC's
  * examples do. The field names are the adjustable summary's own labels, the same as the UK ones.
  */
-function foreignPropertyProfitSummary(nino, calculationId, taxYear, propertyId) {
+function foreignPropertyProfitSummary(nino, calculationId, taxYear, propertyId, submittedCountries = []) {
+  const countryCodes = submittedCountries.length > 0 ? submittedCountries : ["FRA"];
   const startYear = Number(String(taxYear).slice(0, 4));
   const income = { totalRentsReceived: 9000, premiumsOfLeaseGrant: 0, otherPropertyIncome: 1000 };
   const expenses = { premisesRunningCosts: 500, repairsAndMaintenance: 500 };
@@ -400,10 +408,14 @@ function foreignPropertyProfitSummary(nino, calculationId, taxYear, propertyId) 
     deductions,
     taxableProfit: 5000,
   };
-  const countryLevel = { countryCode: "FRA", ...figures };
-  if (startYear >= 2026) {
-    countryLevel.propertyLevelDetail = [{ propertyId: propertyId || EXAMPLE_FOREIGN_PROPERTY_ID, ...figures }];
-  }
+  const countryLevelDetail = countryCodes.map((countryCode) => {
+    const countryLevel = { countryCode, ...figures };
+    if (startYear >= 2026) {
+      countryLevel.propertyLevelDetail = [{ propertyId: propertyId || EXAMPLE_FOREIGN_PROPERTY_ID, ...figures }];
+    }
+    return countryLevel;
+  });
+  const totals = scaleFigures(figures, countryCodes.length);
   return {
     metadata: {
       calculationId,
@@ -425,7 +437,7 @@ function foreignPropertyProfitSummary(nino, calculationId, taxYear, propertyId) 
         receivedDateTime: "2024-02-15T09:35:04.843Z",
       },
     },
-    adjustableSummaryCalculation: { ...figures, countryLevelDetail: [countryLevel] },
+    adjustableSummaryCalculation: { ...totals, countryLevelDetail },
   };
 }
 
@@ -489,19 +501,21 @@ const foreignPropertyRetrieveErrorScenarios = {
  * @param {string} calculationId
  * @param {string} taxYear
  * @param {string|undefined} propertyId - a propertyId the simulator holds, used in the 2026-27 property level
+ * @param {string[]} [submittedCountries] - country codes of the annual submission saved for the year; one country level entry each, the totals are their sum
  * @returns {{bsas: object}|{status: number, body: object}}
  */
-export function getBsasForeignPropertyForScenario(scenario, nino, calculationId, taxYear, propertyId) {
+export function getBsasForeignPropertyForScenario(scenario, nino, calculationId, taxYear, propertyId, submittedCountries = []) {
   if (!scenario) return NOT_FOUND_RESPONSE;
 
   const scenarioUpper = scenario.toUpperCase();
-  if (scenarioUpper === "STATEFUL") return { bsas: foreignPropertyProfitSummary(nino, calculationId, taxYear, propertyId) };
+  if (scenarioUpper === "STATEFUL")
+    return { bsas: foreignPropertyProfitSummary(nino, calculationId, taxYear, propertyId, submittedCountries) };
 
   const isDynamic = scenarioUpper.startsWith("DYNAMIC_");
   const baseScenario = isDynamic ? scenarioUpper.slice("DYNAMIC_".length) : scenarioUpper;
 
   const builder = foreignPropertyRetrieveScenarioBuilders[baseScenario];
-  if (builder) return { bsas: builder(nino, calculationId, taxYear, propertyId) };
+  if (builder) return { bsas: builder(nino, calculationId, taxYear, propertyId, submittedCountries) };
 
   if (foreignPropertyRetrieveErrorScenarios[scenarioUpper]) return foreignPropertyRetrieveErrorScenarios[scenarioUpper];
 

@@ -20,6 +20,8 @@ const state = {
   periodSummaries: new Map(),
   // Foreign properties created through Create Foreign Property Details, keyed by `${nino}:${businessId}`
   foreignProperties: new Map(),
+  // Country codes in the foreign property annual submission last saved, keyed by `${nino}:${taxYear}`
+  foreignAnnualCountries: new Map(),
 };
 
 /**
@@ -33,6 +35,7 @@ export function reset() {
   state.assistReports.clear();
   state.periodSummaries.clear();
   state.foreignProperties.clear();
+  state.foreignAnnualCountries.clear();
 }
 
 /**
@@ -210,6 +213,26 @@ export function getForeignPropertiesForNino(nino) {
  */
 export function findForeignProperty(nino, propertyId) {
   return getForeignPropertiesForNino(nino).find((property) => property.propertyId === propertyId);
+}
+
+/**
+ * Remember the countries a foreign property annual submission was saved with, replacing any earlier save.
+ * @param {string} nino - National Insurance number
+ * @param {string} taxYear - Tax year
+ * @param {string[]} countryCodes - Country codes of the saved entries
+ */
+export function storeForeignAnnualCountries(nino, taxYear, countryCodes) {
+  state.foreignAnnualCountries.set(`${normaliseNino(nino)}:${taxYear}`, countryCodes);
+}
+
+/**
+ * Get the countries the last foreign property annual submission for a tax year was saved with.
+ * @param {string} nino - National Insurance number
+ * @param {string} taxYear - Tax year
+ * @returns {string[]} the country codes, empty when nothing was saved
+ */
+export function getForeignAnnualCountries(nino, taxYear) {
+  return state.foreignAnnualCountries.get(`${normaliseNino(nino)}:${taxYear}`) || [];
 }
 
 export default state;

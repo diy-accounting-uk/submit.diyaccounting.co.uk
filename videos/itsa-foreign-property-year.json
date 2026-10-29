@@ -220,9 +220,13 @@
           "keyWord": "year"
         },
         {
+          "action": "testScenario",
+          "value": "NOT_FOUND"
+        },
+        {
           "action": "click",
           "target": "#loadBtn",
-          "caption": "Load what HMRC already holds for the year.",
+          "caption": "Load what HMRC already holds for the year. Nothing yet.",
           "headline": "Load the year so far",
           "keyWord": "Load"
         },
@@ -405,9 +409,9 @@
           "until": "#summaryContainer",
           "label": "Waiting for HMRC",
           "timeoutMs": 60000,
-          "caption": "Income, expenses and profit, as HMRC worked them out.",
-          "headline": "Income, expenses, profit",
-          "keyWord": "country"
+          "caption": "France and Spain together: income, expenses and profit, as HMRC worked them out.",
+          "headline": "France and Spain together",
+          "keyWord": "together"
         },
         {
           "action": "point",

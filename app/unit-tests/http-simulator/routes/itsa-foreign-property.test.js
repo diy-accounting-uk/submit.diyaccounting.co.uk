@@ -11,7 +11,7 @@ import { apiEndpoint as periodEndpoint } from "@app/http-simulator/routes/itsa-f
 import { apiEndpoint as periodDetailEndpoint } from "@app/http-simulator/routes/itsa-foreign-property-period-detail.js";
 import { apiEndpoint as cumulativeEndpoint } from "@app/http-simulator/routes/itsa-foreign-property-cumulative.js";
 import { apiEndpoint as annualEndpoint } from "@app/http-simulator/routes/itsa-foreign-property-annual.js";
-import { reset as resetState } from "@app/http-simulator/state/store.js";
+import { getForeignAnnualCountries, reset as resetState } from "@app/http-simulator/state/store.js";
 
 const NINO = "AB123456C";
 const BUSINESS_ID = "XAIS12345678910";
@@ -503,6 +503,18 @@ describe("http-simulator/routes/itsa-foreign-property", () => {
           ],
         });
       expect(response.status).toBe(200);
+    });
+
+    test("PUT keeps the saved countries for the year-end summary and a later PUT replaces them", async () => {
+      const send = (countryCodes) =>
+        request(app)
+          .put(annualUrl("2025-26"))
+          .send({ foreignProperty: countryCodes.map((countryCode) => ({ countryCode, allowances })) });
+      await send(["FRA", "ESP"]);
+      expect(getForeignAnnualCountries(NINO, "2025-26")).toEqual(["FRA", "ESP"]);
+      await send(["DEU"]);
+      expect(getForeignAnnualCountries(NINO, "2025-26")).toEqual(["DEU"]);
+      expect(getForeignAnnualCountries(NINO, "2024-25")).toEqual([]);
     });
 
     test("PUT in 2024-25 takes the FHL in the EEA section alone", async () => {

@@ -152,6 +152,18 @@ describe("http-simulator/scenarios/itsa-bsas", () => {
       expect(calculation.countryLevelDetail[0].propertyLevelDetail).toBeUndefined();
     });
 
+    test("FOREIGN_PROPERTY_PROFIT answers one country level entry for each submitted country and totals them", () => {
+      const calculation = getBsasForeignPropertyForScenario("FOREIGN_PROPERTY_PROFIT", NINO, CALCULATION_ID, TAX_YEAR, undefined, [
+        "FRA",
+        "ESP",
+      ]).bsas.adjustableSummaryCalculation;
+      expect(calculation.countryLevelDetail.map((entry) => entry.countryCode)).toEqual(["FRA", "ESP"]);
+      expect(calculation.totalIncome).toBe(20000);
+      expect(calculation.income.totalRentsReceived).toBe(18000);
+      expect(calculation.netProfit).toBe(18000);
+      expect(calculation.expenses.premisesRunningCosts).toBe(1000);
+    });
+
     test("FOREIGN_PROPERTY_PROFIT answers the held property at the property level from 2026-27", () => {
       const result = getBsasForeignPropertyForScenario(
         "FOREIGN_PROPERTY_PROFIT",

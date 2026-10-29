@@ -11,7 +11,7 @@ import {
   getForeignPropertyAnnualAmendErrorForScenario,
 } from "../scenarios/itsa-foreign-property-annual.js";
 import { findEntryListError, taxYearStartYear, validatePathParams } from "./itsa-foreign-property-period.js";
-import { getForeignPropertiesForNino } from "../state/store.js";
+import { getForeignPropertiesForNino, storeForeignAnnualCountries } from "../state/store.js";
 
 /** The first tax year without the foreignFhlEea section: furnished holiday lettings ended 5 April 2025. */
 const FHL_END_YEAR = 2025;
@@ -122,6 +122,9 @@ export function apiEndpoint(app) {
     if (scenarioError) {
       return res.status(scenarioError.status).json(scenarioError.body);
     }
+
+    const countryCodes = (req.body.foreignProperty || []).map((entry) => entry.countryCode).filter(Boolean);
+    storeForeignAnnualCountries(nino, taxYear, countryCodes);
 
     // Default and STATEFUL: HMRC answers 200 with no body.
     res.setHeader("Content-Type", "application/json");
