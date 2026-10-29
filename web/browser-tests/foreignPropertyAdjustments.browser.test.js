@@ -222,6 +222,57 @@ test.describe("foreign property year-end adjustments", () => {
     expect(details.foreignProperty).toEqual([{ propertyId: "FP1", income: { otherPropertyIncome: 5 } }]);
   });
 
+  test("sends furnished holiday lettings in the EEA beside the countries for 2024-25", async ({ page }) => {
+    await openPage(page, { summary: COUNTRY_SUMMARY });
+    await trigger(page, "2024-25");
+    await expect(page.locator("#adjust-fhl legend")).toHaveText("Furnished holiday lettings in the EEA");
+    await expect(page.locator("#adjust-fhl-premiumsOfLeaseGrant")).toHaveCount(0);
+    await expect(page.locator("#adjust-fhl-residentialFinancialCost")).toHaveCount(0);
+    await page.locator("#adjust-1-totalRentsReceived").fill("8500");
+    await page.locator("#adjust-fhl-totalRentsReceived").fill("300");
+    await page.locator("#adjust-fhl-expenses").evaluate((node) => (node.open = true));
+    await page.locator("#adjust-fhl-travelCosts").fill("25");
+    await shoot(page, "adjustments-form-fhl");
+    await page.locator("#submitAdjustmentBtn").click();
+
+    await expect.poll(async () => (await sentCalls(page, "adjust")).length).toBe(1);
+    const [{ details }] = await sentCalls(page, "adjust");
+    expect(details).toEqual({
+      nino: "QQ123456C",
+      calculationId: "c1",
+      taxYear: "2024-25",
+      zeroAdjustments: false,
+      foreignProperty: [{ countryCode: "FRA", income: { totalRentsReceived: 8500 } }],
+      foreignFhlEea: { income: { totalRentsReceived: 300 }, expenses: { travelCosts: 25 } },
+    });
+  });
+
+  test("sends furnished holiday lettings in the EEA alone, and refuses its total with itemised expenses", async ({ page }) => {
+    await openPage(page, { summary: COUNTRY_SUMMARY });
+    await trigger(page, "2024-25");
+    await page.locator("#adjust-fhl-expenses").evaluate((node) => (node.open = true));
+    await page.locator("#adjust-fhl-repairsAndMaintenance").fill("40");
+    await page.locator("#adjust-fhl-consolidatedExpenses").fill("50");
+    await page.locator("#submitAdjustmentBtn").click();
+    await expect(page.locator("#form-error-summary")).toContainText(
+      "Furnished holiday lettings in the EEA: enter either the total expenses or the itemised expenses, not both",
+    );
+    expect((await sentCalls(page, "adjust")).length).toBe(0);
+
+    await page.locator("#adjust-fhl-repairsAndMaintenance").fill("");
+    await page.locator("#submitAdjustmentBtn").click();
+    await expect.poll(async () => (await sentCalls(page, "adjust")).length).toBe(1);
+    const [{ details }] = await sentCalls(page, "adjust");
+    expect(details.foreignProperty).toBeUndefined();
+    expect(details.foreignFhlEea).toEqual({ expenses: { consolidatedExpenses: 50 } });
+  });
+
+  test("shows no furnished holiday lettings section from 2025-26", async ({ page }) => {
+    await openPage(page, { summary: COUNTRY_SUMMARY });
+    await trigger(page, "2025-26");
+    await expect(page.locator("#adjust-fhl")).toHaveCount(0);
+  });
+
   test("does not trigger while a quarterly obligation is open", async ({ page }) => {
     await openPage(page, { summary: COUNTRY_SUMMARY, obligations: [{ status: "open" }] });
     await page.locator("#nino").fill("QQ123456C");

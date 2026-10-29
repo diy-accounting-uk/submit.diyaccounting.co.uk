@@ -86,6 +86,9 @@ export function setupTestEnv(customEnv = {}) {
     HMRC_ITSA_FOREIGN_PROPERTY_DETAILS_PUT_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-foreign-property-details-put-async-requests-table",
     HMRC_ITSA_BSAS_UK_PROPERTY_GET_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-bsas-uk-property-get-async-requests-table",
     HMRC_ITSA_BSAS_UK_PROPERTY_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-bsas-uk-property-adjust-post-async-requests-table",
+    HMRC_ITSA_BSAS_FOREIGN_PROPERTY_GET_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-bsas-foreign-property-get-async-requests-table",
+    HMRC_ITSA_BSAS_FOREIGN_PROPERTY_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME:
+      "test-hmrc-itsa-bsas-foreign-property-adjust-post-async-requests-table",
     HMRC_ITSA_LOSSES_AND_CLAIMS_GET_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-losses-and-claims-get-async-requests-table",
     HMRC_ITSA_LOSSES_AND_CLAIMS_PUT_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-losses-and-claims-put-async-requests-table",
     HMRC_ITSA_LOSSES_AND_CLAIMS_DELETE_ASYNC_REQUESTS_TABLE_NAME: "test-hmrc-itsa-losses-and-claims-delete-async-requests-table",

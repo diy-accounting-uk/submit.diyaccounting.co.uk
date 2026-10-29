@@ -238,6 +238,7 @@ describe("functions/infra/selfDestruct", () => {
       AUTH_STACK_NAME: "auth",
       HMRC_STACK_NAME: "hmrc",
       HMRC_ITSA_STACK_NAME: "hmrc-itsa",
+      HMRC_ITSA_PROPERTY_STACK_NAME: "hmrc-itsa-property",
       COMPANIES_HOUSE_STACK_NAME: "companies-house",
       BILLING_STACK_NAME: "billing",
       DIYA_GL_STACK_NAME: "diya-gl",
@@ -682,6 +683,7 @@ describe("functions/infra/selfDestruct", () => {
       "auth",
       "hmrc",
       "hmrc-itsa",
+      "hmrc-itsa-property",
       "companies-house",
       "billing",
       "diya-gl",
@@ -720,6 +722,7 @@ describe("functions/infra/selfDestruct", () => {
       "auth",
       "hmrc",
       "hmrc-itsa",
+      "hmrc-itsa-property",
       "companies-house",
       "billing",
       "diya-gl",
@@ -791,7 +794,7 @@ describe("functions/infra/selfDestruct", () => {
 
     const stackNamesReadByLambda = new Set([...selfDestructJsSource.matchAll(/process\.env\.(\w*STACK_NAME)/g)].map((m) => m[1]));
     const stackNamesSetByCdk = new Set(
-      [...selfDestructStackJavaSource.matchAll(/putIfNotNull\(selfDestructLambdaEnv, "(\w*STACK_NAME)"/g)].map((m) => m[1]),
+      [...selfDestructStackJavaSource.matchAll(/putIfNotNull\(\s*selfDestructLambdaEnv,\s*"(\w*STACK_NAME)"/g)].map((m) => m[1]),
     );
 
     expect(stackNamesReadByLambda.size).toBeGreaterThan(0);

@@ -132,6 +132,10 @@ export const DEPLOY_SKIPPABLE_JOBS = [
   { id: "deploy-hmrc", description: "Deploys HmrcStack (the VAT MTD Lambda functions and their API Gateway routes) via CDK." },
   { id: "deploy-hmrc-itsa", description: "Deploys HmrcItsaStack (the Income Tax MTD Lambda functions and routes) via CDK." },
   {
+    id: "deploy-hmrc-itsa-property",
+    description: "Deploys HmrcItsaPropertyStack (the Income Tax MTD foreign property adjustable summary Lambdas) via CDK.",
+  },
+  {
     id: "deploy-companies-house",
     description: "Deploys CompaniesHouseStack (confirmation statement and accounts filing Lambdas) via CDK.",
   },

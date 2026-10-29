@@ -1699,6 +1699,35 @@ jobs:
       # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
       # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
 
+  deploy-hmrc-itsa-property:
+    name: 'deploy HmrcItsaPropertyStack via deploy-cdk-stack.yml'
+    if: >-
+      ${{ !cancelled() && needs.names.result == 'success' && needs.skip-deploy-check.result == 'success' && needs.push-images.result == 'success' && needs.validate-secrets.result == 'success'
+      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc-itsa-property')) }}
+    needs:
+      - names
+      - skip-deploy-check
+      - push-images
+      - validate-secrets
+      - stack-holdings
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ needs.names.outputs.deployment-name }}-app-HmrcItsaPropertyStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      cdk-application: 'application'
+      lookup-cognito: 'true'
+      base-image-tag: ${{ needs.push-images.outputs.base-image-tag }}
+      # http-api-url: Looked up from API Gateway custom domain via lookup-resources action
+      # website-hash: Downstream of the web publish use ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
+
   deploy-companies-house:
     name: 'deploy CompaniesHouseStack via deploy-cdk-stack.yml'
     if: >-
@@ -1846,6 +1875,7 @@ jobs:
       && (needs.deploy-auth.result == 'success' || (needs.deploy-auth.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-auth')))
       && (needs.deploy-hmrc.result == 'success' || (needs.deploy-hmrc.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc')))
       && (needs.deploy-hmrc-itsa.result == 'success' || (needs.deploy-hmrc-itsa.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc-itsa')))
+      && (needs.deploy-hmrc-itsa-property.result == 'success' || (needs.deploy-hmrc-itsa-property.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc-itsa-property')))
       && (needs.deploy-companies-house.result == 'success' || (needs.deploy-companies-house.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-companies-house')))
       && (needs.deploy-account.result == 'success' || (needs.deploy-account.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-account')))
       && (needs.deploy-billing.result == 'success' || (needs.deploy-billing.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-billing')))
@@ -1860,6 +1890,7 @@ jobs:
       - deploy-auth
       - deploy-hmrc
       - deploy-hmrc-itsa
+      - deploy-hmrc-itsa-property
       - deploy-companies-house
       - deploy-account
       - deploy-billing
@@ -2027,6 +2058,7 @@ jobs:
       && (needs.deploy-auth.result == 'success' || (needs.deploy-auth.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-auth')))
       && (needs.deploy-hmrc.result == 'success' || (needs.deploy-hmrc.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc')))
       && (needs.deploy-hmrc-itsa.result == 'success' || (needs.deploy-hmrc-itsa.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc-itsa')))
+      && (needs.deploy-hmrc-itsa-property.result == 'success' || (needs.deploy-hmrc-itsa-property.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-hmrc-itsa-property')))
       && (needs.deploy-account.result == 'success' || (needs.deploy-account.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-account')))
       && (needs.deploy-api.result == 'success' || (needs.deploy-api.result == 'skipped' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-api')))
       && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.stack-holdings.outputs.skip-json || '[]'), 'deploy-edge')) }}
@@ -2040,6 +2072,7 @@ jobs:
       - deploy-auth
       - deploy-hmrc
       - deploy-hmrc-itsa
+      - deploy-hmrc-itsa-property
       - deploy-account
       - deploy-api
     uses: ./.github/workflows/deploy-cdk-stack.yml
@@ -2402,7 +2435,8 @@ jobs:
       ${{ !cancelled() && needs.names.result == 'success' && needs.names.outputs.environment-name == 'prod'
       && needs.skip-deploy-check.result == 'success' && needs.deploy-api.result == 'success'
       && needs.deploy-auth.result == 'success' && needs.deploy-hmrc.result == 'success'
-      && needs.deploy-hmrc-itsa.result == 'success' && needs.deploy-account.result == 'success'
+      && needs.deploy-hmrc-itsa.result == 'success' && needs.deploy-hmrc-itsa-property.result == 'success'
+      && needs.deploy-account.result == 'success'
       && needs.deploy-edge.result == 'success' && needs.deploy-publish.result == 'success'
       && needs.deploy-ops.result == 'success' }}
     needs:
@@ -2412,6 +2446,7 @@ jobs:
       - deploy-auth
       - deploy-hmrc
       - deploy-hmrc-itsa
+      - deploy-hmrc-itsa-property
       - deploy-account
       - deploy-edge
       - deploy-publish

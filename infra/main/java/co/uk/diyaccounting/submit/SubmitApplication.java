@@ -18,6 +18,7 @@ import co.uk.diyaccounting.submit.stacks.BillingStack;
 import co.uk.diyaccounting.submit.stacks.CompaniesHouseStack;
 import co.uk.diyaccounting.submit.stacks.DiyaGlStack;
 import co.uk.diyaccounting.submit.stacks.EdgeStack;
+import co.uk.diyaccounting.submit.stacks.HmrcItsaPropertyStack;
 import co.uk.diyaccounting.submit.stacks.HmrcItsaStack;
 import co.uk.diyaccounting.submit.stacks.HmrcStack;
 import co.uk.diyaccounting.submit.stacks.McpStack;
@@ -39,6 +40,7 @@ public class SubmitApplication {
     public final AuthStack authStack;
     public final HmrcStack hmrcStack;
     public final HmrcItsaStack hmrcItsaStack;
+    public final HmrcItsaPropertyStack hmrcItsaPropertyStack;
     public final CompaniesHouseStack companiesHouseStack;
     public final AccountStack accountStack;
     public final BillingStack billingStack;
@@ -422,6 +424,28 @@ public class SubmitApplication {
                         .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
                         .build());
 
+        // Create the HmrcItsaPropertyStack - the ITSA property Lambdas added after HmrcItsaStack
+        // reached CloudFormation's per-stack resource ceiling
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.hmrcItsaPropertyStackId, deploymentName, envName);
+        this.hmrcItsaPropertyStack = new HmrcItsaPropertyStack(
+                app,
+                sharedNames.hmrcItsaPropertyStackId,
+                HmrcItsaPropertyStack.HmrcItsaPropertyStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .baseImageTag(baseImageTag)
+                        .hmrcBaseUri(hmrcBaseUri)
+                        .hmrcSandboxBaseUri(appProps.hmrcSandboxBaseUri)
+                        .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
+                        .build());
+
         // Create the CompaniesHouseStack
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
@@ -613,6 +637,7 @@ public class SubmitApplication {
         lambdaFunctions.addAll(this.billingStack.lambdaFunctionProps);
         List<AbstractApiLambdaProps> routesStackLambdaFunctions = new java.util.ArrayList<>();
         routesStackLambdaFunctions.addAll(this.hmrcItsaStack.lambdaFunctionProps);
+        routesStackLambdaFunctions.addAll(this.hmrcItsaPropertyStack.lambdaFunctionProps);
         routesStackLambdaFunctions.addAll(this.companiesHouseStack.lambdaFunctionProps);
         routesStackLambdaFunctions.addAll(this.diyaGlStack.lambdaFunctionProps);
         if (this.mcpStack != null) routesStackLambdaFunctions.addAll(this.mcpStack.lambdaFunctionProps);
@@ -670,6 +695,7 @@ public class SubmitApplication {
                         .build());
         this.apiRoutesStack.addStackDependency(apiStack);
         this.apiRoutesStack.addStackDependency(hmrcItsaStack);
+        this.apiRoutesStack.addStackDependency(hmrcItsaPropertyStack);
         this.apiRoutesStack.addStackDependency(companiesHouseStack);
         this.apiRoutesStack.addStackDependency(diyaGlStack);
         if (this.mcpStack != null) this.apiRoutesStack.addStackDependency(mcpStack);

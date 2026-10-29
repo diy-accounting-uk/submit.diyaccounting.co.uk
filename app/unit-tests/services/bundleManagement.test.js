@@ -311,6 +311,7 @@ describe("bundleEnforcement.js", () => {
         "/api/v1/hmrc/itsa/tax-liability-adjustments",
         "/api/v1/hmrc/itsa/bsas/self-employment/adjust",
         "/api/v1/hmrc/itsa/bsas/uk-property/adjust",
+        "/api/v1/hmrc/itsa/bsas/foreign-property/adjust",
         "/api/v1/hmrc/itsa/final-declaration",
       ];
 
