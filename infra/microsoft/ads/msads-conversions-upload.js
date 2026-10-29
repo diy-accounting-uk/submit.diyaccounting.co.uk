@@ -30,7 +30,8 @@ import TOML from "@iarna/toml";
 
 import { shapeAthenaRows, SUBSCRIPTION_BUNDLE_IDS, defaultSince, queryLake } from "../../google/ads/ads-conversions-upload.js";
 import { ADS_CONFIG_PATH } from "./msads-sync.js";
-import { loadConfigFromRoot, openSession, discoverCustomer, callApi } from "./msads.js";
+import { loadConfigFromRoot, openSession } from "./msads.js";
+import { discoverCustomer, callApi } from "../../../app/lib/microsoftAdsReporting.js";
 
 export { shapeAthenaRows, defaultSince };
 export const MAX_CONVERSIONS_PER_REQUEST = 1000;

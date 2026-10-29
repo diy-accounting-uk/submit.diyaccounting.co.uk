@@ -15,7 +15,7 @@ import {
   APPLY_PATH,
   MAX_CONVERSIONS_PER_REQUEST,
 } from "../../../infra/microsoft/ads/msads-conversions-upload.js";
-import { parseConfig } from "../../../infra/microsoft/ads/msads.js";
+import { parseConfig } from "../../../app/lib/microsoftAdsReporting.js";
 
 const config = parseConfig(fs.readFileSync("infra/microsoft/ads/msads.toml", "utf8"));
 const athenaPages = JSON.parse(fs.readFileSync("app/unit-tests/scripts/fixtures/adsConversionsUploadAthenaPages.json", "utf8"));
