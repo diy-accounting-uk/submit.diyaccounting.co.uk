@@ -3133,9 +3133,9 @@
           "thumb": "videos/file-confirmation-statement/preview-thumb.webp",
           "full": "videos/file-confirmation-statement/preview.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
+          "thumbHeight": 404,
           "fullWidth": 1000,
-          "fullHeight": 1080
+          "fullHeight": 842
         },
         {
           "scene": "result",
@@ -4223,9 +4223,9 @@
           "thumb": "videos/mcp-hosted/connect-0-thumb.webp",
           "full": "videos/mcp-hosted/connect-0.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 204,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 680
         },
         {
           "scene": "connect",
@@ -4236,9 +4236,9 @@
           "thumb": "videos/mcp-hosted/connect-1-thumb.webp",
           "full": "videos/mcp-hosted/connect-1.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 112,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 372
         },
         {
           "scene": "connect",
@@ -4249,9 +4249,9 @@
           "thumb": "videos/mcp-hosted/connect-2-thumb.webp",
           "full": "videos/mcp-hosted/connect-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 112,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 372
         },
         {
           "scene": "connect",
@@ -4262,9 +4262,9 @@
           "thumb": "videos/mcp-hosted/connect-3-thumb.webp",
           "full": "videos/mcp-hosted/connect-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 270,
+          "thumbHeight": 164,
           "fullWidth": 1600,
-          "fullHeight": 900
+          "fullHeight": 546
         },
         {
           "scene": "connect",
@@ -4446,9 +4446,9 @@
           "thumb": "videos/mcp-harness/configuration-thumb.webp",
           "full": "videos/mcp-harness/configuration.webp",
           "thumbWidth": 480,
-          "thumbHeight": 164,
-          "fullWidth": 1000,
-          "fullHeight": 342
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-figures",
@@ -4459,9 +4459,9 @@
           "thumb": "videos/mcp-harness/vat-figures-0-thumb.webp",
           "full": "videos/mcp-harness/vat-figures-0.webp",
           "thumbWidth": 480,
-          "thumbHeight": 182,
-          "fullWidth": 1000,
-          "fullHeight": 382
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-figures",
@@ -4472,9 +4472,9 @@
           "thumb": "videos/mcp-harness/vat-figures-1-thumb.webp",
           "full": "videos/mcp-harness/vat-figures-1.webp",
           "thumbWidth": 480,
-          "thumbHeight": 206,
-          "fullWidth": 1000,
-          "fullHeight": 430
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-figures",
@@ -4485,9 +4485,9 @@
           "thumb": "videos/mcp-harness/vat-figures-2-thumb.webp",
           "full": "videos/mcp-harness/vat-figures-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-figures",
@@ -4498,9 +4498,9 @@
           "thumb": "videos/mcp-harness/vat-figures-3-thumb.webp",
           "full": "videos/mcp-harness/vat-figures-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-figures",
@@ -4511,9 +4511,9 @@
           "thumb": "videos/mcp-harness/vat-figures-4-thumb.webp",
           "full": "videos/mcp-harness/vat-figures-4.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-figures",
@@ -4524,9 +4524,9 @@
           "thumb": "videos/mcp-harness/vat-figures-5-thumb.webp",
           "full": "videos/mcp-harness/vat-figures-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 210,
-          "fullWidth": 1000,
-          "fullHeight": 436
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-figures",
@@ -4537,9 +4537,9 @@
           "thumb": "videos/mcp-harness/vat-figures-6-thumb.webp",
           "full": "videos/mcp-harness/vat-figures-6.webp",
           "thumbWidth": 480,
-          "thumbHeight": 210,
-          "fullWidth": 1000,
-          "fullHeight": 436
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-figures",
@@ -4550,9 +4550,9 @@
           "thumb": "videos/mcp-harness/vat-figures-7-thumb.webp",
           "full": "videos/mcp-harness/vat-figures-7.webp",
           "thumbWidth": 480,
-          "thumbHeight": 210,
-          "fullWidth": 1000,
-          "fullHeight": 436
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "hmrc-permission",
@@ -4563,9 +4563,9 @@
           "thumb": "videos/mcp-harness/hmrc-permission-0-thumb.webp",
           "full": "videos/mcp-harness/hmrc-permission-0.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "hmrc-permission",
@@ -4576,9 +4576,9 @@
           "thumb": "videos/mcp-harness/hmrc-permission-1-thumb.webp",
           "full": "videos/mcp-harness/hmrc-permission-1.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "hmrc-permission",
@@ -4589,9 +4589,9 @@
           "thumb": "videos/mcp-harness/hmrc-permission-2-thumb.webp",
           "full": "videos/mcp-harness/hmrc-permission-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "hmrc-permission",
@@ -4602,9 +4602,9 @@
           "thumb": "videos/mcp-harness/hmrc-permission-3-thumb.webp",
           "full": "videos/mcp-harness/hmrc-permission-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "hmrc-permission",
@@ -4615,9 +4615,9 @@
           "thumb": "videos/mcp-harness/hmrc-permission-4-thumb.webp",
           "full": "videos/mcp-harness/hmrc-permission-4.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "hmrc-permission",
@@ -4628,9 +4628,9 @@
           "thumb": "videos/mcp-harness/hmrc-permission-5-thumb.webp",
           "full": "videos/mcp-harness/hmrc-permission-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "hmrc-permission",
@@ -4641,9 +4641,9 @@
           "thumb": "videos/mcp-harness/hmrc-permission-6-thumb.webp",
           "full": "videos/mcp-harness/hmrc-permission-6.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "hmrc-permission",
@@ -4654,9 +4654,9 @@
           "thumb": "videos/mcp-harness/hmrc-permission-7-thumb.webp",
           "full": "videos/mcp-harness/hmrc-permission-7.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "hmrc-permission",
@@ -4667,9 +4667,9 @@
           "thumb": "videos/mcp-harness/hmrc-permission-8-thumb.webp",
           "full": "videos/mcp-harness/hmrc-permission-8.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "hmrc-permission",
@@ -4680,9 +4680,9 @@
           "thumb": "videos/mcp-harness/hmrc-permission-9-thumb.webp",
           "full": "videos/mcp-harness/hmrc-permission-9.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-file",
@@ -4693,9 +4693,9 @@
           "thumb": "videos/mcp-harness/vat-file-0-thumb.webp",
           "full": "videos/mcp-harness/vat-file-0.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-file",
@@ -4706,9 +4706,9 @@
           "thumb": "videos/mcp-harness/vat-file-1-thumb.webp",
           "full": "videos/mcp-harness/vat-file-1.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-file",
@@ -4719,9 +4719,9 @@
           "thumb": "videos/mcp-harness/vat-file-2-thumb.webp",
           "full": "videos/mcp-harness/vat-file-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-file",
@@ -4732,9 +4732,9 @@
           "thumb": "videos/mcp-harness/vat-file-3-thumb.webp",
           "full": "videos/mcp-harness/vat-file-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-file",
@@ -4745,9 +4745,9 @@
           "thumb": "videos/mcp-harness/vat-file-4-thumb.webp",
           "full": "videos/mcp-harness/vat-file-4.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-file",
@@ -4758,9 +4758,9 @@
           "thumb": "videos/mcp-harness/vat-file-5-thumb.webp",
           "full": "videos/mcp-harness/vat-file-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-file",
@@ -4771,9 +4771,9 @@
           "thumb": "videos/mcp-harness/vat-file-6-thumb.webp",
           "full": "videos/mcp-harness/vat-file-6.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-file",
@@ -4784,9 +4784,9 @@
           "thumb": "videos/mcp-harness/vat-file-7-thumb.webp",
           "full": "videos/mcp-harness/vat-file-7.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-enquiry",
@@ -4797,9 +4797,9 @@
           "thumb": "videos/mcp-harness/vat-enquiry-0-thumb.webp",
           "full": "videos/mcp-harness/vat-enquiry-0.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-enquiry",
@@ -4810,9 +4810,9 @@
           "thumb": "videos/mcp-harness/vat-enquiry-1-thumb.webp",
           "full": "videos/mcp-harness/vat-enquiry-1.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-enquiry",
@@ -4823,9 +4823,9 @@
           "thumb": "videos/mcp-harness/vat-enquiry-2-thumb.webp",
           "full": "videos/mcp-harness/vat-enquiry-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-enquiry",
@@ -4836,9 +4836,9 @@
           "thumb": "videos/mcp-harness/vat-enquiry-3-thumb.webp",
           "full": "videos/mcp-harness/vat-enquiry-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-enquiry",
@@ -4849,9 +4849,9 @@
           "thumb": "videos/mcp-harness/vat-enquiry-4-thumb.webp",
           "full": "videos/mcp-harness/vat-enquiry-4.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-enquiry",
@@ -4862,9 +4862,9 @@
           "thumb": "videos/mcp-harness/vat-enquiry-5-thumb.webp",
           "full": "videos/mcp-harness/vat-enquiry-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-enquiry",
@@ -4875,9 +4875,9 @@
           "thumb": "videos/mcp-harness/vat-enquiry-6-thumb.webp",
           "full": "videos/mcp-harness/vat-enquiry-6.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "vat-enquiry",
@@ -4888,9 +4888,9 @@
           "thumb": "videos/mcp-harness/vat-enquiry-7-thumb.webp",
           "full": "videos/mcp-harness/vat-enquiry-7.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -4901,9 +4901,9 @@
           "thumb": "videos/mcp-harness/accounts-0-thumb.webp",
           "full": "videos/mcp-harness/accounts-0.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -4914,9 +4914,9 @@
           "thumb": "videos/mcp-harness/accounts-1-thumb.webp",
           "full": "videos/mcp-harness/accounts-1.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -4927,9 +4927,9 @@
           "thumb": "videos/mcp-harness/accounts-2-thumb.webp",
           "full": "videos/mcp-harness/accounts-2.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -4940,9 +4940,9 @@
           "thumb": "videos/mcp-harness/accounts-3-thumb.webp",
           "full": "videos/mcp-harness/accounts-3.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -4953,9 +4953,9 @@
           "thumb": "videos/mcp-harness/accounts-4-thumb.webp",
           "full": "videos/mcp-harness/accounts-4.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -4966,9 +4966,9 @@
           "thumb": "videos/mcp-harness/accounts-5-thumb.webp",
           "full": "videos/mcp-harness/accounts-5.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -4979,9 +4979,9 @@
           "thumb": "videos/mcp-harness/accounts-6-thumb.webp",
           "full": "videos/mcp-harness/accounts-6.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -4992,9 +4992,9 @@
           "thumb": "videos/mcp-harness/accounts-7-thumb.webp",
           "full": "videos/mcp-harness/accounts-7.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -5005,9 +5005,9 @@
           "thumb": "videos/mcp-harness/accounts-8-thumb.webp",
           "full": "videos/mcp-harness/accounts-8.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -5018,9 +5018,9 @@
           "thumb": "videos/mcp-harness/accounts-9-thumb.webp",
           "full": "videos/mcp-harness/accounts-9.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -5031,9 +5031,9 @@
           "thumb": "videos/mcp-harness/accounts-10-thumb.webp",
           "full": "videos/mcp-harness/accounts-10.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -5044,9 +5044,9 @@
           "thumb": "videos/mcp-harness/accounts-11-thumb.webp",
           "full": "videos/mcp-harness/accounts-11.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -5057,9 +5057,9 @@
           "thumb": "videos/mcp-harness/accounts-12-thumb.webp",
           "full": "videos/mcp-harness/accounts-12.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         },
         {
           "scene": "accounts",
@@ -5070,9 +5070,9 @@
           "thumb": "videos/mcp-harness/accounts-13-thumb.webp",
           "full": "videos/mcp-harness/accounts-13.webp",
           "thumbWidth": 480,
-          "thumbHeight": 518,
-          "fullWidth": 1000,
-          "fullHeight": 1080
+          "thumbHeight": 270,
+          "fullWidth": 1600,
+          "fullHeight": 900
         }
       ]
     },
@@ -8303,7 +8303,243 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax for a foreign property business: sign in, take out Resident, save the annual submission for two countries, France and Spain, then read the year-end summary HMRC works out and adjust it. This is a sandbox example, recorded against a local simulator of HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "XKLhr0err0g"
+      "videoId": "XKLhr0err0g",
+      "walkthrough": [
+        {
+          "scene": "annual-submission",
+          "step": 0,
+          "headline": "One submission, each country",
+          "caption": "A foreign property landlord files one annual submission, with a section for each country.",
+          "startSeconds": 14,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-0-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-0.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 454,
+          "fullWidth": 1000,
+          "fullHeight": 946
+        },
+        {
+          "scene": "annual-submission",
+          "step": 3,
+          "headline": "Choose the tax year",
+          "caption": "The tax year the submission covers.",
+          "startSeconds": 26,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-3-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-3.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 454,
+          "fullWidth": 1000,
+          "fullHeight": 946
+        },
+        {
+          "scene": "annual-submission",
+          "step": 5,
+          "headline": "Load the year so far",
+          "caption": "Load what HMRC already holds for the year. Nothing yet.",
+          "startSeconds": 31,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-5-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-5.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 300,
+          "fullWidth": 1000,
+          "fullHeight": 626
+        },
+        {
+          "scene": "annual-submission",
+          "step": 7,
+          "headline": "Add a country",
+          "caption": "Add a country for each place you let property.",
+          "startSeconds": 39,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-7-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-7.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "annual-submission",
+          "step": 8,
+          "headline": "France",
+          "caption": "The first country is France.",
+          "startSeconds": 46,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-8-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-8.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "annual-submission",
+          "step": 9,
+          "headline": "A balancing charge",
+          "caption": "A balancing charge for France.",
+          "startSeconds": 51,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-9-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-9.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "annual-submission",
+          "step": 11,
+          "headline": "An investment allowance",
+          "caption": "And an annual investment allowance.",
+          "startSeconds": 58,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-11-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-11.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "annual-submission",
+          "step": 12,
+          "headline": "Add Spain",
+          "caption": "Add the second country.",
+          "startSeconds": 64,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-12-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-12.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "annual-submission",
+          "step": 13,
+          "headline": "Spain",
+          "caption": "The second country is Spain.",
+          "startSeconds": 69,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-13-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-13.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "annual-submission",
+          "step": 14,
+          "headline": "Claim the property allowance",
+          "caption": "Claim the property income allowance for Spain.",
+          "startSeconds": 73,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-14-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-14.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 514,
+          "fullWidth": 1000,
+          "fullHeight": 1072
+        },
+        {
+          "scene": "annual-submission",
+          "step": 17,
+          "headline": "Save the annual submission",
+          "caption": "Save the year's adjustments and allowances.",
+          "startSeconds": 82,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-17-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-17.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 510,
+          "fullWidth": 1000,
+          "fullHeight": 1062
+        },
+        {
+          "scene": "annual-submission",
+          "step": 18,
+          "headline": "HMRC accepts the year",
+          "caption": "HMRC accepts the annual submission.",
+          "startSeconds": 88,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-18-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-18.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 510,
+          "fullWidth": 1000,
+          "fullHeight": 1062
+        },
+        {
+          "scene": "annual-submission",
+          "step": 19,
+          "headline": "The record as submitted",
+          "caption": "Saved. This is the record as submitted: its reference, its status and the date.",
+          "startSeconds": 94,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-19-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-19.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "annual-submission",
+          "step": 21,
+          "headline": "Keep this copy",
+          "caption": "Every country's figures are on the record, ready to keep.",
+          "startSeconds": 107,
+          "thumb": "videos/itsa-foreign-property-year/annual-submission-21-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/annual-submission-21.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 510,
+          "fullWidth": 1000,
+          "fullHeight": 1062
+        },
+        {
+          "scene": "adjustments",
+          "step": 0,
+          "headline": "HMRC works out a summary",
+          "caption": "HMRC works out an adjustable summary from what was filed.",
+          "startSeconds": 118,
+          "thumb": "videos/itsa-foreign-property-year/adjustments-0-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/adjustments-0.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "adjustments",
+          "step": 6,
+          "headline": "Trigger HMRC's summary",
+          "caption": "Trigger the summary and read what HMRC calculated.",
+          "startSeconds": 132,
+          "thumb": "videos/itsa-foreign-property-year/adjustments-6-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/adjustments-6.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "adjustments",
+          "step": 7,
+          "headline": "France and Spain together",
+          "caption": "France and Spain together: income, expenses and profit, as HMRC worked them out.",
+          "startSeconds": 139,
+          "thumb": "videos/itsa-foreign-property-year/adjustments-7-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/adjustments-7.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        },
+        {
+          "scene": "adjustments",
+          "step": 9,
+          "headline": "Correct a figure",
+          "caption": "Change a figure if HMRC's version is wrong, then submit.",
+          "startSeconds": 149,
+          "thumb": "videos/itsa-foreign-property-year/adjustments-9-thumb.webp",
+          "full": "videos/itsa-foreign-property-year/adjustments-9.webp",
+          "thumbWidth": 480,
+          "thumbHeight": 518,
+          "fullWidth": 1000,
+          "fullHeight": 1080
+        }
+      ]
     }
   ]
 }
