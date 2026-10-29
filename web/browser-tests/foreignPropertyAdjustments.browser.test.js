@@ -199,6 +199,20 @@ test.describe("foreign property year-end adjustments", () => {
       ],
     });
     await expect(page.locator("#adjustmentResults")).toBeVisible();
+    const figures = page.locator("#adjustedFigures tbody tr");
+    await expect(figures).toHaveCount(3);
+    await expect(figures.nth(0)).toContainText("France: Total rents received");
+    await expect(figures.nth(0)).toContainText("£9,000.00");
+    await expect(figures.nth(0)).toContainText("£8,500.00");
+    await expect(figures.nth(2)).toContainText("Spain: Expenses as one total");
+    await expect(figures.nth(2)).toContainText("£320.00");
+    const totals = page.locator("#adjustedTotals tbody tr");
+    await expect(totals.nth(0)).toContainText("£12,000.00");
+    await expect(totals.nth(0)).toContainText("£11,500.00");
+    await expect(totals.nth(1)).toContainText("£1,270.50");
+    await expect(totals.nth(2)).toContainText("£10,229.50");
+    expect(await page.locator("#adjustmentResults").innerText()).not.toMatch(/NaN|undefined/);
+    await shoot(page, "adjustments-result");
   });
 
   test("sends zero adjustments alone", async ({ page }) => {
@@ -209,6 +223,8 @@ test.describe("foreign property year-end adjustments", () => {
     await expect.poll(async () => (await sentCalls(page, "adjust")).length).toBe(1);
     const [{ details }] = await sentCalls(page, "adjust");
     expect(details).toEqual({ nino: "QQ123456C", calculationId: "c1", taxYear: "2025-26", zeroAdjustments: true });
+    await expect(page.locator("#adjustmentResults")).toContainText("No figure changed");
+    await expect(page.locator("#adjustedTotals tbody tr").nth(2)).toContainText("£10,700.00");
   });
 
   test("refuses an entry with one total and itemised expenses together, and an empty adjustment", async ({ page }) => {
