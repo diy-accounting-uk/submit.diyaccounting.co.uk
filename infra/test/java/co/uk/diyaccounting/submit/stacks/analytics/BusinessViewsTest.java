@@ -170,6 +170,23 @@ class BusinessViewsTest {
     }
 
     @Test
+    void visitorsViewReadsTheClientAddressOnlyAsASaltedHashInsideAnAggregate() {
+        Template template = synthBusinessViews();
+
+        var sql = sqlForView(template, "v_visitors_cloudfront_daily").replaceAll("--[^\\n]*", "");
+        assertTrue(
+                sql.contains("count(DISTINCT to_hex(sha256(to_utf8(c_ip ||"),
+                "expected distinct visitors counted from a salted hash of c_ip: " + sql);
+        assertEquals(
+                1,
+                sql.split("c_ip", -1).length - 1,
+                "expected c_ip to appear once, inside the hash, and never as a column: " + sql);
+        assertTrue(
+                sql.contains("visitors") && sql.contains("page_requests"),
+                "expected the view to give visitors beside page requests: " + sql);
+    }
+
+    @Test
     void operatorActorIsAGroupOfItsOwnAndNotACustomer() {
         Template template = synthBusinessViews();
 

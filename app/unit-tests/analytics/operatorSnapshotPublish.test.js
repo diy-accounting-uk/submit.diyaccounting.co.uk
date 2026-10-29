@@ -673,6 +673,19 @@ describe("operatorSnapshotPublish", () => {
       expect(chart.note).toContain("CloudFront");
     });
 
+    test("Bot and Synthetic rows count distinct visitors, not page requests", () => {
+      const conversion = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "conversion-to-submission");
+      const observations = ["sessions-bot", "sessions-synthetic"].map((id) =>
+        conversion.observations.find((observation) => observation.id === id),
+      );
+
+      expect(observations.map((observation) => observation.valueExpr)).toEqual(["visitors", "visitors"]);
+      expect(observations.map((observation) => observation.label)).toEqual(["Visitors, bot", "Visitors, synthetic"]);
+      const sql = buildDailyChartDefinitions().find((definition) => definition.id === "visitors").modes[0].sql;
+      expect(sql).toContain("sum(visitors)");
+      expect(sql).not.toContain("page_requests");
+    });
+
     test("every chart mode asks for the last 90 days and answers day, component and value", () => {
       for (const definition of buildDailyChartDefinitions()) {
         for (const mode of definition.modes) {

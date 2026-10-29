@@ -313,22 +313,22 @@ export const OBJECTIVE_DEFINITIONS = [
       },
       {
         id: "sessions-bot",
-        label: "Page requests, bot visitors",
+        label: "Visitors, bot",
         unit: "count",
         view: "v_visitors_cloudfront_daily",
         dayColumn: "day",
-        valueExpr: "page_requests",
+        valueExpr: "visitors",
         aggregation: "sum",
         where: "visitor_kind = 'bot'",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
         id: "sessions-synthetic",
-        label: "Page requests, synthetic visitors",
+        label: "Visitors, synthetic",
         unit: "count",
         view: "v_visitors_cloudfront_daily",
         dayColumn: "day",
-        valueExpr: "page_requests",
+        valueExpr: "visitors",
         aggregation: "sum",
         where: "visitor_kind = 'synthetic'",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
@@ -1575,8 +1575,9 @@ const VISITOR_KIND_DESCRIPTIONS = {
   operator: "Google Analytics sessions of the operator, flagged once the operator bundle has loaded in the browser.",
   authenticated: "Google Analytics sessions of signed-in users who are not operators.",
   human: "Google Analytics sessions of visitors who are not signed in and are not flagged as a bot, an operator or a test.",
-  synthetic: "Page requests from the behaviour tests, counted from the CloudFront access log by their DIYAccountingProbe user agent.",
-  bot: "Page requests whose user agent matches a known crawler, AI agent or the probe monitor, counted from the CloudFront access log.",
+  synthetic:
+    "Distinct visitors from the behaviour tests each day, counted from the CloudFront access log by their DIYAccountingProbe user agent.",
+  bot: "Distinct visitors each day whose user agent matches a known crawler, AI agent or the probe monitor, counted from the CloudFront access log.",
 };
 
 function activityLabels() {
@@ -1969,7 +1970,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Visitors",
       unit: "count",
-      note: "Operator, authenticated user and human count Google Analytics sessions, so only visitors who accepted analytics. Synthetic and bot count page requests from the CloudFront access log, which Google Analytics cannot see; no client address is read, so they are requests, not people.",
+      note: "Operator, authenticated user and human count Google Analytics sessions, so only visitors who accepted analytics. Synthetic and bot count distinct visitors each day from the CloudFront access log, which Google Analytics cannot see; a visitor is a salted hash of the client address that changes every day, so one visitor is counted once a day and never followed across days.",
       modes: [
         {
           id: "sessions",
@@ -1982,7 +1983,7 @@ export function buildDailyChartDefinitions() {
             `SELECT cast(day AS varchar) AS day, visitor_kind AS component, cast(sum(sessions) AS double) AS value\n` +
             `FROM   v_visitors_by_kind_daily\nWHERE  ${dailyWindowFilter("day")} AND visitor_kind IN ('operator', 'authenticated', 'human')\nGROUP  BY 1, 2\n` +
             `UNION ALL\n` +
-            `SELECT cast(day AS varchar), visitor_kind, cast(sum(page_requests) AS double)\n` +
+            `SELECT cast(day AS varchar), visitor_kind, cast(sum(visitors) AS double)\n` +
             `FROM   v_visitors_cloudfront_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
         },
       ],
