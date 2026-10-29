@@ -725,11 +725,13 @@ test("Click through: File a Foreign Property Quarterly Update with HMRC", async 
       expect(propertyBody.foreignProperty.map((entry) => entry.income.rentIncome.rentAmount).sort((a, b) => a - b)).toEqual([750, 2000]);
       expect(propertyBody.foreignProperty.every((entry) => entry.countryCode === undefined)).toBe(true);
 
-      const malagaId = propertyIds[properties.findIndex((property) => property.propertyName === endedProperty.propertyName)];
+      const endedPropertyId = addRequests.find(
+        (request) => JSON.parse(request.httpRequest.body).propertyName === endedProperty.propertyName,
+      ).httpResponse.body.propertyId;
       const endRequests = assertHmrcApiRequestExists(
         hmrcApiRequestsFile,
         "PUT",
-        `/individuals/business/property/foreign/${testNino}/details/${malagaId}/${propertyYear}`,
+        `/individuals/business/property/foreign/${testNino}/details/${endedPropertyId}/${propertyYear}`,
         "ITSA foreign property details end",
       );
       assertEssentialFraudPreventionHeadersPresent(endRequests[0], "PUT foreign property details request");
