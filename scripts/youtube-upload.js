@@ -9,6 +9,7 @@
 //        node scripts/youtube-upload.js --store-client <path>
 //        node scripts/youtube-upload.js --sync-status [--apply]
 //        node scripts/youtube-upload.js --sync-metadata [--apply]
+//        node scripts/youtube-upload.js --caption-only <id>[,<id>...]
 //
 // Credentials come from an OAuth client of our own (type Desktop app), created once in the
 // Google Cloud console — see videos/PUBLISH.md. Google blocks gcloud's own OAuth client from
@@ -50,6 +51,11 @@
 // --sync-metadata does the same for the title and description in videos/publish.json against
 // YouTube's snippet. A write sends the declared title and description with the live video's own
 // categoryId, tags and defaultLanguage, because videos.update replaces the whole snippet.
+
+//
+// --caption-only uploads the caption file of each named entry to the video id already recorded
+// for it, and prints one line per entry. It uploads no video and does not change
+// videos/publish.json. An entry without a recorded videoId or without a caption file is refused.
 
 import fs from "fs";
 import path from "path";
@@ -112,7 +118,18 @@ export function parseArgs(argv) {
     apply: argv.includes("--apply"),
     clientFile: readFlagValue(argv, "--client-file"),
     storeClient: readFlagValue(argv, "--store-client"),
+    captionOnly: parseIdList(readFlagValue(argv, "--caption-only")),
   };
+}
+
+function parseIdList(value) {
+  if (value === undefined) {
+    return undefined;
+  }
+  return value
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
 }
 
 function readFlagValue(argv, flag) {
@@ -903,8 +920,37 @@ export async function flipUploadedVideosPublic({
   log(`${updatedCount} of ${uploaded.length} uploaded videos updated`);
 }
 
+/**
+ * Upload the caption of each named entry to its recorded video id. Every entry is checked before
+ * the first upload, so a refused entry stops the run with nothing sent.
+ *
+ * @returns {Promise<Array<{id: string, videoId: string, captionId: string}>>}
+ */
+export async function runCaptionOnly({ list, ids, accessToken, quotaProject, uploadCaptionImpl = uploadCaption, log = console.log }) {
+  const entries = ids.map((id) => {
+    const entry = list.videos.find((video) => video.id === id);
+    if (!entry) {
+      throw new Error(`No entry ${id} in the publish list`);
+    }
+    if (!entry.videoId) {
+      throw new Error(`Entry ${id} has no recorded YouTube video id`);
+    }
+    if (!entry.captionFile || !fs.existsSync(entry.captionFile)) {
+      throw new Error(`Entry ${id} has no caption file at ${entry.captionFile}`);
+    }
+    return entry;
+  });
+  const results = [];
+  for (const entry of entries) {
+    const caption = await uploadCaptionImpl({ entry, videoId: entry.videoId, accessToken, quotaProject });
+    log(`${entry.id} https://youtu.be/${entry.videoId} caption ${caption.id}`);
+    results.push({ id: entry.id, videoId: entry.videoId, captionId: caption.id });
+  }
+  return results;
+}
+
 export async function main() {
-  const { publicVideo, check, syncStatus, syncMetadata, apply, clientFile, storeClient } = parseArgs(process.argv.slice(2));
+  const { publicVideo, check, syncStatus, syncMetadata, apply, clientFile, storeClient, captionOnly } = parseArgs(process.argv.slice(2));
 
   if (storeClient) {
     await storeClientCredentials({ clientFile: storeClient });
@@ -922,6 +968,11 @@ export async function main() {
   }
 
   let list = loadPublishList();
+
+  if (captionOnly) {
+    await runCaptionOnly({ list, ids: captionOnly, accessToken, quotaProject });
+    return;
+  }
 
   if (syncStatus) {
     await runStatusSync({ list, accessToken, quotaProject, apply });

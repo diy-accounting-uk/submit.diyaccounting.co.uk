@@ -34,6 +34,7 @@ import {
   channelHandlesMatch,
   uploadVideo,
   uploadCaption,
+  runCaptionOnly,
   publishEntry,
   CAPTION_RETRY_DELAYS_MS,
   selectUploadedVideos,
@@ -70,6 +71,7 @@ describe("parseArgs", () => {
       apply: false,
       clientFile: undefined,
       storeClient: undefined,
+      captionOnly: undefined,
     });
   });
   test("reads --public", () => {
@@ -89,6 +91,9 @@ describe("parseArgs", () => {
   });
   test("reads --client-file with its path", () => {
     expect(parseArgs(["--client-file", "/tmp/client.json"]).clientFile).toBe("/tmp/client.json");
+  });
+  test("reads --caption-only as a list of ids", () => {
+    expect(parseArgs(["--caption-only", "a,b"]).captionOnly).toEqual(["a", "b"]);
   });
   test("reads --store-client with its path", () => {
     expect(parseArgs(["--store-client", "/tmp/client.json"]).storeClient).toBe("/tmp/client.json");
@@ -1294,5 +1299,54 @@ describe("video links in a description", () => {
     const withIds = { videos: real.videos.map((video) => ({ ...video, videoId: video.videoId ?? "ZZZZZZZZZZZ" })) };
     for (const video of real.videos) expect(() => resolveDescription(video, withIds)).not.toThrow();
     expect(real.videos.filter(hasVideoLink).length).toBeGreaterThan(0);
+  });
+});
+
+describe("runCaptionOnly", () => {
+  let dir;
+  beforeEach(() => (dir = makeTempDir()));
+  afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
+
+  test("uploads the caption to the recorded id through fetch and logs one line", async () => {
+    const captionFile = path.join(dir, "clip.vtt");
+    fs.writeFileSync(captionFile, "WEBVTT\n");
+    const list = { videos: [{ id: "clip", videoId: "yt-1", captionFile }] };
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "cap-1" }) });
+    const uploadCaptionImpl = (args) => uploadCaption({ ...args, fetchImpl });
+    const log = vi.fn();
+    const results = await runCaptionOnly({ list, ids: ["clip"], accessToken: "t", quotaProject: "p", uploadCaptionImpl, log });
+    expect(results).toEqual([{ id: "clip", videoId: "yt-1", captionId: "cap-1" }]);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl.mock.calls[0][1].body.toString()).toContain("yt-1");
+    expect(log).toHaveBeenCalledWith("clip https://youtu.be/yt-1 caption cap-1");
+  });
+
+  test("refuses an entry with no recorded video id before uploading anything", async () => {
+    const captionFile = path.join(dir, "clip.vtt");
+    fs.writeFileSync(captionFile, "WEBVTT\n");
+    const list = {
+      videos: [
+        { id: "ok", videoId: "yt-1", captionFile },
+        { id: "bare", captionFile },
+      ],
+    };
+    const uploadCaptionImpl = vi.fn();
+    await expect(runCaptionOnly({ list, ids: ["ok", "bare"], accessToken: "t", quotaProject: "p", uploadCaptionImpl })).rejects.toThrow(
+      /bare has no recorded YouTube video id/,
+    );
+    expect(uploadCaptionImpl).not.toHaveBeenCalled();
+  });
+
+  test("refuses an entry whose caption file is missing", async () => {
+    const list = { videos: [{ id: "clip", videoId: "yt-1", captionFile: path.join(dir, "missing.vtt") }] };
+    await expect(runCaptionOnly({ list, ids: ["clip"], accessToken: "t", quotaProject: "p", uploadCaptionImpl: vi.fn() })).rejects.toThrow(
+      /no caption file/,
+    );
+  });
+
+  test("refuses an unknown entry", async () => {
+    await expect(runCaptionOnly({ list: { videos: [] }, ids: ["nope"], accessToken: "t", quotaProject: "p" })).rejects.toThrow(
+      /No entry nope/,
+    );
   });
 });
