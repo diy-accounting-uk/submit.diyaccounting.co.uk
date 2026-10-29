@@ -48,8 +48,12 @@
           </p>
           <p>
             DIY Accounting offers three ways in: the hosted connector, which a chat client reaches with one URL; the diya-gl MCP server for
-            reading and editing a book; and the submission MCP you run yourself for filing VAT returns and Companies House accounts. Every
-            filing they make is one the web app can make too.
+            reading and editing a book; and the submission MCP you run yourself for filing VAT returns<span
+              data-listed-activity="file-micro-entity-accounts"
+              hidden
+            >
+              and Companies House accounts</span
+            >. Every filing they make is one the web app can make too.
           </p>
         </div>
 
@@ -80,25 +84,33 @@
             <dd>Open a saved cloud book, for you or for a practice client.</dd>
             <dt><code>derive_vat_return</code>, <code>get_vat_receipt</code></dt>
             <dd>The nine VAT return boxes for a period, and a stored receipt.</dd>
-            <dt><code>derive_itsa_quarterly_update</code>, <code>derive_itsa_annual_submission</code></dt>
-            <dd>The Self Employment figures for one quarter and for the year.</dd>
-            <dt><code>derive_micro_entity_accounts</code>, <code>derive_small_company_accounts</code></dt>
-            <dd>The accounts figures for the current and prior year.</dd>
-            <dt>
-              <code>render_micro_entity_accounts_sandbox</code>, <code>submit_micro_entity_accounts_sandbox</code>,
-              <code>poll_submission</code>
-            </dt>
-            <dd>Render the filing, file confirmed accounts with Companies House, and check the outcome.</dd>
-            <dt>
-              <code>get_confirmation_statement_data_sandbox</code>, <code>render_confirmation_statement_sandbox</code>,
-              <code>submit_confirmation_statement_sandbox</code>
-            </dt>
-            <dd>
-              Read the company's confirmation statement data, render the statement, file it, then check the outcome with
-              <code>poll_submission</code>.
-            </dd>
-            <dt><code>list_clients</code>, <code>add_client</code>, <code>move_book_to_client</code></dt>
-            <dd>For a practice: list its clients, add one, and move a book under a client.</dd>
+            <div data-listed-activity="self-employed" hidden>
+              <dt><code>derive_itsa_quarterly_update</code>, <code>derive_itsa_annual_submission</code></dt>
+              <dd>The Self Employment figures for one quarter and for the year.</dd>
+            </div>
+            <div data-listed-activity="file-micro-entity-accounts" hidden>
+              <dt><code>derive_micro_entity_accounts</code>, <code>derive_small_company_accounts</code></dt>
+              <dd>The accounts figures for the current and prior year.</dd>
+              <dt>
+                <code>render_micro_entity_accounts_sandbox</code>, <code>submit_micro_entity_accounts_sandbox</code>,
+                <code>poll_submission</code>
+              </dt>
+              <dd>Render the filing, file confirmed accounts with Companies House, and check the outcome.</dd>
+            </div>
+            <div data-listed-activity="file-confirmation-statement" hidden>
+              <dt>
+                <code>get_confirmation_statement_data_sandbox</code>, <code>render_confirmation_statement_sandbox</code>,
+                <code>submit_confirmation_statement_sandbox</code>
+              </dt>
+              <dd>
+                Read the company's confirmation statement data, render the statement, file it, then check the outcome with
+                <code>poll_submission</code>.
+              </dd>
+            </div>
+            <div data-listed-activity="practice" hidden>
+              <dt><code>list_clients</code>, <code>add_client</code>, <code>move_book_to_client</code></dt>
+              <dd>For a practice: list its clients, add one, and move a book under a client.</dd>
+            </div>
           </dl>
           <p>
             A filing tool takes the figures its derive or render tool returned, so you see and approve the figures before anything reaches
@@ -136,9 +148,17 @@
           <span class="mcp-status mcp-status-available">Available now</span>
           <h2>The submission MCP on your computer</h2>
           <p>
-            The submission MCP takes a customer's book and files the two submissions this service makes: the VAT return to HMRC and the
-            micro-entity accounts to Companies House. It works out the figures a filing needs, shows them for confirmation, and only then
-            sends the filing. It also works out the Self Employment quarterly update and annual submission figures for Income Tax (MTD).
+            The submission MCP takes a customer's book and files the VAT return to HMRC<span
+              data-listed-activity="file-micro-entity-accounts"
+              hidden
+            >
+              and the micro-entity accounts to Companies House</span
+            >. It works out the figures a filing needs, shows them for confirmation, and only then sends the filing.<span
+              data-listed-activity="self-employed"
+              hidden
+            >
+              It also works out the Self Employment quarterly update and annual submission figures for Income Tax (MTD).</span
+            >
           </p>
           <h3>Run it from npm</h3>
           <p>It needs Node.js 24 or later. Run it without installing:</p>
@@ -189,15 +209,19 @@
             <dd>The nine VAT return boxes for a period, with the lines that fed each box.</dd>
             <dt><code>submit_vat_return</code>, <code>get_vat_receipt</code></dt>
             <dd>File a confirmed VAT return with HMRC, and fetch the stored receipt.</dd>
-            <dt><code>derive_micro_entity_accounts</code></dt>
-            <dd>The seven micro-entity balance sheet figures for the current and prior year.</dd>
-            <dt>
-              <code>render_micro_entity_accounts_sandbox</code>, <code>submit_micro_entity_accounts_sandbox</code>,
-              <code>poll_submission</code>
-            </dt>
-            <dd>Render the filing, file confirmed accounts with Companies House, and check the filing's outcome.</dd>
-            <dt><code>derive_itsa_quarterly_update</code>, <code>derive_itsa_annual_submission</code></dt>
-            <dd>The Self Employment figures for one quarter and for the year, from a self-employed book.</dd>
+            <div data-listed-activity="file-micro-entity-accounts" hidden>
+              <dt><code>derive_micro_entity_accounts</code></dt>
+              <dd>The seven micro-entity balance sheet figures for the current and prior year.</dd>
+              <dt>
+                <code>render_micro_entity_accounts_sandbox</code>, <code>submit_micro_entity_accounts_sandbox</code>,
+                <code>poll_submission</code>
+              </dt>
+              <dd>Render the filing, file confirmed accounts with Companies House, and check the filing's outcome.</dd>
+            </div>
+            <div data-listed-activity="self-employed" hidden>
+              <dt><code>derive_itsa_quarterly_update</code>, <code>derive_itsa_annual_submission</code></dt>
+              <dd>The Self Employment figures for one quarter and for the year, from a self-employed book.</dd>
+            </div>
           </dl>
           <p>
             A submit tool takes the figures the derive tool returned, never a book, so you see and approve the figures before anything
@@ -225,6 +249,7 @@
     <script src="lib/toml-parser.js"></script>
     <script src="widgets/feature-status.js"></script>
     <script src="widgets/entitlement-status.js"></script>
+    <script src="widgets/listed-content.js"></script>
     <script src="widgets/auth-status.js"></script>
     <script src="widgets/status-messages.js"></script>
     <script type="module" src="widgets/view-source-link.js"></script>

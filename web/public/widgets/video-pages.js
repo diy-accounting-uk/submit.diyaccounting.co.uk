@@ -7,6 +7,7 @@
 // manifest handling that all six pages share.
 
 import { walkthroughElement, wireWalkthrough, openSceneFromHash, sceneForHash, sceneAnchor } from "./video-walkthrough.js";
+import { fetchActivityListing } from "../lib/services/content-listing.js";
 
 const MANIFEST_URL = "videos/publish.json";
 const EMBED_BASE = "https://www.youtube-nocookie.com/embed/";
@@ -232,7 +233,8 @@ export async function renderVideoPage({ mode, group }) {
     console.error("[video-pages.js] manifest load failed:", err);
     return;
   }
-  const videos = (manifest.videos || []).filter((v) => v && v.videoId);
+  const isListed = await fetchActivityListing();
+  const videos = (manifest.videos || []).filter((v) => v && v.videoId).filter((v) => isListed(v.catalogueActivity));
   if (videos.length === 0) {
     if (navContents) navContents.hidden = true;
     container.replaceChildren(messageElement("No videos are published yet."));

@@ -9,6 +9,7 @@
 
 import { FAQSearch, debounce } from "./faq-search.js";
 import { submitSupportTicket } from "./support-api.js";
+import { fetchActivityListing } from "./services/content-listing.js";
 
 /**
  * Help Page class managing the FAQ display and support form
@@ -36,13 +37,14 @@ class HelpPage {
         throw new Error(`Failed to load FAQs: ${response.status}`);
       }
       const tomlText = await response.text();
-      const faqData = window.TOML.parse(tomlText);
-      this.faqSearch = new FAQSearch(faqData.faq);
+      const isListed = await fetchActivityListing();
+      const faqs = window.TOML.parse(tomlText).faq.filter((faq) => isListed(faq.activity));
+      this.faqSearch = new FAQSearch(faqs);
 
       // Initial render; a #<faq-id> link shows that entry first and opens it
       const initial = this.faqSearch.search("");
       const linkedId = decodeURIComponent(window.location.hash.slice(1));
-      const linked = faqData.faq.find((faq) => faq.id === linkedId);
+      const linked = faqs.find((faq) => faq.id === linkedId);
       this.render(linked ? [linked, ...initial.filter((faq) => faq.id !== linkedId)] : initial);
       if (linked) {
         const item = this.faqList.querySelector(`[data-id="${linked.id}"]`);

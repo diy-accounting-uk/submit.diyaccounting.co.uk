@@ -10,6 +10,7 @@
   "videos": [
     {
       "id": "view-obligations",
+      "catalogueActivity": "vat-obligations",
       "group": "vat",
       "publish": true,
       "pipelineVersion": 10,
@@ -158,6 +159,7 @@
     },
     {
       "id": "submit-return",
+      "catalogueActivity": "submit-vat",
       "group": "vat",
       "publish": true,
       "pipelineVersion": 10,
@@ -431,6 +433,7 @@
     },
     {
       "id": "view-return",
+      "catalogueActivity": "view-vat-return",
       "group": "vat",
       "publish": true,
       "pipelineVersion": 10,
@@ -628,6 +631,7 @@
     },
     {
       "id": "view-liabilities",
+      "catalogueActivity": "vat-liabilities",
       "group": "vat",
       "publish": true,
       "pipelineVersion": 10,
@@ -735,6 +739,7 @@
     },
     {
       "id": "view-payments",
+      "catalogueActivity": "vat-payments",
       "group": "vat",
       "publish": true,
       "pipelineVersion": 10,
@@ -842,6 +847,7 @@
     },
     {
       "id": "view-penalties",
+      "catalogueActivity": "vat-penalties",
       "group": "vat",
       "publish": true,
       "pipelineVersion": 10,
@@ -936,6 +942,7 @@
     },
     {
       "id": "itsa-quarterly-update",
+      "catalogueActivity": "self-employed",
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
@@ -1279,6 +1286,7 @@
     },
     {
       "id": "itsa-business-details",
+      "catalogueActivity": "self-employed",
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
@@ -1387,6 +1395,7 @@
     },
     {
       "id": "itsa-year",
+      "catalogueActivity": "self-employed",
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
@@ -2094,6 +2103,7 @@
     },
     {
       "id": "itsa-year-part",
+      "catalogueActivity": "self-employed",
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
@@ -2855,6 +2865,7 @@
     },
     {
       "id": "my-receipts",
+      "catalogueActivity": "my-receipts",
       "group": "account",
       "publish": true,
       "pipelineVersion": 10,
@@ -2924,6 +2935,7 @@
     },
     {
       "id": "generate-pass-digital",
+      "catalogueActivity": "generate-pass-digital",
       "group": "account",
       "publish": true,
       "pipelineVersion": 10,
@@ -2993,6 +3005,7 @@
     },
     {
       "id": "generate-pass-physical",
+      "catalogueActivity": "generate-pass-physical",
       "group": "account",
       "publish": true,
       "pipelineVersion": 10,
@@ -3022,6 +3035,7 @@
     },
     {
       "id": "company-lookup",
+      "catalogueActivity": "company-lookup",
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
@@ -3063,6 +3077,7 @@
     },
     {
       "id": "file-confirmation-statement",
+      "catalogueActivity": "file-confirmation-statement",
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
@@ -3153,6 +3168,7 @@
     },
     {
       "id": "change-registered-office",
+      "catalogueActivity": "change-registered-office",
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
@@ -3258,6 +3274,7 @@
     },
     {
       "id": "change-registered-email",
+      "catalogueActivity": "change-registered-email",
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
@@ -3363,6 +3380,7 @@
     },
     {
       "id": "file-micro-entity-accounts",
+      "catalogueActivity": "file-micro-entity-accounts",
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
@@ -3587,6 +3605,7 @@
     },
     {
       "id": "file-company-tax-return-book",
+      "catalogueActivity": "file-company-tax-return",
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
@@ -3836,6 +3855,7 @@
     },
     {
       "id": "file-company-tax-return-typed",
+      "catalogueActivity": "file-company-tax-return",
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
@@ -4427,6 +4447,7 @@
     },
     {
       "id": "mcp-harness",
+      "catalogueActivity": "mcp-harness",
       "group": "account",
       "publish": true,
       "pipelineVersion": 10,
@@ -5196,6 +5217,7 @@
     },
     {
       "id": "itsa-self-employment-amend",
+      "catalogueActivity": "self-employed",
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
@@ -5434,6 +5456,7 @@
     },
     {
       "id": "itsa-uk-property-year",
+      "catalogueActivity": "self-employed",
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
@@ -5763,6 +5786,7 @@
     },
     {
       "id": "itsa-annual-from-book",
+      "catalogueActivity": "self-employed",
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
@@ -5898,6 +5922,7 @@
     },
     {
       "id": "itsa-loss-claims",
+      "catalogueActivity": "self-employed",
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
@@ -6085,6 +6110,7 @@
     },
     {
       "id": "itsa-foreign-property-losses",
+      "catalogueActivity": "self-employed",
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
@@ -6494,6 +6520,7 @@
     },
     {
       "id": "vat-hmrc-assist",
+      "catalogueActivity": "vat-assist-check",
       "group": "vat",
       "publish": true,
       "pipelineVersion": 10,
@@ -6716,6 +6743,7 @@
     },
     {
       "id": "itsa-quarterly-from-books",
+      "catalogueActivity": "self-employed",
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
@@ -6968,6 +6996,7 @@
     },
     {
       "id": "itsa-carry-back-adjustments",
+      "catalogueActivity": "self-employed",
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
@@ -7116,6 +7145,7 @@
     },
     {
       "id": "itsa-in-year-estimate",
+      "catalogueActivity": "self-employed",
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
@@ -7775,6 +7805,7 @@
     },
     {
       "id": "file-small-company-accounts",
+      "catalogueActivity": "file-small-company-accounts",
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
@@ -8064,6 +8095,7 @@
     },
     {
       "id": "file-psc-verification-statement",
+      "catalogueActivity": "file-psc-verification-statement",
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 10,
@@ -8226,6 +8258,7 @@
     },
     {
       "id": "bundles",
+      "catalogueActivity": "bundle",
       "group": "account",
       "publish": true,
       "pipelineVersion": 10,
@@ -8291,6 +8324,7 @@
     },
     {
       "id": "itsa-foreign-property-year",
+      "catalogueActivity": "self-employed",
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 10,
