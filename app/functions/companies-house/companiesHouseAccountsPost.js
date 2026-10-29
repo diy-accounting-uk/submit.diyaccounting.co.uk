@@ -44,7 +44,7 @@ import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } 
 import { initializeSalt } from "../../services/subHasher.js";
 import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
 import { applyCodesEntry } from "../../services/companiesHouseCodesEntry.js";
-import { readJointFilingId, jointFilingFields } from "../../services/jointFiling.js";
+import { readJointFilingId, jointFilingFields, readRevision, amendedFields } from "../../services/jointFiling.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
 
@@ -215,6 +215,9 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     errorMessages.push("Invalid or missing director.dateApproved - must be YYYY-MM-DD");
   }
 
+  const revision = readRevision(parsedBody, dateApproved, errorMessages);
+  const revisionField = revision ? { revision } : {};
+
   if (isSmallCompany) {
     const small = extractAndValidateSmallCompany(smallCompany, statementsAccepted, errorMessages);
     return {
@@ -229,6 +232,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
       averageNumberOfEmployees: numericAverageEmployees,
       directorName,
       dateOfApproval: dateApproved,
+      ...revisionField,
       ...small,
     };
   }
@@ -265,6 +269,7 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     averageNumberOfEmployees: numericAverageEmployees,
     directorName,
     dateOfApproval: dateApproved,
+    ...revisionField,
     statementsAccepted: statements,
     ...(isDormant ? { dormant: true, dormantTradingStatus, shareClass, nominalValue: numericNominalValue } : {}),
   };
@@ -461,6 +466,7 @@ export async function ingestHandler(event) {
         filedDocument: ixbrl,
         chargeActivityId: accounts.regime === "small-company" ? "file-small-company-accounts" : "file-micro-entity-accounts",
         ...jointFilingFields(jointFilingId),
+        ...amendedFields(Boolean(accounts.revision)),
       },
       asyncRequestsTableName,
     );
@@ -486,7 +492,7 @@ export async function ingestHandler(event) {
         userSub,
         submissionNumber,
         "failed",
-        { ...parsed, ...jointFilingFields(jointFilingId) },
+        { ...parsed, ...jointFilingFields(jointFilingId), ...amendedFields(Boolean(accounts.revision)) },
         asyncRequestsTableName,
       );
       await recordSubmissionFailure({

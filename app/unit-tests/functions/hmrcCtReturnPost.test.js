@@ -309,6 +309,41 @@ describe("hmrcCtReturnPost ingestHandler", () => {
     });
   });
 
+  describe("an amended return", () => {
+    const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
+    const amendedBody = () => ({
+      ...baseBody,
+      gatewayUserId: USER_ID,
+      gatewayPassword: PASSWORD,
+      jointFilingId: JOINT_FILING_ID,
+      amended: true,
+    });
+
+    test("posts ReturnType amended and stores the amended mark with the jointFilingId", async () => {
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: amendedBody() }));
+      expect(response.statusCode).toBe(201);
+      expect(mockPostToTransactionEngine.mock.calls[0][1]).toContain('ReturnType="amended"');
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      expect(update.input.ExpressionAttributeValues[":data"]).toMatchObject({ jointFilingId: JOINT_FILING_ID, amended: true });
+    });
+
+    test("an original return posts ReturnType new and stores no amended mark", async () => {
+      await hmrcCtReturnPostHandler(buildEvent());
+      expect(mockPostToTransactionEngine.mock.calls[0][1]).toContain('ReturnType="new"');
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const update = mockSend.mock.calls.map(([cmd]) => cmd).find((cmd) => cmd instanceof lib.UpdateCommand);
+      expect(update.input.ExpressionAttributeValues[":data"]).not.toHaveProperty("amended");
+    });
+
+    test("refuses an amended flag that is not true or false and sends nothing", async () => {
+      const response = await hmrcCtReturnPostHandler(buildEvent({ body: { ...amendedBody(), amended: "yes" } }));
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("Invalid amended");
+      expect(mockPostToTransactionEngine).not.toHaveBeenCalled();
+    });
+  });
+
   test("returns 200 with an empty object for a HEAD request", async () => {
     const response = await hmrcCtReturnPostHandler(buildEvent({ method: "HEAD" }));
     expect(response.statusCode).toBe(200);

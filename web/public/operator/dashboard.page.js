@@ -620,6 +620,7 @@ async function initPage() {
   try {
     const snapshot = await fetchJson("/api/v1/operator/snapshot");
     renderSnapshot(snapshot);
+    document.getElementById("objectivesContainer").classList.add("objectives-settled");
     renderReinvestment(snapshot);
     renderReserve(snapshot);
     renderCompanyAccounts(snapshot);

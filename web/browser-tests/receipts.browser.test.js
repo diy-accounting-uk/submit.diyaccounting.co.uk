@@ -135,6 +135,58 @@ test.describe("Receipts page - receipt details", () => {
     await expect(lone).not.toContainText("Company Tax Return:");
   });
 
+  test("lists the revised accounts and the amended Company Tax Return under the filing they amend, marked as amended", async ({ page }) => {
+    await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
+    const jointFilingId = "0b8f6f0e-6d3e-4a39-9a55-2f1f4c6d8a10";
+    await page.evaluate(async (id) => {
+      localStorage.setItem("cognitoIdToken", "token");
+      const items = [
+        {
+          name: "2026-10-09T09:05:00.000Z-CT2.json",
+          timestamp: "2026-10-09T09:05:00.000Z",
+          formBundleNumber: "CT2",
+          kind: "company-tax-return",
+          jointFilingId: id,
+          amended: true,
+        },
+        {
+          name: "2026-10-09T09:00:00.000Z-ACC2.json",
+          timestamp: "2026-10-09T09:00:00.000Z",
+          formBundleNumber: "ACC2",
+          kind: "companies-house-accounts",
+          jointFilingId: id,
+          amended: true,
+        },
+        {
+          name: "2026-10-02T09:05:00.000Z-CT1.json",
+          timestamp: "2026-10-02T09:05:00.000Z",
+          formBundleNumber: "CT1",
+          kind: "company-tax-return",
+          jointFilingId: id,
+          amended: false,
+        },
+        {
+          name: "2026-10-02T09:00:00.000Z-ACC1.json",
+          timestamp: "2026-10-02T09:00:00.000Z",
+          formBundleNumber: "ACC1",
+          kind: "companies-house-accounts",
+          jointFilingId: id,
+          amended: false,
+        },
+      ];
+      window.fetchWithIdToken = async () => ({ ok: true, json: async () => ({ receipts: items }) });
+      await window.fetchReceipts();
+    }, jointFilingId);
+
+    await expect(page.locator("#receiptsTable tbody tr")).toHaveCount(1);
+    const entries = page.locator("#receiptsTable tbody tr").nth(0).locator("td.receipt-cell .receipt-entry");
+    await expect(entries).toHaveCount(4);
+    await expect(entries.nth(0)).toContainText("Amended Company Tax Return: CT2");
+    await expect(entries.nth(1)).toContainText("Revised accounts: ACC2");
+    await expect(entries.nth(2)).toContainText("Company Tax Return: CT1");
+    await expect(entries.nth(3)).toContainText("Accounts: ACC1");
+  });
+
   test("shows a VAT receipt as a record inside the customer copy", async ({ page }) => {
     await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT);
 
@@ -203,6 +255,53 @@ test.describe("Receipts page - receipt details", () => {
     await expect(page.locator("#receiptContent")).toContainText("Content");
     expectCleanFigures(expect, await page.locator("#receiptContent").innerText());
   });
+
+  for (const width of [1280, 390]) {
+    for (const colorScheme of ["light", "dark"]) {
+      test(`lists a joint filing and a VAT row with nothing cut at ${width} px in ${colorScheme}`, async ({ page }) => {
+        await page.emulateMedia({ colorScheme });
+        await showReceipt(page, "2026-09-30T10:15:00.000Z-256660290587", VAT_RECEIPT, { width, styled: true });
+        await page.evaluate(async () => {
+          localStorage.setItem("cognitoIdToken", "token");
+          const items = [
+            {
+              name: "2026-10-02T09:05:00.000Z-CT1.json",
+              timestamp: "2026-10-02T09:05:00.000Z",
+              formBundleNumber: "RB3VJQ7ATMNZ7DXZRD3GQ4KTXY2",
+              kind: "company-tax-return",
+              jointFilingId: "0b8f6f0e-6d3e-4a39-9a55-2f1f4c6d8a10",
+            },
+            {
+              name: "2026-10-02T09:00:00.000Z-CH1.json",
+              timestamp: "2026-10-02T09:00:00.000Z",
+              formBundleNumber: "2026100200012345678901",
+              kind: "companies-house-accounts",
+              jointFilingId: "0b8f6f0e-6d3e-4a39-9a55-2f1f4c6d8a10",
+            },
+            {
+              name: "2026-10-01T09:00:00.000Z-VAT.json",
+              timestamp: "2026-10-01T09:00:00.000Z",
+              formBundleNumber: "256660290587",
+              kind: null,
+            },
+          ];
+          window.fetchWithIdToken = async () => ({ ok: true, json: async () => ({ receipts: items }) });
+          await window.fetchReceipts();
+        });
+        await expect(page.locator("#receiptsTable tbody tr")).toHaveCount(2);
+
+        const cut = await page.evaluate(() => {
+          const viewport = document.documentElement.clientWidth;
+          return [...document.querySelectorAll("#receiptsTable td, #receiptsTable td a")]
+            .filter((el) => el.getBoundingClientRect().right > viewport || el.scrollWidth > el.clientWidth + 1)
+            .map((el) => el.textContent.trim());
+        });
+        expect(cut).toEqual([]);
+        expect(await pageScrollsSideways(page)).toBe(false);
+        await page.screenshot({ path: recordScreenshotPath(`receipts-list-${colorScheme}`, width) });
+      });
+    }
+  }
 
   for (const width of [1280, 390]) {
     test(`screenshot of the VAT receipt at ${width} px`, async ({ page }) => {

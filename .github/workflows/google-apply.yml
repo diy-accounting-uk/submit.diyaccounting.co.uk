@@ -22,10 +22,6 @@ on:
         required: false
         default: false
         type: boolean
-  pull_request:
-    paths:
-      - 'infra/google/**'
-      - '.github/workflows/google-apply.yml'
   push:
     branches:
       - 'main'
@@ -36,7 +32,8 @@ on:
 env:
   NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
-  # pull_request plans; push and a dispatch with apply=true apply.
+  # A dispatch with apply=false plans; push and a dispatch with apply=true apply. Every run is
+  # on the prod environment, so none runs for a pull request.
   GOOGLE_APPLY: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.apply)) && 'true' || 'false' }}
 
 jobs:
@@ -178,7 +175,7 @@ jobs:
           fi
 
       # Read-only: checks infra/google/gcp/oauth.toml against Cognito, Secrets Manager and the
-      # Google Auth Platform brand, the same on a pull request and on a push. Nothing to apply.
+      # Google Auth Platform brand, the same on a plan and on an apply. Nothing to apply.
       - name: Run google-oauth-assert
         run: node infra/google/gcp/google-oauth-assert.js 2>&1 | tee google-oauth-assert.log
 

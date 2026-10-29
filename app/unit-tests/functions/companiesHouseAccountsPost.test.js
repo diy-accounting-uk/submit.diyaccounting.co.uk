@@ -451,6 +451,47 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     });
   });
 
+  describe("revised accounts", () => {
+    const JOINT_FILING_ID = "7d1c0f0e-5a3b-4c8e-9f21-0a6b3c9d4e11";
+    const REVISION = { originalDateOfApproval: "2026-01-10", differences: "Creditors are restated." };
+
+    async function pendingData() {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      const updates = mockSend.mock.calls.map(([cmd]) => cmd).filter((cmd) => cmd instanceof lib.UpdateCommand);
+      return updates.find((cmd) => cmd.input.ExpressionAttributeValues[":status"] === "pending").input.ExpressionAttributeValues[":data"];
+    }
+
+    test("stores the amended mark and the jointFilingId, and builds the document with the revision", async () => {
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildAccountsBody({ jointFilingId: JOINT_FILING_ID, revision: REVISION }) }),
+      );
+      expect(response.statusCode).toBe(201);
+      const data = await pendingData();
+      expect(data).toMatchObject({ jointFilingId: JOINT_FILING_ID, amended: true });
+      expect(mockBuildMicroEntityAccounts).toHaveBeenCalledWith(expect.objectContaining({ revision: REVISION }));
+    });
+
+    test("a small company revision is revised too", async () => {
+      const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildSmallCompanyBody({ revision: REVISION }) }));
+      expect(response.statusCode).toBe(201);
+      expect(await pendingData()).toMatchObject({ amended: true });
+    });
+
+    test("an original filing stores no amended mark", async () => {
+      await companiesHouseAccountsPostHandler(buildEvent());
+      expect(await pendingData()).not.toHaveProperty("amended");
+    });
+
+    test("refuses a revision without a description and sends nothing", async () => {
+      const response = await companiesHouseAccountsPostHandler(
+        buildEvent({ body: buildAccountsBody({ revision: { originalDateOfApproval: "2026-01-10", differences: "" } }) }),
+      );
+      expect(response.statusCode).toBe(400);
+      expect(JSON.stringify(parseResponseBody(response))).toContain("revision.differences");
+      expect(mockPostToGateway).not.toHaveBeenCalled();
+    });
+  });
+
   test("returns 200 with an empty object for a HEAD request", async () => {
     const response = await companiesHouseAccountsPostHandler(buildEvent({ method: "HEAD" }));
     expect(response.statusCode).toBe(200);

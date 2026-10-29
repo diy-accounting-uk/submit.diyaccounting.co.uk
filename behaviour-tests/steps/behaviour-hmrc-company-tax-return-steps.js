@@ -399,8 +399,110 @@ export async function readReceiptsOfTheFilings(page) {
     return Promise.all(
       receipts.map(async (entry) => {
         const detail = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(entry.name)}`, {});
-        return { kind: entry.kind, listedJointFilingId: entry.jointFilingId, receipt: await detail.json() };
+        return { kind: entry.kind, listedJointFilingId: entry.jointFilingId, listedAmended: entry.amended, receipt: await detail.json() };
       }),
     );
+  });
+}
+
+// --- Amending an accepted filing -----------------------------------------------------------------
+
+export async function captureRequestBodies(page, pathSuffix, method) {
+  const captured = { bodies: [] };
+  page.on("request", (request) => {
+    if (request.method() === method && new URL(request.url()).pathname === pathSuffix) {
+      captured.bodies.push(JSON.parse(request.postData() ?? "{}"));
+    }
+  });
+  return captured;
+}
+
+export async function startAmendingTheFiling(page, { accounts }, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user chooses to amend ${accounts ? "the accounts and the return" : "the return"} from the accepted filing`, async () => {
+    await expect(page.locator("#amendPanel")).toBeVisible();
+    if (accounts) await expect(page.locator("#amendAccountsBtn")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-amend-panel.png`, readerView: true });
+    await loggedClick(page, accounts ? "#amendAccountsBtn" : "#amendReturnBtn", "Amending the filing", { screenshotPath });
+    await expect(page.locator("#formView")).toBeVisible();
+  });
+}
+
+export async function reviseTheAccounts(page, { approvedOn, averageEmployees }, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees the accounts open for revision and changes the approval date and a figure", async () => {
+    await expect(page.locator("#accountsLockNote")).toContainText("You are revising the accounts filed at Companies House");
+    await expect(page.locator("#currentTurnover")).toBeEnabled();
+    await expect(page.locator("#directorDateApproved")).toBeEnabled();
+    await loggedFill(page, "#directorDateApproved", approvedOn, "Date the directors approve the revised accounts");
+    await loggedFill(page, "#averageEmployees", averageEmployees, "Average number of employees");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-accounts-open-for-revision.png`, readerView: true });
+  });
+}
+
+export async function changeTheTaxAnswerAndReview(page, { fieldId, value }, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user changes ${fieldId} and goes to the review`, async () => {
+    await loggedFill(page, `#${fieldId}`, value, fieldId);
+    await loggedClick(page, "#previewBtn", "Going to the review", { screenshotPath });
+    await expect(page.locator("#previewView")).toBeVisible({ timeout: 30000 });
+  });
+}
+
+export async function verifyAmendedSendStep(page, { accounts }, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The user sees the send step for ${accounts ? "the revised accounts and the amended return" : "the amended return"}`, async () => {
+    await expect(page.locator("#sendStepHeading")).toHaveText(
+      accounts ? "Send the revised accounts to Companies House and the amended return to HMRC" : "Send the amended return to HMRC",
+    );
+    await expect(page.locator("#submitReturnBtn")).toHaveText(
+      accounts ? "Send the revised accounts, then the amended return" : "Submit the amended return to HMRC",
+    );
+    if (accounts) {
+      await expect(page.locator("#revisionGroup")).toBeVisible();
+      await expect(page.locator("#companyAuthCodeGroup")).toBeVisible();
+    } else {
+      await expect(page.locator("#revisionGroup")).toBeHidden();
+      await expect(page.locator("#companyAuthCodeGroup")).toBeHidden();
+    }
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-amended-send-step.png`, readerView: true });
+  });
+}
+
+export async function describeTheRevisionAndSend(
+  page,
+  { differences, userId, password, companyAuthCode },
+  screenshotPath = defaultScreenshotPath,
+) {
+  await test.step("The user says what the revised accounts change, then sends them with the codes", async () => {
+    await loggedFill(page, "#revisionDifferences", differences, "What the revised accounts change", { screenshotPath });
+    await loggedFill(page, "#companyAuthCode", companyAuthCode, "Company authentication code", { screenshotPath });
+    await loggedFill(page, "#gatewayUserId", userId, "Government Gateway user ID", { screenshotPath });
+    await loggedFill(page, "#gatewayPassword", password, "Government Gateway password", { screenshotPath });
+    await loggedClick(page, "#submitReturnBtn", "Sending the revised accounts", { screenshotPath });
+    await expect(page.locator("#resultView")).toBeVisible({ timeout: 30000 });
+  });
+}
+
+export async function verifyRevisedAccountsAndAmendedReturnAccepted(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees Companies House accept the revised accounts and HMRC accept the amended return", async () => {
+    await expect(page.locator("#companiesHouseOutcome")).toContainText("Companies House accepted the revised accounts", { timeout: 60000 });
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the amended Company Tax Return", { timeout: 60000 });
+    await expect(page.locator("#returnIrmark")).toContainText(/IRmark: [A-Z2-7]{32}/);
+    await expect(page.locator("#jointAccepted")).toContainText("Both amended filings are accepted");
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-amended-both-accepted.png`, readerView: true });
+  });
+}
+
+export async function verifyAmendedReturnAccepted(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees HMRC accept the amended return", async () => {
+    await expect(page.locator("#returnResult")).toContainText("HMRC accepted the amended Company Tax Return", { timeout: 60000 });
+    await expect(page.locator("#returnIrmark")).toContainText(/IRmark: [A-Z2-7]{32}/);
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-amended-return-accepted.png`, readerView: true });
+  });
+}
+
+export async function verifyRevisedAccountsRejected(page, screenshotPath = defaultScreenshotPath) {
+  await test.step("The user sees Companies House reject the revised accounts and nothing sent to HMRC", async () => {
+    await expect(page.locator("#companiesHouseOutcome")).toContainText("Companies House rejected the revised accounts", { timeout: 60000 });
+    await expect(page.locator("#returnResult")).toBeEmpty();
+    await expect(page.locator("#tryAgainBtn")).toBeVisible();
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-03-revised-accounts-rejected.png`, readerView: true });
   });
 }

@@ -95,6 +95,10 @@ export function apiEndpoint(app) {
     if (firstElementText(document, "Qualifier") !== "request" || firstElementText(document, "Function") !== "submit") {
       return sendXml(res, fatalError("A submission is Qualifier request, Function submit", 1002));
     }
+    const returnType = firstElement(document, "CompanyTaxReturn")?.getAttribute("ReturnType");
+    if (returnType !== undefined && returnType !== null && returnType !== "new" && returnType !== "amended") {
+      return sendXml(res, fatalError(`The ReturnType ${returnType} is not new or amended`, 1003));
+    }
     const suppliedIrmark = firstElement(document, "IRmark")?.textContent || "";
     const irmark = computeIrmark(req.body);
     const correlationId = randomBytes(16).toString("hex").toUpperCase();

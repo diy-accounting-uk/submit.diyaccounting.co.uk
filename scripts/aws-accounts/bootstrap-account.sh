@@ -230,7 +230,13 @@ if [[ -n "${EXISTING_ACTIONS_ROLE}" ]]; then
 else
   echo -n "  Creating ${ACTIONS_ROLE_NAME}..."
 
-  # Trust policy: GitHub Actions OIDC, scoped to this repo
+  # Trust policy: GitHub Actions OIDC, scoped to this repo. The prod account accepts only jobs
+  # that declare the prod GitHub environment; every other account accepts any job of the repo.
+  if [[ "${ACCOUNT_NAME}" == "submit-prod" ]]; then
+    OIDC_SUBJECT="repo:${GITHUB_REPO}:environment:prod"
+  else
+    OIDC_SUBJECT="repo:${GITHUB_REPO}:*"
+  fi
   TRUST_POLICY=$(cat <<EOF
 {
   "Version": "2012-10-17",
@@ -246,7 +252,7 @@ else
           "${OIDC_PROVIDER_URL}:aud": "sts.amazonaws.com"
         },
         "StringLike": {
-          "${OIDC_PROVIDER_URL}:sub": "repo:${GITHUB_REPO}:*"
+          "${OIDC_PROVIDER_URL}:sub": "${OIDC_SUBJECT}"
         }
       }
     }

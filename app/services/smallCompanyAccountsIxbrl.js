@@ -44,6 +44,7 @@ import {
   controllingPartyNote,
   renderSigningDirectorFact,
   renderCompanyDescriptionFacts,
+  revisionPage,
   companyInformationNote,
   principalActivitySentence,
   shareNoun,
@@ -817,7 +818,14 @@ export function buildSmallCompanyAccounts(input) {
   hiddenFacts.push(
     ...renderProductionSoftwareFacts(refs.current),
     ...renderReportHeaderFacts({ refs, entityIdentifierXml, periodXml, additionalContexts }),
-    ...renderCompanyDescriptionFacts({ companyNumber: input.companyNumber, refs, entityIdentifierXml, periodXml, additionalContexts }),
+    ...renderCompanyDescriptionFacts({
+      companyNumber: input.companyNumber,
+      refs,
+      entityIdentifierXml,
+      periodXml,
+      additionalContexts,
+      revised: Boolean(input.revision),
+    }),
     signingDirectorFact,
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
     renderFixedFact("entityTradingStatus", refs.current),
@@ -1006,6 +1014,15 @@ export function buildSmallCompanyAccounts(input) {
       periodEnd: input.periodEnd,
     }),
   ];
+  if (input.revision) {
+    pages.push(
+      revisionPage({
+        heading: heading("Revised accounts", `for the ${period}`),
+        periodEnd: input.periodEnd,
+        revision: input.revision,
+      }),
+    );
+  }
   const accountantsPage = input.accountantsReport
     ? accountantsReportPage({
         heading: heading(

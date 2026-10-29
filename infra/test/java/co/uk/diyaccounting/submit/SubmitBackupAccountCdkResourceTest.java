@@ -167,7 +167,9 @@ class SubmitBackupAccountCdkResourceTest {
                                                                                         "StringLike",
                                                                                                 Map.of(
                                                                                                         "token.actions.githubusercontent.com:sub",
-                                                                                                        "repo:diy-accounting-uk/submit.diyaccounting.co.uk:*")))))))))));
+                                                                                                        List.of(
+                                                                                                                "repo:diy-accounting-uk/submit.diyaccounting.co.uk:ref:refs/heads/main",
+                                                                                                                "repo:diy-accounting-uk/submit.diyaccounting.co.uk:environment:ci"))))))))))));
     }
 
     @Test

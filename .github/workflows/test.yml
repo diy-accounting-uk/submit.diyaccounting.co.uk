@@ -1002,7 +1002,7 @@ jobs:
       - changes
       - names
     runs-on: ubuntu-24.04
-    environment: prod
+    environment: ci
     permissions:
       contents: read
       id-token: write
@@ -1035,7 +1035,7 @@ jobs:
         id: lookup
         uses: './.github/actions/lookup-resources'
         with:
-          environment-name: 'prod'
+          environment-name: 'ci'
           lookup-cognito: 'true'
 
       - name: Setup Node
@@ -1078,7 +1078,7 @@ jobs:
           ENVIRONMENT_NAME: 'prod'
           DEPLOYMENT_NAME: 'prod'
           SELF_DESTRUCT_START_DATETIME: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
-          # Looked up from Cognito domain convention
+          # Synth only reads these as strings; the ci pool stands in for the prod pool
           COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
 
