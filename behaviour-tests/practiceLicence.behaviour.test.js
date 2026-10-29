@@ -211,7 +211,7 @@ test("A practice adds two clients and submits a VAT return for each through run_
     hmrcAccount: "synthetic",
   });
   expect(authorisation.ok, `request_hmrc_authorisation: ${JSON.stringify(authorisation.result)}`).toBe(true);
-  await grantMcpHmrcAccessInBrowser(page, authorisation.result.url, currentTestUsername, currentTestPassword, screenshotPath);
+  await grantMcpHmrcAccessInBrowser(page, authorisation.result.url, agentUsername, agentPassword, screenshotPath);
 
   // A throwaway client, invited once so the invite endpoint records the practice's ARN. Its own
   // invitation is left pending (the simulator never accepts one), so it is archived immediately

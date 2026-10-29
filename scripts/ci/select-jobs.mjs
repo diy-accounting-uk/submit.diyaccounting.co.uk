@@ -249,12 +249,11 @@ export function limitDiff(diff, maxCharactersPerFile = 60000) {
 }
 
 // Haiku 4.5 on Bedrock takes 200,000 tokens, and the Claude Code CLI adds its own system prompt
-// and tool definitions (about 20,000 tokens) before the stdin prompt. Code and minified text
-// tokenise at 2.5 to 4 bytes per token, so 300,000 bytes of diff is at most about 120,000 tokens:
-// together with the file list, job catalogue and instructions (about 15,000 bytes) it leaves
-// more than 50,000 tokens for the answer and the turns that read further. A 117-file, 880,000
-// byte diff overflowed the context with no cap.
-export const DIFF_BYTE_BUDGET = 300000;
+// and tool definitions (about 20,000 tokens) before the stdin prompt. Code tokenises at 2.5 to 4
+// bytes per token, but generated text (bundles, JSON of numbers, base64) can fall to about 1.5, so
+// 150,000 bytes of diff is at most about 100,000 tokens. A 300,000-byte budget still overflowed
+// on a 9.7 MB diff whose kept sections were mostly generated files.
+export const DIFF_BYTE_BUDGET = 150000;
 
 // The file the prompt command leaves beside the context file, and the decide command reads, so
 // the decision artifact can say that its decision rested on a partial diff.

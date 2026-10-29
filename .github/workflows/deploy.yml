@@ -356,11 +356,16 @@ jobs:
           LAST_GREEN_SHA: ${{ steps.last-green.outputs.sha }}
         run: |
           set -euo pipefail
-          if [ -n "${LAST_GREEN_SHA}" ] && git cat-file -e "${LAST_GREEN_SHA}^{commit}" 2>/dev/null; then
+          git fetch origin '${{ github.event.repository.default_branch }}' --quiet
+          fork_point=$(git merge-base "origin/${{ github.event.repository.default_branch }}" HEAD)
+          # A code name comes round again, so the last green run of a branch of the same name can
+          # be weeks older than this branch. Use it only when it already holds this branch's fork
+          # point from the default branch.
+          if [ -n "${LAST_GREEN_SHA}" ] && git cat-file -e "${LAST_GREEN_SHA}^{commit}" 2>/dev/null \
+            && git merge-base --is-ancestor "${fork_point}" "${LAST_GREEN_SHA}"; then
             range="${LAST_GREEN_SHA}..${{ github.sha }}"
             echo "compared-from=${LAST_GREEN_SHA}" | tee -a "$GITHUB_OUTPUT"
           else
-            git fetch origin '${{ github.event.repository.default_branch }}' --quiet
             range="origin/${{ github.event.repository.default_branch }}...HEAD"
           fi
           echo "comparing ${range}" | tee -a "$GITHUB_STEP_SUMMARY"

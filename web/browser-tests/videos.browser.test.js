@@ -179,8 +179,8 @@ test.describe("area pages", () => {
 test.describe("videos-hmrc-itsa.html", () => {
   const itsaVideos = EMBEDDED.filter((v) => v.group === "itsa");
 
-  test("embeds all twelve itsa videos, each with its title and a caption track", async ({ page }) => {
-    expect(itsaVideos).toHaveLength(12);
+  test("embeds all thirteen itsa videos, each with its title and a caption track", async ({ page }) => {
+    expect(itsaVideos).toHaveLength(13);
     await serveRealSite(page);
     await page.goto("http://localhost:3000/videos-hmrc-itsa.html", { waitUntil: "domcontentloaded" });
     await assertSections(page, itsaVideos);
