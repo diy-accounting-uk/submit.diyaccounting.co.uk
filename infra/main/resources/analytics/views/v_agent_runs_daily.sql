@@ -4,7 +4,8 @@
 -- Unattended agent workflow runs each day, by workflow and outcome, plus two rates that read
 -- past the run itself into what happened to its work afterwards: the share of the runs that
 -- opened a pull request which a person then merged, and the share of the issues an agent
--- answered that a person then closed, with the median hours that took.
+-- answered that a person then closed, with the median hours that took. prs_accepted counts the
+-- runs whose pull request a person merged.
 --
 -- pr_merges and issue_closes fold github_issue_events down to one row per PR or issue, since a
 -- PR carries several "merged" or "closed" timeline entries when a branch is pushed to more than
@@ -37,6 +38,7 @@ SELECT day,
        workflow,
        count(*)                                                        AS runs,
        count_if(outcome = 'posted')                                    AS posted,
+       count_if(pr_accepted)                                           AS prs_accepted,
        count_if(outcome = 'skipped-budget')                            AS skipped_budget,
        count_if(outcome = 'skipped-role')                              AS skipped_role,
        count_if(outcome = 'skipped-kill-switch')                       AS skipped_kill_switch,

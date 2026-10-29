@@ -59,6 +59,8 @@ import {
   buildChartSeries,
   buildDailyChartDefinitions,
   buildDailyCharts,
+  buildCostDrivers,
+  shortResourceName,
   vatSubmissionReconciliationText,
   toObservationWindows,
   toActivityFastWindows,
@@ -416,12 +418,105 @@ describe("operatorSnapshotPublish", () => {
       const chart = buildDailyChartDefinitions().find((definition) => definition.id === "low-running-cost");
 
       expect(chart.title).toBe("AWS costs");
-      expect(chart.modes.map((mode) => mode.id)).toEqual(["cost", "account", "deployment"]);
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["cost", "account", "deployment", "charge", "agent"]);
       expect(chart.modes[0].maxComponents).toBe(12);
       const account = chart.modes.find((mode) => mode.id === "account");
       expect(account.labelOf("972912397388")).toBe("submit-prod");
       expect(account.labelOf("887764105431")).toBe("management");
       expect(chart.modes.find((mode) => mode.id === "deployment").sql).toContain("deployment AS component");
+    });
+
+    test("the AWS costs chart offers CloudWatch by charge and Bedrock cost per agent result", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "low-running-cost");
+
+      const charge = chart.modes.find((mode) => mode.id === "charge");
+      expect(charge.sql).toContain("charge_description AS component");
+      expect(charge.sql).toContain("FROM   v_cost_by_resource_daily");
+      expect(charge.sql).toContain("service_name LIKE '%CloudWatch%'");
+      expect(charge.maxComponents).toBe(10);
+      expect(charge.descriptionOf("$3.00 per Dashboard per Month")).toContain("$3.00 per Dashboard per Month");
+
+      const agent = chart.modes.find((mode) => mode.id === "agent");
+      expect(agent.sql).toContain("FROM   v_agent_cost_daily");
+      expect(agent.sql).toContain("cost_per_posted_run_usd IS NOT NULL");
+      expect(agent.descriptionOf("cost-per-accepted-pr")).toContain("merged");
+    });
+
+    test("Uptime charts HMRC failures by class and by status and the failure rate as a percentage", () => {
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "hmrc-failures");
+
+      expect(chart.objectiveId).toBe("uptime");
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["class", "status", "rate"]);
+      expect(chart.modes[0].sql).toContain("failure_class AS component");
+      expect(chart.modes[1].sql).toContain("hmrc_status AS component");
+      expect(chart.modes[1].sql).toContain("FROM   v_hmrc_failures_by_class");
+      expect(chart.modes[1].labelOf("none")).toBe("No HMRC status");
+      expect(chart.modes[1].labelOf("429")).toBe("HMRC 429");
+      expect(chart.modes[2].sql).toContain("failure_rate * 100");
+      expect(chart.modes[2].sql).toContain("failure_rate IS NOT NULL");
+    });
+
+    test("failures and agent cost sit on the objectives that own them, each with a description", () => {
+      const observationsOf = (objectiveId) => OBJECTIVE_DEFINITIONS.find((objective) => objective.id === objectiveId).observations;
+      const byId = (objectiveId, id) => observationsOf(objectiveId).find((observation) => observation.id === id);
+
+      expect(byId("uptime", "hmrc-submission-failures")).toMatchObject({ view: "v_submission_failure_rate_daily", valueExpr: "failures" });
+      expect(byId("uptime", "hmrc-submission-failure-rate")).toMatchObject({ unit: "ratio", valueExpr: "failure_rate" });
+      expect(byId("conversion-to-submission", "submission-failure-rate")).toMatchObject({ unit: "ratio", valueExpr: "failure_rate" });
+      expect(byId("low-running-cost", "bedrock-cost-per-posted-run-usd")).toMatchObject({ view: "v_agent_cost_daily", unit: "usd" });
+      expect(byId("low-running-cost", "bedrock-cost-per-accepted-pr-usd")).toMatchObject({ valueExpr: "cost_per_accepted_pr_usd" });
+      expect(byId("operator-effort", "agent-cost-per-posted-run-usd")).toMatchObject({ view: "v_agent_cost_daily" });
+      expect(byId("operator-effort", "agent-cost-per-accepted-pr-usd")).toMatchObject({ view: "v_agent_cost_daily" });
+      for (const id of ["hmrc-submission-failures", "hmrc-submission-failure-rate"]) {
+        expect(byId("uptime", id).description.length).toBeGreaterThan(20);
+        expect(betterDirection(id)).toBe("down");
+      }
+      expect(betterDirection("agent-cost-per-accepted-pr-usd")).toBe("down");
+    });
+
+    test("shortResourceName drops the partition, service, region and account from an ARN", () => {
+      expect(shortResourceName("arn:aws:logs:eu-west-2:972912397388:log-group:/aws/cloudtrail/prod-env-cloud-trail")).toBe(
+        "log-group:/aws/cloudtrail/prod-env-cloud-trail",
+      );
+      expect(shortResourceName("arn:aws:synthetics:eu-west-2:972912397388:canary:prod-dbf4e0a-api")).toBe("canary:prod-dbf4e0a-api");
+      expect(shortResourceName("(no resource)")).toBe("(no resource)");
+    });
+
+    test("buildCostDrivers reads the ten dearest CloudWatch charges of the last 30 days", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({
+              ResultSet: resultSetOfRows(
+                ["charge_description", "resource_id", "cost_usd"],
+                [["$0.5985 per GB custom log data ingested", "arn:aws:logs:eu-west-2:1:log-group:/aws/x", "67.862"]],
+              ),
+            });
+        }
+      });
+
+      const drivers = await buildCostDrivers({ workGroup: "wg", database: "db" });
+
+      const sql = mockAthenaSend.mock.calls.find(([command]) => command.constructor.name === "StartQueryExecutionCommand")[0].input
+        .QueryString;
+      expect(sql).toContain("FROM   v_cost_by_resource_daily");
+      expect(sql).toContain("service_name LIKE '%CloudWatch%'");
+      expect(sql).toContain("LIMIT  10");
+      expect(drivers).toEqual({
+        days: 30,
+        rows: [
+          {
+            charge: "$0.5985 per GB custom log data ingested",
+            resource: "log-group:/aws/x",
+            resourceId: "arn:aws:logs:eu-west-2:1:log-group:/aws/x",
+            costUsd: 67.862,
+          },
+        ],
+      });
     });
 
     test("AWS costs holds AWS figures only and the ads figures sit under Conversion to paid", () => {
@@ -563,7 +658,7 @@ describe("operatorSnapshotPublish", () => {
       }
     });
 
-    test("buildDailyCharts publishes six objectives' charts with 90 points on every series", async () => {
+    test("buildDailyCharts publishes seven charts with 90 points on every series", async () => {
       mockAthenaSend.mockImplementation((command) => {
         switch (command.constructor.name) {
           case "StartQueryExecutionCommand":
@@ -585,6 +680,7 @@ describe("operatorSnapshotPublish", () => {
       expect(dailyCharts.days).toHaveLength(90);
       expect(dailyCharts.charts.map((chart) => chart.id)).toEqual([
         "activity-started-and-completed",
+        "hmrc-failures",
         "conversion-to-submission",
         "conversion-to-paid",
         "low-running-cost",
@@ -625,7 +721,7 @@ describe("operatorSnapshotPublish", () => {
 
       expect(failedChartIds).toEqual(["visitors"]);
       expect(dailyCharts.charts.map((chart) => chart.id)).not.toContain("visitors");
-      expect(dailyCharts.charts).toHaveLength(5);
+      expect(dailyCharts.charts).toHaveLength(6);
     });
 
     test("runAthenaQuery follows result pages, reading the header from the first only", async () => {
@@ -1352,6 +1448,14 @@ describe("operatorSnapshotPublish", () => {
 
       expect(result).toEqual({ environment: "test", objectives: 10 });
       expect(mockS3Send).toHaveBeenCalledTimes(2);
+    });
+
+    test("a failing cost drivers query publishes the snapshot without them and counts as one failure", async () => {
+      mockQueriesWithOneFailing("LIMIT  10", ["10", "5", "30", "20"]);
+
+      await expect(handler()).rejects.toThrow(/1 observation/);
+      const putCalls = mockS3Send.mock.calls.filter(([command]) => command.constructor.name === "PutObjectCommand");
+      expect(JSON.parse(putCalls[0][0].input.Body).costDrivers).toBeUndefined();
     });
 
     test("still publishes the snapshot but rejects when an observation failed, so the Lambda's Errors metric still fires", async () => {

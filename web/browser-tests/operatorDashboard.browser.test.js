@@ -373,6 +373,19 @@ const FIXTURE_DAILY_CHARTS = {
   ],
 };
 
+const FIXTURE_COST_DRIVERS = {
+  days: 30,
+  rows: [
+    {
+      charge: "$0.5985 per GB custom log data ingested in Standard log class - EU (London)",
+      resource: "log-group:/aws/cloudtrail/prod-env-cloud-trail",
+      resourceId: "arn:aws:logs:eu-west-2:972912397388:log-group:/aws/cloudtrail/prod-env-cloud-trail",
+      costUsd: 67.862,
+    },
+    { charge: "$0.0015 per canary run per month - EU (London)", resource: "canary:prod-dbf4e0a-api", resourceId: "arn:x", costUsd: 3.795 },
+  ],
+};
+
 const FIXTURE_SNAPSHOT_WITH_CHARTS = { ...FIXTURE_SNAPSHOT, dailyCharts: FIXTURE_DAILY_CHARTS };
 
 const SAMPLE_VALUE_BY_UNIT = { count: 1234, gbp: 12345.67, usd: 123.45, ratio: 0.987, hours: 12.5, runs: 42 };
@@ -409,6 +422,7 @@ function fullShapeSnapshot() {
         deepLink: observation.deepLink(context),
       })),
     })),
+    costDrivers: FIXTURE_COST_DRIVERS,
     failedObservationCount: 0,
   };
 }
@@ -654,6 +668,25 @@ test.describe("Operator Dashboard", () => {
     const row = page.locator('tr.observation[data-observation-id="quiet"]');
     await expect(row.locator("td").nth(4)).toHaveText("none");
     await expect(row.locator("td").nth(6)).toHaveText("not measured");
+  });
+
+  test("lists the dearest CloudWatch charges under AWS costs, or says none are published", async ({ page }) => {
+    await setupRoutes(page, { snapshotBody: { ...FIXTURE_SNAPSHOT, costDrivers: FIXTURE_COST_DRIVERS } });
+    await loadDashboard(page);
+
+    const section = page.locator('.objective[data-objective-id="low-running-cost"]');
+    await expect(section.locator(".cost-drivers h3")).toHaveText("Top 2 CloudWatch charges, last 30 days");
+    const rows = section.locator("tr.cost-driver");
+    await expect(rows).toHaveCount(2);
+    await expect(rows.nth(0).locator("td").nth(0)).toHaveText("log-group:/aws/cloudtrail/prod-env-cloud-trail");
+    await expect(rows.nth(0).locator("td").nth(0)).toHaveAttribute("title", /arn:aws:logs:eu-west-2:972912397388/);
+    await expect(rows.nth(0).locator("td").nth(2)).toHaveText("US$67.86");
+
+    await setupRoutes(page);
+    await loadDashboard(page);
+    await expect(page.locator('.objective[data-objective-id="low-running-cost"] .cost-drivers')).toContainText(
+      "No CloudWatch charges published yet.",
+    );
   });
 
   test("shows n/a for the daily windows of a monthly figure", async ({ page }) => {

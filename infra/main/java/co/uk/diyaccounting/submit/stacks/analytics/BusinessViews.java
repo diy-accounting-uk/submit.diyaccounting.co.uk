@@ -221,6 +221,20 @@ public class BusinessViews extends Construct {
                     "Billed cost each day from the FOCUS export, by service, deployment and stack",
                     List.of("cost_focus")),
             new ViewDefinition(
+                    "v_cost_by_resource_daily",
+                    "Billed cost each day from the FOCUS export, by charge, SKU and resource",
+                    List.of("cost_focus")),
+            new ViewDefinition(
+                    "v_agent_cost_daily",
+                    "Bedrock cost each day per agent run that posted a result and per agent pull request a person merged",
+                    List.of("v_cost_daily", "v_agent_runs_daily"),
+                    List.of("v_cost_daily", "v_agent_runs_daily")),
+            new ViewDefinition(
+                    "v_submission_failure_rate_daily",
+                    "VAT returns sent to HMRC each day, how many failed and the share that failed",
+                    List.of("v_submissions_daily"),
+                    List.of("v_submissions_daily")),
+            new ViewDefinition(
                     "v_cost_per_submission_daily",
                     "The day's cost divided by the day's completed submissions",
                     List.of("v_cost_daily", "v_submissions_by_activity_daily"),

@@ -548,8 +548,53 @@ function renderSnapshot(snapshot) {
 
   OBJECTIVE_ORDER.forEach((objectiveId) => {
     const objective = objectivesById[objectiveId] || { id: objectiveId, name: objectiveId, observations: [] };
-    container.appendChild(renderObjective(objective));
+    const section = renderObjective(objective);
+    if (objectiveId === "low-running-cost") section.appendChild(renderCostDrivers(snapshot.costDrivers));
+    container.appendChild(section);
   });
+}
+
+// The most expensive CloudWatch charges, each a resource and the charge on it.
+function renderCostDrivers(costDrivers) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "cost-drivers";
+  const heading = document.createElement("h3");
+  heading.textContent =
+    "Top " +
+    ((costDrivers && costDrivers.rows.length) || 10) +
+    " CloudWatch charges, last " +
+    ((costDrivers && costDrivers.days) || 30) +
+    " days";
+  wrapper.appendChild(heading);
+  if (!costDrivers || costDrivers.rows.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "cost-drivers-empty";
+    empty.textContent = "No CloudWatch charges published yet.";
+    wrapper.appendChild(empty);
+    return wrapper;
+  }
+  const table = document.createElement("table");
+  table.className = "observations data-table cost-drivers-table";
+  table.innerHTML = "<thead><tr><th>Resource</th><th>Charge</th><th>Cost</th></tr></thead>";
+  const tbody = document.createElement("tbody");
+  costDrivers.rows.forEach((driver) => {
+    const row = document.createElement("tr");
+    row.className = "cost-driver";
+    const resource = document.createElement("td");
+    resource.textContent = driver.resource;
+    resource.title = driver.resourceId;
+    const charge = document.createElement("td");
+    charge.textContent = driver.charge;
+    const cost = document.createElement("td");
+    cost.textContent = formatValue("usd", driver.costUsd);
+    row.appendChild(resource);
+    row.appendChild(charge);
+    row.appendChild(cost);
+    tbody.appendChild(row);
+  });
+  table.appendChild(tbody);
+  wrapper.appendChild(table);
+  return wrapper;
 }
 
 function renderExperiments(experiments) {

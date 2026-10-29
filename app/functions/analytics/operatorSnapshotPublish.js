@@ -164,6 +164,28 @@ export const OBJECTIVE_DEFINITIONS = [
         deepLink: (ctx) => buildGithubActionsWorkflowLink(ctx.githubRepo, "deploy.yml"),
       },
       {
+        id: "hmrc-submission-failures",
+        label: "HMRC submission failures",
+        description: "VAT returns that customers sent to HMRC and that failed, counted from the activity events.",
+        unit: "count",
+        view: "v_submission_failure_rate_daily",
+        dayColumn: "day",
+        valueExpr: "failures",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "hmrc-submission-failure-rate",
+        label: "HMRC submission failure rate",
+        description: "The share of VAT returns sent to HMRC that failed, averaged over the days. A day with no submissions has no rate.",
+        unit: "ratio",
+        view: "v_submission_failure_rate_daily",
+        dayColumn: "day",
+        valueExpr: "failure_rate",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
         id: "agent-posted-rate",
         label: "Agent runs that posted a result",
         unit: "ratio",
@@ -227,6 +249,17 @@ export const OBJECTIVE_DEFINITIONS = [
         dayColumn: "signup_day",
         valueExpr: "new_accounts",
         aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "submission-failure-rate",
+        label: "VAT submissions that failed",
+        description: "The share of VAT returns sent to HMRC that failed, averaged over the days. A day with no submissions has no rate.",
+        unit: "ratio",
+        view: "v_submission_failure_rate_daily",
+        dayColumn: "day",
+        valueExpr: "failure_rate",
+        aggregation: "avg",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
@@ -448,6 +481,30 @@ export const OBJECTIVE_DEFINITIONS = [
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
+        id: "bedrock-cost-per-posted-run-usd",
+        label: "Bedrock cost per agent run that posted",
+        description:
+          "The day's Claude on Bedrock cost divided by the agent runs that posted a result that day, averaged over the days. The cost export lands a day or two late.",
+        unit: "usd",
+        view: "v_agent_cost_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_posted_run_usd",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "bedrock-cost-per-accepted-pr-usd",
+        label: "Bedrock cost per accepted agent pull request",
+        description:
+          "The day's Claude on Bedrock cost divided by the agent pull requests a person merged that day, averaged over the days.",
+        unit: "usd",
+        view: "v_agent_cost_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_accepted_pr_usd",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
         id: "cost-per-completion-usd",
         label: "Cost per completion",
         unit: "usd",
@@ -637,6 +694,29 @@ export const OBJECTIVE_DEFINITIONS = [
     id: "operator-effort",
     name: "Operator effort",
     observations: [
+      {
+        id: "agent-cost-per-posted-run-usd",
+        label: "Agent cost per run that posted",
+        description: "The day's Claude on Bedrock cost divided by the agent runs that posted a result that day, averaged over the days.",
+        unit: "usd",
+        view: "v_agent_cost_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_posted_run_usd",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "agent-cost-per-accepted-pr-usd",
+        label: "Agent cost per accepted pull request",
+        description:
+          "The day's Claude on Bedrock cost divided by the agent pull requests a person merged that day, averaged over the days.",
+        unit: "usd",
+        view: "v_agent_cost_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_accepted_pr_usd",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
       {
         id: "operator-interventions-total",
         label: "Operator interventions, all kinds",
@@ -864,6 +944,13 @@ const BETTER_UP_IDS = [
 ];
 const BETTER_DOWN_IDS = [
   "alarms-fired",
+  "hmrc-submission-failures",
+  "hmrc-submission-failure-rate",
+  "submission-failure-rate",
+  "bedrock-cost-per-posted-run-usd",
+  "bedrock-cost-per-accepted-pr-usd",
+  "agent-cost-per-posted-run-usd",
+  "agent-cost-per-accepted-pr-usd",
   "deploy-failure-rate",
   "agent-median-hours-to-close",
   "monthly-cost-usd",
@@ -1097,6 +1184,7 @@ export const LATEST_READING_VIEWS = new Set([
   "v_cost_per_submission_daily",
   "v_cost_daily",
   "v_cost_by_resource_daily",
+  "v_agent_cost_daily",
   "security_hub_findings",
   "guardduty_findings",
   "github_alerts",
@@ -1584,6 +1672,63 @@ export function buildDailyChartDefinitions() {
       ],
     },
     {
+      id: "hmrc-failures",
+      objectiveId: "uptime",
+      title: "HMRC submission failures",
+      unit: "count",
+      note: "VAT returns that failed on their way to HMRC, from the activity events. Days are UTC. Failure rate is a percentage of that day's submissions.",
+      modes: [
+        {
+          id: "class",
+          label: "By failure class",
+          total: "All failures",
+          totalDescription: "Failures of every class added together.",
+          maxComponents: 8,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `VAT submissions that failed with the class ${id}.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "failure_class",
+            valueExpression: "failures",
+            view: "v_hmrc_failures_by_class",
+            dayColumn: "day",
+          }),
+        },
+        {
+          id: "status",
+          label: "By HMRC status",
+          total: "All failures",
+          totalDescription: "Failures of every HMRC status added together.",
+          maxComponents: 8,
+          labelOf: (id) => (id === "none" ? "No HMRC status" : `HMRC ${id}`),
+          descriptionOf: (id) =>
+            id === "none" ? "Failures that never reached HMRC, so carry no status." : `VAT submissions HMRC answered with status ${id}.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "hmrc_status",
+            valueExpression: "failures",
+            view: "v_hmrc_failures_by_class",
+            dayColumn: "day",
+          }),
+        },
+        {
+          id: "rate",
+          label: "Failure rate",
+          total: null,
+          labelOf: () => "Failure rate, %",
+          descriptionOf: () => "Share of the day's VAT submissions that failed, as a percentage. A day with no submissions has no point.",
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "'failure-rate'",
+            valueExpression: "failure_rate * 100",
+            view: "v_submission_failure_rate_daily",
+            dayColumn: "day",
+            where: "failure_rate IS NOT NULL",
+          }),
+        },
+      ],
+    },
+    {
       id: "conversion-to-submission",
       objectiveId: "conversion-to-submission",
       title: "Conversion to submission",
@@ -1726,6 +1871,42 @@ export function buildDailyChartDefinitions() {
             view: "v_cost_daily",
             dayColumn: "day",
           }),
+        },
+        {
+          id: "charge",
+          label: "CloudWatch by charge",
+          total: "All CloudWatch",
+          totalDescription: "Every CloudWatch charge added together, in dollars.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Dollars billed for the CloudWatch charge "${id}" across all accounts.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "charge_description",
+            valueExpression: "billed_cost_usd",
+            view: "v_cost_by_resource_daily",
+            dayColumn: "day",
+            where: "service_name LIKE '%CloudWatch%'",
+          }),
+        },
+        {
+          id: "agent",
+          label: "Bedrock per agent result",
+          total: null,
+          componentOrder: ["cost-per-posted-run", "cost-per-accepted-pr"],
+          labelOf: (id) =>
+            ({ "cost-per-posted-run": "Per run that posted", "cost-per-accepted-pr": "Per accepted pull request" })[id] ?? id,
+          descriptionOf: (id) =>
+            ({
+              "cost-per-posted-run": "The day's Claude on Bedrock cost divided by the agent runs that posted a result that day.",
+              "cost-per-accepted-pr": "The day's Claude on Bedrock cost divided by the agent pull requests a person merged that day.",
+            })[id],
+          sql:
+            `SELECT cast(day AS varchar) AS day, 'cost-per-posted-run' AS component, cast(sum(cost_per_posted_run_usd) AS double) AS value\n` +
+            `FROM   v_agent_cost_daily\nWHERE  ${dailyWindowFilter("day")} AND cost_per_posted_run_usd IS NOT NULL\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'cost-per-accepted-pr', cast(sum(cost_per_accepted_pr_usd) AS double)\n` +
+            `FROM   v_agent_cost_daily\nWHERE  ${dailyWindowFilter("day")} AND cost_per_accepted_pr_usd IS NOT NULL\nGROUP  BY 1`,
         },
       ],
     },
@@ -1949,6 +2130,45 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
   return { dailyCharts: { days, charts }, failedChartIds: [...failedChartIds] };
 }
 
+export const COST_DRIVER_DAYS = 30;
+export const COST_DRIVER_COUNT = 10;
+
+// The log group, alarm or canary an ARN names, without the partition, service, region and
+// account: "arn:aws:logs:eu-west-2:123:log-group:/aws/x" reads "log-group:/aws/x". A value that
+// is not an ARN is returned as it is.
+export function shortResourceName(resourceId) {
+  const parts = String(resourceId).split(":");
+  return parts[0] === "arn" && parts.length > 5 ? parts.slice(5).join(":") : resourceId;
+}
+
+/**
+ * The most expensive CloudWatch charges over the last COST_DRIVER_DAYS days, each a resource (a
+ * log group, an alarm, a canary) and the charge on it, across every account in the organisation.
+ * The FOCUS export names no resource for some charges, which group under "(no resource)".
+ *
+ * @returns {Promise<{days: number, rows: Array<{charge: string, resource: string, resourceId: string, costUsd: number}>}>}
+ */
+export async function buildCostDrivers({ workGroup, database }) {
+  const rows = await runAthenaQuery({
+    workGroup,
+    database,
+    sql:
+      `SELECT charge_description, resource_id, cast(sum(billed_cost_usd) AS double) AS cost_usd\n` +
+      `FROM   v_cost_by_resource_daily\n` +
+      `WHERE  day > date_add('day', -${COST_DRIVER_DAYS}, current_date) AND service_name LIKE '%CloudWatch%'\n` +
+      `GROUP  BY 1, 2\nORDER  BY 3 DESC\nLIMIT  ${COST_DRIVER_COUNT}`,
+  });
+  return {
+    days: COST_DRIVER_DAYS,
+    rows: rows.map((row) => ({
+      charge: row.charge_description,
+      resource: shortResourceName(row.resource_id),
+      resourceId: row.resource_id,
+      costUsd: Number(row.cost_usd),
+    })),
+  };
+}
+
 /**
  * Writes the snapshot to its latest pointer and a dated copy alongside it, so the page always
  * reads the same key while a historical run stays available under its own date.
@@ -2002,7 +2222,20 @@ export async function handler() {
 
   const built = await buildSnapshot({ workGroup, database, context });
   const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup, database });
-  const snapshot = { ...built, dailyCharts, failedObservationCount: built.failedObservationCount + failedChartIds.length };
+  let costDrivers = null;
+  let failedCostDrivers = 0;
+  try {
+    costDrivers = await buildCostDrivers({ workGroup, database });
+  } catch (error) {
+    failedCostDrivers = 1;
+    logger.warn({ message: "Cost drivers query failed, publishing none", error: error.message });
+  }
+  const snapshot = {
+    ...built,
+    dailyCharts,
+    ...(costDrivers ? { costDrivers } : {}),
+    failedObservationCount: built.failedObservationCount + failedChartIds.length + failedCostDrivers,
+  };
   await writeSnapshot({ bucket: lakeBucket, envName, snapshot });
 
   logger.info({
