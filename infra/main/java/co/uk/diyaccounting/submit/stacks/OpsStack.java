@@ -563,7 +563,10 @@ public class OpsStack extends Stack {
                         props.sharedNames().hmrcItsaForeignPropertyPeriodPostIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaForeignPropertyPeriodPutIngest",
-                        props.sharedNames().hmrcItsaForeignPropertyPeriodPutIngestLambdaFunctionName));
+                        props.sharedNames().hmrcItsaForeignPropertyPeriodPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaForeignPropertyAnnualPutIngest",
+                        props.sharedNames().hmrcItsaForeignPropertyAnnualPutIngestLambdaFunctionName));
 
         for (TokenChargeSource source : tokenChargeSources) {
             ILogGroup lambdaLogGroup = LogGroup.fromLogGroupName(

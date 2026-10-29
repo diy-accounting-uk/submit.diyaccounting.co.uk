@@ -134,6 +134,8 @@ export default [
         putTaxLiabilityAdjustments: "readonly",
         getBsasUkProperty: "readonly",
         adjustBsasUkProperty: "readonly",
+        getBsasForeignProperty: "readonly",
+        adjustBsasForeignProperty: "readonly",
         getUkPropertyAnnual: "readonly",
         putUkPropertyAnnual: "readonly",
         checkAuthStatus: "readonly",

@@ -158,6 +158,19 @@
               aria-describedby="companyAuthCode-hint"
             />
           </div>
+          <div class="form-group" id="revisionGroup" style="display: none">
+            <label for="revisionDifferences">What do the revised accounts change?</label>
+            <p id="revisionDifferences-hint" class="hint">
+              Companies House prints this in the revised accounts, under the statement that they replace the accounts it holds.
+            </p>
+            <textarea
+              id="revisionDifferences"
+              name="revisionDifferences"
+              rows="4"
+              maxlength="2000"
+              aria-describedby="revisionDifferences-hint"
+            ></textarea>
+          </div>
           <p class="hint">
             Sign in with the Government Gateway user ID and password for the company's Corporation Tax enrolment. They are sent once with
             this return and never stored.
@@ -210,6 +223,19 @@
           <div id="returnErrors" style="display: none"></div>
         </div>
         <div id="returnRecord"></div>
+        <section id="amendPanel" aria-labelledby="amendHeading" style="display: none">
+          <h3 id="amendHeading">Amend this filing</h3>
+          <p class="hint">
+            Amend the return when a tax answer was wrong. Amend the accounts and the return when a figure in the accounts was wrong:
+            Companies House gets revised accounts, then HMRC gets an amended return. Your receipts show the amendments under this filing.
+          </p>
+          <div class="button-group">
+            <button type="button" id="amendReturnBtn" class="secondary-button">Amend the return</button>
+            <button type="button" id="amendAccountsBtn" class="secondary-button" style="display: none">
+              Amend the accounts and the return
+            </button>
+          </div>
+        </section>
         <div class="button-group">
           <button type="button" id="tryAgainBtn" class="secondary-button" style="display: none">Check the return and try again</button>
           <button type="button" id="startAgainBtn" class="secondary-button" style="display: none">Start a new return</button>

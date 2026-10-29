@@ -23,7 +23,7 @@ import {
 const IR_ENVELOPE =
   '<IRenvelope xmlns="http://www.govtalk.gov.uk/taxation/CT/5"><IRheader><Keys><Key Type="UTR">8596148860</Key></Keys><PeriodEnd>2026-03-31</PeriodEnd><DefaultCurrency>GBP</DefaultCurrency><IRmark Type="generic"></IRmark><Sender>Company</Sender></IRheader><CompanyTaxReturn ReturnType="new"/></IRenvelope>';
 
-function submissionXml() {
+function submissionXml(irEnvelopeXml = IR_ENVELOPE) {
   return buildCt600SubmissionRequest({
     senderId: "user1",
     password: "password1",
@@ -31,7 +31,7 @@ function submissionXml() {
     vendorId: "1000",
     productName: "DIY Accounting Submit",
     productVersion: "1.0",
-    irEnvelopeXml: IR_ENVELOPE,
+    irEnvelopeXml,
     gatewayTest: true,
   });
 }
@@ -110,5 +110,27 @@ describe("HMRC Transaction Engine simulator", () => {
       submissionXml().xml.replace("<Class>HMRC-CT-CT600</Class>", "<Class>HMRC-SA-SA100</Class>"),
     );
     expect(otherClass.errors[0].text).toContain("HMRC-SA-SA100");
+  });
+
+  test("accepts an amended return and answers its receipt like any other", async () => {
+    const server = app();
+    const { xml, irmark } = submissionXml(IR_ENVELOPE.replace('ReturnType="new"', 'ReturnType="amended"'));
+    const acknowledgement = await post(server, SUBMISSION_PATH, xml);
+    expect(acknowledgement.qualifier).toBe("acknowledgement");
+    const pollRequest = buildPollRequest({ correlationId: acknowledgement.correlationId, gatewayTest: true });
+    await post(server, POLL_PATH, pollRequest);
+    const response = await post(server, POLL_PATH, pollRequest);
+    expect(response.qualifier).toBe("response");
+    expect(response.irmarkReceipt).toBe(irmark.base64);
+  });
+
+  test("answers a fatal error for a return type that is neither new nor amended", async () => {
+    const response = await post(
+      app(),
+      SUBMISSION_PATH,
+      submissionXml(IR_ENVELOPE.replace('ReturnType="new"', 'ReturnType="duplicate"')).xml,
+    );
+    expect(response.qualifier).toBe("error");
+    expect(response.errors[0].text).toContain("duplicate");
   });
 });

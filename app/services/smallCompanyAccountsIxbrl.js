@@ -18,6 +18,7 @@ import {
   qname,
   buildContexts,
   formatMonetary,
+  formatNominalValue,
   displayDate,
   previousDay,
   periodEndedPhrase,
@@ -43,6 +44,7 @@ import {
   controllingPartyNote,
   renderSigningDirectorFact,
   renderCompanyDescriptionFacts,
+  revisionPage,
   companyInformationNote,
   principalActivitySentence,
   shareNoun,
@@ -701,7 +703,7 @@ function shareCapitalNoteHtml({ shareCapital, calledUpShareCapital, refs, entity
   const instantContext = classContext(refs.currentInstant, `${refs.currentInstant}-share-class`);
   const description = `<ix:nonNumeric name="${qname(CONCEPTS.descriptionShareType)}" contextRef="${durationContext}">${escapeXmlText(SHARE_CLASS_LABEL[shareCapital.shareClass])}</ix:nonNumeric>`;
   const count = `<ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${instantContext}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction>`;
-  const parValue = `<ix:nonFraction name="${qname(CONCEPTS.parValueShare)}" contextRef="${durationContext}" unitRef="pure" decimals="INF">${shareCapital.nominalValue}</ix:nonFraction>`;
+  const parValue = `<ix:nonFraction name="${qname(CONCEPTS.parValueShare)}" contextRef="${durationContext}" unitRef="pure" decimals="INF">${formatNominalValue(shareCapital.nominalValue)}</ix:nonFraction>`;
   return `<p>Allotted, called up and fully paid: ${count} ${description} ${shareNoun(sharesIssued)} of £${parValue} each.</p>`;
 }
 
@@ -816,7 +818,14 @@ export function buildSmallCompanyAccounts(input) {
   hiddenFacts.push(
     ...renderProductionSoftwareFacts(refs.current),
     ...renderReportHeaderFacts({ refs, entityIdentifierXml, periodXml, additionalContexts }),
-    ...renderCompanyDescriptionFacts({ companyNumber: input.companyNumber, refs, entityIdentifierXml, periodXml, additionalContexts }),
+    ...renderCompanyDescriptionFacts({
+      companyNumber: input.companyNumber,
+      refs,
+      entityIdentifierXml,
+      periodXml,
+      additionalContexts,
+      revised: Boolean(input.revision),
+    }),
     signingDirectorFact,
     `<ix:nonNumeric name="${qname(CONCEPTS.entityDormantTruefalse)}" contextRef="${refs.current}">false</ix:nonNumeric>`,
     renderFixedFact("entityTradingStatus", refs.current),
@@ -1005,6 +1014,15 @@ export function buildSmallCompanyAccounts(input) {
       periodEnd: input.periodEnd,
     }),
   ];
+  if (input.revision) {
+    pages.push(
+      revisionPage({
+        heading: heading("Revised accounts", `for the ${period}`),
+        periodEnd: input.periodEnd,
+        revision: input.revision,
+      }),
+    );
+  }
   const accountantsPage = input.accountantsReport
     ? accountantsReportPage({
         heading: heading(

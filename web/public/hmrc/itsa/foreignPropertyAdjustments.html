@@ -1,0 +1,175 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en-GB">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Foreign property year-end adjustments - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
+      <h1>Foreign property year-end adjustments</h1>
+      <p class="subtitle">Request the year-end summary, review the figures HMRC calculated, and adjust them if needed</p>
+    </header>
+
+    <main id="mainContent">
+      <p class="hint" data-feature-status="sandbox">
+        <strong>Status: sandbox.</strong> This runs against HMRC's sandbox. Nothing you send reaches your real HMRC record. Production waits
+        on HMRC's recognition of our software after its 2027 update.
+      </p>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
+
+      <div id="statusMessagesContainer" role="status" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- Trigger form -->
+      <div
+        id="triggerForm"
+        class="form-container"
+        data-requires-sign-in
+        data-sign-in-title="Log in to see your foreign property year-end adjustments"
+        data-sign-in-text="Log in to trigger the year-end summary for a foreign property business, read the figures HMRC calculated and adjust them."
+      >
+        <h2>Request the year-end summary</h2>
+        <div id="obligationsWarning" class="status-message status-error" style="display: none" role="alert"></div>
+        <form id="itsaForeignBsasTriggerForm" novalidate>
+          <div class="form-group">
+            <label for="nino">National Insurance number</label>
+            <p id="nino-hint" class="hint">
+              This is two letters, six numbers and a final letter, for example QQ 12 34 56 C. You can find it on your National Insurance
+              card, payslip or P60.
+            </p>
+            <input
+              type="text"
+              id="nino"
+              name="nino"
+              required
+              value=""
+              maxlength="13"
+              spellcheck="false"
+              autocapitalize="characters"
+              aria-describedby="nino-hint"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="businessId">Business ID</label>
+            <p id="businessId-hint" class="hint">
+              Filled in when you pick a business on the Income Tax dashboard. Otherwise copy it from Business details, for example
+              XAIS12345678910.
+            </p>
+            <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
+          </div>
+
+          <div class="form-group">
+            <label for="taxYear">Tax year</label>
+            <p id="taxYear-hint" class="hint">Choose the tax year.</p>
+            <select id="taxYear" name="taxYear" required aria-describedby="taxYear-hint"></select>
+          </div>
+
+          <div class="form-group">
+            <label for="accountingPeriodStartDate">Accounting period start date</label>
+            <input type="date" id="accountingPeriodStartDate" name="accountingPeriodStartDate" required />
+          </div>
+
+          <div class="form-group">
+            <label for="accountingPeriodEndDate">Accounting period end date</label>
+            <input type="date" id="accountingPeriodEndDate" name="accountingPeriodEndDate" required />
+          </div>
+
+          <!-- Developer Test Scenario Section -->
+          <div id="developerSection" class="form-group" style="display: none">
+            <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
+            <p id="testScenario-hint" class="hint">Test different HMRC sandbox scenarios for requesting a summary</p>
+            <select id="testScenario" name="testScenario" aria-describedby="testScenario-hint">
+              <option value="">Default (request succeeds)</option>
+              <option value="OBLIGATIONS_NOT_MET">Obligations not met</option>
+              <option value="ACCOUNTING_PERIOD_NOT_ENDED">Accounting period not ended</option>
+              <option value="NOT_FOUND">Not Found</option>
+            </select>
+            <div class="choice">
+              <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" /><label
+                for="runFraudPreventionHeaderValidation"
+                >Validate fraud prevention headers</label
+              >
+            </div>
+          </div>
+
+          <button type="submit" id="triggerBtn" class="btn">Request year-end summary</button>
+        </form>
+      </div>
+
+      <!-- Summary and adjustment form, shown after a successful trigger and retrieve -->
+      <div id="summaryContainer" class="results-container" style="display: none">
+        <h3>Year-end summary</h3>
+        <div id="summaryDetails"></div>
+        <div id="summaryEntries"></div>
+
+        <h3>Submit an adjustment</h3>
+        <p class="hint">
+          Change a figure if HMRC's calculation is wrong, or confirm no change is needed. These figures adjust the year-end summary above,
+          not your quarterly updates. Amounts are in pounds sterling; convert at the rate of the day or an average rate.
+        </p>
+        <div id="adjustEntries"></div>
+        <div id="adjustFhl"></div>
+        <div class="button-group">
+          <button type="button" id="submitAdjustmentBtn" class="btn">Submit adjustment</button>
+          <button type="button" id="zeroAdjustmentsBtn" class="secondary-button">Nothing to adjust</button>
+        </div>
+      </div>
+
+      <!-- Results Display -->
+      <div id="adjustmentResults" class="results-container" style="display: none">
+        <h3>Adjustment submitted</h3>
+        <p>HMRC has accepted the adjustment.</p>
+        <div class="button-group">
+          <button type="button" id="newSearchBtn" class="secondary-button">Start again</button>
+        </div>
+      </div>
+    </main>
+
+    <footer></footer>
+
+    <script src="../../widgets/page-chrome.js"></script>
+    <script src="../../lib/env-loader.js"></script>
+    <script src="../../lib/auth-url-builder.js"></script>
+    <script type="module" src="../../submit.js"></script>
+    <script src="../../developer-mode.js"></script>
+    <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/carried-identifiers.js"></script>
+    <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/form-errors.js"></script>
+    <script src="../../lib/self-employment-expenses.js"></script>
+    <script src="../../lib/itsaSubmissionModel.js"></script>
+    <script src="../../lib/country-codes.js"></script>
+    <script src="../../lib/hmrc-scope-check.js"></script>
+    <script type="module" src="../../lib/services/hmrc-service.js"></script>
+    <script src="../../widgets/entitlement-status.js"></script>
+    <script src="../../widgets/auth-status.js"></script>
+    <script src="../../widgets/status-messages.js"></script>
+    <script src="../../widgets/signed-out-panel.js"></script>
+    <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../lib/money-format.js"></script>
+    <script src="../../lib/money-input.js"></script>
+    <script src="../../lib/hmrc-field-table.js"></script>
+    <script src="foreignPropertyAdjustments.page.js"></script>
+  </body>
+</html>

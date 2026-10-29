@@ -141,15 +141,21 @@ function openPropertyForm(property) {
 
 async function loadProperties(criteria, accessToken) {
   const govClientHeaders = await getGovClientHeaders();
-  const result = await window.getForeignPropertyDetails(
-    criteria.nino,
-    criteria.businessId,
-    criteria.taxYear,
-    accessToken,
-    govClientHeaders,
-    criteria.runFraudPreventionHeaderValidation,
-    criteria.testScenario,
-  );
+  // HMRC answers 404 when the business holds no property yet; the list is then empty and the add button is the way on.
+  const result = await window
+    .getForeignPropertyDetails(
+      criteria.nino,
+      criteria.businessId,
+      criteria.taxYear,
+      accessToken,
+      govClientHeaders,
+      criteria.runFraudPreventionHeaderValidation,
+      criteria.testScenario,
+    )
+    .catch((error) => {
+      if (error.status === 404) return null;
+      throw error;
+    });
   loaded = { nino: criteria.nino, businessId: criteria.businessId, taxYear: criteria.taxYear };
   properties = result?.foreignPropertyDetails || [];
   showPropertyList();

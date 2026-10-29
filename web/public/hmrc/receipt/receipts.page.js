@@ -78,14 +78,16 @@ function groupByJointFiling(items) {
 }
 
 const JOINT_RECEIPT_TITLES = { "companies-house-accounts": "Accounts", "company-tax-return": "Company Tax Return" };
+const AMENDED_RECEIPT_TITLES = { "companies-house-accounts": "Revised accounts", "company-tax-return": "Amended Company Tax Return" };
 
 function receiptEntry(it, inJointFiling) {
   const entry = document.createElement("div");
   entry.className = "receipt-entry";
-  if (inJointFiling && JOINT_RECEIPT_TITLES[it.kind]) {
+  const kindTitle = it.amended ? AMENDED_RECEIPT_TITLES[it.kind] : inJointFiling ? JOINT_RECEIPT_TITLES[it.kind] : undefined;
+  if (kindTitle) {
     const title = document.createElement("span");
     title.className = "receipt-kind";
-    title.textContent = `${JOINT_RECEIPT_TITLES[it.kind]}: `;
+    title.textContent = `${kindTitle}: `;
     entry.appendChild(title);
   }
   const receiptLabel = document.createElement("a");

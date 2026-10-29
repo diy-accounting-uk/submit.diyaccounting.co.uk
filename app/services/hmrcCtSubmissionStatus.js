@@ -19,7 +19,7 @@ import {
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { putReceipt } from "../data/dynamoDbReceiptRepository.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
-import { jointFilingFields } from "./jointFiling.js";
+import { jointFilingFields, amendedFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
 
 const logger = createLogger({ source: "app/services/hmrcCtSubmissionStatus.js" });
@@ -62,7 +62,7 @@ export async function pollCtSubmission({ userSub, correlationId, govTestScenario
   }
 
   const pending = persistedRequest.data;
-  const jointFiling = jointFilingFields(pending.jointFilingId);
+  const jointFiling = { ...jointFilingFields(pending.jointFilingId), ...amendedFields(pending.amended === true) };
   const now = Date.now();
   if (pending.nextPollAt && Date.parse(pending.nextPollAt) > now) {
     return {

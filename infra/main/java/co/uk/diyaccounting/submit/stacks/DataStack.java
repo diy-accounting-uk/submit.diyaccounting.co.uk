@@ -57,6 +57,8 @@ public class DataStack extends Stack {
     public ITable hmrcItsaForeignPropertyPeriodPostAsyncRequestsTable;
     public ITable hmrcItsaForeignPropertyPeriodGetAsyncRequestsTable;
     public ITable hmrcItsaForeignPropertyPeriodPutAsyncRequestsTable;
+    public ITable hmrcItsaForeignPropertyAnnualGetAsyncRequestsTable;
+    public ITable hmrcItsaForeignPropertyAnnualPutAsyncRequestsTable;
     public ITable hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable;
     public ITable hmrcItsaForeignPropertyDetailsPostAsyncRequestsTable;
     public ITable hmrcItsaForeignPropertyDetailsPutAsyncRequestsTable;
@@ -69,6 +71,8 @@ public class DataStack extends Stack {
     public ITable hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTable;
     public ITable hmrcItsaBsasUkPropertyGetAsyncRequestsTable;
     public ITable hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable;
+    public ITable hmrcItsaBsasForeignPropertyGetAsyncRequestsTable;
+    public ITable hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTable;
     public ITable hmrcItsaCalculationTriggerPostAsyncRequestsTable;
     public ITable hmrcItsaCalculationGetAsyncRequestsTable;
     public ITable hmrcItsaFinalDeclarationPostAsyncRequestsTable;
@@ -562,6 +566,38 @@ public class DataStack extends Stack {
                 "Ensured HMRC ITSA Foreign Property Period PUT async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcItsaForeignPropertyPeriodPutAsyncRequestsTableName);
 
+        // HMRC ITSA Foreign Property Annual GET (retrieve) async request storage
+        this.hmrcItsaForeignPropertyAnnualGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyAnnualGetAsyncRequestsTable",
+                props.sharedNames().hmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyAnnualGetAsyncTTL",
+                props.sharedNames().hmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA Foreign Property Annual GET async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName);
+
+        // HMRC ITSA Foreign Property Annual PUT (create and amend) async request storage
+        this.hmrcItsaForeignPropertyAnnualPutAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyAnnualPutAsyncRequestsTable",
+                props.sharedNames().hmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaForeignPropertyAnnualPutAsyncTTL",
+                props.sharedNames().hmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA Foreign Property Annual PUT async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName);
+
         // HMRC ITSA Foreign Property Details GET async request storage
         this.hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable = ensureTable(
                 this,
@@ -753,6 +789,38 @@ public class DataStack extends Stack {
         infof(
                 "Ensured HMRC ITSA BSAS UK property adjust async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName);
+
+        // HMRC ITSA business source adjustable summary (foreign property) retrieve async request storage
+        this.hmrcItsaBsasForeignPropertyGetAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaBsasForeignPropertyGetAsyncRequestsTable",
+                props.sharedNames().hmrcItsaBsasForeignPropertyGetAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaBsasForeignPropertyGetAsyncTTL",
+                props.sharedNames().hmrcItsaBsasForeignPropertyGetAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA BSAS foreign property retrieve async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaBsasForeignPropertyGetAsyncRequestsTableName);
+
+        // HMRC ITSA business source adjustable summary (foreign property) adjust async request storage
+        this.hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTable",
+                props.sharedNames().hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaBsasForeignPropertyAdjustPostAsyncTTL",
+                props.sharedNames().hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA BSAS foreign property adjust async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTableName);
 
         // HMRC ITSA tax calculation trigger async request storage
         this.hmrcItsaCalculationTriggerPostAsyncRequestsTable = ensureTable(
@@ -1317,6 +1385,22 @@ public class DataStack extends Stack {
                 this.hmrcItsaForeignPropertyPeriodPutAsyncRequestsTable.getTableArn());
         cfnOutput(
                 this,
+                "HmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName",
+                this.hmrcItsaForeignPropertyAnnualGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaForeignPropertyAnnualGetAsyncRequestsTableArn",
+                this.hmrcItsaForeignPropertyAnnualGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName",
+                this.hmrcItsaForeignPropertyAnnualPutAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaForeignPropertyAnnualPutAsyncRequestsTableArn",
+                this.hmrcItsaForeignPropertyAnnualPutAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
                 "HmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName",
                 this.hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable.getTableName());
         cfnOutput(
@@ -1409,6 +1493,22 @@ public class DataStack extends Stack {
                 this,
                 "HmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableArn",
                 this.hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaBsasForeignPropertyGetAsyncRequestsTableName",
+                this.hmrcItsaBsasForeignPropertyGetAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaBsasForeignPropertyGetAsyncRequestsTableArn",
+                this.hmrcItsaBsasForeignPropertyGetAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTableName",
+                this.hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTableArn",
+                this.hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTable.getTableArn());
         cfnOutput(
                 this,
                 "HmrcItsaCalculationTriggerPostAsyncRequestsTableName",

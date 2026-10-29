@@ -78,7 +78,19 @@ let companiesHousePollWindow = 0;
 
 // What the customer chose to send and how far each filing has got. companiesHouse holds the
 // accounts submission once it is sent; its statusCode is PENDING, PARKED, ACCEPT or REJECT.
-const sending = { mode: "hmrc", copy: "full", jointFilingId: null, companiesHouse: null, taxReturnSent: false, taxReturnAccepted: false };
+// amendment is set while the customer amends an accepted filing: accounts is true when revised
+// accounts go to Companies House before the amended return. revision names the accounts already
+// filed that the revised accounts replace; both requests carry it once it is set.
+const sending = {
+  mode: "hmrc",
+  copy: "full",
+  jointFilingId: null,
+  companiesHouse: null,
+  taxReturnSent: false,
+  taxReturnAccepted: false,
+  amendment: null,
+  revision: null,
+};
 
 // bundle and taxData fill in once the books bundle has loaded; touched holds the error targets whose
 // field the customer has left; edited holds the ids the customer typed in, so a default stops following.
@@ -1218,7 +1230,9 @@ async function showOutcome(outcome) {
   element("startAgainBtn").style.display = "none";
   if (outcome.statusCode === "ACCEPT") {
     setOutcome("ok");
-    element("returnResult").replaceChildren(outcomeTitle("HMRC accepted the Company Tax Return"));
+    element("returnResult").replaceChildren(
+      outcomeTitle(sending.amendment ? "HMRC accepted the amended Company Tax Return" : "HMRC accepted the Company Tax Return"),
+    );
     element("returnIrmark").replaceChildren(
       create("p", {}, "IRmark: ", create("code", {}, outcome.irmark)),
       create("p", {}, "Keep the IRmark. It is HMRC's record of exactly what you sent."),
@@ -1230,11 +1244,14 @@ async function showOutcome(outcome) {
     if (!sending.companiesHouse || companiesHouseAccepted()) forgetJoint();
     else persistJoint();
     await renderReturnRecord(outcome);
+    showAmendPanel();
     return;
   }
   if (outcome.statusCode === "REJECT") {
     setOutcome("error");
-    element("returnResult").replaceChildren(outcomeTitle("HMRC rejected the Company Tax Return"));
+    element("returnResult").replaceChildren(
+      outcomeTitle(sending.amendment ? "HMRC rejected the amended Company Tax Return" : "HMRC rejected the Company Tax Return"),
+    );
     renderErrors(outcome);
     element("tryAgainBtn").style.display = "inline-block";
     sending.taxReturnSent = false;
@@ -1275,14 +1292,27 @@ function accountsStillToSend() {
 
 function configureSendStep() {
   const accountsFirst = accountsStillToSend();
-  element("sendStepHeading").textContent = accountsFirst ? "Send to Companies House and HMRC" : "Send to HMRC";
+  const amending = Boolean(sending.amendment);
+  const sendsToHmrc = amending ? "Send the amended return to HMRC" : "Send to HMRC";
+  element("sendStepHeading").textContent = accountsFirst
+    ? amending
+      ? "Send the revised accounts to Companies House and the amended return to HMRC"
+      : "Send to Companies House and HMRC"
+    : sendsToHmrc;
   const order = element("sendStepOrder");
   order.style.display = sending.mode === "both" ? "block" : "none";
   order.textContent = accountsFirst
     ? "Companies House gets the accounts first. When it accepts them, the Company Tax Return goes to HMRC."
     : "Companies House accepted the accounts. The Company Tax Return is the one filing left to send.";
   element("companyAuthCodeGroup").style.display = accountsFirst ? "block" : "none";
-  element("submitReturnBtn").textContent = accountsFirst ? "Send to Companies House, then HMRC" : "Submit to HMRC";
+  element("revisionGroup").style.display = accountsFirst && sending.amendment?.accounts ? "block" : "none";
+  element("submitReturnBtn").textContent = accountsFirst
+    ? amending
+      ? "Send the revised accounts, then the amended return"
+      : "Send to Companies House, then HMRC"
+    : amending
+      ? "Submit the amended return to HMRC"
+      : "Submit to HMRC";
 }
 
 function scenarioHeaders() {
@@ -1294,7 +1324,13 @@ function companiesHouseRequest(companyAuthCode) {
   const smallCompany = previewRequest.smallCompany
     ? { smallCompany: { ...previewRequest.smallCompany, filleted: sending.copy === "filleted" } }
     : {};
-  return { ...previewRequest, ...smallCompany, companyAuthCode, jointFilingId: sending.jointFilingId };
+  return {
+    ...previewRequest,
+    ...smallCompany,
+    companyAuthCode,
+    jointFilingId: sending.jointFilingId,
+    ...(sending.revision ? { revision: sending.revision } : {}),
+  };
 }
 
 function taxReturnRequest(gatewayUserId, gatewayPassword) {
@@ -1304,17 +1340,22 @@ function taxReturnRequest(gatewayUserId, gatewayPassword) {
     gatewayUserId,
     gatewayPassword,
     ...(sending.jointFilingId ? { jointFilingId: sending.jointFilingId } : {}),
+    ...(sending.revision ? { revision: sending.revision } : {}),
+    ...(sending.amendment ? { amended: true } : {}),
   };
 }
 
 // The accounts are with Companies House, so the figures they came from cannot change here. The tax answers can.
-function lockAccounts() {
-  const locked = [
+function accountsControls() {
+  return [
     ...element("section-accounts").querySelectorAll("input, textarea"),
     ...[...STATEMENT_FIELDS.map(({ id }) => id), MICRO_STATEMENT_FIELD.id, "periodStart", "periodEnd"].map(element),
     ...document.querySelectorAll('input[name="sendTo"], input[name="companiesHouseCopy"]'),
   ];
-  for (const control of locked) control.disabled = true;
+}
+
+function lockAccounts() {
+  for (const control of accountsControls()) control.disabled = true;
   element("booksImport").hidden = true;
   element("accountsLockNote")?.remove();
   const { submissionNumber } = sending.companiesHouse;
@@ -1329,8 +1370,68 @@ function lockAccounts() {
     );
 }
 
+// Amending the accounts reopens them: the figures and the approval date change, and the revised
+// accounts replace the ones Companies House holds.
+function unlockAccounts() {
+  for (const control of accountsControls()) control.disabled = false;
+  element("accountsLockNote")?.remove();
+  element("section-accounts")
+    .querySelector("h3")
+    .after(
+      create(
+        "p",
+        { id: "accountsLockNote", class: "hint", role: "status" },
+        "You are revising the accounts filed at Companies House. Change the figures and the date the directors approve the revised accounts.",
+      ),
+    );
+}
+
 function todayText() {
   return new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
+}
+
+// --- Amending an accepted filing -------------------------------------------------------------
+
+// The return is accepted, and so are the accounts when they went too: the customer can amend.
+function showAmendPanel() {
+  const accepted = sending.taxReturnAccepted && (sending.mode === "hmrc" || companiesHouseAccepted());
+  element("amendPanel").style.display = accepted ? "block" : "none";
+  element("amendAccountsBtn").style.display = accepted && sending.mode === "both" ? "inline-block" : "none";
+}
+
+function hideAmendPanel() {
+  element("amendPanel").style.display = "none";
+}
+
+// Both amendments reopen the form for the tax answers and send an amended return. Amending the
+// accounts also reopens the accounts and sends them to Companies House first as revised accounts.
+function startAmendment({ accounts }) {
+  companiesHousePollWindow++;
+  hideAmendPanel();
+  sending.amendment = { accounts };
+  sending.taxReturnSent = false;
+  sending.taxReturnAccepted = false;
+  if (accounts) {
+    sending.revision = { originalDateOfApproval: element("directorDateApproved").value, differences: "" };
+    sending.companiesHouse = null;
+    unlockAccounts();
+  }
+  element("revisionDifferences").value = "";
+  element("returnResult").replaceChildren();
+  element("returnRecord").replaceChildren();
+  element("returnIrmark").style.display = "none";
+  element("startAgainBtn").style.display = "none";
+  element("jointProgress").style.display = "none";
+  setOutcome();
+  persistJoint();
+  window.hideStatus();
+  showView("formView");
+}
+
+function revisionDifferencesProblem() {
+  const input = element("revisionDifferences");
+  if (input.value.trim()) return null;
+  return { input, message: "Say what the revised accounts change" };
 }
 
 function persistJoint() {
@@ -1428,7 +1529,7 @@ function renderCompaniesHouse() {
         )
       : "";
     outcome.replaceChildren(
-      outcomeTitle("Companies House accepted the accounts"),
+      outcomeTitle(sending.amendment?.accounts ? "Companies House accepted the revised accounts" : "Companies House accepted the accounts"),
       paragraph("Submission ", { strong: submissionNumber }, ". "),
       ...(copyLink ? [copyLink] : []),
       ...(sending.taxReturnAccepted
@@ -1436,7 +1537,9 @@ function renderCompaniesHouse() {
             create(
               "p",
               { id: "jointAccepted" },
-              "Both filings are accepted. Your receipts show them as one filing: ",
+              sending.amendment
+                ? "Both amended filings are accepted. Your receipts show them under the filing they amend: "
+                : "Both filings are accepted. Your receipts show them as one filing: ",
               create("a", { href: "../hmrc/receipt/receipts.html" }, "Your receipts"),
               ".",
             ),
@@ -1448,7 +1551,7 @@ function renderCompaniesHouse() {
   if (statusCode === "REJECT") {
     outcome.className = "outcome outcome--error";
     outcome.replaceChildren(
-      outcomeTitle("Companies House rejected the accounts"),
+      outcomeTitle(sending.amendment?.accounts ? "Companies House rejected the revised accounts" : "Companies House rejected the accounts"),
       paragraph("Submission ", { strong: submissionNumber }, "."),
     );
     errors.style.display = "block";
@@ -1573,6 +1676,7 @@ function companyAuthCodeProblem() {
 }
 
 async function runSend(send) {
+  hideAmendPanel();
   window.showLoading();
   window.hideStatus();
   try {
@@ -1599,6 +1703,14 @@ async function handleSubmitReturn() {
       return;
     }
     window.formErrors.clearFormErrors();
+    if (sending.amendment?.accounts) {
+      const differencesProblem = revisionDifferencesProblem();
+      if (differencesProblem) {
+        window.formErrors.showFormErrors([differencesProblem]);
+        return;
+      }
+      sending.revision = { ...sending.revision, differences: element("revisionDifferences").value.trim() };
+    }
   }
   await runSend(async () => {
     const headers = scenarioHeaders();
@@ -1654,8 +1766,12 @@ function startAgain() {
     companiesHouse: null,
     taxReturnSent: false,
     taxReturnAccepted: false,
+    amendment: null,
+    revision: null,
   });
   forgetJoint();
+  hideAmendPanel();
+  element("revisionDifferences").value = "";
   element("jointProgress").style.display = "none";
   element("booksImport").hidden = false;
   element("companyAuthCode").value = "";
@@ -1696,6 +1812,8 @@ element("tryAgainBtn").addEventListener("click", () => {
 element("sendCtNowBtn").addEventListener("click", handleSendCtNow);
 element("waitForCompaniesHouseBtn").addEventListener("click", handleWaitForCompaniesHouse);
 element("startAgainBtn").addEventListener("click", startAgain);
+element("amendAccountsBtn").addEventListener("click", () => startAmendment({ accounts: true }));
+element("amendReturnBtn").addEventListener("click", () => startAmendment({ accounts: false }));
 element("changeCompanyLink").addEventListener("click", (event) => {
   event.preventDefault();
   showView("companyView");

@@ -3940,10 +3940,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-61 Intake support email as private issues
 
 - **Use when:** a customer email to support@ must become a `support` and `maintainer-review` issue in the private repository, or the mailbox read scope is in question.
-- **Does:** support-mail-intake.yml (every 10 minutes and on dispatch) runs support-mail-intake.mjs, which reads the support inbox through the `gmail.readonly` service account `support-gmail-read` (identity.toml), skips our own and automated senders and threads already filed, and opens one issue per new customer thread with the thread id, sender and Message-ID and the text fenced as data. It prints counts only, and exits 0 while SUPPORT_GMAIL_READ_KEY is unset.
+- **Does:** support-mail-intake.yml (every 10 minutes and on dispatch) runs support-mail-intake.mjs, which reads the support inbox through the `gmail.readonly` service account `support-gmail-read` (identity.toml), skips our own and automated senders and threads already filed, and opens one issue per new customer thread with the thread id, sender and Message-ID and the text fenced as data. It prints counts only, and exits 0 while SUPPORT_GMAIL_READ_KEY is unset. The same workflow's daily `acceptance` job syncs the draft rows from `curated/support-drafts/`, runs support-draft-acceptance.mjs (accepted, edited, rejected, pending per draft older than seven days, by comparing the sent body's digest with the row's) and writes the summary row to `curated/support-draft-acceptance/`.
 - **Run:** `gh workflow run support-mail-intake.yml -f dry-run=true`
 - **Entry:** `scripts/support-mail-intake.mjs:`
-- **Files:** scripts/support-mail-intake.mjs, .github/workflows/support-mail-intake.yml, app/unit-tests/scripts/supportMailIntake.test.js, app/unit-tests/fixtures/supportMailIntake/, infra/google/gcp/identity.toml
+- **Files:** scripts/support-mail-intake.mjs, scripts/support-draft-acceptance.mjs, .github/workflows/support-mail-intake.yml, app/unit-tests/scripts/supportDraftAcceptance.test.js, app/unit-tests/scripts/supportMailIntake.test.js, app/unit-tests/fixtures/supportMailIntake/, infra/google/gcp/identity.toml
 - **Keywords:** support mail intake, gmail readonly, domain-wide delegation, support issues, maintainer-review, private repository
 - **Related:** OPS-56, DATA-42
 #### DATA-23 Classify visitor kind as human, bot or synthetic

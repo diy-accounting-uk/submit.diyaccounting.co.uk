@@ -913,7 +913,6 @@ test.describe("Operator Dashboard", () => {
 
         const heights = await page.evaluate(() => {
           const panels = {
-            objectivesContainer: document.getElementById("objectivesContainer"),
             visitorsPanel: document.getElementById("visitorsPanel"),
             experimentsPanel: document.getElementById("experimentsPanel"),
           };
@@ -931,6 +930,24 @@ test.describe("Operator Dashboard", () => {
         for (const [name, { reserved, rendered }] of Object.entries(heights)) {
           expect(reserved, `${name} reserves ${reserved}px for ${rendered}px of content`).toBeGreaterThanOrEqual(rendered);
         }
+      });
+    }
+  });
+
+  test.describe("released objectives reservation", () => {
+    for (const width of [390, 700, 900, 1280]) {
+      test(`leaves under 80px between the last objective and the Visitors panel at ${width}px wide`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await setupRoutes(page, { snapshotBody: fullShapeSnapshot() });
+        await loadDashboard(page);
+        await expect(page.locator(".objective[data-objective-id]")).toHaveCount(8);
+
+        const gap = await page.evaluate(() => {
+          const objectives = document.querySelectorAll(".objective[data-objective-id]");
+          const lastBottom = objectives[objectives.length - 1].getBoundingClientRect().bottom;
+          return document.getElementById("visitorsPanel").getBoundingClientRect().top - lastBottom;
+        });
+        expect(gap).toBeLessThan(80);
       });
     }
   });

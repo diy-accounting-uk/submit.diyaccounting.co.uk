@@ -425,7 +425,7 @@ display = "never"
 bundles = ["resident", "resident-pro"]
 tokenCost = 1
 metered = true
-paths = ["hmrc/itsa/annualSubmission.html", "hmrc/itsa/adjustments.html", "hmrc/itsa/ukPropertyAnnualSubmission.html", "hmrc/itsa/ukPropertyAdjustments.html", "hmrc/itsa/lossesAndClaims.html", "hmrc/itsa/taxLiabilityAdjustments.html"]
+paths = ["hmrc/itsa/annualSubmission.html", "hmrc/itsa/adjustments.html", "hmrc/itsa/ukPropertyAnnualSubmission.html", "hmrc/itsa/ukPropertyAdjustments.html", "hmrc/itsa/foreignPropertyAnnualSubmission.html", "hmrc/itsa/foreignPropertyAdjustments.html", "hmrc/itsa/lossesAndClaims.html", "hmrc/itsa/taxLiabilityAdjustments.html"]
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 

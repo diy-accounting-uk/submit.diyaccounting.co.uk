@@ -12,7 +12,10 @@
  * With --micro the attachment is the book's company filing as a micro-entity: FRS 105 accounts with
  * the profit and loss account the return carries.
  *
- * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro]
+ * With --amended the return is an amended return (ReturnType="amended") and the attached accounts
+ * are revised accounts that replace the original accounts.
+ *
+ * Usage: node scripts/hmrc-tpvs-ct600.js [--book <dir>] [--out <dir>] [--utr <10 digits>] [--prior <file>] [--micro] [--amended]
  *   --book defaults to fixtures/diya-gl/precision-code-ltd; --out to target/hmrc-tpvs;
  *   --utr to 8596148860, the UTR HMRC's own CT600 samples use; --prior names a JSON file of the
  *   prior year's profit and loss lines, which the accounts then show as the comparative column
@@ -44,6 +47,7 @@ const bookDirectory = argument("--book", "fixtures/diya-gl/precision-code-ltd");
 const outputDirectory = argument("--out", "target/hmrc-tpvs");
 const utr = argument("--utr", "8596148860");
 const micro = process.argv.includes("--micro");
+const amended = process.argv.includes("--amended");
 // The book holds no registered office; the TPVS fixture company takes a labelled test address unless one is given.
 const registeredOffice = {
   addressLine1: argument("--registered-office-line1", "1 Test Street (TPVS test address)"),
@@ -70,6 +74,12 @@ const { boxes, computationLines, losses, carryBack, periodStart, periodEnd, figu
 });
 
 const depreciation = figures.depreciation ?? 0;
+const revision = amended
+  ? {
+      originalDateOfApproval: periodEnd,
+      differences: "The tax charge in the profit and loss account is restated to match the amended return.",
+    }
+  : undefined;
 const microAccounts = micro ? await deriveMicroEntityAccounts(session) : undefined;
 const accountsIxbrl = micro
   ? buildMicroEntityAccounts({
@@ -82,6 +92,7 @@ const accountsIxbrl = micro
       averageNumberOfEmployees: accounts.averageNumberOfEmployees,
       directorName,
       dateOfApproval: periodEnd,
+      ...(revision ? { revision } : {}),
       balanceSheet: { current: microAccounts.balanceSheet.currentYear, prior: microAccounts.balanceSheet.priorYear },
       profitAndLoss: { current: microProfitAndLossYear(accounts.profitAndLoss.currentYear, depreciation) },
     })
@@ -98,6 +109,7 @@ const accountsIxbrl = micro
       directors: accounts.directors.length > 0 ? accounts.directors : [directorName],
       directorName,
       dateOfApproval: periodEnd,
+      ...(revision ? { revision } : {}),
       balanceSheet: { current: accounts.balanceSheet.currentYear, prior: accounts.balanceSheet.priorYear },
       profitAndLoss: {
         current: accounts.profitAndLoss.currentYear,
@@ -117,7 +129,7 @@ const computationsIxbrl = buildCtComputations({
   carryBack,
   tradeOutsideUk: figures.lossOutsideUk === true,
 });
-const irEnvelopeXml = buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl });
+const irEnvelopeXml = buildCt600IrEnvelope({ boxes, accountsIxbrl, computationsIxbrl, amended });
 const { xml, irmark } = buildCt600SubmissionRequest({
   senderId: "tpvs",
   password: "tpvs",
@@ -130,9 +142,10 @@ const { xml, irmark } = buildCt600SubmissionRequest({
 });
 
 mkdirSync(outputDirectory, { recursive: true });
-writeFileSync(join(outputDirectory, "ct600-submission.xml"), xml);
+const outputPrefix = amended ? "ct600-amended" : "ct600";
+writeFileSync(join(outputDirectory, `${outputPrefix}-submission.xml`), xml);
 const result = await postToTransactionEngine(TPVS_CT600_URL, xml);
-writeFileSync(join(outputDirectory, "tpvs-response.xml"), result.data);
+writeFileSync(join(outputDirectory, `${outputPrefix}-tpvs-response.xml`), result.data);
 if (result.status !== 200) {
   console.error(
     `TPVS answered HTTP ${result.status}; an Akamai "Access Denied" page has followed bursts of posts, and a retry a minute later has passed`,

@@ -47,9 +47,8 @@ const HMRC_API_VERSION = "7.0";
 const BUSINESS_ID_PATTERN = /^X[A-Za-z0-9]IS\d{11}$/;
 
 // The trigger endpoint is one endpoint for every income type this repository submits for;
-// typeOfBusiness in its body chooses which. Foreign property is not a journey this repository
-// builds, so it is not in this set even though HMRC's trigger accepts it too.
-const VALID_TYPES_OF_BUSINESS = ["self-employment", "uk-property"];
+// typeOfBusiness in its body chooses which.
+const VALID_TYPES_OF_BUSINESS = ["self-employment", "uk-property", "foreign-property"];
 
 /**
  * Build the Business Source Adjustable Summary v7.0 "Trigger a Business Source Adjustable

@@ -43,6 +43,8 @@ on:
           - 'itsaSelfEmploymentPeriodBehaviour'
           - 'itsaUkPropertyPeriodBehaviour'
           - 'itsaUkPropertyAnnualSubmissionBehaviour'
+          - 'itsaForeignPropertyPeriodBehaviour'
+          - 'itsaForeignPropertyAnnualSubmissionBehaviour'
           - 'itsaLossesAndClaimsBehaviour'
           - 'getVatReturnBehaviour'
           - 'postVatReturnFraudPreventionHeadersBehaviour'

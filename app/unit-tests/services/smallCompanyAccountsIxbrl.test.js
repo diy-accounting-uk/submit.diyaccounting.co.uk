@@ -646,6 +646,13 @@ describe("the share capital note and the tax policy of a small company", () => {
     expect(single).toMatch(/>1<\/ix:nonFraction> <ix:nonNumeric[^>]*>ordinary<\/ix:nonNumeric> share of £/);
   });
 
+  test("prints 500 ordinary shares of £0.20 each for a £100 share capital", () => {
+    const fifty = buildSmallCompanyAccounts({ ...input, shareCapital: { shareClass: "ordinaryShares", nominalValue: 0.2 } });
+    expect(fifty).toMatch(/name="core:NumberSharesIssuedFullyPaid"[^>]*unitRef="shares"[^>]*>500</);
+    expect(fifty).toMatch(/name="core:ParValueShare"[^>]*decimals="INF"[^>]*>0\.20</);
+    expect(parseXmlDocument(fifty).getElementsByTagName("body")[0].textContent).toContain("500 ordinary shares of £0.20 each");
+  });
+
   test("tags the tax policy in the accounting policies note", () => {
     expect(xhtml).toMatch(/name="core:TaxPolicy" contextRef="y\d{4}">The tax expense for the year comprises current tax/);
   });
@@ -1082,4 +1089,30 @@ describe("the debtors, directors' loan, group and provisions lines of a small co
   function SAMPLE_INPUT_WITH_SPLIT() {
     return withYears(split, { ...PRIOR_BALANCE_SHEET, tradeDebtors: 2000 });
   }
+});
+
+describe("services/smallCompanyAccountsIxbrl revised accounts", () => {
+  const REVISION = {
+    originalDateOfApproval: "2026-09-01",
+    differences: "Creditors falling due within one year are restated to include a late invoice.",
+  };
+
+  test("flags the report as revised, states the replacement and names what changed", () => {
+    const xhtml = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, revision: REVISION, dateOfApproval: "2026-10-20" });
+    expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("true");
+    expect(xhtml).toContain("These are revised accounts. They replace the original accounts of the company");
+    expect(xhtml).toContain("which were approved on 1 September 2026");
+    expect(xhtml).toContain("Creditors falling due within one year are restated to include a late invoice.");
+  });
+
+  test("a filleted revision is flagged the same way", () => {
+    const xhtml = buildSmallCompanyAccounts({ ...SAMPLE_INPUT, filleted: true, revision: REVISION, dateOfApproval: "2026-10-20" });
+    expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("true");
+  });
+
+  test("an original filing carries no revision page", () => {
+    const xhtml = buildSmallCompanyAccounts(SAMPLE_INPUT);
+    expect(xhtml).not.toContain("These are revised accounts");
+    expect(hiddenText(xhtml, "bus:ReportAnAmendedRevisedVersionPreviouslyFiledReportTruefalse")).toBe("false");
+  });
 });

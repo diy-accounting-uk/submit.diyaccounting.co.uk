@@ -266,3 +266,67 @@ window.showSavedRecord = function(){ return Promise.resolve(); };`,
     await expect(page.locator("#sba-1-amount")).toBeEnabled();
   });
 });
+
+test.describe("foreign property annual: Structures and Buildings Allowance claims for each entry", () => {
+  test.beforeEach(async ({ page }) => {
+    await openAnnualPage(
+      page,
+      "foreignPropertyAnnualSubmission.html",
+      `window.putForeignPropertyAnnual = function(details){ window.__sent.push(details); return Promise.resolve({}); };
+window.getGovClientHeaders = function(){ return Promise.resolve({}); };
+window.resolveSyntheticTestScenario = function(){ return null; };
+window.getForeignPropertyAnnual = function(){ return Promise.resolve({}); };`,
+    );
+    await page.locator("#nino").fill("QQ123456C");
+    await page.locator("#businessId").fill("XAIS12345678910");
+    await page.locator("#taxYear").selectOption("2025-26");
+    await page.locator("#loadBtn").click();
+    await expect(page.locator("#annualEditForm")).toBeVisible();
+    await page.locator("#fa-add").click();
+    await page.locator("#fa-1-country").selectOption("FRA");
+    await page.locator("#fa-add").click();
+    await page.locator("#fa-2-country").selectOption("ESP");
+  });
+
+  test("sends each entry's claims under that entry", async ({ page }) => {
+    await page.locator("#fa-1-allowanceTypeItemised").check();
+    await page.locator("#fa-1-sba-add").click();
+    await page.locator("#fa-1-sba-1-amount").fill("300");
+    await page.locator("#fa-1-sba-1-qualifyingDate").fill("2023-04-06");
+    await page.locator("#fa-1-sba-1-qualifyingAmountExpenditure").fill("7500");
+    await page.locator("#fa-1-sba-1-buildingNumber").fill("4");
+    await page.locator("#fa-1-sba-1-postcode").fill("M1 1AA");
+    await page.locator("#fa-2-allowanceTypeItemised").check();
+    await page.locator("#fa-2-sba-add").click();
+    await page.locator("#fa-2-sba-1-amount").fill("90");
+    await page.locator("#fa-2-sba-1-buildingName").fill("Zone block");
+    await page.locator("#fa-2-sba-1-postcode").fill("LS1 1AA");
+    await page.locator("#saveBtn").click();
+
+    await expect.poll(() => page.evaluate(() => window.__sent.length)).toBe(1);
+    const { foreignProperty } = await page.evaluate(() => window.__sent[0]);
+    expect(foreignProperty[0].allowances.structuredBuildingAllowance).toEqual([
+      {
+        amount: 300,
+        firstYear: { qualifyingDate: "2023-04-06", qualifyingAmountExpenditure: 7500 },
+        building: { number: "4", postcode: "M1 1AA" },
+      },
+    ]);
+    expect(foreignProperty[1].allowances.structuredBuildingAllowance).toEqual([
+      { amount: 90, building: { name: "Zone block", postcode: "LS1 1AA" } },
+    ]);
+  });
+
+  test("removing a claim in one entry renumbers that entry only", async ({ page }) => {
+    await page.locator("#fa-1-allowanceTypeItemised").check();
+    await page.locator("#fa-2-allowanceTypeItemised").check();
+    await page.locator("#fa-1-sba-add").click();
+    await page.locator("#fa-1-sba-add").click();
+    await page.locator("#fa-2-sba-add").click();
+    await page.locator("#fa-1-sba-claims .sba-claim").first().getByRole("button", { name: "Remove claim" }).click();
+
+    await expect(page.locator("#fa-1-sba-claims .sba-claim")).toHaveCount(1);
+    await expect(page.locator("#fa-2-sba-claims .sba-claim")).toHaveCount(1);
+    await expect(page.locator("#fa-1-sba-claims legend").nth(1)).toHaveText("Claim 1");
+  });
+});

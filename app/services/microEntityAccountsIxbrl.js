@@ -16,6 +16,7 @@ import {
   qname,
   buildContexts,
   formatMonetary,
+  formatNominalValue,
   periodEndedPhrase,
   renderStatement,
   renderFixedFact,
@@ -37,6 +38,7 @@ import {
   accountsStatusMember,
   accountantsReportPage,
   renderCompanyDescriptionFacts,
+  revisionPage,
   companyInformationNote,
   shareNoun,
 } from "./accountsIxbrlCommon.js";
@@ -193,6 +195,7 @@ function withOptionalHeadings(balanceSheetYears) {
  * @param {number} input.averageNumberOfEmployees
  * @param {string} input.directorName
  * @param {string} input.dateOfApproval - ISO date
+ * @param {{originalDateOfApproval: string, differences: string}} [input.revision] - makes the document revised accounts that replace accounts already filed
  * @param {{accountantsName: string, statement: string}} [input.accountantsReport] - adds the accountants' report page and the audit exempt with accountants' report status
  * @param {object} input.balanceSheet
  * @param {object} input.balanceSheet.current - fixedAssets, currentAssets, creditorsWithinOneYear,
@@ -237,7 +240,14 @@ export function buildMicroEntityAccounts(input) {
   hiddenFacts.push(...renderProductionSoftwareFacts(refs.current));
   hiddenFacts.push(...renderReportHeaderFacts({ refs, entityIdentifierXml, periodXml, additionalContexts }));
   hiddenFacts.push(
-    ...renderCompanyDescriptionFacts({ companyNumber: input.companyNumber, refs, entityIdentifierXml, periodXml, additionalContexts }),
+    ...renderCompanyDescriptionFacts({
+      companyNumber: input.companyNumber,
+      refs,
+      entityIdentifierXml,
+      periodXml,
+      additionalContexts,
+      revised: Boolean(input.revision),
+    }),
   );
   hiddenFacts.push(
     `<ix:nonNumeric name="${qname(CONCEPTS.reportIncludesDetailedProfitLossStatement)}" contextRef="${refs.current}">${profitAndLoss ? "true" : "false"}</ix:nonNumeric>`,
@@ -353,8 +363,8 @@ export function buildMicroEntityAccounts(input) {
       title: "Called up share capital",
       html:
         unpaid > 0
-          ? `<p>Allotted and called up: <ix:nonFraction name="${qname(CONCEPTS.numberSharesAllotted)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesAllotted)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesAllotted)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction> each, of which <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${paidVerb} fully paid.</p>`
-          : `<p>Allotted, called up and fully paid: <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesIssued)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${input.nominalValue}</ix:nonFraction> each.</p>`,
+          ? `<p>Allotted and called up: <ix:nonFraction name="${qname(CONCEPTS.numberSharesAllotted)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesAllotted)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesAllotted)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${formatNominalValue(input.nominalValue)}</ix:nonFraction> each, of which <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${paidVerb} fully paid.</p>`
+          : `<p>Allotted, called up and fully paid: <ix:nonFraction name="${qname(CONCEPTS.numberSharesIssuedFullyPaid)}" contextRef="${shareClassInstantContextId}" unitRef="shares" decimals="0" format="${NUMBER_FORMAT}">${formatMonetary(sharesIssued)}</ix:nonFraction> ${SHARE_CLASS_LABEL[input.shareClass]} ${shareNoun(sharesIssued)} of £<ix:nonFraction name="${qname(CONCEPTS.nominalValueAllottedShareCapital)}" contextRef="${shareClassDurationContextId}" unitRef="GBP" decimals="INF">${formatNominalValue(input.nominalValue)}</ix:nonFraction> each.</p>`,
     });
     shareCapitalNote = notes.length;
   }
@@ -373,6 +383,14 @@ export function buildMicroEntityAccounts(input) {
       })}`
     : "";
 
+  const revisionHtml = input.revision
+    ? `\n${revisionPage({
+        heading: heading("Revised accounts", `for the ${escapeXmlText(periodEndedPhrase(input.periodStart, input.periodEnd))}`),
+        periodEnd: input.periodEnd,
+        revision: input.revision,
+      })}`
+    : "";
+
   const bodyHtml = `${coverPage({
     refs,
     companyName: input.companyName,
@@ -380,7 +398,7 @@ export function buildMicroEntityAccounts(input) {
     title: input.dormant ? "Unaudited dormant micro-entity accounts" : "Unaudited micro-entity accounts",
     periodStart: input.periodStart,
     periodEnd: input.periodEnd,
-  })}${accountantsPage}
+  })}${revisionHtml}${accountantsPage}
 <div class="page">
 ${heading("Balance sheet", `as at ${renderDateFact("balanceSheetDate", refs.currentInstant, input.periodEnd)}`)}${recordTable({
     columns,

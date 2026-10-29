@@ -75,6 +75,7 @@ class MetricFilterLogGroupCdkResourceTest {
                 submitApplication.authStack,
                 submitApplication.hmrcStack,
                 submitApplication.hmrcItsaStack,
+                submitApplication.hmrcItsaPropertyStack,
                 submitApplication.companiesHouseStack,
                 submitApplication.accountStack,
                 submitApplication.billingStack,

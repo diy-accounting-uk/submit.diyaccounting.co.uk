@@ -73,6 +73,7 @@ class HmrcEndpointSelectionCdkResourceTest {
         var clientIds = lambdaEnvValues(application.hmrcStack, "HMRC_CLIENT_ID");
         var baseUris = new HashSet<>(lambdaEnvValues(application.hmrcStack, "HMRC_BASE_URI"));
         baseUris.addAll(lambdaEnvValues(application.hmrcItsaStack, "HMRC_BASE_URI"));
+        baseUris.addAll(lambdaEnvValues(application.hmrcItsaPropertyStack, "HMRC_BASE_URI"));
         var agentBaseUris = lambdaEnvValues(application.accountStack, "HMRC_AGENT_AUTHORISATION_BASE_URI");
 
         assertEquals(Set.of(SANDBOX_CLIENT_ID), clientIds);
@@ -91,6 +92,7 @@ class HmrcEndpointSelectionCdkResourceTest {
         var clientIds = lambdaEnvValues(application.hmrcStack, "HMRC_CLIENT_ID");
         var baseUris = new HashSet<>(lambdaEnvValues(application.hmrcStack, "HMRC_BASE_URI"));
         baseUris.addAll(lambdaEnvValues(application.hmrcItsaStack, "HMRC_BASE_URI"));
+        baseUris.addAll(lambdaEnvValues(application.hmrcItsaPropertyStack, "HMRC_BASE_URI"));
 
         assertEquals(Set.of(PRODUCTION_CLIENT_ID), clientIds);
         assertEquals(Set.of(PRODUCTION_BASE_URI), baseUris);

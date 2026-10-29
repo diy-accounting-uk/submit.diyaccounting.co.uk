@@ -19,7 +19,7 @@ import {
 import { putAsyncRequest, getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { putReceipt } from "../data/dynamoDbReceiptRepository.js";
 import { publishActivityEvent, resolveActorClass } from "../lib/activityAlert.js";
-import { jointFilingFields } from "./jointFiling.js";
+import { jointFilingFields, amendedFields } from "./jointFiling.js";
 import { chargeTokenOnSuccess } from "./tokenEnforcement.js";
 
 const ACCOUNTS_RECEIPT_KIND = "companies-house-accounts";
@@ -84,7 +84,10 @@ export async function pollSubmission({ userSub, submissionNumber, govTestScenari
   // one submission number always answers with exactly one.
   const status = parsed.statuses[0];
 
-  const jointFiling = jointFilingFields(persistedRequest.data?.jointFilingId);
+  const jointFiling = {
+    ...jointFilingFields(persistedRequest.data?.jointFilingId),
+    ...amendedFields(persistedRequest.data?.amended === true),
+  };
 
   if (status.statusCode === "REJECT") {
     await putAsyncRequest(userSub, submissionNumber, "failed", { ...status, kind, ...jointFiling }, asyncRequestsTableName);

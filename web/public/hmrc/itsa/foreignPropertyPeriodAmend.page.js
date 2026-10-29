@@ -103,7 +103,7 @@ async function loadProperties(criteria, accessToken) {
     criteria.runFraudPreventionHeaderValidation,
     criteria.testScenario,
   );
-  figures.setProperties(result?.propertyDetails || []);
+  figures.setProperties(result?.foreignPropertyDetails || []);
 }
 
 // HMRC's retrieve is not stateful in the sandbox: with no Gov-Test-Scenario it answers not-found.

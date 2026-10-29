@@ -1326,6 +1326,147 @@ export async function adjustBsasUkProperty(
 }
 
 /**
+ * Retrieve the annual submission of a foreign property business from HMRC.
+ * @param {string} nino - National Insurance number
+ * @param {string} businessId - HMRC business ID
+ * @param {string} taxYear - Tax year, e.g. "2025-26"
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a query parameter
+ * @returns {Promise<object>} Response containing foreignFhlEea (2024-25 and before) and foreignProperty
+ */
+export async function getForeignPropertyAnnual(
+  nino,
+  businessId,
+  taxYear,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const params = new URLSearchParams({ nino, businessId, taxYear });
+  if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+  if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+  return foreignPropertyRequest(
+    "retrieve the annual submission",
+    "GET",
+    `/api/v1/hmrc/itsa/foreign-property/annual?${params}`,
+    null,
+    accessToken,
+    govClientHeaders,
+    null,
+  );
+}
+
+/**
+ * Create or amend the annual submission of a foreign property business with HMRC.
+ * @param {object} annualDetails - { nino, businessId, taxYear, foreignFhlEea?, foreignProperty? }. foreignProperty holds
+ *   one entry for each country (2025-26 and before) or property (2026-27 on), each with adjustments and allowances.
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a header
+ * @returns {Promise<object>} Response, empty on success
+ */
+export async function putForeignPropertyAnnual(
+  annualDetails,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  return foreignPropertyRequest(
+    "save the annual submission",
+    "PUT",
+    "/api/v1/hmrc/itsa/foreign-property/annual",
+    {
+      nino: annualDetails.nino,
+      businessId: annualDetails.businessId,
+      taxYear: annualDetails.taxYear,
+      runFraudPreventionHeaderValidation,
+      foreignFhlEea: annualDetails.foreignFhlEea,
+      foreignProperty: annualDetails.foreignProperty,
+    },
+    accessToken,
+    govClientHeaders,
+    testScenario,
+  );
+}
+
+/**
+ * Retrieve a triggered ITSA business source adjustable summary (BSAS) for foreign property.
+ * @param {string} nino - National Insurance number
+ * @param {string} calculationId - The BSAS calculation ID from the trigger response
+ * @param {string} taxYear - Tax year, e.g. "2025-26"
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a query parameter
+ * @returns {Promise<object>} Response containing metadata, inputs and adjustableSummaryCalculation with one
+ *   countryLevelDetail entry for each country
+ */
+export async function getBsasForeignProperty(
+  nino,
+  calculationId,
+  taxYear,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  const params = new URLSearchParams({ nino, calculationId, taxYear });
+  if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+  if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
+  return foreignPropertyRequest(
+    "retrieve the year-end summary",
+    "GET",
+    `/api/v1/hmrc/itsa/bsas/foreign-property?${params}`,
+    null,
+    accessToken,
+    govClientHeaders,
+    null,
+  );
+}
+
+/**
+ * Submit adjustments (or zeroAdjustments) to a triggered ITSA foreign property adjustable summary.
+ * @param {object} adjustDetails - { nino, calculationId, taxYear, foreignProperty?, foreignFhlEea?, zeroAdjustments? }. foreignProperty
+ *   holds one entry for each country (2025-26 and before) or property (2026-27 on), each with income and expenses. foreignFhlEea
+ *   holds the income and expenses of furnished holiday lettings in the EEA, for 2024-25 and before.
+ * @param {string} accessToken - HMRC access token
+ * @param {object} govClientHeaders - Gov-Client headers
+ * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
+ * @param {string|null} testScenario - Optional HMRC sandbox Gov-Test-Scenario value, sent as a header
+ * @returns {Promise<object>} Response, empty on success
+ */
+export async function adjustBsasForeignProperty(
+  adjustDetails,
+  accessToken,
+  govClientHeaders = {},
+  runFraudPreventionHeaderValidation = false,
+  testScenario = null,
+) {
+  return foreignPropertyRequest(
+    "submit the year-end adjustment",
+    "POST",
+    "/api/v1/hmrc/itsa/bsas/foreign-property/adjust",
+    {
+      nino: adjustDetails.nino,
+      calculationId: adjustDetails.calculationId,
+      taxYear: adjustDetails.taxYear,
+      runFraudPreventionHeaderValidation,
+      foreignProperty: adjustDetails.foreignProperty,
+      foreignFhlEea: adjustDetails.foreignFhlEea,
+      zeroAdjustments: adjustDetails.zeroAdjustments,
+    },
+    accessToken,
+    govClientHeaders,
+    testScenario,
+  );
+}
+
+/**
  * Trigger an ITSA tax calculation (in-year estimate or intent-to-finalise) with HMRC. HMRC's
  * calculation runs asynchronously; the worker behind this endpoint waits and retrieves it, so
  * this call answers with the finished calculation body.
@@ -1735,6 +1876,10 @@ if (typeof window !== "undefined") {
   window.getForeignPropertyDetails = getForeignPropertyDetails;
   window.postForeignPropertyDetails = postForeignPropertyDetails;
   window.putForeignPropertyDetails = putForeignPropertyDetails;
+  window.getForeignPropertyAnnual = getForeignPropertyAnnual;
+  window.putForeignPropertyAnnual = putForeignPropertyAnnual;
+  window.getBsasForeignProperty = getBsasForeignProperty;
+  window.adjustBsasForeignProperty = adjustBsasForeignProperty;
   window.postForeignPropertyPeriod = postForeignPropertyPeriod;
   window.putForeignPropertyPeriod = putForeignPropertyPeriod;
   window.getForeignPropertyPeriod = getForeignPropertyPeriod;

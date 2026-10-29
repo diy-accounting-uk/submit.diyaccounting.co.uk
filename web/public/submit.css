@@ -1759,6 +1759,20 @@ textarea.input--error {
   margin-top: var(--space-5);
 }
 
+/* A heading that follows a row of buttons starts a new block. */
+.button-group + h3 {
+  margin-top: var(--space-5);
+}
+
+/* Under 601px every button in a group takes the full width, so primary and secondary match. */
+@media (max-width: 600px) {
+  .button-group .btn,
+  .button-group .secondary-button {
+    width: 100%;
+    margin: 0;
+  }
+}
+
 @media (min-width: 601px) {
   .button-group .btn {
     width: auto;
@@ -2139,10 +2153,13 @@ caption {
   }
 
   .results-table:not(.review-table) td.receipt-cell {
-    grid-template-columns: minmax(6rem, 40%) auto auto;
-    justify-content: start;
-    align-items: center;
+    grid-template-columns: minmax(6rem, 40%) minmax(0, 1fr);
+    align-items: start;
     gap: var(--space-3);
+  }
+
+  .results-table:not(.review-table) td.date-column {
+    white-space: normal;
   }
 
   .results-table:not(.review-table) td.action-column {
@@ -2167,8 +2184,8 @@ caption {
   }
 
   .results-table:not(.review-table) td.receipt-cell .receipt-label {
-    white-space: nowrap;
-    overflow-wrap: normal;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 }
 
@@ -5425,12 +5442,13 @@ table.observations th {
 
 /* The containers below are empty until the snapshot arrives. Each reserves the height
    measured on a full snapshot so the fill does not push what sits below; a failed load
-   releases the reservation. */
+   or a rendered snapshot releases the reservation. */
 #objectivesContainer {
   min-height: 4400px;
 }
 
-#objectivesContainer.objectives-failed {
+#objectivesContainer.objectives-failed,
+#objectivesContainer.objectives-settled {
   min-height: 0;
 }
 
@@ -5461,7 +5479,8 @@ table.observations th {
     min-height: 6950px;
   }
 
-  #objectivesContainer.objectives-failed {
+  #objectivesContainer.objectives-failed,
+  #objectivesContainer.objectives-settled {
     min-height: 0;
   }
 
