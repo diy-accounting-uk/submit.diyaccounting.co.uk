@@ -1431,8 +1431,9 @@ export async function getBsasForeignProperty(
 
 /**
  * Submit adjustments (or zeroAdjustments) to a triggered ITSA foreign property adjustable summary.
- * @param {object} adjustDetails - { nino, calculationId, taxYear, foreignProperty?, zeroAdjustments? }. foreignProperty holds one
- *   entry for each country (2025-26 and before) or property (2026-27 on), each with income and expenses.
+ * @param {object} adjustDetails - { nino, calculationId, taxYear, foreignProperty?, foreignFhlEea?, zeroAdjustments? }. foreignProperty
+ *   holds one entry for each country (2025-26 and before) or property (2026-27 on), each with income and expenses. foreignFhlEea
+ *   holds the income and expenses of furnished holiday lettings in the EEA, for 2024-25 and before.
  * @param {string} accessToken - HMRC access token
  * @param {object} govClientHeaders - Gov-Client headers
  * @param {boolean} runFraudPreventionHeaderValidation - Whether to validate fraud prevention headers (sandbox only)
@@ -1456,6 +1457,7 @@ export async function adjustBsasForeignProperty(
       taxYear: adjustDetails.taxYear,
       runFraudPreventionHeaderValidation,
       foreignProperty: adjustDetails.foreignProperty,
+      foreignFhlEea: adjustDetails.foreignFhlEea,
       zeroAdjustments: adjustDetails.zeroAdjustments,
     },
     accessToken,

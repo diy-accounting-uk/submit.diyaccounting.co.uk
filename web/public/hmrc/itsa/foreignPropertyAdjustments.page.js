@@ -30,6 +30,13 @@ const ITEMISED_EXPENSE_FIELDS = [
 
 const CONSOLIDATED_FIELD = { id: "consolidatedExpenses", label: "Expenses as one total" };
 
+// Furnished holiday lettings in the EEA, adjusted up to 2024-25: rents only, and no residential
+// finance costs.
+const FHL_PREFIX = "adjust-fhl";
+const FHL_NAME = "Furnished holiday lettings in the EEA";
+const FHL_INCOME_FIELDS = [INCOME_FIELDS[0]];
+const FHL_ITEMISED_EXPENSE_FIELDS = ITEMISED_EXPENSE_FIELDS.filter((field) => field.id !== "residentialFinancialCost");
+
 let triggered = { nino: "", taxYear: "", calculationId: "" };
 let adjustableEntries = [];
 
@@ -143,6 +150,32 @@ function mountAdjustmentFields() {
   );
 }
 
+function hasFhlSection(taxYear) {
+  return window.itsaSubmissionModel.resolveItsaSubmissionModel(taxYear) === "dated";
+}
+
+function mountFhlFields(taxYear) {
+  const container = document.getElementById("adjustFhl");
+  if (!hasFhlSection(taxYear)) {
+    container.replaceChildren();
+    return;
+  }
+  container.replaceChildren(
+    el("fieldset", { className: "form-group foreign-property-entry", id: FHL_PREFIX }, [
+      el("legend", { textContent: FHL_NAME }),
+      el("p", { className: "hint", textContent: "Only for tax years up to 2024-25. Leave blank if you had none." }),
+      el("h4", { textContent: "Income" }),
+      ...FHL_INCOME_FIELDS.map((field) => moneyGroup(FHL_PREFIX, field)),
+      el("details", { className: "field-group", id: `${FHL_PREFIX}-expenses` }, [
+        el("summary", { textContent: "Expenses" }),
+        el("p", { className: "hint", textContent: "Enter the itemised expenses or one total, not both." }),
+        ...FHL_ITEMISED_EXPENSE_FIELDS.map((field) => moneyGroup(FHL_PREFIX, field)),
+        moneyGroup(FHL_PREFIX, CONSOLIDATED_FIELD),
+      ]),
+    ]),
+  );
+}
+
 function displaySummary(bsas, taxYear) {
   const calculation = bsas?.adjustableSummaryCalculation;
   HmrcFieldTable.mountFieldTable(document.getElementById("summaryDetails"), HmrcFieldTable.foreignPropertySummaryRows(calculation), {
@@ -163,6 +196,7 @@ function displaySummary(bsas, taxYear) {
     }),
   );
   mountAdjustmentFields();
+  mountFhlFields(taxYear);
 }
 
 async function runTriggerAndRetrieve(criteria, accessToken) {
@@ -294,25 +328,38 @@ async function handleTriggerFormSubmission(event) {
 }
 
 // One entry's figures as { income, expenses }, leaving out a field that is blank.
-function readEntryFigures(prefix) {
+function readEntryFigures(prefix, incomeFields = INCOME_FIELDS, itemisedExpenseFields = ITEMISED_EXPENSE_FIELDS) {
   const read = (field) => {
     const text = document.getElementById(`${prefix}-${field.id}`).value;
     return String(text).trim() === "" ? undefined : window.parseMoneyInput(text);
   };
   const collect = (fields) =>
     Object.fromEntries(fields.map((field) => [field.id, read(field)]).filter(([, value]) => value !== undefined && value !== null));
-  return { income: collect(INCOME_FIELDS), expenses: collect([...ITEMISED_EXPENSE_FIELDS, CONSOLIDATED_FIELD]) };
+  return { income: collect(incomeFields), expenses: collect([...itemisedExpenseFields, CONSOLIDATED_FIELD]) };
 }
 
 // The problems that stop an adjustment: an entry with one total and itemised expenses together.
-function adjustmentProblems(figuresByEntry) {
-  return figuresByEntry
-    .map((figures, index) => ({ figures, entry: adjustableEntries[index], prefix: `adjust-${index + 1}` }))
+function adjustmentProblems(figuresByEntry, fhlFigures) {
+  const sections = figuresByEntry.map((figures, index) => ({
+    figures,
+    name: adjustableEntries[index].name,
+    prefix: `adjust-${index + 1}`,
+  }));
+  if (fhlFigures) sections.push({ figures: fhlFigures, name: FHL_NAME, prefix: FHL_PREFIX });
+  return sections
     .filter(({ figures }) => figures.expenses.consolidatedExpenses !== undefined && Object.keys(figures.expenses).length > 1)
-    .map(({ entry, prefix }) => ({
+    .map(({ name, prefix }) => ({
       input: document.getElementById(`${prefix}-${CONSOLIDATED_FIELD.id}`),
-      message: `${entry.name}: enter either the total expenses or the itemised expenses, not both`,
+      message: `${name}: enter either the total expenses or the itemised expenses, not both`,
     }));
+}
+
+function buildForeignFhlEea(fhlFigures) {
+  if (!fhlFigures) return undefined;
+  const section = {};
+  if (Object.keys(fhlFigures.income).length > 0) section.income = fhlFigures.income;
+  if (Object.keys(fhlFigures.expenses).length > 0) section.expenses = fhlFigures.expenses;
+  return Object.keys(section).length > 0 ? section : undefined;
 }
 
 function buildForeignProperty(figuresByEntry) {
@@ -332,13 +379,17 @@ async function handleAdjustmentSubmit(zeroAdjustments) {
   if (!zeroAdjustments) {
     if (window.formErrors.reportMoneyProblems()) return;
     const figuresByEntry = adjustableEntries.map((_, index) => readEntryFigures(`adjust-${index + 1}`));
-    const problems = adjustmentProblems(figuresByEntry);
+    const fhlFigures = hasFhlSection(triggered.taxYear)
+      ? readEntryFigures(FHL_PREFIX, FHL_INCOME_FIELDS, FHL_ITEMISED_EXPENSE_FIELDS)
+      : null;
+    const problems = adjustmentProblems(figuresByEntry, fhlFigures);
     if (problems.length > 0) {
       window.formErrors.showFormErrors(problems);
       return;
     }
     const foreignProperty = buildForeignProperty(figuresByEntry);
-    if (foreignProperty.length === 0) {
+    const foreignFhlEea = buildForeignFhlEea(fhlFigures);
+    if (foreignProperty.length === 0 && !foreignFhlEea) {
       window.formErrors.showFormErrors([
         {
           input: document.querySelector("#adjustEntries input") || document.getElementById("adjustEntries"),
@@ -347,7 +398,8 @@ async function handleAdjustmentSubmit(zeroAdjustments) {
       ]);
       return;
     }
-    adjustDetails.foreignProperty = foreignProperty;
+    if (foreignProperty.length > 0) adjustDetails.foreignProperty = foreignProperty;
+    if (foreignFhlEea) adjustDetails.foreignFhlEea = foreignFhlEea;
   }
   const criteria = readCriteria();
   await ensureAuthorizedThen({

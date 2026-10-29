@@ -195,8 +195,8 @@ describe("hmrcItsaBsasTriggerPost ingestHandler", () => {
     expect(body.message).toContain("typeOfBusiness");
   });
 
-  test("returns 400 when typeOfBusiness is not self-employment or uk-property", async () => {
-    const event = buildTriggerEvent({ body: { typeOfBusiness: "foreign-property" } });
+  test("returns 400 when typeOfBusiness is not a business type the trigger takes", async () => {
+    const event = buildTriggerEvent({ body: { typeOfBusiness: "furnished-holiday-lettings" } });
     const response = await hmrcItsaBsasTriggerPostHandler(event);
     expect(response.statusCode).toBe(400);
   });
@@ -219,6 +219,17 @@ describe("hmrcItsaBsasTriggerPost ingestHandler", () => {
     const calledInit = mockFetch.mock.calls[0][1];
     const sentBody = JSON.parse(calledInit.body);
     expect(sentBody.typeOfBusiness).toBe("self-employment");
+  });
+
+  test("sends foreign-property when a foreign property business is picked", async () => {
+    mockHmrcSuccess(mockFetch, { calculationId: "12345678" });
+
+    const event = buildTriggerEvent({ body: { typeOfBusiness: "foreign-property" } });
+    const response = await hmrcItsaBsasTriggerPostHandler(event);
+
+    expect(response.statusCode).toBe(200);
+    const sentBody = JSON.parse(mockFetch.mock.calls[0][1].body);
+    expect(sentBody.typeOfBusiness).toBe("foreign-property");
   });
 
   test("sends uk-property when a property business is picked", async () => {

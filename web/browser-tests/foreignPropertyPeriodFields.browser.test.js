@@ -60,7 +60,7 @@ window.getGovClientHeaders = function(){ return Promise.resolve({}); };
 window.resolveSyntheticTestScenario = function(explicit, account, fallback){ return explicit || (account === "synthetic" ? fallback : null); };
 window.getForeignPropertyDetails = function(nino, businessId, taxYear){
   window.__sent.push({ call: "details", nino: nino, businessId: businessId, taxYear: taxYear });
-  return Promise.resolve({ propertyDetails: window.__properties });
+  return Promise.resolve({ foreignPropertyDetails: window.__properties });
 };
 window.postForeignPropertyPeriod = function(period){
   window.__sent.push({ call: "post", period: period });
