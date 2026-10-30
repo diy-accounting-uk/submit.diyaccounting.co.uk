@@ -43,7 +43,17 @@ import {
   parseConfig,
   runCampaignReport,
 } from "../../../app/lib/microsoftAdsReporting.js";
-import { loadDesiredFromRoot, planChanges, formatPlan, applyPlan, exportToToml, shapeUetTag, shapeGoal, GOAL_TYPES } from "./msads-sync.js";
+import {
+  loadDesiredFromRoot,
+  planChanges,
+  formatPlan,
+  applyPlan,
+  exportToToml,
+  shapeUetTag,
+  shapeGoal,
+  GOAL_TYPES,
+  MSCLKID_AUTO_TAGGING,
+} from "./msads-sync.js";
 
 export const CONFIG_PATH = "infra/microsoft/ads/msads.toml";
 export const DEFAULT_CAMPAIGN_TYPES = "Search";
@@ -280,9 +290,13 @@ export async function readConversionSetup(session) {
   const goals = await callApi(session, config.campaignManagementUrl, "/ConversionGoals/QueryByIds", {
     ConversionGoalIds: null,
     ConversionGoalTypes: GOAL_TYPES.join(","),
-    ReturnAdditionalFields: null,
+    ReturnAdditionalFields: "GoalCategory",
   });
-  return { uetTags: (tags.UetTags ?? []).map(shapeUetTag), goals: (goals.ConversionGoals ?? []).map(shapeGoal) };
+  const properties = await callApi(session, config.campaignManagementUrl, "/AccountProperties/Query", {
+    AccountPropertyNames: [MSCLKID_AUTO_TAGGING],
+  });
+  const msclkidAutoTagging = (properties.AccountProperties ?? []).some((p) => p.Name === MSCLKID_AUTO_TAGGING && p.Value === "true");
+  return { uetTags: (tags.UetTags ?? []).map(shapeUetTag), goals: (goals.ConversionGoals ?? []).map(shapeGoal), msclkidAutoTagging };
 }
 
 export async function readLiveState(session, who) {

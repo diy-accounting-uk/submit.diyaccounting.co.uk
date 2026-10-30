@@ -29,7 +29,7 @@ export const KEYWORD_MATCH_TYPES = { PHRASE: "Phrase", EXACT: "Exact", BROAD: "B
 export const GOAL_TYPES = ["Event", "OfflineConversion"];
 export const NETWORK_OWNED_ONLY = "OwnedAndOperatedOnly";
 export const NETWORK_WITH_PARTNERS = "OwnedAndOperatedAndSyndicatedSearch";
-export const AUTO_TAG_ENABLED = "Enabled";
+export const MSCLKID_AUTO_TAGGING = "MSCLKIDAutoTaggingEnabled";
 
 // --- Declared state ---
 
@@ -364,7 +364,7 @@ function planCampaign(campaign, liveCampaign, actions, unmanaged) {
 
 /**
  * The ordered actions that make the live account match the declared state, with the live entities
- * the file does not name. `live` is {account, uetTags, goals, campaigns}.
+ * the file does not name. `live` is {account, msclkidAutoTagging, uetTags, goals, campaigns}.
  */
 export function planChanges(desired, live) {
   const actions = [];
@@ -376,8 +376,8 @@ export function planChanges(desired, live) {
   for (const campaign of desired.campaigns) planCampaign(campaign, liveCampaigns.get(campaign.name), actions, unmanaged);
   const declaredCampaigns = new Set(desired.campaigns.map((c) => c.name));
   for (const c of live.campaigns) if (!declaredCampaigns.has(c.name)) unmanaged.push(`campaign "${c.name}"`);
-  if (desired.autoTagging && live.account.autoTagType !== AUTO_TAG_ENABLED) {
-    actions.push({ kind: "enable-auto-tagging", account: live.account });
+  if (desired.autoTagging && !live.msclkidAutoTagging) {
+    actions.push({ kind: "enable-auto-tagging" });
   }
   return { actions, unmanaged, tagId: tag?.id ?? desired.uet.tagId };
 }
@@ -568,10 +568,10 @@ async function applyAction(a, { api, accountId, ctx }) {
     case "enable-auto-tagging":
       await call(
         api,
-        "/Account",
-        { Account: { Id: a.account.id, Name: a.account.name, TimeStamp: a.account.timeStamp, AutoTagType: AUTO_TAG_ENABLED } },
-        { method: "PUT", service: "customerManagement" },
-        "UpdateAccount",
+        "/AccountProperties",
+        { AccountProperties: [{ Name: MSCLKID_AUTO_TAGGING, Value: "true" }] },
+        { method: "PUT" },
+        "SetAccountProperties",
       );
       return;
     default:
@@ -625,7 +625,7 @@ export function exportToToml(live) {
   }));
   const tag = live.uetTags[0];
   return TOML.stringify({
-    account: { auto_tagging: live.account.autoTagType === AUTO_TAG_ENABLED },
+    account: { auto_tagging: live.msclkidAutoTagging },
     ...(tag ? { uet: { name: tag.name, description: "", tag_id: tag.id } } : {}),
     conversion_goal: goals,
     campaign: campaigns,

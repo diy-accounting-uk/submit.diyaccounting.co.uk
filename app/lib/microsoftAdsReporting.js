@@ -123,7 +123,6 @@ export function shapeAccount(account) {
     lifeCycleStatus: account.AccountLifeCycleStatus,
     financialStatus: account.AccountFinancialStatus,
     timeZone: account.TimeZone,
-    autoTagType: account.AutoTagType,
     timeStamp: account.TimeStamp,
     parentCustomerId: account.ParentCustomerId === undefined ? undefined : String(account.ParentCustomerId),
   };
