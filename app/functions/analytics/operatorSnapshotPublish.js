@@ -400,16 +400,13 @@ export const OBJECTIVE_DEFINITIONS = [
       },
       {
         id: "sessions-authenticated",
-        label: "Sessions, authenticated users",
+        label: "Visitors, signed-in customers",
         unit: "count",
-        view: "v_visitors_by_kind_daily",
+        view: "v_active_users_daily",
         dayColumn: "day",
-        valueExpr: "sessions",
+        valueExpr: "active_users",
         aggregation: "sum",
-        where: "visitor_kind = 'authenticated'",
-        fastWindowView: "v_visitors_by_kind_hourly",
-        fastWindowColumn: "hour",
-        deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
         id: "sessions-bot",
@@ -1985,7 +1982,8 @@ const VISITOR_KIND_LABELS = {
 
 const VISITOR_KIND_DESCRIPTIONS = {
   operator: "Google Analytics sessions of the operator, flagged once the operator bundle has loaded in the browser.",
-  authenticated: "Google Analytics sessions of signed-in users who are not operators.",
+  authenticated:
+    "Distinct signed-in customers each day, operator and test accounts apart, counted from the activity events, which record every signed-in request whether or not the customer accepted analytics.",
   human: "Google Analytics sessions of visitors who are not signed in and are not flagged as a bot, an operator or a test.",
   synthetic:
     "Distinct visitors from the behaviour tests each day, counted from the CloudFront access log by their DIYAccountingProbe user agent.",
@@ -2605,25 +2603,28 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Visitors",
       unit: "count",
-      note: "Operator, authenticated user and human count Google Analytics sessions, so only visitors who accepted analytics. Synthetic and bot count distinct visitors each day from the CloudFront access log, which Google Analytics cannot see; a visitor is a salted hash of the client address that changes every day, so one visitor is counted once a day and never followed across days. By landing page counts the Google Analytics sessions that began on each page; By country counts the activity events' new sessions, with AI agents apart.",
+      note: "Operator and human count Google Analytics sessions, so only visitors who accepted analytics. Authenticated user counts distinct signed-in customers each day from the activity events, so every customer who signs in, whether or not they accepted analytics. Synthetic and bot count distinct visitors each day from the CloudFront access log, which Google Analytics cannot see; a visitor is a salted hash of the client address that changes every day, so one visitor is counted once a day and never followed across days. By landing page counts the Google Analytics sessions that began on each page; By country counts the activity events' new sessions, with AI agents apart.",
       modes: [
         {
           id: "sessions",
           label: "Visitors",
           total: null,
           componentOrder: ["operator", "authenticated", "human", "synthetic", "bot"],
-          hourlyComponentOrder: ["operator", "authenticated", "human"],
+          hourlyComponentOrder: ["operator", "human"],
           labelOf: (id) => VISITOR_KIND_LABELS[id] ?? id,
           descriptionOf: (id) => VISITOR_KIND_DESCRIPTIONS[id],
           hourlySql: hourlyLongFormSql({
             componentExpression: "visitor_kind",
             valueExpression: "sessions",
             view: "v_visitors_by_kind_hourly",
-            where: "visitor_kind IN ('operator', 'authenticated', 'human')",
+            where: "visitor_kind IN ('operator', 'human')",
           }),
           sql:
             `SELECT cast(day AS varchar) AS day, visitor_kind AS component, cast(sum(sessions) AS double) AS value\n` +
-            `FROM   v_visitors_by_kind_daily\nWHERE  ${dailyWindowFilter("day")} AND visitor_kind IN ('operator', 'authenticated', 'human')\nGROUP  BY 1, 2\n` +
+            `FROM   v_visitors_by_kind_daily\nWHERE  ${dailyWindowFilter("day")} AND visitor_kind IN ('operator', 'human')\nGROUP  BY 1, 2\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'authenticated', cast(sum(active_users) AS double)\n` +
+            `FROM   v_active_users_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(day AS varchar), visitor_kind, cast(sum(visitors) AS double)\n` +
             `FROM   v_visitors_cloudfront_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,

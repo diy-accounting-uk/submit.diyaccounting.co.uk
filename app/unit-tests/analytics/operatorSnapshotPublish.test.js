@@ -886,18 +886,20 @@ describe("operatorSnapshotPublish", () => {
       expect(dailyCharts.charts.find((chart) => chart.id === "visitors").reconciliation).toBeUndefined();
     });
 
-    test("Bot and Synthetic visitors read the CloudFront log view, the other three kinds read Google Analytics", () => {
+    test("Bot and Synthetic visitors read the CloudFront log view, Authenticated user the activity events, Operator and Human Google Analytics", () => {
       const conversion = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "conversion-to-submission");
       const viewOf = (id) => conversion.observations.find((observation) => observation.id === id).view;
 
       expect(["sessions-bot", "sessions-synthetic"].map(viewOf)).toEqual(["v_visitors_cloudfront_daily", "v_visitors_cloudfront_daily"]);
-      expect(["sessions-operator", "sessions-authenticated", "sessions-human"].map(viewOf)).toEqual(
-        Array(3).fill("v_visitors_by_kind_daily"),
-      );
+      expect(["sessions-operator", "sessions-human"].map(viewOf)).toEqual(Array(2).fill("v_visitors_by_kind_daily"));
+      expect(viewOf("sessions-authenticated")).toBe("v_active_users_daily");
       const chart = buildDailyChartDefinitions().find((definition) => definition.id === "visitors");
       expect(chart.modes[0].componentOrder).toEqual(["operator", "authenticated", "human", "synthetic", "bot"]);
       expect(chart.modes[0].sql).toContain("v_visitors_cloudfront_daily");
+      expect(chart.modes[0].sql).toContain("'authenticated', cast(sum(active_users) AS double)\nFROM   v_active_users_daily");
+      expect(chart.modes[0].sql).toContain("visitor_kind IN ('operator', 'human')");
       expect(chart.note).toContain("CloudFront");
+      expect(chart.note).toContain("whether or not they accepted analytics");
     });
 
     test("Bot and Synthetic rows count distinct visitors, not page requests", () => {
@@ -1019,9 +1021,9 @@ describe("operatorSnapshotPublish", () => {
         "visitors/sessions",
       ]);
       const visitors = dailyCharts.charts.find((chart) => chart.id === "visitors").modes[0];
-      expect(visitors.hourly.series.map((line) => line.id)).toEqual(["operator", "authenticated", "human"]);
+      expect(visitors.hourly.series.map((line) => line.id)).toEqual(["operator", "human"]);
       for (const line of visitors.hourly.series) expect(line.values).toHaveLength(168);
-      expect(visitors.hourly.series[2].values.at(-1)).toBe(3);
+      expect(visitors.hourly.series[1].values.at(-1)).toBe(3);
     });
 
     test("a failing hourly query leaves the chart without its hourly series and counts as a failure", async () => {
@@ -1757,7 +1759,7 @@ describe("operatorSnapshotPublish", () => {
   });
 
   describe("hourly-grain observations in the snapshot", () => {
-    const visitorIds = ["sessions-human", "sessions-operator", "sessions-authenticated"];
+    const visitorIds = ["sessions-human", "sessions-operator"];
     const context = {
       envName: "test",
       region: "eu-west-2",
@@ -1776,9 +1778,10 @@ describe("operatorSnapshotPublish", () => {
       const hourly = sqlStatements.filter((sql) => /FROM   \w+_hourly/.test(sql));
       expect(hourly).toHaveLength(3);
       const visitors = hourly.find((sql) => sql.includes("FROM   v_visitors_by_kind_hourly"));
-      for (const kind of ["human", "operator", "authenticated"]) {
+      for (const kind of ["human", "operator"]) {
         expect(visitors).toContain(`AND (visitor_kind = '${kind}') THEN sessions END`);
       }
+      expect(visitors).not.toContain("authenticated");
     });
 
     test("an hourly figure replaces the day-grain Today, Previous day and Last 7 days and leaves the 30 and 90 day windows", async () => {
