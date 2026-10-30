@@ -32,7 +32,7 @@ vi.mock("@aws-sdk/client-s3", () => ({
   },
 }));
 
-import { handler, defaultTargetDate, formatGa4Date, rowToRecord, toNdjsonGzip } from "@app/functions/analytics/ga4ReportPull.js";
+import { handler, formatGa4Date, rowToRecord, toNdjsonGzip } from "@app/functions/analytics/ga4ReportPull.js";
 
 function emptyReport() {
   return [{ rows: [] }];
@@ -66,15 +66,6 @@ describe("ga4ReportPull", () => {
       delete process.env[name];
     }
     vi.restoreAllMocks();
-  });
-
-  describe("defaultTargetDate", () => {
-    test("returns yesterday in UTC as YYYY-MM-DD", () => {
-      const now = new Date();
-      const expected = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1)).toISOString().slice(0, 10);
-
-      expect(defaultTargetDate()).toBe(expected);
-    });
   });
 
   describe("formatGa4Date", () => {
@@ -128,18 +119,27 @@ describe("ga4ReportPull", () => {
   });
 
   describe("handler", () => {
-    test("uses yesterday by default and writes three date-partitioned reports", async () => {
-      const result = await handler();
+    test("pulls yesterday and today so far by default and writes three date-partitioned reports for each", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-08-21T10:15:00Z"));
+      let result;
+      try {
+        result = await handler();
+      } finally {
+        vi.useRealTimers();
+      }
 
-      expect(result.date).toBe(defaultTargetDate());
-      expect(mockS3Send).toHaveBeenCalledTimes(3);
+      expect(result.days.map((d) => d.date)).toEqual(["2026-08-20", "2026-08-21"]);
+      expect(mockS3Send).toHaveBeenCalledTimes(6);
 
       const keys = mockS3Send.mock.calls.map((call) => call[0].input.Key);
-      expect(keys).toEqual([
-        `curated/ga4/report=traffic/dt=${result.date}/traffic.json.gz`,
-        `curated/ga4/report=pages/dt=${result.date}/pages.json.gz`,
-        `curated/ga4/report=events/dt=${result.date}/events.json.gz`,
-      ]);
+      expect(keys).toEqual(
+        ["2026-08-20", "2026-08-21"].flatMap((date) => [
+          `curated/ga4/report=traffic/dt=${date}/traffic.json.gz`,
+          `curated/ga4/report=pages/dt=${date}/pages.json.gz`,
+          `curated/ga4/report=events/dt=${date}/events.json.gz`,
+        ]),
+      );
       for (const call of mockS3Send.mock.calls) {
         expect(call[0].input.Bucket).toBe("test-lake-bucket");
       }
@@ -148,7 +148,7 @@ describe("ga4ReportPull", () => {
     test("an explicit date in the event overrides the default and sets the GA4 date range", async () => {
       const result = await handler({ date: "2026-08-20" });
 
-      expect(result.date).toBe("2026-08-20");
+      expect(result.days.map((d) => d.date)).toEqual(["2026-08-20"]);
       for (const call of mockRunReport.mock.calls) {
         expect(call[0].dateRanges).toEqual([{ startDate: "2026-08-20", endDate: "2026-08-20" }]);
       }

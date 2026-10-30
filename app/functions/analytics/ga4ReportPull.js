@@ -14,6 +14,7 @@ import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
 import { federationSettings, createFederatedGoogleAuth } from "../../lib/googleWorkloadIdentity.js";
 import { createLogger } from "../../lib/logger.js";
+import { recentPullDays } from "../../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/functions/analytics/ga4ReportPull.js" });
 
@@ -68,18 +69,6 @@ async function getGa4Client() {
   cachedGa4Client = new BetaAnalyticsDataClient({ authClient });
   cachedFederationKey = federationKey;
   return cachedGa4Client;
-}
-
-/**
- * Yesterday's date in UTC, as "YYYY-MM-DD". The default report target: a run that fires just
- * after midnight reports on the day that just ended.
- *
- * @returns {string}
- */
-export function defaultTargetDate() {
-  const now = new Date();
-  const yesterday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
-  return yesterday.toISOString().slice(0, 10);
 }
 
 /**
@@ -157,14 +146,16 @@ async function putReportObject(s3Client, bucket, reportName, dateStr, records) {
 }
 
 /**
- * Pull one day of GA4 traffic, pages and events reports into the lake.
+ * Pull GA4 traffic, pages and events reports into the lake: yesterday and today so far, or one
+ * explicit day. The Data API serves the current day, so today's object is a partial that the
+ * next run overwrites.
  *
- * @param {{date?: string}} [event] - an explicit `date` ("YYYY-MM-DD") overrides yesterday,
- *   which is what a backfill invoke passes.
- * @returns {Promise<{date: string, keys: object, counts: object}>}
+ * @param {{date?: string}} [event] - an explicit `date` ("YYYY-MM-DD") replaces the default pair
+ *   of days, which is what a backfill invoke passes.
+ * @returns {Promise<{days: Array<{date: string, keys: object, counts: object}>}>}
  */
 export async function handler(event = {}) {
-  const targetDate = event.date ?? defaultTargetDate();
+  const days = event.date ? [event.date] : recentPullDays();
 
   const propertyId = process.env.GA4_PROPERTY_ID;
   if (!propertyId) {
@@ -181,6 +172,14 @@ export async function handler(event = {}) {
   const client = await getGa4Client();
 
   const s3Client = getS3Client();
+  const results = [];
+  for (const targetDate of days) {
+    results.push(await pullDay(client, s3Client, bucket, propertyId, targetDate));
+  }
+  return { days: results };
+}
+
+async function pullDay(client, s3Client, bucket, propertyId, targetDate) {
   const keys = {};
   const counts = {};
   for (const report of REPORTS) {

@@ -90,6 +90,24 @@ describe("handler", () => {
     mockS3Send.mockResolvedValue({});
   });
 
+  test("with no date asks for yesterday through today and writes one object for each", async () => {
+    mockRunCampaignReport.mockResolvedValue([reportRow("2026-10-28", "1"), reportRow("2026-10-29", "1")]);
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-10-29T10:15:00Z"));
+    let result;
+    try {
+      result = await handler({});
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(mockRunCampaignReport.mock.calls[0][1]).toEqual({ from: "2026-10-28", to: "2026-10-29", aggregation: "Daily" });
+    expect(result.days.map((d) => d.key)).toEqual([
+      "curated/ads/ads_cost/dt=2026-10-28/ms_ads_cost.json.gz",
+      "curated/ads/ads_cost/dt=2026-10-29/ms_ads_cost.json.gz",
+    ]);
+  });
+
   test("asks for one daily report over the range and writes one object per day", async () => {
     mockRunCampaignReport.mockResolvedValue([reportRow("2026-10-27", "1"), reportRow("2026-10-28", "1")]);
 

@@ -185,7 +185,7 @@ export function objectKey(dateStr) {
  * Pull Google Ads cost into the lake, one object per day.
  *
  * @param {{date?: string, from?: string, to?: string}} [event] - `date` ("YYYY-MM-DD") overrides
- *   yesterday; `from` and `to` (inclusive, at most 93 days) backfill a range.
+ *   yesterday and today so far; `from` and `to` (inclusive, at most 93 days) backfill a range.
  * @returns {Promise<{days: Array<{date: string, key: string, count: number}>}>}
  */
 export async function handler(event = {}) {

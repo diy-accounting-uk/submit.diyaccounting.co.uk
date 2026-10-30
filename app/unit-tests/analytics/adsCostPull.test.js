@@ -172,6 +172,30 @@ describe("handler", () => {
     vi.unstubAllGlobals();
   });
 
+  test("with no date writes yesterday and today so far, each to its own partition", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url, options) => {
+        if (String(url).startsWith("https://oauth2.googleapis.com/token")) return jsonResponse({ access_token: "at" });
+        return jsonResponse(JSON.parse(options.body).query.includes("FROM ad_group") ? adGroupSearch : campaignSearch);
+      }),
+    );
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-29T10:15:00Z"));
+    let result;
+    try {
+      result = await handler({});
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+
+    expect(result.days.map((d) => d.key)).toEqual([
+      "curated/ads/ads_cost/dt=2026-09-28/ads_cost.json.gz",
+      "curated/ads/ads_cost/dt=2026-09-29/ads_cost.json.gz",
+    ]);
+  });
+
   test("throws when a required environment variable is missing", async () => {
     delete process.env.ADS_REFRESH_TOKEN_SECRET_ARN;
     await expect(handler({ date: "2026-09-28" })).rejects.toThrow("ADS_REFRESH_TOKEN_SECRET_ARN environment variable is required");

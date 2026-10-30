@@ -14,6 +14,7 @@ import { gzipSync } from "zlib";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { createLogger } from "../../lib/logger.js";
+import { recentPullDays } from "../../lib/dateUtils.js";
 import { createPacer, fetchAccessToken, fetchAllTransactions, realSleep } from "../../services/paypalTransactionSearch.js";
 import {
   CREDIT_NOTE_EVENT_CODES,
@@ -56,17 +57,6 @@ async function readSecret(secretId) {
   const { SecretString } = await getSecretsClient().send(new GetSecretValueCommand({ SecretId: secretId }));
   if (!SecretString) throw new Error(`Secret ${secretId} has no SecretString`);
   return SecretString;
-}
-
-/**
- * Yesterday's date in UTC, as "YYYY-MM-DD".
- *
- * @returns {string}
- */
-export function defaultTargetDate() {
-  const now = new Date();
-  const yesterday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
-  return yesterday.toISOString().slice(0, 10);
 }
 
 /**
@@ -160,7 +150,7 @@ const MAX_RANGE_DAYS = 93;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
- * The inclusive list of days a request covers: its `date`, its `from` and `to`, or yesterday.
+ * The inclusive list of days a request covers: its `date`, its `from` and `to`, or yesterday and today so far.
  *
  * @param {{date?: string, from?: string, to?: string}} event
  * @returns {string[]} "YYYY-MM-DD" days in order
@@ -178,16 +168,16 @@ export function daysOf(event) {
     if (span > MAX_RANGE_DAYS) throw new Error(`A range covers at most ${MAX_RANGE_DAYS} days, ${from} to ${to} is ${span}`);
     return Array.from({ length: span }, (_, offset) => new Date(Date.parse(from) + offset * MS_PER_DAY).toISOString().slice(0, 10));
   }
-  const single = date ?? defaultTargetDate();
-  if (!ISO_DATE.test(single) || Number.isNaN(Date.parse(single))) throw new Error(`Not an ISO date: ${single}`);
-  return [single];
+  if (!date) return recentPullDays();
+  if (!ISO_DATE.test(date) || Number.isNaN(Date.parse(date))) throw new Error(`Not an ISO date: ${date}`);
+  return [date];
 }
 
 /**
  * Pull PayPal receipts into the lake, one object per day.
  *
  * @param {{date?: string, from?: string, to?: string}} [event] - `date` ("YYYY-MM-DD") overrides
- *   yesterday; `from` and `to` (inclusive, at most 93 days) backfill a range.
+ *   yesterday and today so far; `from` and `to` (inclusive, at most 93 days) backfill a range.
  * @returns {Promise<{days: Array<{date: string, key: string, count: number}>}>}
  */
 export async function handler(event = {}) {
