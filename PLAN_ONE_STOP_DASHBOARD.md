@@ -4,9 +4,7 @@
 # PLAN: The one-stop dashboard
 
 Status: open, drafted 2026-09-07, reshaped the same evening around objectives, levers and
-experiments, then widened to eight objectives with the optimisation and reinvestment loop. D1, D5 to D9
-and D11 to D15 are on main, D3 too; D4 and D2 on main; D10, D16 and D17 open (NEXT.md B52i, B52l,
-B52m-a and B52m-b).
+experiments, then widened to eight objectives. D1 to D15 are on main.
 
 One page the operator opens to see how DIY Accounting is doing against eight objectives, which levers
 are being pulled, and how each running experiment is moving its metric. The same data, exported
@@ -209,71 +207,6 @@ respond, recover); the CIS AWS Foundations Benchmark at its current major in Sec
 OpenSSF Scorecard for the repositories and SLSA provenance for the published packages;
 CISA's KEV catalogue as the exploit feed. The row is D13.
 
-## Optimisation and the reinvestment loop
-
-The operator's aim, stated 2026-09-07: enough data to have Claude propose experiments,
-optimisation across several variables at once, and a feedback loop that reinvests income for
-sustained growth and excellence in the other objectives. The operator will buy traffic
-(Google Ads) and boost articles to generate data where the organic volume is too small to
-measure.
-
-**What is being optimised.** A scalar score over the objectives, each objective's reading
-normalised against its target and weighted, subject to constraints (a cash reserve, the
-uptime SLO, zero open findings above medium). The levers split into continuous ones (spend
-per channel and per week, price, the free-bundle boundary as a number of submissions, Lambda
-memory, provisioned concurrency, the WAF rate threshold, the reinvestment fraction) and
-discrete ones (a feature on or off, a page variant). The methods differ by lever type.
-
-**The ladder of methods, and where each fits.** Linear algebra was the first rung, not the
-whole answer: a least-squares fit is a first-order model of the response, and Newton-Raphson
-is what finds the optimum of a second-order one. Each rung below needs more data than the
-one before and handles more shape.
-
-1. **Least squares on the export** (first-order). Ranks levers within a block by estimated
-   effect per unit cost. Honest for the cost block, which is linear in usage, and for the
-   funnels after taking logs. It says which lever to test next, not what its effect is.
-2. **Response-surface methods** (second-order). A designed set of experiments over two or
-   three continuous levers fits a quadratic; a Newton step on the fitted surface gives the
-   next setting; repeat as the surface is refined. This is Newton-Raphson applied where it
-   belongs, to a smooth model fitted from noisy runs, not to the noisy data directly.
-   Quasi-Newton (BFGS) does the same without forming the Hessian by hand.
-3. **Bayesian optimisation** with a Gaussian-process model. The standard in 2026 for noisy,
-   expensive experiments over a handful of continuous knobs, because it chooses each next
-   experiment by expected improvement and works from a few dozen evaluations. This is the
-   rung for price, the bundle boundary and the infrastructure knobs.
-4. **Bandits** (Thompson sampling) for allocation. Ad spend across channels, article boosts
-   across articles, and page variants are allocation problems, not surface problems: the
-   bandit shifts budget towards what pays while it keeps sampling the rest. It runs
-   continuously and needs no fitted surface.
-5. **Marketing-mix modelling** for spend to revenue. Response to spend saturates and lags
-   (adstock), so the recognisable models are Bayesian MMMs with Hill saturation curves,
-   which is what Google's Meridian and Meta's Robyn implement as open source. Saturation
-   makes the spend objective concave, so once the curves are fitted, gradient methods on
-   them are well behaved and the budget split across channels is a constrained convex
-   problem with a closed form at the margin: spend until the marginal return per pound is
-   equal across channels.
-6. **The reinvestment loop as a control problem.** Income in a month sets the next month's
-   budget through a reinvestment fraction; budget through the fitted curves sets traffic;
-   traffic through the funnels sets submissions and income. That is a discrete-time system
-   with a delay (the VAT quarter dominates the lag), and the fraction is the control input.
-   The page shows the loop's state (trailing income, reserve, budget, return per pound,
-   payback period) and the fraction is a lever with a floor on the reserve. Change it slowly,
-   once per cycle, and hold it when the estimated return per pound drops below one; a fast
-   controller on a quarterly signal oscillates.
-
-**Making the bought traffic identifiable.** Spend without a design measures nothing. Each
-paid test is an experiment row: on-off weeks or geographic splits so the effect has a
-control, a holdout for incrementality, and the metric watched named before it starts. The
-sources panel then reads per-channel return, and the boosted articles read as a source
-each. The Ads accounts were cancelled in 2026 (`google-analytics.toml`), so a new account
-with conversion import from GA4's key events is an operator step before the first test.
-
-**What the operator sees.** Under each objective the page lists the open experiments with
-their predicted and observed effect, and one line from the optimiser: the next experiment it
-would run, the lever, the setting, the expected effect with its interval, and the cost. Claude
-reads the same export and the same models when asked for advice, so the page and the advice
-agree. Rows D16 and D17.
-
 ## Panel by panel
 
 | Panel | Objective | Source today | Gap | Work |
@@ -339,8 +272,6 @@ on NEXT.md.
 | D13 | The security panels: AWS Config recorder and the CIS 5.0 standard, findings and GitHub alerts into the lake, `lifecycle.toml` and its check, the SBOM and KEV match, the CloudTrail metric filters, WAF logs, the rotation record | D1; the operator's yes for Config and the multi-region trail (an environment deploy) | Claude Code, Sonnet; Opus for the traffic baselines |
 | D14 | Retention and operator-effort views: returning submitters by quarter keyed by hashed subject, renewals and cancellations from the subscriptions stream; a nightly pull of Actions runs by trigger and actor, issue timelines and commits by author, classified into interventions | D1 | Claude Code, Sonnet |
 | D15 | The compliance panel: accessibility results from `compliance.yml` into the lake; backlog 22's path from HMRC's monthly email to `fraudPreventionHeaderReport.js` and the result into the lake; `compliance.toml` for the standing items with dates and owners | D1; `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_FRAUD_HEADER_EMAIL_CHECK.md` | Claude Code, Sonnet |
-| D16 | The optimiser: a notebook over the raw export that computes the per-block correlations, fits the block models (linear cost, log-linear funnels, Hill curves for spend), ranks levers by effect per unit cost, and proposes the next experiment with its predicted effect; Bayesian optimisation for the continuous knobs and a bandit for allocations once experiments exist | D12; three months of export | Claude Code, Opus for the models, Sonnet for the notebook |
-| D17 | The reinvestment loop: trailing income, reserve, budget, return per pound and payback on the page; the reinvestment fraction as a lever with a reserve floor; paid-traffic experiments as rows with on-off or geographic controls; the Ads account with GA4 conversion import. The paid rows start from the £0.36 breakeven cost per session (0.28% session-to-purchase, £127 lifetime contribution at 30% churn; `../private.diyaccounting.co.uk/strategy/REPORT_PRICE_UPDATE_REVIEW.md` §4), against which a £2 click costs £714 per subscriber | D2, D16; the operator opens the Ads account and sets the reserve floor | Claude Code, Sonnet; the operator's decisions |
 
 ## B52d design
 
@@ -793,11 +724,6 @@ touch identity.
   start" from the pulled export alone.
 - The company balance sheet on the page equals the Ltd engine's published balance sheet for
   the same book, and its prior-year column equals the last set filed at Companies House.
-- The optimiser's proposed experiment, once run, lands inside the interval it predicted more
-  often than not over a quarter; a proposal that keeps missing is a model to refit, not a
-  lever to keep pulling.
-- A paid-traffic week shows in the sources panel as its own source with a control week
-  beside it.
 - The page is reachable signed in as the operator and returns the site's normal denial to any
   other user and to the synthetic users.
 
