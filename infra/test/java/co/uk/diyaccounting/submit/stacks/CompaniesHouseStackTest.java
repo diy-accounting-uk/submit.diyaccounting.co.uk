@@ -523,25 +523,24 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void everyGrantCompaniesHouseLambdaAccessLambdaCanReadTheOperatorEmailsSecretAndTheTokenLambdaCannot() {
+    void everyCompaniesHouseLambdaCanReadTheOperatorEmailsSecret() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        // Every Companies House Lambda routed through grantCompaniesHouseLambdaAccess (all read
-        // and write endpoints except the OAuth token exchange) can read the operator-emails
-        // secret: enforceBundles() calls isOperatorEmail() on every request.
+        // The 23 Lambdas routed through grantCompaniesHouseLambdaAccess call isOperatorEmail() in
+        // enforceBundles(), and the OAuth token exchange publishes activity events, which label
+        // an operator's events from the same list.
+        var operatorEmailsArn = Match.objectLike(Map.of(
+                "Fn::Join",
+                Match.arrayWith(List.of(Match.arrayWith(List.of(":secret:docs/submit/operator-emails*"))))));
+        var operatorEmailsStatement =
+                Match.objectLike(Map.of("Action", "secretsmanager:GetSecretValue", "Resource", operatorEmailsArn));
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
                         "PolicyDocument",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action",
-                                        "secretsmanager:GetSecretValue",
-                                        "Resource",
-                                        Match.stringLikeRegexp(".*docs/submit/operator-emails.*"))))))))),
-                23);
+                        Match.objectLike(Map.of("Statement", Match.arrayWith(List.of(operatorEmailsStatement)))))),
+                24);
     }
 
     @Test

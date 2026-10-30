@@ -42,6 +42,41 @@ import software.amazon.awscdk.assertions.Template;
 class SubmitEnvironmentCdkResourceTest {
 
     @Test
+    void everyLambdaThatPublishesActivityEventsCanReadTheOperatorList() throws IOException {
+        // 1) Load the CDK context from cdk-environment/cdk.json
+        Path cdkJsonPath = Path.of("cdk-environment/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+
+        // Normalize to keys expected by SubmitEnvironmentProps if provided via cdk-environment
+        if (ctx.containsKey("apexActiveLabel")) {
+            ctx.put("activeLabel", ctx.get("apexActiveLabel"));
+        }
+        if (ctx.containsKey("apexDeploymentOrigins")) {
+            ctx.put("deploymentOriginsCsv", ctx.get("apexDeploymentOrigins"));
+        }
+        // Use a syntactically valid fake ACM certificate ARN so CDK doesn't reject the ARN format
+        ctx.put(
+                "certificateArn",
+                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
+        ctx.put(
+                "holdingCertificateArn",
+                "arn:aws:acm:us-east-1:111111111111:certificate/12345678-1234-1234-1234-123456789012");
+
+        App app = new App(AppProps.builder().context(ctx).build());
+
+        // 2) Load props using the application loader to mimic real execution
+        SubmitEnvironment.SubmitEnvironmentProps appProps = SubmitEnvironment.loadAppProps(app, "cdk-environment/");
+
+        // 3) Build the environment and synth
+        new SubmitEnvironment(app, appProps);
+        app.synth();
+
+        var result = ActivityPublisherGrants.check(app);
+        assertTrue(result.publishers() > 0, "no Lambda names ACTIVITY_BUS_NAME");
+        assertEquals(List.of(), result.ungranted());
+    }
+
+    @Test
     void shouldCreateEnvironmentStacksWithResources() throws IOException {
         // 1) Load the CDK context from cdk-environment/cdk.json
         Path cdkJsonPath = Path.of("cdk-environment/cdk.json").toAbsolutePath();

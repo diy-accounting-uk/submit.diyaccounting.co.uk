@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-import { describe, test, expect, vi, beforeEach } from "vitest";
+import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { gunzipSync } from "zlib";
 
 const mockS3Send = vi.fn();
@@ -45,6 +45,10 @@ describe("fxRatePull", () => {
     process.env.ANALYTICS_LAKE_BUCKET_NAME = "lake";
   });
 
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   test("parseEcbRates crosses the USD and GBP rates into pounds per dollar and skips a date without both", () => {
     const rows = parseEcbRates(FEED);
 
@@ -57,8 +61,9 @@ describe("fxRatePull", () => {
 
   test("handler writes one gzipped object per rate date under curated/fx/fx_rates", async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, text: async () => FEED });
+    vi.stubGlobal("fetch", fetchImpl);
 
-    const result = await handler({}, fetchImpl);
+    const result = await handler({}, { awsRequestId: "lambda-context" });
 
     expect(fetchImpl).toHaveBeenCalledWith(ECB_NINETY_DAY_FEED_URL);
     expect(result).toEqual({ days: 2 });
@@ -71,8 +76,10 @@ describe("fxRatePull", () => {
   });
 
   test("handler throws when the feed answers an error or holds no usable rate", async () => {
-    await expect(handler({}, vi.fn().mockResolvedValue({ ok: false, status: 503 }))).rejects.toThrow(/503/);
-    await expect(handler({}, vi.fn().mockResolvedValue({ ok: true, text: async () => "<Cube/>" }))).rejects.toThrow(/no USD and GBP/);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 503 }));
+    await expect(handler()).rejects.toThrow(/503/);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, text: async () => "<Cube/>" }));
+    await expect(handler()).rejects.toThrow(/no USD and GBP/);
     expect(mockS3Send).not.toHaveBeenCalled();
   });
 });

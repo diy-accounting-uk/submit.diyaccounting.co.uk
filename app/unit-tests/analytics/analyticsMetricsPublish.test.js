@@ -209,7 +209,7 @@ describe("analyticsMetricsPublish", () => {
       const definition = METRIC_DEFINITIONS.find((d) => d.metricName === "ChargesWithoutActivation");
       expect(definition.usesReconciliationDate).toBe(true);
       expect(definition.dimension).toBeNull();
-      expect(definition.sql("2026-08-28")).toContain("greatest(-activity_minus_stripe, 0)");
+      expect(definition.sql("2026-08-28")).toContain("greatest(-activity_minus_first_charges, 0)");
       expect(definition.sql("2026-08-28")).toContain("DATE '2026-08-28'");
       expect(toMetricData(definition, [{ charges_without_activation: "2" }], timestamp)).toEqual([
         { MetricName: "ChargesWithoutActivation", Value: 2, Unit: "Count", Timestamp: timestamp, Dimensions: [] },

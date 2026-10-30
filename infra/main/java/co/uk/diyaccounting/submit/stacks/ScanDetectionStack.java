@@ -10,6 +10,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDependency;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.util.List;
 import java.util.Map;
@@ -147,6 +148,7 @@ public class ScanDetectionStack extends Stack {
                 .logGroup(logGroup.logGroup())
                 .build();
         this.scanRate404DetectFunction.getNode().addDependency(logGroup.ensureResource());
+        OperatorEmailsHelper.grantWhenPublishingActivity(this.scanRate404DetectFunction, environment);
 
         // Athena lists the table's partition prefixes under the caller's own credentials before it
         // reads a file, so the Lambda needs s3:ListBucket on the lake, scoped to the CloudFront
