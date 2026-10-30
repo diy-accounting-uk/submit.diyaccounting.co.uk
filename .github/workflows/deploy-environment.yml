@@ -1206,7 +1206,7 @@ jobs:
           GITHUB_APP_ID: ${{ vars.OPS_APP_ID }}
           GITHUB_APP_INSTALLATION_ID: ${{ vars.OPS_APP_INSTALLATION_ID }}
           # DIY Accounting Limited's own diya-gl book, for the company book pull job. Unset
-          # means no job and no grant (see PLAN_ONE_STOP_DASHBOARD.md's "D10 build" section).
+          # means no job and no grant.
           COMPANY_BOOK_ID: ${{ vars.SUBMIT_COMPANY_BOOK_ID }}
           COMPANY_BOOK_OWNER_PREFIX: ${{ vars.SUBMIT_COMPANY_BOOK_OWNER_PREFIX }}
           # The PayPal donations pull job exists only where the PayPal credentials were landed

@@ -3,8 +3,7 @@
 
 version = "1.0.0"
 
-# One row per experiment against an objective on the operator dashboard
-# (PLAN_ONE_STOP_DASHBOARD.md, "Optimisation and the reinvestment loop"). The dashboard draws
+# One row per experiment against an objective on the operator dashboard. The dashboard draws
 # each experiment's start and end as a vertical annotation on the metric it watches, and lists
 # open experiments (no end date yet) under their objective.
 #
