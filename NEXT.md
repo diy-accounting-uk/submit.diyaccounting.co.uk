@@ -137,27 +137,9 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Human-driven
 
-- [ ] **OAFF1. Approve the affiliate rates and holds.** The proposal (`../private.diyaccounting.co.uk/strategy/REPORT_AFFILIATE_SCHEME_2026-10-30.md` sections 1 and 4):
-  - 30% of net payments for 12 months;
-  - account credit after 30 days;
-  - cash only to approved adults through Stripe Connect Express, after 120 days (the dispute window);
-  - cash caps of £100 a month and £1,000 a year, and a credit cap of 12 free months.
-
-  The alternative is a 60-day cash hold with netting. It pays sooner but leaves a dispute loss between day 60 and day 120. Write the decision into the report. Unblocks AFF3. **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
-- [ ] **OAFF2. Approve the family tier (report section 7).** Steps:
-  - Check the nephew's date of birth against his school-leaving date (the last Friday in June of the school year he turns 16). Before that date, amounts build up and are paid after it.
-  - Pass a board minute of all five shareholders.
-  - Get a parent's signed consent form.
-  - Ask the accountant whether paying a shareholder's child above the public rate is a close-company benefit to that shareholder.
-
-  He gets a counts-only `observer` view, never `operator`. Unblocks AFF7. **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
-- [ ] **OAFF4. Have a solicitor review the affiliate terms.** The clauses are discretion, clawback, no employment and disclosure (`#ad`) (report section 6). Unblocks AFF8. **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
 - [ ] **OAFF5. Choose the buyer offer.** No buyer offer, or a Stripe promotion code beside the referral code. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
-- [ ] **OAFF3. Turn on Stripe Connect, GB only, Express accounts.** Only the cash tier needs it, so this follows OAFF1. Unblocks AFF6. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+- [ ] **OAFF3. Enable Stripe Connect on the live account, GB only, Express accounts.** Approved (operator, 2026-10-30). The platform profile and the Connect settings are set in the Stripe dashboard (`https://dashboard.stripe.com/connect`); the Connect onboarding questionnaire has no API. Unblocks AFF5, AFF6. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 ## Blocked
 
@@ -170,23 +152,15 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
   - A daily release job applies the volume, fraud and card-fingerprint holds.
   - The CDK goes in `AccountStack.java`.
 
-  Design in `../private.diyaccounting.co.uk/strategy/REPORT_AFFILIATE_SCHEME_2026-10-30.md` sections 4 and 9. Blocked on OAFF1 and AFF1. Unblocks AFF4, AFF6, AFF9. **Owner**: Claude Code. **Model**: Opus. **Size**: ~12 files.
+  Design in `../private.diyaccounting.co.uk/strategy/REPORT_AFFILIATE_SCHEME_2026-10-30.md` sections 4 and 9; the rates and holds are approved as proposed (operator, 2026-10-30). Blocked on AFF1. Unblocks AFF4, AFF6, AFF9. **Owner**: Claude Code. **Model**: Opus. **Size**: ~12 files.
 
 - [ ] **AFF4. Credit payouts.** A monthly job applies the payable lines as Stripe customer-balance credits, and debits back unused credit when a line is reversed. Blocked on AFF3. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
 
-- [ ] **AFF5. Affiliate approval.** An `affiliate#<hash>` record holds the tier and the state. An operator-only route beside `passAdminPost.js` approves and ends an affiliate, and an operator page uses it. Blocked on OAFF1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
+- [ ] **AFF5. Affiliate applications through Stripe, approved by the operator.** An affiliate applies from the instructions on the marketing site (AFF8). The application is Stripe Connect Express onboarding, GB only, so Stripe does the KYC. An `affiliate#<hash>` record holds the tier, the state (`applied`, `approved` or `ended`) and the Connect account id. An operator-only route beside `passAdminPost.js`, and an operator page, approve or end each application. No commission line is payable to an affiliate who is not approved. Blocked on OAFF3 (Connect enabled). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
-- [ ] **AFF6. The cash tier on Stripe Connect Express.** A GB-only onboarding link writes the account id to the affiliate record. A monthly transfer pays the lines that are older than 120 days, when the total is over £20 and inside the caps. Blocked on OAFF3, AFF3 and AFF5. **Owner**: Claude Code. **Model**: Opus. **Size**: ~10 files.
+- [ ] **AFF6. The cash tier on Stripe Connect Express.** A GB-only onboarding link writes the account id to the affiliate record. A monthly transfer pays the lines that are older than 120 days, when the total is over £20 and inside the caps. Blocked on OAFF3, AFF3 and AFF5. The nephew's family tier is paid by the operator's own bank transfer from the ledger's figures, not through Connect. **Owner**: Claude Code. **Model**: Opus. **Size**: ~10 files.
 
-- [ ] **AFF7. The `observer` bundle and the subscriber-counts page.** The changes:
-  - a hidden bundle in `web/public/submit.catalogue.toml`, with its pass type in `submit.passes.toml`;
-  - a counts-only subset in `operatorSnapshotPublish.js`;
-  - the route `/api/v1/operator/subscriber-counts` and the page `web/public/operator/subscribers.html`;
-  - a test that the response holds no amount and no identifier.
-
-  Blocked on OAFF2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
-
-- [ ] **AFF8. `affiliates.html` and the affiliate terms.** The page states the tiers, the rates, the holds, the discretion clause, the disclosure rule, UK only, 18 or over for cash, and no employment. `web/public/terms.html` gets refund, cancellation and age clauses, and `web/public/privacy.html` gets the scheme. Blocked on OAFF4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+- [ ] **AFF8. How to become an affiliate, on the marketing site, and the terms.** A section of marketing.diyaccounting.co.uk (MKT1) states the tiers, the rates and the holds (30% for 12 months; credit after 30 days; cash after 120 days). It also states the discretion clause, the `#ad` disclosure rule, UK only, 18 or over for cash, and no employment, and it links to the Stripe application (AFF5). `web/public/terms.html` gets the affiliate clauses and the refund, cancellation and age clauses, and `web/public/privacy.html` gets the scheme. The solicitor reviews the clauses before the first approval; that is recorded in the private report. Blocked on MKT1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **AFF9. Commission figures for the operator.** A view `v_affiliate_commissions_monthly` gives held, payable, paid and reversed amounts by tier, and the operator dashboard shows it on one line. Blocked on AFF3. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
 
