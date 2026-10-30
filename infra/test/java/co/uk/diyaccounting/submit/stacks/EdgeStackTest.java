@@ -169,6 +169,7 @@ class EdgeStackTest {
                 policies++;
                 assertTrue(matcher.group().contains("https://www.googleadservices.com"), directive);
                 assertTrue(matcher.group().contains("https://googleads.g.doubleclick.net"), directive);
+                assertTrue(matcher.group().contains("https://pagead2.googlesyndication.com"), directive);
             }
             assertTrue(policies > 0, directive + " not found");
         }
