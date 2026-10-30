@@ -54,7 +54,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Machine-ask
 
-- [ ] **XQ5l-b. Delete the replaced videos.** The new ids are on main (PRs #589 and #591). Remainder: the operator's choice whether to delete the replaced videos `jMIOZrQir2M` and `Nf1guAvG2Wo` (CT600), `eyXASbwZQFg` (submit-return), `zLtpkTuuyrc` (vat-from-books) and `GAwKKe0vP-E` (file-confirmation-statement); deleting one is `DELETE https://www.googleapis.com/youtube/v3/videos?id=<id>` with the stored YouTube credentials (50 quota units each). **Source**: exploratory review 2026-10-26. **Owner**: Claude Code; the choice is the operator's. **Model**: Haiku. **Size**: 0 files.
 
 ## Human-driven
 
