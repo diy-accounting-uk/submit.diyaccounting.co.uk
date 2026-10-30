@@ -4944,10 +4944,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-24 Document developer setup and repository conventions
 
 - **Use when:** a new contributor needs the setup guide, or the session record needs reading.
-- **Does:** README.md describes the app, setup and key features, and CLAUDE.md carries the project's Claude Code conventions. _developers/SETUP.md is the local development setup guide, and NEXT.md is the live open-work board. The PLAN_*.md documents hold the work not yet boarded, PLAN_REPOSITORY_AUTOMATION.md tracks the automation plan, and REPORT_*.md files are session and audit reports.
+- **Does:** README.md describes the app, setup and key features, and CLAUDE.md carries the project's Claude Code conventions. _developers/SETUP.md is the local development setup guide, and NEXT.md is the live open-work board. The PLAN_*.md documents hold the work not yet boarded, and REPORT_*.md files are session and audit reports.
 - **Run:** no command; see Does and Entry
 - **Entry:** `README.md`; `_developers/SETUP.md`; `NEXT.md`
-- **Files:** README.md, CLAUDE.md, _developers/SETUP.md, NEXT.md, PLAN_REPOSITORY_AUTOMATION.md
+- **Files:** README.md, CLAUDE.md, _developers/SETUP.md, NEXT.md
 - **Keywords:** readme, setup guide, developer onboarding, next.md, plan doc, session report, architecture report
 - **Related:** DEV-27, DEV-40
 
