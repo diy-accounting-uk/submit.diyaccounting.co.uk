@@ -155,15 +155,23 @@
         <h4>Consent and Control</h4>
         <p>
           Our lawful basis for analytics and advertising measurement is your <strong>consent</strong>. Until you accept the cookie banner,
-          the GA4 script is not loaded, no request is made to Google, and nothing about your visit is written to your browser for these
-          purposes. If you decline, that stays the case. You can withdraw consent at any time by clearing your browser's site data and
-          revisiting the site.
+          the GA4 and Microsoft Advertising scripts are not loaded, no request is made to Google or Microsoft, and nothing about your visit
+          is written to your browser for these purposes. If you decline, that stays the case. You can withdraw consent at any time by
+          clearing your browser's site data and revisiting the site.
         </p>
         <h4>Google Ads measurement</h4>
         <p>
           If you arrive from a Google or Microsoft ad, the link carries a click identifier (<code>gclid</code> or <code>msclkid</code>) and
           campaign tags (<code>utm_*</code>). With your consent we keep them in your browser for up to 90 days and send them with your
           session, so we can count which ads lead to sign-ups and payments. Without consent they are not kept.
+        </p>
+        <h4>Microsoft Advertising measurement</h4>
+        <p>
+          With your consent we load Microsoft Advertising's Universal Event Tracking (UET) tag from <code>bat.bing.com</code>. It sends your
+          page views and the events for a purchase, a VAT return, a download and a donation to <code>bat.bing.com</code>,
+          <code>bat.bing.net</code> and <code>c.bing.com</code>, so Microsoft can count which of its ads lead to those actions. The tag may
+          set a cookie in your browser. Microsoft Corporation is the processor; see
+          <a href="https://privacy.microsoft.com/privacystatement" target="_blank" rel="noopener">Microsoft's Privacy Statement</a>.
         </p>
         <h4>Data Retention and Processing</h4>
         <ul>
@@ -183,7 +191,11 @@
         <h3>Infrastructure and Operational Data</h3>
         <ul>
           <li><strong>API Gateway access logs</strong>: Request metadata including timestamps, paths, response codes, and request IDs</li>
-          <li><strong>CloudFront/WAF logs</strong>: Edge request logs including IP addresses for security monitoring and rate limiting</li>
+          <li>
+            <strong>CloudFront/WAF logs</strong>: Edge request logs including IP addresses for security monitoring and rate limiting. We
+            also count the distinct visitors that bots and our own automated tests make each day: the address is turned into a one-way hash
+            with a salt that changes every day, only the count is kept, and the hash is never stored or compared across days.
+          </li>
           <li>
             <strong>Lambda execution logs</strong>: Structured operational logs with correlation IDs for debugging (sensitive data excluded)
           </li>

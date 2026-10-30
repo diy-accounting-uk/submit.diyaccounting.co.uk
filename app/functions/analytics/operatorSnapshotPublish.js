@@ -252,6 +252,106 @@ export const OBJECTIVE_DEFINITIONS = [
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
+        id: "spreadsheets-downloads",
+        label: "Spreadsheet downloads",
+        description:
+          "Downloads of a spreadsheet from the spreadsheets site, from the GA4 download events, added over the days. The first step of the path to a first filing. GA4 reports whole days two days late.",
+        unit: "count",
+        view: "v_spreadsheets_downloads_daily",
+        dayColumn: "day",
+        valueExpr: "downloads",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "sessions-from-spreadsheets",
+        label: "Submit sessions from the spreadsheets site",
+        description:
+          "Sessions on the Submit site whose source is the spreadsheets site, from GA4, added over the days. Counts visitors who accepted analytics.",
+        unit: "count",
+        view: "v_submit_referrals_daily",
+        dayColumn: "day",
+        valueExpr: "sessions",
+        aggregation: "sum",
+        where: "origin = 'spreadsheets'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "sessions-from-www",
+        label: "Submit sessions from the gateway site",
+        description:
+          "Sessions on the Submit site whose source is the gateway site (www.diyaccounting.co.uk), from GA4, added over the days. Counts visitors who accepted analytics.",
+        unit: "count",
+        view: "v_submit_referrals_daily",
+        dayColumn: "day",
+        valueExpr: "sessions",
+        aggregation: "sum",
+        where: "origin = 'www'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "active-customers-daily",
+        label: "Active customers, per day",
+        description: "Distinct signed-in customers who made a call on a day, all app clients together, averaged over the days.",
+        unit: "count",
+        view: "v_active_customers_7d_daily",
+        dayColumn: "day",
+        valueExpr: "active_users_1d",
+        aggregation: "avg",
+        where: "app_client = 'all'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "active-customers-7d",
+        label: "Active customers, per 7 days",
+        description:
+          "Distinct signed-in customers who made a call in the 7 days to each day, all app clients together, averaged over the days. Each customer counts once however many days they came.",
+        unit: "count",
+        view: "v_active_customers_7d_daily",
+        dayColumn: "day",
+        valueExpr: "active_users_7d",
+        aggregation: "avg",
+        where: "app_client = 'all'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "new-accounts-submitted",
+        label: "New accounts that submitted",
+        description:
+          "Of the accounts opened in the window, the ones that have made a submission since, added over the days. A recent account may not have submitted yet.",
+        unit: "count",
+        view: "v_signup_to_first_submission",
+        dayColumn: "signup_day",
+        valueExpr: "submitted",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "new-accounts-submitted-share",
+        label: "New accounts that submitted, share",
+        description:
+          "The accounts opened in the window that have submitted, as a share of all the accounts opened in it. A recent account may not have submitted yet.",
+        unit: "ratio",
+        view: "v_signup_to_first_submission",
+        dayColumn: "signup_day",
+        valueExpr: "submitted",
+        aggregation: "ratio",
+        denominatorExpr: "new_accounts",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "median-hours-to-first-submission",
+        label: "Median hours to first submission",
+        description:
+          "For the accounts opened each day, the median hours from opening to the first submission, averaged over the days. A day with no submitting account has no figure.",
+        unit: "hours",
+        view: "v_signup_to_first_submission",
+        dayColumn: "signup_day",
+        valueExpr: "median_hours_to_first_submission",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
         id: "submission-failure-rate",
         label: "VAT submissions that failed",
         description: "The share of VAT returns sent to HMRC that failed, averaged over the days. A day with no submissions has no rate.",
@@ -313,22 +413,22 @@ export const OBJECTIVE_DEFINITIONS = [
       },
       {
         id: "sessions-bot",
-        label: "Page requests, bot visitors",
+        label: "Visitors, bot",
         unit: "count",
         view: "v_visitors_cloudfront_daily",
         dayColumn: "day",
-        valueExpr: "page_requests",
+        valueExpr: "visitors",
         aggregation: "sum",
         where: "visitor_kind = 'bot'",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
         id: "sessions-synthetic",
-        label: "Page requests, synthetic visitors",
+        label: "Visitors, synthetic",
         unit: "count",
         view: "v_visitors_cloudfront_daily",
         dayColumn: "day",
-        valueExpr: "page_requests",
+        valueExpr: "visitors",
         aggregation: "sum",
         where: "visitor_kind = 'synthetic'",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
@@ -426,7 +526,8 @@ export const OBJECTIVE_DEFINITIONS = [
       },
       {
         id: "paid-landings",
-        label: "Paid landings",
+        label: "Paid landings, Google (gclid)",
+        description: "Page requests that arrived with a Google Ads click id (gclid), added over the days.",
         unit: "count",
         view: "v_paid_landings_daily",
         dayColumn: "day",
@@ -436,22 +537,193 @@ export const OBJECTIVE_DEFINITIONS = [
       },
       {
         id: "ads-cost-gbp",
-        label: "Ads cost",
+        label: "Google Ads cost",
         unit: "gbp",
         view: "v_ads_cost_daily",
         dayColumn: "day",
         valueExpr: "cost_gbp",
         aggregation: "sum",
+        where: "platform = 'google'",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
         id: "ads-cost-per-paid-landing-gbp",
-        label: "Ads cost per paid landing",
+        label: "Google Ads cost per paid landing",
         unit: "gbp",
         view: "v_ads_cost_per_paid_landing_daily",
         dayColumn: "day",
         valueExpr: "cost_per_paid_landing_gbp",
         aggregation: "avg",
+        where: "platform = 'google'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "contribution-gbp",
+        label: "Contribution",
+        description:
+          "Revenue less the AWS bill in pounds less Ads cost (Google and Microsoft), added over the days. The AWS bill is in dollars and is converted at the European Central Bank rate of each day.",
+        unit: "gbp",
+        view: "v_contribution_daily",
+        dayColumn: "day",
+        valueExpr: "contribution_gbp",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ads-impressions",
+        label: "Google Ads impressions",
+        description: "Times a Google Ads advertisement was shown, added over the days.",
+        unit: "count",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "impressions",
+        aggregation: "sum",
+        where: "platform = 'google'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ads-clicks",
+        label: "Google Ads clicks",
+        description: "Clicks on Google Ads advertisements, added over the days.",
+        unit: "count",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "clicks",
+        aggregation: "sum",
+        where: "platform = 'google'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ads-ctr",
+        label: "Google Ads click-through rate",
+        description: "Clicks divided by impressions for the day, averaged over the days. A day with no impressions has no rate.",
+        unit: "ratio",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "ctr",
+        aggregation: "avg",
+        where: "platform = 'google'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ads-cost-per-click-gbp",
+        label: "Google Ads cost per click",
+        description: "The day's Google Ads cost divided by the day's clicks, averaged over the days. A day with no clicks has no figure.",
+        unit: "gbp",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_click_gbp",
+        aggregation: "avg",
+        where: "platform = 'google'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-cost-gbp",
+        label: "Microsoft Ads cost",
+        description: "Microsoft Advertising spend in pounds, added over the days.",
+        unit: "gbp",
+        view: "v_ads_cost_daily",
+        dayColumn: "day",
+        valueExpr: "cost_gbp",
+        aggregation: "sum",
+        where: "platform = 'microsoft'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-impressions",
+        label: "Microsoft Ads impressions",
+        description: "Times a Microsoft Advertising advertisement was shown, added over the days.",
+        unit: "count",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "impressions",
+        aggregation: "sum",
+        where: "platform = 'microsoft'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-clicks",
+        label: "Microsoft Ads clicks",
+        description: "Clicks on Microsoft Advertising advertisements, added over the days.",
+        unit: "count",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "clicks",
+        aggregation: "sum",
+        where: "platform = 'microsoft'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-ctr",
+        label: "Microsoft Ads click-through rate",
+        description: "Clicks divided by impressions for the day, averaged over the days. A day with no impressions has no rate.",
+        unit: "ratio",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "ctr",
+        aggregation: "avg",
+        where: "platform = 'microsoft'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-cost-per-click-gbp",
+        label: "Microsoft Ads cost per click",
+        description:
+          "The day's Microsoft Advertising cost divided by the day's clicks, averaged over the days. A day with no clicks has no figure.",
+        unit: "gbp",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_click_gbp",
+        aggregation: "avg",
+        where: "platform = 'microsoft'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-paid-landings",
+        label: "Paid landings, Microsoft (msclkid)",
+        description: "Page requests that arrived with a Microsoft Advertising click id (msclkid), added over the days.",
+        unit: "count",
+        view: "v_paid_landings_daily",
+        dayColumn: "day",
+        valueExpr: "msclkid_landings",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-cost-per-paid-landing-gbp",
+        label: "Microsoft Ads cost per paid landing",
+        description:
+          "The day's Microsoft Advertising cost divided by the day's msclkid landings, averaged over the days. A day with no landing has no figure.",
+        unit: "gbp",
+        view: "v_ads_cost_per_paid_landing_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_paid_landing_gbp",
+        aggregation: "avg",
+        where: "platform = 'microsoft'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "ms-ads-conversions",
+        label: "Microsoft Ads conversions",
+        description: "Conversions Microsoft Advertising counts, added over the days.",
+        unit: "count",
+        view: "v_ads_performance_daily",
+        dayColumn: "day",
+        valueExpr: "conversions",
+        aggregation: "sum",
+        where: "platform = 'microsoft'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "charges-without-activation",
+        label: "Charges with no activation",
+        description:
+          "Days' Stripe paid charges that have no subscription-activated event, added over the days. Above zero means a customer paid and may have no bundle.",
+        unit: "count",
+        view: "v_purchase_reconciliation_daily",
+        dayColumn: "day",
+        valueExpr: "greatest(-activity_minus_stripe, 0)",
+        aggregation: "sum",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
     ],
@@ -657,6 +929,43 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "returning_submitters_90d",
         aggregation: "latest",
         deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      },
+      {
+        id: "retention-active-customers-7d",
+        label: "Active customers, per 7 days",
+        description:
+          "Distinct signed-in customers who made a call in the 7 days to each day, all app clients together, averaged over the days. The base the retained submitters come from.",
+        unit: "count",
+        view: "v_active_customers_7d_daily",
+        dayColumn: "day",
+        valueExpr: "active_users_7d",
+        aggregation: "avg",
+        where: "app_client = 'all'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "retention-new-accounts",
+        label: "New accounts",
+        description: "Accounts opened, added over the days.",
+        unit: "count",
+        view: "v_signup_to_first_submission",
+        dayColumn: "signup_day",
+        valueExpr: "new_accounts",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "retention-new-accounts-submitted-share",
+        label: "New accounts that submitted, share",
+        description:
+          "The accounts opened in the window that have submitted, as a share of all the accounts opened in it. A recent account may not have submitted yet.",
+        unit: "ratio",
+        view: "v_signup_to_first_submission",
+        dayColumn: "signup_day",
+        valueExpr: "submitted",
+        aggregation: "ratio",
+        denominatorExpr: "new_accounts",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
       {
         id: "retention-passes-issued",
@@ -900,6 +1209,42 @@ export const OBJECTIVE_DEFINITIONS = [
         aggregation: "max",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
+      {
+        id: "company-contribution-gbp",
+        label: "Contribution",
+        description:
+          "Revenue less the AWS bill in pounds less Ads cost (Google and Microsoft), added over the days. The AWS bill is in dollars and is converted at the European Central Bank rate of each day.",
+        unit: "gbp",
+        view: "v_contribution_daily",
+        dayColumn: "day",
+        valueExpr: "contribution_gbp",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "company-net-monthly-burn-gbp",
+        label: "Net monthly burn",
+        description:
+          "The period's costs less its turnover in the latest company book, spread over the months of the accounting period. Zero or below means the book made a profit.",
+        unit: "gbp",
+        view: "v_company_runway",
+        dayColumn: "dt",
+        valueExpr: "net_monthly_burn_gbp",
+        aggregation: "latest",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "company-runway-months",
+        label: "Runway",
+        description:
+          "Cash at bank less creditors due within one year, divided by the net monthly burn, in months. Not shown while the book makes a profit.",
+        unit: "months",
+        view: "v_company_runway",
+        dayColumn: "dt",
+        valueExpr: "runway_months",
+        aggregation: "latest",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
     ],
   },
   {
@@ -941,6 +1286,26 @@ const BETTER_UP_IDS = [
   "subscription-renewals",
   "company-turnover",
   "company-profit",
+  "contribution-gbp",
+  "company-contribution-gbp",
+  "company-runway-months",
+  "ads-impressions",
+  "ads-clicks",
+  "ads-ctr",
+  "ms-ads-impressions",
+  "ms-ads-clicks",
+  "ms-ads-ctr",
+  "ms-ads-conversions",
+  "spreadsheets-downloads",
+  "sessions-from-spreadsheets",
+  "sessions-from-www",
+  "active-customers-daily",
+  "active-customers-7d",
+  "new-accounts-submitted",
+  "new-accounts-submitted-share",
+  "retention-active-customers-7d",
+  "retention-new-accounts",
+  "retention-new-accounts-submitted-share",
 ];
 const BETTER_DOWN_IDS = [
   "alarms-fired",
@@ -975,6 +1340,13 @@ const BETTER_DOWN_IDS = [
   "accessibility-open-findings",
   "fraud-header-open-findings",
   "company-costs",
+  "company-net-monthly-burn-gbp",
+  "ads-cost-per-click-gbp",
+  "ms-ads-cost-gbp",
+  "ms-ads-cost-per-click-gbp",
+  "ms-ads-cost-per-paid-landing-gbp",
+  "charges-without-activation",
+  "median-hours-to-first-submission",
 ];
 
 export function betterDirection(observationId) {
@@ -990,6 +1362,7 @@ export function measureDescription(observation) {
   const periods = PERIOD_NAME_BY_DAY_COLUMN[observation.dayColumn] ?? "days";
   if (observation.aggregation === "sum") return `total of the ${periods}`;
   if (observation.aggregation === "avg") return `average of the ${periods}`;
+  if (observation.aggregation === "ratio") return `total of ${observation.valueExpr} over total of ${observation.denominatorExpr}`;
   if (observation.aggregation === "max") return "highest in the window";
   if (observation.aggregation === "latest") return "latest day in the window";
   return "count of rows";
@@ -1006,7 +1379,7 @@ export const OBJECTIVE_GUIDANCE = {
     levers: "Sign-in friction, the first screen after sign-in, guide and video content, search and ad landing pages.",
   },
   "conversion-to-paid": {
-    sli: "Revenue and paid conversions from donations, subscriptions and passes, and the Google Ads spend and paid landings that lead to them.",
+    sli: "Revenue and paid conversions from donations, subscriptions and passes, and the Google and Microsoft Ads spend and paid landings that lead to them.",
     levers: "Price, the bundle page, the donation prompt after a submission, pass campaigns, the ads daily budget.",
   },
   "low-running-cost": {
@@ -1112,12 +1485,21 @@ function isS3Throttling(error) {
   return error.message.includes("HIVE_S3_THROTTLING");
 }
 
+// GENERIC_INTERNAL_ERROR is Athena failing on its own side, not a SQL error, and the same query
+// started again normally succeeds. SQL errors such as SYNTAX_ERROR are not matched here.
+function isAthenaInternalError(error) {
+  return error.message.includes("FAILED: GENERIC_INTERNAL_ERROR");
+}
+
 export async function runAthenaQuery({ workGroup, database, sql }) {
   const athenaClient = getAthenaClient();
   const maxThrottleRetries = Number(process.env.ATHENA_THROTTLE_MAX_RETRIES || 2);
   const throttleBackoffMs = Number(process.env.ATHENA_THROTTLE_BACKOFF_MS || 10000);
+  const maxInternalErrorRetries = 1;
+  let throttleRetries = 0;
+  let internalErrorRetries = 0;
 
-  for (let retry = 0; ; retry += 1) {
+  for (;;) {
     const { QueryExecutionId } = await athenaClient.send(
       new StartQueryExecutionCommand({
         QueryString: sql,
@@ -1129,9 +1511,23 @@ export async function runAthenaQuery({ workGroup, database, sql }) {
     try {
       await pollUntilTerminal(athenaClient, QueryExecutionId);
     } catch (error) {
-      if (retry < maxThrottleRetries && isS3Throttling(error)) {
-        logger.warn({ message: "Athena query throttled by S3, starting it again", queryExecutionId: QueryExecutionId, retry: retry + 1 });
-        await sleep(throttleBackoffMs * 2 ** retry);
+      if (throttleRetries < maxThrottleRetries && isS3Throttling(error)) {
+        logger.warn({
+          message: "Athena query throttled by S3, starting it again",
+          queryExecutionId: QueryExecutionId,
+          retry: throttleRetries + 1,
+        });
+        await sleep(throttleBackoffMs * 2 ** throttleRetries);
+        throttleRetries += 1;
+        continue;
+      }
+      if (internalErrorRetries < maxInternalErrorRetries && isAthenaInternalError(error)) {
+        logger.warn({
+          message: "Athena query failed with its own internal error, starting it again",
+          queryExecutionId: QueryExecutionId,
+          retry: internalErrorRetries + 1,
+        });
+        internalErrorRetries += 1;
         continue;
       }
       throw error;
@@ -1194,6 +1590,11 @@ export const LATEST_READING_VIEWS = new Set([
   "v_operator_interventions_daily",
   "v_compliance_status",
   "company_accounts",
+  "v_company_runway",
+  "v_contribution_daily",
+  "v_ads_performance_daily",
+  "v_spreadsheets_downloads_daily",
+  "v_submit_referrals_daily",
 ]);
 
 // A view with one row per month or quarter has no Today or Previous day.
@@ -1220,6 +1621,9 @@ function caseFilter(where) {
  * newest day up to today and `o<i>_today_as_of` is that day. A view with one row per month or
  * quarter has no Today or Previous day, so those columns are left out.
  *
+ * An observation with aggregation "ratio" divides the window's total of `valueExpr` by its total
+ * of `denominatorExpr`, so a share is weighted by the days' sizes rather than averaged.
+ *
  * `reportDataSince` adds `o<i>_data_since`, the earliest day the view holds rows for that
  * observation, so a window longer than the data reads as "since <day>" on the page rather than
  * as a full window.
@@ -1227,13 +1631,13 @@ function caseFilter(where) {
  * Each query lists every partition prefix its view's tables project and reads their objects, so
  * every run makes one query per view rather than one per observation.
  *
- * @param {{view: string, dayColumn: string, observations: Array<{valueExpr: string, aggregation: string, where?: string, reportDataSince?: boolean}>}} group
+ * @param {{view: string, dayColumn: string, observations: Array<{valueExpr: string, denominatorExpr?: string, aggregation: string, where?: string, reportDataSince?: boolean}>}} group
  * @returns {string}
  */
 export function buildWindowedBatchSql({ view, dayColumn, observations }) {
   const latestReading = LATEST_READING_VIEWS.has(view);
   const periodic = isPeriodicDayColumn(dayColumn);
-  const columns = observations.flatMap(({ valueExpr, aggregation, where, reportDataSince }, index) => {
+  const columns = observations.flatMap(({ valueExpr, denominatorExpr, aggregation, where, reportDataSince }, index) => {
     const prefix = observationColumnPrefix(index);
     const filter = caseFilter(where);
     // "latest" reads the value on the newest day inside the window, for a balance that a
@@ -1245,6 +1649,10 @@ export function buildWindowedBatchSql({ view, dayColumn, observations }) {
         if (aggregation === "latest" || newestDay) {
           const window = newestDay ? `${dayColumn} <= ${UK_TODAY}` : condition(dayColumn);
           return `max_by(${valueExpr}, ${dayColumn}) FILTER (WHERE ${window}${filter}) AS ${prefix}${alias}`;
+        }
+        if (aggregation === "ratio") {
+          const inWindow = `CASE WHEN ${condition(dayColumn)}${filter}`;
+          return `cast(sum(${inWindow} THEN ${valueExpr} END) AS double) / nullif(sum(${inWindow} THEN ${denominatorExpr} END), 0) AS ${prefix}${alias}`;
         }
         return `${aggregation}(CASE WHEN ${condition(dayColumn)}${filter} THEN ${valueExpr} END) AS ${prefix}${alias}`;
       },
@@ -1389,7 +1797,7 @@ function readWindow(row, column, aggregation, today) {
   const windowEndDay = column === "today" || column === "prev_1" ? ukDayFormat.format(windowEnd) : windowEnd.toISOString().slice(0, 10);
   if (row.first_day.slice(0, 10) > windowEndDay) return { value };
   if (aggregation === "sum") return { value: 0 };
-  return aggregation === "avg" ? { value, noEvents: true } : { value };
+  return aggregation === "avg" || aggregation === "ratio" ? { value, noEvents: true } : { value };
 }
 
 // Today for a source that reports whole days is its latest reading, whatever day that was: no
@@ -1560,7 +1968,11 @@ export async function buildSnapshot({ workGroup, database, context }) {
 
 export const DAILY_CHART_DAYS = 90;
 
+export const HOURLY_CHART_HOURS = 168;
+
 const dailyWindowFilter = (dayColumn) => `${dayColumn} > date_add('day', -${DAILY_CHART_DAYS}, current_date)`;
+const hourlyWindowFilter = (hourColumn) =>
+  `${hourColumn} > date_add('hour', -${HOURLY_CHART_HOURS}, date_trunc('hour', cast(current_timestamp AS timestamp)))`;
 
 const VISITOR_KIND_LABELS = {
   "operator": "Operator",
@@ -1575,8 +1987,9 @@ const VISITOR_KIND_DESCRIPTIONS = {
   operator: "Google Analytics sessions of the operator, flagged once the operator bundle has loaded in the browser.",
   authenticated: "Google Analytics sessions of signed-in users who are not operators.",
   human: "Google Analytics sessions of visitors who are not signed in and are not flagged as a bot, an operator or a test.",
-  synthetic: "Page requests from the behaviour tests, counted from the CloudFront access log by their DIYAccountingProbe user agent.",
-  bot: "Page requests whose user agent matches a known crawler, AI agent or the probe monitor, counted from the CloudFront access log.",
+  synthetic:
+    "Distinct visitors from the behaviour tests each day, counted from the CloudFront access log by their DIYAccountingProbe user agent.",
+  bot: "Distinct visitors each day whose user agent matches a known crawler, AI agent or the probe monitor, counted from the CloudFront access log.",
 };
 
 function activityLabels() {
@@ -1593,17 +2006,41 @@ function longFormSql({ dayExpression, componentExpression, valueExpression, view
   );
 }
 
+// One query over an hourly view for the 168 hours to now. The hour comes back as an ISO key in the
+// "day" column so buildChartSeries reads it like a daily row.
+function hourlyLongFormSql({ componentExpression, valueExpression, view, where }) {
+  const conditions = [hourlyWindowFilter("hour"), ...(where ? [where] : [])].join(" AND ");
+  return (
+    `SELECT date_format(hour, '%Y-%m-%dT%H:00:00Z') AS day, ${componentExpression} AS component, ` +
+    `cast(sum(${valueExpression}) AS double) AS value\n` +
+    `FROM   ${view}\nWHERE  ${conditions}\nGROUP  BY 1, 2`
+  );
+}
+
 const STRIPE_DONATION_COMPONENT_CASE =
   `CASE WHEN ${STRIPE_DONATION_PRODUCT_FILTER} THEN 'stripe-donations' ` +
   `WHEN ${PAYPAL_DONATION_PRODUCT_FILTER} THEN 'paypal-donations' ` +
   `WHEN product LIKE 'paypal-%' THEN 'paypal-other' ELSE 'subscriptions' END`;
+
+// The v_contribution_daily column behind each line of the Contribution chart mode, in drawing order.
+const CONTRIBUTION_COLUMNS = {
+  "revenue": "revenue_gbp",
+  "aws-cost": "aws_cost_gbp",
+  "ads-cost": "ads_cost_gbp",
+  "contribution": "contribution_gbp",
+};
+
+// A campaign line carries its platform, so a Google and a Microsoft campaign never share a line.
+const CAMPAIGN_COMPONENT = `CASE platform WHEN 'microsoft' THEN 'Microsoft: ' ELSE 'Google: ' END || campaign_name`;
+
+const PLATFORM_LABELS = { google: "Google", microsoft: "Microsoft" };
 
 const plural = (count, singular, pluralForm) => `${count} ${Number(count) === 1 ? singular : pluralForm}`;
 
 /**
  * The line under the Retention graph that lets the graph's submitters be checked against the
  * Submit VAT (HMRC) completions in the activities table: the same window's distinct submitters
- * and completions from the activity events, customers apart from test accounts, beside the
+ * and completions from the activity events, customers apart from operators and test accounts, beside the
  * graph's own Submitters line on its latest day (read from receipts).
  *
  * @param {{rows: Array<{actor_group: string, submissions: string, submitters: string}>, series: Array<{id: string, values: number[]}>, days: number}} params
@@ -1612,14 +2049,16 @@ const plural = (count, singular, pluralForm) => `${count} ${Number(count) === 1 
 export function vatSubmissionReconciliationText({ rows, series, days }) {
   const group = (name) => rows.find((row) => row.actor_group === name) ?? { submissions: "0", submitters: "0" };
   const customer = group("customer");
+  const operator = group("operator");
   const test = group("test");
   const receiptSubmitters = series.find((line) => line.id === "submitters-90d")?.values.at(-1) ?? 0;
   return (
     `Last ${days} days, customers: ${plural(customer.submitters, "distinct submitter", "distinct submitters")} in the activity events ` +
     `made ${plural(customer.submissions, "Submit VAT (HMRC) completion", "Submit VAT (HMRC) completions")}; ` +
     `the Submitters line reads ${receiptSubmitters} on its latest day, counted from receipts. ` +
+    `Operators apart: ${plural(operator.submitters, "account", "accounts")} made ${plural(operator.submissions, "completion", "completions")}. ` +
     `Test accounts apart: ${plural(test.submitters, "account", "accounts")} made ${plural(test.submissions, "completion", "completions")}. ` +
-    `Completions include failed attempts. The lake does not mark an operator's own account, so operator submissions are in the customer figures.`
+    `Completions include failed attempts.`
   );
 }
 
@@ -1653,6 +2092,11 @@ export function buildDailyChartDefinitions() {
             view: "v_activity_started_daily",
             dayColumn: "day",
           }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "activity",
+            valueExpression: "starts",
+            view: "v_activity_started_hourly",
+          }),
         },
         {
           id: "completed",
@@ -1667,6 +2111,11 @@ export function buildDailyChartDefinitions() {
             valueExpression: "completions",
             view: "v_submissions_by_activity_daily",
             dayColumn: "day",
+          }),
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "activity",
+            valueExpression: "completions",
+            view: "v_submissions_by_activity_hourly",
           }),
         },
       ],
@@ -1733,7 +2182,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Conversion to submission",
       unit: "count",
-      note: "Steps, left to right: human sessions, customers active that day, those who submitted within 7 days. The last few days have not had their 7 days yet.",
+      note: "Steps, left to right: spreadsheet downloads, Submit sessions that came from the spreadsheets and gateway sites, human sessions, customers active that day, those who submitted within 7 days. Google Analytics reports whole days two days late. The last few days have not had their 7 days yet. Active customers shows each app client's customers per day and over 7 days.",
       modes: [
         {
           id: "funnel",
@@ -1741,19 +2190,39 @@ export function buildDailyChartDefinitions() {
           total: null,
           descriptionOf: (id) =>
             ({
+              "spreadsheet-downloads": "Spreadsheets downloaded from the spreadsheets site, from the GA4 download events.",
+              "sessions-from-spreadsheets": "Sessions on the Submit site whose source is the spreadsheets site, from Google Analytics.",
+              "sessions-from-www":
+                "Sessions on the Submit site whose source is the gateway site (www.diyaccounting.co.uk), from Google Analytics.",
               "human-sessions": "Sessions of visitors classed as human, from Google Analytics; counts visitors who accepted analytics.",
               "active-customers": "Customers who signed in on the day.",
               "submitted-within-7-days": "Of those who signed in on the day, the customers who made a submission within 7 days.",
             })[id],
-          componentOrder: ["human-sessions", "active-customers", "submitted-within-7-days"],
+          componentOrder: [
+            "spreadsheet-downloads",
+            "sessions-from-spreadsheets",
+            "sessions-from-www",
+            "human-sessions",
+            "active-customers",
+            "submitted-within-7-days",
+          ],
           labelOf: (id) =>
             ({
+              "spreadsheet-downloads": "Spreadsheet downloads",
+              "sessions-from-spreadsheets": "Submit sessions from the spreadsheets site",
+              "sessions-from-www": "Submit sessions from the gateway site",
               "human-sessions": "Human sessions",
               "active-customers": "Active customers",
               "submitted-within-7-days": "Submitted within 7 days",
             })[id] ?? id,
           sql:
-            `SELECT cast(day AS varchar) AS day, 'human-sessions' AS component, cast(sum(sessions) AS double) AS value\n` +
+            `SELECT cast(day AS varchar) AS day, 'spreadsheet-downloads' AS component, cast(sum(downloads) AS double) AS value\n` +
+            `FROM   v_spreadsheets_downloads_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'sessions-from-' || origin, cast(sum(sessions) AS double)\n` +
+            `FROM   v_submit_referrals_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'human-sessions', cast(sum(sessions) AS double)\n` +
             `FROM   v_visitors_by_kind_daily\nWHERE  ${dailyWindowFilter("day")} AND visitor_kind = 'human'\nGROUP  BY 1\n` +
             `UNION ALL\n` +
             `SELECT cast(cohort_day AS varchar), 'active-customers', cast(sum(logged_in) AS double)\n` +
@@ -1761,6 +2230,32 @@ export function buildDailyChartDefinitions() {
             `UNION ALL\n` +
             `SELECT cast(cohort_day AS varchar), 'submitted-within-7-days', cast(sum(submitted_within_7d) AS double)\n` +
             `FROM   v_login_to_submission_funnel\nWHERE  ${dailyWindowFilter("cohort_day")}\nGROUP  BY 1`,
+        },
+        {
+          id: "active-customers",
+          label: "Active customers by app client",
+          total: null,
+          labelOf: (id) => (id === "all" ? "All clients" : id),
+          descriptionOf: (id) =>
+            id === "all"
+              ? "Distinct signed-in customers who made a call on the day, all app clients together."
+              : `Distinct signed-in customers who made a call on the day through the ${id} app client.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, app_client AS component, cast(sum(active_users_1d) AS double) AS value\n` +
+            `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+        },
+        {
+          id: "active-customers-7d",
+          label: "Active customers over 7 days",
+          total: null,
+          labelOf: (id) => (id === "all" ? "All clients" : id),
+          descriptionOf: (id) =>
+            id === "all"
+              ? "Distinct signed-in customers who made a call in the 7 days to the day, all app clients together."
+              : `Distinct signed-in customers who made a call in the 7 days to the day through the ${id} app client.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, app_client AS component, cast(sum(active_users_7d) AS double) AS value\n` +
+            `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
         },
       ],
     },
@@ -1812,6 +2307,131 @@ export function buildDailyChartDefinitions() {
             view: "v_pass_redemptions_daily",
             dayColumn: "day",
           }),
+        },
+        {
+          id: "contribution",
+          label: "Contribution",
+          total: null,
+          componentOrder: Object.keys(CONTRIBUTION_COLUMNS),
+          labelOf: (id) =>
+            ({ "revenue": "Revenue", "aws-cost": "AWS cost", "ads-cost": "Ads cost", "contribution": "Contribution" })[id] ?? id,
+          descriptionOf: (id) =>
+            ({
+              "revenue": "Stripe and PayPal revenue of the day, in pounds.",
+              "aws-cost":
+                "The day's AWS bill across every account, converted from dollars to pounds at the European Central Bank rate of the day.",
+              "ads-cost": "The day's Ads cost on Google and Microsoft together, in pounds.",
+              "contribution": "Revenue less AWS cost less Ads cost.",
+            })[id],
+          sql: Object.entries(CONTRIBUTION_COLUMNS)
+            .map(
+              ([component, column]) =>
+                `SELECT cast(day AS varchar) AS day, '${component}' AS component, cast(${column} AS double) AS value\n` +
+                `FROM   v_contribution_daily\nWHERE  ${dailyWindowFilter("day")} AND contribution_gbp IS NOT NULL`,
+            )
+            .join("\nUNION ALL\n"),
+        },
+        {
+          id: "ads-impressions",
+          label: "Ads impressions by campaign",
+          unit: "count",
+          total: "All campaigns",
+          totalDescription: "Impressions of every campaign added together.",
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Times the ${id} campaign's advertisements were shown in a day.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, cast(sum(impressions) AS double) AS value\n` +
+            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+        },
+        {
+          id: "ads-clicks",
+          label: "Ads clicks by campaign",
+          unit: "count",
+          total: "All campaigns",
+          totalDescription: "Clicks on every campaign added together.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Clicks on the ${id} campaign's advertisements in a day.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, cast(sum(clicks) AS double) AS value\n` +
+            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+        },
+        {
+          id: "ads-ctr",
+          label: "Ads click-through rate by campaign",
+          unit: "ratio",
+          total: null,
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `The ${id} campaign's clicks divided by its impressions in a day.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, cast(sum(clicks) AS double) / sum(impressions) AS value\n` +
+            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2\nHAVING sum(impressions) > 0`,
+        },
+        {
+          id: "ads-cpc",
+          label: "Ads cost per click by campaign",
+          unit: "gbp",
+          total: null,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `The ${id} campaign's cost divided by its clicks in a day, in pounds.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, ${CAMPAIGN_COMPONENT} AS component, sum(cost_gbp) / sum(clicks) AS value\n` +
+            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2\nHAVING sum(clicks) > 0`,
+        },
+        {
+          id: "ads-cost",
+          label: "Ads cost by platform",
+          unit: "gbp",
+          total: "All platforms",
+          totalDescription: "Google and Microsoft Ads cost added together, in pounds.",
+          componentOrder: ["google", "microsoft"],
+          labelOf: (id) => PLATFORM_LABELS[id] ?? id,
+          descriptionOf: (id) => `The day's ${PLATFORM_LABELS[id] ?? id} Ads cost, in pounds.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, platform AS component, cast(sum(cost_gbp) AS double) AS value\n` +
+            `FROM   v_ads_cost_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+        },
+        {
+          id: "ads-paid-landings",
+          label: "Paid landings by platform",
+          unit: "count",
+          total: "All platforms",
+          totalDescription: "Landings with a Google or Microsoft click id added together.",
+          componentOrder: ["google", "microsoft"],
+          labelOf: (id) => PLATFORM_LABELS[id] ?? id,
+          descriptionOf: (id) =>
+            `Page requests in a day that arrived with a ${id === "microsoft" ? "Microsoft Advertising click id (msclkid)" : "Google Ads click id (gclid)"}.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, 'google' AS component, cast(sum(paid_landings) AS double) AS value\n` +
+            `FROM   v_paid_landings_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(day AS varchar), 'microsoft', cast(sum(msclkid_landings) AS double)\n` +
+            `FROM   v_paid_landings_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1`,
+        },
+        {
+          id: "ads-cost-per-paid-landing",
+          label: "Cost per paid landing by platform",
+          unit: "gbp",
+          total: null,
+          componentOrder: ["google", "microsoft"],
+          labelOf: (id) => PLATFORM_LABELS[id] ?? id,
+          descriptionOf: (id) => `The day's ${PLATFORM_LABELS[id] ?? id} Ads cost divided by its paid landings, in pounds.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, platform AS component, cast(cost_per_paid_landing_gbp AS double) AS value\n` +
+            `FROM   v_ads_cost_per_paid_landing_daily\nWHERE  ${dailyWindowFilter("day")} AND cost_per_paid_landing_gbp IS NOT NULL`,
+        },
+        {
+          id: "ads-conversions",
+          label: "Ads conversions by platform",
+          unit: "count",
+          total: null,
+          componentOrder: ["google", "microsoft"],
+          labelOf: (id) => PLATFORM_LABELS[id] ?? id,
+          descriptionOf: (id) => `Conversions ${PLATFORM_LABELS[id] ?? id} Ads counts in a day. The Google pull does not read conversions.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, platform AS component, cast(conversions AS double) AS value\n` +
+            `FROM   v_ads_performance_daily\nWHERE  ${dailyWindowFilter("day")} AND conversions IS NOT NULL`,
         },
       ],
     },
@@ -1915,7 +2535,7 @@ export function buildDailyChartDefinitions() {
       objectiveId: "retention",
       title: "Retention",
       unit: "count",
-      note: "The 90-day windows roll: each day counts the customers who submitted in the 90 days up to it, so a figure falls when a submission leaves the window. A returning submitter also submitted in the 90 days before that; the table above reads the same line on its latest day. Passes issued are a count per day.",
+      note: "The 90-day windows roll: each day counts the customers who submitted in the 90 days up to it, so a figure falls when a submission leaves the window. A returning submitter also submitted in the 90 days before that; the table above reads the same line on its latest day. Active customers over 7 days and New accounts are the bases the submitters come from. Passes issued are a count per day.",
       reconciliation: {
         sql:
           `SELECT actor_group, cast(sum(submissions) AS varchar) AS submissions, cast(count(DISTINCT hashed_sub) AS varchar) AS submitters\n` +
@@ -1934,8 +2554,18 @@ export function buildDailyChartDefinitions() {
               "renewals": "Subscriptions renewed on the day.",
               "cancellations": "Subscriptions cancelled on the day.",
               "passes-issued": "Passes issued on the day, of every pass type.",
+              "active-customers-7d": "Distinct signed-in customers who made a call in the 7 days to the day.",
+              "new-accounts": "Accounts opened on the day, test and operator accounts apart.",
             })[id],
-          componentOrder: ["submitters-90d", "returning-submitters-90d", "renewals", "cancellations", "passes-issued"],
+          componentOrder: [
+            "active-customers-7d",
+            "new-accounts",
+            "submitters-90d",
+            "returning-submitters-90d",
+            "renewals",
+            "cancellations",
+            "passes-issued",
+          ],
           labelOf: (id) =>
             ({
               "passes-issued": "Passes issued",
@@ -1943,8 +2573,16 @@ export function buildDailyChartDefinitions() {
               "returning-submitters-90d": "Returning submitters, 90 days to this day",
               "renewals": "Subscription renewals",
               "cancellations": "Subscription cancellations",
+              "active-customers-7d": "Active customers, 7 days to this day",
+              "new-accounts": "New accounts",
             })[id] ?? id,
           sql:
+            `SELECT cast(day AS varchar) AS day, 'active-customers-7d' AS component, cast(sum(active_users_7d) AS double) AS value\n` +
+            `FROM   v_active_customers_7d_daily\nWHERE  ${dailyWindowFilter("day")} AND app_client = 'all'\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
+            `SELECT cast(signup_day AS varchar), 'new-accounts', cast(sum(new_accounts) AS double)\n` +
+            `FROM   v_signup_to_first_submission\nWHERE  ${dailyWindowFilter("signup_day")}\nGROUP  BY 1\n` +
+            `UNION ALL\n` +
             `SELECT cast(day AS varchar) AS day, 'submitters-90d' AS component, cast(sum(submitters_90d) AS double) AS value\n` +
             `FROM   v_returning_submitters_rolling_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1\n` +
             `UNION ALL\n` +
@@ -1967,21 +2605,90 @@ export function buildDailyChartDefinitions() {
       objectiveId: "conversion-to-submission",
       title: "Visitors",
       unit: "count",
-      note: "Operator, authenticated user and human count Google Analytics sessions, so only visitors who accepted analytics. Synthetic and bot count page requests from the CloudFront access log, which Google Analytics cannot see; no client address is read, so they are requests, not people.",
+      note: "Operator, authenticated user and human count Google Analytics sessions, so only visitors who accepted analytics. Synthetic and bot count distinct visitors each day from the CloudFront access log, which Google Analytics cannot see; a visitor is a salted hash of the client address that changes every day, so one visitor is counted once a day and never followed across days. By landing page counts the Google Analytics sessions that began on each page; By country counts the activity events' new sessions, with AI agents apart.",
       modes: [
         {
           id: "sessions",
           label: "Visitors",
           total: null,
           componentOrder: ["operator", "authenticated", "human", "synthetic", "bot"],
+          hourlyComponentOrder: ["operator", "authenticated", "human"],
           labelOf: (id) => VISITOR_KIND_LABELS[id] ?? id,
           descriptionOf: (id) => VISITOR_KIND_DESCRIPTIONS[id],
+          hourlySql: hourlyLongFormSql({
+            componentExpression: "visitor_kind",
+            valueExpression: "sessions",
+            view: "v_visitors_by_kind_hourly",
+            where: "visitor_kind IN ('operator', 'authenticated', 'human')",
+          }),
           sql:
             `SELECT cast(day AS varchar) AS day, visitor_kind AS component, cast(sum(sessions) AS double) AS value\n` +
             `FROM   v_visitors_by_kind_daily\nWHERE  ${dailyWindowFilter("day")} AND visitor_kind IN ('operator', 'authenticated', 'human')\nGROUP  BY 1, 2\n` +
             `UNION ALL\n` +
-            `SELECT cast(day AS varchar), visitor_kind, cast(sum(page_requests) AS double)\n` +
+            `SELECT cast(day AS varchar), visitor_kind, cast(sum(visitors) AS double)\n` +
             `FROM   v_visitors_cloudfront_daily\nWHERE  ${dailyWindowFilter("day")}\nGROUP  BY 1, 2`,
+        },
+        {
+          id: "landing-page",
+          label: "By landing page",
+          total: "All landing pages",
+          totalDescription: "Sessions of every landing page added together.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Google Analytics sessions that began on ${id}.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "landing_page",
+            valueExpression: "sessions",
+            view: "v_ga4_landing_pages_daily",
+            dayColumn: "day",
+          }),
+        },
+        {
+          id: "landing-page-sign-in",
+          label: "Sign-in rate by landing page",
+          unit: "ratio",
+          total: null,
+          labelOf: (id) => id,
+          descriptionOf: (id) =>
+            `The share of sessions that began on ${id} and went on to sign in. The ten landing pages with most sessions in the window.`,
+          sql:
+            `SELECT cast(day AS varchar) AS day, landing_page AS component, cast(sum(sign_ins) AS double) / sum(sessions) AS value\n` +
+            `FROM   v_ga4_landing_pages_daily\nWHERE  ${dailyWindowFilter("day")} AND landing_page IN (\n` +
+            `  SELECT landing_page FROM v_ga4_landing_pages_daily WHERE ${dailyWindowFilter("day")}\n` +
+            `  GROUP BY 1 ORDER BY sum(sessions) DESC LIMIT 10)\nGROUP  BY 1, 2\nHAVING sum(sessions) > 0`,
+        },
+        {
+          id: "country",
+          label: "By country",
+          total: "All countries",
+          totalDescription: "Sessions of every country added together, AI agents apart.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Sessions from ${id} that are not AI agents, from the activity events.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "country",
+            valueExpression: "human_sessions",
+            view: "v_traffic_by_country_daily",
+            dayColumn: "day",
+          }),
+        },
+        {
+          id: "ai-agent-country",
+          label: "AI agents by country",
+          total: "All AI-agent sessions",
+          totalDescription: "Sessions by AI agents from every country added together.",
+          maxComponents: 10,
+          labelOf: (id) => id,
+          descriptionOf: (id) => `Sessions by AI agents from ${id}, from the activity events.`,
+          sql: longFormSql({
+            dayExpression: "day",
+            componentExpression: "country",
+            valueExpression: "ai_agent_sessions",
+            view: "v_traffic_by_country_daily",
+            dayColumn: "day",
+          }),
         },
       ],
     },
@@ -1999,6 +2706,19 @@ export function dailyChartDays(endDay, count = DAILY_CHART_DAYS) {
     const day = new Date(end);
     day.setUTCDate(end.getUTCDate() - (count - 1 - index));
     return day.toISOString().slice(0, 10);
+  });
+}
+
+/**
+ * The last `count` UTC hours ending on the hour that contains `now`, oldest first, as ISO keys
+ * like `2026-09-08T14:00:00Z`: the hours the hourly charts' `hour > now_hour - 168 hours` filter returns.
+ */
+export function hourlyChartHours(now, count = HOURLY_CHART_HOURS) {
+  const end = new Date(now);
+  end.setUTCMinutes(0, 0, 0);
+  return Array.from({ length: count }, (_, index) => {
+    const hour = new Date(end.getTime() - (count - 1 - index) * 3600000);
+    return hour.toISOString().slice(0, 13) + ":00:00Z";
   });
 }
 
@@ -2064,10 +2784,11 @@ export function buildChartSeries({ days, rows, mode }) {
  * query fails leaves its chart out and is returned in `failedChartIds`, so one missing view does
  * not stop the other charts publishing.
  *
- * @returns {Promise<{dailyCharts: {days: string[], charts: object[]}, failedChartIds: string[]}>}
+ * @returns {Promise<{dailyCharts: {days: string[], hours: string[], charts: object[]}, failedChartIds: string[]}>}
  */
-export async function buildDailyCharts({ workGroup, database, endDay = new Date().toISOString().slice(0, 10) }) {
+export async function buildDailyCharts({ workGroup, database, endDay = new Date().toISOString().slice(0, 10), now = new Date() }) {
   const days = dailyChartDays(endDay);
+  const hours = hourlyChartHours(now);
   const definitions = buildDailyChartDefinitions();
   const failedChartIds = new Set();
 
@@ -2077,6 +2798,27 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
     async ({ definition, mode }) => {
       try {
         const rows = await runAthenaQuery({ workGroup, database, sql: mode.sql });
+        let hourly = null;
+        if (mode.hourlySql) {
+          try {
+            const hourlyRows = await runAthenaQuery({ workGroup, database, sql: mode.hourlySql });
+            hourly = {
+              series: buildChartSeries({
+                days: hours,
+                rows: hourlyRows,
+                mode: { ...mode, componentOrder: mode.hourlyComponentOrder ?? mode.componentOrder },
+              }),
+            };
+          } catch (error) {
+            failedChartIds.add(`${definition.id}-hourly`);
+            logger.warn({
+              message: "Hourly chart query failed, publishing the chart without its hourly series",
+              chartId: definition.id,
+              mode: mode.id,
+              error: error.message,
+            });
+          }
+        }
         return {
           chartId: definition.id,
           mode: {
@@ -2084,6 +2826,7 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
             label: mode.label,
             ...(mode.unit ? { unit: mode.unit } : {}),
             series: buildChartSeries({ days, rows, mode }),
+            ...(hourly ? { hourly } : {}),
           },
         };
       } catch (error) {
@@ -2127,7 +2870,7 @@ export async function buildDailyCharts({ workGroup, database, endDay = new Date(
       });
     }
   }
-  return { dailyCharts: { days, charts }, failedChartIds: [...failedChartIds] };
+  return { dailyCharts: { days, hours, charts }, failedChartIds: [...failedChartIds] };
 }
 
 export const COST_DRIVER_DAYS = 30;
@@ -2166,6 +2909,40 @@ export async function buildCostDrivers({ workGroup, database }) {
       resourceId: row.resource_id,
       costUsd: Number(row.cost_usd),
     })),
+  };
+}
+
+/**
+ * The paying subscribers of the latest month with a charge, each row an acquisition
+ * channel and bundle with its active subscribers, monthly recurring revenue and annualised
+ * recurring revenue, and the three figures added over every row. A subscriber with no recorded
+ * channel reads "unknown". The totals add the rows, so a customer paying for two bundles counts
+ * once in each.
+ *
+ * @returns {Promise<{month: string|null, rows: Array<{source: string, bundleId: string, subscribers: number, mrrGbp: number, arrGbp: number}>, totals: {subscribers: number, mrrGbp: number, arrGbp: number}}>}
+ */
+export async function buildPaidSubscribers({ workGroup, database }) {
+  const rows = await runAthenaQuery({
+    workGroup,
+    database,
+    sql:
+      `SELECT cast(month AS varchar) AS month, source, bundle_id, cast(active_subscribers AS double) AS subscribers,\n` +
+      `       cast(mrr_gbp AS double) AS mrr_gbp, cast(arr_gbp AS double) AS arr_gbp\n` +
+      `FROM   v_paid_subscribers_by_channel\n` +
+      `WHERE  month = (SELECT max(month) FROM v_paid_subscribers_by_channel)\nORDER  BY mrr_gbp DESC, source, bundle_id`,
+  });
+  const entries = rows.map((row) => ({
+    source: row.source,
+    bundleId: row.bundle_id,
+    subscribers: Number(row.subscribers),
+    mrrGbp: Number(row.mrr_gbp),
+    arrGbp: Number(row.arr_gbp),
+  }));
+  const total = (key) => entries.reduce((sum, entry) => sum + entry[key], 0);
+  return {
+    month: rows[0]?.month ?? null,
+    rows: entries,
+    totals: { subscribers: total("subscribers"), mrrGbp: total("mrrGbp"), arrGbp: total("arrGbp") },
   };
 }
 
@@ -2230,11 +3007,20 @@ export async function handler() {
     failedCostDrivers = 1;
     logger.warn({ message: "Cost drivers query failed, publishing none", error: error.message });
   }
+  let paidSubscribers = null;
+  let failedPaidSubscribers = 0;
+  try {
+    paidSubscribers = await buildPaidSubscribers({ workGroup, database });
+  } catch (error) {
+    failedPaidSubscribers = 1;
+    logger.warn({ message: "Paid subscribers query failed, publishing none", error: error.message });
+  }
   const snapshot = {
     ...built,
     dailyCharts,
     ...(costDrivers ? { costDrivers } : {}),
-    failedObservationCount: built.failedObservationCount + failedChartIds.length + failedCostDrivers,
+    ...(paidSubscribers ? { paidSubscribers } : {}),
+    failedObservationCount: built.failedObservationCount + failedChartIds.length + failedCostDrivers + failedPaidSubscribers,
   };
   await writeSnapshot({ bucket: lakeBucket, envName, snapshot });
 

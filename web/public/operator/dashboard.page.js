@@ -48,6 +48,12 @@ const COMPANY_BALANCE_SHEET_ROWS = [
   ["company-capital-and-reserves", "Capital and reserves"],
 ];
 
+const COMPANY_CONTRIBUTION_ROWS = [
+  ["company-contribution-gbp", "Contribution, last 30 days"],
+  ["company-net-monthly-burn-gbp", "Net monthly burn"],
+  ["company-runway-months", "Runway"],
+];
+
 const RESERVE_FLOOR_GBP = 2000;
 
 const NOT_MEASURED = "not measured";
@@ -81,6 +87,7 @@ function formatValue(unit, value) {
   if (unit === "gbp") return gbpFormat.format(value);
   if (unit === "usd") return usdFormat.format(value);
   if (unit === "hours") return numberFormat.format(value) + " h";
+  if (unit === "months") return numberFormat.format(value) + (value === 1 ? " month" : " months");
   if (unit === "runs") return numberFormat.format(value) + (value === 1 ? " run" : " runs");
   if (unit === "count" && value === 0) return NONE;
   return numberFormat.format(value);
@@ -101,6 +108,46 @@ function formatTrend(trend, isNew, better) {
   if (trend > 0) return { text: "↑ " + pct, className: trendClassFor(1, better) };
   if (trend < 0) return { text: "↓ " + pct, className: trendClassFor(-1, better) };
   return { text: "flat", className: "trend-flat" };
+}
+
+const clockFormat = new Intl.DateTimeFormat("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
+const readingDayFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+
+// The day the daily readings are for: the latest day any source in the table reports for itself
+// (a window's asOf), otherwise the day the snapshot was generated.
+function dailyReadingDay(observations, generatedAt) {
+  const reported = observations.flatMap((observation) =>
+    ["today", "previousDay", "last7", "last30", "last90"]
+      .map((key) => observation && observation[key] && observation[key].asOf)
+      .filter(Boolean),
+  );
+  return reported.length > 0 ? reported.sort().at(-1) : generatedAt.slice(0, 10);
+}
+
+// A second header row under the window columns: the hourly reading's time under Today and
+// Previous day, the daily reading's day under the 7, 30 and 90 day columns. `trailingColumns`
+// is the count of columns after Last 90 days.
+function setLastUpdated(table, observations, generatedAt, trailingColumns) {
+  const head = table.querySelector("thead");
+  head.querySelectorAll("tr.last-updated").forEach((row) => row.remove());
+  const row = document.createElement("tr");
+  row.className = "last-updated";
+  const cell = (text, span, kind) => {
+    const th = document.createElement("th");
+    th.scope = "colgroup";
+    th.colSpan = span;
+    th.className = "last-updated-cell";
+    if (kind) th.dataset.reading = kind;
+    th.textContent = text;
+    return th;
+  };
+  row.appendChild(cell("", 1));
+  row.appendChild(cell("Last updated " + clockFormat.format(new Date(generatedAt)) + " UTC", 2, "hourly"));
+  row.appendChild(
+    cell("Last updated " + readingDayFormat.format(new Date(dailyReadingDay(observations, generatedAt) + "T00:00:00Z")), 4, "daily"),
+  );
+  for (let index = 0; index < trailingColumns; index += 1) row.appendChild(cell("", 1));
+  head.appendChild(row);
 }
 
 function formatTimestamp(iso) {
@@ -176,7 +223,7 @@ function renderObservationRow(observation) {
   return row;
 }
 
-function renderObjective(objective) {
+function renderObjective(objective, generatedAt) {
   const section = document.createElement("section");
   section.className = "objective";
   section.dataset.objectiveId = objective.id;
@@ -218,6 +265,7 @@ function renderObjective(objective) {
   thead.innerHTML =
     '<tr><th>Observation</th><th title="Since midnight UK time">Today</th><th>Previous day</th><th>Last 7 days</th><th>Last 30 days</th><th title="Last 30 days against the 30 days before them">30 day trend</th><th>Last 90 days</th><th>Where to look</th></tr>';
   table.appendChild(thead);
+  setLastUpdated(table, objective.observations, generatedAt, 1);
 
   const tbody = document.createElement("tbody");
   objective.observations.forEach((observation) => tbody.appendChild(renderObservationRow(observation)));
@@ -252,6 +300,13 @@ function renderVisitors(snapshot) {
     observationsById[observation.id] = observation;
   });
 
+  setLastUpdated(
+    document.getElementById("visitorsTable"),
+    VISITOR_KINDS.map(([observationId]) => observationsById[observationId]).filter(Boolean),
+    snapshot.generatedAt,
+    0,
+  );
+
   VISITOR_KINDS.forEach(([observationId, kindLabel]) => {
     const observation = observationsById[observationId];
     const row = document.createElement("tr");
@@ -285,8 +340,12 @@ function renderCompanyAccountsRow(observationsById, id, label) {
   row.appendChild(labelCell);
 
   const observation = observationsById[id];
+  if (observation && observation.description) labelCell.title = observation.description;
   const valueCell = document.createElement("td");
-  valueCell.textContent = formatValue("gbp", observation && observation.last30 && observation.last30.value);
+  valueCell.textContent = formatValue(
+    (observation && observation.unit) || "gbp",
+    observation && observation.last30 && observation.last30.value,
+  );
   row.appendChild(valueCell);
 
   return row;
@@ -323,6 +382,10 @@ function renderCompanyAccounts(snapshot) {
   const bsBody = document.getElementById("companyBalanceSheetBody");
   bsBody.innerHTML = "";
   COMPANY_BALANCE_SHEET_ROWS.forEach(([id, label]) => bsBody.appendChild(renderCompanyAccountsRow(observationsById, id, label)));
+
+  const contributionBody = document.getElementById("companyContributionBody");
+  contributionBody.innerHTML = "";
+  COMPANY_CONTRIBUTION_ROWS.forEach(([id, label]) => contributionBody.appendChild(renderCompanyAccountsRow(observationsById, id, label)));
 }
 
 function appendReserveRow(body, id, label, text) {
@@ -502,6 +565,12 @@ function renderActivities(snapshot) {
   dataSinceNote.hidden = dataSinceNote.textContent === "";
 
   ["started", "completed"].forEach((kind) => {
+    setLastUpdated(
+      document.getElementById(kind === "started" ? "activitiesStartedTable" : "activitiesCompletedTable"),
+      objective.observations.filter((observation) => observation.id.split("::")[1] === kind),
+      snapshot.generatedAt,
+      0,
+    );
     const body = document.getElementById(kind === "started" ? "activitiesStartedBody" : "activitiesCompletedBody");
     body.innerHTML = "";
     activityIds.forEach((activityId) => {
@@ -548,8 +617,9 @@ function renderSnapshot(snapshot) {
 
   OBJECTIVE_ORDER.forEach((objectiveId) => {
     const objective = objectivesById[objectiveId] || { id: objectiveId, name: objectiveId, observations: [] };
-    const section = renderObjective(objective);
+    const section = renderObjective(objective, snapshot.generatedAt);
     if (objectiveId === "low-running-cost") section.appendChild(renderCostDrivers(snapshot.costDrivers));
+    if (objectiveId === "conversion-to-paid") section.appendChild(renderPaidSubscribers(snapshot.paidSubscribers));
     container.appendChild(section);
   });
 }
@@ -592,6 +662,59 @@ function renderCostDrivers(costDrivers) {
     row.appendChild(cost);
     tbody.appendChild(row);
   });
+  table.appendChild(tbody);
+  wrapper.appendChild(table);
+  return wrapper;
+}
+
+// The paying subscribers of the latest month, by acquisition channel and bundle.
+function renderPaidSubscribers(paidSubscribers) {
+  const wrapper = document.createElement("div");
+  wrapper.className = "paid-subscribers";
+  const heading = document.createElement("h3");
+  heading.textContent =
+    "Paying subscribers by channel and bundle" + (paidSubscribers && paidSubscribers.month ? ", " + paidSubscribers.month.slice(0, 7) : "");
+  heading.title =
+    "Customers with a paid subscription charge in the latest month, by the channel that first brought the account (from the click id or utm source) and by bundle. Monthly recurring revenue is the month's charges net of refunds; annual is twelve times that.";
+  wrapper.appendChild(heading);
+  if (!paidSubscribers || paidSubscribers.rows.length === 0) {
+    const empty = document.createElement("p");
+    empty.className = "paid-subscribers-empty";
+    empty.textContent = "No paying subscribers published yet.";
+    wrapper.appendChild(empty);
+    return wrapper;
+  }
+  const table = document.createElement("table");
+  table.className = "observations data-table paid-subscribers-table";
+  table.innerHTML =
+    '<thead><tr><th>Channel</th><th>Bundle</th><th title="Customers with a paid charge in the month">Subscribers</th><th title="The month\'s charges net of refunds">MRR</th><th title="Twelve times the monthly recurring revenue">ARR</th></tr></thead>';
+  const tbody = document.createElement("tbody");
+  const addRow = (className, cells) => {
+    const row = document.createElement("tr");
+    row.className = className;
+    cells.forEach((text) => {
+      const cell = document.createElement("td");
+      cell.textContent = text;
+      row.appendChild(cell);
+    });
+    tbody.appendChild(row);
+  };
+  paidSubscribers.rows.forEach((entry) =>
+    addRow("paid-subscribers-row", [
+      entry.source,
+      entry.bundleId,
+      formatValue("count", entry.subscribers),
+      formatValue("gbp", entry.mrrGbp),
+      formatValue("gbp", entry.arrGbp),
+    ]),
+  );
+  addRow("paid-subscribers-total", [
+    "All channels",
+    "All bundles",
+    formatValue("count", paidSubscribers.totals.subscribers),
+    formatValue("gbp", paidSubscribers.totals.mrrGbp),
+    formatValue("gbp", paidSubscribers.totals.arrGbp),
+  ]);
   table.appendChild(tbody);
   wrapper.appendChild(table);
   return wrapper;

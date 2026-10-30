@@ -14,7 +14,11 @@ vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
   listClients: vi.fn().mockResolvedValue([]),
   getPracticeArn: vi.fn().mockResolvedValue(null),
 }));
-vi.mock("@app/lib/operators.js", () => ({ isOperatorEmail: vi.fn().mockResolvedValue(false) }));
+vi.mock("@app/lib/operators.js", () => ({
+  isOperatorEmail: vi.fn().mockResolvedValue(false),
+  isOperatorEmailLoaded: vi.fn().mockReturnValue(false),
+  warmOperators: vi.fn().mockResolvedValue(undefined),
+}));
 
 const { ingestHandler: listHandler } = await import("../../functions/practice/practiceClientsListGet.js");
 const { ingestHandler: getHandler } = await import("../../functions/practice/practiceClientGet.js");

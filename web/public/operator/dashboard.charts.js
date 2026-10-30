@@ -3,7 +3,9 @@
 
 // Daily line charts for the operator dashboard, drawn as inline SVG from snapshot.dailyCharts:
 // one chart per objective, one point per day, a line per component and a total line where the
-// parts add up. A legend button hides or shows a line, a double-click on it shows only that line (again, all lines), Show all and Hide all set every line at once, and a legend button's tooltip says what the line is; moving over the chart reads one day.
+// parts add up. A legend button hides or shows a line, a double-click on it shows only that line (again, all lines), Show all and Hide all set every line at once, and a legend button's tooltip says what the line is; moving over the chart reads one point.
+// A chart mode whose source has an hourly grain carries mode.hourly, and a switch beside Show all
+// and Hide all moves it between 90 days by day and 7 days by hour (snapshot.dailyCharts.hours).
 
 const SVG_NAMESPACE = "http://www.w3.org/2000/svg";
 const CHART_HEIGHT = 220;
@@ -16,15 +18,45 @@ const axisNumberFormat = new Intl.NumberFormat("en-GB", { notation: "compact", m
 const readoutNumberFormat = new Intl.NumberFormat("en-GB", { maximumFractionDigits: 2 });
 const UNIT_PREFIX = { gbp: "£", usd: "$" };
 
+const hourFormat = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "UTC",
+});
+
 function formatDay(isoDay) {
   return dayFormat.format(new Date(isoDay + "T00:00:00Z"));
 }
 
+function formatHour(isoHour) {
+  return hourFormat.format(new Date(isoHour)).replace(",", "");
+}
+
+const RANGES = [
+  ["daily", "90 days, by day"],
+  ["hourly", "7 days, by hour"],
+];
+
+// The series the chart draws now: the mode's hourly series when the switch is on 7 days and the
+// mode has them, otherwise its daily series.
+function isHourly(state) {
+  return state.range === "hourly" && Boolean(state.chart.modes[state.modeIndex].hourly);
+}
+
+function activeSeries(state) {
+  const mode = state.chart.modes[state.modeIndex];
+  return isHourly(state) ? mode.hourly.series : mode.series;
+}
+
 function formatAxisValue(unit, value) {
+  if (unit === "ratio") return axisNumberFormat.format(value * 100) + "%";
   return (UNIT_PREFIX[unit] || "") + axisNumberFormat.format(value);
 }
 
 function formatReadoutValue(unit, value) {
+  if (unit === "ratio") return readoutNumberFormat.format(value * 100) + "%";
   return (UNIT_PREFIX[unit] || "") + readoutNumberFormat.format(value);
 }
 
@@ -65,11 +97,15 @@ function lineStylesFor(seriesList) {
 }
 
 function drawChart(state) {
-  const { chart, days, svg, readout } = state;
+  const { chart, svg, readout } = state;
   const mode = chart.modes[state.modeIndex];
+  const hourly = isHourly(state);
+  const days = hourly ? state.hours : state.days;
+  const formatPoint = hourly ? formatHour : formatDay;
+  const seriesList = activeSeries(state);
   const unit = mode.unit || chart.unit;
-  const visible = mode.series.filter((series) => !state.hidden.has(series.id));
-  const styles = lineStylesFor(mode.series);
+  const visible = seriesList.filter((series) => !state.hidden.has(series.id));
+  const styles = lineStylesFor(seriesList);
 
   const width = Math.max(state.card.clientWidth - 2, 240);
   const plotWidth = width - MARGIN.left - MARGIN.right;
@@ -97,11 +133,11 @@ function drawChart(state) {
       "text-anchor": axisAnchor(position, all.length),
       "class": "chart-axis",
     });
-    label.textContent = formatDay(days[index]);
+    label.textContent = formatPoint(days[index]);
     svg.appendChild(label);
   });
 
-  mode.series.forEach((series, seriesIndex) => {
+  seriesList.forEach((series, seriesIndex) => {
     if (state.hidden.has(series.id)) return;
     const style = styles[seriesIndex];
     const points = series.values.map((value, index) => xAt(index).toFixed(1) + "," + yAt(value).toFixed(1)).join(" ");
@@ -133,7 +169,7 @@ function drawChart(state) {
     const parts = visible
       .filter((series) => series.values[index] !== 0 || series.isTotal)
       .map((series) => series.label + " " + formatReadoutValue(unit, series.values[index]));
-    return formatDay(days[index]) + ": " + (parts.length > 0 ? parts.join(", ") : "nothing");
+    return formatPoint(days[index]) + ": " + (parts.length > 0 ? parts.join(", ") : "nothing");
   };
   const showIndex = (index) => {
     guide.setAttribute("x1", xAt(index));
@@ -153,21 +189,19 @@ function drawChart(state) {
   readout.textContent = describeDay(days.length - 1);
 
   const everyValueZero = visible.every((series) => series.values.every((value) => value === 0));
+  state.empty.textContent = "No data in the last " + days.length + (hourly ? " hours." : " days.");
   state.empty.hidden = !everyValueZero;
   svg.setAttribute(
     "aria-label",
     chart.title +
-      ", daily over the last " +
-      days.length +
-      " days. " +
+      (hourly ? ", hourly over the last " + days.length + " hours. " : ", daily over the last " + days.length + " days. ") +
       (everyValueZero ? "No data." : "Latest " + describeDay(days.length - 1)),
   );
 }
 
 // Whether the visible lines are exactly the one named, which is what a double-click leaves.
 function isIsolated(state, seriesId) {
-  const mode = state.chart.modes[state.modeIndex];
-  return mode.series.every((series) => (series.id === seriesId) === !state.hidden.has(series.id));
+  return activeSeries(state).every((series) => (series.id === seriesId) === !state.hidden.has(series.id));
 }
 
 function syncLegend(state) {
@@ -182,10 +216,10 @@ function updateAfterVisibilityChange(state) {
 }
 
 function drawLegend(state) {
-  const mode = state.chart.modes[state.modeIndex];
-  const styles = lineStylesFor(mode.series);
+  const seriesList = activeSeries(state);
+  const styles = lineStylesFor(seriesList);
   state.legend.replaceChildren();
-  mode.series.forEach((series, index) => {
+  seriesList.forEach((series, index) => {
     const item = document.createElement("li");
     const button = document.createElement("button");
     button.type = "button";
@@ -210,7 +244,7 @@ function drawLegend(state) {
     button.addEventListener("dblclick", () => {
       state.hidden = isIsolated(state, series.id)
         ? new Set()
-        : new Set(mode.series.filter((other) => other.id !== series.id).map((other) => other.id));
+        : new Set(seriesList.filter((other) => other.id !== series.id).map((other) => other.id));
       updateAfterVisibilityChange(state);
     });
     item.appendChild(button);
@@ -223,7 +257,7 @@ function legendControls(state) {
   controls.className = "chart-legend-controls";
   [
     ["show-all", "Show all", () => new Set()],
-    ["hide-all", "Hide all", () => new Set(state.chart.modes[state.modeIndex].series.map((series) => series.id))],
+    ["hide-all", "Hide all", () => new Set(activeSeries(state).map((series) => series.id))],
   ].forEach(([action, label, hiddenAfter]) => {
     const button = document.createElement("button");
     button.type = "button";
@@ -236,10 +270,44 @@ function legendControls(state) {
     });
     controls.appendChild(button);
   });
+  controls.appendChild(rangeSwitch(state));
   return controls;
 }
 
-function renderChartCard(chart, days) {
+// The switch between 90 days by day and 7 days by hour. It shows only while the chart's current
+// mode has an hourly series.
+function rangeSwitch(state) {
+  const group = document.createElement("span");
+  group.className = "chart-range";
+  group.setAttribute("role", "group");
+  group.setAttribute("aria-label", state.chart.title + " range");
+  RANGES.forEach(([range, label]) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "chart-mode chart-legend-control chart-range-option";
+    button.dataset.range = range;
+    button.textContent = label;
+    button.addEventListener("click", () => {
+      state.range = range;
+      syncRangeSwitch(state);
+      drawLegend(state);
+      drawChart(state);
+    });
+    group.appendChild(button);
+  });
+  state.rangeSwitch = group;
+  syncRangeSwitch(state);
+  return group;
+}
+
+function syncRangeSwitch(state) {
+  state.rangeSwitch.hidden = !state.chart.modes[state.modeIndex].hourly;
+  state.rangeSwitch.querySelectorAll("button").forEach((button) => {
+    button.setAttribute("aria-pressed", String(button.dataset.range === (isHourly(state) ? "hourly" : "daily")));
+  });
+}
+
+function renderChartCard(chart, days, hours) {
   const card = document.createElement("article");
   card.className = "chart-card";
   card.dataset.chartId = chart.id;
@@ -248,7 +316,7 @@ function renderChartCard(chart, days) {
   heading.textContent = chart.title;
   card.appendChild(heading);
 
-  const state = { chart, days, modeIndex: 0, hidden: new Set(), card };
+  const state = { chart, days, hours, range: "daily", modeIndex: 0, hidden: new Set(), card };
 
   if (chart.modes.length > 1) {
     const tabs = document.createElement("div");
@@ -266,6 +334,7 @@ function renderChartCard(chart, days) {
         state.modeIndex = index;
         state.hidden = new Set();
         tabs.querySelectorAll("button").forEach((other, otherIndex) => other.setAttribute("aria-pressed", String(otherIndex === index)));
+        syncRangeSwitch(state);
         drawLegend(state);
         drawChart(state);
       });
@@ -339,7 +408,7 @@ function renderDailyCharts(snapshot) {
   }
   panel.hidden = false;
   daily.charts.forEach((chart) => {
-    const state = renderChartCard(chart, daily.days);
+    const state = renderChartCard(chart, daily.days, daily.hours || []);
     grid.appendChild(state.card);
     renderedCharts.push(state);
   });

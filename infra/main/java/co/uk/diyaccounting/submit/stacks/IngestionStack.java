@@ -875,6 +875,125 @@ public class IngestionStack extends Stack {
         }
 
         // ============================================================================
+        // Microsoft Advertising cost pull job: yesterday's impressions, clicks, spend and
+        // conversions per campaign into the same lake table as the Google rows, read through the
+        // Reporting service with the Google sign-in infra/microsoft/ads/msads.js --consent stores.
+        // Created with the Google Ads pull, on the environment that holds the Microsoft account
+        // (prod), and with read on the three secrets msads.toml names and nothing else.
+        // ============================================================================
+        Function msAdsCostPullLambda = null;
+        if (props.adsCostPullEnabled()) {
+            var msAdsCostPullFunctionName = prefix + "-ms-ads-cost-pull";
+            var msAdsSecretArnPrefix = "arn:aws:secretsmanager:%s:%s:secret:%s/submit/"
+                    .formatted(this.getRegion(), this.getAccount(), props.envName());
+            var msAdsSecretArns = List.of(
+                    msAdsSecretArnPrefix + "microsoft-ads/developer_token",
+                    msAdsSecretArnPrefix + "microsoft-ads/google_refresh_token",
+                    msAdsSecretArnPrefix + "youtube/oauth_client");
+
+            var msAdsCostPullEnv = new PopulatedMap<String, String>()
+                    .with("ENVIRONMENT_NAME", props.envName())
+                    .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName);
+
+            IRepository msAdsCostPullRepository = Repository.fromRepositoryAttributes(
+                    this,
+                    prefix + "-MsAdsCostPull-EcrRepo",
+                    RepositoryAttributes.builder()
+                            .repositoryArn(sharedNames.ecrRepositoryArn)
+                            .repositoryName(sharedNames.ecrRepositoryName)
+                            .build());
+
+            var msAdsCostPullLogGroup = ensureLogGroupWithDependency(
+                    this, prefix + "-MsAdsCostPullLogGroup", "/aws/lambda/" + msAdsCostPullFunctionName);
+
+            msAdsCostPullLambda = DockerImageFunction.Builder.create(this, prefix + "-MsAdsCostPullFn")
+                    .functionName(msAdsCostPullFunctionName)
+                    .code(DockerImageCode.fromEcr(
+                            msAdsCostPullRepository,
+                            EcrImageCodeProps.builder()
+                                    .tagOrDigest(props.baseImageTag())
+                                    .cmd(List.of("app/functions/analytics/msAdsCostPull.handler"))
+                                    .build()))
+                    .timeout(Duration.minutes(5))
+                    .memorySize(512)
+                    .architecture(Architecture.ARM_64)
+                    .environment(msAdsCostPullEnv)
+                    .logGroup(msAdsCostPullLogGroup.logGroup())
+                    .build();
+            msAdsCostPullLambda.getNode().addDependency(msAdsCostPullLogGroup.ensureResource());
+
+            // Own prefix only, and the three secrets only: no salt, no DynamoDB, since a lake row
+            // carries no customer identity.
+            msAdsCostPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("s3:PutObject"))
+                    .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ads/*"))
+                    .build());
+            msAdsCostPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(msAdsSecretArns.stream().map(arn -> arn + "-*").toList())
+                    .build());
+
+            registerIngestionJob(
+                    "MsAdsCostPull",
+                    msAdsCostPullFunctionName,
+                    msAdsCostPullLambda,
+                    "Pull yesterday's Microsoft Advertising impressions, clicks, spend and conversions into the analytics lake");
+        }
+
+        // ============================================================================
+        // FX rate pull job: the European Central Bank's euro reference rates for the last 90
+        // working days into the lake, so the operator dashboard converts the dollar AWS bill to
+        // pounds. The feed is public and needs no credential, so the job exists in every
+        // environment.
+        // ============================================================================
+        var fxRatePullFunctionName = prefix + "-fx-rate-pull";
+        var fxRatePullEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName);
+
+        IRepository fxRatePullRepository = Repository.fromRepositoryAttributes(
+                this,
+                prefix + "-FxRatePull-EcrRepo",
+                RepositoryAttributes.builder()
+                        .repositoryArn(sharedNames.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .build());
+
+        var fxRatePullLogGroup = ensureLogGroupWithDependency(
+                this, prefix + "-FxRatePullLogGroup", "/aws/lambda/" + fxRatePullFunctionName);
+
+        Function fxRatePullLambda = DockerImageFunction.Builder.create(this, prefix + "-FxRatePullFn")
+                .functionName(fxRatePullFunctionName)
+                .code(DockerImageCode.fromEcr(
+                        fxRatePullRepository,
+                        EcrImageCodeProps.builder()
+                                .tagOrDigest(props.baseImageTag())
+                                .cmd(List.of("app/functions/analytics/fxRatePull.handler"))
+                                .build()))
+                .timeout(Duration.minutes(2))
+                .memorySize(256)
+                .architecture(Architecture.ARM_64)
+                .environment(fxRatePullEnv)
+                .logGroup(fxRatePullLogGroup.logGroup())
+                .build();
+        fxRatePullLambda.getNode().addDependency(fxRatePullLogGroup.ensureResource());
+
+        // Own prefix only: the rates carry no customer identity.
+        fxRatePullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:PutObject"))
+                .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/fx/*"))
+                .build());
+
+        registerIngestionJob(
+                "FxRatePull",
+                fxRatePullFunctionName,
+                fxRatePullLambda,
+                "Pull the European Central Bank's euro reference rates into the analytics lake");
+
+        // ============================================================================
         // Nightly orchestration: one Step Functions state machine, one EventBridge Scheduler
         // schedule, replacing the five independent rules and DLQs the jobs used before this
         // machine existed
@@ -906,6 +1025,8 @@ public class IngestionStack extends Stack {
                         .companyBookPullLambda(Optional.ofNullable(companyBookPullLambda))
                         .paypalDonationsPullLambda(Optional.ofNullable(paypalDonationsPullLambda))
                         .adsCostPullLambda(Optional.ofNullable(adsCostPullLambda))
+                        .msAdsCostPullLambda(Optional.ofNullable(msAdsCostPullLambda))
+                        .fxRatePullLambda(fxRatePullLambda)
                         .dataQualityRunLambda(dataQualityRunLambda)
                         .metricsPublishLambda(metricsPublishLambda)
                         .rawExportPublishLambda(rawExportPublishLambda)

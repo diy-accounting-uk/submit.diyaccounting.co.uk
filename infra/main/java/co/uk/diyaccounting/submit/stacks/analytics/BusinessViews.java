@@ -150,16 +150,17 @@ public class BusinessViews extends Construct {
                     List.of("cloudfront_requests")),
             new ViewDefinition(
                     "v_ads_cost_daily",
-                    "Google Ads impressions, clicks and cost each day, by campaign and ad group",
+                    "Google and Microsoft Ads impressions, clicks, cost and conversions each day, by platform, campaign and ad group",
                     List.of("ads_cost")),
             new ViewDefinition(
                     "v_paid_landings_daily",
-                    "Page requests each day that carry a gclid or utm_source in the query string, by landing page,"
-                            + " utm_source and utm_campaign, read from the CloudFront access log without consent",
+                    "Page requests each day that carry a gclid, msclkid or utm_source in the query string, by"
+                            + " landing page, utm_source and utm_campaign, read from the CloudFront access log"
+                            + " without consent",
                     List.of("cloudfront_requests")),
             new ViewDefinition(
                     "v_ads_cost_per_paid_landing_daily",
-                    "The day's Google Ads cost divided by the day's paid landings",
+                    "The day's Ads cost of each platform divided by the day's paid landings that carry its click id",
                     List.of("v_ads_cost_daily", "v_paid_landings_daily"),
                     List.of("v_ads_cost_daily", "v_paid_landings_daily")),
             new ViewDefinition(
@@ -251,7 +252,42 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_paid_subscribers_by_channel",
                     "Live paid subscribers each month by acquisition source and bundle: active base, MRR and ARR",
-                    List.of("stripe_charges", "stripe_subscriptions", "dynamo_subscriptions", "dynamo_bundles")));
+                    List.of("stripe_charges", "stripe_subscriptions", "dynamo_subscriptions", "dynamo_bundles")),
+            new ViewDefinition(
+                    "v_usd_gbp_daily",
+                    "Pounds per dollar on each day from the European Central Bank reference rate, carried over"
+                            + " days the bank does not publish",
+                    List.of("fx_rates")),
+            new ViewDefinition(
+                    "v_contribution_daily",
+                    "Revenue less the AWS bill in pounds less Ads cost (Google and Microsoft), each day",
+                    List.of("v_revenue_daily", "v_cost_daily", "v_ads_cost_daily", "v_usd_gbp_daily"),
+                    List.of("v_revenue_daily", "v_cost_daily", "v_ads_cost_daily", "v_usd_gbp_daily")),
+            new ViewDefinition(
+                    "v_company_runway",
+                    "Net monthly burn and the months of runway from the company book's cash and creditors",
+                    List.of("company_accounts")),
+            new ViewDefinition(
+                    "v_ads_performance_daily",
+                    "Impressions, clicks, cost, conversions, click-through rate and cost per click each day, by Ads platform",
+                    List.of("v_ads_cost_daily"),
+                    List.of("v_ads_cost_daily")),
+            new ViewDefinition(
+                    "v_spreadsheets_downloads_daily",
+                    "Spreadsheet downloads each day, by product, from the GA4 download events",
+                    List.of("downloads_by_product_daily")),
+            new ViewDefinition(
+                    "v_submit_referrals_daily",
+                    "Submit sessions each day that came from the spreadsheets site and from the gateway site",
+                    List.of("sessions_by_host_source_daily")),
+            new ViewDefinition(
+                    "v_active_customers_7d_daily",
+                    "Distinct customers active each day and over the 7 days to it, by app client and for all clients",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_ga4_landing_pages_daily",
+                    "GA4 sessions each day by landing page, and how many of them signed in",
+                    List.of("ga4_bq_events")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<CustomResource> viewResources = new ArrayList<>();

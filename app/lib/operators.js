@@ -56,6 +56,25 @@ export async function loadOperators() {
   return cachedOperators;
 }
 
+// Load the operator list so a later synchronous check (isOperatorEmailLoaded) has it when a
+// submission is classified. Callers that cannot wait start it and carry on; the returned promise
+// never rejects. A failed load leaves the list unloaded and the next call tries again.
+export async function warmOperators() {
+  if (cachedOperators !== null) return;
+  try {
+    await loadOperators();
+  } catch (error) {
+    logger.warn({ message: "Could not warm the operator list", error: error.message });
+  }
+}
+
+// True only when the operator list is already loaded and holds the email; false while it is
+// not loaded, so an unwarmed process classifies the account as a customer.
+export function isOperatorEmailLoaded(email) {
+  if (cachedOperators === null || !email || typeof email !== "string") return false;
+  return cachedOperators.includes(email.trim().toLowerCase());
+}
+
 export async function isOperatorEmail(email) {
   if (!email || typeof email !== "string") return false;
   const operators = await loadOperators();

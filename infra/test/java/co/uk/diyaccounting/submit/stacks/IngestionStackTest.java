@@ -162,7 +162,7 @@ class IngestionStackTest {
         // adding one more Lambda function: the shared create-if-missing/retention singleton
         // provider.
         template.resourceCountIs("AWS::S3::Bucket", 0);
-        template.resourceCountIs("AWS::Lambda::Function", 6);
+        template.resourceCountIs("AWS::Lambda::Function", 7);
 
         // No per-job schedule, DLQ or DLQ-depth alarm any more: NightlyIngestionWorkflow's one
         // state machine and one scheduler schedule replace them. Five job Errors alarms plus
@@ -170,7 +170,7 @@ class IngestionStackTest {
         // so a non-prod envName ("docs") gives six alarms, not seven.
         template.resourceCountIs("AWS::Events::Rule", 0);
         template.resourceCountIs("AWS::SQS::Queue", 0);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 6);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 7);
         template.resourceCountIs("AWS::StepFunctions::StateMachine", 1);
         template.resourceCountIs("AWS::Scheduler::Schedule", 1);
 
@@ -329,7 +329,7 @@ class IngestionStackTest {
 
         // Five pre-existing job alarms plus the state machine's ExecutionsFailed alarm plus
         // this test's own job alarm.
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 7);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 8);
         var alarms = template.findResources("AWS::CloudWatch::Alarm");
         for (Map<String, Object> alarm : alarms.values()) {
             @SuppressWarnings("unchecked")
@@ -357,7 +357,7 @@ class IngestionStackTest {
         // Same blank property id, non-prod envName: synth succeeds, matching the ci-deploys-fine-
         // before-the-operator-creates-the-service-account guarantee the design calls for.
         Template template = Template.fromStack(synthIngestionStack("docs", null, null, null));
-        template.resourceCountIs("AWS::Lambda::Function", 6);
+        template.resourceCountIs("AWS::Lambda::Function", 7);
     }
 
     @Test
@@ -370,7 +370,7 @@ class IngestionStackTest {
         // Same blank project id, non-prod envName: synth succeeds, matching the ci-deploys-fine-
         // before-the-operator-grants-BigQuery-access guarantee the design calls for.
         Template template = Template.fromStack(synthIngestionStack("docs", null, null, "999000111", null, null, null));
-        template.resourceCountIs("AWS::Lambda::Function", 6);
+        template.resourceCountIs("AWS::Lambda::Function", 7);
     }
 
     @Test
@@ -579,7 +579,13 @@ class IngestionStackTest {
     void adsCostPullJobExistsOnlyWhenAdsCostPullIsEnabled() {
         Template disabled = Template.fromStack(synthIngestionStackWithAds("disabled", false));
 
-        disabled.resourceCountIs("AWS::Lambda::Function", 6);
+        disabled.resourceCountIs("AWS::Lambda::Function", 7);
+        assertEquals(
+                0,
+                disabled.findResources(
+                                "AWS::Lambda::Function",
+                                Map.of("Properties", Map.of("FunctionName", "docs-env-ms-ads-cost-pull")))
+                        .size());
         assertEquals(
                 0,
                 disabled.findResources(
@@ -589,10 +595,19 @@ class IngestionStackTest {
         assertFalse(
                 joinedDefinitionString(disabled).contains("\"Ads cost pull\":{"),
                 "a disabled Ads cost pull should leave the workflow without its branch");
+        assertFalse(
+                joinedDefinitionString(disabled).contains("\"Microsoft Ads cost pull\":{"),
+                "a disabled Ads cost pull should leave the workflow without the Microsoft branch");
 
         Template enabled = Template.fromStack(synthIngestionStackWithAds("enabled", true));
 
-        enabled.resourceCountIs("AWS::Lambda::Function", 7);
+        enabled.resourceCountIs("AWS::Lambda::Function", 9);
+        assertEquals(
+                1,
+                enabled.findResources(
+                                "AWS::Lambda::Function",
+                                Map.of("Properties", Map.of("FunctionName", "docs-env-ms-ads-cost-pull")))
+                        .size());
         assertEquals(
                 1,
                 enabled.findResources(
@@ -602,6 +617,9 @@ class IngestionStackTest {
         assertTrue(
                 joinedDefinitionString(enabled).contains("\"Ads cost pull\":{"),
                 "an enabled Ads cost pull should add its branch to the workflow");
+        assertTrue(
+                joinedDefinitionString(enabled).contains("\"Microsoft Ads cost pull\":{"),
+                "an enabled Ads cost pull should add the Microsoft branch to the workflow");
     }
 
     @Test
@@ -621,12 +639,17 @@ class IngestionStackTest {
                 .filter(statement -> "secretsmanager:GetSecretValue".equals(statement.get("Action")))
                 .filter(statement -> statement.get("Resource") instanceof List)
                 .toList();
-        assertEquals(1, secretStatements.size());
-        assertEquals(
-                List.of(
-                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/youtube/oauth_client-*",
-                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/google/ads/refresh_token-*"),
-                secretStatements.get(0).get("Resource"));
+        assertEquals(2, secretStatements.size());
+        assertTrue(
+                secretStatements.stream()
+                        .anyMatch(
+                                statement -> statement
+                                        .get("Resource")
+                                        .equals(
+                                                List.of(
+                                                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/youtube/oauth_client-*",
+                                                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/google/ads/refresh_token-*"))),
+                "the Google Ads pull reads its two secrets");
 
         var lambdaEnvironment = environmentVariablesOf(template.findResources(
                 "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-ads-cost-pull"))));
@@ -636,6 +659,45 @@ class IngestionStackTest {
         assertEquals(
                 "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/google/ads/refresh_token",
                 lambdaEnvironment.get("ADS_REFRESH_TOKEN_SECRET_ARN"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void msAdsCostPullReadsOnlyTheThreeMicrosoftAdsSecretsAndPutsUnderCuratedAds() {
+        Template template = Template.fromStack(synthIngestionStackWithAds("ms-scoped", true));
+
+        var secretStatements = template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> "secretsmanager:GetSecretValue".equals(statement.get("Action")))
+                .filter(statement -> statement.get("Resource") instanceof List)
+                .filter(statement -> ((List<String>) statement.get("Resource")).size() == 3)
+                .toList();
+        assertEquals(1, secretStatements.size());
+        assertEquals(
+                List.of(
+                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/microsoft-ads/developer_token-*",
+                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/microsoft-ads/google_refresh_token-*",
+                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/youtube/oauth_client-*"),
+                secretStatements.get(0).get("Resource"));
+
+        var lambdaEnvironment = environmentVariablesOf(template.findResources(
+                "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-ms-ads-cost-pull"))));
+        assertTrue(lambdaEnvironment.containsKey("ANALYTICS_LAKE_BUCKET_NAME"));
+        assertFalse(lambdaEnvironment.keySet().stream().anyMatch(key -> key.endsWith("_SECRET_ARN")));
+    }
+
+    @Test
+    void fxRatePullExistsInEveryEnvironmentAndCanOnlyPutUnderCuratedFx() {
+        Template template = Template.fromStack(synthIngestionStack());
+
+        template.hasResourceProperties(
+                "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", "docs-env-fx-rate-pull")));
+        assertTrue(
+                actionResources(template, "s3:PutObject").stream()
+                        .anyMatch(resource -> resource.endsWith("/curated/fx/*")),
+                "expected an s3:PutObject statement scoped to .../curated/fx/*");
     }
 
     private static IngestionStack synthIngestionStackWithPaypal(String testId, boolean paypalPullEnabled) {
@@ -666,7 +728,7 @@ class IngestionStackTest {
     void paypalDonationsPullJobExistsOnlyWhenPaypalPullIsEnabled() {
         Template disabled = Template.fromStack(synthIngestionStackWithPaypal("disabled", false));
 
-        disabled.resourceCountIs("AWS::Lambda::Function", 6);
+        disabled.resourceCountIs("AWS::Lambda::Function", 7);
         assertEquals(
                 0,
                 disabled.findResources(
@@ -679,7 +741,7 @@ class IngestionStackTest {
 
         Template enabled = Template.fromStack(synthIngestionStackWithPaypal("enabled", true));
 
-        enabled.resourceCountIs("AWS::Lambda::Function", 7);
+        enabled.resourceCountIs("AWS::Lambda::Function", 8);
         assertEquals(
                 1,
                 enabled.findResources(
@@ -720,7 +782,7 @@ class IngestionStackTest {
     void companyBookPullJobAndDiyaGlGrantExistOnlyWhenBothValuesAreConfigured() {
         Template unconfigured = Template.fromStack(synthIngestionStackWithCompanyBook("unconfigured", null, null));
 
-        unconfigured.resourceCountIs("AWS::Lambda::Function", 6);
+        unconfigured.resourceCountIs("AWS::Lambda::Function", 7);
         assertEquals(
                 0,
                 unconfigured
@@ -738,7 +800,7 @@ class IngestionStackTest {
         Template configured = Template.fromStack(
                 synthIngestionStackWithCompanyBook("configured", COMPANY_BOOK_ID, COMPANY_BOOK_OWNER_PREFIX));
 
-        configured.resourceCountIs("AWS::Lambda::Function", 7);
+        configured.resourceCountIs("AWS::Lambda::Function", 8);
         assertEquals(
                 1,
                 configured

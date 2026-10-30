@@ -59,7 +59,9 @@ import {
   buildChartSeries,
   buildDailyChartDefinitions,
   buildDailyCharts,
+  hourlyChartHours,
   buildCostDrivers,
+  buildPaidSubscribers,
   shortResourceName,
   vatSubmissionReconciliationText,
   toObservationWindows,
@@ -474,6 +476,231 @@ describe("operatorSnapshotPublish", () => {
       expect(betterDirection("agent-cost-per-accepted-pr-usd")).toBe("down");
     });
 
+    test("money in and money out: contribution, runway, Ads performance and unactivated charges are described rows", () => {
+      const byId = (objectiveId, id) =>
+        OBJECTIVE_DEFINITIONS.find((objective) => objective.id === objectiveId).observations.find((observation) => observation.id === id);
+
+      expect(byId("conversion-to-paid", "contribution-gbp")).toMatchObject({
+        view: "v_contribution_daily",
+        valueExpr: "contribution_gbp",
+        unit: "gbp",
+      });
+      expect(byId("company-accounts", "company-contribution-gbp")).toMatchObject({ view: "v_contribution_daily", aggregation: "sum" });
+      expect(byId("company-accounts", "company-runway-months")).toMatchObject({
+        view: "v_company_runway",
+        valueExpr: "runway_months",
+        unit: "months",
+        aggregation: "latest",
+      });
+      expect(byId("company-accounts", "company-net-monthly-burn-gbp")).toMatchObject({ view: "v_company_runway", unit: "gbp" });
+      expect(byId("conversion-to-paid", "ads-ctr")).toMatchObject({ view: "v_ads_performance_daily", valueExpr: "ctr", unit: "ratio" });
+      expect(byId("conversion-to-paid", "charges-without-activation")).toMatchObject({
+        view: "v_purchase_reconciliation_daily",
+        valueExpr: "greatest(-activity_minus_stripe, 0)",
+        aggregation: "sum",
+      });
+      for (const id of [
+        "contribution-gbp",
+        "ads-impressions",
+        "ads-clicks",
+        "ads-ctr",
+        "ads-cost-per-click-gbp",
+        "charges-without-activation",
+      ]) {
+        expect(byId("conversion-to-paid", id).description.length, id).toBeGreaterThan(20);
+      }
+      for (const id of ["company-contribution-gbp", "company-net-monthly-burn-gbp", "company-runway-months"]) {
+        expect(byId("company-accounts", id).description.length, id).toBeGreaterThan(20);
+      }
+      expect(betterDirection("contribution-gbp")).toBe("up");
+      expect(betterDirection("company-runway-months")).toBe("up");
+      expect(betterDirection("company-net-monthly-burn-gbp")).toBe("down");
+      expect(betterDirection("ads-cost-per-click-gbp")).toBe("down");
+      expect(betterDirection("charges-without-activation")).toBe("down");
+    });
+
+    test("the funnel starts at the spreadsheets site and the signup observations carry a weighted share", () => {
+      const submission = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "conversion-to-submission");
+      const byId = (id) => submission.observations.find((observation) => observation.id === id);
+
+      expect(byId("spreadsheets-downloads")).toMatchObject({ view: "v_spreadsheets_downloads_daily", valueExpr: "downloads" });
+      expect(byId("sessions-from-spreadsheets")).toMatchObject({ view: "v_submit_referrals_daily", where: "origin = 'spreadsheets'" });
+      expect(byId("sessions-from-www")).toMatchObject({ view: "v_submit_referrals_daily", where: "origin = 'www'" });
+      expect(byId("active-customers-7d")).toMatchObject({
+        view: "v_active_customers_7d_daily",
+        valueExpr: "active_users_7d",
+        where: "app_client = 'all'",
+      });
+      expect(byId("new-accounts-submitted-share")).toMatchObject({
+        view: "v_signup_to_first_submission",
+        valueExpr: "submitted",
+        denominatorExpr: "new_accounts",
+        aggregation: "ratio",
+        unit: "ratio",
+      });
+      expect(byId("median-hours-to-first-submission")).toMatchObject({ unit: "hours", valueExpr: "median_hours_to_first_submission" });
+      const retention = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "retention");
+      for (const id of ["retention-active-customers-7d", "retention-new-accounts", "retention-new-accounts-submitted-share"]) {
+        expect(retention.observations.map((observation) => observation.id)).toContain(id);
+      }
+      for (const observation of [...submission.observations, ...retention.observations].filter((o) =>
+        /spreadsheet|from-www|active-customers|submitted|median-hours|retention-new/.test(o.id),
+      )) {
+        expect(observation.description.length, observation.id).toBeGreaterThan(20);
+      }
+      expect(measureDescription(byId("new-accounts-submitted-share"))).toBe("total of submitted over total of new_accounts");
+
+      const chart = buildDailyChartDefinitions().find((definition) => definition.id === "conversion-to-submission");
+      expect(chart.modes.map((mode) => mode.id)).toEqual(["funnel", "active-customers", "active-customers-7d"]);
+      const funnel = chart.modes[0];
+      expect(funnel.componentOrder.slice(0, 3)).toEqual(["spreadsheet-downloads", "sessions-from-spreadsheets", "sessions-from-www"]);
+      for (const id of funnel.componentOrder) expect(funnel.descriptionOf(id), id).toBeTruthy();
+      expect(chart.modes[1].sql).toContain("FROM   v_active_customers_7d_daily");
+      expect(chart.modes[2].labelOf("all")).toBe("All clients");
+    });
+
+    test("the Visitors chart reads sessions by landing page, the sign-in rate and sessions by country with AI agents apart", () => {
+      const visitors = buildDailyChartDefinitions().find((definition) => definition.id === "visitors");
+
+      expect(visitors.modes.map((mode) => mode.id)).toEqual([
+        "sessions",
+        "landing-page",
+        "landing-page-sign-in",
+        "country",
+        "ai-agent-country",
+      ]);
+      expect(visitors.modes[1].label).toBe("By landing page");
+      expect(visitors.modes[1].sql).toContain("FROM   v_ga4_landing_pages_daily");
+      expect(visitors.modes[2].unit).toBe("ratio");
+      expect(visitors.modes[2].sql).toContain("sum(sign_ins)");
+      expect(visitors.modes[3].sql).toContain("human_sessions");
+      expect(visitors.modes[4].sql).toContain("ai_agent_sessions");
+      for (const mode of visitors.modes.slice(1)) {
+        expect(mode.descriptionOf("/pricing"), mode.id).toBeTruthy();
+        if (mode.total) expect(mode.totalDescription, mode.id).toBeTruthy();
+      }
+    });
+
+    test("a ratio observation divides the window's total by the window's total of its denominator", () => {
+      const sql = buildWindowedBatchSql({
+        view: "v_signup_to_first_submission",
+        dayColumn: "signup_day",
+        observations: [{ valueExpr: "submitted", denominatorExpr: "new_accounts", aggregation: "ratio" }],
+      });
+
+      expect(sql).toContain(
+        "cast(sum(CASE WHEN signup_day > date_add('day', -30, current_date) THEN submitted END) AS double) / nullif(sum(CASE WHEN signup_day > date_add('day', -30, current_date) THEN new_accounts END), 0) AS o0_last_30",
+      );
+      const empty = toObservationWindows({ first_day: "2026-01-01", last_30: null }, "ratio", new Date("2026-10-29T12:00:00Z"));
+      expect(empty.last30).toEqual({ value: null, trend: null, noEvents: true });
+    });
+
+    test("each Google Ads row reads the google platform and has a Microsoft twin that reads the microsoft platform", () => {
+      const paid = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "conversion-to-paid").observations;
+      const byId = (id) => paid.find((observation) => observation.id === id);
+
+      for (const id of [
+        "ads-cost-gbp",
+        "ads-impressions",
+        "ads-clicks",
+        "ads-ctr",
+        "ads-cost-per-click-gbp",
+        "ads-cost-per-paid-landing-gbp",
+      ]) {
+        const twin = byId(`ms-${id}`);
+        expect(byId(id).where, id).toBe("platform = 'google'");
+        expect(twin, id).toBeTruthy();
+        expect(twin.where, id).toBe("platform = 'microsoft'");
+        expect({ view: twin.view, valueExpr: twin.valueExpr, unit: twin.unit, aggregation: twin.aggregation }, id).toEqual({
+          view: byId(id).view,
+          valueExpr: byId(id).valueExpr,
+          unit: byId(id).unit,
+          aggregation: byId(id).aggregation,
+        });
+        expect(twin.label, id).toMatch(/^Microsoft Ads/);
+        expect(twin.description.length, id).toBeGreaterThan(20);
+      }
+      expect(byId("ms-paid-landings")).toMatchObject({ view: "v_paid_landings_daily", valueExpr: "msclkid_landings", unit: "count" });
+      expect(byId("ms-ads-conversions")).toMatchObject({
+        view: "v_ads_performance_daily",
+        valueExpr: "conversions",
+        where: "platform = 'microsoft'",
+      });
+      expect(betterDirection("ms-ads-cost-gbp")).toBe("down");
+      expect(betterDirection("ms-ads-ctr")).toBe("up");
+      expect(betterDirection("ms-ads-conversions")).toBe("up");
+    });
+
+    test("the Conversion to paid chart draws contribution and the Ads campaigns, each line described", () => {
+      const paid = buildDailyChartDefinitions().find((definition) => definition.id === "conversion-to-paid");
+
+      expect(paid.modes.map((mode) => mode.id)).toEqual([
+        "revenue",
+        "passes",
+        "contribution",
+        "ads-impressions",
+        "ads-clicks",
+        "ads-ctr",
+        "ads-cpc",
+        "ads-cost",
+        "ads-paid-landings",
+        "ads-cost-per-paid-landing",
+        "ads-conversions",
+      ]);
+      const contribution = paid.modes.find((mode) => mode.id === "contribution");
+      expect(contribution.componentOrder).toEqual(["revenue", "aws-cost", "ads-cost", "contribution"]);
+      expect(contribution.sql).toContain("FROM   v_contribution_daily");
+      expect(contribution.sql).toContain("aws_cost_gbp");
+      for (const id of contribution.componentOrder) expect(contribution.descriptionOf(id)).toBeTruthy();
+      for (const id of ["ads-impressions", "ads-clicks", "ads-ctr", "ads-cpc"]) {
+        const mode = paid.modes.find((candidate) => candidate.id === id);
+        expect(mode.sql, id).toContain("|| campaign_name AS component");
+        expect(mode.sql, id).toContain("'Microsoft: '");
+        expect(mode.descriptionOf("Search: MTD VAT"), id).toContain("Search: MTD VAT");
+      }
+      for (const id of ["ads-cost", "ads-paid-landings", "ads-cost-per-paid-landing", "ads-conversions"]) {
+        const mode = paid.modes.find((candidate) => candidate.id === id);
+        expect(mode.componentOrder, id).toEqual(["google", "microsoft"]);
+        expect(mode.labelOf("microsoft"), id).toBe("Microsoft");
+        expect(mode.descriptionOf("microsoft"), id).toContain("Microsoft");
+      }
+      expect(paid.modes.find((mode) => mode.id === "ads-paid-landings").sql).toContain("sum(msclkid_landings)");
+      expect(paid.modes.find((mode) => mode.id === "ads-cost-per-paid-landing").unit).toBe("gbp");
+      expect(paid.modes.find((mode) => mode.id === "ads-ctr").unit).toBe("ratio");
+      expect(paid.modes.find((mode) => mode.id === "ads-cpc").unit).toBe("gbp");
+    });
+
+    test("buildPaidSubscribers reads the latest month by channel and bundle and adds the totals", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({
+              ResultSet: resultSetOfRows(
+                ["month", "source", "bundle_id", "subscribers", "mrr_gbp", "arr_gbp"],
+                [
+                  ["2026-10-01", "google-ads", "resident-vat", "3", "27", "324"],
+                  ["2026-10-01", "unknown", "resident-pro", "1", "19", "228"],
+                ],
+              ),
+            });
+        }
+      });
+
+      const result = await buildPaidSubscribers({ workGroup: "wg", database: "db" });
+
+      const sql = mockAthenaSend.mock.calls.find(([command]) => command.constructor.name === "StartQueryExecutionCommand")[0].input
+        .QueryString;
+      expect(sql).toContain("FROM   v_paid_subscribers_by_channel");
+      expect(sql).toContain("SELECT max(month)");
+      expect(result.month).toBe("2026-10-01");
+      expect(result.rows[0]).toEqual({ source: "google-ads", bundleId: "resident-vat", subscribers: 3, mrrGbp: 27, arrGbp: 324 });
+      expect(result.totals).toEqual({ subscribers: 4, mrrGbp: 46, arrGbp: 552 });
+    });
+
     test("shortResourceName drops the partition, service, region and account from an ARN", () => {
       expect(shortResourceName("arn:aws:logs:eu-west-2:972912397388:log-group:/aws/cloudtrail/prod-env-cloud-trail")).toBe(
         "log-group:/aws/cloudtrail/prod-env-cloud-trail",
@@ -608,6 +835,32 @@ describe("operatorSnapshotPublish", () => {
       expect(text).toContain("3 accounts made 40 completions");
     });
 
+    test("the reconciliation line shows operator submissions apart from customers and test accounts", () => {
+      const text = vatSubmissionReconciliationText({
+        rows: [
+          { actor_group: "customer", submissions: "90", submitters: "12" },
+          { actor_group: "operator", submissions: "7", submitters: "1" },
+          { actor_group: "test", submissions: "40", submitters: "3" },
+        ],
+        series: [{ id: "submitters-90d", values: [1, 11] }],
+        days: 90,
+      });
+
+      expect(text).toContain("12 distinct submitters");
+      expect(text).toContain("Operators apart: 1 account made 7 completions");
+      expect(text).toContain("3 accounts made 40 completions");
+    });
+
+    test("the reconciliation line reads zero operators when the lake has none", () => {
+      const text = vatSubmissionReconciliationText({
+        rows: [{ actor_group: "customer", submissions: "5", submitters: "2" }],
+        series: [],
+        days: 30,
+      });
+
+      expect(text).toContain("Operators apart: 0 accounts made 0 completions");
+    });
+
     test("buildDailyCharts attaches the Retention reconciliation line", async () => {
       mockAthenaSend.mockImplementation((command) => {
         switch (command.constructor.name) {
@@ -645,6 +898,19 @@ describe("operatorSnapshotPublish", () => {
       expect(chart.modes[0].componentOrder).toEqual(["operator", "authenticated", "human", "synthetic", "bot"]);
       expect(chart.modes[0].sql).toContain("v_visitors_cloudfront_daily");
       expect(chart.note).toContain("CloudFront");
+    });
+
+    test("Bot and Synthetic rows count distinct visitors, not page requests", () => {
+      const conversion = OBJECTIVE_DEFINITIONS.find((objective) => objective.id === "conversion-to-submission");
+      const observations = ["sessions-bot", "sessions-synthetic"].map((id) =>
+        conversion.observations.find((observation) => observation.id === id),
+      );
+
+      expect(observations.map((observation) => observation.valueExpr)).toEqual(["visitors", "visitors"]);
+      expect(observations.map((observation) => observation.label)).toEqual(["Visitors, bot", "Visitors, synthetic"]);
+      const sql = buildDailyChartDefinitions().find((definition) => definition.id === "visitors").modes[0].sql;
+      expect(sql).toContain("sum(visitors)");
+      expect(sql).not.toContain("page_requests");
     });
 
     test("every chart mode asks for the last 90 days and answers day, component and value", () => {
@@ -695,6 +961,95 @@ describe("operatorSnapshotPublish", () => {
       }
       const activities = dailyCharts.charts[0];
       expect(activities.modes.map((mode) => mode.id)).toEqual(["started", "completed"]);
+    });
+
+    test("hourlyChartHours lists 168 UTC hours ending on the hour of now, oldest first", () => {
+      const hours = hourlyChartHours(new Date("2026-10-29T14:37:12.000Z"));
+      expect(hours).toHaveLength(168);
+      expect(hours[0]).toBe("2026-10-22T15:00:00Z");
+      expect(hours.at(-1)).toBe("2026-10-29T14:00:00Z");
+    });
+
+    test("only the modes read from an hourly view carry an hourly query, one over each view for 168 hours", () => {
+      const withHourly = buildDailyChartDefinitions().flatMap((definition) =>
+        definition.modes.filter((mode) => mode.hourlySql).map((mode) => `${definition.id}/${mode.id}`),
+      );
+      expect(withHourly).toEqual([
+        "activity-started-and-completed/started",
+        "activity-started-and-completed/completed",
+        "visitors/sessions",
+      ]);
+      for (const definition of buildDailyChartDefinitions()) {
+        for (const mode of definition.modes.filter((candidate) => candidate.hourlySql)) {
+          expect(mode.hourlySql).toContain("date_add('hour', -168,");
+          expect(mode.hourlySql).toMatch(/FROM\s+v_[a-z_]+_hourly/);
+          expect(mode.hourlySql).toMatch(/AS day/);
+        }
+      }
+    });
+
+    test("buildDailyCharts publishes 168 hourly points on the hourly modes and none elsewhere, with three extra queries", async () => {
+      const queries = [];
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            queries.push(command.input.QueryString);
+            return Promise.resolve({ QueryExecutionId: "q" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          default:
+            return Promise.resolve({
+              ResultSet: resultSetOfRows(["day", "component", "value"], [["2026-10-29T14:00:00Z", "human", "3"]]),
+            });
+        }
+      });
+
+      const now = new Date("2026-10-29T14:37:00.000Z");
+      const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY, now });
+
+      expect(failedChartIds).toEqual([]);
+      expect(dailyCharts.hours).toHaveLength(168);
+      expect(queries.filter((sql) => /_hourly/.test(sql))).toHaveLength(3);
+      const hourlyModes = dailyCharts.charts.flatMap((chart) =>
+        chart.modes.filter((mode) => mode.hourly).map((mode) => `${chart.id}/${mode.id}`),
+      );
+      expect(hourlyModes).toEqual([
+        "activity-started-and-completed/started",
+        "activity-started-and-completed/completed",
+        "visitors/sessions",
+      ]);
+      const visitors = dailyCharts.charts.find((chart) => chart.id === "visitors").modes[0];
+      expect(visitors.hourly.series.map((line) => line.id)).toEqual(["operator", "authenticated", "human"]);
+      for (const line of visitors.hourly.series) expect(line.values).toHaveLength(168);
+      expect(visitors.hourly.series[2].values.at(-1)).toBe(3);
+    });
+
+    test("a failing hourly query leaves the chart without its hourly series and counts as a failure", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand": {
+            const failing = command.input.QueryString.includes("v_visitors_by_kind_hourly");
+            return Promise.resolve({ QueryExecutionId: failing ? "failing-1" : "q" });
+          }
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({
+              QueryExecution: {
+                Status: command.input.QueryExecutionId.startsWith("failing")
+                  ? { State: "FAILED", StateChangeReason: "TABLE_NOT_FOUND" }
+                  : { State: "SUCCEEDED" },
+              },
+            });
+          default:
+            return Promise.resolve({ ResultSet: resultSetOfRows(["day", "component", "value"], []) });
+        }
+      });
+
+      const { dailyCharts, failedChartIds } = await buildDailyCharts({ workGroup: "wg", database: "db", endDay: END_DAY });
+
+      expect(failedChartIds).toEqual(["visitors-hourly"]);
+      const visitors = dailyCharts.charts.find((chart) => chart.id === "visitors");
+      expect(visitors.modes[0].hourly).toBeUndefined();
+      expect(visitors.modes[0].series.length).toBeGreaterThan(0);
     });
 
     test("a chart whose query fails is left out and reported, and the others still publish", async () => {
@@ -887,8 +1242,8 @@ describe("operatorSnapshotPublish", () => {
       expect(rows).toEqual([{ last_30: "1", prev_30: "2", last_90: "3", prev_90: "4" }]);
     });
 
-    // The first `throttledStarts` executions fail with S3 throttling; every later one succeeds.
-    function mockThrottledThenSucceeding(throttledStarts) {
+    // The first `failingStarts` executions fail with `reason`; every later one succeeds.
+    function mockFailingThenSucceeding(reason, failingStarts) {
       let starts = 0;
       mockAthenaSend.mockImplementation((command) => {
         switch (command.constructor.name) {
@@ -897,10 +1252,8 @@ describe("operatorSnapshotPublish", () => {
             return Promise.resolve({ QueryExecutionId: `qid-${starts}` });
           case "GetQueryExecutionCommand": {
             const start = Number(command.input.QueryExecutionId.slice(4));
-            if (start <= throttledStarts) {
-              return Promise.resolve({
-                QueryExecution: { Status: { State: "FAILED", StateChangeReason: "HIVE_S3_THROTTLING: Please reduce your request rate." } },
-              });
+            if (start <= failingStarts) {
+              return Promise.resolve({ QueryExecution: { Status: { State: "FAILED", StateChangeReason: reason } } });
             }
             return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
           }
@@ -913,17 +1266,39 @@ describe("operatorSnapshotPublish", () => {
       return () => starts;
     }
 
+    const THROTTLED = "HIVE_S3_THROTTLING: Please reduce your request rate.";
+    const INTERNAL_ERROR = "GENERIC_INTERNAL_ERROR: Cannot invoke a method because factory is null.";
+
     test("runAthenaQuery starts a query again when S3 throttled it", async () => {
-      const startCount = mockThrottledThenSucceeding(2);
+      const startCount = mockFailingThenSucceeding(THROTTLED, 2);
       const rows = await runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" });
       expect(rows).toEqual([{ value: "7" }]);
       expect(startCount()).toBe(3);
     });
 
     test("runAthenaQuery gives up after its throttling retries", async () => {
-      const startCount = mockThrottledThenSucceeding(3);
+      const startCount = mockFailingThenSucceeding(THROTTLED, 3);
       await expect(runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" })).rejects.toThrow("HIVE_S3_THROTTLING");
       expect(startCount()).toBe(3);
+    });
+
+    test("runAthenaQuery starts a query again once after Athena's own internal error, and then succeeds", async () => {
+      const startCount = mockFailingThenSucceeding(INTERNAL_ERROR, 1);
+      const rows = await runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" });
+      expect(rows).toEqual([{ value: "7" }]);
+      expect(startCount()).toBe(2);
+    });
+
+    test("runAthenaQuery fails when Athena's internal error comes back on the second run too", async () => {
+      const startCount = mockFailingThenSucceeding(INTERNAL_ERROR, 2);
+      await expect(runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" })).rejects.toThrow("GENERIC_INTERNAL_ERROR");
+      expect(startCount()).toBe(2);
+    });
+
+    test("runAthenaQuery does not start a SQL error again", async () => {
+      const startCount = mockFailingThenSucceeding("SYNTAX_ERROR: line 1:8: mismatched input 'FROM'.", 1);
+      await expect(runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" })).rejects.toThrow("SYNTAX_ERROR");
+      expect(startCount()).toBe(1);
     });
 
     test("runAthenaQuery does not start a query again for any other failure", async () => {
@@ -1179,7 +1554,7 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const companyAccounts = snapshot.objectives.find((o) => o.id === "company-accounts");
-      expect(companyAccounts.observations).toHaveLength(11);
+      expect(companyAccounts.observations).toHaveLength(14);
 
       const byId = Object.fromEntries(companyAccounts.observations.map((o) => [o.id, o]));
       expect(byId["company-cash-at-bank"].last30.value).toBe(3500.5);
@@ -1195,7 +1570,10 @@ describe("operatorSnapshotPublish", () => {
 
     test("the company-accounts observation set answers every value as null while the book pull job is off", async () => {
       mockQueries({
-        windowedRowFor: (line, sql) => (sql.includes("FROM   company_accounts") ? [null, null, null, null] : ["1", "1", "1", "1"]),
+        windowedRowFor: (line, sql) =>
+          sql.includes("FROM   company_accounts") || sql.includes("FROM   v_company_runway")
+            ? [null, null, null, null]
+            : ["1", "1", "1", "1"],
       });
 
       const context = {
@@ -1208,8 +1586,8 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const companyAccounts = snapshot.objectives.find((o) => o.id === "company-accounts");
-      expect(companyAccounts.observations).toHaveLength(11);
-      for (const observation of companyAccounts.observations) {
+      expect(companyAccounts.observations).toHaveLength(14);
+      for (const observation of companyAccounts.observations.filter((o) => o.source !== "v_contribution_daily")) {
         expect(observation.last30).toEqual({ value: null, trend: null });
         expect(observation.last90).toEqual({ value: null, trend: null });
       }

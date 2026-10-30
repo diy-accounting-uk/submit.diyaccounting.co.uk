@@ -6,6 +6,7 @@
 import { EventBridgeClient, PutEventsCommand } from "@aws-sdk/client-eventbridge";
 import { createLogger, context } from "./logger.js";
 import { hashSub, isSaltInitialized } from "../services/subHasher.js";
+import { isOperatorEmailLoaded, warmOperators } from "./operators.js";
 
 const logger = createLogger({ source: "app/lib/activityAlert.js" });
 
@@ -65,6 +66,7 @@ export async function publishActivityEvent({
   const requestId = context.get("requestId") || null;
   const effectiveUserSub = userSub || context.get("userSub") || null;
   const hashedSub = hashSubForEvent(effectiveUserSub);
+  await warmOperators();
   const effectiveActor = resolveActorClass(actor, hashedSub);
   const effectiveFlow = flow || (effectiveUserSub ? "user-journey" : "unknown");
 
@@ -127,7 +129,7 @@ export async function publishActivityEvent({
  *
  * @param {string} [explicitActor] - Overrides the derived class when supplied
  * @param {string|null} [hashedSub] - Hashed sub of the account the event belongs to
- * @returns {"customer"|"test-user"|"probe"|"system"}
+ * @returns {"customer"|"operator"|"test-user"|"probe"|"system"}
  */
 export function resolveActorClass(explicitActor, hashedSub = null) {
   if (explicitActor) return explicitActor;
@@ -214,14 +216,16 @@ export async function publishActivityFailureEvent({
 }
 
 /**
- * Classify an actor based on email.
+ * Classify an actor based on email. An operator is recognised once the operator list is loaded
+ * (see warmOperators); before that an operator's email reads as a customer.
  * @param {string} email
- * @returns {"customer"|"test-user"|"probe"|"system"}
+ * @returns {"customer"|"operator"|"test-user"|"probe"|"system"}
  */
 export function classifyActor(email) {
   if (!email) return "system";
   if (email.endsWith("@test.diyaccounting.co.uk")) return "test-user";
   if (email.startsWith("probe-") || email.includes("+probe")) return "probe";
+  if (isOperatorEmailLoaded(email)) return "operator";
   return "customer";
 }
 

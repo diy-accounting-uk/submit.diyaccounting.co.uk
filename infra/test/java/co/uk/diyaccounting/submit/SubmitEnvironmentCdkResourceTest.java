@@ -220,9 +220,9 @@ class SubmitEnvironmentCdkResourceTest {
         analytics.resourceCountIs("AWS::Glue::Database", 1);
         analytics.resourceCountIs("AWS::Glue::DataQualityRuleset", 6);
         analytics.resourceCountIs("AWS::CloudWatch::Dashboard", 1);
-        analytics.resourceCountIs("AWS::Glue::Table", 31);
+        analytics.resourceCountIs("AWS::Glue::Table", 32);
         analytics.resourceCountIs("AWS::Athena::WorkGroup", 1);
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 44);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 52);
         // The lake and the Athena results bucket
         analytics.resourceCountIs("AWS::S3::Bucket", 2);
 
@@ -261,10 +261,10 @@ class SubmitEnvironmentCdkResourceTest {
         // adding the shared singleton provider.
         Template ingestion = Template.fromStack(env.ingestionStack);
         ingestion.resourceCountIs("AWS::S3::Bucket", 0);
-        ingestion.resourceCountIs("AWS::Lambda::Function", 6);
+        ingestion.resourceCountIs("AWS::Lambda::Function", 7);
         ingestion.resourceCountIs("AWS::Events::Rule", 0);
         ingestion.resourceCountIs("AWS::SQS::Queue", 0);
-        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 6);
+        ingestion.resourceCountIs("AWS::CloudWatch::Alarm", 7);
         ingestion.resourceCountIs("AWS::StepFunctions::StateMachine", 1);
         ingestion.resourceCountIs("AWS::Scheduler::Schedule", 1);
         assertNoUnscopedIamResources(ingestion);

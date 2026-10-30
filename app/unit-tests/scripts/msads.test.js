@@ -5,27 +5,29 @@ import { describe, it, expect } from "vitest";
 import fs from "node:fs";
 import zlib from "node:zlib";
 import {
-  parseConfig,
   parseArgs,
-  parseDeveloperToken,
-  refreshAccessToken,
-  buildHeaders,
-  callApi,
-  discoverCustomer,
   shapeCampaign,
   shapeKeyword,
   shapeAd,
   shapeCriterion,
-  parseCsv,
-  unzipFirstEntry,
-  buildCampaignReportRequest,
-  shapeReportRows,
-  runCampaignReport,
   buildTrafficEstimateRequest,
   shapeTrafficEstimates,
   earliestStart,
   defaultReportRange,
 } from "../../../infra/microsoft/ads/msads.js";
+import {
+  parseConfig,
+  parseDeveloperToken,
+  refreshAccessToken,
+  buildHeaders,
+  callApi,
+  discoverCustomer,
+  parseCsv,
+  unzipFirstEntry,
+  buildCampaignReportRequest,
+  shapeReportRows,
+  runCampaignReport,
+} from "../../lib/microsoftAdsReporting.js";
 
 const config = parseConfig(fs.readFileSync("infra/microsoft/ads/msads.toml", "utf8"));
 
@@ -232,6 +234,24 @@ describe("msads reporting", () => {
     expect(request.Scope).toEqual({ AccountIds: ["188495572"] });
     expect(request.Time.CustomDateRangeStart).toEqual({ Year: 2026, Month: 10, Day: 1 });
     expect(request.Time.CustomDateRangeEnd).toEqual({ Year: 2026, Month: 10, Day: 28 });
+  });
+  it("asks for one row per campaign and day with a TimePeriod column when the report is daily", () => {
+    const request = buildCampaignReportRequest({
+      accountId: "188495572",
+      from: "2026-10-01",
+      to: "2026-10-28",
+      aggregation: "Daily",
+    }).ReportRequest;
+    expect(request.Aggregation).toBe("Daily");
+    expect(request.Columns[0]).toBe("TimePeriod");
+    expect(request.Columns).toContain("Spend");
+    expect(buildCampaignReportRequest({ accountId: "1", from: "2026-10-01", to: "2026-10-28" }).ReportRequest.Aggregation).toBe("Summary");
+  });
+  it("carries the day of a daily report row", () => {
+    const rows = shapeReportRows(
+      "TimePeriod,CampaignId,CampaignName,Impressions,Clicks,Ctr,AverageCpc,Spend,Conversions,Revenue\n2026-10-28,1,VAT,10,1,10.00%,0.50,0.50,1,--\n",
+    );
+    expect(rows[0]).toMatchObject({ date: "2026-10-28", campaignId: "1", impressions: 10, clicks: 1, spend: 0.5, conversions: 1 });
   });
   it("shapes report rows and treats -- as zero", () => {
     const rows = shapeReportRows(

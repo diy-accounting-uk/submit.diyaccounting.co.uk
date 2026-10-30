@@ -23,6 +23,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.CostBudgetsAndAnomalyMonitor;
 import co.uk.diyaccounting.submit.stacks.analytics.CostFocusIngestion;
 import co.uk.diyaccounting.submit.stacks.analytics.CostFocusTables;
 import co.uk.diyaccounting.submit.stacks.analytics.DataQuality;
+import co.uk.diyaccounting.submit.stacks.analytics.FxRateTables;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4DailyTables;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
 import co.uk.diyaccounting.submit.stacks.analytics.OperatorEffortTables;
@@ -436,6 +437,15 @@ public class AnalyticsStack extends Stack {
                         .build());
         adsCostTables.costTable.addResourceDependency(this.glueDatabase);
 
+        var fxRateTables = new FxRateTables(
+                this,
+                FxRateTables.FxRateTablesProps.builder()
+                        .idPrefix(prefix)
+                        .databaseName(sharedNames.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .build());
+        fxRateTables.ratesTable.addResourceDependency(this.glueDatabase);
+
         var ga4Tables = new Ga4Tables(
                 this,
                 Ga4Tables.Ga4TablesProps.builder()
@@ -714,6 +724,22 @@ public class AnalyticsStack extends Stack {
         });
         businessViews.viewResourcesByName.get("v_revenue_daily").getNode().addDependency(paypalTables.donationsTable);
         businessViews.viewResourcesByName.get("v_ads_cost_daily").getNode().addDependency(adsCostTables.costTable);
+        businessViews.viewResourcesByName.get("v_usd_gbp_daily").getNode().addDependency(fxRateTables.ratesTable);
+        businessViews
+                .viewResourcesByName
+                .get("v_spreadsheets_downloads_daily")
+                .getNode()
+                .addDependency(ga4DailyTables.downloadsByProductTable);
+        businessViews
+                .viewResourcesByName
+                .get("v_submit_referrals_daily")
+                .getNode()
+                .addDependency(ga4DailyTables.sessionsByHostSourceTable);
+        businessViews
+                .viewResourcesByName
+                .get("v_company_runway")
+                .getNode()
+                .addDependency(companyBookTables.companyAccountsTable);
         // The three new sources each feed exactly one view, so their dependency edges are added
         // by view name rather than unconditionally on every view.
         businessViews

@@ -175,6 +175,26 @@ class EdgeStackTest {
     }
 
     @Test
+    void contentSecurityPolicyAllowsMicrosoftUetScriptAndBeacons() {
+        String templateJson = Template.fromStack(synthEdgeStack()).toJSON().toString();
+
+        for (String directive : new String[] {"script-src", "connect-src", "img-src"}) {
+            java.util.regex.Matcher matcher =
+                    java.util.regex.Pattern.compile(directive + " [^;]*;").matcher(templateJson);
+            int policies = 0;
+            while (matcher.find()) {
+                if (!matcher.group().contains("googletagmanager.com")) {
+                    continue;
+                }
+                policies++;
+                assertTrue(matcher.group().contains("https://bat.bing.com"), directive);
+                assertTrue(matcher.group().contains("https://bat.bing.net"), directive);
+            }
+            assertTrue(policies > 0, directive + " not found");
+        }
+    }
+
+    @Test
     void originBucketLetsCloudFrontListSoAMissingKeyAnswers404NotForbidden() {
         Template template = Template.fromStack(synthEdgeStack());
         template.hasResourceProperties(

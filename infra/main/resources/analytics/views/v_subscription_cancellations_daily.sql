@@ -41,5 +41,5 @@ FROM   history h
 LEFT JOIN subscription_actor sa ON sa.subscription_id = h.subscription_id
 WHERE  ((h.status = 'canceled' AND (h.previous_status IS NULL OR h.previous_status <> 'canceled'))
    OR   (h.cancel_at_period_end = true AND (h.previous_cancel_at_period_end IS NULL OR h.previous_cancel_at_period_end = false)))
-  AND  coalesce(sa.actor, 'customer') NOT IN ('test-user', 'probe', 'synthetic')
+  AND  coalesce(sa.actor, 'customer') NOT IN ('test-user', 'probe', 'synthetic', 'operator')
 GROUP  BY 1, 2

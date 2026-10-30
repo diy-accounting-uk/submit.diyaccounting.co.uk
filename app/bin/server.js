@@ -264,6 +264,7 @@ app.get("/submit.env", (req, res) => {
     "COMPANIES_HOUSE_IDENTITY_BASE_URI",
     "DIY_SUBMIT_BASE_URL",
     "GA4_MEASUREMENT_ID",
+    "UET_TAG_ID",
   ];
 
   const lines = publicVars.map((v) => `${v}=${process.env[v] || ""}`);

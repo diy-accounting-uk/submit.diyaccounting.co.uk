@@ -40,5 +40,5 @@ SELECT date(s.signup_at) AS signup_day,
 FROM   signups s
 LEFT JOIN signup_actor sa ON sa.hashed_sub = s.hashed_sub
 LEFT JOIN first_submissions f ON f.hashed_sub = s.hashed_sub
-WHERE  coalesce(s.item_actor, sa.actor, 'customer') NOT IN ('test-user', 'probe', 'synthetic')
+WHERE  coalesce(s.item_actor, sa.actor, 'customer') NOT IN ('test-user', 'probe', 'synthetic', 'operator')
 GROUP  BY 1

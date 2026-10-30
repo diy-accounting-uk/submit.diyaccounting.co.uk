@@ -29,7 +29,7 @@ import software.amazon.awscdk.services.s3.Bucket;
  */
 class BusinessViewsTest {
 
-    private static final int VIEW_COUNT = 42;
+    private static final int VIEW_COUNT = 50;
 
     private Template synthBusinessViews() {
         var sharedNames = SubmitSharedNames.forDocs();
@@ -135,7 +135,15 @@ class BusinessViewsTest {
                 "v_ads_cost_per_paid_landing_daily",
                 "v_cost_by_resource_daily",
                 "v_agent_cost_daily",
-                "v_submission_failure_rate_daily");
+                "v_submission_failure_rate_daily",
+                "v_usd_gbp_daily",
+                "v_contribution_daily",
+                "v_company_runway",
+                "v_ads_performance_daily",
+                "v_spreadsheets_downloads_daily",
+                "v_submit_referrals_daily",
+                "v_active_customers_7d_daily",
+                "v_ga4_landing_pages_daily");
 
         var customResources = template.findResources("Custom::AthenaView");
         var viewNamesFound = new ArrayList<String>();
@@ -167,6 +175,43 @@ class BusinessViewsTest {
                 sql.contains("diyaccountingprobe") && sql.contains("probe-monitor"),
                 "expected probe user agents to be excluded: " + sql);
         assertFalse(sql.contains("c_ip"), "c_ip is personal data and must not be read: " + sql);
+    }
+
+    @Test
+    void visitorsViewReadsTheClientAddressOnlyAsASaltedHashInsideAnAggregate() {
+        Template template = synthBusinessViews();
+
+        var sql = sqlForView(template, "v_visitors_cloudfront_daily").replaceAll("--[^\\n]*", "");
+        assertTrue(
+                sql.contains("count(DISTINCT to_hex(sha256(to_utf8(c_ip ||"),
+                "expected distinct visitors counted from a salted hash of c_ip: " + sql);
+        assertEquals(
+                1,
+                sql.split("c_ip", -1).length - 1,
+                "expected c_ip to appear once, inside the hash, and never as a column: " + sql);
+        assertTrue(
+                sql.contains("visitors") && sql.contains("page_requests"),
+                "expected the view to give visitors beside page requests: " + sql);
+    }
+
+    @Test
+    void operatorActorIsAGroupOfItsOwnAndNotACustomer() {
+        Template template = synthBusinessViews();
+
+        var bySubmitter = sqlForView(template, "v_vat_submissions_by_actor_daily");
+        assertTrue(
+                bySubmitter.contains("WHEN actor = 'operator' THEN 'operator'"),
+                "expected the submissions view to group operators apart from customers and test accounts: "
+                        + bySubmitter);
+        for (var view : java.util.List.of(
+                "v_subscription_renewals_daily",
+                "v_subscription_cancellations_daily",
+                "v_signup_to_first_submission",
+                "v_pass_redemptions_daily")) {
+            assertTrue(
+                    sqlForView(template, view).contains("'operator'"),
+                    "expected " + view + " to leave operator accounts out of customer figures");
+        }
     }
 
     @Test

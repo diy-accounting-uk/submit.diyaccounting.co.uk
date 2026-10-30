@@ -132,8 +132,9 @@ class CloudFrontAccessLogsTest {
         Template template = synth(sharedNames);
 
         // c_ip stays in the table (it's the raw operational record); the GDPR constraint is that
-        // no view built on top of it may select the column, which the description calls out since
-        // there is no way to enforce it at the Glue-table level itself.
+        // a view built on top of it may use the column only inside an aggregate, as a salted hash,
+        // which the description calls out since there is no way to enforce it at the Glue-table
+        // level itself.
         template.hasResourceProperties(
                 "AWS::Glue::Table",
                 Match.objectLike(Map.of(

@@ -14,9 +14,11 @@ import software.amazon.awscdk.services.glue.CfnTable;
 import software.constructs.Construct;
 
 /**
- * A Glue table over the Google Ads spend that {@code adsCostPull.js} writes nightly to
+ * A Glue table over the advertising spend that {@code adsCostPull.js} (Google Ads) and
+ * {@code msAdsCostPull.js} (Microsoft Advertising) write nightly to
  * {@code curated/ads/ads_cost/dt=YYYY-MM-DD/}: {@code ads_cost}, one row per day, campaign and
- * ad group with its impressions, clicks and cost in pounds.
+ * ad group with its platform, impressions, clicks, cost in pounds and conversions. A row with no
+ * platform is a Google row; the Google pull does not write conversions.
  *
  * <p>Always created, in every environment, even where the pull job is absent: the table is then
  * empty and {@code v_ads_cost_daily} still compiles. Same shape as {@link PayPalDonationTables}:
@@ -71,7 +73,7 @@ public class AdsCostTables {
                 .tableInput(CfnTable.TableInputProperty.builder()
                         .name(COST_TABLE_NAME)
                         .description(
-                                "Google Ads impressions, clicks and cost for the day by campaign and ad group, one JSON object per line")
+                                "Google and Microsoft Ads impressions, clicks, cost and conversions for the day by campaign and ad group, one JSON object per line")
                         .tableType("EXTERNAL_TABLE")
                         .parameters(parameters)
                         .partitionKeys(List.of(CfnTable.ColumnProperty.builder()
@@ -89,13 +91,15 @@ public class AdsCostTables {
                                         .build())
                                 .columns(List.of(
                                         column("date", "string"),
+                                        column("platform", "string"),
                                         column("campaign_id", "string"),
                                         column("campaign_name", "string"),
                                         column("ad_group_id", "string"),
                                         column("ad_group_name", "string"),
                                         column("impressions", "bigint"),
                                         column("clicks", "bigint"),
-                                        column("cost_gbp", "double")))
+                                        column("cost_gbp", "double"),
+                                        column("conversions", "double")))
                                 .build())
                         .build())
                 .build();

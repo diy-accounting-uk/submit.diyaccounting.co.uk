@@ -32,9 +32,16 @@ const CONTENT_TYPES = {
   ".ico": "image/x-icon",
 };
 
-async function serveRealSite(page) {
+const UET_STUB = "window.UET = function (options) { this.options = options; this.push = function () {}; };";
+
+async function serveRealSite(page, { uetTagId = "" } = {}) {
   await page.route("**/*", async (route) => {
     const url = new URL(route.request().url());
+
+    if (url.hostname === "bat.bing.com" && url.pathname === "/bat.js") {
+      await route.fulfill({ status: 200, contentType: "application/javascript", body: UET_STUB });
+      return;
+    }
 
     // Never let the GA4 tag loader or any /api/* call hit the real network.
     if (url.hostname !== "localhost") {
@@ -42,7 +49,7 @@ async function serveRealSite(page) {
       return;
     }
     if (url.pathname === "/submit.env") {
-      await route.fulfill({ status: 200, contentType: "text/plain", body: "GA4_MEASUREMENT_ID=G-TESTMEASURE\n" });
+      await route.fulfill({ status: 200, contentType: "text/plain", body: `GA4_MEASUREMENT_ID=G-TESTMEASURE\nUET_TAG_ID=${uetTagId}\n` });
       return;
     }
     if (url.pathname.startsWith("/api/")) {
@@ -67,9 +74,10 @@ async function gtagConsentCalls(page) {
 }
 
 function trackRequests(page) {
-  const seen = { gtag: 0, beacon: 0 };
+  const seen = { gtag: 0, beacon: 0, uet: 0 };
   page.on("request", (request) => {
     const url = request.url();
+    if (url.startsWith("https://bat.bing.com/bat.js")) seen.uet += 1;
     if (url.startsWith("https://www.googletagmanager.com/gtag/js")) seen.gtag += 1;
     if (url.endsWith("/api/v1/session/beacon") && !request.postDataJSON()?.consentAnswer) seen.beacon += 1;
   });
@@ -162,6 +170,31 @@ test.describe("Cookie consent banner", () => {
     // before any user interaction.
     const callsAfterReload = await gtagConsentCalls(page);
     expect(callsAfterReload.some((c) => c[1] === "update" && c[2].analytics_storage === "granted")).toBe(true);
+  });
+
+  test("Microsoft UET is not requested before Accept, is requested after it, and never after Decline", async ({ page, browser }) => {
+    const seen = trackRequests(page);
+    await serveRealSite(page, { uetTagId: "187012345" });
+    await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+
+    const banner = page.locator("#consent-banner");
+    await expect(banner).toBeVisible({ timeout: 5000 });
+    await delay(500);
+    expect(seen.uet).toBe(0);
+    expect(await page.evaluate(() => typeof window.uetq)).toBe("undefined");
+
+    await banner.locator("#consent-accept").click();
+    await expect.poll(() => seen.uet, { timeout: 5000 }).toBe(1);
+    await expect.poll(() => page.evaluate(() => window.uetq?.options?.ti), { timeout: 5000 }).toBe("187012345");
+
+    const declined = await (await browser.newContext()).newPage();
+    const declinedSeen = trackRequests(declined);
+    await serveRealSite(declined, { uetTagId: "187012345" });
+    await declined.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+    await declined.locator("#consent-banner #consent-decline").click();
+    await delay(500);
+    expect(declinedSeen.uet).toBe(0);
+    await declined.context().close();
   });
 
   test("Decline dismisses the banner, keeps GA4 denied, and persists so the banner does not return", async ({ page }) => {
