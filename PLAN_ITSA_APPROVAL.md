@@ -262,7 +262,7 @@ operator's approval to enable it for live users on prod.
   **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
 - [ ] **UH2. Resident, Resident Pro and diya-gl storage.** Preconditions: every filing the
   bundles describe is live on prod (Income Tax, UH3; confirmation statement, PSC verification
-  statement, accounts and CT600, `PLAN_COMPANIES_HOUSE_APPROVAL.md` UH4); the operator's
+  statement and accounts, `PLAN_COMPANIES_HOUSE_APPROVAL.md` UH4; CT600, `PLAN_HMRC_CT_APPROVAL.md` UH7); the operator's
   approval. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet.
   **Size**: ~3 files.
 - [ ] **UH1. Practice.** Preconditions: HMRC production credentials for the Agent
@@ -278,7 +278,7 @@ IA2 ──► HMRC's early-2027 update ──► IA5 ──► IA6 ──► IA7
 IA3 ──► IA6
 IA4 decided (a); the note is on the spreadsheets home page (spreadsheets PR #164)
 IA11 ──► IA6 (the recordings are cited in the application)
-IA7 ──► UH3 ──► UH2 ──► UH1   (UH2 also waits on PLAN_COMPANIES_HOUSE_APPROVAL.md UH4)
+IA7 ──► UH3 ──► UH2 ──► UH1   (UH2 also waits on PLAN_COMPANIES_HOUSE_APPROVAL.md UH4 and PLAN_HMRC_CT_APPROVAL.md UH7)
 ```
 
 Backlog row 10 (ITSA phase 1) is closed: its build is on main and proven, and the send it
