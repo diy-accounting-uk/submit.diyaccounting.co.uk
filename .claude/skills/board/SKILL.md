@@ -134,7 +134,7 @@ main"); it is on the board when its label, or a NEXT.md row whose **Source** nam
 own order: the plan's task label, a short name, then a bracketed status of two fields:
 
 ```
-**PLAN_COMPANIES_HOUSE.md**
+**PLAN_COMPANIES_HOUSE_APPROVAL.md**
 - CS-11b Confirmation statement customer launch [ready, —]
 - B34c Accounts filing on prod [blocked, O34c]
 ```
@@ -148,7 +148,7 @@ next. Pulling is not part of a render.
 
 **Part 2b — one line per remaining plan**, in two groups. First the plans whose every open task
 is on the board: the plan's name, the count of its open tasks and the board labels that carry
-them (`PLAN_HMRC_ASSIST.md: 8 open, all boarded (HA1 to HA8)`). Then the plans with no open task
+them (`PLAN_HMRC_ASSIST_APPROVAL.md: 8 open, all boarded (HA1 to HA8)`). Then the plans with no open task
 at all, each marked as a candidate for the archive
 (`PLAN_<NAME>.md: no open task; candidate for ../private.diyaccounting.co.uk/engineering/submit/archive/`).
 Archiving is not part of a render.

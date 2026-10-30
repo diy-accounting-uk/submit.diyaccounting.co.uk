@@ -249,6 +249,27 @@ send.
   8816f93c, PR #414) and applies with `npm run ads:sync -- --apply` on the operator's yes.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
 
+### Unhide on prod
+
+HIDE1 hid these from prod with an environment rule (the catalogue's `environments`, the page
+guard in `web/public/widgets/entitlement-status.js`, `enforceBundles` on the practice handlers).
+Unhiding one is that rule with `prod` added, and the availability table and dates on
+`web/public/mtd-calendar.html` in the same change. The last precondition of each is the
+operator's approval to enable it for live users on prod.
+
+- [ ] **UH3. Income Tax forms.** Preconditions: HMRC's recognition and production credentials
+  for the ITSA APIs (IA7); each activity in a bundle sold on prod; the operator's approval.
+  **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
+- [ ] **UH2. Resident, Resident Pro and diya-gl storage.** Preconditions: every filing the
+  bundles describe is live on prod (Income Tax, UH3; confirmation statement, PSC verification
+  statement and accounts, `PLAN_COMPANIES_HOUSE_APPROVAL.md` UH4; CT600, `PLAN_HMRC_CT_APPROVAL.md` UH7); the operator's
+  approval. **Owner**: Claude Code (build), Operator (approval). **Model**: Sonnet.
+  **Size**: ~3 files.
+- [ ] **UH1. Practice.** Preconditions: HMRC production credentials for the Agent
+  Authorisation API on Submit's production application; HMRC's approval of agent use; practice
+  sold in a bundle on prod (Resident Pro, UH2); the operator's approval. **Owner**: Claude Code
+  (build), Operator (approval). **Model**: Sonnet. **Size**: ~3 files.
+
 ### Dependency graph
 
 ```
@@ -257,6 +278,7 @@ IA2 ──► HMRC's early-2027 update ──► IA5 ──► IA6 ──► IA7
 IA3 ──► IA6
 IA4 decided (a); the note is on the spreadsheets home page (spreadsheets PR #164)
 IA11 ──► IA6 (the recordings are cited in the application)
+IA7 ──► UH3 ──► UH2 ──► UH1   (UH2 also waits on PLAN_COMPANIES_HOUSE_APPROVAL.md UH4 and PLAN_HMRC_CT_APPROVAL.md UH7)
 ```
 
 Backlog row 10 (ITSA phase 1) is closed: its build is on main and proven, and the send it

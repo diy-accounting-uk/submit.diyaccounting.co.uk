@@ -1454,7 +1454,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** companiesHouseAccountsPost.js builds the XML submission via buildAccountsSubmissionRequest, submits it via postToGateway, and stores the async request in DynamoDB. companiesHouseAccountsGet.js polls that stored request for the filing's status. A request carrying a smallCompany section files FRS 102 section 1A small company accounts instead (buildSmallCompanyAccounts: profit and loss account, balance sheet sub-lines, fixed asset note, directors' report, optional prior-year comparatives, optional section 444 filleted copy) through the same two Lambdas and the fileSmallCompanyAccounts.html page; derive_small_company_accounts reads its figures from a Company book.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/companies-house/companiesHouseAccountsPost.js:ingestHandler`; `app/functions/companies-house/companiesHouseAccountsGet.js:ingestHandler`
-- **Files:** app/functions/companies-house/companiesHouseAccountsPost.js, app/functions/companies-house/companiesHouseAccountsGet.js, app/unit-tests/functions/companiesHouseAccountsPost.test.js, app/unit-tests/functions/companiesHouseAccountsGet.test.js, app/services/microEntityAccountsIxbrl.js, app/unit-tests/services/microEntityAccountsIxbrl.test.js, app/services/accountsIxbrlCommon.js, app/services/smallCompanyAccountsIxbrl.js, app/services/smallCompanyAccountsRequest.js, app/services/smallCompanyAccounts.js, app/unit-tests/services/smallCompanyAccountsIxbrl.test.js, web/public/companies-house/fileSmallCompanyAccounts.html, app/services/companiesHouseXmlGateway.js, app/unit-tests/services/companiesHouseXmlGateway.test.js, web/public/companies-house/fileMicroEntityAccounts.html, web/public/lib/services/companies-house-filing-service.js, behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-filing-steps.js, app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js, app/system-tests/companiesHouseFilingSimulator.system.test.js, app/system-tests/companiesHouseSimulator.system.test.js, PLAN_COMPANIES_HOUSE.md
+- **Files:** app/functions/companies-house/companiesHouseAccountsPost.js, app/functions/companies-house/companiesHouseAccountsGet.js, app/unit-tests/functions/companiesHouseAccountsPost.test.js, app/unit-tests/functions/companiesHouseAccountsGet.test.js, app/services/microEntityAccountsIxbrl.js, app/unit-tests/services/microEntityAccountsIxbrl.test.js, app/services/accountsIxbrlCommon.js, app/services/smallCompanyAccountsIxbrl.js, app/services/smallCompanyAccountsRequest.js, app/services/smallCompanyAccounts.js, app/unit-tests/services/smallCompanyAccountsIxbrl.test.js, web/public/companies-house/fileSmallCompanyAccounts.html, app/services/companiesHouseXmlGateway.js, app/unit-tests/services/companiesHouseXmlGateway.test.js, web/public/companies-house/fileMicroEntityAccounts.html, web/public/lib/services/companies-house-filing-service.js, behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js, behaviour-tests/steps/behaviour-companies-house-filing-steps.js, app/unit-tests/http-simulator/routes/companies-house-xmlgw.test.js, app/system-tests/companiesHouseFilingSimulator.system.test.js, app/system-tests/companiesHouseSimulator.system.test.js, PLAN_COMPANIES_HOUSE_APPROVAL.md
 - **Keywords:** companies house, micro-entity accounts, small company accounts, FRS 102, section 1A, filleted accounts, ixbrl, xml gateway, govtalk, async request, dynamodb, filing, presenter credential
 - **Related:** CH-07, CH-09, CH-11, CH-12, CH-13
 
@@ -4030,10 +4030,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-26 Render the operator objectives dashboard
 
 - **Use when:** the operator-only dashboard page must show the eight one-stop objectives or the account's activity list.
-- **Does:** web/public/operator/dashboard.html is the operator-only page, behind the operator bundle entitlement. It renders the eight one-stop objectives' trailing 30/90-day observations, trend and deep links from operatorSnapshotGet.js. It also lists the account's entitled bundles; PLAN_ONE_STOP_DASHBOARD.md is the plan it implements.
+- **Does:** web/public/operator/dashboard.html is the operator-only page, behind the operator bundle entitlement. It renders the eight one-stop objectives' trailing 30/90-day observations, trend and deep links from operatorSnapshotGet.js. It also lists the account's entitled bundles; ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ONE_STOP_DASHBOARD.md is the plan it implements.
 - **Run:** no command; see Does and Entry
 - **Entry:** `web/public/operator/dashboard.html:`
-- **Files:** web/public/operator/dashboard.html, web/browser-tests/operatorDashboard.browser.test.js, web/browser-tests/operatorDashboardActivity.browser.test.js, PLAN_ONE_STOP_DASHBOARD.md
+- **Files:** web/public/operator/dashboard.html, web/browser-tests/operatorDashboard.browser.test.js, web/browser-tests/operatorDashboardActivity.browser.test.js, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ONE_STOP_DASHBOARD.md
 - **Keywords:** operator dashboard page, one-stop objectives, operator bundle entitlement, activity list, trend deep link
 - **Related:** DATA-19
 
@@ -4944,10 +4944,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-24 Document developer setup and repository conventions
 
 - **Use when:** a new contributor needs the setup guide, or the session record needs reading.
-- **Does:** README.md describes the app, setup and key features, and CLAUDE.md carries the project's Claude Code conventions. _developers/SETUP.md is the local development setup guide, and NEXT.md is the live open-work board. The PLAN_*.md documents hold the work not yet boarded, PLAN_REPOSITORY_AUTOMATION.md tracks the automation plan, and REPORT_*.md files are session and audit reports.
+- **Does:** README.md describes the app, setup and key features, and CLAUDE.md carries the project's Claude Code conventions. _developers/SETUP.md is the local development setup guide, and NEXT.md is the live open-work board. The PLAN_*.md documents hold the work not yet boarded, and REPORT_*.md files are session and audit reports.
 - **Run:** no command; see Does and Entry
 - **Entry:** `README.md`; `_developers/SETUP.md`; `NEXT.md`
-- **Files:** README.md, CLAUDE.md, _developers/SETUP.md, NEXT.md, PLAN_REPOSITORY_AUTOMATION.md
+- **Files:** README.md, CLAUDE.md, _developers/SETUP.md, NEXT.md
 - **Keywords:** readme, setup guide, developer onboarding, next.md, plan doc, session report, architecture report
 - **Related:** DEV-27, DEV-40
 
