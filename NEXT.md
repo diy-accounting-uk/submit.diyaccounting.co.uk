@@ -15,7 +15,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-8e599ab** (PR #593's merge 8e599ab99; `/submit/prod/last-known-good-deployment` reads it; main's deploy 40983752681 promoted it and failed only the `prodSurface.browser.test.js:84` browser test, which passes 3 of 3 locally; PR #595's deploy of 287515a0f follows). `npm run video:embed-check` needs `eval "$(aws --profile diya-submit-prod configure export-credentials --format env)"` when the SDK's SSO cache reads expired. The site's `script-src` carries no `'unsafe-inline'`.
+**Prod runs deployment prod-2b28d0c** (PR #599's merge 2b28d0c72; `/submit/prod/last-known-good-deployment` reads it; main's deploy 41004441558 promoted it). `npm run video:embed-check` needs `eval "$(aws --profile diya-submit-prod configure export-credentials --format env)"` when the SDK's SSO cache reads expired. The site's `script-src` carries no `'unsafe-inline'`.
 **ci**: ci-set1 stands (PR #595's deploy updated it) and is `/submit/ci/last-known-good-deployment`.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -41,6 +41,8 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 ## In flight
 
 ## Machine-only
+
+- [ ] **AL7. Confirm the fx rate pull and the nightly pass, then close #597 and #598.** PR #599 (AL7) fixed `fxRatePull.js`, which took Lambda's context as its fetch function; `prod-env-fx-rate-pull` was updated at 05:02 UTC on 2026-10-30. Remainder: the `prod-env-analytics-nightly` execution at 02:15 UTC on 2026-10-31 succeeds (`aws --profile diya-submit-prod stepfunctions list-executions --state-machine-arn arn:aws:states:eu-west-2:972912397388:stateMachine:prod-env-analytics-nightly --max-results 3`) and `curated/fx/fx_rates/` holds that day's object; then close #597 and #598 with the execution name. **Source**: issues #597, #598. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files. GH issue #597, #598.
 
 - [ ] **MSA3b. Verify the UET hosts and schedule the offline upload.** The Bing campaign "Search: MTD VAT" (Active, £1.00 a day, Enhanced CPC, UK, English, 6 ad groups) and the UET tag 97279388 are live (PRs #593 and #595; `msads-apply.yml` on 287515a0f plans 0 changes). `UET_TAG_ID` in `.env.prod` makes prod pages load `bat.bing.com/bat.js` after analytics consent. (1) Load a prod page with consent in a browser, read the hosts the tag calls, and set `script-src`, `connect-src` and `img-src` in `EdgeStack.java` (lines ~327, ~410, ~483) to those hosts: `bat.bing.com` is documented; `bat.bing.net` and `c.bing.com` are guesses that go if the tag does not call them; the privacy page's list follows. (2) Schedule `infra/microsoft/ads/msads-conversions-upload.js --apply` daily, the twin of the Google upload's schedule. **Source**: MSA3, operator 2026-10-29. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
