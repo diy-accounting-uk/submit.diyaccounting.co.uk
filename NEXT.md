@@ -79,8 +79,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 - [ ] **MCP1. The hosted MCP launched on prod: every tool, the harness, and the listing.** HIDE1 narrowed the hosted MCP tools on prod to VAT (`submit_vat_return` and its reads) and hid `web/public/mcp-harness.html` behind the page guard. MCP1 brings both back and launches the MCP: each tool beyond VAT enabled on prod as the journey it files goes live (Income Tax, `PLAN_ITSA_APPROVAL.md` UH3; practice, UH1; Companies House and CT600, `PLAN_COMPANIES_HOUSE_APPROVAL.md` UH4), the harness on prod behind an operator-only activity, and the MCP's public listing and connection guide once the tool set is whole; the availability table and dates on `web/public/mtd-calendar.html` change in the same change. Blocked on: UH1, UH3 and UH4 for the tools; the operator's approval to enable it for live users. **Source**: operator, 2026-10-30 (replaces the unhide rows for the MCP tools and the harness). **Owner**: Claude Code (build), operator (approval). **Model**: Sonnet. **Size**: ~5 files.
 
-- [ ] **H5c. Foreign property: the book source (PLAN_SUBMISSION_COVERAGE GAP1-H5).** The foreign property journey and its video are on main (PR #588, https://youtu.be/XKLhr0err0g). Remainder: fill the foreign property forms from a diya-gl book (spreadsheets then Submit, ~9 files). Blocked on a book that holds foreign property postings. **Source**: GAP1-H5, `PLAN_SUBMISSION_COVERAGE.md` "GAP1-H5 design: the foreign property journey". **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~9 files.
-
 ## Discipline
 
 - **Push once per batch of landed tracks, never per track**, and prefer one dispatch that
