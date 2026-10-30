@@ -189,6 +189,7 @@ class EdgeStackTest {
                 policies++;
                 assertTrue(matcher.group().contains("https://bat.bing.com"), directive);
                 assertTrue(matcher.group().contains("https://bat.bing.net"), directive);
+                assertFalse(matcher.group().contains("c.bing.com"), directive);
             }
             assertTrue(policies > 0, directive + " not found");
         }
