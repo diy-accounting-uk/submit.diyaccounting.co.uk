@@ -78,6 +78,7 @@ runs:
         INPUT_FILE: ${{ inputs.input-file }}
         FORMAT: ${{ inputs.format }}
         ECHO_OUTPUT: ${{ inputs.echo-output }}
+        TRIAGE_RUN_URL: ${{ inputs.run-url }}
       run: |
         set -o pipefail
         FLAG=""

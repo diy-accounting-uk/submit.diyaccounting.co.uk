@@ -228,15 +228,22 @@ jobs:
         id: triage-run
         run: |
           set -o pipefail
-          if jq -e '.subtype == "success" and (.is_error | not) and (.result | length > 0)' /tmp/support-triage.json > /dev/null; then
-            echo "stopped=false" >> "$GITHUB_OUTPUT"
-          elif jq -e '.subtype == "error_max_turns"' /tmp/support-triage.json > /dev/null; then
-            echo "triage used its 60-turn budget before finishing; the partial answer goes to the issue"
-            echo "stopped=max_turns" >> "$GITHUB_OUTPUT"
-          else
-            echo "triage produced no answer (subtype: $(jq -r '.subtype // "none"' /tmp/support-triage.json))"
-            exit 1
-          fi
+          node scripts/triage-result-verdict.mjs /tmp/support-triage.json > /tmp/support-verdict.txt
+          VERDICT=$(sed -n 's/^verdict=//p' /tmp/support-verdict.txt)
+          REASON=$(sed -n 's/^reason=//p' /tmp/support-verdict.txt)
+          case "$VERDICT" in
+            complete)
+              echo "stopped=false" >> "$GITHUB_OUTPUT"
+              ;;
+            max_turns | incomplete)
+              echo "triage stopped before an answer: ${REASON}"
+              echo "stopped=${VERDICT}" >> "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "triage produced no answer (subtype: $(jq -r '.subtype // "none"' /tmp/support-triage.json))"
+              exit 1
+              ;;
+          esac
 
       - name: Filter the triage answer before it is published
         id: publish-filter
@@ -356,11 +363,11 @@ jobs:
         run: node scripts/github-issue-comment.mjs --repo "$PRIVATE_REPO" --issue "$ISSUE_NUMBER" --body-file /tmp/support-comment.md
 
       # Runs after the comment is posted, so the answer is not lost, but the run still ends red:
-      # a triage that only got through 60 turns by exhausting its budget is not a clean pass.
+      # a triage that stopped before an answer is not a clean pass.
       - name: Fail the run when triage stopped early
-        if: needs.handle.outputs.stopped == 'max_turns'
+        if: needs.handle.outputs.stopped == 'max_turns' || needs.handle.outputs.stopped == 'incomplete'
         run: |
-          echo "failing the run: triage stopped after using its 60-turn budget"
+          echo "failing the run: triage stopped before an answer"
           exit 1
 
   # Opens a draft pull request in this repository when the handling agent judged that the ticket
@@ -633,7 +640,7 @@ jobs:
           ROW_GUARDRAIL_ACTION: ${{ needs.handle.outputs.guardrail-action }}
         run: |
           set -euo pipefail
-          if [ "$POST_RESULT" = "success" ] && [ "$STOPPED" = "max_turns" ]; then OUTCOME=max-turns
+          if [ "$POST_RESULT" = "success" ] && { [ "$STOPPED" = "max_turns" ] || [ "$STOPPED" = "incomplete" ]; }; then OUTCOME=max-turns
           elif [ "$POST_RESULT" = "success" ]; then OUTCOME=posted
           elif [ "$HANDLE_RESULT" = "failure" ]; then OUTCOME=no-answer
           elif [ "$POST_RESULT" = "failure" ]; then OUTCOME=post-failed

@@ -10,13 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  DENY_PATTERNS,
-  redact,
-  extractFinalAssistantText,
-  describeStoppedRun,
-  maxTurnsNote,
-} from "../../../scripts/redact-triage-output.mjs";
+import { DENY_PATTERNS, redact, extractFinalAssistantText } from "../../../scripts/redact-triage-output.mjs";
 
 const SCRIPT_PATH = fileURLToPath(new URL("../../../scripts/redact-triage-output.mjs", import.meta.url));
 
@@ -213,59 +207,6 @@ describe("extractFinalAssistantText", () => {
   });
 });
 
-describe("maxTurnsNote", () => {
-  test("names the turn budget for a run that hit max-turns", () => {
-    const parsed = { type: "result", subtype: "error_max_turns", is_error: false, num_turns: 30 };
-    expect(maxTurnsNote(parsed)).toBe("_Triage stopped: the 30-turn budget ran out before it finished._");
-  });
-
-  test("returns null for a successful result", () => {
-    expect(maxTurnsNote({ type: "result", subtype: "success", result: "final answer" })).toBeNull();
-  });
-
-  test("returns null for any other stopped subtype", () => {
-    expect(maxTurnsNote({ type: "result", subtype: "error_during_execution", is_error: true, num_turns: 3 })).toBeNull();
-  });
-
-  test("returns null when there is no result entry at all", () => {
-    expect(maxTurnsNote({ foo: "bar" })).toBeNull();
-  });
-});
-
-describe("describeStoppedRun", () => {
-  test("gives the max-turns note for a run that hit max-turns with no text", () => {
-    const parsed = { type: "result", subtype: "error_max_turns", is_error: false, num_turns: 30 };
-    expect(describeStoppedRun(parsed)).toBe("_Triage stopped: the 30-turn budget ran out before it finished._");
-  });
-
-  test("returns null for a successful result", () => {
-    const parsed = { type: "result", subtype: "success", result: "final answer" };
-    expect(describeStoppedRun(parsed)).toBeNull();
-  });
-
-  test("returns null for an is_error failure, leaving it to extractFinalAssistantText's own message", () => {
-    const parsed = { type: "result", subtype: "error_during_execution", is_error: true, num_turns: 3 };
-    expect(describeStoppedRun(parsed)).toBeNull();
-  });
-
-  test("returns null when there is no result entry at all", () => {
-    expect(describeStoppedRun({ foo: "bar" })).toBeNull();
-  });
-
-  test("falls back to a generic message for a stopped subtype that is not max-turns", () => {
-    const parsed = { type: "result", subtype: "error_during_execution", is_error: false, num_turns: 3 };
-    expect(describeStoppedRun(parsed)).toBe("triage stopped: error_during_execution after 3 turns");
-  });
-
-  test("reads the last result entry out of a transcript array", () => {
-    const parsed = [
-      { type: "assistant", message: { role: "assistant", content: [{ type: "text", text: "intermediate turn" }] } },
-      { type: "result", subtype: "error_max_turns", is_error: false, num_turns: 30 },
-    ];
-    expect(describeStoppedRun(parsed)).toBe("_Triage stopped: the 30-turn budget ran out before it finished._");
-  });
-});
-
 describe("CLI", () => {
   test("prints the redacted final result and exits zero", () => {
     const parsed = { type: "result", subtype: "success", result: "Customer 192.168.1.1 hit the alarm." };
@@ -291,14 +232,7 @@ describe("CLI", () => {
     expect(result.stderr).toMatch(/no assistant text/);
   });
 
-  test("exits zero with a one-line summary when the run hit max-turns with no text", () => {
-    const parsed = { type: "result", subtype: "error_max_turns", is_error: false, num_turns: 30 };
-    const result = runCli(JSON.stringify(parsed));
-    expect(result.status).toBe(0);
-    expect(result.stdout.trim()).toBe("_Triage stopped: the 30-turn budget ran out before it finished._");
-  });
-
-  test("exits zero with the partial result plus the budget note when max-turns still produced text", () => {
+  test("posts one stop line, not the partial text, when the run hit max-turns", () => {
     const parsed = {
       type: "result",
       subtype: "error_max_turns",
@@ -308,8 +242,34 @@ describe("CLI", () => {
     };
     const result = runCli(JSON.stringify(parsed));
     expect(result.status).toBe(0);
-    expect(result.stdout).toContain("Likely cause: the worker Lambda is timing out under load.");
-    expect(result.stdout).toContain("_Triage stopped: the 30-turn budget ran out before it finished._");
+    expect(result.stdout.trim()).toBe("_Triage stopped before an answer: the 30-turn budget ran out._");
+  });
+
+  test("posts one stop line when a success result ends mid-step", () => {
+    const parsed = {
+      type: "result",
+      subtype: "success",
+      is_error: false,
+      num_turns: 9,
+      result: "The error is that my start time is too far in the past. Let me look at the code:",
+    };
+    const result = runCli(JSON.stringify(parsed));
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe("_Triage stopped before an answer: the final message stopped mid-step after 9 turns._");
+    expect(result.stdout).not.toContain("start time");
+  });
+
+  test("adds the run link to the stop line when the caller names one", () => {
+    const parsed = { type: "result", subtype: "error_max_turns", is_error: false, num_turns: 30 };
+    const dir = mkdtempSync(join(tmpdir(), "redact-triage-output-"));
+    const inputPath = join(dir, "triage.json");
+    writeFileSync(inputPath, JSON.stringify(parsed));
+    const result = spawnSync(process.execPath, [SCRIPT_PATH, inputPath], {
+      encoding: "utf8",
+      env: { ...process.env, TRIAGE_RUN_URL: "https://example.test/runs/7" },
+    });
+    rmSync(dir, { recursive: true, force: true });
+    expect(result.stdout.trim()).toBe("_Triage stopped before an answer: the 30-turn budget ran out. Run: https://example.test/runs/7_");
   });
 
   test("exits non-zero when the input is not valid JSON", () => {

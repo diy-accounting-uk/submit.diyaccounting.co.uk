@@ -426,6 +426,9 @@ jobs:
           elif ! jq -e '.result | length > 0' /tmp/triage.haiku.json > /dev/null 2>&1; then
             ESCALATE=true
             REASON="the Haiku pass returned an empty result"
+          elif ! node scripts/triage-result-verdict.mjs /tmp/triage.haiku.json | grep -qx 'verdict=complete'; then
+            ESCALATE=true
+            REASON="the Haiku pass ended mid-step without an answer"
           else
             RESULT_TEXT=$(jq -r '.result' /tmp/triage.haiku.json)
             if printf '%s' "$RESULT_TEXT" | grep -qiE 'unable to determine|cannot determine|could not determine|insufficient evidence|without querying'; then
@@ -505,22 +508,30 @@ jobs:
           # gets back from Bedrock - fails this step with the reason on record, instead of
           # falling through to be posted as a comment.
           #
-          # error_max_turns is the one shape that still gets posted: the redaction script already
-          # turns it (and any partial `.result` text it carries) into a comment, so this step lets
-          # the later Filter/guardrail/Comment steps run and only records that the turn budget was
-          # the reason, leaving "Fail the run when triage stopped early" (the job's last step) to
-          # put the run back into red once the comment is on the issue.
-          if jq -e '.subtype == "success" and (.is_error | not) and (.result | length > 0)' /tmp/triage.json > /dev/null; then
-            echo "stopped=false" | tee -a "$GITHUB_OUTPUT"
-          elif jq -e '.subtype == "error_max_turns"' /tmp/triage.json > /dev/null; then
-            echo "triage used its 60-turn budget before finishing; posting whatever partial answer it produced" \
-              | tee -a "$GITHUB_STEP_SUMMARY"
-            echo "stopped=max_turns" | tee -a "$GITHUB_OUTPUT"
-          else
-            echo "triage produced no answer:" | tee -a "$GITHUB_STEP_SUMMARY"
-            head -c 2000 /tmp/triage.json | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 1
-          fi
+          # A run that stopped without a complete answer (the turn budget spent, or a success whose
+          # final message is mid-step narration) still gets a comment: the redaction script posts
+          # one stop line in place of the model's text, so this step lets the later Filter and
+          # Comment steps run and only records the reason, leaving "Fail the run when triage
+          # stopped early" (the job's last step) to put the run back into red once the line is on
+          # the issue.
+          node scripts/triage-result-verdict.mjs /tmp/triage.json | tee /tmp/triage-verdict.txt
+          VERDICT=$(sed -n 's/^verdict=//p' /tmp/triage-verdict.txt)
+          REASON=$(sed -n 's/^reason=//p' /tmp/triage-verdict.txt)
+          case "$VERDICT" in
+            complete)
+              echo "stopped=false" | tee -a "$GITHUB_OUTPUT"
+              ;;
+            max_turns | incomplete)
+              echo "triage stopped before an answer: ${REASON}; posting a one-line stop notice" \
+                | tee -a "$GITHUB_STEP_SUMMARY"
+              echo "stopped=${VERDICT}" | tee -a "$GITHUB_OUTPUT"
+              ;;
+            *)
+              echo "triage produced no answer:" | tee -a "$GITHUB_STEP_SUMMARY"
+              head -c 2000 /tmp/triage.json | tee -a "$GITHUB_STEP_SUMMARY"
+              exit 1
+              ;;
+          esac
 
       - name: Filter the triage answer before it is published
         if: steps.role.outputs.configured == 'true' && steps.judge.outputs.hold != 'true'
@@ -630,7 +641,11 @@ jobs:
               --title "[ALARM] ${ALARM_NAME} (public #${ISSUE_NUMBER})" --body-file /tmp/mirror-body.md)
           fi
           gh issue comment "$MIRROR_URL" --body-file "$OUTPUT_FILE"
-          if [ "$TRIAGE_STOPPED" = "max_turns" ]; then STATUS="stopped at its turn limit"; else STATUS="complete"; fi
+          case "$TRIAGE_STOPPED" in
+            max_turns) STATUS="stopped at its turn limit" ;;
+            incomplete) STATUS="stopped before an answer" ;;
+            *) STATUS="complete" ;;
+          esac
           export GH_TOKEN="${{ github.token }}"
           gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" \
             --body "Triage ${STATUS}. Reasoning: ${MIRROR_URL}"
@@ -746,9 +761,9 @@ jobs:
       # still ends red: a triage that only got through 60 turns by exhausting its budget is not a
       # clean pass, and green here would hide that the answer may be incomplete.
       - name: Fail the run when triage stopped early
-        if: steps.triage-run.outputs.stopped == 'max_turns'
+        if: steps.triage-run.outputs.stopped == 'max_turns' || steps.triage-run.outputs.stopped == 'incomplete'
         run: |
-          echo "failing the run: triage stopped after using its 60-turn budget" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "failing the run: triage stopped before an answer" | tee -a "$GITHUB_STEP_SUMMARY"
           exit 1
 
       # Agent-run ledger row for the one-stop dashboard (v_agent_runs_daily): one row per run,
@@ -762,7 +777,7 @@ jobs:
         id: ledger-outcome
         run: |
           set -euo pipefail
-          if [ "${{ steps.comment-triage.conclusion }}" = "success" ] && [ "${{ steps.triage-run.outputs.stopped }}" = "max_turns" ]; then
+          if [ "${{ steps.comment-triage.conclusion }}" = "success" ] && { [ "${{ steps.triage-run.outputs.stopped }}" = "max_turns" ] || [ "${{ steps.triage-run.outputs.stopped }}" = "incomplete" ]; }; then
             OUTCOME=max-turns
           elif [ "${{ steps.comment-triage.conclusion }}" = "success" ]; then
             OUTCOME=posted
