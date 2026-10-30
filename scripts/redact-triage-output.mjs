@@ -109,6 +109,30 @@ function finalMessageOnly(text) {
   return prosePrecedesHeading ? text.slice(firstHeading) : text;
 }
 
+/**
+ * One line noting that a run exhausted `--max-turns` before it could finish, so a reader of the
+ * posted comment knows the answer above it (if any) may be incomplete. Returns null for any other
+ * subtype, including a run still in progress or one that never reached a result entry.
+ */
+export function maxTurnsNote(parsed) {
+  const entries = Array.isArray(parsed) ? parsed : [parsed];
+  const lastResult = [...entries].reverse().find((entry) => entry && typeof entry === "object" && entry.type === "result");
+  if (!lastResult || lastResult.subtype !== "error_max_turns") return null;
+  return `_Triage stopped: the ${lastResult.num_turns}-turn budget ran out before it finished._`;
+}
+
+/**
+ * Describes a Claude Code run that stopped before producing any assistant text — most often by
+ * exhausting `--max-turns`. Returns null when `parsed` is not that shape, so callers fall back to
+ * `extractFinalAssistantText`'s own error for a genuine `is_error` failure or malformed input.
+ */
+export function describeStoppedRun(parsed) {
+  const entries = Array.isArray(parsed) ? parsed : [parsed];
+  const lastResult = [...entries].reverse().find((entry) => entry && typeof entry === "object" && entry.type === "result");
+  if (!lastResult || lastResult.subtype === "success" || lastResult.is_error === true) return null;
+  return maxTurnsNote(parsed) ?? `triage stopped: ${lastResult.subtype} after ${lastResult.num_turns} turns`;
+}
+
 function main() {
   const args = process.argv.slice(2);
   const isMarkdown = args.includes("--markdown");
@@ -135,8 +159,10 @@ function main() {
       process.exit(1);
     }
 
+    // A run that ran out of turns keeps its partial findings with the budget note below; any other
+    // stop, including a success whose last message is a mid-step narration, posts one stop line.
     const { verdict, reason } = triageVerdict(parsed);
-    if (verdict === "max_turns" || verdict === "incomplete") {
+    if (verdict === "incomplete") {
       writeFileSync("/tmp/redactions.txt", "");
       process.stdout.write(`${stopLine(reason, process.env.TRIAGE_RUN_URL)}\n`);
       return;
@@ -145,6 +171,12 @@ function main() {
     try {
       text = extractFinalAssistantText(parsed);
     } catch (err) {
+      const stoppedSummary = describeStoppedRun(parsed);
+      if (stoppedSummary) {
+        writeFileSync("/tmp/redactions.txt", "");
+        process.stdout.write(`${stoppedSummary}\n`);
+        return;
+      }
       console.error(err.message);
       process.exit(1);
     }
@@ -152,7 +184,13 @@ function main() {
 
   const { redacted, redactions } = redact(text);
   writeFileSync("/tmp/redactions.txt", redactions.length > 0 ? `${redactions.join("\n")}\n` : "");
-  process.stdout.write(redacted.endsWith("\n") ? redacted : `${redacted}\n`);
+  // A run can exhaust --max-turns after it already wrote a partial `.result`, so
+  // extractFinalAssistantText returns text here without ever reaching describeStoppedRun's
+  // fallback above. Append the same note in that case so the comment still says the answer may
+  // be incomplete, instead of reading like a finished one. Markdown input has no such envelope.
+  const note = isMarkdown ? null : maxTurnsNote(parsed);
+  const final = note ? `${redacted}\n\n${note}` : redacted;
+  process.stdout.write(final.endsWith("\n") ? final : `${final}\n`);
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {
