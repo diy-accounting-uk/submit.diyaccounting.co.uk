@@ -10,8 +10,8 @@ description: From a prod-env-charges-without-activation alarm (or its [ALARM] is
 
 The alarm `prod-env-charges-without-activation` fires when `ChargesWithoutActivation` in
 `Submit/Analytics` is above 0 for a day. The metric is
-`greatest(-activity_minus_stripe, 0)` from `v_purchase_reconciliation_daily` for the
-reconciliation day (two days before the run): Stripe has more paid charges than the lake has
+`greatest(-activity_minus_first_charges, 0)` from `v_purchase_reconciliation_daily` for the
+reconciliation day (two days before the run): Stripe has more first charges (a charge within an hour of its subscription's creation; renewals are left out) than the lake has
 `subscription-activated` events from `billingWebhookPost.js`. A customer paid and may hold no bundle.
 
 All lookups are read-only. Use the `diya-submit-prod` SSO profile

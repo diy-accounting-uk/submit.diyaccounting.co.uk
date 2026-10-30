@@ -179,13 +179,13 @@ export const METRIC_DEFINITIONS = [
     unit: "Count",
     valueColumn: "charges_without_activation",
     dimension: null,
-    // The one gap column that is published: a Stripe charge with no subscription-activated event
-    // means a customer paid and the webhook did not grant the bundle, and an alarm needs the
-    // shortfall as a number it can compare with zero. Activations above charges (renewals the
-    // webhook handled, test traffic) are clamped to zero so only a shortfall breaches.
+    // The one gap column that is published: a first Stripe charge with no subscription-activated
+    // event means a customer paid and the webhook did not grant the bundle, and an alarm needs the
+    // shortfall as a number it can compare with zero. Renewal charges have no activation and are
+    // left out; activations above first charges (test traffic) are clamped to zero.
     usesReconciliationDate: true,
     sql: (day) =>
-      `SELECT greatest(-activity_minus_stripe, 0) AS charges_without_activation FROM v_purchase_reconciliation_daily WHERE day = DATE '${day}'`,
+      `SELECT greatest(-activity_minus_first_charges, 0) AS charges_without_activation FROM v_purchase_reconciliation_daily WHERE day = DATE '${day}'`,
   },
   {
     metricName: "CompletionsByActivity",

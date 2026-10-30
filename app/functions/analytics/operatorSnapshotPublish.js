@@ -718,11 +718,11 @@ export const OBJECTIVE_DEFINITIONS = [
         id: "charges-without-activation",
         label: "Charges with no activation",
         description:
-          "Days' Stripe paid charges that have no subscription-activated event, added over the days. Above zero means a customer paid and may have no bundle.",
+          "Days' first Stripe charges (renewals left out) that have no subscription-activated event, added over the days. Above zero means a customer paid and may have no bundle.",
         unit: "count",
         view: "v_purchase_reconciliation_daily",
         dayColumn: "day",
-        valueExpr: "greatest(-activity_minus_stripe, 0)",
+        valueExpr: "greatest(-activity_minus_first_charges, 0)",
         aggregation: "sum",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },

@@ -496,7 +496,7 @@ describe("operatorSnapshotPublish", () => {
       expect(byId("conversion-to-paid", "ads-ctr")).toMatchObject({ view: "v_ads_performance_daily", valueExpr: "ctr", unit: "ratio" });
       expect(byId("conversion-to-paid", "charges-without-activation")).toMatchObject({
         view: "v_purchase_reconciliation_daily",
-        valueExpr: "greatest(-activity_minus_stripe, 0)",
+        valueExpr: "greatest(-activity_minus_first_charges, 0)",
         aggregation: "sum",
       });
       for (const id of [

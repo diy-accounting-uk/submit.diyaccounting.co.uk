@@ -117,7 +117,7 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_purchase_reconciliation_daily",
                     "GA4, Stripe and activity-event purchase counts each day, side by side",
-                    List.of("stripe_charges", "activity_events_all", "v_ga4_funnel_daily"),
+                    List.of("stripe_charges", "stripe_subscriptions", "activity_events_all", "v_ga4_funnel_daily"),
                     List.of("v_ga4_funnel_daily")),
             new ViewDefinition(
                     "v_submissions_by_activity_daily",
