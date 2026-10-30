@@ -1333,6 +1333,40 @@ test.describe("Operator Dashboard", () => {
       await page.screenshot({ path: "target/dashboard-1920.png", fullPage: true });
     });
 
+    for (const width of [1280, 1920]) {
+      test(`gives each of the eight objective columns its own space with no scroll inside a card at ${width}px wide`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 1080 });
+        await setupRoutes(page);
+        await loadDashboard(page);
+
+        const tables = page.locator("#objectivesContainer table.observations");
+        const tableCount = await tables.count();
+        expect(tableCount).toBeGreaterThan(0);
+        for (let t = 0; t < tableCount; t++) {
+          const headers = tables.nth(t).locator("thead tr:not(.last-updated) th");
+          await expect(headers).toHaveCount(8);
+          const boxes = [];
+          for (let i = 0; i < 8; i++) {
+            const header = headers.nth(i);
+            const box = await header.boundingBox();
+            expect(box.width).toBeGreaterThan(40);
+            const textOverflows = await header.evaluate((el) => el.scrollWidth > el.clientWidth + 1);
+            expect(textOverflows).toBe(false);
+            boxes.push(box);
+          }
+          for (let i = 1; i < 8; i++) expect(boxes[i].x).toBeGreaterThanOrEqual(boxes[i - 1].x + boxes[i - 1].width - 1);
+        }
+
+        const scrollingCards = await page
+          .locator(".objective")
+          .evaluateAll((cards) => cards.filter((el) => el.scrollWidth > el.clientWidth + 1).length);
+        expect(scrollingCards).toBe(0);
+        const bodyWidth = await page.evaluate(() => document.body.getBoundingClientRect().width);
+        expect(bodyWidth).toBeGreaterThan(width * 0.9);
+        await page.screenshot({ path: `target/dashboard-columns-${width}.png`, fullPage: true });
+      });
+    }
+
     test("keeps every table inside its card, scrolling instead of overflowing, at 390px wide", async ({ page }) => {
       await page.setViewportSize({ width: 390, height: 844 });
       await setupRoutes(page);

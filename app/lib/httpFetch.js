@@ -70,6 +70,43 @@ export async function fetchWithTimeout(url, options = {}, timeoutMs = 30000) {
 }
 
 /**
+ * Perform an HTTP fetch, retrying when the network layer fails. Node's fetch throws a TypeError
+ * for a connection failure; a returned Response of any status is never retried, and any other
+ * error type is rethrown at once. The last failure is rethrown unchanged.
+ *
+ * @param {string} url - The URL to fetch
+ * @param {Object} options - Fetch options (method, headers, body, etc.)
+ * @param {Object} [retry] - Retry settings
+ * @param {number} [retry.attempts=3] - Total attempts, including the first
+ * @param {number} [retry.backoffMs=500] - Wait before the second attempt; doubles for each later one
+ * @param {function(number): Promise<void>} [retry.sleep] - Wait function, replaceable in tests
+ * @returns {Promise<Response>} The fetch response
+ *
+ * @example
+ * const response = await fetchRetryingNetworkErrors('https://api.example.com/data', { method: 'GET' });
+ */
+export async function fetchRetryingNetworkErrors(
+  url,
+  options = {},
+  { attempts = 3, backoffMs = 500, sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms)) } = {},
+) {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      return await fetch(url, options);
+    } catch (error) {
+      if (!(error instanceof TypeError) || attempt >= attempts) throw error;
+      logger.warn({
+        message: "HTTP request failed at the network layer, retrying",
+        url,
+        attempt,
+        error: error.message,
+      });
+      await sleep(backoffMs * 2 ** (attempt - 1));
+    }
+  }
+}
+
+/**
  * Normalize fetch response headers to a plain object
  * Headers objects are not directly serializable to JSON
  *

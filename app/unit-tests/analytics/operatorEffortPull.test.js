@@ -258,4 +258,26 @@ describe("operatorEffortPull", () => {
     delete process.env.GITHUB_REPO;
     await expect(handler({ date: "2026-09-05" })).rejects.toThrow("GITHUB_REPO");
   });
+
+  test("pullCommits succeeds when the first fetch fails at the network layer", async () => {
+    vi.useFakeTimers();
+    try {
+      mockFetch.mockRejectedValueOnce(new TypeError("fetch failed")).mockResolvedValueOnce(jsonResponse([]));
+
+      const pending = pullCommits({ githubRepo: "x/y", token: "t", dateStr: "2026-09-05" });
+      await vi.runAllTimersAsync();
+
+      await expect(pending).resolves.toEqual([]);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("pullCommits does not retry a non-OK response", async () => {
+    mockFetch.mockResolvedValueOnce({ ok: false, status: 502, text: () => Promise.resolve("bad gateway") });
+
+    await expect(pullCommits({ githubRepo: "x/y", token: "t", dateStr: "2026-09-05" })).rejects.toThrow(/502/);
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
 });

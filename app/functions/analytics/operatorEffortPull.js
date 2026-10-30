@@ -17,6 +17,7 @@
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { createLogger } from "../../lib/logger.js";
+import { fetchRetryingNetworkErrors } from "../../lib/httpFetch.js";
 import { recentPullDays } from "../../lib/dateUtils.js";
 import { getInstallationAccessToken } from "../../lib/githubAppToken.js";
 
@@ -125,7 +126,7 @@ export function parseNextLink(response) {
 }
 
 async function getJsonPage(url, token) {
-  const response = await fetch(url, { headers: githubHeaders(token) });
+  const response = await fetchRetryingNetworkErrors(url, { headers: githubHeaders(token) });
   if (!response.ok) {
     const errorText = await response.text();
     throw new Error(`GitHub API error fetching ${url}: ${response.status} ${errorText}`);

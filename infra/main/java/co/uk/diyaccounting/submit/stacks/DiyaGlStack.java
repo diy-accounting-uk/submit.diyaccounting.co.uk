@@ -13,6 +13,7 @@ import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
@@ -186,6 +187,8 @@ public class DiyaGlStack extends Stack {
         bundlesTable.grant(this.diyaGlListGetLambda, "dynamodb:Query");
         practiceClientsTable.grant(this.diyaGlListGetLambda, "dynamodb:GetItem");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlListGetLambda, region, account, props.envName());
+        // The response helper warms the operator list on every API call
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.diyaGlListGetLambda, region, account, props.envName());
         infof(
                 "Created DIYA-GL List GET Lambda %s",
                 this.diyaGlListGetLambda.getNode().getId());
@@ -228,6 +231,8 @@ public class DiyaGlStack extends Stack {
                 .build());
         practiceClientsTable.grant(this.diyaGlVersionGetLambda, "dynamodb:GetItem");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlVersionGetLambda, region, account, props.envName());
+        // The response helper warms the operator list on every API call
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.diyaGlVersionGetLambda, region, account, props.envName());
         grantAppClientIdParameterAccess(this.diyaGlVersionGetLambda, region, account, props.envName());
         infof(
                 "Created DIYA-GL Version GET Lambda %s",
@@ -288,6 +293,8 @@ public class DiyaGlStack extends Stack {
         bundlesTable.grant(this.diyaGlPutLambda, "dynamodb:Query");
         practiceClientsTable.grant(this.diyaGlPutLambda, "dynamodb:GetItem");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlPutLambda, region, account, props.envName());
+        // The response helper warms the operator list on every API call
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.diyaGlPutLambda, region, account, props.envName());
         grantAppClientIdParameterAccess(this.diyaGlPutLambda, region, account, props.envName());
         infof("Created DIYA-GL PUT Lambda %s", this.diyaGlPutLambda.getNode().getId());
 
@@ -334,6 +341,8 @@ public class DiyaGlStack extends Stack {
                 .build());
         practiceClientsTable.grant(this.diyaGlDeleteLambda, "dynamodb:GetItem");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlDeleteLambda, region, account, props.envName());
+        // The response helper warms the operator list on every API call
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.diyaGlDeleteLambda, region, account, props.envName());
         grantAppClientIdParameterAccess(this.diyaGlDeleteLambda, region, account, props.envName());
         infof(
                 "Created DIYA-GL DELETE Lambda %s",
@@ -381,6 +390,9 @@ public class DiyaGlStack extends Stack {
         practiceClientsTable.grant(this.practiceClientBookMovePostLambda, "dynamodb:GetItem");
         bundlesTable.grant(this.practiceClientBookMovePostLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.practiceClientBookMovePostLambda, region, account, props.envName());
+        // The response helper warms the operator list on every API call
+        OperatorEmailsHelper.grantOperatorEmailsAccess(
+                this.practiceClientBookMovePostLambda, region, account, props.envName());
         grantAppClientIdParameterAccess(this.practiceClientBookMovePostLambda, region, account, props.envName());
         infof(
                 "Created Practice Client Book Move Lambda %s",
