@@ -273,5 +273,5 @@ If nothing merged, say so and do not arm a watch.
 **Then, if any PR merged, run `/compact-ready`.** A verified merge is the natural break: the batch's
 work is on `main` and its worktree is done. Settle what the skill finds, then act on its answer:
 `yes` means print the `/compact <summary>` line in full for the operator (a session cannot run the
-built-in `/compact` itself), `yes after <action>` means do the action and print it, `not yet` means
-carry on and run `/compact-ready` again at the next break. Skipped in dry-run mode.
+built-in `/compact` itself); `not yet` means print no `/compact` line, carry on, and run
+`/compact-ready` again at the next break. Skipped in dry-run mode.

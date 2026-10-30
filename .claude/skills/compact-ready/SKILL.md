@@ -40,7 +40,12 @@ Also list this session's running sub-agents, Monitors and background commands, b
 
 ## 3. Answer
 
-One line first: `yes`, `yes after <action>`, or `not yet: <what to wait for>`.
+Settle every item in section 2 first, then gather again. The answer describes the state at the
+moment it is printed, never a state expected later.
+
+One line first: `yes` or `not yet: <what is still open>`. No other answer exists. A conditional
+answer ("yes after <action>", "yes once the agent commits") is `not yet`. When an action would make
+it `yes`, do the action, gather again, and answer from that result.
 
 `not yet` has exactly two causes, and nothing else earns it:
 
@@ -54,6 +59,10 @@ these goes on waiting unaided, and its notification arrives after the compaction
 before compacting only delays the compaction; it protects nothing. Before writing `not yet`, name
 which of the two causes applies; if neither does, the answer is `yes`.
 
+With `not yet`, print no `/compact` line. The operator runs what is printed, so a line printed
+before the state is ready compacts over the uncommitted work it was meant to wait for. Run
+`/compact-ready` again when the cause clears.
+
 Then the list the summary must keep, because it lives only in this conversation:
 
 1. What is running: each agent, Monitor and background command, and what to do when it reports.
@@ -61,5 +70,5 @@ Then the list the summary must keep, because it lives only in this conversation:
 3. Operator decisions from this session not yet in a file.
 4. Operator commands handed over and not yet run, in full with the `!` prefix.
 
-When the answer is `yes`, print one line, `/compact ` followed by the list, in a fenced block, so the
-operator runs it as typed; the built-in `/compact` is the operator's to run.
+Only when the answer is `yes`, print one line, `/compact ` followed by the list, in a fenced block,
+so the operator runs it as typed; the built-in `/compact` is the operator's to run.

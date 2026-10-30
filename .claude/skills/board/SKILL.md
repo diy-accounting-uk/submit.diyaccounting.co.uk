@@ -193,6 +193,11 @@ for the one that is live (the apex and the probes point at it). One row per depl
   spare prod set is "on destroy-prod", and `Follow-up` names the dispatch:
   `gh workflow run destroy-prod.yml -f deployment-name=<name>`, which is the operator's to run,
   printed in full in a fenced block with the `!` prefix.
+- A destroy or removal command is printed only when its target can go now. A prod set is
+  spare, and its `destroy-prod.yml` command printed, only when it is not the live set and no
+  `deploy.yml` run on `main` is in flight (a failed deploy rolls the apex back to the live set,
+  and a deploy in flight has not yet promoted the next one). A set that becomes spare later
+  gets no command and no "once spare" note; the render after it becomes spare prints it.
 - A live set's `Follow-up` is none. A ci set past its self-destruct time that is still
   standing, or a live prod set with a stack in a failed state, is a follow-up: say what.
 - Keep `NEXT.md`'s prod line ("**Prod runs deployment …**") matching the live set; that edit is
@@ -214,6 +219,9 @@ for branches with commits nowhere else, whether their content already exists on 
   for local and origin alike.
 - Summarise `worktree-agent-*` branches as one line (count, how many carry content not on
   `main` or the batch, and those names) rather than one row each.
+A worktree or branch goes in the block only when it can go now: its content is on `main` or
+the batch and no agent, gate run or deploy is using it. Never print a removal with a condition
+attached ("after the merge", "once the agent reports").
 Never delete anything from this skill: `git worktree remove`, `git branch -d` and `-D` are
 denied to the session here, and an origin branch is the operator's anyway. After the table, print
 one fenced block with the `!` prefix that removes every stale worktree and local branch and every
@@ -293,6 +301,8 @@ Every render ends with `/compact-ready`, after the write-back is pushed. A board
 natural break: the file and the table agree, so the next thing to settle is whether the session's
 work in flight (agents, worktrees, monitors, chat decisions) is in a state a compaction keeps.
 Act on its answer as that skill says: `yes` prints the `/compact <summary>` line in full for the
-operator, `yes after <action>` does the action and prints it, `not yet` names what must land
-first. `not yet` is only for an agent mid-edit with no commit or a merge between its gates and its
-verification; PRs in CI, running deploys and pending asks are `yes`, named in the summary. Its output follows the board's lists, and is the last thing in the reply.
+operator; `not yet` names what must land first and prints no `/compact` line. There is no
+conditional answer: an action that would make it `yes` is done first, and the answer comes from
+the state after it. `not yet` is only for an agent mid-edit with no commit or a merge between its
+gates and its verification; PRs in CI, running deploys and pending asks are `yes`, named in the
+summary. Its output follows the board's lists, and is the last thing in the reply.
