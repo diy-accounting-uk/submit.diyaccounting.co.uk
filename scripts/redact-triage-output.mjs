@@ -13,6 +13,7 @@
 // shapes these regexes miss, such as a person's name in prose.
 
 import { readFileSync, writeFileSync } from "node:fs";
+import { triageVerdict, stopLine } from "./triage-result-verdict.mjs";
 
 // Order matters: eori and hash64 run before vrn so a longer identifier is redacted whole
 // rather than leaving a residual 9-digit fragment unmatched by a later pass.
@@ -156,6 +157,15 @@ function main() {
     } catch (err) {
       console.error(`could not parse ${inputPath} as JSON: ${err.message}`);
       process.exit(1);
+    }
+
+    // A run that ran out of turns keeps its partial findings with the budget note below; any other
+    // stop, including a success whose last message is a mid-step narration, posts one stop line.
+    const { verdict, reason } = triageVerdict(parsed);
+    if (verdict === "incomplete") {
+      writeFileSync("/tmp/redactions.txt", "");
+      process.stdout.write(`${stopLine(reason, process.env.TRIAGE_RUN_URL)}\n`);
+      return;
     }
 
     try {

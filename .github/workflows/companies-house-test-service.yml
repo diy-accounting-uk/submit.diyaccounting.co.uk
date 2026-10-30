@@ -7,7 +7,7 @@ run-name: "Companies House XML Gateway test-service harness"
 # Runs the fixed case list in scripts/fixtures/companies-house-test-service-cases.json against the
 # real Companies House XML Gateway test service (GatewayTest=1, the ci presenter), through
 # scripts/companies-house-test-service-run.js. This is the recurring proof the assumed
-# software-authorisation criteria (PLAN_COMPANIES_HOUSE.md) ask for: every variant filed on the
+# software-authorisation criteria (PLAN_COMPANIES_HOUSE_APPROVAL.md) ask for: every variant filed on the
 # test service, polled to a terminal state, at least weekly, with an evidence log a human can hand
 # to Companies House's XML team. allocateSubmissionNumber() increments a live DynamoDB counter -
 # an AWS write - so this run happens only here, never from a local session.

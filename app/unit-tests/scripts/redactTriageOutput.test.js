@@ -312,6 +312,35 @@ describe("CLI", () => {
     expect(result.stdout).toContain("_Triage stopped: the 30-turn budget ran out before it finished._");
   });
 
+  test("posts one stop line when a success result ends mid-step", () => {
+    const parsed = {
+      type: "result",
+      subtype: "success",
+      is_error: false,
+      num_turns: 9,
+      result: "The error is that my start time is too far in the past. Let me look at the code:",
+    };
+    const result = runCli(JSON.stringify(parsed));
+    expect(result.status).toBe(0);
+    expect(result.stdout.trim()).toBe("_Triage stopped before an answer: the final message stopped mid-step after 9 turns._");
+    expect(result.stdout).not.toContain("start time");
+  });
+
+  test("adds the run link to the stop line when the caller names one", () => {
+    const parsed = { type: "result", subtype: "success", is_error: false, num_turns: 4, result: "Let me check the logs first." };
+    const dir = mkdtempSync(join(tmpdir(), "redact-triage-output-"));
+    const inputPath = join(dir, "triage.json");
+    writeFileSync(inputPath, JSON.stringify(parsed));
+    const result = spawnSync(process.execPath, [SCRIPT_PATH, inputPath], {
+      encoding: "utf8",
+      env: { ...process.env, TRIAGE_RUN_URL: "https://example.test/runs/7" },
+    });
+    rmSync(dir, { recursive: true, force: true });
+    expect(result.stdout.trim()).toBe(
+      "_Triage stopped before an answer: the final message stopped mid-step after 4 turns. Run: https://example.test/runs/7_",
+    );
+  });
+
   test("exits non-zero when the input is not valid JSON", () => {
     const result = runCli("not json at all");
     expect(result.status).not.toBe(0);

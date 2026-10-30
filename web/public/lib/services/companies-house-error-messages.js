@@ -5,7 +5,7 @@
 // Plain-English text for the Companies House XML Gateway's GovTalkErrors numbers. A
 // GovTalkErrors block means the submission never reached Companies House at all, so every one of
 // these describes a failed attempt, not a rejected filing - the numbers and their Text come from
-// PLAN_COMPANIES_HOUSE.md's gateway envelope section and cases observed against the test service.
+// The gateway envelope section of PLAN_COMPANIES_HOUSE_APPROVAL.md and cases observed against the test service.
 
 const GOVTALK_ERROR_MESSAGES = {
   100: "Companies House could not read part of the submission - a value sent was invalid or too long.",
