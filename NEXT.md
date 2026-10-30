@@ -48,7 +48,44 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 - [ ] **AL13. An authenticated API Lambda cannot read the operator list (issue #607).** On `claude/ember-operator-grant` (not pushed). Commit 0a91fb4aa: `ApiLambda` grants `prod/submit/operator-emails` to every route with an authorizer. Nine routed Lambdas lacked it: `account-settings-put` (denied at 21:46:07 UTC on 2026-10-30 on prod-39c45cf, the cause of the alarm), `billing-checkout-session-get` and the seven practice-client routes. The application CDK test now checks every such role. Commit 7a3a2a3bc: the triage on private #16 read CloudTrail at 21:50, before the window had closed and before CloudTrail delivered the event, and answered "watch, no action". `alarm-triage.yml` now waits for the window end, plus 600 s for a CloudTrail log group. Remainder: the gate check, the push, the PR, the merge, then close #607 and private #16 with the CloudTrail evidence. **Source**: issue #607. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
 
+- [ ] **RPT1. A technical-debt audit of every repository in the workspace.** A background sub-agent (Sonnet) is writing `../private.diyaccounting.co.uk/engineering/REPORT_TECH_DEBT_AUDIT_2026-10-30.md` and committing it in the private repository. The repositories are submit, spreadsheets, www, root and the private repository; diy-accounting-archive is read only for what still points at it. The report applies several published methods: Fowler's technical-debt quadrant, SQALE remediation cost, Tornhill's change-frequency and complexity hotspots from `git log`, ISO/IEC 25010 quality characteristics, and the debt categories in the 2024 DORA report. Each finding is ranked by cost against value, and each ranked fix becomes a board row in the repository that owns it. Remainder: read the report, then board its top findings. **Source**: operator, 2026-10-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file (private).
+
+- [ ] **RPT2. An affiliate scheme: commission models, payout control and abuse risk.** A background sub-agent (Opus) is writing `../private.diyaccounting.co.uk/strategy/REPORT_AFFILIATE_SCHEME_2026-10-30.md` and committing it in the private repository. The report covers:
+  - commission models that are normal in the industry, leaning to what Stripe supports natively;
+  - a custom tier for family: the nephew (16) is also the child of another shareholder and the nephew of all five shareholders, and he could have the first month's paid subscription after the payment clears and operator access to see subscriber numbers;
+  - per-pass totals for "My generated passes" (usages, sign-ups, subscribers and other useful figures);
+  - payout rules that leave no loss through a chargeback, a demand for more, or lost control of payments: DIY Accounting has the final say and no liability;
+  - KYC against manual approval, and a bot policy for affiliate identities;
+  - no worker or employment-law relationship, UK only if that helps;
+  - an audit of what passes, campaigns and attribution already do, from this repository and `../private.diyaccounting.co.uk/`.
+
+  Remainder: read the report, decide, and board the build rows. **Source**: operator, 2026-10-30. **Owner**: Claude Code (report), Operator (decision). **Model**: Opus. **Size**: ~1 file (private).
+
 ## Machine-only
+
+- [ ] **BING1. Bing against Google on cost per paid customer (`../private.diyaccounting.co.uk/PLAN_PAID_GOOGLE_SEARCH.md` E7).** The coded campaign "Search: MTD VAT" (account G1202SF9, ad groups and keywords mirroring the Google campaign, PR #593) went live at 07:43 UTC on 2026-10-30 (`msads-apply.yml`), at £1 a day; the forecast at the £1 bid is about 230 impressions a week (`npm run msads:forecast`). Remainder, measurement only: read `npm run msads:report` from 2026-10-30 (the first day's impressions show on 2026-10-31; a zero then means reading the Diagnostics panel, `.claude/skills/microsoft-ads/SKILL.md` "Why a campaign serves nothing"); when Bing has 150 clicks, compare cost per paid customer against Google's for the same keywords and ads, joining on the stored `msclkid`, and write the reading into the plan's E7 row with the budget shift it implies. The pace is set by the budget: at £1 a day 150 clicks take months; the plan's £12 a day is the operator's approval to give. **Source**: `../private.diyaccounting.co.uk/PLAN_PAID_GOOGLE_SEARCH.md` E7. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file (private).
+
+- [ ] **PASS1. A generated pass opens under "My generated passes".** On `web/public/passes/generate-digital.page.js` the generate handler (lines 132 to 160: `__generatedPassCode = body.code`, the QR code) stays on the generate page. After a pass is generated, the page goes to `bundles.html#myGeneratedPasses` with the new pass shown and in focus (`web/public/bundles.html` line 79, `<div id="myGeneratedPasses">`, list `#generatedPassesList`). There the pass already has "Copy Link" and "View QR". `generate-physical.page.js` gets the same treatment if its flow matches. The behaviour test that generates a pass asserts the landing section. **Source**: operator, 2026-10-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **DEV1. developer.diyaccounting.co.uk: a micro site for developer resources, managed from this repository.** One static page in the house flat style of `https://diyaccounting.co.uk/about.html` (the www repository's `about.html` and its stylesheet are the reference). It links to:
+  - the Swagger and OpenAPI docs (`web/public/docs/api/index.html`, `openapi.json`, `openapi.yaml`);
+  - the MCP API docs: the tools, their schemas and the server endpoint, but not the consumer usage steps on `web/public/mcp.html`;
+  - the published JavaScript libraries (`@diy-accounting-uk/diya-gl` on npm, the Homebrew tap `diy-accounting-uk/homebrew-diya-gl`) and the published container images;
+  - the latest Playwright test reports for submit and spreadsheets.
+
+  Infrastructure: a static-site stack in this repository (S3, CloudFront, an ACM certificate in us-east-1), on the pattern of the existing static stacks. The DNS record for the subdomain is in `../root.diyaccounting.co.uk` (Route53 in the management account), which is a second change in that repository. The Playwright report links need a published, stable URL per run. The test workflows upload reports as artefacts today, so the build publishes the last green report for each suite to the site's bucket. The page carries the light and dark tokens of the house style. Unblocks GW1. **Source**: operator, 2026-10-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~12 files.
+
+- [ ] **MKT1. marketing.diyaccounting.co.uk: a micro site of brand guides and shareable resources, managed from this repository.** Four sections: "DIY Accounting Submit", "DIY Accounting Spreadsheets", "diya-gl" and "DIY Accounting Limited". Each section has:
+  - one sentence on what it is;
+  - a brand guide: fragments of screenshots from that site, examples of its key page furniture styled as that site styles them, and text in its type styles, with a light and dark switch beside the section;
+  - one shareable resource set per live public product, and one set for the whole section;
+  - Submit VAT has five ready-made post sets.
+
+  A resource set has text posts of several lengths, each selectable, with a copy button. It has images in the sizes the social networks and ad formats want, and share buttons for the main networks: LinkedIn, X, Facebook, WhatsApp, Reddit, email, and the platforms' own share URLs or intents. Each set has its own `#anchor`.
+
+  An affiliate box at the top takes a pass code or a pass URL from `https://submit.diyaccounting.co.uk/passes/generate-digital.html` (`bundles.html?pass=<code>`). Entering one fills the other. The pass becomes the base of every Submit link in the posts. `?pass=<code>` in the page URL fills the box. A "Post" button lists the running campaigns, a subset of the sections ("Post Submit VAT", "Post DIY Accounting Submit"). The campaign list is data the page reads, so a campaign starts or ends without a code change.
+
+  Infrastructure as DEV1: one static-site stack and its DNS record in `../root.diyaccounting.co.uk`. Screenshots come from `npm run site:screenshots` and the spreadsheets and gateway equivalents. The visual definition of done applies: the `visual-review` skill and the `ui-ux-pro-max` skill. Size: a two-agent chain. Opus designs the page, the data shape of the sets and campaigns, and the share mechanics. Sonnet builds it. RPT2's commission decision does not block the site, which links passes only. Unblocks MKT2, GW1. **Source**: operator, 2026-10-30. **Owner**: Claude Code. **Model**: Opus, then Sonnet. **Size**: ~25 files.
 
 - [ ] **CAL1. The availability table on the MTD calendar is shaded by state.** On `web/public/mtd-calendar.html` the section "What you can file, and how" has a table (`<table class="deadline-table stacked-table">`, caption "Availability by filing and channel"). It has 10 rows and 7 channel columns. Each cell's text starts with `production`, `sandbox`, `preview` or `not offered`, and some cells add a `<span class="calendar-date">` note. Shade each cell by its state:
   - production: green, followed by a tick graphic;
@@ -65,14 +102,16 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
   Proof: `npm run site:screenshots` for the page at phone and desktop width in both themes. This is a shared-stylesheet change, so the `visual-review` skill judges the screenshots. **Source**: operator, 2026-10-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
-- [ ] **BING1. Bing against Google on cost per paid customer (`../private.diyaccounting.co.uk/PLAN_PAID_GOOGLE_SEARCH.md` E7).** The coded campaign "Search: MTD VAT" (account G1202SF9, ad groups and keywords mirroring the Google campaign, PR #593) went live at 07:43 UTC on 2026-10-30 (`msads-apply.yml`), at £1 a day; the forecast at the £1 bid is about 230 impressions a week (`npm run msads:forecast`). Remainder, measurement only: read `npm run msads:report` from 2026-10-30 (the first day's impressions show on 2026-10-31; a zero then means reading the Diagnostics panel, `.claude/skills/microsoft-ads/SKILL.md` "Why a campaign serves nothing"); when Bing has 150 clicks, compare cost per paid customer against Google's for the same keywords and ads, joining on the stored `msclkid`, and write the reading into the plan's E7 row with the budget shift it implies. The pace is set by the budget: at £1 a day 150 clicks take months; the plan's £12 a day is the operator's approval to give. **Source**: `../private.diyaccounting.co.uk/PLAN_PAID_GOOGLE_SEARCH.md` E7. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file (private).
-
 ## Machine-ask
 
 
 ## Human-driven
 
 ## Blocked
+
+- [ ] **MKT2. A "Post" action on each generated pass.** On `web/public/bundles.html` "My generated passes", beside "Copy Link" and "View QR", a "Post" link opens `https://marketing.diyaccounting.co.uk/?pass=<code>#<section>` in a new tab. The section is the campaign the pass promotes, so the affiliate box arrives filled. Blocked on MKT1 (the site and its section anchors). **Source**: operator, 2026-10-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **GW1. Two buttons on diyaccounting.co.uk to the marketing and developer sites.** In `../www.diyaccounting.co.uk` (the gateway site, its own repository and PR), add two buttons beside the existing product buttons on the home page, to `https://marketing.diyaccounting.co.uk/` and `https://developer.diyaccounting.co.uk/`, in the same style. Blocked on MKT1 and DEV1 being live, so the buttons never link to a missing site. **Source**: operator, 2026-10-30. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files (www repository).
 
 - [ ] **OCS1. Set the live Companies House package on GitHub's `prod` environment.** The XML team offered a live package for every document type developed to date on 2026-10-29; the operator sent the six presenter details the same day (`../private.diyaccounting.co.uk/companies-house/correspondence/EMAIL_XMLGW_LIVE_PACKAGE_DETAILS.md`, presenter 00072432000, credit account 00531853000). When they answer with the live package reference (and any live presenter credentials), Claude Code hands the operator the `gh secret set` and `gh variable set` commands for `prod` (O34c). Blocked on the XML team's answer. **Source**: `PLAN_COMPANIES_HOUSE_APPROVAL.md` CS-A4 and O34c; the XML team, 2026-10-29. **Owner**: Operator (set), Claude Code (commands). **Model**: Haiku. **Size**: 0 files. Unblocks CS-11b, B34c.
 
