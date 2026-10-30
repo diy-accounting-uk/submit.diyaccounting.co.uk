@@ -22,7 +22,7 @@ auto_tagging = true
 [uet]
 name = "DIY Accounting Submit"
 description = "Site tag for submit.diyaccounting.co.uk"
-tag_id = ""
+tag_id = "97279388"
 
 # msads-conversions-upload.js sends paid conversions to this offline goal by msclkid.
 [upload]

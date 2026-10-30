@@ -25,7 +25,8 @@ const desired = parseDesired(adsToml);
 const campaign = desired.campaigns[0];
 
 const emptyLive = {
-  account: { id: "188495572", name: "DIY Accounting Limited", timeStamp: "AAA=", autoTagType: "Inactive" },
+  account: { id: "188495572", name: "DIY Accounting Limited", timeStamp: "AAA=" },
+  msclkidAutoTagging: false,
   uetTags: [],
   goals: [],
   campaigns: [],
@@ -66,7 +67,8 @@ function liveCampaignMatching(c) {
 }
 
 const matchingLive = () => ({
-  account: { ...emptyLive.account, autoTagType: "Enabled" },
+  account: { ...emptyLive.account },
+  msclkidAutoTagging: true,
   uetTags: [{ id: "55", name: desired.uet.name }],
   goals: desired.goals.map((g) => ({
     id: g.name,
@@ -257,8 +259,8 @@ describe("apply", () => {
     const adGroup = calls.find((c) => c.path === "/AdGroups");
     expect(adGroup.body.CampaignId).toBe("900");
     expect(adGroup.body.AdGroups[0]).toMatchObject({ Name: "Own brand", CpcBid: { Amount: 1 }, Network: "OwnedAndOperatedOnly" });
-    expect(calls.at(-1)).toMatchObject({ method: "PUT", path: "/Account" });
-    expect(calls.at(-1).body.Account.AutoTagType).toBe("Enabled");
+    expect(calls.at(-1)).toMatchObject({ method: "PUT", path: "/AccountProperties" });
+    expect(calls.at(-1).body.AccountProperties).toEqual([{ Name: "MSCLKIDAutoTaggingEnabled", Value: "true" }]);
   });
 
   it("updates with PUT and sends only the changed entity", async () => {
