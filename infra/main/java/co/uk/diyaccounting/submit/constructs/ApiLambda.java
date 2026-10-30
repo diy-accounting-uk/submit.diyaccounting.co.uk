@@ -5,6 +5,7 @@
 
 package co.uk.diyaccounting.submit.constructs;
 
+import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import software.constructs.Construct;
 
 public class ApiLambda extends Lambda {
@@ -13,5 +14,16 @@ public class ApiLambda extends Lambda {
     public ApiLambda(final Construct scope, AbstractApiLambdaProps apiProps) {
         super(scope, apiProps);
         this.apiProps = apiProps;
+        if (isBehindAnAuthorizer(apiProps)) {
+            OperatorEmailsHelper.grantWhenAuthenticatingCallers(this.ingestLambda, apiProps.environment());
+        }
+    }
+
+    public static boolean isBehindAnAuthorizer(AbstractApiLambdaProps apiProps) {
+        return apiProps.jwtAuthorizer()
+                || apiProps.customAuthorizer()
+                || apiProps.booksJwtAuthorizer()
+                || apiProps.billingJwtAuthorizer()
+                || apiProps.allClientsJwtAuthorizer();
     }
 }
