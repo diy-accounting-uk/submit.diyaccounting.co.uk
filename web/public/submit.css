@@ -5521,15 +5521,6 @@ table.observations thead tr.last-updated th.last-updated-cell,
   color: var(--c-ink-muted);
 }
 
-#experimentsPanel ul {
-  margin: 0;
-  padding-left: var(--space-5);
-}
-
-#experimentsPanel li {
-  margin-bottom: var(--space-3);
-}
-
 /* Activity column: wide enough that a long catalogue name sits on one or two lines. */
 .activities-table th:first-child,
 .activities-table td:first-child {
@@ -5558,12 +5549,6 @@ table.observations thead tr.last-updated th.last-updated-cell,
   font-variant-numeric: tabular-nums;
 }
 
-.side-panels {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: var(--space-5);
-}
-
 /* The containers below are empty until the snapshot arrives. Each reserves the height
    measured on a full snapshot so the fill does not push what sits below; a failed load
    or a rendered snapshot releases the reservation. */
@@ -5580,10 +5565,6 @@ table.observations thead tr.last-updated th.last-updated-cell,
   min-height: 440px;
 }
 
-#experimentsPanel {
-  min-height: 200px;
-}
-
 @media (max-width: 900px) {
   #objectivesContainer {
     min-height: 6600px;
@@ -5591,10 +5572,6 @@ table.observations thead tr.last-updated th.last-updated-cell,
 
   #visitorsPanel {
     min-height: 510px;
-  }
-
-  #experimentsPanel {
-    min-height: 260px;
   }
 }
 
@@ -5610,10 +5587,6 @@ table.observations thead tr.last-updated th.last-updated-cell,
 
   #visitorsPanel {
     min-height: 560px;
-  }
-
-  #experimentsPanel {
-    min-height: 300px;
   }
 }
 
@@ -5638,8 +5611,41 @@ table.observations thead tr.last-updated th.last-updated-cell,
 }
 
 .chart-card h3 {
-  margin: 0 0 var(--space-2) 0;
+  margin: 0;
   font-size: var(--step-0);
+}
+
+.chart-card[data-chart-id="conversion-to-paid"] {
+  grid-column: 1 / -1;
+}
+
+/* A section heading with its "#" link and, at the right, its table and auto-refresh links. */
+.section-heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.section-heading-row > h2,
+.section-heading-row > h3 {
+  margin: 0;
+}
+
+.section-heading-row .anchor-link,
+.section-heading-row .chart-table-link,
+.section-heading-row .refresh-link {
+  font-size: var(--step--1);
+}
+
+.section-heading-row .anchor-link {
+  text-decoration: none;
+  color: var(--c-ink-muted);
+}
+
+.section-heading-row .section-heading-first-action {
+  margin-left: auto;
 }
 
 .chart-svg {
