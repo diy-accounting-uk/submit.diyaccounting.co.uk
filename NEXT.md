@@ -48,6 +48,21 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Machine-only
 
+- [ ] **CAL1. The availability table on the MTD calendar is shaded by state.** On `web/public/mtd-calendar.html` the section "What you can file, and how" has a table (`<table class="deadline-table stacked-table">`, caption "Availability by filing and channel"). It has 10 rows and 7 channel columns. Each cell's text starts with `production`, `sandbox`, `preview` or `not offered`, and some cells add a `<span class="calendar-date">` note. Shade each cell by its state:
+  - production: green, followed by a tick graphic;
+  - preview: amber;
+  - sandbox: yellow;
+  - not offered: grey.
+
+  Implementation:
+  - Each cell gets a state class, for example `avail-production`.
+  - The colours are tokens in `web/public/submit.css`. Use the existing `--c-ok-tint` and `--c-warn-tint` where they fit, and new tokens for yellow and grey. Define each new token in the light block and in both dark blocks: `@media (prefers-color-scheme: dark)` and `[data-theme="dark"]`.
+  - The text and its note must keep a 4.5:1 contrast on each shade in both themes.
+  - The tick is decorative (`aria-hidden`, or CSS content with empty alt text), because the word "production" already carries the state. The stacked mobile layout (`data-label`) keeps the shading.
+  - A case in `web/unit-tests/mtdCalendar.test.js` checks that every cell's class matches its first word. A later edit to the table that changes the text and forgets the class then fails.
+
+  Proof: `npm run site:screenshots` for the page at phone and desktop width in both themes. This is a shared-stylesheet change, so the `visual-review` skill judges the screenshots. **Source**: operator, 2026-10-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
 - [ ] **BING1. Bing against Google on cost per paid customer (`../private.diyaccounting.co.uk/PLAN_PAID_GOOGLE_SEARCH.md` E7).** The coded campaign "Search: MTD VAT" (account G1202SF9, ad groups and keywords mirroring the Google campaign, PR #593) went live at 07:43 UTC on 2026-10-30 (`msads-apply.yml`), at £1 a day; the forecast at the £1 bid is about 230 impressions a week (`npm run msads:forecast`). Remainder, measurement only: read `npm run msads:report` from 2026-10-30 (the first day's impressions show on 2026-10-31; a zero then means reading the Diagnostics panel, `.claude/skills/microsoft-ads/SKILL.md` "Why a campaign serves nothing"); when Bing has 150 clicks, compare cost per paid customer against Google's for the same keywords and ads, joining on the stored `msclkid`, and write the reading into the plan's E7 row with the budget shift it implies. The pace is set by the budget: at £1 a day 150 clicks take months; the plan's £12 a day is the operator's approval to give. **Source**: `../private.diyaccounting.co.uk/PLAN_PAID_GOOGLE_SEARCH.md` E7. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file (private).
 
 ## Machine-ask
