@@ -137,8 +137,6 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Human-driven
 
-- [ ] **OAFF5. Choose the buyer offer.** No buyer offer, or a Stripe promotion code beside the referral code. **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
 - [ ] **OAFF3. Enable Stripe Connect on the live account, GB only, Express accounts.** Approved (operator, 2026-10-30). The platform profile and the Connect settings are set in the Stripe dashboard (`https://dashboard.stripe.com/connect`); the Connect onboarding questionnaire has no API. Unblocks AFF5, AFF6. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 ## Blocked
