@@ -23,7 +23,6 @@ export async function goToFileMicroEntityAccounts(page, screenshotPath = default
       screenshotPath,
       timeout: 60000,
     });
-    await page.waitForLoadState("networkidle");
     await expect(page.locator("#companyForm")).toBeVisible();
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-form.png`, readerView: true });
   });
@@ -33,7 +32,6 @@ export async function enterCompanyNumberAndLookUp(page, companyNumber, screensho
   await test.step(`The user enters company number ${companyNumber} and looks it up`, async () => {
     await loggedFill(page, "#companyNumber", companyNumber, "Company number", { screenshotPath });
     await loggedClick(page, "#companyLookupBtn", "Looking up the company", { screenshotPath });
-    await page.waitForLoadState("networkidle");
     await expect(page.locator("#formView")).toBeVisible({ timeout: 15000 });
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-looked-up.png`, readerView: true });
   });
@@ -77,7 +75,6 @@ export async function fillInAccountsForm(page, accounts, screenshotPath = defaul
 export async function previewAccounts(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user previews the accounts", async () => {
     await loggedClick(page, "#previewBtn", "Previewing the accounts", { screenshotPath });
-    await page.waitForLoadState("networkidle");
     await expect(page.locator("#previewView")).toBeVisible({ timeout: 15000 });
     const preview = await page.locator("#previewIxbrl").textContent();
     expect(preview).toContain("<?xml");
@@ -144,7 +141,6 @@ export async function goToFileSmallCompanyAccounts(page, screenshotPath = defaul
       screenshotPath,
       timeout: 60000,
     });
-    await page.waitForLoadState("networkidle");
     await expect(page.locator("#companyForm")).toBeVisible();
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-company-form.png`, readerView: true });
   });

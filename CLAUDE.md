@@ -80,7 +80,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/capabilities/SKILL.md` — find the tooling the repository already has before building any, and keep `REPORT_CAPABILITIES.md` current; invoke as `/capabilities`
 - `.claude/skills/itsa-readiness/SKILL.md` — say whether the Income Tax (MTD) recognition email can go to HMRC, check by check with the evidence; invoke as `/itsa-readiness`
 - `.claude/skills/fast-deploy/SKILL.md` — put a candidate fix live on a ci set in minutes from the local tree (`npm run deploy:app-ci`, or a single-stack `deploy-cdk-stack.yml` dispatch) when a ci `test.yml` or `deploy.yml` failed and confidence in the fix is short of high; prod only on the operator's direct instruction; invoke as `/fast-deploy`
-- `.claude/skills/compact-ready/SKILL.md` — before a compaction: land or commit every agent's and worktree's work, write `NEXT.md` and chat decisions to files, keep monitors, then say yes / yes after / not yet and list what the summary must keep; invoke as `/compact-ready`
+- `.claude/skills/compact-ready/SKILL.md` — before a compaction: land or commit every agent's and worktree's work, write `NEXT.md` and chat decisions to files, keep monitors, then say yes or not yet (ready now, never conditional) and list what the summary must keep; invoke as `/compact-ready`
 - `.claude/skills/company-book/SKILL.md` — build, verify and hand over DIY Accounting Limited's own diya-gl book from its bank, Stripe, PayPal and supplier sources, and tell Cowork how to read it with the spreadsheets MCP; invoke as `/company-book`
 - `.claude/skills/donor-usage/SKILL.md` — match Stripe and PayPal donors to prod submit accounts and their submissions, into a private file at the workspace root; invoke as `/donor-usage`
 - `.claude/skills/visual-review/SKILL.md` — judge screenshots as a reader sees them (realistic data, not a bug, clean edges, space used, readable, current, safe) after a major visual change, then refresh and review the guide and site screenshots and the videos; the look pass in the visual definition of done
@@ -129,6 +129,20 @@ no longer needed (its content is proven on the batch or on `main`), print the re
 command for the operator, in a fenced block with the `!` prefix, at the moment it stops being
 needed, and again in every `/board` render's Part 5 until it is gone. Nothing waits on the removal:
 a stale worktree or branch left on disk blocks no merge, no dispatch and no push.
+
+## Ready means ready now; destructive commands only when they can run now
+
+A readiness answer (`/compact-ready`, a merge verdict, "safe to remove") describes the state at the
+moment it is printed. "Yes after X" is "not yet": do X, check again, and answer from the result.
+A command the operator runs that destroys or removes something (`destroy-prod.yml`,
+`git worktree remove`, `git branch -D`, `git push --delete`, a `/compact` line) is printed only
+when it can run at once with no harm: its target is spare now, nothing in flight uses it, and no
+condition is attached. A target that becomes spare later gets its command in the reply after it
+does, never a conditional one now.
+
+**Why:** the operator runs a printed `!` or `/compact` line as typed and does not re-check the
+condition beside it (2026-10-30: a "yes after the agent commits" compaction while an agent was
+mid-edit, and a `destroy-prod.yml` for a set still live "once spare").
 
 ## Definition of done for anything a person sees
 
