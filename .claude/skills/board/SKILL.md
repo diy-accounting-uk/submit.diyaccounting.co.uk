@@ -134,7 +134,7 @@ main"); it is on the board when its label, or a NEXT.md row whose **Source** nam
 own order: the plan's task label, a short name, then a bracketed status of two fields:
 
 ```
-**PLAN_COMPANIES_HOUSE.md**
+**PLAN_COMPANIES_HOUSE_APPROVAL.md**
 - CS-11b Confirmation statement customer launch [ready, —]
 - B34c Accounts filing on prod [blocked, O34c]
 ```

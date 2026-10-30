@@ -53,7 +53,7 @@ Taken: dormant flag, trading status member (never traded / no longer trading), s
 
 ### Small accounts, full set
 
-Sources: as above; bulk group `small-full` (650, caveat above); CHG1 plan section "Design: the values Companies House's examples carry (CHG1)", `git show origin/claude/ltd-ch-facts:PLAN_COMPANIES_HOUSE.md`; page `fileSmallCompanyAccounts.html`.
+Sources: as above; bulk group `small-full` (650, caveat above); CHG1 plan section "Design: the values Companies House's examples carry (CHG1)", `git show origin/claude/ltd-ch-facts:PLAN_COMPANIES_HOUSE_APPROVAL.md`; page `fileSmallCompanyAccounts.html`.
 
 Taken (main): 11 balance sheet lines, both P&L formats with 9 to 16 lines, 5-class tangible asset note, tax policy, accounting policies, principal activity, employees, directors, 4 statements. CHG1 adds the values listed at the top.
 
