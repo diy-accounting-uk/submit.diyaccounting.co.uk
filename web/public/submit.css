@@ -5385,9 +5385,9 @@ main ol.calendar {
   --note-tint: var(--c-info-tint);
 }
 
-/* Operator dashboard: wide enough for the 13-column tables, with a bound at very wide windows. */
+/* Operator dashboard: the full window width, so every column shows without a scroll. */
 body.page-dashboard {
-  max-width: 90rem;
+  max-width: none;
 }
 
 .objective {
@@ -5397,8 +5397,13 @@ body.page-dashboard {
   box-shadow: var(--shadow-card);
   padding: var(--space-5);
   margin: 0 0 var(--space-5) 0;
-  /* A table wider than its card scrolls inside the card, not the page. */
-  overflow-x: auto;
+}
+
+/* On a narrow screen a table wider than its card scrolls inside the card, not the page. */
+@media (max-width: 900px) {
+  .objective {
+    overflow-x: auto;
+  }
 }
 
 .objective h2 {
@@ -5466,26 +5471,32 @@ table.observations th {
   width: 100%;
 }
 
+/* Eight columns: Observation, Today, Previous day, Last 7 days, Last 30 days, 30 day trend,
+   Last 90 days, Where to look. */
 #objectivesContainer table.observations th:nth-child(1) {
-  width: 34%;
+  width: 24%;
 }
 
-#objectivesContainer table.observations th:nth-child(2),
-#objectivesContainer table.observations th:nth-child(4) {
-  width: 14%;
+#objectivesContainer table.observations th:nth-child(n + 2):nth-child(-n + 7) {
+  width: 9%;
 }
 
-#objectivesContainer table.observations th:nth-child(3) {
-  width: 15%;
+#objectivesContainer table.observations th:nth-child(8) {
+  width: 22%;
 }
 
-#objectivesContainer table.observations th:nth-child(5) {
-  width: 23%;
-}
-
-#objectivesContainer table.observations th:nth-child(3),
-#objectivesContainer table.observations td:nth-child(3) {
+#objectivesContainer table.observations th:nth-child(n + 2):nth-child(-n + 7),
+#objectivesContainer table.observations td:nth-child(n + 2):nth-child(-n + 7) {
   text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#objectivesContainer table.observations td:nth-child(8) {
+  overflow-wrap: anywhere;
+}
+
+#objectivesContainer table.observations th {
+  white-space: normal;
 }
 
 @media (max-width: 600px) {
@@ -5542,11 +5553,7 @@ table.observations thead tr.last-updated th.last-updated-cell,
 #companyBalanceSheetTable th:nth-child(2),
 #companyBalanceSheetTable td:nth-child(2),
 #visitorsTable th:not(:first-child),
-#visitorsTable td:not(:first-child),
-#objectivesContainer table.observations th:nth-child(2),
-#objectivesContainer table.observations td:nth-child(2),
-#objectivesContainer table.observations th:nth-child(4),
-#objectivesContainer table.observations td:nth-child(4) {
+#visitorsTable td:not(:first-child) {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
