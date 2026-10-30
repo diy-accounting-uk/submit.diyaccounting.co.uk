@@ -17,8 +17,7 @@
 //     --issue-number 12 --out /tmp/support-draft-row.json
 //
 // --out receives one JSON row for the acceptance measure: the draft id and the time it was made.
-// The measure compares drafts to what the mailbox later sent (see PLAN_REPOSITORY_AUTOMATION.md,
-// Phase 4).
+// The measure compares drafts to what the mailbox later sent.
 
 import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
