@@ -107,48 +107,23 @@ statement).
 
 ```mermaid
 flowchart LR
-    SEC[The replacement test presenter into the ci secrets] --> B346c[B34.6c]
-    B346c --> O34c
-    B346c --> B34c
+    OCS1[OCS1 the live package reference from the XML team] --> O34c
     O34c --> B34c
-    B346c --> CSA4[CS-A4 evidence to the XML team]
-    CSA4 --> CS11b[CS-11b]
+    OCS1 --> CS11b[CS-11b]
     CS11b --> CSP1[CS-P1]
-    B34h[B34h design] --> B34f
-    B34f --> B34e
-    B34e --> B34g1["PLAN_HMRC_CT_APPROVAL.md B34g1"]
-    B346c --> B34f
-    B346c --> B34e
-    CT3c["PLAN_HMRC_CT_APPROVAL.md CT3c"] --> DF2a
-    B34c --> DF2a
-    B34g2b["PLAN_HMRC_CT_APPROVAL.md B34g2b"] --> DF2a
-    DF2a --> DF2b
-    DF2a --> DF2c
-    IX1[IX1 design] --> IX2a
-    IX2a --> IX2b
-    BK1 --> IX2b
-    IX2b --> IX2c
-    CT3b["PLAN_HMRC_CT_APPROVAL.md CT3b"] --> IX2c
-    IX2a --> IX2d
+    B34c --> DF2b
+    B34g["PLAN_HMRC_CT_APPROVAL.md B34g"] --> DF2b
+    B34c --> UH4
+    CS11b --> UH4
+    UH4 --> UH2["PLAN_ITSA_APPROVAL.md UH2"]
 ```
 
-The launch and approval steps (O34c, B34c, CS-A4, CS-11b, OCH1) are boarded in `PLAN_COMPANIES_HOUSE_APPROVAL.md`; the graph keeps them so the chain reads whole.
-
-- B34.6c: sent 2026-10-23 on the 000004 thread; the XML team answered on 2026-10-23 and the retest request is `NEXT.md` OAX5 (after OAX6); the harness is green under the replacement presenter and every case is pinned
-- O34c: ready; it is the ask in B34's email
+- O34c and CS-A4: the live package reference; blocked on the XML team's answer (`NEXT.md` OCS1)
 - B34c: blocked by O34c
-- CS-A4: in flight; the pack rides on the retest request (`NEXT.md` OAX5)
-- CS-11b: blocked by CS-A4
+- CS-11b: blocked by OCS1
 - CS-P1: blocked by CS-11b (it adds a second payment path to the journey CS-11b launches)
-- B34f: on main (PR #469 the build, PR #488 the harness case, PR #490 the share-class contexts); proven on the test service (run 38069747950: acknowledged at submit, PENDING on every poll)
-- B34e: on main (PR #471), with B34e2's validator fix
-- DF2a: blocked by B34c and B34g2b (`PLAN_HMRC_CT_APPROVAL.md`) (the DF1 design below)
-- DF2b: blocked by DF2a
-- DF2c: blocked by DF2a
-- IX2a: on main (spreadsheets PR #167; diya-gl 1.2.56 on the registry; the IX1 design below)
-- IX2b: on main (PR #540; the card reads iXBRL on the three accounts pages)
-- IX2c: on main (PR #541; the CT600 page, `PLAN_HMRC_CT_APPROVAL.md`, fills its accounts section from an iXBRL file)
-- IX2d: ready (`NEXT.md` IX2d; spreadsheets repository)
+- DF2b: blocked by B34c and `PLAN_HMRC_CT_APPROVAL.md` B34g
+- UH4: blocked by B34c, CS-11b and the operator's approval
 
 ## Operator dates
 

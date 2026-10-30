@@ -41,32 +41,18 @@ DF1, DF2a to DF2c (the joint filing) and IX2c (the CT600 page fills its accounts
 
 ```mermaid
 flowchart LR
-    B34h[B34h design] --> B34g2a
-    B34e["PLAN_COMPANIES_HOUSE_APPROVAL.md B34e"] --> B34g1
-    B34g2a[B34g2a journey on the simulator] --> B34g2b
-    B34g1 --> B34g2b
     O34g[O34g HMRC SDST test credentials] --> B34g1
+    B34g1 --> B34g2b
     O34g --> B34g2b
-    CT2[CT2 design] --> CT3a
-    CT3a --> CT3b
-    CT1 --> CT3b
-    CT3b --> CT3c
-    CT3c --> CT4
-    CT3a --> CT3d
-    CT3c --> DF2a["PLAN_COMPANIES_HOUSE_APPROVAL.md DF2a"]
-    B34g2b --> DF2a
-    CT3b --> IX2c["PLAN_COMPANIES_HOUSE_APPROVAL.md IX2c"]
+    B34g2b --> DF2b["PLAN_COMPANIES_HOUSE_APPROVAL.md DF2b"]
+    B34g2b --> UH7
+    UH7 --> UH2["PLAN_ITSA_APPROVAL.md UH2"]
 ```
 
-- B34g1: built (PR #475); its ETS proof waits on O34g and runs with B34g2b as NEXT.md B34g
-- B34g2a: on main (PR #511); the journey built and proven on the simulator, listed on ci and the local lanes
+- O34g: blocked on SDST's answer
+- B34g1: built (PR #475); its ETS proof waits on O34g and runs with B34g2b as `NEXT.md` B34g
 - B34g2b: blocked by B34g1 and O34g; the ETS filing from the page
-- CT3a: on main (PR #533; the CT2 design below)
-- CT3b: on main (PR #534 the form and the card's `ct600` kind, PR #535 the visual pass); CT1 on main (PR #530)
-- CT3c: on main (PR #535 the review and the journeys, PR #536 the reviewed-boxes check)
-- CT3d: on main (PR #536 the FRS 105 attachment, TPVS accepted; PR #537 the page's micro-entity entry path)
-- CT4: on main (PR #537); the two CT600 videos are re-recorded on the redesigned page by `NEXT.md` VV1b
-- B34e, DF2a, IX2c: in `PLAN_COMPANIES_HOUSE_APPROVAL.md`
+- UH7: blocked by HMRC's Corporation Tax production approval, B34g2b and the operator's approval
 
 ## Designs
 
