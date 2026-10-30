@@ -50,22 +50,13 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 - [ ] **RPT1. A technical-debt audit of every repository in the workspace.** A background sub-agent (Sonnet) is writing `../private.diyaccounting.co.uk/engineering/REPORT_TECH_DEBT_AUDIT_2026-10-30.md` and committing it in the private repository. The repositories are submit, spreadsheets, www, root and the private repository; diy-accounting-archive is read only for what still points at it. The report applies several published methods: Fowler's technical-debt quadrant, SQALE remediation cost, Tornhill's change-frequency and complexity hotspots from `git log`, ISO/IEC 25010 quality characteristics, and the debt categories in the 2024 DORA report. Each finding is ranked by cost against value, and each ranked fix becomes a board row in the repository that owns it. Remainder: read the report, then board its top findings. **Source**: operator, 2026-10-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file (private).
 
-- [ ] **RPT2. An affiliate scheme: commission models, payout control and abuse risk.** A background sub-agent (Opus) is writing `../private.diyaccounting.co.uk/strategy/REPORT_AFFILIATE_SCHEME_2026-10-30.md` and committing it in the private repository. The report covers:
-  - commission models that are normal in the industry, leaning to what Stripe supports natively;
-  - a custom tier for family: the nephew (16) is also the child of another shareholder and the nephew of all five shareholders, and he could have the first month's paid subscription after the payment clears and operator access to see subscriber numbers;
-  - per-pass totals for "My generated passes" (usages, sign-ups, subscribers and other useful figures);
-  - payout rules that leave no loss through a chargeback, a demand for more, or lost control of payments: DIY Accounting has the final say and no liability;
-  - KYC against manual approval, and a bot policy for affiliate identities;
-  - no worker or employment-law relationship, UK only if that helps;
-  - an audit of what passes, campaigns and attribution already do, from this repository and `../private.diyaccounting.co.uk/`.
-
-  Remainder: read the report, decide, and board the build rows. **Source**: operator, 2026-10-30. **Owner**: Claude Code (report), Operator (decision). **Model**: Opus. **Size**: ~1 file (private).
-
 ## Machine-only
 
 - [ ] **BING1. Bing against Google on cost per paid customer (`../private.diyaccounting.co.uk/PLAN_PAID_GOOGLE_SEARCH.md` E7).** The coded campaign "Search: MTD VAT" (account G1202SF9, ad groups and keywords mirroring the Google campaign, PR #593) went live at 07:43 UTC on 2026-10-30 (`msads-apply.yml`), at £1 a day; the forecast at the £1 bid is about 230 impressions a week (`npm run msads:forecast`). Remainder, measurement only: read `npm run msads:report` from 2026-10-30 (the first day's impressions show on 2026-10-31; a zero then means reading the Diagnostics panel, `.claude/skills/microsoft-ads/SKILL.md` "Why a campaign serves nothing"); when Bing has 150 clicks, compare cost per paid customer against Google's for the same keywords and ads, joining on the stored `msclkid`, and write the reading into the plan's E7 row with the budget shift it implies. The pace is set by the budget: at £1 a day 150 clicks take months; the plan's £12 a day is the operator's approval to give. **Source**: `../private.diyaccounting.co.uk/PLAN_PAID_GOOGLE_SEARCH.md` E7. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file (private).
 
 - [ ] **PASS1. A generated pass opens under "My generated passes".** On `web/public/passes/generate-digital.page.js` the generate handler (lines 132 to 160: `__generatedPassCode = body.code`, the QR code) stays on the generate page. After a pass is generated, the page goes to `bundles.html#myGeneratedPasses` with the new pass shown and in focus (`web/public/bundles.html` line 79, `<div id="myGeneratedPasses">`, list `#generatedPassesList`). There the pass already has "Copy Link" and "View QR". `generate-physical.page.js` gets the same treatment if its flow matches. The behaviour test that generates a pass asserts the landing section. **Source**: operator, 2026-10-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **AFF1. A pass redemption records the redeemer and the code.** In `app/functions/account/passPost.js`, write a `redemption#<code>#<hashedSub>` item with the time, the issuer hash and the pass type. Set the redeemer's `acquisition.ref` to the code when the account has none, through `app/lib/acquisition.js`. Add `passTypeId` and the code to the `pass-redeemed` detail (line 102), and carry the new fields in `dynamoStreamToFirehose.js`. Refuse the redemption when the redeemer is the issuer (`issuedBy`). Full design: `../private.diyaccounting.co.uk/strategy/REPORT_AFFILIATE_SCHEME_2026-10-30.md` section 9. Unblocks AFF2. **Source**: the affiliate report. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
 
 - [ ] **DEV1. developer.diyaccounting.co.uk: a micro site for developer resources, managed from this repository.** One static page in the house flat style of `https://diyaccounting.co.uk/about.html` (the www repository's `about.html` and its stylesheet are the reference). It links to:
   - the Swagger and OpenAPI docs (`web/public/docs/api/index.html`, `openapi.json`, `openapi.yaml`);
@@ -107,7 +98,58 @@ Facts several rows share. Every behaviour suite on the simulator lane takes the 
 
 ## Human-driven
 
+- [ ] **OAFF1. Approve the affiliate rates and holds.** The proposal (`../private.diyaccounting.co.uk/strategy/REPORT_AFFILIATE_SCHEME_2026-10-30.md` sections 1 and 4):
+  - 30% of net payments for 12 months;
+  - account credit after 30 days;
+  - cash only to approved adults through Stripe Connect Express, after 120 days (the dispute window);
+  - cash caps of £100 a month and £1,000 a year, and a credit cap of 12 free months.
+
+  The alternative is a 60-day cash hold with netting. It pays sooner but leaves a dispute loss between day 60 and day 120. Write the decision into the report. Unblocks AFF3. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- [ ] **OAFF2. Approve the family tier (report section 7).** Steps:
+  - Check the nephew's date of birth against his school-leaving date (the last Friday in June of the school year he turns 16). Before that date, amounts build up and are paid after it.
+  - Pass a board minute of all five shareholders.
+  - Get a parent's signed consent form.
+  - Ask the accountant whether paying a shareholder's child above the public rate is a close-company benefit to that shareholder.
+
+  He gets a counts-only `observer` view, never `operator`. Unblocks AFF7. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- [ ] **OAFF4. Have a solicitor review the affiliate terms.** The clauses are discretion, clawback, no employment and disclosure (`#ad`) (report section 6). Unblocks AFF8. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- [ ] **OAFF5. Choose the buyer offer.** No buyer offer, or a Stripe promotion code beside the referral code. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- [ ] **OAFF3. Turn on Stripe Connect, GB only, Express accounts.** Only the cash tier needs it, so this follows OAFF1. Unblocks AFF6. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
 ## Blocked
+
+- [ ] **AFF2. Per-pass figures under "My generated passes".** A new view `v_pass_performance` joins the redemption items (AFF1), `activity_events_all`, `dynamo_subscriptions` and `stripe_charges`. A nightly job writes one figures item per pass; there is no live query on customer tables. `passMyPassesGet.js` returns the figures and `web/public/bundles.page.js` shows them: uses, new accounts, filed, subscribers, paid charges, last used. Below 3 new accounts the page shows "fewer than 3", and there is a totals row. The commission figure joins when AFF3 lands. The design is in the report, section 8. Blocked by AFF1. **Source**: the affiliate report; operator, 2026-10-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~9 files.
+
+- [ ] **AFF3. The commission ledger.** The steps:
+  - `referrals.toml` holds the tiers (customer, casual, creator, family) with rate, months, form, hold days and caps.
+  - `invoice.paid` writes `commission#<referrerHash>` lines.
+  - `charge.refunded` and `charge.dispute.created` in `app/functions/billing/billingWebhookPost.js` reverse them.
+  - A daily release job applies the volume, fraud and card-fingerprint holds.
+  - The CDK goes in `AccountStack.java`.
+
+  Design in `../private.diyaccounting.co.uk/strategy/REPORT_AFFILIATE_SCHEME_2026-10-30.md` sections 4 and 9. Blocked on OAFF1 and AFF1. Unblocks AFF4, AFF6, AFF9. **Owner**: Claude Code. **Model**: Opus. **Size**: ~12 files.
+
+- [ ] **AFF4. Credit payouts.** A monthly job applies the payable lines as Stripe customer-balance credits, and debits back unused credit when a line is reversed. Blocked on AFF3. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
+
+- [ ] **AFF5. Affiliate approval.** An `affiliate#<hash>` record holds the tier and the state. An operator-only route beside `passAdminPost.js` approves and ends an affiliate, and an operator page uses it. Blocked on OAFF1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
+
+- [ ] **AFF6. The cash tier on Stripe Connect Express.** A GB-only onboarding link writes the account id to the affiliate record. A monthly transfer pays the lines that are older than 120 days, when the total is over £20 and inside the caps. Blocked on OAFF3, AFF3 and AFF5. **Owner**: Claude Code. **Model**: Opus. **Size**: ~10 files.
+
+- [ ] **AFF7. The `observer` bundle and the subscriber-counts page.** The changes:
+  - a hidden bundle in `web/public/submit.catalogue.toml`, with its pass type in `submit.passes.toml`;
+  - a counts-only subset in `operatorSnapshotPublish.js`;
+  - the route `/api/v1/operator/subscriber-counts` and the page `web/public/operator/subscribers.html`;
+  - a test that the response holds no amount and no identifier.
+
+  Blocked on OAFF2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
+
+- [ ] **AFF8. `affiliates.html` and the affiliate terms.** The page states the tiers, the rates, the holds, the discretion clause, the disclosure rule, UK only, 18 or over for cash, and no employment. `web/public/terms.html` gets refund, cancellation and age clauses, and `web/public/privacy.html` gets the scheme. Blocked on OAFF4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
+- [ ] **AFF9. Commission figures for the operator.** A view `v_affiliate_commissions_monthly` gives held, payable, paid and reversed amounts by tier, and the operator dashboard shows it on one line. Blocked on AFF3. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
 
 - [ ] **MKT2. A "Post" action on each generated pass.** On `web/public/bundles.html` "My generated passes", beside "Copy Link" and "View QR", a "Post" link opens `https://marketing.diyaccounting.co.uk/?pass=<code>#<section>` in a new tab. The section is the campaign the pass promotes, so the affiliate box arrives filled. Blocked on MKT1 (the site and its section anchors). **Source**: operator, 2026-10-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
