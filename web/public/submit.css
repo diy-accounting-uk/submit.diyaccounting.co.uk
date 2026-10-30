@@ -5466,48 +5466,48 @@ table.observations th {
 }
 
 /* The eight objectives share one column grid so figures line up from panel to panel. */
-#objectivesContainer table.observations {
+#objectivesContainer [data-objective-slot] table.observations {
   table-layout: fixed;
   width: 100%;
 }
 
 /* Eight columns: Observation, Today, Previous day, Last 7 days, Last 30 days, 30 day trend,
    Last 90 days, Where to look. */
-#objectivesContainer table.observations th:nth-child(1) {
+#objectivesContainer [data-objective-slot] table.observations th:nth-child(1) {
   width: 24%;
 }
 
-#objectivesContainer table.observations th:nth-child(n + 2):nth-child(-n + 7) {
+#objectivesContainer [data-objective-slot] table.observations th:nth-child(n + 2):nth-child(-n + 7) {
   width: 9%;
 }
 
-#objectivesContainer table.observations th:nth-child(8) {
+#objectivesContainer [data-objective-slot] table.observations th:nth-child(8) {
   width: 22%;
 }
 
-#objectivesContainer table.observations th:nth-child(n + 2):nth-child(-n + 7),
-#objectivesContainer table.observations td:nth-child(n + 2):nth-child(-n + 7) {
+#objectivesContainer [data-objective-slot] table.observations th:nth-child(n + 2):nth-child(-n + 7),
+#objectivesContainer [data-objective-slot] table.observations td:nth-child(n + 2):nth-child(-n + 7) {
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
 
-#objectivesContainer table.observations td:nth-child(8) {
+#objectivesContainer [data-objective-slot] table.observations td:nth-child(8) {
   overflow-wrap: anywhere;
 }
 
-#objectivesContainer table.observations th {
+#objectivesContainer [data-objective-slot] table.observations th {
   white-space: normal;
 }
 
 @media (max-width: 600px) {
-  #objectivesContainer table.observations {
+  #objectivesContainer [data-objective-slot] table.observations {
     min-width: 36rem;
   }
 }
 
 /* The "Last updated" subtitles under the window columns. */
 table.observations thead tr.last-updated th.last-updated-cell,
-#objectivesContainer table.observations thead tr.last-updated th.last-updated-cell {
+#objectivesContainer [data-objective-slot] table.observations thead tr.last-updated th.last-updated-cell {
   padding-top: 0;
   font-size: var(--step--1);
   font-weight: normal;
@@ -5571,7 +5571,7 @@ table.observations thead tr.last-updated th.last-updated-cell,
   }
 
   #visitorsPanel {
-    min-height: 510px;
+    min-height: 640px;
   }
 }
 
@@ -5586,7 +5586,7 @@ table.observations thead tr.last-updated th.last-updated-cell,
   }
 
   #visitorsPanel {
-    min-height: 560px;
+    min-height: 670px;
   }
 }
 
