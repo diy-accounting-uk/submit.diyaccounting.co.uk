@@ -54,6 +54,23 @@ Per campaign: impressions, clicks, CTR, average CPC, spend, conversions and reve
 break-even cost per session is the same as for Google Ads (see `ads-advisor`): quote spend per
 click against it, and call zero conversions on a small spend a sample too small to judge.
 
+## Why a campaign serves nothing
+
+Read it through the API first; ask the operator for the web UI only for the part the API does
+not show.
+
+1. When it went live: the last successful `msads-apply.yml` run on `main`
+   (`gh run list --workflow msads-apply.yml`). The report lags by several hours, so a zero on the
+   first day is not a fault.
+2. Status and approval: `npm run msads:inventory -- --json`. Read the account
+   `financialStatus`, and the `status` and `editorialStatus` of every campaign, ad group, ad and
+   keyword. Read the location criteria and `findings` as well.
+3. Volume at the bids: `npm run msads:forecast`. A keyword with 0 forecast impressions serves
+   nothing at any bid.
+4. The UI's Diagnostics panel (Campaign > Overview) and the Delivery column give the delivery
+   reason. No API operation returns them. Ask the operator for that panel only, and read its date
+   filter, because the performance tiles under it follow the filter.
+
 ## Forecast
 
 Ad Insight traffic estimates for the account's own keywords, at each campaign's daily budget,
