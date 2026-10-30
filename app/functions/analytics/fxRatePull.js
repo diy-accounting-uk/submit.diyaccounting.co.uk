@@ -12,6 +12,7 @@
 
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { createLogger } from "../../lib/logger.js";
+import { fetchRetryingNetworkErrors } from "../../lib/httpFetch.js";
 import { toNdjsonGzip } from "./paypalDonationsPull.js";
 
 const logger = createLogger({ source: "app/functions/analytics/fxRatePull.js" });
@@ -67,7 +68,7 @@ export function objectKey(dateStr) {
  */
 export async function handler() {
   const bucket = requireEnv("ANALYTICS_LAKE_BUCKET_NAME");
-  const response = await fetch(ECB_NINETY_DAY_FEED_URL);
+  const response = await fetchRetryingNetworkErrors(ECB_NINETY_DAY_FEED_URL);
   if (!response.ok) throw new Error(`${response.status} from the ECB reference rate feed`);
   const rows = parseEcbRates(await response.text());
   if (rows.length === 0) throw new Error("The ECB reference rate feed held no USD and GBP rates");

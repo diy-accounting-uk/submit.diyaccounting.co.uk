@@ -65,7 +65,7 @@ describe("fxRatePull", () => {
 
     const result = await handler({}, { awsRequestId: "lambda-context" });
 
-    expect(fetchImpl).toHaveBeenCalledWith(ECB_NINETY_DAY_FEED_URL);
+    expect(fetchImpl).toHaveBeenCalledWith(ECB_NINETY_DAY_FEED_URL, {});
     expect(result).toEqual({ days: 2 });
     const puts = mockS3Send.mock.calls.map(([command]) => command.input);
     expect(puts.map((put) => put.Key)).toEqual([objectKey("2026-10-29"), objectKey("2026-10-28")]);
@@ -81,5 +81,32 @@ describe("fxRatePull", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, text: async () => "<Cube/>" }));
     await expect(handler()).rejects.toThrow(/no USD and GBP/);
     expect(mockS3Send).not.toHaveBeenCalled();
+  });
+
+  test("handler succeeds when the first fetch fails at the network layer", async () => {
+    vi.useFakeTimers();
+    try {
+      const fetchImpl = vi
+        .fn()
+        .mockRejectedValueOnce(new TypeError("fetch failed"))
+        .mockResolvedValueOnce({ ok: true, text: async () => FEED });
+      vi.stubGlobal("fetch", fetchImpl);
+
+      const pending = handler();
+      await vi.runAllTimersAsync();
+
+      await expect(pending).resolves.toEqual({ days: 2 });
+      expect(fetchImpl).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test("handler does not retry an error status from the feed", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 503 });
+    vi.stubGlobal("fetch", fetchImpl);
+
+    await expect(handler()).rejects.toThrow(/503/);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
   });
 });
