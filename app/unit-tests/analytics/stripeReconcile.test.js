@@ -35,7 +35,6 @@ vi.mock("@aws-sdk/client-s3", () => ({
 import {
   handler,
   computeDateWindow,
-  defaultTargetDate,
   listAllPages,
   loadPaymentLinkBundleIdsFromRoot,
   resolveChargeBundleId,
@@ -97,15 +96,6 @@ describe("stripeReconcile", () => {
       expect(gte).toBe(Date.UTC(2026, 7, 20, 0, 0, 0) / 1000);
       expect(lt).toBe(Date.UTC(2026, 7, 21, 0, 0, 0) / 1000);
       expect(lt - gte).toBe(86400);
-    });
-  });
-
-  describe("defaultTargetDate", () => {
-    test("returns yesterday in UTC as YYYY-MM-DD", () => {
-      const now = new Date();
-      const expected = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1)).toISOString().slice(0, 10);
-
-      expect(defaultTargetDate()).toBe(expected);
     });
   });
 
@@ -371,18 +361,27 @@ describe("stripeReconcile", () => {
   });
 
   describe("handler", () => {
-    test("uses yesterday by default and writes three date-partitioned objects", async () => {
-      const result = await handler();
+    test("pulls yesterday and today so far by default and writes three date-partitioned objects for each", async () => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-08-21T10:15:00Z"));
+      let result;
+      try {
+        result = await handler();
+      } finally {
+        vi.useRealTimers();
+      }
 
-      expect(result.date).toBe(defaultTargetDate());
-      expect(mockS3Send).toHaveBeenCalledTimes(3);
+      expect(result.days.map((d) => d.date)).toEqual(["2026-08-20", "2026-08-21"]);
+      expect(mockS3Send).toHaveBeenCalledTimes(6);
 
       const keys = mockS3Send.mock.calls.map((call) => call[0].input.Key);
-      expect(keys).toEqual([
-        `curated/stripe/stripe_balance_transactions/dt=${result.date}/balance_transactions.json.gz`,
-        `curated/stripe/stripe_charges/dt=${result.date}/charges.json.gz`,
-        `curated/stripe/stripe_subscriptions/dt=${result.date}/subscriptions.json.gz`,
-      ]);
+      expect(keys).toEqual(
+        ["2026-08-20", "2026-08-21"].flatMap((date) => [
+          `curated/stripe/stripe_balance_transactions/dt=${date}/balance_transactions.json.gz`,
+          `curated/stripe/stripe_charges/dt=${date}/charges.json.gz`,
+          `curated/stripe/stripe_subscriptions/dt=${date}/subscriptions.json.gz`,
+        ]),
+      );
       for (const call of mockS3Send.mock.calls) {
         expect(call[0].input.Bucket).toBe("test-lake-bucket");
       }
@@ -398,13 +397,13 @@ describe("stripeReconcile", () => {
       expect(keys[0]).toMatch(/^curated\/stripe\/stripe_balance_transactions\/dt=2026-08-20\//);
       expect(keys[1]).toMatch(/^curated\/stripe\/stripe_charges\/dt=2026-08-20\//);
       expect(keys[2]).toMatch(/^curated\/stripe\/stripe_subscriptions\/dt=2026-08-20\//);
-      expect(result.date).toBe("2026-08-20");
+      expect(result.days.map((d) => d.date)).toEqual(["2026-08-20"]);
     });
 
     test("an explicit date in the event overrides the default and sets the Stripe date window", async () => {
       const result = await handler({ date: "2026-08-20" });
 
-      expect(result.date).toBe("2026-08-20");
+      expect(result.days.map((d) => d.date)).toEqual(["2026-08-20"]);
       const expectedWindow = computeDateWindow("2026-08-20");
       expect(mockBalanceTransactionsList).toHaveBeenCalledWith(
         expect.objectContaining({ created: { gte: expectedWindow.gte, lt: expectedWindow.lt } }),
@@ -442,7 +441,7 @@ describe("stripeReconcile", () => {
 
       const result = await handler({ date: "2026-08-20" });
 
-      expect(result.counts.charges).toBe(1);
+      expect(result.days[0].counts.charges).toBe(1);
       const chargesCall = mockS3Send.mock.calls.find((call) => call[0].input.Key.includes("/stripe_charges/"));
       const body = gunzipSync(chargesCall[0].input.Body).toString("utf8");
       const row = JSON.parse(body.trimEnd());

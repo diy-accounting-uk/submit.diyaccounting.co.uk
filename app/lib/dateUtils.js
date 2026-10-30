@@ -33,6 +33,18 @@ export function calculateTtl(baseDate, offset = {}) {
   };
 }
 
+/**
+ * The UTC days an hourly pull rewrites: yesterday, final, then today so far. Each day is one
+ * `dt=YYYY-MM-DD` object that the next run overwrites, so a re-run is idempotent.
+ * @param {Date} [now]
+ * @returns {string[]} "YYYY-MM-DD", oldest first
+ */
+export function recentPullDays(now = new Date()) {
+  return [1, 0].map((daysBack) =>
+    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - daysBack)).toISOString().slice(0, 10),
+  );
+}
+
 // Common TTL presets for different record types
 export const TTL_PRESETS = {
   // HMRC requires tax records to be kept for 7 years (approx 2555 days)

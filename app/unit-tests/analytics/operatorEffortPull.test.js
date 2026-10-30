@@ -41,7 +41,6 @@ vi.mock("@app/lib/githubAppToken.js", () => ({
 
 import {
   handler,
-  defaultTargetDate,
   nextDay,
   parseNextLink,
   fetchAllPages,
@@ -83,12 +82,6 @@ describe("operatorEffortPull", () => {
     delete process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID;
     delete process.env.ANALYTICS_LAKE_BUCKET_NAME;
     delete process.env.OPERATOR_GITHUB_LOGIN;
-  });
-
-  test("defaultTargetDate returns yesterday in UTC", () => {
-    const now = new Date();
-    const expected = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1)).toISOString().slice(0, 10);
-    expect(defaultTargetDate()).toBe(expected);
   });
 
   test("nextDay rolls a date forward by one", () => {
@@ -224,16 +217,41 @@ describe("operatorEffortPull", () => {
     const result = await handler({ date: "2026-09-05" });
 
     expect(result).toEqual({
-      date: "2026-09-05",
-      keys: {
-        workflow_runs: "curated/operator/workflow-runs/dt=2026-09-05/workflow_runs.json",
-        issue_events: "curated/operator/issue-events/dt=2026-09-05/issue_events.json",
-        commits: "curated/operator/commits/dt=2026-09-05/commits.json",
-      },
-      counts: { workflow_runs: 0, issue_events: 0, commits: 0 },
+      days: [
+        {
+          date: "2026-09-05",
+          keys: {
+            workflow_runs: "curated/operator/workflow-runs/dt=2026-09-05/workflow_runs.json",
+            issue_events: "curated/operator/issue-events/dt=2026-09-05/issue_events.json",
+            commits: "curated/operator/commits/dt=2026-09-05/commits.json",
+          },
+          counts: { workflow_runs: 0, issue_events: 0, commits: 0 },
+        },
+      ],
     });
     expect(mockSmSend).toHaveBeenCalledTimes(1);
     expect(mockS3Send).toHaveBeenCalledTimes(3);
+  });
+
+  test("handler pulls yesterday and today so far by default, one set of objects each", async () => {
+    mockFetch.mockImplementation(async (url) => jsonResponse(String(url).includes("/actions/runs") ? { workflow_runs: [] } : []));
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-06T10:15:00Z"));
+    let result;
+    try {
+      result = await handler();
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(result.days.map((d) => d.date)).toEqual(["2026-09-05", "2026-09-06"]);
+    expect(mockS3Send.mock.calls.map((call) => call[0].input.Key)).toEqual(
+      ["2026-09-05", "2026-09-06"].flatMap((date) => [
+        `curated/operator/workflow-runs/dt=${date}/workflow_runs.json`,
+        `curated/operator/issue-events/dt=${date}/issue_events.json`,
+        `curated/operator/commits/dt=${date}/commits.json`,
+      ]),
+    );
   });
 
   test("handler throws when GITHUB_REPO is missing", async () => {

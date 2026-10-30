@@ -368,6 +368,8 @@ export function buildTrafficEstimateRequest({ campaign, extraKeywords = [], maxC
     .filter((c) => !c.negative && (c.type === "LocationCriterion" || c.type === "DeviceCriterion"))
     .map((c) => ({ Type: c.type, ...c.detail }));
   for (const language of campaign.languages.filter((l) => l !== "All")) criteria.push({ Type: "LanguageCriterion", Language: language });
+  const network = campaign.adGroups.find((g) => g.network)?.network ?? "OwnedAndOperatedOnly";
+  criteria.push({ Type: "NetworkCriterion", Network: network });
   return {
     CampaignEstimators: [
       {
@@ -477,8 +479,20 @@ export function formatInventory(inv) {
 }
 
 export function formatForecast(rows) {
+  // Ad Insight estimates clicks, impressions and cost per week.
   return table(
-    ["keyword", "match", "clicks min", "clicks max", "impr min", "impr max", "cpc min", "cpc max", "cost min", "cost max"],
+    [
+      "keyword",
+      "match",
+      "clicks/wk min",
+      "clicks/wk max",
+      "impr/wk min",
+      "impr/wk max",
+      "cpc min",
+      "cpc max",
+      "cost/wk min",
+      "cost/wk max",
+    ],
     rows.map((r) => [
       r.keyword,
       r.matchType,

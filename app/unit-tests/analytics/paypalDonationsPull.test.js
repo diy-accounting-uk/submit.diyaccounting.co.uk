@@ -41,7 +41,7 @@ vi.mock("@app/services/paypalTransactionSearch.js", () => ({
   realSleep: async () => {},
 }));
 
-const { handler, donationRowsFromTransactions, computeDayWindow, daysOf, defaultTargetDate, objectKey, toNdjsonGzip } =
+const { handler, donationRowsFromTransactions, computeDayWindow, daysOf, objectKey, toNdjsonGzip } =
   await import("../../functions/analytics/paypalDonationsPull.js");
 
 function record({ id, code, status = "S", amount, currency = "GBP", fee, date = "2026-09-14T10:15:00+0000", subject, referenceId }) {
@@ -198,6 +198,16 @@ describe("donationRowsFromTransactions", () => {
 });
 
 describe("daysOf", () => {
+  test("defaults to yesterday and today so far", () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-03-01T00:30:00Z"));
+    try {
+      expect(daysOf({})).toEqual(["2026-02-28", "2026-03-01"]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   test("a date is one day", () => {
     expect(daysOf({ date: "2026-09-14" })).toEqual(["2026-09-14"]);
   });
@@ -227,18 +237,6 @@ describe("computeDayWindow", () => {
   });
 });
 
-describe("defaultTargetDate", () => {
-  test("is yesterday in UTC", () => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date("2026-03-01T00:30:00Z"));
-    try {
-      expect(defaultTargetDate()).toBe("2026-02-28");
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-});
-
 describe("toNdjsonGzip", () => {
   test("an empty day is a valid empty gzip member", () => {
     expect(gunzipSync(toNdjsonGzip([])).toString()).toBe("");
@@ -260,6 +258,22 @@ describe("handler", () => {
     mockFetchAccessToken.mockResolvedValue("the-access-token");
     mockFetchAllTransactions.mockResolvedValue(RECORDED_DAY);
     mockS3Send.mockResolvedValue({});
+  });
+
+  test("with no date writes yesterday and today so far, each to its own partition", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-09-15T10:15:00Z"));
+    let result;
+    try {
+      result = await handler({});
+    } finally {
+      vi.useRealTimers();
+    }
+
+    expect(result.days.map((d) => d.key)).toEqual([
+      "curated/paypal/paypal_donations/dt=2026-09-14/donations.json.gz",
+      "curated/paypal/paypal_donations/dt=2026-09-15/donations.json.gz",
+    ]);
   });
 
   test("writes the day's receipts to the curated PayPal prefix as gzipped NDJSON", async () => {

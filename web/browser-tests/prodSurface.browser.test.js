@@ -81,13 +81,14 @@ test.describe("Prod surface", () => {
     await shoot(page, "guard-prod");
   });
 
-  test("a Companies House filing page and the practice page show the panel in prod", async ({ page }) => {
-    await serveSite(page, "prod");
-    for (const pagePath of ["companies-house/fileConfirmationStatement.html", "practice.html", "mcp-harness.html"]) {
+  for (const pagePath of ["companies-house/fileConfirmationStatement.html", "practice.html", "mcp-harness.html"]) {
+    test(`${pagePath} shows the panel in prod`, async ({ page }) => {
+      await serveSite(page, "prod");
       await page.goto(`http://localhost:3000/${pagePath}`, { waitUntil: "networkidle" });
-      await expect(page.locator("#activityUnavailablePanel")).toBeVisible();
-    }
-  });
+      // The guard reads the catalogue, imports two services and reads the viewer's settings first.
+      await expect(page.locator("#activityUnavailablePanel")).toBeVisible({ timeout: 15000 });
+    });
+  }
 
   test("an Income Tax page keeps its form in ci", async ({ page }) => {
     await serveSite(page, "ci");

@@ -17,6 +17,7 @@
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { createLogger } from "../../lib/logger.js";
+import { recentPullDays } from "../../lib/dateUtils.js";
 import { getInstallationAccessToken } from "../../lib/githubAppToken.js";
 
 const logger = createLogger({ source: "app/functions/analytics/operatorEffortPull.js" });
@@ -75,18 +76,6 @@ function githubHeaders(token) {
     "Accept": "application/vnd.github+json",
     "X-GitHub-Api-Version": "2022-11-28",
   };
-}
-
-/**
- * Yesterday's date in UTC, as "YYYY-MM-DD". The default pull target: a run that fires just
- * after midnight pulls the day that just ended.
- *
- * @returns {string}
- */
-export function defaultTargetDate() {
-  const now = new Date();
-  const yesterday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
-  return yesterday.toISOString().slice(0, 10);
 }
 
 /**
@@ -271,14 +260,15 @@ async function putEntityObject(s3Client, bucket, prefix, dateStr, fileName, reco
 }
 
 /**
- * Pull one UTC day of GitHub Actions runs, issue events and commits into the lake.
+ * Pull GitHub Actions runs, issue events and commits into the lake: yesterday and today so far,
+ * or one explicit day.
  *
- * @param {{date?: string}} [event] - an explicit `date` ("YYYY-MM-DD") overrides yesterday,
- *   matching every other job in the nightly chain.
- * @returns {Promise<{date: string, keys: object, counts: object}>}
+ * @param {{date?: string}} [event] - an explicit `date` ("YYYY-MM-DD") replaces the default pair
+ *   of days.
+ * @returns {Promise<{days: Array<{date: string, keys: object, counts: object}>}>}
  */
 export async function handler(event = {}) {
-  const targetDate = event.date ?? defaultTargetDate();
+  const days = event.date ? [event.date] : recentPullDays();
   const githubRepo = process.env.GITHUB_REPO;
   const operatorLogin = process.env.OPERATOR_GITHUB_LOGIN || "antonycc";
   const bucket = process.env.ANALYTICS_LAKE_BUCKET_NAME;
@@ -287,6 +277,14 @@ export async function handler(event = {}) {
 
   const token = await resolveGitHubToken(githubRepo);
 
+  const results = [];
+  for (const targetDate of days) {
+    results.push(await pullDay({ githubRepo, operatorLogin, bucket, token, targetDate }));
+  }
+  return { days: results };
+}
+
+async function pullDay({ githubRepo, operatorLogin, bucket, token, targetDate }) {
   const workflowRuns = await pullWorkflowRuns({ githubRepo, token, dateStr: targetDate });
   const issueEvents = await pullIssueEvents({ githubRepo, token, dateStr: targetDate, operatorLogin });
   const commits = await pullCommits({ githubRepo, token, dateStr: targetDate });

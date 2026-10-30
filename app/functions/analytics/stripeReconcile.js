@@ -15,6 +15,7 @@ import { gzipSync } from "zlib";
 import TOML from "@iarna/toml";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { createLogger } from "../../lib/logger.js";
+import { recentPullDays } from "../../lib/dateUtils.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 
 const CHARGE_API_VERSION = "2024-12-18.acacia";
@@ -32,18 +33,6 @@ function getS3Client() {
     cachedS3Client = new S3Client({ region: process.env.AWS_REGION || "eu-west-2" });
   }
   return cachedS3Client;
-}
-
-/**
- * Yesterday's date in UTC, as "YYYY-MM-DD". The default reconciliation target: a run that
- * fires just after midnight reconciles the day that just ended.
- *
- * @returns {string}
- */
-export function defaultTargetDate() {
-  const now = new Date();
-  const yesterday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1));
-  return yesterday.toISOString().slice(0, 10);
 }
 
 /**
@@ -259,24 +248,33 @@ async function putEntityObject(s3Client, bucket, entity, dateStr, records) {
 }
 
 /**
- * Reconcile one day of Stripe activity into the lake.
+ * Reconcile Stripe activity into the lake: yesterday and today so far, or one explicit day.
  *
- * @param {{date?: string}} [event] - an explicit `date` ("YYYY-MM-DD") overrides yesterday,
- *   which is what a backfill invoke passes.
- * @returns {Promise<{date: string, keys: object, counts: object}>}
+ * @param {{date?: string}} [event] - an explicit `date` ("YYYY-MM-DD") replaces the default pair
+ *   of days, which is what a backfill invoke passes.
+ * @returns {Promise<{days: Array<{date: string, keys: object, counts: object}>}>}
  */
 export async function handler(event = {}) {
   await initializeSalt();
 
-  const targetDate = event.date ?? defaultTargetDate();
+  const days = event.date ? [event.date] : recentPullDays();
   const isProd = process.env.ENVIRONMENT_NAME === "prod";
   const stripe = await getStripeClient({ test: !isProd });
-  const { gte, lt } = computeDateWindow(targetDate);
 
   const bucket = process.env.ANALYTICS_LAKE_BUCKET_NAME;
   if (!bucket) {
     throw new Error("ANALYTICS_LAKE_BUCKET_NAME environment variable is required");
   }
+
+  const results = [];
+  for (const targetDate of days) {
+    results.push(await reconcileDay(stripe, bucket, targetDate));
+  }
+  return { days: results };
+}
+
+async function reconcileDay(stripe, bucket, targetDate) {
+  const { gte, lt } = computeDateWindow(targetDate);
 
   const balanceTransactions = (
     await listAllPages((params) => stripe.balanceTransactions.list(params), {

@@ -3,7 +3,7 @@
 
 import { describe, test, expect } from "vitest";
 
-import { calculateTtl, calculateHmrcTaxRecordTtl } from "@app/lib/dateUtils.js";
+import { calculateTtl, calculateHmrcTaxRecordTtl, recentPullDays } from "@app/lib/dateUtils.js";
 
 // 2026-10-25 01:00 UTC is when Europe/London goes from BST to GMT. This base is half an hour
 // before that change in local wall-clock time on the same day.
@@ -38,5 +38,15 @@ describe("calculateTtl", () => {
     const { ttl } = calculateHmrcTaxRecordTtl(BASE_BEFORE_CLOCK_CHANGE);
 
     expect(ttl - baseSeconds).toBe(2555 * 86400);
+  });
+});
+
+describe("recentPullDays", () => {
+  test("is yesterday then today, in UTC", () => {
+    expect(recentPullDays(new Date("2026-03-01T00:30:00Z"))).toEqual(["2026-02-28", "2026-03-01"]);
+  });
+
+  test("a late-evening UTC time is still that UTC day", () => {
+    expect(recentPullDays(new Date("2026-10-24T23:59:00Z"))).toEqual(["2026-10-23", "2026-10-24"]);
   });
 });
