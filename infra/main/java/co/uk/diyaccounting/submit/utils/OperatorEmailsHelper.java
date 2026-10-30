@@ -11,6 +11,7 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
+import software.constructs.Construct;
 
 /**
  * Helper for granting Lambda functions access to the operator emails secret.
@@ -21,6 +22,8 @@ import software.amazon.awscdk.services.lambda.Function;
  */
 public class OperatorEmailsHelper {
 
+    private static final String GRANT_MARKER_ID = "OperatorEmailsAccess";
+
     /**
      * Grant a Lambda function permission to read the operator emails secret.
      *
@@ -30,6 +33,9 @@ public class OperatorEmailsHelper {
      * @param envName Environment name (e.g., "ci", "prod")
      */
     public static void grantOperatorEmailsAccess(Function lambda, String region, String account, String envName) {
+        // A Lambda can reach this from its construct and from its stack; grant it once.
+        if (lambda.getNode().tryFindChild(GRANT_MARKER_ID) != null) return;
+        new Construct(lambda, GRANT_MARKER_ID);
         // Secret ARN pattern includes wildcard suffix because Secrets Manager
         // appends a random suffix to secret names
         String operatorEmailsSecretArn = String.format(
