@@ -317,6 +317,7 @@ describe("msads forecast", () => {
     expect(estimator.Criteria).toEqual([
       { Type: "LocationCriterion", LocationId: 188 },
       { Type: "LanguageCriterion", Language: "English" },
+      { Type: "NetworkCriterion", Network: "OwnedAndOperatedOnly" },
     ]);
     expect(estimator.AdGroupEstimators[0].KeywordEstimators[0]).toEqual({
       Keyword: { Id: "3", MatchType: "Exact", Text: "vat" },
