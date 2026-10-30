@@ -63,13 +63,11 @@ export function objectKey(dateStr) {
  * Pull the ECB reference rates into the lake, one object per rate date. Re-running rewrites the
  * same objects.
  *
- * @param {object} [_event] - unused
- * @param {typeof fetch} [fetchImpl]
  * @returns {Promise<{days: number}>}
  */
-export async function handler(_event = {}, fetchImpl = fetch) {
+export async function handler() {
   const bucket = requireEnv("ANALYTICS_LAKE_BUCKET_NAME");
-  const response = await fetchImpl(ECB_NINETY_DAY_FEED_URL);
+  const response = await fetch(ECB_NINETY_DAY_FEED_URL);
   if (!response.ok) throw new Error(`${response.status} from the ECB reference rate feed`);
   const rows = parseEcbRates(await response.text());
   if (rows.length === 0) throw new Error("The ECB reference rate feed held no USD and GBP rates");
