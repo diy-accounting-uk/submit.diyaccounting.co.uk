@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.constructs;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 
+import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -90,6 +91,7 @@ public class AsyncApiLambda extends ApiLambda {
                 .logGroup(this.logGroup)
                 .tracing(Tracing.ACTIVE)
                 .build();
+        OperatorEmailsHelper.grantWhenPublishingActivity(this.workerLambda, props.environment());
 
         this.workerLambdaVersion = Version.Builder.create(scope, props.idPrefix() + "-worker-version")
                 .lambda(this.workerLambda)

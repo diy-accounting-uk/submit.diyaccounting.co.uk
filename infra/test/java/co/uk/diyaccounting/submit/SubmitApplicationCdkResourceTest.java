@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.Lambda;
@@ -53,6 +54,21 @@ import software.amazon.awscdk.assertions.Template;
     @SetEnvironmentVariable(key = "CDK_DEFAULT_REGION", value = "eu-west-2"),
 })
 class SubmitApplicationCdkResourceTest {
+
+    @Test
+    void everyLambdaThatPublishesActivityEventsCanReadTheOperatorList() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+        new SubmitApplication(app, appProps);
+        app.synth();
+
+        var result = ActivityPublisherGrants.check(app);
+        assertTrue(result.publishers() > 0, "no Lambda names ACTIVITY_BUS_NAME");
+        assertEquals(List.of(), result.ungranted());
+    }
 
     @Test
     @SetEnvironmentVariable(key = "GITHUB_APP_ID", value = "123456")
