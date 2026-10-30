@@ -5236,7 +5236,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** The explore skill mints the state, then dispatches one Opus sub-agent per role: visitor, customer, practice, operator. A Sonnet sub-agent verifies each finding against the oracle. The coordinator writes one review with screenshots in the private repository and lists proposed rows.
 - **Run:** `/explore`
 - **Entry:** `.claude/skills/explore/SKILL.md`
-- **Files:** .claude/skills/explore/SKILL.md, PLAN_EXPLORATORY_QA.md
+- **Files:** .claude/skills/explore/SKILL.md, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_EXPLORATORY_QA.md
 - **Keywords:** explore skill, exploratory qa, judgement pass, role pass, review document, findings with screenshots
 - **Related:** DEV-46, DEV-48, DEV-49
 
@@ -5246,7 +5246,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** `scripts/exploratory-crawl.mjs` follows every same-origin link and submits up to three forms per page empty, 300 pages per role, viewport and theme, at 1280x800 and 390x844 in light and dark; it writes `target/exploratory-crawl/<lane>/<role>/<viewport>-<theme>/` with `contact-sheet.html`, one PNG per page and `findings.json`, and `summary-<lane>.md`. The `exploratory-crawl` job in `test.yml` runs it on the scheduled run on Sundays and on dispatch: prod as the visitor, ci as both roles behind the native-auth enable and disable, the counts in the job summary, the folder as an artifact, the sheets copied to the deployment's bucket under `tests/exploratory/<date>/`.
 - **Run:** `gh workflow run test.yml --ref main -f runExploratoryCrawl=true`; locally `node scripts/exploratory-crawl.mjs --lane simulator --base-url http://localhost:3000 --roles visitor --viewports desktop --themes light`
 - **Entry:** `scripts/exploratory-crawl.mjs`
-- **Files:** scripts/exploratory-crawl.mjs, app/unit-tests/scripts/exploratoryCrawl.test.js, .github/workflows/test.yml (job `exploratory-crawl`), PLAN_EXPLORATORY_QA.md
+- **Files:** scripts/exploratory-crawl.mjs, app/unit-tests/scripts/exploratoryCrawl.test.js, .github/workflows/test.yml (job `exploratory-crawl`), ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_EXPLORATORY_QA.md
 - **Keywords:** exploratory crawl, blind crawl, weekly crawl, contact sheet, findings.json, console errors, failed requests, overflow, raw identifiers, Sunday job
 - **Related:** DEV-46, DEV-49, DEV-50
 

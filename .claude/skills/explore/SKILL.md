@@ -9,7 +9,7 @@ description: Walk the deployed ci site as a person would, one role at a time (vi
 
 A test checks what its author thought of. This pass follows a link that looked promising, resizes
 the window, reads a result and asks whether it says what it should. The design is in
-`PLAN_EXPLORATORY_QA.md`: the oracle, the verdicts, the review document. Read its "Rules of a
+`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_EXPLORATORY_QA.md`: the oracle, the verdicts, the review document. Read its "Rules of a
 pass" and "The oracle" sections before you dispatch.
 
 The coordinator (this session) plans, dispatches and writes. A role sub-agent only browses and
