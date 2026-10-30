@@ -256,7 +256,7 @@ class McpStackTest {
     }
 
     @Test
-    void theHmrcGrantFunctionCarriesTheHmrcClientsAndReadsTheirSecretsTheBlobKeyAndTheSalt() {
+    void theHmrcGrantFunctionCarriesTheHmrcClientsAndReadsTheirSecretsTheBlobKeyTheSaltAndTheOperatorList() {
         McpStack stack = synthMcpStack();
         Template template = Template.fromStack(stack);
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
@@ -280,13 +280,17 @@ class McpStackTest {
                 .filter(statement -> actionsOf(statement).contains("secretsmanager:GetSecretValue"))
                 .map(statement -> String.valueOf(statement.get("Resource")))
                 .toList();
-        assertEquals(4, secretResources.size(), "expected the blob key, the salt and the two HMRC client secrets");
+        assertEquals(
+                5,
+                secretResources.size(),
+                "expected the blob key, the salt, the operator list and the two HMRC client secrets");
+        assertTrue(secretResources.stream().anyMatch(resource -> resource.contains("/submit/operator-emails")));
         assertTrue(secretResources.contains(HMRC_SECRET_ARN + "-*"));
         assertTrue(secretResources.contains(HMRC_SANDBOX_SECRET_ARN + "-*"));
     }
 
     @Test
-    void theCodesEntryFunctionReadsAndWritesTheSessionsTableAndReadsTheBlobKeyAndTheSalt() {
+    void theCodesEntryFunctionReadsAndWritesTheSessionsTableAndReadsTheBlobKeyTheSaltAndTheOperatorList() {
         McpStack stack = synthMcpStack();
         Template template = Template.fromStack(stack);
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
@@ -307,12 +311,12 @@ class McpStackTest {
                         .anyMatch(statement -> actionsOf(statement).contains("dynamodb:PutItem")
                                 && actionsOf(statement).contains("dynamodb:DeleteItem")),
                 "expected the codes entry function to write the sessions table");
-        assertEquals(
-                2,
-                statements.stream()
-                        .filter(statement -> actionsOf(statement).contains("secretsmanager:GetSecretValue"))
-                        .count(),
-                "expected the blob key and the salt");
+        var secretResources = statements.stream()
+                .filter(statement -> actionsOf(statement).contains("secretsmanager:GetSecretValue"))
+                .map(statement -> String.valueOf(statement.get("Resource")))
+                .toList();
+        assertEquals(3, secretResources.size(), "expected the blob key, the salt and the operator list");
+        assertTrue(secretResources.stream().anyMatch(resource -> resource.contains("/submit/operator-emails")));
     }
 
     @SuppressWarnings("unchecked")
