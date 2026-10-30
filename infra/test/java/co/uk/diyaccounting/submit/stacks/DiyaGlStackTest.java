@@ -240,6 +240,25 @@ class DiyaGlStackTest {
     }
 
     @Test
+    void everyFunctionCanReadTheOperatorList() {
+        DiyaGlStack stack = synthDiyaGlStack();
+        Template template = Template.fromStack(stack);
+
+        for (String functionName : List.of(
+                stack.diyaGlListGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlVersionGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlPutLambdaProps.ingestFunctionName(),
+                stack.diyaGlDeleteLambdaProps.ingestFunctionName(),
+                stack.practiceClientBookMovePostLambdaProps.ingestFunctionName())) {
+            assertTrue(
+                    iamStatementsForFunction(template, functionName).stream()
+                            .anyMatch(statement -> actionsOf(statement).contains("secretsmanager:GetSecretValue")
+                                    && String.valueOf(statement.get("Resource")).contains("/submit/operator-emails")),
+                    "expected " + functionName + " to read the operator emails secret");
+        }
+    }
+
+    @Test
     void everyFunctionGetsReadAccessToThePracticeClientsTable() {
         DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
