@@ -490,7 +490,7 @@ This repo deploys to two accounts: **submit-ci** (367191799875) and **submit-pro
 
 **GitHub Actions variables**: `SUBMIT_*` are environment-scoped (ci/prod have different values). `ROOT_*`, `GATEWAY_*` and `SPREADSHEETS_*` are org-level (`gh variable list --org diy-accounting-uk`).
 
-See `PLAN_ACCOUNT_SEPARATION.md` for the full migration plan.
+See `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ACCOUNT_SEPARATION.md` for the full migration plan.
 
 ## AWS CLI Access (Local Development)
 
@@ -534,7 +534,7 @@ npm run test:enableCognitoNative
 - Environment stacks: `{env}-env-{StackName}` (e.g., `ci-env-IdentityStack`, `prod-env-DataStack`)
 - Application stacks: `{deployment}-app-{StackName}` (e.g., `ci-cleanlogin-app-AuthStack`)
 
-See `PLAN_ACCOUNT_SEPARATION.md` for multi-account architecture and role structure.
+See `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ACCOUNT_SEPARATION.md` for multi-account architecture and role structure.
 
 ## Running Behaviour Tests Against Deployed Environments (Fast Turnaround)
 
@@ -605,7 +605,7 @@ The spreadsheets site is managed by the sibling repository `diy-accounting-uk/sp
 
 Behaviour tests exist for spreadsheets (`test:spreadsheetsBehaviour-*`).
 
-**Stripe Payment Links** are live on the spreadsheets site for donations (see `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_STRIPE_1.md` — completed). Submit site subscription payments are planned in `PLAN_PAYMENT_INTEGRATION.md`.
+**Stripe Payment Links** are live on the spreadsheets site for donations (see `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_STRIPE_1.md` — completed). Submit site subscription payments are in `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_PAYMENT_INTEGRATION.md`.
 
 ## Security Checklist
 
