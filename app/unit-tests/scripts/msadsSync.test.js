@@ -191,7 +191,7 @@ describe("plan", () => {
     expect(kinds[0]).toBe("create-uet");
     expect(kinds.filter((k) => k === "create-goal")).toHaveLength(5);
     expect(kinds.indexOf("create-campaign")).toBeGreaterThan(kinds.lastIndexOf("create-goal"));
-    expect(kinds.filter((k) => k === "create-ad-group")).toHaveLength(6);
+    expect(kinds.filter((k) => k === "create-ad-group")).toHaveLength(7);
     expect(kinds.at(-1)).toBe("enable-auto-tagging");
     expect(plan.unmanaged).toEqual([]);
     expect(formatPlan(plan)).toContain('+ create campaign "Search: MTD VAT" Active budget 1.00/day EnhancedCpc not political');
@@ -257,9 +257,9 @@ describe("apply", () => {
     const paths = calls.map((c) => `${c.method} ${c.path}`);
     expect(paths.slice(0, 7)).toEqual(["POST /UetTags", ...Array(5).fill("POST /ConversionGoals"), "POST /Campaigns"]);
     expect(paths.slice(7, 9)).toEqual(["POST /CampaignCriterions", "POST /EntityNegativeKeywords"]);
-    expect(calls.filter((c) => c.path === "/AdGroups")).toHaveLength(6);
-    expect(calls.filter((c) => c.path === "/Keywords")).toHaveLength(6);
-    expect(calls.filter((c) => c.path === "/Ads")).toHaveLength(6);
+    expect(calls.filter((c) => c.path === "/AdGroups")).toHaveLength(7);
+    expect(calls.filter((c) => c.path === "/Keywords")).toHaveLength(7);
+    expect(calls.filter((c) => c.path === "/Ads")).toHaveLength(7);
     expect(calls.find((c) => c.path === "/ConversionGoals").body.ConversionGoals[0].TagId).toBe("55");
     expect(calls.find((c) => c.path === "/Campaigns").body.Campaigns[0].IsPolitical).toBe(false);
     expect(calls.find((c) => c.path === "/CampaignCriterions").body.CriterionType).toBe("Targets");
@@ -293,8 +293,8 @@ describe("export", () => {
     const exported = TOML.parse(exportToToml(live));
     expect(exported.campaign[0].name).toBe("Search: MTD VAT");
     expect(exported.campaign[0].locations).toEqual(["GB"]);
-    expect(exported.campaign[0].ad_group).toHaveLength(6);
-    expect(exported.campaign[0].ad_group[0].keyword[0]).toEqual({ text: "diy accounting", match_type: "PHRASE" });
+    expect(exported.campaign[0].ad_group).toHaveLength(7);
+    expect(exported.campaign[0].ad_group[0].keyword[0]).toEqual({ text: "diy accounting", match_type: "BROAD" });
     expect(exported.uet.tag_id).toBe("55");
     expect(exported.account.auto_tagging).toBe(true);
   });

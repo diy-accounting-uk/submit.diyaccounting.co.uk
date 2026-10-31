@@ -1199,7 +1199,7 @@ describe("infra/google/ads/ads.toml", () => {
     expect(search.bidding).toEqual({ strategy: "maximize_clicks", cpcBidCeilingMicros: "3000000" });
   });
 
-  it("declares six ad groups of phrase-match keywords, 34 in all, each with one ad", () => {
+  it("declares seven ad groups of broad-match keywords, 38 in all, each with one ad", () => {
     expect(search.adGroups.map((adGroup) => adGroup.name)).toEqual([
       "Own brand",
       "Bridging software",
@@ -1207,11 +1207,28 @@ describe("infra/google/ads/ads.toml", () => {
       "Submit VAT return",
       "Free MTD VAT",
       "Spreadsheet and Excel",
+      "VAT deadline",
     ]);
     const keywords = search.adGroups.flatMap((adGroup) => adGroup.keywords);
-    expect(keywords).toHaveLength(34);
-    expect(keywords.every((keyword) => keyword.matchType === "PHRASE")).toBe(true);
-    expect(new Set(keywords.map((keyword) => keyword.text)).size).toBe(34);
+    expect(keywords).toHaveLength(38);
+    expect(keywords.every((keyword) => keyword.matchType === "BROAD")).toBe(true);
+    expect(new Set(keywords.map((keyword) => keyword.text)).size).toBe(38);
+  });
+
+  it("offers the free check of the customer's own VAT due dates in the VAT deadline ad group", () => {
+    const group = search.adGroups.find((adGroup) => adGroup.name === "VAT deadline");
+    expect(group.keywords.map((keyword) => keyword.text)).toEqual([
+      "vat return deadline",
+      "vat return due date",
+      "when is my vat return due",
+      "vat deadline",
+    ]);
+    expect(group.ad.headlines).toContain("Free Day Pass: See Due Dates");
+    expect(group.ad.descriptions.join(" ")).not.toMatch(/approved|accredited|certified|endorsed/i);
+  });
+
+  it("keeps template out of the negatives because three keywords contain it", () => {
+    expect(search.negativeKeywords.map((negative) => negative.text)).not.toContain("template");
   });
 
   it("carries negatives that block none of its own keywords", () => {
