@@ -112,7 +112,7 @@ public class CloudFrontAccessLogs {
         /** {@code sharedNames.envResourceNamePrefix}, e.g. {@code ci-env}. Used for logical ids. */
         String envResourceNamePrefix();
 
-        /** The lake bucket's literal physical name, e.g. {@code sharedNames.analyticsLakeBucketName}. */
+        /** The lake bucket's literal physical name, e.g. {@code sharedNames.analytics.analyticsLakeBucketName}. */
         String lakeBucketName();
 
         /** The real lake bucket construct, so a resource-policy statement can be attached to it. */

@@ -588,7 +588,7 @@ public class SubmitApplication {
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
-                        .diyaGlBucketName(sharedNames.diyaGlBucketName)
+                        .diyaGlBucketName(sharedNames.data.diyaGlBucketName)
                         .booksAllowedOrigins(booksAllowedOrigins)
                         .residentTierEnabled(true)
                         .build());
@@ -799,7 +799,7 @@ public class SubmitApplication {
                             .cloudTrailEnabled(cloudTrailEnabled)
                             .sharedNames(sharedNames)
                             .baseImageTag(baseImageTag)
-                            .selfDestructLogGroupName(sharedNames.ew2SelfDestructLogGroupName)
+                            .selfDestructLogGroupName(sharedNames.observability.ew2SelfDestructLogGroupName)
                             .selfDestructStartDatetime(selfDestructStartDatetime)
                             .selfDestructDelayHours(selfDestructDelayHours)
                             .isApplicationStack(true)

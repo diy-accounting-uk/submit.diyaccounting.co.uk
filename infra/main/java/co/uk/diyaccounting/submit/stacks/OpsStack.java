@@ -201,7 +201,7 @@ public class OpsStack extends Stack {
         // ============================================================================
         // EventBridge Custom Activity Bus (imported from env-level ActivityStack)
         // ============================================================================
-        this.activityBus = EventBus.fromEventBusName(this, "ActivityBus", props.sharedNames().activityBusName);
+        this.activityBus = EventBus.fromEventBusName(this, "ActivityBus", props.sharedNames().activity.activityBusName);
 
         // ============================================================================
         // Telegram Forwarder Lambda (env-level, imported)
@@ -214,7 +214,7 @@ public class OpsStack extends Stack {
                 this,
                 "ImportedTelegramForwarderLambda",
                 FunctionAttributes.builder()
-                        .functionArn(props.sharedNames().activityTelegramForwarderLambdaArn)
+                        .functionArn(props.sharedNames().activity.activityTelegramForwarderLambdaArn)
                         .sameEnvironment(true)
                         .build());
 
@@ -247,20 +247,20 @@ public class OpsStack extends Stack {
                     .with("GITHUB_APP_INSTALLATION_ID", props.githubAppInstallationId())
                     .with("GITHUB_APP_PRIVATE_KEY_SECRET_ID", githubAppPrivateKeySecretId)
                     .with("GITHUB_REPO", props.opsGithubRepo())
-                    .with("ALARM_ISSUE_LOCK_DYNAMODB_TABLE_NAME", props.sharedNames().alarmIssueLockTableName);
+                    .with("ALARM_ISSUE_LOCK_DYNAMODB_TABLE_NAME", props.sharedNames().data.alarmIssueLockTableName);
             var alarmToGithubIssueLambdaConstruct = new Lambda(
                     this,
                     LambdaProps.builder()
-                            .idPrefix(props.sharedNames().alarmToGithubIssueLambdaFunctionName)
+                            .idPrefix(props.sharedNames().ops.alarmToGithubIssueLambdaFunctionName)
                             .baseImageTag(props.baseImageTag())
-                            .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                            .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                            .ingestFunctionName(props.sharedNames().alarmToGithubIssueLambdaFunctionName)
+                            .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                            .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                            .ingestFunctionName(props.sharedNames().ops.alarmToGithubIssueLambdaFunctionName)
                             .callsExternalApi(true)
-                            .ingestHandler(props.sharedNames().alarmToGithubIssueLambdaHandler)
-                            .ingestLambdaArn(props.sharedNames().alarmToGithubIssueLambdaArn)
+                            .ingestHandler(props.sharedNames().ops.alarmToGithubIssueLambdaHandler)
+                            .ingestLambdaArn(props.sharedNames().ops.alarmToGithubIssueLambdaArn)
                             .ingestProvisionedConcurrencyAliasArn(
-                                    props.sharedNames().alarmToGithubIssueProvisionedConcurrencyLambdaAliasArn)
+                                    props.sharedNames().ops.alarmToGithubIssueProvisionedConcurrencyLambdaAliasArn)
                             .ingestProvisionedConcurrency(0)
                             .ingestLambdaTimeout(Duration.seconds(10))
                             .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
@@ -286,7 +286,7 @@ public class OpsStack extends Stack {
             // own issue. Env-scoped table, shared by every live deployment's copy of this
             // Lambda.
             ITable alarmIssueLockTable =
-                    Table.fromTableName(this, "AlarmIssueLockTable", props.sharedNames().alarmIssueLockTableName);
+                    Table.fromTableName(this, "AlarmIssueLockTable", props.sharedNames().data.alarmIssueLockTableName);
             alarmIssueLockTable.grant(alarmToGithubIssueLambda, "dynamodb:PutItem");
 
             alarmToGithubIssueLambda.addToRolePolicy(PolicyStatement.Builder.create()
@@ -358,16 +358,16 @@ public class OpsStack extends Stack {
             var alarmSmsForwardLambdaConstruct = new Lambda(
                     this,
                     LambdaProps.builder()
-                            .idPrefix(props.sharedNames().alarmSmsForwardLambdaFunctionName)
+                            .idPrefix(props.sharedNames().ops.alarmSmsForwardLambdaFunctionName)
                             .baseImageTag(props.baseImageTag())
-                            .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                            .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                            .ingestFunctionName(props.sharedNames().alarmSmsForwardLambdaFunctionName)
+                            .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                            .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                            .ingestFunctionName(props.sharedNames().ops.alarmSmsForwardLambdaFunctionName)
                             .callsExternalApi(true)
-                            .ingestHandler(props.sharedNames().alarmSmsForwardLambdaHandler)
-                            .ingestLambdaArn(props.sharedNames().alarmSmsForwardLambdaArn)
+                            .ingestHandler(props.sharedNames().ops.alarmSmsForwardLambdaHandler)
+                            .ingestLambdaArn(props.sharedNames().ops.alarmSmsForwardLambdaArn)
                             .ingestProvisionedConcurrencyAliasArn(
-                                    props.sharedNames().alarmSmsForwardProvisionedConcurrencyLambdaAliasArn)
+                                    props.sharedNames().ops.alarmSmsForwardProvisionedConcurrencyLambdaAliasArn)
                             .ingestProvisionedConcurrency(0)
                             .ingestLambdaTimeout(Duration.seconds(10))
                             .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
@@ -535,49 +535,49 @@ public class OpsStack extends Stack {
         record TokenChargeSource(String label, String functionName) {}
         List<TokenChargeSource> tokenChargeSources = List.of(
                 new TokenChargeSource(
-                        "VatReturnPostIngest", props.sharedNames().hmrcVatReturnPostIngestLambdaFunctionName),
+                        "VatReturnPostIngest", props.sharedNames().hmrc.hmrcVatReturnPostIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaFinalDeclarationPostIngest",
-                        props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaFunctionName),
+                        props.sharedNames().hmrc.hmrcItsaFinalDeclarationPostIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaLossesAndClaimsPutIngest",
-                        props.sharedNames().hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName),
+                        props.sharedNames().hmrcItsa.hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaLossesAndClaimsDeleteIngest",
-                        props.sharedNames().hmrcItsaLossesAndClaimsDeleteIngestLambdaFunctionName),
+                        props.sharedNames().hmrcItsa.hmrcItsaLossesAndClaimsDeleteIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaSelfEmploymentPeriodPutIngest",
-                        props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName),
+                        props.sharedNames().hmrc.hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaUkPropertyPeriodPutIngest",
-                        props.sharedNames().hmrcItsaUkPropertyPeriodPutIngestLambdaFunctionName),
+                        props.sharedNames().hmrcItsa.hmrcItsaUkPropertyPeriodPutIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaSelfEmploymentAnnualPutIngest",
-                        props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName),
+                        props.sharedNames().hmrc.hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaUkPropertyAnnualPutIngest",
-                        props.sharedNames().hmrcItsaUkPropertyAnnualPutIngestLambdaFunctionName),
+                        props.sharedNames().hmrcItsa.hmrcItsaUkPropertyAnnualPutIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaSelfEmploymentPeriodPostIngest",
-                        props.sharedNames().hmrcItsaSelfEmploymentPeriodPostIngestLambdaFunctionName),
+                        props.sharedNames().hmrc.hmrcItsaSelfEmploymentPeriodPostIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaTaxLiabilityAdjustmentsPutIngest",
-                        props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName),
+                        props.sharedNames().hmrcItsa.hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaTaxLiabilityAdjustmentsDeleteIngest",
-                        props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaFunctionName),
+                        props.sharedNames().hmrcItsa.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaUkPropertyPeriodPostIngest",
-                        props.sharedNames().hmrcItsaUkPropertyPeriodPostIngestLambdaFunctionName),
+                        props.sharedNames().hmrcItsa.hmrcItsaUkPropertyPeriodPostIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaForeignPropertyPeriodPostIngest",
-                        props.sharedNames().hmrcItsaForeignPropertyPeriodPostIngestLambdaFunctionName),
+                        props.sharedNames().hmrcItsa.hmrcItsaForeignPropertyPeriodPostIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaForeignPropertyPeriodPutIngest",
-                        props.sharedNames().hmrcItsaForeignPropertyPeriodPutIngestLambdaFunctionName),
+                        props.sharedNames().hmrcItsa.hmrcItsaForeignPropertyPeriodPutIngestLambdaFunctionName),
                 new TokenChargeSource(
                         "ItsaForeignPropertyAnnualPutIngest",
-                        props.sharedNames().hmrcItsaForeignPropertyAnnualPutIngestLambdaFunctionName));
+                        props.sharedNames().hmrcItsa.hmrcItsaForeignPropertyAnnualPutIngestLambdaFunctionName));
 
         for (TokenChargeSource source : tokenChargeSources) {
             ILogGroup lambdaLogGroup = LogGroup.fromLogGroupName(

@@ -201,7 +201,7 @@ public class ObservabilityStack extends Stack {
                     .build();
 
             this.trail = Trail.Builder.create(this, props.resourceNamePrefix() + "-Trail")
-                    .trailName(props.sharedNames().trailName)
+                    .trailName(props.sharedNames().observability.trailName)
                     .bucket(trailBucket)
                     .cloudWatchLogGroup(this.cloudTrailLogGroup)
                     .sendToCloudWatchLogs(true)
@@ -279,7 +279,7 @@ public class ObservabilityStack extends Stack {
         this.selfDestructLogGroup = ensureLogGroupWithDependency(
                         this,
                         props.resourceNamePrefix() + "-SelfDestructLogGroup",
-                        props.sharedNames().ew2SelfDestructLogGroupName,
+                        props.sharedNames().observability.ew2SelfDestructLogGroupName,
                         props.accessLogGroupRetentionPeriodDays())
                 .logGroup();
 
@@ -291,7 +291,7 @@ public class ObservabilityStack extends Stack {
         this.apiAccessLogGroup = ensureLogGroupWithDependency(
                         this,
                         props.resourceNamePrefix() + "-ApiAccessLogGroup",
-                        props.sharedNames().apiAccessLogGroupName,
+                        props.sharedNames().observability.apiAccessLogGroupName,
                         props.accessLogGroupRetentionPeriodDays())
                 .logGroup();
 
@@ -996,7 +996,7 @@ public class ObservabilityStack extends Stack {
                 "arn:aws:iam::%s:role/submit-%s-github-actions-role".formatted(this.getAccount(), props.envName());
 
         Role alarmTriageRole = Role.Builder.create(this, props.resourceNamePrefix() + "-AlarmTriageRole")
-                .roleName(props.sharedNames().alarmTriageRoleName)
+                .roleName(props.sharedNames().observability.alarmTriageRoleName)
                 .maxSessionDuration(Duration.hours(1))
                 .description("Read-only role the alarm-triage, board, do-next and auto-merge"
                         + " agent workflows chain into for Bedrock and read-only AWS")
@@ -1075,7 +1075,7 @@ public class ObservabilityStack extends Stack {
         // triage's draft row per drafted reply, each under its own prefix. Scoped to those prefixes
         // so it cannot touch any other curated table, and to PutObject alone - the DenyCustomerData
         // statement below already denies this role every read of the lake, and that stays true here.
-        String analyticsLakeBucketArn = "arn:aws:s3:::" + props.sharedNames().analyticsLakeBucketName;
+        String analyticsLakeBucketArn = "arn:aws:s3:::" + props.sharedNames().analytics.analyticsLakeBucketName;
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("WriteAgentRunLedgerRows")
                 .actions(List.of("s3:PutObject"))
@@ -1122,9 +1122,9 @@ public class ObservabilityStack extends Stack {
         // with no chaining. It reads the support draft rows from the lake and writes its summary
         // rows back, and holds nothing else. The alarm triage role cannot do this read: its
         // DenyCustomerData statement denies every read of the lake, and stays as it is.
-        String analyticsLakeArn = "arn:aws:s3:::" + props.sharedNames().analyticsLakeBucketName;
+        String analyticsLakeArn = "arn:aws:s3:::" + props.sharedNames().analytics.analyticsLakeBucketName;
         Role supportAcceptanceRole = Role.Builder.create(this, props.resourceNamePrefix() + "-SupportAcceptanceRole")
-                .roleName(props.sharedNames().supportAcceptanceRoleName)
+                .roleName(props.sharedNames().observability.supportAcceptanceRoleName)
                 .maxSessionDuration(Duration.hours(1))
                 .description("Reads the support draft rows and writes the draft acceptance summary row"
                         + " for the support-mail-intake workflow")
@@ -1167,7 +1167,7 @@ public class ObservabilityStack extends Stack {
         // BLOCK fallback.
         CfnGuardrail alarmTriageGuardrail = CfnGuardrail.Builder.create(
                         this, props.resourceNamePrefix() + "-AlarmTriageGuardrail")
-                .name(props.sharedNames().alarmTriageGuardrailName)
+                .name(props.sharedNames().observability.alarmTriageGuardrailName)
                 // AWS::Bedrock::Guardrail requires both messages even though this guardrail only
                 // ever screens agent output (source OUTPUT) and never blocks it (every entity and
                 // regex below is ANONYMIZE); CloudFormation rejects the resource as incomplete
@@ -1237,13 +1237,13 @@ public class ObservabilityStack extends Stack {
 
         StringParameter guardrailIdParameter = StringParameter.Builder.create(
                         this, props.resourceNamePrefix() + "-AlarmTriageGuardrailIdParameter")
-                .parameterName(props.sharedNames().alarmTriageGuardrailIdParameterName)
+                .parameterName(props.sharedNames().observability.alarmTriageGuardrailIdParameterName)
                 .stringValue(alarmTriageGuardrail.getAttrGuardrailId())
                 .build();
 
         StringParameter guardrailVersionParameter = StringParameter.Builder.create(
                         this, props.resourceNamePrefix() + "-AlarmTriageGuardrailVersionParameter")
-                .parameterName(props.sharedNames().alarmTriageGuardrailVersionParameterName)
+                .parameterName(props.sharedNames().observability.alarmTriageGuardrailVersionParameterName)
                 .stringValue(alarmTriageGuardrailVersion.getAttrVersion())
                 .build();
 
@@ -1258,7 +1258,7 @@ public class ObservabilityStack extends Stack {
         // dispatch.
         StringParameter killSwitchParameter = StringParameter.Builder.create(
                         this, props.resourceNamePrefix() + "-AgentKillSwitchParameter")
-                .parameterName(props.sharedNames().agentKillSwitchParameterName)
+                .parameterName(props.sharedNames().observability.agentKillSwitchParameterName)
                 .stringValue("off")
                 .description("Set to on to stop every unattended agent workflow before it acts")
                 .build();
@@ -1268,7 +1268,7 @@ public class ObservabilityStack extends Stack {
         // profile routes to), screen the answer with the guardrail, and read the three parameters
         // the reader job needs. It has no telemetry, S3, DynamoDB or Marketplace grant.
         Role quarantineReaderRole = Role.Builder.create(this, props.resourceNamePrefix() + "-QuarantineReaderRole")
-                .roleName(props.sharedNames().quarantineReaderRoleName)
+                .roleName(props.sharedNames().observability.quarantineReaderRoleName)
                 .maxSessionDuration(Duration.hours(1))
                 .description("Role the quarantine reader workflows chain into to summarise untrusted text"
                         + " with Haiku and screen the answer with the guardrail")

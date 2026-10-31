@@ -134,12 +134,12 @@ public class McpStack extends Stack {
         ITable mcpSessionsTable = Table.fromTableName(
                 this,
                 "ImportedMcpSessionsTable-%s".formatted(props.deploymentName()),
-                sharedNames.mcpSessionsTableName);
+                sharedNames.data.mcpSessionsTableName);
 
         this.oauthBlobKeySecret = Secret.fromSecretCompleteArn(
                 this,
                 props.resourceNamePrefix() + "-McpOauthBlobKey",
-                StringParameter.valueForStringParameter(this, sharedNames.mcpOauthBlobKeySecretArnParameterName));
+                StringParameter.valueForStringParameter(this, sharedNames.mcp.mcpOauthBlobKeySecretArnParameterName));
 
         var publicHosts = new LinkedHashSet<String>();
         publicHosts.add(sharedNames.deploymentDomainName);
@@ -168,23 +168,23 @@ public class McpStack extends Stack {
         var mcpHttpApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(sharedNames.mcpHttpIngestLambdaFunctionName)
+                        .idPrefix(sharedNames.mcp.mcpHttpIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
-                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                        .ingestFunctionName(sharedNames.mcpHttpIngestLambdaFunctionName)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ingestFunctionName(sharedNames.mcp.mcpHttpIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(sharedNames.mcpHttpIngestLambdaHandler)
-                        .ingestLambdaArn(sharedNames.mcpHttpIngestLambdaArn)
+                        .ingestHandler(sharedNames.mcp.mcpHttpIngestLambdaHandler)
+                        .ingestLambdaArn(sharedNames.mcp.mcpHttpIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                sharedNames.mcpHttpIngestProvisionedConcurrencyLambdaAliasArn)
+                                sharedNames.mcp.mcpHttpIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .ingestReservedConcurrentExecutions(Optional.of(MCP_HTTP_RESERVED_CONCURRENCY))
                         .provisionedConcurrencyAliasName(sharedNames.provisionedConcurrencyAliasName)
-                        .httpMethod(sharedNames.mcpHttpLambdaHttpMethod)
-                        .urlPath(sharedNames.mcpHttpLambdaUrlPath)
-                        .jwtAuthorizer(sharedNames.mcpHttpLambdaJwtAuthorizer)
-                        .customAuthorizer(sharedNames.mcpHttpLambdaCustomAuthorizer)
+                        .httpMethod(sharedNames.mcp.mcpHttpLambdaHttpMethod)
+                        .urlPath(sharedNames.mcp.mcpHttpLambdaUrlPath)
+                        .jwtAuthorizer(sharedNames.mcp.mcpHttpLambdaJwtAuthorizer)
+                        .customAuthorizer(sharedNames.mcp.mcpHttpLambdaCustomAuthorizer)
                         .environment(mcpHttpEnv)
                         .build());
         this.mcpHttpLambdaProps = mcpHttpApiLambda.apiProps;
@@ -210,24 +210,24 @@ public class McpStack extends Stack {
         var mcpOauthApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(sharedNames.mcpOauthIngestLambdaFunctionName)
+                        .idPrefix(sharedNames.mcp.mcpOauthIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
-                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                        .ingestFunctionName(sharedNames.mcpOauthIngestLambdaFunctionName)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ingestFunctionName(sharedNames.mcp.mcpOauthIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(sharedNames.mcpOauthIngestLambdaHandler)
-                        .ingestLambdaArn(sharedNames.mcpOauthIngestLambdaArn)
+                        .ingestHandler(sharedNames.mcp.mcpOauthIngestLambdaHandler)
+                        .ingestLambdaArn(sharedNames.mcp.mcpOauthIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                sharedNames.mcpOauthIngestProvisionedConcurrencyLambdaAliasArn)
+                                sharedNames.mcp.mcpOauthIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .ingestMemorySize(MCP_OAUTH_MEMORY_MB)
                         .ingestLambdaTimeout(Duration.seconds(MCP_OAUTH_TIMEOUT_SECONDS))
                         .provisionedConcurrencyAliasName(sharedNames.provisionedConcurrencyAliasName)
-                        .httpMethod(sharedNames.mcpOauthLambdaHttpMethod)
-                        .urlPath(sharedNames.mcpOauthLambdaUrlPath)
-                        .jwtAuthorizer(sharedNames.mcpOauthLambdaJwtAuthorizer)
-                        .customAuthorizer(sharedNames.mcpOauthLambdaCustomAuthorizer)
+                        .httpMethod(sharedNames.mcp.mcpOauthLambdaHttpMethod)
+                        .urlPath(sharedNames.mcp.mcpOauthLambdaUrlPath)
+                        .jwtAuthorizer(sharedNames.mcp.mcpOauthLambdaJwtAuthorizer)
+                        .customAuthorizer(sharedNames.mcp.mcpOauthLambdaCustomAuthorizer)
                         .environment(mcpOauthEnv)
                         .build());
         this.mcpOauthLambdaProps = mcpOauthApiLambda.apiProps;
@@ -235,11 +235,11 @@ public class McpStack extends Stack {
         this.mcpOauthLambdaLogGroup = mcpOauthApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.mcpOauthLambdaProps);
         this.lambdaFunctionProps.add(onPublishedPath(
-                this.mcpOauthLambdaProps, HttpMethod.GET, sharedNames.mcpOauthProtectedResourceUrlPath));
+                this.mcpOauthLambdaProps, HttpMethod.GET, sharedNames.mcp.mcpOauthProtectedResourceUrlPath));
         this.lambdaFunctionProps.add(onPublishedPath(
-                this.mcpOauthLambdaProps, HttpMethod.GET, sharedNames.mcpOauthProtectedResourceMcpUrlPath));
+                this.mcpOauthLambdaProps, HttpMethod.GET, sharedNames.mcp.mcpOauthProtectedResourceMcpUrlPath));
         this.lambdaFunctionProps.add(
-                onPublishedPath(this.mcpOauthLambdaProps, HttpMethod.ANY, sharedNames.mcpOauthActionUrlPath));
+                onPublishedPath(this.mcpOauthLambdaProps, HttpMethod.ANY, sharedNames.mcp.mcpOauthActionUrlPath));
         this.oauthBlobKeySecret.grantRead(this.mcpOauthLambda);
         infof("Created MCP OAuth Lambda %s", this.mcpOauthLambda.getNode().getId());
 
@@ -249,7 +249,7 @@ public class McpStack extends Stack {
         // sealed under a key derived from the blob key before they reach the sessions table.
         // ============================================================================
         ITable practiceClientsTable =
-                Table.fromTableName(this, "PracticeClientsTable", sharedNames.practiceClientsTableName);
+                Table.fromTableName(this, "PracticeClientsTable", sharedNames.data.practiceClientsTableName);
         var mcpCodesEntryEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("DIY_SUBMIT_BASE_URL", sharedNames.baseUrl)
@@ -259,22 +259,22 @@ public class McpStack extends Stack {
         var mcpCodesEntryApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(sharedNames.mcpCodesEntryIngestLambdaFunctionName)
+                        .idPrefix(sharedNames.mcp.mcpCodesEntryIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
-                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                        .ingestFunctionName(sharedNames.mcpCodesEntryIngestLambdaFunctionName)
-                        .ingestHandler(sharedNames.mcpCodesEntryIngestLambdaHandler)
-                        .ingestLambdaArn(sharedNames.mcpCodesEntryIngestLambdaArn)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ingestFunctionName(sharedNames.mcp.mcpCodesEntryIngestLambdaFunctionName)
+                        .ingestHandler(sharedNames.mcp.mcpCodesEntryIngestLambdaHandler)
+                        .ingestLambdaArn(sharedNames.mcp.mcpCodesEntryIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                sharedNames.mcpCodesEntryIngestProvisionedConcurrencyLambdaAliasArn)
+                                sharedNames.mcp.mcpCodesEntryIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .ingestReservedConcurrentExecutions(Optional.of(MCP_CODES_ENTRY_RESERVED_CONCURRENCY))
                         .provisionedConcurrencyAliasName(sharedNames.provisionedConcurrencyAliasName)
-                        .httpMethod(sharedNames.mcpCodesEntryLambdaHttpMethod)
-                        .urlPath(sharedNames.mcpCodesEntryLambdaUrlPath)
-                        .jwtAuthorizer(sharedNames.mcpCodesEntryLambdaJwtAuthorizer)
-                        .customAuthorizer(sharedNames.mcpCodesEntryLambdaCustomAuthorizer)
+                        .httpMethod(sharedNames.mcp.mcpCodesEntryLambdaHttpMethod)
+                        .urlPath(sharedNames.mcp.mcpCodesEntryLambdaUrlPath)
+                        .jwtAuthorizer(sharedNames.mcp.mcpCodesEntryLambdaJwtAuthorizer)
+                        .customAuthorizer(sharedNames.mcp.mcpCodesEntryLambdaCustomAuthorizer)
                         .environment(mcpCodesEntryEnv)
                         .build());
         this.mcpCodesEntryLambdaProps = mcpCodesEntryApiLambda.apiProps;
@@ -285,7 +285,7 @@ public class McpStack extends Stack {
             this.lambdaFunctionProps.add(ApiLambdaProps.builder()
                     .from(this.mcpCodesEntryLambdaProps)
                     .httpMethod(itemMethod)
-                    .urlPath(sharedNames.mcpCodesEntryItemUrlPath)
+                    .urlPath(sharedNames.mcp.mcpCodesEntryItemUrlPath)
                     .jwtAuthorizer(false)
                     .customAuthorizer(false)
                     .build());
@@ -307,7 +307,7 @@ public class McpStack extends Stack {
         ITable hmrcApiRequestsTable = Table.fromTableName(
                 this,
                 "ImportedHmrcApiRequestsTable-%s".formatted(props.deploymentName()),
-                sharedNames.hmrcApiRequestsTableName);
+                sharedNames.data.hmrcApiRequestsTableName);
         var mcpHmrcGrantEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("DIY_SUBMIT_BASE_URL", sharedNames.publicBaseUrl)
@@ -327,23 +327,23 @@ public class McpStack extends Stack {
         var mcpHmrcGrantApiLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
-                        .idPrefix(sharedNames.mcpHmrcGrantIngestLambdaFunctionName)
+                        .idPrefix(sharedNames.mcp.mcpHmrcGrantIngestLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(sharedNames.ecrRepositoryName)
-                        .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                        .ingestFunctionName(sharedNames.mcpHmrcGrantIngestLambdaFunctionName)
+                        .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .ingestFunctionName(sharedNames.mcp.mcpHmrcGrantIngestLambdaFunctionName)
                         .callsExternalApi(true)
-                        .ingestHandler(sharedNames.mcpHmrcGrantIngestLambdaHandler)
-                        .ingestLambdaArn(sharedNames.mcpHmrcGrantIngestLambdaArn)
+                        .ingestHandler(sharedNames.mcp.mcpHmrcGrantIngestLambdaHandler)
+                        .ingestLambdaArn(sharedNames.mcp.mcpHmrcGrantIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                sharedNames.mcpHmrcGrantIngestProvisionedConcurrencyLambdaAliasArn)
+                                sharedNames.mcp.mcpHmrcGrantIngestProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .ingestReservedConcurrentExecutions(Optional.of(MCP_HMRC_GRANT_RESERVED_CONCURRENCY))
                         .provisionedConcurrencyAliasName(sharedNames.provisionedConcurrencyAliasName)
-                        .httpMethod(sharedNames.mcpHmrcGrantLambdaHttpMethod)
-                        .urlPath(sharedNames.mcpHmrcGrantLambdaUrlPath)
-                        .jwtAuthorizer(sharedNames.mcpHmrcGrantLambdaJwtAuthorizer)
-                        .customAuthorizer(sharedNames.mcpHmrcGrantLambdaCustomAuthorizer)
+                        .httpMethod(sharedNames.mcp.mcpHmrcGrantLambdaHttpMethod)
+                        .urlPath(sharedNames.mcp.mcpHmrcGrantLambdaUrlPath)
+                        .jwtAuthorizer(sharedNames.mcp.mcpHmrcGrantLambdaJwtAuthorizer)
+                        .customAuthorizer(sharedNames.mcp.mcpHmrcGrantLambdaCustomAuthorizer)
                         .environment(mcpHmrcGrantEnv)
                         .build());
         this.mcpHmrcGrantLambdaProps = mcpHmrcGrantApiLambda.apiProps;
@@ -351,11 +351,11 @@ public class McpStack extends Stack {
         this.mcpHmrcGrantLambdaLogGroup = mcpHmrcGrantApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.mcpHmrcGrantLambdaProps);
         this.lambdaFunctionProps.add(
-                onPublishedPath(this.mcpHmrcGrantLambdaProps, HttpMethod.GET, sharedNames.mcpHmrcGrantItemUrlPath));
+                onPublishedPath(this.mcpHmrcGrantLambdaProps, HttpMethod.GET, sharedNames.mcp.mcpHmrcGrantItemUrlPath));
         this.lambdaFunctionProps.add(ApiLambdaProps.builder()
                 .from(this.mcpHmrcGrantLambdaProps)
                 .httpMethod(HttpMethod.POST)
-                .urlPath(sharedNames.mcpHmrcGrantCallbackUrlPath)
+                .urlPath(sharedNames.mcp.mcpHmrcGrantCallbackUrlPath)
                 .jwtAuthorizer(false)
                 .customAuthorizer(false)
                 .build());

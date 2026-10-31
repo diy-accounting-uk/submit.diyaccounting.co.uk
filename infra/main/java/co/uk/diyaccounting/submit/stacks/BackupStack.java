@@ -367,14 +367,14 @@ public class BackupStack extends Stack {
         // Backup Selection - Critical Tables
         // ============================================================================
 
-        ITable receiptsTable = importTable("ImportedReceiptsTable", props.sharedNames().receiptsTableName);
-        ITable bundlesTable = importTable("ImportedBundlesTable", props.sharedNames().bundlesTableName);
+        ITable receiptsTable = importTable("ImportedReceiptsTable", props.sharedNames().data.receiptsTableName);
+        ITable bundlesTable = importTable("ImportedBundlesTable", props.sharedNames().data.bundlesTableName);
         ITable hmrcApiRequestsTable =
-                importTable("ImportedHmrcApiRequestsTable", props.sharedNames().hmrcApiRequestsTableName);
-        ITable passesTable = importTable("ImportedPassesTable", props.sharedNames().passesTableName);
+                importTable("ImportedHmrcApiRequestsTable", props.sharedNames().data.hmrcApiRequestsTableName);
+        ITable passesTable = importTable("ImportedPassesTable", props.sharedNames().data.passesTableName);
         ITable subscriptionsTable =
-                importTable("ImportedSubscriptionsTable", props.sharedNames().subscriptionsTableName);
-        String diyaGlBucketArn = "arn:aws:s3:::" + props.sharedNames().diyaGlBucketName;
+                importTable("ImportedSubscriptionsTable", props.sharedNames().data.subscriptionsTableName);
+        String diyaGlBucketArn = "arn:aws:s3:::" + props.sharedNames().data.diyaGlBucketName;
 
         BackupSelection.Builder.create(this, props.resourceNamePrefix() + "-CriticalTablesSelection")
                 .backupPlan(this.backupPlan)

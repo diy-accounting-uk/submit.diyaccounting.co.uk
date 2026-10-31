@@ -117,7 +117,7 @@ public class ObservabilityUE1Stack extends Stack {
         this.distributionAccessLogGroup = ensureLogGroupWithDependency(
                         this,
                         props.resourceNamePrefix() + "-DistributionAccessLogGroup",
-                        props.sharedNames().distributionAccessLogGroupName,
+                        props.sharedNames().observability.distributionAccessLogGroupName,
                         props.logGroupRetentionPeriodDays())
                 .logGroup();
 
@@ -127,7 +127,7 @@ public class ObservabilityUE1Stack extends Stack {
         this.selfDestructLogGroup = ensureLogGroupWithDependency(
                         this,
                         props.resourceNamePrefix() + "-SelfDestructLogGroup",
-                        props.sharedNames().ue1SelfDestructLogGroupName,
+                        props.sharedNames().observability.ue1SelfDestructLogGroupName,
                         props.logGroupRetentionPeriodDays())
                 .logGroup();
         infof(
@@ -160,8 +160,8 @@ public class ObservabilityUE1Stack extends Stack {
         // The role name is a plain string, not a CDK reference: the triage role lives in the other
         // region's stack, and SubmitSharedNames.alarmTriageRoleName is how both stacks agree on it
         // (asserted in SubmitEnvironmentCdkResourceTest and its us-east-1 equivalent).
-        String alarmTriageRoleArn =
-                "arn:aws:iam::%s:role/%s".formatted(this.getAccount(), props.sharedNames().alarmTriageRoleName);
+        String alarmTriageRoleArn = "arn:aws:iam::%s:role/%s"
+                .formatted(this.getAccount(), props.sharedNames().observability.alarmTriageRoleName);
 
         Role budgetsActionRole = Role.Builder.create(this, props.resourceNamePrefix() + "-BudgetsActionRole")
                 .roleName(props.resourceNamePrefix() + "-budgets-action-role")
@@ -236,8 +236,8 @@ public class ObservabilityUE1Stack extends Stack {
                         .iamActionDefinition(CfnBudgetsAction.IamActionDefinitionProperty.builder()
                                 .policyArn(bedrockDenyPolicy.getManagedPolicyArn())
                                 .roles(List.of(
-                                        props.sharedNames().alarmTriageRoleName,
-                                        props.sharedNames().quarantineReaderRoleName))
+                                        props.sharedNames().observability.alarmTriageRoleName,
+                                        props.sharedNames().observability.quarantineReaderRoleName))
                                 .build())
                         .build())
                 .subscribers(List.of(CfnBudgetsAction.SubscriberProperty.builder()
@@ -292,7 +292,7 @@ public class ObservabilityUE1Stack extends Stack {
         var budgetAlertForwardFunctionName = props.resourceNamePrefix() + "-bedrock-budget-alert-forward";
         var budgetAlertForwardEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ACTIVITY_BUS_REGION", "eu-west-2");
 
         var budgetAlertForwardLambda = new Lambda(
@@ -300,8 +300,8 @@ public class ObservabilityUE1Stack extends Stack {
                 LambdaProps.builder()
                         .idPrefix(budgetAlertForwardFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ue1EcrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ue1EcrRepositoryArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ue1EcrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ue1EcrRepositoryArn)
                         .ingestFunctionName(budgetAlertForwardFunctionName)
                         .ingestHandler("app/functions/ops/bedrockBudgetAlertForward.handler")
                         .ingestLambdaArn("arn:aws:lambda:us-east-1:" + this.getAccount() + ":function:"
@@ -319,8 +319,8 @@ public class ObservabilityUE1Stack extends Stack {
         // us-east-1 (the budget itself is account-wide, but Bedrock spend and the deny action's
         // execution role live where this stack does). Scoped to this environment's own activity
         // bus, not every bus in the account.
-        String activityBusArn =
-                "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/" + props.sharedNames().activityBusName;
+        String activityBusArn = "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/"
+                + props.sharedNames().activity.activityBusName;
         budgetAlertForwardLambda.ingestLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .actions(List.of("events:PutEvents"))
                 .resources(List.of(activityBusArn))

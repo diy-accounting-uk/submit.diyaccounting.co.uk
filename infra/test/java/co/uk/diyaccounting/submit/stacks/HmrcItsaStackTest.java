@@ -56,16 +56,16 @@ class HmrcItsaStackTest {
     // which needs Query alone).
     private static Stream<String> chargingWorkerFunctionNames() {
         return Stream.of(
-                SHARED_NAMES.hmrcItsaUkPropertyPeriodPostWorkerLambdaFunctionName,
-                SHARED_NAMES.hmrcItsaUkPropertyPeriodPutWorkerLambdaFunctionName,
-                SHARED_NAMES.hmrcItsaForeignPropertyPeriodPostWorkerLambdaFunctionName,
-                SHARED_NAMES.hmrcItsaForeignPropertyPeriodPutWorkerLambdaFunctionName,
-                SHARED_NAMES.hmrcItsaUkPropertyAnnualPutWorkerLambdaFunctionName,
-                SHARED_NAMES.hmrcItsaForeignPropertyAnnualPutWorkerLambdaFunctionName,
-                SHARED_NAMES.hmrcItsaLossesAndClaimsPutWorkerLambdaFunctionName,
-                SHARED_NAMES.hmrcItsaLossesAndClaimsDeleteWorkerLambdaFunctionName,
-                SHARED_NAMES.hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaFunctionName,
-                SHARED_NAMES.hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaFunctionName);
+                SHARED_NAMES.hmrcItsa.hmrcItsaUkPropertyPeriodPostWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrcItsa.hmrcItsaUkPropertyPeriodPutWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrcItsa.hmrcItsaForeignPropertyPeriodPostWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrcItsa.hmrcItsaForeignPropertyPeriodPutWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrcItsa.hmrcItsaUkPropertyAnnualPutWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrcItsa.hmrcItsaForeignPropertyAnnualPutWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrcItsa.hmrcItsaLossesAndClaimsPutWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrcItsa.hmrcItsaLossesAndClaimsDeleteWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrcItsa.hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrcItsa.hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaFunctionName);
     }
 
     @ParameterizedTest

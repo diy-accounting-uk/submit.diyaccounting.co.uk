@@ -174,39 +174,40 @@ public class DataStack extends Stack {
         this.receiptsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-ReceiptsTable",
-                props.sharedNames().receiptsTableName,
+                props.sharedNames().data.receiptsTableName,
                 "hashedSub",
                 "receiptId");
         String receiptsStreamArn =
-                ensureTableStream(props.resourceNamePrefix() + "-Receipts", props.sharedNames().receiptsTableName);
+                ensureTableStream(props.resourceNamePrefix() + "-Receipts", props.sharedNames().data.receiptsTableName);
         ensureTimeToLive(
-                this, props.resourceNamePrefix() + "-ReceiptsTTL", props.sharedNames().receiptsTableName, "ttl");
-        infof("Ensured receipts DynamoDB table with name %s", props.sharedNames().receiptsTableName);
+                this, props.resourceNamePrefix() + "-ReceiptsTTL", props.sharedNames().data.receiptsTableName, "ttl");
+        infof("Ensured receipts DynamoDB table with name %s", props.sharedNames().data.receiptsTableName);
 
         // Bundles table for bundle storage
         // HIGH priority - contains user subscription data
         this.bundlesTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-BundlesTable",
-                props.sharedNames().bundlesTableName,
+                props.sharedNames().data.bundlesTableName,
                 "hashedSub",
                 "bundleId");
-        ensureTimeToLive(this, props.resourceNamePrefix() + "-BundlesTTL", props.sharedNames().bundlesTableName, "ttl");
+        ensureTimeToLive(
+                this, props.resourceNamePrefix() + "-BundlesTTL", props.sharedNames().data.bundlesTableName, "ttl");
         // GSI for counting live allocations of a capped bundle without scanning the table.
         // Sparse: an item with no expiry carries no index entry, which matches the count the
         // capacity reconciliation needs. KEYS_ONLY because the query only ever asks for a count.
         ensureGlobalSecondaryIndex(
                 this,
                 props.resourceNamePrefix() + "-BundlesBundleIdExpiryGSI",
-                props.sharedNames().bundlesTableName,
+                props.sharedNames().data.bundlesTableName,
                 "bundleId-expiry-index",
                 "bundleId",
                 "expiry",
                 "KEYS_ONLY");
-        infof("Ensured bundleId-expiry-index GSI on bundles table %s", props.sharedNames().bundlesTableName);
+        infof("Ensured bundleId-expiry-index GSI on bundles table %s", props.sharedNames().data.bundlesTableName);
         String bundlesStreamArn =
-                ensureTableStream(props.resourceNamePrefix() + "-Bundles", props.sharedNames().bundlesTableName);
-        infof("Ensured bundles DynamoDB table with name %s", props.sharedNames().bundlesTableName);
+                ensureTableStream(props.resourceNamePrefix() + "-Bundles", props.sharedNames().data.bundlesTableName);
+        infof("Ensured bundles DynamoDB table with name %s", props.sharedNames().data.bundlesTableName);
 
         // Async request tables — 1-hour TTL on "ttl" attribute
 
@@ -214,833 +215,833 @@ public class DataStack extends Stack {
         this.bundlePostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-BundlePostAsyncRequestsTable",
-                props.sharedNames().bundlePostAsyncRequestsTableName,
+                props.sharedNames().data.bundlePostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-BundlePostAsyncTTL",
-                props.sharedNames().bundlePostAsyncRequestsTableName,
+                props.sharedNames().data.bundlePostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured bundle POST async requests DynamoDB table with name %s",
-                props.sharedNames().bundlePostAsyncRequestsTableName);
+                props.sharedNames().data.bundlePostAsyncRequestsTableName);
 
         // Bundle DELETE async request storage
         this.bundleDeleteAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-BundleDeleteAsyncRequestsTable",
-                props.sharedNames().bundleDeleteAsyncRequestsTableName,
+                props.sharedNames().data.bundleDeleteAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-BundleDeleteAsyncTTL",
-                props.sharedNames().bundleDeleteAsyncRequestsTableName,
+                props.sharedNames().data.bundleDeleteAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured bundle DELETE async requests DynamoDB table with name %s",
-                props.sharedNames().bundleDeleteAsyncRequestsTableName);
+                props.sharedNames().data.bundleDeleteAsyncRequestsTableName);
 
         // HMRC VAT Return POST async request storage
         this.hmrcVatReturnPostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatReturnPostAsyncRequestsTable",
-                props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatReturnPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatReturnPostAsyncTTL",
-                props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatReturnPostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC VAT Return POST async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcVatReturnPostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcVatReturnPostAsyncRequestsTableName);
 
         // HMRC VAT Return GET async request storage
         this.hmrcVatReturnGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatReturnGetAsyncRequestsTable",
-                props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatReturnGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatReturnGetAsyncTTL",
-                props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatReturnGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC VAT Return GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcVatReturnGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcVatReturnGetAsyncRequestsTableName);
 
         // HMRC VAT Obligation GET async request storage
         this.hmrcVatObligationGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatObligationGetAsyncRequestsTable",
-                props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatObligationGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatObligationGetAsyncTTL",
-                props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatObligationGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC VAT Obligation GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcVatObligationGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcVatObligationGetAsyncRequestsTableName);
 
         // HMRC VAT Liabilities GET async request storage
         this.hmrcVatLiabilitiesGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatLiabilitiesGetAsyncRequestsTable",
-                props.sharedNames().hmrcVatLiabilitiesGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatLiabilitiesGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatLiabilitiesGetAsyncTTL",
-                props.sharedNames().hmrcVatLiabilitiesGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatLiabilitiesGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC VAT Liabilities GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcVatLiabilitiesGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcVatLiabilitiesGetAsyncRequestsTableName);
 
         // HMRC VAT Payments GET async request storage
         this.hmrcVatPaymentsGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatPaymentsGetAsyncRequestsTable",
-                props.sharedNames().hmrcVatPaymentsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatPaymentsGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatPaymentsGetAsyncTTL",
-                props.sharedNames().hmrcVatPaymentsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatPaymentsGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC VAT Payments GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcVatPaymentsGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcVatPaymentsGetAsyncRequestsTableName);
 
         // HMRC VAT Penalties GET async request storage
         this.hmrcVatPenaltiesGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatPenaltiesGetAsyncRequestsTable",
-                props.sharedNames().hmrcVatPenaltiesGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatPenaltiesGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatPenaltiesGetAsyncTTL",
-                props.sharedNames().hmrcVatPenaltiesGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatPenaltiesGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC VAT Penalties GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcVatPenaltiesGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcVatPenaltiesGetAsyncRequestsTableName);
 
         // HMRC ITSA Business Details GET async request storage
         this.hmrcItsaBusinessDetailsGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBusinessDetailsGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaBusinessDetailsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBusinessDetailsGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBusinessDetailsGetAsyncTTL",
-                props.sharedNames().hmrcItsaBusinessDetailsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBusinessDetailsGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Business Details GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaBusinessDetailsGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaBusinessDetailsGetAsyncRequestsTableName);
 
         // HMRC ITSA Obligations GET async request storage
         this.hmrcItsaObligationsGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaObligationsGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaObligationsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaObligationsGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaObligationsGetAsyncTTL",
-                props.sharedNames().hmrcItsaObligationsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaObligationsGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Obligations GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaObligationsGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaObligationsGetAsyncRequestsTableName);
 
         // HMRC ITSA Self-Employment Period POST async request storage
         this.hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentPeriodPostAsyncRequestsTable",
-                props.sharedNames().hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentPeriodPostAsyncTTL",
-                props.sharedNames().hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Self-Employment Period POST async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaSelfEmploymentPeriodPostAsyncRequestsTableName);
 
         // HMRC ITSA Self-Employment Periods GET (list) async request storage
         this.hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentPeriodsGetAsyncTTL",
-                props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Self-Employment Periods GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaSelfEmploymentPeriodsGetAsyncRequestsTableName);
 
         // HMRC ITSA Self-Employment Period GET (retrieve one) async request storage
         this.hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentPeriodGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentPeriodGetAsyncTTL",
-                props.sharedNames().hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Self-Employment Period GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaSelfEmploymentPeriodGetAsyncRequestsTableName);
 
         // HMRC ITSA Self-Employment Period PUT (amend) async request storage
         this.hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentPeriodPutAsyncRequestsTable",
-                props.sharedNames().hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentPeriodPutAsyncTTL",
-                props.sharedNames().hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Self-Employment Period PUT async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaSelfEmploymentPeriodPutAsyncRequestsTableName);
 
         // HMRC ITSA UK Property Period POST async request storage
         this.hmrcItsaUkPropertyPeriodPostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaUkPropertyPeriodPostAsyncRequestsTable",
-                props.sharedNames().hmrcItsaUkPropertyPeriodPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaUkPropertyPeriodPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaUkPropertyPeriodPostAsyncTTL",
-                props.sharedNames().hmrcItsaUkPropertyPeriodPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaUkPropertyPeriodPostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA UK Property Period POST async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaUkPropertyPeriodPostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaUkPropertyPeriodPostAsyncRequestsTableName);
 
         // HMRC ITSA UK Property Periods GET (list) async request storage
         this.hmrcItsaUkPropertyPeriodsGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaUkPropertyPeriodsGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaUkPropertyPeriodsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaUkPropertyPeriodsGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaUkPropertyPeriodsGetAsyncTTL",
-                props.sharedNames().hmrcItsaUkPropertyPeriodsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaUkPropertyPeriodsGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA UK Property Periods GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaUkPropertyPeriodsGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaUkPropertyPeriodsGetAsyncRequestsTableName);
 
         // HMRC ITSA UK Property Period GET (retrieve one) async request storage
         this.hmrcItsaUkPropertyPeriodGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaUkPropertyPeriodGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaUkPropertyPeriodGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaUkPropertyPeriodGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaUkPropertyPeriodGetAsyncTTL",
-                props.sharedNames().hmrcItsaUkPropertyPeriodGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaUkPropertyPeriodGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA UK Property Period GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaUkPropertyPeriodGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaUkPropertyPeriodGetAsyncRequestsTableName);
 
         // HMRC ITSA UK Property Period PUT (amend) async request storage
         this.hmrcItsaUkPropertyPeriodPutAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaUkPropertyPeriodPutAsyncRequestsTable",
-                props.sharedNames().hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaUkPropertyPeriodPutAsyncTTL",
-                props.sharedNames().hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA UK Property Period PUT async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaUkPropertyPeriodPutAsyncRequestsTableName);
 
         // HMRC ITSA UK Property Annual GET (retrieve) async request storage
         this.hmrcItsaUkPropertyAnnualGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaUkPropertyAnnualGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaUkPropertyAnnualGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaUkPropertyAnnualGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaUkPropertyAnnualGetAsyncTTL",
-                props.sharedNames().hmrcItsaUkPropertyAnnualGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaUkPropertyAnnualGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA UK Property Annual GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaUkPropertyAnnualGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaUkPropertyAnnualGetAsyncRequestsTableName);
 
         // HMRC ITSA UK Property Annual PUT (create and amend) async request storage
         this.hmrcItsaUkPropertyAnnualPutAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaUkPropertyAnnualPutAsyncRequestsTable",
-                props.sharedNames().hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaUkPropertyAnnualPutAsyncTTL",
-                props.sharedNames().hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA UK Property Annual PUT async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName);
 
         // HMRC ITSA Foreign Property Period POST async request storage
         this.hmrcItsaForeignPropertyPeriodPostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyPeriodPostAsyncRequestsTable",
-                props.sharedNames().hmrcItsaForeignPropertyPeriodPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyPeriodPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyPeriodPostAsyncTTL",
-                props.sharedNames().hmrcItsaForeignPropertyPeriodPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyPeriodPostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Foreign Property Period POST async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaForeignPropertyPeriodPostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaForeignPropertyPeriodPostAsyncRequestsTableName);
 
         // HMRC ITSA Foreign Property Period GET (retrieve one) async request storage
         this.hmrcItsaForeignPropertyPeriodGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyPeriodGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaForeignPropertyPeriodGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyPeriodGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyPeriodGetAsyncTTL",
-                props.sharedNames().hmrcItsaForeignPropertyPeriodGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyPeriodGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Foreign Property Period GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaForeignPropertyPeriodGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaForeignPropertyPeriodGetAsyncRequestsTableName);
 
         // HMRC ITSA Foreign Property Period PUT (amend) async request storage
         this.hmrcItsaForeignPropertyPeriodPutAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyPeriodPutAsyncRequestsTable",
-                props.sharedNames().hmrcItsaForeignPropertyPeriodPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyPeriodPutAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyPeriodPutAsyncTTL",
-                props.sharedNames().hmrcItsaForeignPropertyPeriodPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyPeriodPutAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Foreign Property Period PUT async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaForeignPropertyPeriodPutAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaForeignPropertyPeriodPutAsyncRequestsTableName);
 
         // HMRC ITSA Foreign Property Annual GET (retrieve) async request storage
         this.hmrcItsaForeignPropertyAnnualGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyAnnualGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyAnnualGetAsyncTTL",
-                props.sharedNames().hmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Foreign Property Annual GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaForeignPropertyAnnualGetAsyncRequestsTableName);
 
         // HMRC ITSA Foreign Property Annual PUT (create and amend) async request storage
         this.hmrcItsaForeignPropertyAnnualPutAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyAnnualPutAsyncRequestsTable",
-                props.sharedNames().hmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyAnnualPutAsyncTTL",
-                props.sharedNames().hmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Foreign Property Annual PUT async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaForeignPropertyAnnualPutAsyncRequestsTableName);
 
         // HMRC ITSA Foreign Property Details GET async request storage
         this.hmrcItsaForeignPropertyDetailsGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyDetailsGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyDetailsGetAsyncTTL",
-                props.sharedNames().hmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Foreign Property Details GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaForeignPropertyDetailsGetAsyncRequestsTableName);
 
         // HMRC ITSA Foreign Property Details POST async request storage
         this.hmrcItsaForeignPropertyDetailsPostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyDetailsPostAsyncRequestsTable",
-                props.sharedNames().hmrcItsaForeignPropertyDetailsPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyDetailsPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyDetailsPostAsyncTTL",
-                props.sharedNames().hmrcItsaForeignPropertyDetailsPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyDetailsPostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Foreign Property Details POST async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaForeignPropertyDetailsPostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaForeignPropertyDetailsPostAsyncRequestsTableName);
 
         // HMRC ITSA Foreign Property Details PUT async request storage
         this.hmrcItsaForeignPropertyDetailsPutAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyDetailsPutAsyncRequestsTable",
-                props.sharedNames().hmrcItsaForeignPropertyDetailsPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyDetailsPutAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaForeignPropertyDetailsPutAsyncTTL",
-                props.sharedNames().hmrcItsaForeignPropertyDetailsPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaForeignPropertyDetailsPutAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Foreign Property Details PUT async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaForeignPropertyDetailsPutAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaForeignPropertyDetailsPutAsyncRequestsTableName);
 
         // HMRC ITSA Self-Employment Annual GET (retrieve) async request storage
         this.hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentAnnualGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentAnnualGetAsyncTTL",
-                props.sharedNames().hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Self-Employment Annual GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaSelfEmploymentAnnualGetAsyncRequestsTableName);
 
         // HMRC ITSA Self-Employment Annual PUT (create and amend) async request storage
         this.hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable",
-                props.sharedNames().hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaSelfEmploymentAnnualPutAsyncTTL",
-                props.sharedNames().hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Self-Employment Annual PUT async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTableName);
 
         // HMRC ITSA final declaration (crystallisation) obligations async request storage
         this.hmrcItsaCrystallisationObligationsGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaCrystallisationObligationsGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaCrystallisationObligationsGetAsyncTTL",
-                props.sharedNames().hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA crystallisation obligations async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName);
 
         // HMRC ITSA status async request storage
         this.hmrcItsaStatusGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaStatusGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaStatusGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaStatusGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaStatusGetAsyncTTL",
-                props.sharedNames().hmrcItsaStatusGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaStatusGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA status async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaStatusGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaStatusGetAsyncRequestsTableName);
 
         // HMRC ITSA business source adjustable summary trigger async request storage
         this.hmrcItsaBsasTriggerPostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasTriggerPostAsyncRequestsTable",
-                props.sharedNames().hmrcItsaBsasTriggerPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasTriggerPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasTriggerPostAsyncTTL",
-                props.sharedNames().hmrcItsaBsasTriggerPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasTriggerPostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA BSAS trigger async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaBsasTriggerPostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaBsasTriggerPostAsyncRequestsTableName);
 
         // HMRC ITSA business source adjustable summary (self-employment) retrieve async request storage
         this.hmrcItsaBsasSelfEmploymentGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasSelfEmploymentGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaBsasSelfEmploymentGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasSelfEmploymentGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasSelfEmploymentGetAsyncTTL",
-                props.sharedNames().hmrcItsaBsasSelfEmploymentGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasSelfEmploymentGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA BSAS self-employment retrieve async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaBsasSelfEmploymentGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaBsasSelfEmploymentGetAsyncRequestsTableName);
 
         // HMRC ITSA business source adjustable summary (self-employment) adjust async request storage
         this.hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTable",
-                props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasSelfEmploymentAdjustPostAsyncTTL",
-                props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA BSAS self-employment adjust async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaBsasSelfEmploymentAdjustPostAsyncRequestsTableName);
 
         // HMRC ITSA business source adjustable summary (UK property) retrieve async request storage
         this.hmrcItsaBsasUkPropertyGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasUkPropertyGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaBsasUkPropertyGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasUkPropertyGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasUkPropertyGetAsyncTTL",
-                props.sharedNames().hmrcItsaBsasUkPropertyGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasUkPropertyGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA BSAS UK property retrieve async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaBsasUkPropertyGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaBsasUkPropertyGetAsyncRequestsTableName);
 
         // HMRC ITSA business source adjustable summary (UK property) adjust async request storage
         this.hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable",
-                props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasUkPropertyAdjustPostAsyncTTL",
-                props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA BSAS UK property adjust async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTableName);
 
         // HMRC ITSA business source adjustable summary (foreign property) retrieve async request storage
         this.hmrcItsaBsasForeignPropertyGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasForeignPropertyGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaBsasForeignPropertyGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasForeignPropertyGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasForeignPropertyGetAsyncTTL",
-                props.sharedNames().hmrcItsaBsasForeignPropertyGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasForeignPropertyGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA BSAS foreign property retrieve async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaBsasForeignPropertyGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaBsasForeignPropertyGetAsyncRequestsTableName);
 
         // HMRC ITSA business source adjustable summary (foreign property) adjust async request storage
         this.hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTable",
-                props.sharedNames().hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaBsasForeignPropertyAdjustPostAsyncTTL",
-                props.sharedNames().hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA BSAS foreign property adjust async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaBsasForeignPropertyAdjustPostAsyncRequestsTableName);
 
         // HMRC ITSA tax calculation trigger async request storage
         this.hmrcItsaCalculationTriggerPostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaCalculationTriggerPostAsyncRequestsTable",
-                props.sharedNames().hmrcItsaCalculationTriggerPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaCalculationTriggerPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaCalculationTriggerPostAsyncTTL",
-                props.sharedNames().hmrcItsaCalculationTriggerPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaCalculationTriggerPostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA calculation trigger async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaCalculationTriggerPostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaCalculationTriggerPostAsyncRequestsTableName);
 
         // HMRC ITSA tax calculation retrieve async request storage
         this.hmrcItsaCalculationGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaCalculationGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaCalculationGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaCalculationGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaCalculationGetAsyncTTL",
-                props.sharedNames().hmrcItsaCalculationGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaCalculationGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA calculation retrieve async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaCalculationGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaCalculationGetAsyncRequestsTableName);
 
         // HMRC ITSA final declaration async request storage
         this.hmrcItsaFinalDeclarationPostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaFinalDeclarationPostAsyncRequestsTable",
-                props.sharedNames().hmrcItsaFinalDeclarationPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaFinalDeclarationPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaFinalDeclarationPostAsyncTTL",
-                props.sharedNames().hmrcItsaFinalDeclarationPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaFinalDeclarationPostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA final declaration async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaFinalDeclarationPostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaFinalDeclarationPostAsyncRequestsTableName);
 
         // HMRC VAT Assist report async request storage
         this.hmrcVatAssistReportPostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatAssistReportPostAsyncRequestsTable",
-                props.sharedNames().hmrcVatAssistReportPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatAssistReportPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatAssistReportPostAsyncTTL",
-                props.sharedNames().hmrcVatAssistReportPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatAssistReportPostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC VAT Assist report async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcVatAssistReportPostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcVatAssistReportPostAsyncRequestsTableName);
 
         // HMRC VAT Assist acknowledge async request storage
         this.hmrcVatAssistAcknowledgePostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatAssistAcknowledgePostAsyncRequestsTable",
-                props.sharedNames().hmrcVatAssistAcknowledgePostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatAssistAcknowledgePostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcVatAssistAcknowledgePostAsyncTTL",
-                props.sharedNames().hmrcVatAssistAcknowledgePostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcVatAssistAcknowledgePostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC VAT Assist acknowledge async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcVatAssistAcknowledgePostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcVatAssistAcknowledgePostAsyncRequestsTableName);
 
         // HMRC ITSA Assist report async request storage
         this.hmrcItsaAssistReportPostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaAssistReportPostAsyncRequestsTable",
-                props.sharedNames().hmrcItsaAssistReportPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaAssistReportPostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaAssistReportPostAsyncTTL",
-                props.sharedNames().hmrcItsaAssistReportPostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaAssistReportPostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Assist report async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaAssistReportPostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaAssistReportPostAsyncRequestsTableName);
 
         // HMRC ITSA Assist acknowledge async request storage
         this.hmrcItsaAssistAcknowledgePostAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaAssistAcknowledgePostAsyncRequestsTable",
-                props.sharedNames().hmrcItsaAssistAcknowledgePostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaAssistAcknowledgePostAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaAssistAcknowledgePostAsyncTTL",
-                props.sharedNames().hmrcItsaAssistAcknowledgePostAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaAssistAcknowledgePostAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA Assist acknowledge async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaAssistAcknowledgePostAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaAssistAcknowledgePostAsyncRequestsTableName);
 
         // HMRC ITSA losses and claims GET (retrieve) async request storage
         this.hmrcItsaLossesAndClaimsGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaLossesAndClaimsGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaLossesAndClaimsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaLossesAndClaimsGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaLossesAndClaimsGetAsyncTTL",
-                props.sharedNames().hmrcItsaLossesAndClaimsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaLossesAndClaimsGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA losses and claims GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaLossesAndClaimsGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaLossesAndClaimsGetAsyncRequestsTableName);
 
         // HMRC ITSA losses and claims PUT (create and amend) async request storage
         this.hmrcItsaLossesAndClaimsPutAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaLossesAndClaimsPutAsyncRequestsTable",
-                props.sharedNames().hmrcItsaLossesAndClaimsPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaLossesAndClaimsPutAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaLossesAndClaimsPutAsyncTTL",
-                props.sharedNames().hmrcItsaLossesAndClaimsPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaLossesAndClaimsPutAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA losses and claims PUT async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaLossesAndClaimsPutAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaLossesAndClaimsPutAsyncRequestsTableName);
 
         // HMRC ITSA losses and claims DELETE async request storage
         this.hmrcItsaLossesAndClaimsDeleteAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaLossesAndClaimsDeleteAsyncRequestsTable",
-                props.sharedNames().hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaLossesAndClaimsDeleteAsyncTTL",
-                props.sharedNames().hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA losses and claims DELETE async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName);
 
         // HMRC ITSA tax liability adjustments GET (retrieve) async request storage
         this.hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTable",
-                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaTaxLiabilityAdjustmentsGetAsyncTTL",
-                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA tax liability adjustments GET async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaTaxLiabilityAdjustmentsGetAsyncRequestsTableName);
 
         // HMRC ITSA tax liability adjustments PUT (create and amend) async request storage
         this.hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable",
-                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaTaxLiabilityAdjustmentsPutAsyncTTL",
-                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA tax liability adjustments PUT async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTableName);
 
         // HMRC ITSA tax liability adjustments DELETE async request storage
         this.hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable",
-                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcItsaTaxLiabilityAdjustmentsDeleteAsyncTTL",
-                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName,
+                props.sharedNames().data.hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured HMRC ITSA tax liability adjustments DELETE async requests DynamoDB table with name %s",
-                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName);
+                props.sharedNames().data.hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName);
 
         // Companies House accounts filing async request storage - the submission-number counter
         // allocateSubmissionNumber() increments also lives here, keyed apart from any real
@@ -1048,53 +1049,59 @@ public class DataStack extends Stack {
         this.companiesHouseAccountsAsyncRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-CompaniesHouseAccountsAsyncRequestsTable",
-                props.sharedNames().companiesHouseAccountsAsyncRequestsTableName,
+                props.sharedNames().data.companiesHouseAccountsAsyncRequestsTableName,
                 "hashedSub",
                 "requestId");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-CompaniesHouseAccountsAsyncTTL",
-                props.sharedNames().companiesHouseAccountsAsyncRequestsTableName,
+                props.sharedNames().data.companiesHouseAccountsAsyncRequestsTableName,
                 "ttl");
         infof(
                 "Ensured Companies House accounts async requests DynamoDB table with name %s",
-                props.sharedNames().companiesHouseAccountsAsyncRequestsTableName);
+                props.sharedNames().data.companiesHouseAccountsAsyncRequestsTableName);
 
         // HMRC API requests storage - audit trail for HMRC interactions
         // 28-day retention via TTL on "ttl" attribute
         this.hmrcApiRequestsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-HmrcApiRequestsTable",
-                props.sharedNames().hmrcApiRequestsTableName,
+                props.sharedNames().data.hmrcApiRequestsTableName,
                 "hashedSub",
                 "id");
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-HmrcApiRequestsTTL",
-                props.sharedNames().hmrcApiRequestsTableName,
+                props.sharedNames().data.hmrcApiRequestsTableName,
                 "ttl");
-        infof("Ensured HMRC API Requests DynamoDB table with name %s", props.sharedNames().hmrcApiRequestsTableName);
+        infof(
+                "Ensured HMRC API Requests DynamoDB table with name %s",
+                props.sharedNames().data.hmrcApiRequestsTableName);
 
         // Passes table for storing invitation pass codes
         // Pass codes are four-word passphrases that grant bundle access when redeemed.
         // PK-only table (no sort key) - passes are looked up by code.
         this.passesTable = ensureTable(
-                this, props.resourceNamePrefix() + "-PassesTable", props.sharedNames().passesTableName, "pk", null);
-        infof("Ensured passes DynamoDB table with name %s", props.sharedNames().passesTableName);
+                this,
+                props.resourceNamePrefix() + "-PassesTable",
+                props.sharedNames().data.passesTableName,
+                "pk",
+                null);
+        infof("Ensured passes DynamoDB table with name %s", props.sharedNames().data.passesTableName);
 
         // GSI for querying passes by issuer (user-generated pass listing)
         ensureGlobalSecondaryIndex(
                 this,
                 props.resourceNamePrefix() + "-PassesIssuedByGSI",
-                props.sharedNames().passesTableName,
+                props.sharedNames().data.passesTableName,
                 "issuedBy-index",
                 "issuedBy",
                 "createdAt",
                 "ALL");
-        infof("Ensured issuedBy-index GSI on passes table %s", props.sharedNames().passesTableName);
+        infof("Ensured issuedBy-index GSI on passes table %s", props.sharedNames().data.passesTableName);
 
         String passesStreamArn =
-                ensureTableStream(props.resourceNamePrefix() + "-Passes", props.sharedNames().passesTableName);
+                ensureTableStream(props.resourceNamePrefix() + "-Passes", props.sharedNames().data.passesTableName);
 
         // Bundle capacity counter table for tracking global cap enforcement
         // PK-only table (no sort key) - counters are looked up by bundleId.
@@ -1103,21 +1110,21 @@ public class DataStack extends Stack {
         this.bundleCapacityTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-BundleCapacityTable",
-                props.sharedNames().bundleCapacityTableName,
+                props.sharedNames().data.bundleCapacityTableName,
                 "bundleId",
                 null);
-        infof("Ensured bundle capacity DynamoDB table with name %s", props.sharedNames().bundleCapacityTableName);
+        infof("Ensured bundle capacity DynamoDB table with name %s", props.sharedNames().data.bundleCapacityTableName);
 
         // Subscriptions table (subscription data)
         this.subscriptionsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-SubscriptionsTable",
-                props.sharedNames().subscriptionsTableName,
+                props.sharedNames().data.subscriptionsTableName,
                 "pk",
                 null);
         String subscriptionsStreamArn = ensureTableStream(
-                props.resourceNamePrefix() + "-Subscriptions", props.sharedNames().subscriptionsTableName);
-        infof("Ensured subscriptions DynamoDB table with name %s", props.sharedNames().subscriptionsTableName);
+                props.resourceNamePrefix() + "-Subscriptions", props.sharedNames().data.subscriptionsTableName);
+        infof("Ensured subscriptions DynamoDB table with name %s", props.sharedNames().data.subscriptionsTableName);
 
         // Activity charges table: one payment covers one filing. Partition key is the user's
         // hashed sub, sort key is "charge#{activityId}#{subjectKey}" (e.g. the confirmation
@@ -1128,10 +1135,12 @@ public class DataStack extends Stack {
         this.activityChargesTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-ActivityChargesTable",
-                props.sharedNames().activityChargesTableName,
+                props.sharedNames().data.activityChargesTableName,
                 "hashedSub",
                 "chargeKey");
-        infof("Ensured activity charges DynamoDB table with name %s", props.sharedNames().activityChargesTableName);
+        infof(
+                "Ensured activity charges DynamoDB table with name %s",
+                props.sharedNames().data.activityChargesTableName);
 
         // Practice clients table: partition key is the practice's hashed sub, sort key is the
         // client's ULID. No index reads clientId on its own, so a client is reachable only
@@ -1139,10 +1148,12 @@ public class DataStack extends Stack {
         this.practiceClientsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-PracticeClientsTable",
-                props.sharedNames().practiceClientsTableName,
+                props.sharedNames().data.practiceClientsTableName,
                 "hashedSub",
                 "clientId");
-        infof("Ensured practice clients DynamoDB table with name %s", props.sharedNames().practiceClientsTableName);
+        infof(
+                "Ensured practice clients DynamoDB table with name %s",
+                props.sharedNames().data.practiceClientsTableName);
 
         // Security state table for issue #10 data-theft detection: bundle-endpoint burst
         // counters (rate#{hashedSub}#{minute}) and mid-session country-change state
@@ -1152,15 +1163,15 @@ public class DataStack extends Stack {
         this.securityStateTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-SecurityStateTable",
-                props.sharedNames().securityStateTableName,
+                props.sharedNames().data.securityStateTableName,
                 "stateKey",
                 null);
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-SecurityStateTTL",
-                props.sharedNames().securityStateTableName,
+                props.sharedNames().data.securityStateTableName,
                 "ttl");
-        infof("Ensured security state DynamoDB table with name %s", props.sharedNames().securityStateTableName);
+        infof("Ensured security state DynamoDB table with name %s", props.sharedNames().data.securityStateTableName);
 
         // Alarm-issue lock table: one item per CloudWatch alarm state-change transition
         // (dedupeKey = "{alarmName}#{timestamp}"), written with a conditional put before
@@ -1173,33 +1184,36 @@ public class DataStack extends Stack {
         this.alarmIssueLockTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-AlarmIssueLockTable",
-                props.sharedNames().alarmIssueLockTableName,
+                props.sharedNames().data.alarmIssueLockTableName,
                 "dedupeKey",
                 null);
         ensureTimeToLive(
                 this,
                 props.resourceNamePrefix() + "-AlarmIssueLockTTL",
-                props.sharedNames().alarmIssueLockTableName,
+                props.sharedNames().data.alarmIssueLockTableName,
                 "ttl");
-        infof("Ensured alarm-issue lock DynamoDB table with name %s", props.sharedNames().alarmIssueLockTableName);
+        infof("Ensured alarm-issue lock DynamoDB table with name %s", props.sharedNames().data.alarmIssueLockTableName);
 
         // Hosted MCP sessions: one item per Mcp-Session-Id holding the owner's hashedSub and the
         // open cloud book pointer. PK-only; items expire 24 hours after their last write.
         this.mcpSessionsTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-McpSessionsTable",
-                props.sharedNames().mcpSessionsTableName,
+                props.sharedNames().data.mcpSessionsTableName,
                 "sessionId",
                 null);
         ensureTimeToLive(
-                this, props.resourceNamePrefix() + "-McpSessionsTTL", props.sharedNames().mcpSessionsTableName, "ttl");
-        infof("Ensured MCP sessions DynamoDB table with name %s", props.sharedNames().mcpSessionsTableName);
+                this,
+                props.resourceNamePrefix() + "-McpSessionsTTL",
+                props.sharedNames().data.mcpSessionsTableName,
+                "ttl");
+        infof("Ensured MCP sessions DynamoDB table with name %s", props.sharedNames().data.mcpSessionsTableName);
 
         // DIYA-GL bucket: one zip-in-S3 store per environment for the paid diya-gl storage tier.
         // Versioned so AWS Backup for S3 can cover it and a bad metadata write has a prior version;
         // noncurrent versions expire after 30 days rather than being kept forever.
         this.diyaGlBucket = Bucket.Builder.create(this, props.resourceNamePrefix() + "-DiyaGl")
-                .bucketName(props.sharedNames().diyaGlBucketName)
+                .bucketName(props.sharedNames().data.diyaGlBucketName)
                 .encryption(BucketEncryption.S3_MANAGED)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                 .enforceSsl(true)
@@ -1222,7 +1236,7 @@ public class DataStack extends Stack {
                                 .noncurrentVersionExpiration(Duration.days(1))
                                 .build()))
                 .build();
-        infof("Ensured diya-gl bucket with name %s", props.sharedNames().diyaGlBucketName);
+        infof("Ensured diya-gl bucket with name %s", props.sharedNames().data.diyaGlBucketName);
 
         cfnOutput(this, "ReceiptsTableName", this.receiptsTable.getTableName());
         cfnOutput(this, "ReceiptsTableArn", this.receiptsTable.getTableArn());

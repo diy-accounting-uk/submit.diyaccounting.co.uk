@@ -253,7 +253,7 @@ public class HoldingStack extends Stack {
         ILogGroup distributionAccessLogGroup = ensureLogGroupWithDependency(
                         this,
                         props.resourceNamePrefix() + "-HoldingDistributionAccessLogGroup",
-                        props.sharedNames().distributionAccessLogGroupName)
+                        props.sharedNames().observability.distributionAccessLogGroupName)
                 .logGroup();
 
         // During a failover requests arrive on every path the live site ever published, so map the
@@ -296,7 +296,7 @@ public class HoldingStack extends Stack {
                 this,
                 props.resourceNamePrefix() + "-HoldingCfAccessLogsDestination",
                 CfnDeliveryDestinationProps.builder()
-                        .name(props.sharedNames().distributionAccessLogDeliveryHoldingDestinationName)
+                        .name(props.sharedNames().observability.distributionAccessLogDeliveryHoldingDestinationName)
                         .destinationResourceArn(distributionAccessLogGroup.getLogGroupArn())
                         .outputFormat("json")
                         .build());
@@ -306,7 +306,7 @@ public class HoldingStack extends Stack {
                 this,
                 props.resourceNamePrefix() + "-HoldingCfAccessLogsSource",
                 CfnDeliverySourceProps.builder()
-                        .name(props.sharedNames().distributionAccessLogDeliveryHoldingSourceName)
+                        .name(props.sharedNames().observability.distributionAccessLogDeliveryHoldingSourceName)
                         .logType("ACCESS_LOGS") // required for CloudFront
                         .resourceArn(distributionArn)
                         .build());
@@ -317,7 +317,8 @@ public class HoldingStack extends Stack {
                 props.resourceNamePrefix() + "-HoldingCfAccessLogsDelivery",
                 CfnDeliveryProps.builder()
                         // *** IMPORTANT: must exactly match the Name above ***
-                        .deliverySourceName(props.sharedNames().distributionAccessLogDeliveryHoldingSourceName)
+                        .deliverySourceName(
+                                props.sharedNames().observability.distributionAccessLogDeliveryHoldingSourceName)
                         .deliveryDestinationArn(cfLogsDestination.getAttrArn())
                         .build());
 

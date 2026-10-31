@@ -146,29 +146,29 @@ public class BillingWebhookStack extends Stack {
         // Lambda function — Docker image from ECR, 0 provisioned concurrency
         // ============================================================================
 
-        ITable bundlesTable = Table.fromTableName(this, "BundlesTable", props.sharedNames().bundlesTableName);
+        ITable bundlesTable = Table.fromTableName(this, "BundlesTable", props.sharedNames().data.bundlesTableName);
         ITable subscriptionsTable =
-                Table.fromTableName(this, "SubscriptionsTable", props.sharedNames().subscriptionsTableName);
+                Table.fromTableName(this, "SubscriptionsTable", props.sharedNames().data.subscriptionsTableName);
         ITable activityChargesTable =
-                Table.fromTableName(this, "ActivityChargesTable", props.sharedNames().activityChargesTableName);
+                Table.fromTableName(this, "ActivityChargesTable", props.sharedNames().data.activityChargesTableName);
         ITable practiceClientsTable =
-                Table.fromTableName(this, "PracticeClientsTable", props.sharedNames().practiceClientsTableName);
-        String activityBusArn =
-                "arn:aws:events:%s:%s:event-bus/%s".formatted(region, account, props.sharedNames().activityBusName);
+                Table.fromTableName(this, "PracticeClientsTable", props.sharedNames().data.practiceClientsTableName);
+        String activityBusArn = "arn:aws:events:%s:%s:event-bus/%s"
+                .formatted(region, account, props.sharedNames().activity.activityBusName);
 
         // A Resident (or resident-pro practice) subscription lapsing or being reactivated moves
         // the owner's (or each of a practice's clients') diya-gl books between the resident and
         // sandbox tiers - see setOwnerBooksRetention in s3DiyaGlRepository.js.
-        String diyaGlBucketArn = "arn:aws:s3:::" + props.sharedNames().diyaGlBucketName;
+        String diyaGlBucketArn = "arn:aws:s3:::" + props.sharedNames().data.diyaGlBucketName;
         String booksObjectsArnPattern = diyaGlBucketArn + "/users/*/books/*";
 
         var lambdaEnv = new PopulatedMap<String, String>()
                 .with("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME", subscriptionsTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
-                .with("DIYA_GL_BUCKET_NAME", props.sharedNames().diyaGlBucketName)
+                .with("DIYA_GL_BUCKET_NAME", props.sharedNames().data.diyaGlBucketName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             lambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
@@ -189,15 +189,15 @@ public class BillingWebhookStack extends Stack {
         var webhookLambda = new Lambda(
                 this,
                 LambdaProps.builder()
-                        .idPrefix(props.sharedNames().envBillingWebhookLambdaFunctionName)
+                        .idPrefix(props.sharedNames().billing.envBillingWebhookLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().envBillingWebhookLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().envBillingWebhookLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().envBillingWebhookLambdaArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().billing.envBillingWebhookLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().billing.envBillingWebhookLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().billing.envBillingWebhookLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().envBillingWebhookProvisionedConcurrencyAliasArn)
+                                props.sharedNames().billing.envBillingWebhookProvisionedConcurrencyAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .provisionedConcurrencyAliasName("pc")
                         .ingestMemorySize(512)

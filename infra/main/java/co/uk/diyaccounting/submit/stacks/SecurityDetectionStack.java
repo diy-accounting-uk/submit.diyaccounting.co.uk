@@ -123,11 +123,11 @@ public class SecurityDetectionStack extends Stack {
         // the async-request and bundle-capacity tables, which hold operational state rather than
         // customer records.
         List<String> customerTableNames = List.of(
-                props.sharedNames().receiptsTableName,
-                props.sharedNames().bundlesTableName,
-                props.sharedNames().passesTableName,
-                props.sharedNames().subscriptionsTableName,
-                props.sharedNames().hmrcApiRequestsTableName);
+                props.sharedNames().data.receiptsTableName,
+                props.sharedNames().data.bundlesTableName,
+                props.sharedNames().data.passesTableName,
+                props.sharedNames().data.subscriptionsTableName,
+                props.sharedNames().data.hmrcApiRequestsTableName);
 
         String tableNameClause = customerTableNames.stream()
                 .map(tableName -> "$.requestParameters.tableName = \"%s\"".formatted(tableName))

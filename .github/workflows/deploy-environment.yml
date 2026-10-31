@@ -100,6 +100,7 @@ on:
       - 'infra/main/java/co/uk/diyaccounting/submit/utils/**'
       - 'infra/main/java/co/uk/diyaccounting/submit/SubmitEnvironment.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java'
+      - 'infra/main/java/co/uk/diyaccounting/submit/names/**'
       - 'infra/main/java/co/uk/diyaccounting/submit/SubmitStackProps.java'
   schedule:
     - cron: '51 3 * * *'

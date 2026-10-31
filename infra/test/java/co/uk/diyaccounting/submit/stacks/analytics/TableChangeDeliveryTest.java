@@ -43,17 +43,17 @@ class TableChangeDeliveryTest {
                                 .build())
                         .build());
 
-        var lakeBucket = Bucket.fromBucketName(stack, "LakeBucket", sharedNames.analyticsLakeBucketName);
+        var lakeBucket = Bucket.fromBucketName(stack, "LakeBucket", sharedNames.analytics.analyticsLakeBucketName);
 
         var props = TableChangeDelivery.TableChangeDeliveryProps.builder()
                 .lakeBucket(lakeBucket)
-                .glueDatabaseName(sharedNames.glueDatabaseName)
+                .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                 .sharedNames(sharedNames)
                 .envName("docs")
                 .resourceNamePrefix(sharedNames.envResourceNamePrefix)
                 .baseImageTag("test-tag")
-                .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
                 .build();
 
         new TableChangeDelivery(stack, "TableChangeDelivery", props);
@@ -180,10 +180,10 @@ class TableChangeDeliveryTest {
             String json = String.valueOf(variables.get("STREAM_TARGETS"));
             JsonNode targets = new ObjectMapper().readTree(json);
             assertEquals(4, targets.size());
-            assertTrue(targets.has(sharedNames.receiptsTableName));
-            assertTrue(targets.has(sharedNames.bundlesTableName));
-            assertTrue(targets.has(sharedNames.subscriptionsTableName));
-            assertTrue(targets.has(sharedNames.passesTableName));
+            assertTrue(targets.has(sharedNames.data.receiptsTableName));
+            assertTrue(targets.has(sharedNames.data.bundlesTableName));
+            assertTrue(targets.has(sharedNames.data.subscriptionsTableName));
+            assertTrue(targets.has(sharedNames.data.passesTableName));
         }
         assertTrue(found, "Expected one Lambda function with a STREAM_TARGETS environment variable");
     }

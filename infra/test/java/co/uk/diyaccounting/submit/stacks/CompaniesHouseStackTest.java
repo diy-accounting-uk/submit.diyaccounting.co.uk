@@ -256,7 +256,7 @@ class CompaniesHouseStackTest {
                 "AWS::Lambda::Function",
                 Match.objectLike(Map.of(
                         "FunctionName",
-                        SubmitSharedNames.forDocs().hmrcCtReturnPostIngestLambdaFunctionName,
+                        SubmitSharedNames.forDocs().companiesHouse.hmrcCtReturnPostIngestLambdaFunctionName,
                         "Environment",
                         Map.of("Variables", Match.objectLike(Map.of("HMRC_CT_GATEWAY_TEST", "false"))))));
     }

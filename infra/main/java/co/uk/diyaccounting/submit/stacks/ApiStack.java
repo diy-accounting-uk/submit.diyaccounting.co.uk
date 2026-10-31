@@ -272,7 +272,7 @@ public class ApiStack extends Stack {
         String apiAccessLogGroupArn = formatArn(ArnComponents.builder()
                 .service("logs")
                 .resource("log-group")
-                .resourceName(props.sharedNames().apiAccessLogGroupName)
+                .resourceName(props.sharedNames().observability.apiAccessLogGroupName)
                 .arnFormat(ArnFormat.COLON_RESOURCE_NAME)
                 .build());
 

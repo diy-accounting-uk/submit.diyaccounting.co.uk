@@ -98,7 +98,7 @@ public class AlarmStateChangeDelivery extends Construct {
         var sharedNames = props.sharedNames();
         var prefix = props.resourceNamePrefix();
         var lakeBucket = props.lakeBucket();
-        var deliveryStreamName = sharedNames.alarmStateChangeDeliveryStreamName;
+        var deliveryStreamName = sharedNames.analytics.alarmStateChangeDeliveryStreamName;
 
         // ============================================================================
         // Glue table
@@ -114,15 +114,15 @@ public class AlarmStateChangeDelivery extends Construct {
         this.transformLambdaConstruct = new Lambda(
                 this,
                 LambdaProps.builder()
-                        .idPrefix(sharedNames.alarmStateChangeTransformLambdaFunctionName)
+                        .idPrefix(sharedNames.analytics.alarmStateChangeTransformLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .ingestFunctionName(sharedNames.alarmStateChangeTransformLambdaFunctionName)
-                        .ingestHandler(sharedNames.alarmStateChangeTransformLambdaHandler)
-                        .ingestLambdaArn(sharedNames.alarmStateChangeTransformLambdaArn)
+                        .ingestFunctionName(sharedNames.analytics.alarmStateChangeTransformLambdaFunctionName)
+                        .ingestHandler(sharedNames.analytics.alarmStateChangeTransformLambdaHandler)
+                        .ingestLambdaArn(sharedNames.analytics.alarmStateChangeTransformLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                sharedNames.alarmStateChangeTransformProvisionedConcurrencyLambdaAliasArn)
+                                sharedNames.analytics.alarmStateChangeTransformProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .ingestLambdaTimeout(Duration.seconds(60))
                         .provisionedConcurrencyAliasName(sharedNames.provisionedConcurrencyAliasName)
@@ -134,7 +134,7 @@ public class AlarmStateChangeDelivery extends Construct {
         // Delivery stream
         // ============================================================================
         var streamLogGroup = LogGroup.Builder.create(this, prefix + "-AlarmStateChangesStreamLogGroup")
-                .logGroupName(sharedNames.deliveryStreamLogGroupName(deliveryStreamName))
+                .logGroupName(sharedNames.analytics.deliveryStreamLogGroupName(deliveryStreamName))
                 .retention(RetentionDays.ONE_MONTH)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
@@ -201,7 +201,8 @@ public class AlarmStateChangeDelivery extends Construct {
                                 .compressionFormat("UNCOMPRESSED")
                                 .cloudWatchLoggingOptions(CfnDeliveryStream.CloudWatchLoggingOptionsProperty.builder()
                                         .enabled(true)
-                                        .logGroupName(sharedNames.deliveryStreamLogGroupName(deliveryStreamName))
+                                        .logGroupName(
+                                                sharedNames.analytics.deliveryStreamLogGroupName(deliveryStreamName))
                                         .logStreamName("S3Delivery")
                                         .build())
                                 .processingConfiguration(CfnDeliveryStream.ProcessingConfigurationProperty.builder()

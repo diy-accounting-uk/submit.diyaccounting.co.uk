@@ -48,7 +48,7 @@ class SelfDestructStackTest {
                 .cloudTrailEnabled("false")
                 .sharedNames(sharedNames)
                 .baseImageTag("latest")
-                .selfDestructLogGroupName(sharedNames.ew2SelfDestructLogGroupName)
+                .selfDestructLogGroupName(sharedNames.observability.ew2SelfDestructLogGroupName)
                 .selfDestructStartDatetime(ZonedDateTime.parse(startDatetime))
                 .selfDestructDelayHours(delayHours)
                 .isApplicationStack(true)

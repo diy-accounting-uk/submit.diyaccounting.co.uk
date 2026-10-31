@@ -247,8 +247,9 @@ public class IngestionStack extends Stack {
         // Imported by name, not by cross-stack reference, matching how AnalyticsStack imports
         // the activity bus: AnalyticsStack owns the lake's lifecycle, this stack only writes
         // into it.
-        this.lakeBucket = Bucket.fromBucketName(this, prefix + "-AnalyticsLake", sharedNames.analyticsLakeBucketName);
-        this.glueDatabaseName = sharedNames.glueDatabaseName;
+        this.lakeBucket =
+                Bucket.fromBucketName(this, prefix + "-AnalyticsLake", sharedNames.analytics.analyticsLakeBucketName);
+        this.glueDatabaseName = sharedNames.analytics.glueDatabaseName;
 
         var isProd = "prod".equals(props.envName());
         var region = props.getEnv() != null ? props.getEnv().getRegion() : "eu-west-2";
@@ -266,7 +267,7 @@ public class IngestionStack extends Stack {
 
         var stripeReconcileEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName);
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analytics.analyticsLakeBucketName);
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             stripeReconcileEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
         }
@@ -279,8 +280,8 @@ public class IngestionStack extends Stack {
                 this,
                 prefix + "-StripeReconcile-EcrRepo",
                 RepositoryAttributes.builder()
-                        .repositoryArn(sharedNames.ecrRepositoryArn)
-                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .repositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecr.ecrRepositoryName)
                         .build());
 
         // IngestionStack is env-scoped (one deployment per environment, redeployed
@@ -361,7 +362,7 @@ public class IngestionStack extends Stack {
 
         var ga4ReportPullEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName);
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analytics.analyticsLakeBucketName);
         if (props.ga4PropertyId() != null && !props.ga4PropertyId().isBlank()) {
             ga4ReportPullEnv.with("GA4_PROPERTY_ID", props.ga4PropertyId());
         }
@@ -371,8 +372,8 @@ public class IngestionStack extends Stack {
                 this,
                 prefix + "-Ga4ReportPull-EcrRepo",
                 RepositoryAttributes.builder()
-                        .repositoryArn(sharedNames.ecrRepositoryArn)
-                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .repositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecr.ecrRepositoryName)
                         .build());
 
         // Same exposure as stripeReconcileLambda above: env-scoped, stable function name,
@@ -426,7 +427,7 @@ public class IngestionStack extends Stack {
 
         var ga4EventExportPullEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName);
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analytics.analyticsLakeBucketName);
         if (props.ga4BigQueryProjectId() != null
                 && !props.ga4BigQueryProjectId().isBlank()) {
             ga4EventExportPullEnv.with("GA4_BIGQUERY_PROJECT_ID", props.ga4BigQueryProjectId());
@@ -444,8 +445,8 @@ public class IngestionStack extends Stack {
                 this,
                 prefix + "-Ga4EventExportPull-EcrRepo",
                 RepositoryAttributes.builder()
-                        .repositoryArn(sharedNames.ecrRepositoryArn)
-                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .repositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecr.ecrRepositoryName)
                         .build());
 
         // Same exposure as the other two jobs above: env-scoped, stable function name - use the
@@ -490,7 +491,7 @@ public class IngestionStack extends Stack {
 
         var ga4DailyPullEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName);
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analytics.analyticsLakeBucketName);
         if (props.ga4BigQueryProjectId() != null
                 && !props.ga4BigQueryProjectId().isBlank()) {
             ga4DailyPullEnv.with("GA4_BIGQUERY_PROJECT_ID", props.ga4BigQueryProjectId());
@@ -508,8 +509,8 @@ public class IngestionStack extends Stack {
                 this,
                 prefix + "-Ga4DailyPull-EcrRepo",
                 RepositoryAttributes.builder()
-                        .repositoryArn(sharedNames.ecrRepositoryArn)
-                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .repositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecr.ecrRepositoryName)
                         .build());
 
         // Same exposure as the other GA4 jobs above: env-scoped, stable function name - use the
@@ -581,7 +582,7 @@ public class IngestionStack extends Stack {
 
         var operatorEffortPullEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName)
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analytics.analyticsLakeBucketName)
                 .with("GITHUB_REPO", props.githubRepo());
         if (props.githubAppId() != null
                 && !props.githubAppId().isBlank()
@@ -597,8 +598,8 @@ public class IngestionStack extends Stack {
                 this,
                 prefix + "-OperatorEffortPull-EcrRepo",
                 RepositoryAttributes.builder()
-                        .repositoryArn(sharedNames.ecrRepositoryArn)
-                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .repositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecr.ecrRepositoryName)
                         .build());
 
         // Same exposure as the other jobs above: env-scoped, stable function name - use the
@@ -679,8 +680,8 @@ public class IngestionStack extends Stack {
 
             var companyBookPullEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
-                    .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName)
-                    .with("DIYA_GL_BUCKET_NAME", sharedNames.diyaGlBucketName)
+                    .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analytics.analyticsLakeBucketName)
+                    .with("DIYA_GL_BUCKET_NAME", sharedNames.data.diyaGlBucketName)
                     .with("COMPANY_BOOK_ID", companyBookId)
                     .with("COMPANY_BOOK_OWNER_PREFIX", companyBookOwnerPrefix);
 
@@ -688,8 +689,8 @@ public class IngestionStack extends Stack {
                     this,
                     prefix + "-CompanyBookPull-EcrRepo",
                     RepositoryAttributes.builder()
-                            .repositoryArn(sharedNames.ecrRepositoryArn)
-                            .repositoryName(sharedNames.ecrRepositoryName)
+                            .repositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                            .repositoryName(sharedNames.ecr.ecrRepositoryName)
                             .build());
 
             // Same exposure as the other jobs above: env-scoped, stable function name - use the
@@ -719,7 +720,7 @@ public class IngestionStack extends Stack {
                     .effect(Effect.ALLOW)
                     .actions(List.of("s3:GetObject"))
                     .resources(List.of("arn:aws:s3:::%s/users/%s/books/%s/*"
-                            .formatted(sharedNames.diyaGlBucketName, companyBookOwnerPrefix, companyBookId)))
+                            .formatted(sharedNames.data.diyaGlBucketName, companyBookOwnerPrefix, companyBookId)))
                     .build());
             companyBookPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
                     .effect(Effect.ALLOW)
@@ -749,7 +750,7 @@ public class IngestionStack extends Stack {
 
             var paypalDonationsPullEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
-                    .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName)
+                    .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analytics.analyticsLakeBucketName)
                     .with("PAYPAL_CLIENT_ID_SECRET_ID", paypalClientIdSecretId)
                     .with("PAYPAL_CLIENT_SECRET_SECRET_ID", paypalClientSecretSecretId);
 
@@ -757,8 +758,8 @@ public class IngestionStack extends Stack {
                     this,
                     prefix + "-PaypalDonationsPull-EcrRepo",
                     RepositoryAttributes.builder()
-                            .repositoryArn(sharedNames.ecrRepositoryArn)
-                            .repositoryName(sharedNames.ecrRepositoryName)
+                            .repositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                            .repositoryName(sharedNames.ecr.ecrRepositoryName)
                             .build());
 
             // Same exposure as the other jobs above: env-scoped, stable function name - use the
@@ -823,7 +824,7 @@ public class IngestionStack extends Stack {
 
             var adsCostPullEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
-                    .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName)
+                    .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analytics.analyticsLakeBucketName)
                     .with("ADS_OAUTH_CLIENT_SECRET_ARN", adsOauthClientSecretArn)
                     .with("ADS_REFRESH_TOKEN_SECRET_ARN", adsRefreshTokenSecretArn);
 
@@ -831,8 +832,8 @@ public class IngestionStack extends Stack {
                     this,
                     prefix + "-AdsCostPull-EcrRepo",
                     RepositoryAttributes.builder()
-                            .repositoryArn(sharedNames.ecrRepositoryArn)
-                            .repositoryName(sharedNames.ecrRepositoryName)
+                            .repositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                            .repositoryName(sharedNames.ecr.ecrRepositoryName)
                             .build());
 
             var adsCostPullLogGroup = ensureLogGroupWithDependency(
@@ -893,14 +894,14 @@ public class IngestionStack extends Stack {
 
             var msAdsCostPullEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
-                    .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName);
+                    .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analytics.analyticsLakeBucketName);
 
             IRepository msAdsCostPullRepository = Repository.fromRepositoryAttributes(
                     this,
                     prefix + "-MsAdsCostPull-EcrRepo",
                     RepositoryAttributes.builder()
-                            .repositoryArn(sharedNames.ecrRepositoryArn)
-                            .repositoryName(sharedNames.ecrRepositoryName)
+                            .repositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                            .repositoryName(sharedNames.ecr.ecrRepositoryName)
                             .build());
 
             var msAdsCostPullLogGroup = ensureLogGroupWithDependency(
@@ -951,14 +952,14 @@ public class IngestionStack extends Stack {
         var fxRatePullFunctionName = prefix + "-fx-rate-pull";
         var fxRatePullEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName);
+                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analytics.analyticsLakeBucketName);
 
         IRepository fxRatePullRepository = Repository.fromRepositoryAttributes(
                 this,
                 prefix + "-FxRatePull-EcrRepo",
                 RepositoryAttributes.builder()
-                        .repositoryArn(sharedNames.ecrRepositoryArn)
-                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .repositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecr.ecrRepositoryName)
                         .build());
 
         var fxRatePullLogGroup = ensureLogGroupWithDependency(
@@ -1016,7 +1017,7 @@ public class IngestionStack extends Stack {
                 NightlyIngestionWorkflow.NightlyIngestionWorkflowProps.builder()
                         .idPrefix(prefix)
                         .envName(props.envName())
-                        .stateMachineName(sharedNames.stateMachineName)
+                        .stateMachineName(sharedNames.analytics.stateMachineName)
                         .stripeReconcileLambda(stripeReconcileLambda)
                         .ga4ReportPullLambda(ga4ReportPullLambda)
                         .ga4EventExportPullLambda(ga4EventExportPullLambda)

@@ -233,7 +233,9 @@ public class SelfDestructStack extends Stack {
         putIfNotNull(selfDestructLambdaEnv, "EDGE_ORIGIN_BUCKET", props.originBucketName());
         putIfNotNull(selfDestructLambdaEnv, "DEPLOYMENT_NAME", props.deploymentName());
         putIfNotNull(
-                selfDestructLambdaEnv, "AWS_XRAY_TRACING_NAME", props.sharedNames().selfDestructLambdaFunctionName);
+                selfDestructLambdaEnv,
+                "AWS_XRAY_TRACING_NAME",
+                props.sharedNames().selfDestruct.selfDestructLambdaFunctionName);
         putIfNotNull(selfDestructLambdaEnv, "AUTH_STACK_NAME", props.sharedNames().authStackId);
         putIfNotNull(selfDestructLambdaEnv, "HMRC_STACK_NAME", props.sharedNames().hmrcStackId);
         putIfNotNull(selfDestructLambdaEnv, "HMRC_ITSA_STACK_NAME", props.sharedNames().hmrcItsaStackId);
@@ -271,26 +273,26 @@ public class SelfDestructStack extends Stack {
         String ecrRepositoryName;
         String ecrRepositoryArn;
         if (Objects.equals(props.getEnv().getRegion(), "us-east-1")) {
-            ecrRepositoryName = props.sharedNames().ue1EcrRepositoryName;
-            ecrRepositoryArn = props.sharedNames().ue1EcrRepositoryArn;
+            ecrRepositoryName = props.sharedNames().ecr.ue1EcrRepositoryName;
+            ecrRepositoryArn = props.sharedNames().ecr.ue1EcrRepositoryArn;
         } else {
-            ecrRepositoryName = props.sharedNames().ecrRepositoryName;
-            ecrRepositoryArn = props.sharedNames().ecrRepositoryArn;
+            ecrRepositoryName = props.sharedNames().ecr.ecrRepositoryName;
+            ecrRepositoryArn = props.sharedNames().ecr.ecrRepositoryArn;
         }
 
         // Lambda function for self-destruction
         var lambda = new Lambda(
                 this,
                 LambdaProps.builder()
-                        .idPrefix(props.sharedNames().selfDestructLambdaFunctionName)
+                        .idPrefix(props.sharedNames().selfDestruct.selfDestructLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(ecrRepositoryName)
                         .ecrRepositoryArn(ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().selfDestructLambdaFunctionName)
-                        .ingestHandler(props.sharedNames().selfDestructLambdaHandler)
-                        .ingestLambdaArn(props.sharedNames().selfDestructLambdaArn)
+                        .ingestFunctionName(props.sharedNames().selfDestruct.selfDestructLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().selfDestruct.selfDestructLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().selfDestruct.selfDestructLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().selfDestructProvisionedConcurrencyLambdaAliasArn)
+                                props.sharedNames().selfDestruct.selfDestructProvisionedConcurrencyLambdaAliasArn)
                         .ingestLambdaTimeout(Duration.millis(Long.parseLong("900000"))) // 15 minutes
                         .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                         .environment(selfDestructLambdaEnv)

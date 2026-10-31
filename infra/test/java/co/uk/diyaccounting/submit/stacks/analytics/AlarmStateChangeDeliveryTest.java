@@ -40,17 +40,17 @@ class AlarmStateChangeDeliveryTest {
                                 .build())
                         .build());
 
-        var lakeBucket = Bucket.fromBucketName(stack, "LakeBucket", sharedNames.analyticsLakeBucketName);
+        var lakeBucket = Bucket.fromBucketName(stack, "LakeBucket", sharedNames.analytics.analyticsLakeBucketName);
 
         var props = AlarmStateChangeDelivery.AlarmStateChangeDeliveryProps.builder()
                 .lakeBucket(lakeBucket)
-                .glueDatabaseName(sharedNames.glueDatabaseName)
+                .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                 .sharedNames(sharedNames)
                 .envName("docs")
                 .resourceNamePrefix(sharedNames.envResourceNamePrefix)
                 .baseImageTag("test-tag")
-                .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
-                .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                .ecrRepositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                .ecrRepositoryName(sharedNames.ecr.ecrRepositoryName)
                 .build();
 
         new AlarmStateChangeDelivery(stack, "AlarmStateChangeDelivery", props);

@@ -694,7 +694,7 @@ public class EdgeStack extends Stack {
         IBucket analyticsLakeBucket = Bucket.fromBucketName(
                 this,
                 props.resourceNamePrefix() + "-AnalyticsLakeBucketRef",
-                props.sharedNames().analyticsLakeBucketName);
+                props.sharedNames().analytics.analyticsLakeBucketName);
 
         CfnDeliveryDestination cfAccessLogsDestination = new CfnDeliveryDestination(
                 this,
@@ -1484,7 +1484,7 @@ public class EdgeStack extends Stack {
         var wafScanDetectEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("DEPLOYMENT_NAME", props.deploymentName())
-                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activity.activityBusName)
                 .with("ACTIVITY_BUS_REGION", "eu-west-2")
                 .with("WAF_SCAN_BURST_DYNAMODB_TABLE_NAME", wafScanBurstsTableName);
 
@@ -1493,8 +1493,8 @@ public class EdgeStack extends Stack {
                 LambdaProps.builder()
                         .idPrefix(wafScanDetectFunctionName)
                         .baseImageTag(props.baseImageTag())
-                        .ecrRepositoryName(props.sharedNames().ue1EcrRepositoryName)
-                        .ecrRepositoryArn(props.sharedNames().ue1EcrRepositoryArn)
+                        .ecrRepositoryName(props.sharedNames().ecr.ue1EcrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ue1EcrRepositoryArn)
                         .ingestFunctionName(wafScanDetectFunctionName)
                         .ingestHandler("app/functions/security/wafScanDetect.handler")
                         .ingestLambdaArn("arn:aws:lambda:us-east-1:" + this.getAccount() + ":function:"
@@ -1509,8 +1509,8 @@ public class EdgeStack extends Stack {
 
         // Cross-region PutEvents: the activity bus lives in eu-west-2, this Lambda runs in
         // us-east-1. Scoped to this environment's own activity bus, not every bus in the account.
-        String activityBusArn =
-                "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/" + props.sharedNames().activityBusName;
+        String activityBusArn = "arn:aws:events:eu-west-2:" + this.getAccount() + ":event-bus/"
+                + props.sharedNames().activity.activityBusName;
         wafScanDetectLambda.ingestLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .actions(List.of("events:PutEvents"))
                 .resources(List.of(activityBusArn))

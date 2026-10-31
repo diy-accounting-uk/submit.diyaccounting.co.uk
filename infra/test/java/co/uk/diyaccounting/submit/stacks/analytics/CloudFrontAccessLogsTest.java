@@ -45,7 +45,7 @@ class CloudFrontAccessLogsTest {
                         .build());
 
         Bucket lakeBucket = Bucket.Builder.create(stack, "Lake")
-                .bucketName(sharedNames.analyticsLakeBucketName)
+                .bucketName(sharedNames.analytics.analyticsLakeBucketName)
                 .encryption(BucketEncryption.S3_MANAGED)
                 .blockPublicAccess(BlockPublicAccess.BLOCK_ALL)
                 .build();
@@ -53,7 +53,7 @@ class CloudFrontAccessLogsTest {
         CfnDatabase glueDatabase = CfnDatabase.Builder.create(stack, "GlueDatabase")
                 .catalogId(stack.getAccount())
                 .databaseInput(CfnDatabase.DatabaseInputProperty.builder()
-                        .name(sharedNames.glueDatabaseName)
+                        .name(sharedNames.analytics.glueDatabaseName)
                         .build())
                 .build();
 
@@ -61,9 +61,9 @@ class CloudFrontAccessLogsTest {
                 stack,
                 CloudFrontAccessLogs.CloudFrontAccessLogsProps.builder()
                         .envResourceNamePrefix(sharedNames.envResourceNamePrefix)
-                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .lakeBucketName(sharedNames.analytics.analyticsLakeBucketName)
                         .lakeBucket(lakeBucket)
-                        .glueDatabaseName(sharedNames.glueDatabaseName)
+                        .glueDatabaseName(sharedNames.analytics.glueDatabaseName)
                         .glueDatabase(glueDatabase)
                         .build());
 
@@ -94,7 +94,7 @@ class CloudFrontAccessLogsTest {
                 "AWS::Glue::Table",
                 Match.objectLike(Map.of(
                         "DatabaseName",
-                        sharedNames.glueDatabaseName,
+                        sharedNames.analytics.glueDatabaseName,
                         "TableInput",
                         Match.objectLike(Map.of(
                                 "Name",

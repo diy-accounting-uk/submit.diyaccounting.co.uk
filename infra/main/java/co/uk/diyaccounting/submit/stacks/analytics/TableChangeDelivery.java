@@ -105,14 +105,15 @@ public class TableChangeDelivery extends Construct {
         var prefix = props.resourceNamePrefix();
 
         Map<String, String> tableNameByKind = new LinkedHashMap<>();
-        tableNameByKind.put("receipts", sharedNames.receiptsTableName);
-        tableNameByKind.put("bundles", sharedNames.bundlesTableName);
-        tableNameByKind.put("subscriptions", sharedNames.subscriptionsTableName);
-        tableNameByKind.put("passes", sharedNames.passesTableName);
+        tableNameByKind.put("receipts", sharedNames.data.receiptsTableName);
+        tableNameByKind.put("bundles", sharedNames.data.bundlesTableName);
+        tableNameByKind.put("subscriptions", sharedNames.data.subscriptionsTableName);
+        tableNameByKind.put("passes", sharedNames.data.passesTableName);
 
         Map<String, String> deliveryStreamNameByTable = new LinkedHashMap<>();
         for (String kind : STREAMED_TABLE_KINDS) {
-            deliveryStreamNameByTable.put(tableNameByKind.get(kind), sharedNames.tableStreamDeliveryStreamName(kind));
+            deliveryStreamNameByTable.put(
+                    tableNameByKind.get(kind), sharedNames.analytics.tableStreamDeliveryStreamName(kind));
         }
 
         // ============================================================================
@@ -121,15 +122,15 @@ public class TableChangeDelivery extends Construct {
         this.consumerLambdaConstruct = new Lambda(
                 this,
                 LambdaProps.builder()
-                        .idPrefix(sharedNames.dynamoStreamToFirehoseLambdaFunctionName)
+                        .idPrefix(sharedNames.analytics.dynamoStreamToFirehoseLambdaFunctionName)
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.ecrRepositoryName())
                         .ecrRepositoryArn(props.ecrRepositoryArn())
-                        .ingestFunctionName(sharedNames.dynamoStreamToFirehoseLambdaFunctionName)
-                        .ingestHandler(sharedNames.dynamoStreamToFirehoseLambdaHandler)
-                        .ingestLambdaArn(sharedNames.dynamoStreamToFirehoseLambdaArn)
+                        .ingestFunctionName(sharedNames.analytics.dynamoStreamToFirehoseLambdaFunctionName)
+                        .ingestHandler(sharedNames.analytics.dynamoStreamToFirehoseLambdaHandler)
+                        .ingestLambdaArn(sharedNames.analytics.dynamoStreamToFirehoseLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(
-                                sharedNames.dynamoStreamToFirehoseProvisionedConcurrencyLambdaAliasArn)
+                                sharedNames.analytics.dynamoStreamToFirehoseProvisionedConcurrencyLambdaAliasArn)
                         .ingestProvisionedConcurrency(0)
                         .ingestLambdaTimeout(Duration.seconds(60))
                         .provisionedConcurrencyAliasName(sharedNames.provisionedConcurrencyAliasName)
@@ -171,7 +172,7 @@ public class TableChangeDelivery extends Construct {
         // ============================================================================
         for (String kind : STREAMED_TABLE_KINDS) {
             String tableName = tableNameByKind.get(kind);
-            String deliveryStreamName = sharedNames.tableStreamDeliveryStreamName(kind);
+            String deliveryStreamName = sharedNames.analytics.tableStreamDeliveryStreamName(kind);
             String glueTableName = "dynamo_" + kind;
             String curatedPrefix = "curated/tables/%s/".formatted(kind);
 
@@ -356,7 +357,7 @@ public class TableChangeDelivery extends Construct {
         var lakeBucket = props.lakeBucket();
 
         var streamLogGroup = LogGroup.Builder.create(this, prefix + "-" + kind + "-StreamLogGroup")
-                .logGroupName(props.sharedNames().deliveryStreamLogGroupName(deliveryStreamName))
+                .logGroupName(props.sharedNames().analytics.deliveryStreamLogGroupName(deliveryStreamName))
                 .retention(RetentionDays.ONE_MONTH)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
@@ -421,8 +422,9 @@ public class TableChangeDelivery extends Construct {
                                 .compressionFormat("UNCOMPRESSED")
                                 .cloudWatchLoggingOptions(CfnDeliveryStream.CloudWatchLoggingOptionsProperty.builder()
                                         .enabled(true)
-                                        .logGroupName(
-                                                props.sharedNames().deliveryStreamLogGroupName(deliveryStreamName))
+                                        .logGroupName(props.sharedNames()
+                                                .analytics
+                                                .deliveryStreamLogGroupName(deliveryStreamName))
                                         .logStreamName("S3Delivery")
                                         .build())
                                 .dataFormatConversionConfiguration(

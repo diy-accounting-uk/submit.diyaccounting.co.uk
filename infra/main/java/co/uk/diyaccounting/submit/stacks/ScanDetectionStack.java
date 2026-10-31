@@ -113,17 +113,17 @@ public class ScanDetectionStack extends Stack {
 
         var environment = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("ATHENA_WORK_GROUP_NAME", sharedNames.athenaWorkGroupName)
-                .with("GLUE_DATABASE_NAME", sharedNames.glueDatabaseName)
+                .with("ATHENA_WORK_GROUP_NAME", sharedNames.analytics.athenaWorkGroupName)
+                .with("GLUE_DATABASE_NAME", sharedNames.analytics.glueDatabaseName)
                 .with("SCAN_DETECTION_404_PER_MINUTE", String.valueOf(props.scanDetection404PerMinute()))
-                .with("ACTIVITY_BUS_NAME", sharedNames.activityBusName);
+                .with("ACTIVITY_BUS_NAME", sharedNames.activity.activityBusName);
 
         IRepository repository = Repository.fromRepositoryAttributes(
                 this,
                 prefix + "-ScanDetect404-EcrRepo",
                 RepositoryAttributes.builder()
-                        .repositoryArn(sharedNames.ecrRepositoryArn)
-                        .repositoryName(sharedNames.ecrRepositoryName)
+                        .repositoryArn(sharedNames.ecr.ecrRepositoryArn)
+                        .repositoryName(sharedNames.ecr.ecrRepositoryName)
                         .build());
 
         // This stack is env-scoped (one deployment per environment, redeployed indefinitely), so
@@ -156,7 +156,7 @@ public class ScanDetectionStack extends Stack {
         this.scanRate404DetectFunction.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:ListBucket"))
-                .resources(List.of(lakeBucketArn(sharedNames.analyticsLakeBucketName)))
+                .resources(List.of(lakeBucketArn(sharedNames.analytics.analyticsLakeBucketName)))
                 .conditions(Map.of("StringLike", Map.of("s3:prefix", "raw/cloudfront/*")))
                 .build());
 
@@ -174,7 +174,7 @@ public class ScanDetectionStack extends Stack {
         this.scanRate404DetectFunction.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("athena:StartQueryExecution", "athena:GetQueryExecution", "athena:GetQueryResults"))
-                .resources(List.of(athenaWorkGroupArn(region, account, sharedNames.athenaWorkGroupName)))
+                .resources(List.of(athenaWorkGroupArn(region, account, sharedNames.analytics.athenaWorkGroupName)))
                 .build());
 
         // Glue: read the database and the one table the query reads.
@@ -183,8 +183,8 @@ public class ScanDetectionStack extends Stack {
                 .actions(List.of("glue:GetDatabase", "glue:GetTable", "glue:GetPartitions"))
                 .resources(List.of(
                         glueCatalogArn(region, account),
-                        glueDatabaseArn(region, account, sharedNames.glueDatabaseName),
-                        glueTableArn(region, account, sharedNames.glueDatabaseName, "cloudfront_requests")))
+                        glueDatabaseArn(region, account, sharedNames.analytics.glueDatabaseName),
+                        glueTableArn(region, account, sharedNames.analytics.glueDatabaseName, "cloudfront_requests")))
                 .build());
 
         // Athena writes its query output to the results bucket and reads it back for
@@ -192,12 +192,12 @@ public class ScanDetectionStack extends Stack {
         this.scanRate404DetectFunction.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject", "s3:PutObject"))
-                .resources(List.of(resultsBucketArn(sharedNames.analyticsResultsBucketName) + "/*"))
+                .resources(List.of(resultsBucketArn(sharedNames.analytics.analyticsResultsBucketName) + "/*"))
                 .build());
         this.scanRate404DetectFunction.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetBucketLocation"))
-                .resources(List.of(resultsBucketArn(sharedNames.analyticsResultsBucketName)))
+                .resources(List.of(resultsBucketArn(sharedNames.analytics.analyticsResultsBucketName)))
                 .build());
 
         // Athena reads the Parquet data itself from the lake, under the raw/cloudfront/ prefix
@@ -205,7 +205,7 @@ public class ScanDetectionStack extends Stack {
         this.scanRate404DetectFunction.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject"))
-                .resources(List.of(lakeBucketArn(sharedNames.analyticsLakeBucketName) + "/raw/cloudfront/*"))
+                .resources(List.of(lakeBucketArn(sharedNames.analytics.analyticsLakeBucketName) + "/raw/cloudfront/*"))
                 .build());
 
         // Publish one ActivityEvent per row detected, onto this environment's own activity bus.
@@ -214,8 +214,8 @@ public class ScanDetectionStack extends Stack {
         this.scanRate404DetectFunction.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))
-                .resources(List.of(
-                        "arn:aws:events:" + region + ":" + account + ":event-bus/" + sharedNames.activityBusName))
+                .resources(List.of("arn:aws:events:" + region + ":" + account + ":event-bus/"
+                        + sharedNames.activity.activityBusName))
                 .build());
 
         // ============================================================================

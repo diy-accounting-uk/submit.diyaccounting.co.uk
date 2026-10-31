@@ -61,11 +61,11 @@ class HmrcStackTest {
     // which needs Query alone).
     private static Stream<String> chargingWorkerFunctionNames() {
         return Stream.of(
-                SHARED_NAMES.hmrcVatReturnPostWorkerLambdaFunctionName,
-                SHARED_NAMES.hmrcItsaSelfEmploymentPeriodPostWorkerLambdaFunctionName,
-                SHARED_NAMES.hmrcItsaSelfEmploymentPeriodPutWorkerLambdaFunctionName,
-                SHARED_NAMES.hmrcItsaSelfEmploymentAnnualPutWorkerLambdaFunctionName,
-                SHARED_NAMES.hmrcItsaFinalDeclarationPostWorkerLambdaFunctionName);
+                SHARED_NAMES.hmrc.hmrcVatReturnPostWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrc.hmrcItsaSelfEmploymentPeriodPostWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrc.hmrcItsaSelfEmploymentPeriodPutWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrc.hmrcItsaSelfEmploymentAnnualPutWorkerLambdaFunctionName,
+                SHARED_NAMES.hmrc.hmrcItsaFinalDeclarationPostWorkerLambdaFunctionName);
     }
 
     @ParameterizedTest

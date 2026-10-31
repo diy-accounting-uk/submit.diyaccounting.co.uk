@@ -461,7 +461,7 @@ class DataStackTest {
     void diyaGlBucketHasATagKeyedLifecycleRuleForTheSandboxRetention() {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);
-        String expectedDiyaGlBucketName = SubmitSharedNames.forDocs().diyaGlBucketName;
+        String expectedDiyaGlBucketName = SubmitSharedNames.forDocs().data.diyaGlBucketName;
 
         template.hasResourceProperties(
                 "AWS::S3::Bucket",
@@ -486,7 +486,7 @@ class DataStackTest {
     void diyaGlBucketIsVersionedEncryptedAndDestroyable() {
         DataStack dataStack = synthDataStack();
         Template template = Template.fromStack(dataStack);
-        String expectedDiyaGlBucketName = SubmitSharedNames.forDocs().diyaGlBucketName;
+        String expectedDiyaGlBucketName = SubmitSharedNames.forDocs().data.diyaGlBucketName;
 
         template.hasResourceProperties(
                 "AWS::S3::Bucket",

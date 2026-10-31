@@ -156,7 +156,8 @@ public class OpenApiGenerator {
 
         // Group lambdas by path for easier processing
         Map<String, List<SubmitSharedNames.PublishedLambda>> pathToLambdas = sharedNames.publishedApiLambdas.stream()
-                .collect(Collectors.groupingBy(pl -> pl.urlPath.replaceFirst("^/api/v1", "")));
+                .collect(Collectors.groupingBy(
+                        pl -> pl.urlPath.replaceFirst("^/api/v1", ""), TreeMap::new, Collectors.toList()));
 
         // Build base operations from discovered lambdas in CDK code
         for (Map.Entry<String, List<SubmitSharedNames.PublishedLambda>> entry : pathToLambdas.entrySet()) {

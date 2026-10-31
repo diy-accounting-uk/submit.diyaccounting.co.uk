@@ -96,13 +96,13 @@ public class EcrStack extends Stack {
         String ecrLogGroupName;
         String ecrPublishRoleName;
         if (Objects.equals(props.getEnv().getRegion(), "us-east-1")) {
-            ecrRepositoryName = props.sharedNames().ue1EcrRepositoryName;
-            ecrLogGroupName = props.sharedNames().ue1EcrLogGroupName;
-            ecrPublishRoleName = props.sharedNames().ue1EcrPublishRoleName;
+            ecrRepositoryName = props.sharedNames().ecr.ue1EcrRepositoryName;
+            ecrLogGroupName = props.sharedNames().ecr.ue1EcrLogGroupName;
+            ecrPublishRoleName = props.sharedNames().ecr.ue1EcrPublishRoleName;
         } else {
-            ecrRepositoryName = props.sharedNames().ecrRepositoryName;
-            ecrLogGroupName = props.sharedNames().ecrLogGroupName;
-            ecrPublishRoleName = props.sharedNames().ecrPublishRoleName;
+            ecrRepositoryName = props.sharedNames().ecr.ecrRepositoryName;
+            ecrLogGroupName = props.sharedNames().ecr.ecrLogGroupName;
+            ecrPublishRoleName = props.sharedNames().ecr.ecrPublishRoleName;
         }
 
         // ECR Repository with lifecycle rules
