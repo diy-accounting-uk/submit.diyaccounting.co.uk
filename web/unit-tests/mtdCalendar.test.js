@@ -35,7 +35,7 @@ describe("MTD calendar page", () => {
 
   test("both wide tables stack their rows on a phone and label every cell", () => {
     const html = readFileSync(PAGE_PATH, "utf8");
-    const css = readFileSync(path.join(process.cwd(), "web/public/submit.css"), "utf8");
+    const css = readFileSync(path.join(process.cwd(), "web/public/css/generated-pages.css"), "utf8");
     expect(css).toMatch(/@media \(max-width: 600px\)[\s\S]*\.stacked-table td\[data-label\]::before/);
     for (const id of ["business-types", "availability"]) {
       const section = html.slice(html.indexOf(`id="${id}"`)).split("</table>")[0];

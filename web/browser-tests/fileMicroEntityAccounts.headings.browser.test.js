@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { serveMoneyInput, servePageScripts } from "./hmrcFieldTableAssets.js";
+import { readSubmitCss } from "./submitCss.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -89,7 +90,7 @@ test.describe("File micro-entity accounts page - optional balance sheet headings
         route.fulfill({
           status: 200,
           contentType: "text/css",
-          body: fs.readFileSync(path.join(process.cwd(), "web/public/submit.css"), "utf-8"),
+          body: readSubmitCss(),
         }),
       );
       await openFormView(page);

@@ -1,0 +1,203 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Main navigation: text links in one row under the band. The current page
+   carries an underline in the brand colour and aria-current="page". When
+   the row is wider than the screen it scrolls sideways, and a fade on the
+   right edge shows that more links follow.
+   ============================================ */
+
+.main-nav {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--space-5);
+  height: var(--nav-height);
+  margin-top: var(--space-1);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  border-bottom: 1px solid var(--c-rule-subtle);
+}
+
+.main-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.main-nav a {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  height: 100%;
+  color: var(--c-ink);
+  text-decoration: none;
+  font-size: var(--step-0);
+  white-space: nowrap;
+  border-bottom: 3px solid transparent;
+  padding-top: 3px;
+  transition:
+    color 150ms,
+    border-color 150ms;
+}
+
+.main-nav a[hidden] {
+  display: none;
+}
+
+.main-nav a:hover {
+  color: var(--c-brand);
+  border-bottom-color: var(--c-rule);
+}
+
+.main-nav a.active {
+  font-weight: var(--weight-strong);
+  color: var(--c-ink);
+  border-bottom-color: var(--c-brand);
+}
+
+/* About page navigation links (Help / User Guide) */
+.about-nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  margin: var(--space-6) 0 var(--space-5) 0;
+}
+
+.about-nav-link {
+  background: var(--c-paper);
+  color: var(--c-brand);
+  text-decoration: underline;
+  font-size: var(--step-1);
+  font-weight: var(--weight-strong);
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  transition: border-color 150ms;
+  flex: 1 1 28%;
+}
+
+.about-nav-link:hover {
+  border-color: var(--c-brand);
+}
+
+@media (orientation: portrait) {
+  .about-nav-link {
+    flex: 1 1 40%;
+  }
+}
+
+/* Definition lists: each label sits beside its value, one row per dt/dd pair. */
+dl {
+  display: grid;
+  grid-template-columns: fit-content(40%) 1fr;
+  column-gap: var(--space-4);
+  row-gap: var(--space-1);
+  margin: 0 0 var(--space-4);
+}
+
+dt {
+  font-weight: var(--weight-strong);
+}
+
+dd {
+  margin: 0;
+  overflow-wrap: break-word;
+}
+
+@media (max-width: 600px) {
+  dl {
+    grid-template-columns: 1fr;
+    row-gap: 0;
+  }
+
+  dd {
+    margin-bottom: var(--space-1);
+  }
+
+  .login-prefix {
+    display: none;
+  }
+
+  .brand-name {
+    font-size: var(--step-0);
+  }
+
+  .header-left {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .home-link {
+    min-width: 0;
+  }
+
+  /* Two rows: the 2.75rem icons, the 2.5rem account row, the padding and the rule.
+     The fallback reserves the same height so the band's insertion does not move the title. */
+  header {
+    --phone-band-height: calc(2.75rem + 2.5rem + var(--space-1) + 3px);
+  }
+
+  .chrome-fallback {
+    height: var(--phone-band-height);
+  }
+
+  .header-nav {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: var(--phone-band-height);
+    row-gap: 0;
+    padding-bottom: var(--space-1);
+  }
+
+  .auth-section {
+    flex: 1 1 100%;
+    min-height: 2.5rem;
+  }
+
+  .login-status {
+    flex: 1 1 0;
+    line-height: 1.1;
+    text-align: left;
+  }
+
+  .auth-section {
+    justify-content: space-between;
+  }
+
+  header h1 {
+    font-size: var(--step-3);
+    margin-top: var(--space-4);
+  }
+
+  .subtitle {
+    font-size: var(--step-0);
+  }
+
+  .main-nav a {
+    font-size: var(--step--1);
+  }
+
+  .main-nav {
+    --nav-fade: var(--space-7);
+    gap: var(--space-3);
+    --fade-before: #000;
+    --fade-after: #000;
+    padding-right: var(--nav-fade);
+    mask-image: linear-gradient(to right, var(--fade-before), #000 var(--nav-fade), #000 calc(100% - var(--nav-fade)), var(--fade-after));
+    -webkit-mask-image: linear-gradient(
+      to right,
+      var(--fade-before),
+      #000 var(--nav-fade),
+      #000 calc(100% - var(--nav-fade)),
+      var(--fade-after)
+    );
+  }
+
+  .main-nav.has-more-before {
+    --fade-before: transparent;
+  }
+
+  .main-nav.has-more-after {
+    --fade-after: transparent;
+  }
+}

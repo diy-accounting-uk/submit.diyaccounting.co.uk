@@ -1,0 +1,254 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Root pages: the guide, and the screenshot lightbox
+   ============================================ */
+
+.guide-intro {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-left: 6px solid var(--c-brand);
+  border-radius: var(--radius-control);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.guide-intro p:last-child {
+  margin-bottom: 0;
+}
+
+.guide-group {
+  margin: var(--space-6) 0;
+}
+
+.guide-group > h2 {
+  margin-top: 0;
+  margin-bottom: var(--space-1);
+}
+
+.guide-group-intro {
+  color: var(--c-ink-muted);
+}
+
+.guide-journey {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  margin-top: var(--space-3);
+}
+
+.guide-journey > summary {
+  cursor: pointer;
+  padding: var(--space-3) var(--space-4);
+  font-weight: var(--weight-strong);
+  color: var(--c-brand);
+}
+
+.guide-journey[open] > summary {
+  border-bottom: 1px solid var(--c-rule-subtle);
+}
+
+.guide-journey-note {
+  font-weight: var(--weight-text);
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+  margin-left: var(--space-2);
+}
+
+.guide-steps-list {
+  list-style: none;
+  counter-reset: guide-step;
+  margin: 0;
+  padding: var(--space-4);
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+.guide-step {
+  counter-increment: guide-step;
+  scroll-margin-top: var(--space-4);
+  background: var(--c-canvas);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-control);
+  padding: var(--space-2);
+}
+
+.guide-step-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  margin: var(--space-1) 0 var(--space-2);
+}
+
+.guide-step-title {
+  margin: 0;
+}
+
+.guide-step-link {
+  flex: none;
+  background: none;
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-control);
+  color: var(--c-brand);
+  font-size: var(--step--1);
+  padding: var(--space-1) var(--space-2);
+  cursor: pointer;
+}
+
+.guide-jump {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+}
+
+.guide-jump a {
+  display: inline-block;
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-control);
+  background: var(--c-paper);
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--step--1);
+}
+
+.guide-step-title::before {
+  content: counter(guide-step);
+  display: inline-block;
+  background: var(--c-brand);
+  color: var(--c-on-brand);
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  text-align: center;
+  line-height: 1.75rem;
+  font-weight: var(--weight-strong);
+  margin-right: var(--space-2);
+}
+
+.guide-thumb {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-control);
+  background: none;
+  cursor: zoom-in;
+}
+
+.guide-thumb img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: var(--radius-control);
+}
+
+.guide-caption {
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+  margin: var(--space-2) 0 0;
+}
+
+@media (min-width: 700px) {
+  .guide-steps-list {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.lightbox-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: var(--c-scrim-strong);
+  z-index: 10001;
+  cursor: pointer;
+  justify-content: center;
+  align-items: center;
+}
+
+.lightbox-overlay.active {
+  display: flex;
+}
+
+.lightbox-overlay img {
+  max-width: min(95%, calc(100% - 7rem));
+  max-height: calc(100% - 4.5rem);
+  object-fit: contain;
+  border-radius: var(--radius-control);
+}
+
+.lightbox-close,
+.lightbox-nav {
+  background: none;
+  border: 0;
+  padding: var(--space-2);
+}
+
+.lightbox-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--c-on-scrim);
+  font-size: var(--step-4);
+  line-height: 1;
+  cursor: pointer;
+  z-index: 10002;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  text-shadow: 0 0 6px var(--c-scrim-strong);
+}
+
+@media (max-width: 699px) {
+  .lightbox-keys {
+    display: none;
+  }
+}
+
+.lightbox-nav:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.lightbox-previous {
+  left: var(--space-2);
+}
+
+.lightbox-next {
+  right: var(--space-2);
+}
+
+.lightbox-nav:focus-visible {
+  outline: 3px solid var(--c-on-scrim);
+  outline-offset: 4px;
+}
+
+.lightbox-close {
+  position: absolute;
+  top: var(--space-4);
+  right: var(--space-5);
+  color: var(--c-on-scrim);
+  font-size: var(--step-4);
+  font-weight: var(--weight-strong);
+  cursor: pointer;
+  z-index: 10002;
+  line-height: 1;
+}
+
+.lightbox-close:focus-visible {
+  outline: 3px solid var(--c-on-scrim);
+  outline-offset: 4px;
+}
+
+.lightbox-hint {
+  position: absolute;
+  bottom: var(--space-4);
+  left: 50%;
+  transform: translateX(-50%);
+  color: var(--c-on-scrim);
+  font-size: var(--step--1);
+  white-space: nowrap;
+}

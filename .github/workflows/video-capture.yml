@@ -104,7 +104,6 @@ permissions:
   actions: read
 
 env:
-  NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
 
 jobs:
@@ -170,27 +169,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Read back last known good deployment from SSM Parameter Store
         # Runs even when deployment-name is given, so an explicit name can be checked against
@@ -269,17 +253,13 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        # No --ignore-scripts here (unlike the behaviour-test workflows): ffmpeg-static's own
-        # postinstall must run to download its ffmpeg binary. PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD
-        # still stops @playwright/test re-downloading browsers the container already has.
-        run: npm ci
+          npm-install: scripts
+        # A full npm ci: ffmpeg-static's own postinstall must run to download its ffmpeg binary.
+        # PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD still stops @playwright/test re-downloading browsers
+        # the container already has.
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
@@ -293,29 +273,13 @@ jobs:
           echo "auth=${AUTH}" | tee -a "$GITHUB_OUTPUT"
           if [ "${AUTH}" = "user" ] && [ -z "${CAPTURE_ENVIRONMENT_NAME}" ]; then echo "Script ${{ needs.params.outputs.script }} signs in as a user and has no environment: dispatch with environment-name set (ci or prod)"; exit 1; fi
 
-      - name: Configure AWS role via GitHub OIDC (for native auth / test user)
+      - name: Assume the AWS actions and deploy roles (for native auth / test user)
         if: ${{ steps.script-auth.outputs.auth == 'user' && env.CAPTURE_ENVIRONMENT_NAME != 'simulator' }}
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role (for native auth / test user)
-        if: ${{ steps.script-auth.outputs.auth == 'user' && env.CAPTURE_ENVIRONMENT_NAME != 'simulator' }}
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Wait for older ci deploy runs to finish
         if: ${{ steps.script-auth.outputs.auth == 'user' && env.CAPTURE_ENVIRONMENT_NAME != 'prod' && env.CAPTURE_ENVIRONMENT_NAME != 'simulator' }}
@@ -339,27 +303,12 @@ jobs:
         if: ${{ steps.script-auth.outputs.auth == 'user' && env.CAPTURE_ENVIRONMENT_NAME != 'simulator' }}
         run: node scripts/ensure-cognito-test-user.js "${{ needs.names.outputs.environment-name || needs.params.outputs.environment-name }}" videoCapture
 
-      - name: Configure AWS role via GitHub OIDC (for the capture)
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles (for the capture)
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role (for the capture)
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: 'Record ${{ needs.params.outputs.script }} on the simulator'
         if: ${{ env.CAPTURE_ENVIRONMENT_NAME == 'simulator' }}
@@ -402,29 +351,13 @@ jobs:
       - name: Check video timings
         run: node scripts/check-video-timings.js "target/videos/${{ needs.params.outputs.script }}/${{ needs.params.outputs.script }}.timeline.json"
 
-      - name: Configure AWS role via GitHub OIDC (for native auth cleanup)
+      - name: Assume the AWS actions and deploy roles (for native auth cleanup)
         if: ${{ !cancelled() && steps.script-auth.outputs.auth == 'user' && env.CAPTURE_ENVIRONMENT_NAME != 'simulator' && needs.params.outputs.skip-native-auth-disable != 'true' }}
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role (for native auth cleanup)
-        if: ${{ !cancelled() && steps.script-auth.outputs.auth == 'user' && env.CAPTURE_ENVIRONMENT_NAME != 'simulator' && needs.params.outputs.skip-native-auth-disable != 'true' }}
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Disable native auth on Cognito Hosted UI
         if: ${{ !cancelled() && steps.script-auth.outputs.auth == 'user' && env.CAPTURE_ENVIRONMENT_NAME != 'simulator' && needs.params.outputs.skip-native-auth-disable != 'true' }}
@@ -464,14 +397,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
+          npm-install: scripts
 
       - name: Install Playwright browsers
         run: npx playwright install chromium --with-deps
@@ -479,27 +408,12 @@ jobs:
       - name: Pull the MCP image
         run: docker pull ghcr.io/diy-accounting-uk/diya-submit-mcp:0.1.1
 
-      - name: Configure AWS role via GitHub OIDC (for the capture)
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles (for the capture)
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role (for the capture)
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: 'Record ${{ needs.params.outputs.script }}'
         run: |

@@ -1,0 +1,225 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Buttons
+
+   Primary: brand fill. Secondary: paper fill with a brand rule.
+   Quiet: text. Destructive: error fill. Disabled: half opacity.
+   Every button is at least --control-height tall.
+   ============================================ */
+
+.btn,
+.btn-small,
+.btn-compact,
+.action-button,
+.secondary-button,
+.cancel-button,
+.developer-button,
+.support-button,
+.form-actions button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  font: inherit;
+  font-size: var(--step-0);
+  font-weight: var(--weight-strong);
+  line-height: var(--leading-head);
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    background-color 150ms,
+    border-color 150ms,
+    color 150ms;
+}
+
+/* These display rules must not reveal an element the page hides. */
+.btn[hidden],
+.btn-small[hidden],
+.btn-compact[hidden],
+.action-button[hidden],
+.secondary-button[hidden],
+.cancel-button[hidden],
+.developer-button[hidden],
+.support-button[hidden],
+.form-actions button[hidden],
+.auth-btn[hidden],
+.status-message[hidden],
+.login-link[hidden] {
+  display: none;
+}
+
+.btn,
+.btn-small,
+.btn-compact,
+.action-button,
+.support-button.primary,
+.form-actions button.primary {
+  background-color: var(--c-brand);
+  border-color: var(--c-brand);
+  color: var(--c-on-brand);
+}
+
+.btn:hover,
+.btn-small:hover,
+.btn-compact:hover,
+.action-button:hover,
+.support-button.primary:hover,
+.form-actions button.primary:hover {
+  background-color: var(--c-brand-strong);
+  border-color: var(--c-brand-strong);
+  color: var(--c-on-brand);
+}
+
+.btn {
+  width: 100%;
+  max-width: 100%;
+  font-size: var(--step-1);
+  overflow-wrap: anywhere;
+}
+
+/* A lone action in a card takes the width of its label, not the width of the card. */
+.btn.btn-fit {
+  width: auto;
+  padding-inline: var(--space-6);
+}
+
+.btn-secondary,
+.secondary-button,
+.support-button.secondary,
+.form-actions button.secondary {
+  background-color: var(--c-paper);
+  border-color: var(--c-brand);
+  color: var(--c-brand);
+}
+
+.btn-secondary:hover,
+.secondary-button:hover,
+.support-button.secondary:hover,
+.form-actions button.secondary:hover {
+  background-color: var(--c-brand-tint);
+  border-color: var(--c-brand-strong);
+  color: var(--c-brand-strong);
+}
+
+.developer-button,
+.link-button {
+  background: none;
+  border-color: transparent;
+  color: var(--c-brand);
+  text-decoration: underline;
+}
+
+.developer-button:hover,
+.link-button:hover {
+  color: var(--c-brand-strong);
+  text-decoration-thickness: 2px;
+}
+
+.cancel-button {
+  background-color: var(--c-error);
+  border-color: var(--c-error);
+  color: var(--c-on-brand);
+}
+
+.cancel-button:hover {
+  background-color: var(--c-paper);
+  color: var(--c-error);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"],
+.btn-small:disabled,
+.btn-compact:disabled,
+.action-button:disabled,
+.secondary-button:disabled,
+.cancel-button:disabled,
+.form-actions button:disabled {
+  cursor: not-allowed;
+}
+
+/* A disabled control reads as a grey fill with dark text, not a faded live one. */
+.btn:disabled,
+.btn[aria-disabled="true"],
+.btn-small:disabled,
+.btn-compact:disabled,
+.action-button:disabled,
+.secondary-button:disabled,
+.cancel-button:disabled,
+.form-actions button:disabled {
+  background-color: var(--c-rule-subtle);
+  border-color: var(--c-rule);
+  color: var(--c-ink-muted);
+}
+
+.btn:disabled:hover,
+.btn-small:disabled:hover,
+.action-button:disabled:hover,
+.form-actions button.primary:disabled:hover {
+  background-color: var(--c-brand);
+  border-color: var(--c-brand);
+}
+
+.btn-small,
+.btn-compact,
+.action-button {
+  width: auto;
+  padding: var(--space-1) var(--space-4);
+}
+
+.action-button,
+.secondary-button,
+.cancel-button {
+  margin: var(--space-1);
+}
+
+.link-button {
+  padding: 0;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+}
+
+.form-toggle-buttons {
+  margin-bottom: var(--space-3);
+}
+
+.form-toggle-buttons .secondary-button,
+.form-toggle-buttons .cancel-button {
+  margin-left: 0;
+}
+
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
+}
+
+/* A heading that follows a row of buttons starts a new block. */
+.button-group + h3 {
+  margin-top: var(--space-5);
+}
+
+/* Under 601px every button in a group takes the full width, so primary and secondary match. */
+@media (max-width: 600px) {
+  .button-group .btn,
+  .button-group .secondary-button {
+    width: 100%;
+    margin: 0;
+  }
+}
+
+@media (min-width: 601px) {
+  .button-group .btn {
+    width: auto;
+    min-width: 14rem;
+  }
+}

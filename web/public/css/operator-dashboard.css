@@ -1,0 +1,485 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* Operator dashboard: the full window width, so every column shows without a scroll. */
+body.page-dashboard {
+  max-width: none;
+}
+
+.objective {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-5);
+  margin: 0 0 var(--space-5) 0;
+}
+
+/* On a narrow screen a table wider than its card scrolls inside the card, not the page. */
+@media (max-width: 900px) {
+  .objective {
+    overflow-x: auto;
+  }
+}
+
+.objective h2 {
+  margin: 0 0 var(--space-3) 0;
+  font-size: var(--step-1);
+}
+
+.objective-empty {
+  color: var(--c-ink-muted);
+  font-style: italic;
+}
+
+table.observations {
+  margin: 0;
+}
+
+table.observations th,
+table.observations td {
+  padding: 0.4em 0.6em;
+}
+
+table.observations th {
+  white-space: nowrap;
+}
+
+.trend-good {
+  color: var(--c-ok);
+}
+
+.trend-bad {
+  color: var(--c-error);
+}
+
+.observation-source {
+  display: block;
+  color: var(--c-ink-muted);
+  font-size: var(--step--1);
+}
+
+.objective-guidance {
+  margin: 0 0 var(--space-4) 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: var(--space-1) var(--space-4);
+  font-size: var(--step--1);
+}
+
+.objective-guidance dt {
+  color: var(--c-ink-muted);
+}
+
+.objective-guidance dd {
+  margin: 0;
+}
+
+@media (max-width: 600px) {
+  .objective-guidance {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* The eight objectives share one column grid so figures line up from panel to panel. */
+#objectivesContainer [data-objective-slot] table.observations {
+  table-layout: fixed;
+  width: 100%;
+}
+
+/* Eight columns: Observation, Today, Previous day, Last 7 days, Last 30 days, 30 day trend,
+   Last 90 days, Where to look. */
+#objectivesContainer [data-objective-slot] table.observations th:nth-child(1) {
+  width: 24%;
+}
+
+#objectivesContainer [data-objective-slot] table.observations th:nth-child(n + 2):nth-child(-n + 7) {
+  width: 9%;
+}
+
+#objectivesContainer [data-objective-slot] table.observations th:nth-child(8) {
+  width: 22%;
+}
+
+#objectivesContainer [data-objective-slot] table.observations th:nth-child(n + 2):nth-child(-n + 7),
+#objectivesContainer [data-objective-slot] table.observations td:nth-child(n + 2):nth-child(-n + 7) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+#objectivesContainer [data-objective-slot] table.observations td:nth-child(8) {
+  overflow-wrap: anywhere;
+}
+
+#objectivesContainer [data-objective-slot] table.observations th {
+  white-space: normal;
+}
+
+@media (max-width: 600px) {
+  #objectivesContainer [data-objective-slot] table.observations {
+    min-width: 36rem;
+  }
+
+  #objectivesContainer [data-objective-slot] table.observations th:nth-child(1) {
+    min-width: 10rem;
+  }
+
+  #objectivesContainer [data-objective-slot] table.observations th:nth-child(8) {
+    min-width: 11rem;
+  }
+}
+
+/* The "Last updated" subtitles under the window columns. */
+table.observations thead tr.last-updated th.last-updated-cell,
+#objectivesContainer [data-objective-slot] table.observations thead tr.last-updated th.last-updated-cell {
+  padding-top: 0;
+  font-size: var(--step--1);
+  font-weight: normal;
+  color: var(--c-ink-muted);
+  text-align: left;
+  white-space: normal;
+}
+
+.trend-flat,
+.trend-unknown {
+  color: var(--c-ink-muted);
+}
+
+/* Activity column: wide enough that a long catalogue name sits on one or two lines. */
+.activities-table th:first-child,
+.activities-table td:first-child {
+  min-width: 18em;
+}
+
+.activities-table thead th,
+.activities-table tbody td:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.activities-table thead th:first-child {
+  text-align: left;
+}
+
+#reinvestmentTable th:nth-child(2),
+#reinvestmentTable td:nth-child(2),
+#companyProfitAndLossTable th:nth-child(2),
+#companyProfitAndLossTable td:nth-child(2),
+#companyBalanceSheetTable th:nth-child(2),
+#companyBalanceSheetTable td:nth-child(2),
+#visitorsTable th:not(:first-child),
+#visitorsTable td:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* The containers below are empty until the snapshot arrives. Each reserves the height
+   measured on a full snapshot so the fill does not push what sits below; a failed load
+   or a rendered snapshot releases the reservation. */
+#objectivesContainer {
+  min-height: 4400px;
+}
+
+#objectivesContainer.objectives-failed,
+#objectivesContainer.objectives-settled {
+  min-height: 0;
+}
+
+#visitorsPanel {
+  min-height: 440px;
+}
+
+@media (max-width: 900px) {
+  #objectivesContainer {
+    min-height: 6600px;
+  }
+
+  #visitorsPanel {
+    min-height: 640px;
+  }
+}
+
+@media (max-width: 600px) {
+  #objectivesContainer {
+    min-height: 6950px;
+  }
+
+  #objectivesContainer.objectives-failed,
+  #objectivesContainer.objectives-settled {
+    min-height: 0;
+  }
+
+  #visitorsPanel {
+    min-height: 670px;
+  }
+}
+
+/* Operator dashboard daily charts. */
+.charts-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-5);
+}
+
+@media (min-width: 900px) {
+  .charts-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.chart-card {
+  min-width: 0;
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-3);
+}
+
+.chart-card h3 {
+  margin: 0;
+  font-size: var(--step-0);
+}
+
+.chart-card[data-chart-id="conversion-to-paid"] {
+  grid-column: 1 / -1;
+}
+
+/* A section heading with its "#" link and, at the right, its table and auto-refresh links. */
+.section-heading-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  margin: 0 0 var(--space-3) 0;
+}
+
+.section-heading-row > h2,
+.section-heading-row > h3 {
+  margin: 0;
+}
+
+.section-heading-row .anchor-link,
+.section-heading-row .chart-table-link,
+.section-heading-row .refresh-link {
+  font-size: var(--step--1);
+}
+
+.section-heading-row .anchor-link {
+  text-decoration: none;
+  color: var(--c-ink-muted);
+}
+
+.section-heading-row .section-heading-first-action {
+  margin-left: auto;
+}
+
+.chart-svg {
+  display: block;
+  max-width: 100%;
+  touch-action: pan-y;
+}
+
+.chart-grid {
+  stroke: var(--c-rule-subtle);
+  stroke-width: 1;
+}
+
+.chart-axis {
+  fill: var(--c-ink-muted);
+  font-size: 11px;
+  font-family: var(--font-figures);
+}
+
+.chart-guide {
+  stroke: var(--c-ink-muted);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.chart-readout {
+  margin: var(--space-2) 0;
+  min-height: 2.8em;
+  font-size: var(--step--1);
+  font-variant-numeric: tabular-nums;
+}
+
+.chart-plot {
+  position: relative;
+}
+
+/* Over the plot, so hiding every line does not move the legend under the pointer. */
+.chart-plot .chart-empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  pointer-events: none;
+}
+
+.chart-plot .chart-empty[hidden] {
+  display: none;
+}
+
+.chart-empty,
+.chart-note {
+  margin: var(--space-2) 0;
+  color: var(--c-ink-muted);
+  font-size: var(--step--1);
+}
+
+.chart-modes {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.chart-mode,
+.chart-legend-item {
+  font: inherit;
+  font-size: var(--step--1);
+  color: var(--c-ink);
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule);
+  border-radius: var(--radius-card);
+  padding: 0.25em 0.6em;
+  cursor: pointer;
+}
+
+.chart-mode[aria-pressed="true"],
+.chart-legend-item[aria-pressed="true"] {
+  background: var(--c-brand-tint);
+  border-color: var(--c-brand);
+}
+
+.chart-legend-item[aria-pressed="false"] {
+  color: var(--c-ink-muted);
+  text-decoration: line-through;
+}
+
+.chart-legend-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.chart-range {
+  display: inline-flex;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.chart-range[hidden] {
+  display: none;
+}
+
+.chart-legend {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+}
+
+.chart-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+}
+
+.chart-swatch {
+  display: inline-block;
+  width: 1.4em;
+  border-top: 2px solid;
+}
+
+/* Data tables under 40rem: each row is a block of label and value pairs, so no column sits out
+   of sight. lib/stacked-table.js copies the column headings onto the cells as data-label. The
+   operator dashboard's other observation tables keep scrolling inside their cards. */
+@media (max-width: 40rem) {
+  .data-table:not(.observations:not(.activities-table)),
+  .data-table:not(.observations:not(.activities-table)) tbody,
+  .rates-table,
+  .rates-table tbody {
+    display: block;
+    width: 100%;
+    min-width: 0;
+    overflow: visible;
+    background: none;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) caption,
+  .rates-table caption,
+  .stacked-table caption {
+    display: block;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) thead,
+  .rates-table thead {
+    position: absolute;
+    left: -9999px;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) tr,
+  .rates-table tr {
+    display: block;
+    padding: var(--space-2) 0;
+    border-bottom: 2px solid var(--c-rule);
+  }
+
+  .data-table:not(.observations:not(.activities-table)) td,
+  .rates-table td {
+    display: grid;
+    grid-template-columns: minmax(6rem, 40%) minmax(0, 1fr);
+    gap: var(--space-3);
+    min-width: 0;
+    padding: var(--space-1) 0;
+    border: 0;
+    text-align: left;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) td[data-label]::before,
+  .rates-table td[data-label]::before {
+    content: attr(data-label);
+    font-weight: var(--weight-strong);
+    color: var(--c-ink-muted);
+  }
+
+  .data-table:not(.observations:not(.activities-table)) td[colspan],
+  .rates-table td[colspan] {
+    display: block;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) tbody th,
+  .rates-table tbody th {
+    display: block;
+    text-align: left;
+    border: 0;
+    padding: var(--space-2) 0 0;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) .receipt-nowrap {
+    white-space: normal;
+  }
+
+  .data-table:not(.observations:not(.activities-table)) td .link-button {
+    text-align: left;
+  }
+
+  .activities-table th:first-child,
+  .activities-table td:first-child {
+    min-width: 0;
+  }
+}
+
+/* Above 1100px the tilted header grid still fans past the content column far enough to make the
+   page scroll sideways, so the header clips it there too. */
+@media (min-width: 1101px) {
+  header {
+    overflow-x: clip;
+  }
+}

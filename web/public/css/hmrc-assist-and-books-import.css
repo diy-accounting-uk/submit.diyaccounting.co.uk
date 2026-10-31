@@ -1,0 +1,91 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   HMRC Assist feedback
+   ============================================ */
+
+.hmrc-assist {
+  margin: var(--space-4) 0;
+}
+
+.hmrc-assist-feedback {
+  border-left: 4px solid currentColor;
+  padding-left: var(--space-4);
+  margin: var(--space-2) 0 var(--space-4);
+}
+
+.hmrc-assist-feedback ol {
+  padding-left: var(--space-5);
+}
+
+.hmrc-assist-message {
+  margin-bottom: var(--space-4);
+}
+
+.hmrc-assist-message p {
+  margin: var(--space-1) 0;
+}
+
+input.hmrc-assist-highlight {
+  outline: 3px solid var(--c-focus);
+  outline-offset: 0;
+}
+
+/* ============================================
+   Import from your books (widgets/books-import.js)
+   ============================================ */
+
+.books-import {
+  margin-top: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.books-import-drop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 2px dashed var(--c-brand);
+  border-radius: var(--radius-card);
+  color: var(--c-ink);
+}
+
+.books-import-drop--over {
+  background: var(--c-brand-tint);
+}
+
+.books-import-status {
+  white-space: pre-line;
+}
+
+/* The Company Tax Return form: the worked tax is the one emphasised block */
+.worked-tax {
+  border: 2px solid var(--c-brand);
+  border-radius: var(--radius-card);
+  background: var(--c-brand-tint);
+  padding: var(--space-4);
+  margin-bottom: var(--space-5);
+}
+
+.worked-tax__list {
+  margin: 0;
+}
+
+.worked-tax__row {
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--c-rule-subtle);
+}
+
+.worked-tax__row dt {
+  font-weight: var(--weight-strong);
+}
+
+.worked-tax__row dd {
+  margin: 0;
+}
+
+.worked-tax__row .hint {
+  margin-bottom: 0;
+}

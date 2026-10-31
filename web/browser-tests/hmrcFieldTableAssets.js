@@ -8,6 +8,7 @@
 
 import fs from "fs";
 import path from "path";
+import { readSubmitCss } from "./submitCss.js";
 
 const PUBLIC_DIR = path.join(process.cwd(), "web/public");
 
@@ -44,7 +45,9 @@ export function serveMoneyInput(page) {
 // The site stylesheet, for a screenshot that looks like the deployed page.
 export async function serveSiteStyles(page) {
   await serveFile(page, "**/submission-record.css", "submission-record.css", "text/css");
-  return serveFile(page, "**/submit.css", "submit.css", "text/css");
+  return page.route("**/submit.css", async (route) => {
+    await route.fulfill({ status: 200, contentType: "text/css", body: readSubmitCss() });
+  });
 }
 
 export function screenshotPath(name) {

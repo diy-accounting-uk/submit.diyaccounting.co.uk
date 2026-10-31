@@ -1,0 +1,163 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* Bundles */
+.bundles-section {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--c-rule-subtle);
+}
+
+.form-container > .bundles-section:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.bundles-section[hidden],
+#passStatus[hidden],
+#generatedPassesEmpty[hidden],
+#generatedPassesLoadMore[hidden] {
+  display: none;
+}
+
+.bundles-section h2 {
+  margin-top: 0;
+}
+
+.pass-entry {
+  max-width: 28rem;
+}
+
+.pass-entry .btn {
+  width: auto;
+  margin-top: var(--space-3);
+}
+
+.pass-status {
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--pass-ink);
+  border-radius: var(--radius-control);
+  background: var(--pass-tint);
+  color: var(--c-ink);
+}
+
+.pass-status--ok {
+  --pass-ink: var(--c-ok);
+  --pass-tint: var(--c-ok-tint);
+}
+
+.pass-status--error {
+  --pass-ink: var(--c-error);
+  --pass-tint: var(--c-error-tint);
+}
+
+.pass-status--info {
+  --pass-ink: var(--c-info);
+  --pass-tint: var(--c-info-tint);
+}
+
+.service-item {
+  text-align: left;
+}
+
+.bundle-note {
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+  margin: var(--space-2) 0 0;
+}
+
+.bundle-note--ok {
+  color: var(--c-ok);
+}
+
+.bundle-note--warn {
+  color: var(--c-warn);
+}
+
+.bundle-note--info {
+  color: var(--c-ink);
+}
+
+.bundle-row {
+  margin-bottom: var(--space-4);
+  padding: var(--space-4);
+  background: var(--c-canvas);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-control);
+}
+
+.bundle-row-line {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.pass-figures {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-3);
+  margin: var(--space-3) 0 var(--space-4);
+}
+
+@media (min-width: 40rem) {
+  .pass-figures {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.pass-figure dt {
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+}
+
+.pass-figure dd {
+  margin: 0;
+  font-weight: var(--weight-strong);
+  overflow-wrap: anywhere;
+}
+
+.pass-totals {
+  border-color: var(--c-brand);
+}
+
+.bundle-row-line + .bundle-row-line {
+  margin-top: var(--space-2);
+}
+
+.pass-code {
+  font-weight: var(--weight-strong);
+  color: var(--c-brand);
+  word-break: break-word;
+}
+
+.btn.btn-outline {
+  background-color: var(--c-paper);
+  color: var(--c-brand);
+  border: 1px solid var(--c-brand);
+}
+
+.btn.btn-outline:hover {
+  background-color: var(--c-brand-tint);
+}
+
+.btn.btn-danger-outline {
+  background-color: var(--c-paper);
+  color: var(--c-error);
+  border: 1px solid var(--c-error);
+}
+
+.btn.btn-danger-outline:hover {
+  background-color: var(--c-error-tint);
+}
+
+.btn.bundle-row-btn {
+  width: auto;
+}
+
+.bundle-row-name {
+  flex: 1 1 12em;
+  min-width: 0;
+}

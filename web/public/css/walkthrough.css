@@ -1,0 +1,258 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Walkthrough under each embedded video (widgets/video-walkthrough.js)
+   ============================================ */
+
+.walkthrough {
+  margin-top: var(--space-4);
+}
+
+.walkthrough > summary {
+  cursor: pointer;
+  font-weight: var(--weight-strong);
+  color: var(--c-brand);
+  padding: var(--space-2) 0;
+}
+
+.walkthrough-list {
+  list-style: none;
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+.walkthrough-item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  scroll-margin-top: var(--space-4);
+}
+
+.walkthrough-item:target .walkthrough-thumb {
+  outline: 3px solid var(--c-brand);
+}
+
+.walkthrough-thumb {
+  display: block;
+  padding: 0;
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  background: var(--c-paper);
+  cursor: zoom-in;
+  overflow: hidden;
+}
+
+.walkthrough-thumb img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: center;
+}
+
+.walkthrough-headline {
+  margin: 0;
+  font-size: var(--step-0);
+}
+
+.walkthrough-caption {
+  margin: 0;
+  font-size: var(--step--1);
+}
+
+.walkthrough-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.walkthrough-status {
+  color: var(--c-ok);
+  font-size: var(--step--1);
+}
+
+.walkthrough-overlay {
+  box-sizing: border-box;
+  width: min(1100px, 96vw);
+  max-height: 96vh;
+  padding: var(--space-4) var(--space-5);
+  border: 0;
+  border-radius: var(--radius-card);
+  background: var(--c-paper);
+  color: var(--c-ink);
+  overflow: auto;
+}
+
+.walkthrough-overlay::backdrop {
+  background: rgb(11 12 12 / 0.88);
+}
+
+.walkthrough-overlay-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+  font-size: var(--step--1);
+}
+
+.walkthrough-overlay-image {
+  display: block;
+  width: 100%;
+  max-height: 66vh;
+  object-fit: contain;
+  background: var(--c-canvas);
+  border-radius: var(--radius-card);
+}
+
+.walkthrough-overlay-heading {
+  margin: var(--space-3) 0 var(--space-1);
+}
+
+.walkthrough-overlay-caption {
+  margin: 0 0 var(--space-3);
+}
+
+.walkthrough-overlay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+/* Walkthrough video pages: the intro, contents and one section per video (widgets/video-pages.js) */
+.videos-intro,
+.video-section,
+.video-contents-nav {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-4) var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.videos-intro p {
+  margin: 0;
+}
+
+.video-section {
+  scroll-margin-top: var(--space-4);
+}
+
+.video-section:target {
+  outline: 3px solid var(--c-brand);
+  outline-offset: 2px;
+}
+
+.video-section h2,
+.video-contents-nav h2 {
+  margin: 0 0 var(--space-2);
+}
+
+.video-contents-nav h3 {
+  margin: var(--space-4) 0 var(--space-1);
+  font-size: var(--step-0);
+  color: var(--c-ink-muted);
+}
+
+.video-contents-nav .video-contents-groups > h3:first-child {
+  margin-top: 0;
+}
+
+.video-contents-nav ul {
+  margin: 0;
+}
+
+.video-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: var(--c-focus-ink);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  margin: var(--space-3) 0;
+}
+
+.video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.video-share {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.video-share .copied {
+  color: var(--c-ok);
+}
+
+.help-intro {
+  text-align: center;
+}
+
+/* Walkthrough video pages: click-to-load player and reserved space (widgets/video-pages.js) */
+#videoList {
+  min-height: 30rem;
+}
+
+#videoContents .video-contents-groups {
+  min-height: 14em;
+}
+
+.video-facade {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: #000;
+  cursor: pointer;
+}
+
+.video-facade img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.video-facade-play {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 4.5em;
+  height: 3.2em;
+  transform: translate(-50%, -50%);
+  border-radius: 0.9em;
+  background: rgb(0 0 0 / 0.8);
+}
+
+.video-facade-play::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-35%, -50%);
+  border-style: solid;
+  border-width: 0.8em 0 0.8em 1.3em;
+  border-color: transparent transparent transparent #fff;
+}
+
+/* YouTube's own play-button red, on the video's black frame. */
+.video-facade:hover .video-facade-play,
+.video-facade:focus-visible .video-facade-play {
+  background: #c00;
+}

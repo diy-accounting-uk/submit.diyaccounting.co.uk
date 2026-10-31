@@ -1,0 +1,65 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   The outcome of a filing
+
+   The colour, the left bar and the heading all say accepted or
+   rejected, so the colour is never the only sign.
+   ============================================ */
+
+.outcome {
+  padding: var(--space-4) var(--space-5);
+  border-left: 6px solid var(--c-info);
+  background: var(--c-info-tint);
+  border-radius: var(--radius-control);
+  color: var(--c-ink);
+}
+
+.outcome > :first-child {
+  margin-top: 0;
+}
+
+.outcome > :last-child,
+.outcome > :last-child > :last-child {
+  margin-bottom: 0;
+}
+
+.outcome + .outcome,
+.outcome ~ p:has(> #filingCopyLink) {
+  margin-top: var(--space-4);
+}
+
+.outcome--ok {
+  border-left-color: var(--c-ok);
+  background: var(--c-ok-tint);
+}
+
+.outcome--error {
+  border-left-color: var(--c-error);
+  background: var(--c-error-tint);
+}
+
+.outcome__title {
+  font-size: var(--step-2);
+  margin-bottom: var(--space-3);
+}
+
+.outcome--ok .outcome__title {
+  color: var(--c-ok);
+}
+
+.outcome--error .outcome__title {
+  color: var(--c-error);
+}
+
+.outcome code {
+  font-family: var(--font-code);
+  font-size: var(--step-0);
+  overflow-wrap: anywhere;
+}
+
+.outcome ul {
+  margin: 0 0 var(--space-3);
+  padding-left: var(--space-5);
+}

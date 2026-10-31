@@ -1,0 +1,121 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* Passes */
+.pass-intro {
+  margin-top: 0;
+  max-width: var(--measure);
+}
+
+.pass-field {
+  max-width: 28rem;
+  margin: var(--space-4) 0;
+  padding: 0;
+  border: none;
+}
+
+.pass-field label,
+.pass-field legend {
+  display: block;
+  margin-bottom: var(--space-1);
+  padding: 0;
+  font-weight: var(--weight-strong);
+}
+
+.pass-field input[type="text"] {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.product-type-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-5);
+}
+
+.product-type-option {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-weight: var(--weight-text);
+  cursor: pointer;
+}
+
+.pass-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin: var(--space-4) 0;
+}
+
+.pass-actions > .btn:not(.btn-small) {
+  width: auto;
+  min-width: 12rem;
+}
+
+.pass-result {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--c-rule-subtle);
+}
+
+.pass-code {
+  margin: var(--space-4) 0;
+  font-size: var(--step-2);
+  font-weight: var(--weight-strong);
+  letter-spacing: 0.02em;
+  color: var(--c-brand);
+  word-break: break-word;
+}
+
+.pass-copy-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-2) 0;
+}
+
+.pass-copy-text {
+  word-break: break-all;
+}
+
+.pass-qr {
+  max-width: 250px;
+  margin: var(--space-4) 0;
+}
+
+.pass-design h4 {
+  margin: var(--space-4) 0 var(--space-2);
+}
+
+.pass-preview {
+  display: inline-block;
+  min-width: 200px;
+  padding: var(--space-4);
+  background: var(--c-print);
+  border: 2px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+}
+
+.pass-note {
+  display: block;
+  max-width: var(--measure);
+  padding: var(--space-3);
+  margin: var(--space-3) 0 0;
+  border-left: 4px solid var(--note-ink);
+  border-radius: var(--radius-control);
+  background: var(--note-tint);
+  color: var(--c-ink);
+  font-size: var(--step--1);
+}
+
+.pass-note.status-warning {
+  --note-ink: var(--c-warn);
+  --note-tint: var(--c-warn-tint);
+}
+
+.pass-note.status-info {
+  --note-ink: var(--c-info);
+  --note-tint: var(--c-info-tint);
+}

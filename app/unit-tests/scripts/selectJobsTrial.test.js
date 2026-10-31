@@ -6,6 +6,8 @@
 import { describe, test, expect } from "vitest";
 import {
   jobDisplayNames,
+  readMatrixEntries,
+  readCalledWorkflows,
   jobDurationSeconds,
   tallyAdvisedSkips,
   renderMarkdownTable,
@@ -41,6 +43,81 @@ describe("jobDisplayNames", () => {
   });
 });
 
+describe("jobDisplayNames with matrix entries", () => {
+  const MATRIX_WORKFLOW_YAML = `
+jobs:
+  lint-js:
+    runs-on: ubuntu-24.04
+  behaviour-test-simulator:
+    name: 'simulator - \${{ matrix.suite }}'
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        include: \${{ fromJSON(needs.simulator-suites.outputs.include) }}
+`;
+  const entries = [{ id: "behaviour-test-simulator-submit-vat", suite: "submitVatBehaviour" }];
+
+  test("fills the matrix job's name template from the entry", () => {
+    const names = jobDisplayNames(MATRIX_WORKFLOW_YAML, ["behaviour-test-simulator-submit-vat", "lint-js"], entries);
+    expect(names).toEqual({ "behaviour-test-simulator-submit-vat": "simulator - submitVatBehaviour", "lint-js": "lint-js" });
+  });
+
+  test("names every simulator catalogue id as the check the old job had", async () => {
+    const fs = await import("node:fs");
+    const workflowText = fs.readFileSync(".github/workflows/test.yml", "utf8");
+    const { JOB_ID_CATALOGUES } = await import("../../../scripts/ci/select-jobs.mjs");
+    const matrixEntries = readMatrixEntries("test.yml");
+    const simulatorIds = [...JOB_ID_CATALOGUES["test.yml"]].filter((id) => id.startsWith("behaviour-test-simulator-"));
+    expect(matrixEntries.map((entry) => entry.id).sort()).toEqual(simulatorIds.sort());
+    const names = jobDisplayNames(workflowText, simulatorIds, matrixEntries);
+    for (const entry of matrixEntries) {
+      expect(names[entry.id]).toBe(`simulator - ${entry.suite}`);
+    }
+  });
+});
+
+describe("jobDisplayNames with the probe matrix entries", () => {
+  test("lists every deploy.yml probe catalogue id except web-test, and names each as the old job was", async () => {
+    const fs = await import("node:fs");
+    const workflowText = fs.readFileSync(".github/workflows/deploy.yml", "utf8");
+    const { JOB_ID_CATALOGUES } = await import("../../../scripts/ci/select-jobs.mjs");
+    const matrixEntries = readMatrixEntries("deploy.yml");
+    const probeIds = [...JOB_ID_CATALOGUES["deploy.yml"]].filter((id) => id.startsWith("web-test-"));
+    expect(matrixEntries.map((entry) => entry.id).sort()).toEqual(probeIds.sort());
+    const names = jobDisplayNames(workflowText, probeIds, matrixEntries);
+    for (const entry of matrixEntries) {
+      expect(names[entry.id]).toBe(`${entry.suite}-\${{ needs.names.outputs.environment-name }} via probe test`);
+    }
+  });
+});
+
+describe("jobDisplayNames with called workflows", () => {
+  test("names a stack job id from deploy-stacks.yml with the stack phase caller prefix", async () => {
+    const fs = await import("node:fs");
+    const workflowText = fs.readFileSync(".github/workflows/deploy.yml", "utf8");
+    const names = jobDisplayNames(
+      workflowText,
+      ["deploy-api", "deploy-auth", "deploy-edge", "web-test"],
+      [],
+      readCalledWorkflows("deploy.yml"),
+    );
+    expect(names["deploy-api"]).toBe("deploy stacks / deploy api");
+    expect(names["deploy-auth"]).toBe("deploy stacks / deploy AuthStack via deploy-cdk-stack.yml");
+    expect(names["deploy-edge"]).toBe("deploy stacks / deploy EdgeStack via deploy-cdk-stack.yml");
+    expect(names["web-test"]).not.toMatch(/^deploy stacks \//);
+  });
+
+  test("names every deploy.yml stack catalogue id from the called workflow", async () => {
+    const fs = await import("node:fs");
+    const workflowText = fs.readFileSync(".github/workflows/deploy.yml", "utf8");
+    const { JOB_ID_CATALOGUES } = await import("../../../scripts/ci/select-jobs.mjs");
+    const stackIds = [...JOB_ID_CATALOGUES["deploy.yml"]].filter((id) => id.startsWith("deploy-"));
+    expect(stackIds.length).toBeGreaterThan(0);
+    const names = jobDisplayNames(workflowText, stackIds, [], readCalledWorkflows("deploy.yml"));
+    for (const id of stackIds) expect(names[id]).toMatch(/^deploy stacks \/ deploy /);
+  });
+});
+
 describe("artifactLabelForCatalogue", () => {
   test("labels test.yml's own artifact 'test'", () => {
     expect(artifactLabelForCatalogue("test.yml")).toBe("test");
@@ -56,10 +133,10 @@ describe("artifactLabelForCatalogue", () => {
 });
 
 describe("runSourcesForCatalogue", () => {
-  test("test.yml gathers from its own runs and from deploy.yml's, prefixed by the caller job id", () => {
+  test("test.yml gathers from its own runs and from deploy.yml's, prefixed by the caller job name", () => {
     expect(runSourcesForCatalogue("test.yml")).toEqual([
       { workflowFile: "test.yml", jobNamePrefix: "" },
-      { workflowFile: "deploy.yml", jobNamePrefix: "test / " },
+      { workflowFile: "deploy.yml", jobNamePrefix: "delegate to test workflow / " },
     ]);
   });
 

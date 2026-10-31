@@ -1,0 +1,257 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Reset and base
+   ============================================ */
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font-text);
+  font-size: var(--step-0);
+  line-height: var(--leading-text);
+  background-color: var(--c-canvas);
+  color: var(--c-ink);
+  display: flex;
+  flex-direction: column;
+  padding: 0 var(--gutter) var(--space-4);
+  max-width: calc(var(--content-max) + 2 * var(--gutter));
+  margin: 0 auto;
+  font-variant-numeric: lining-nums;
+}
+
+/* Paragraph and list rhythm inside content. */
+main p,
+main ul,
+main ol {
+  margin-bottom: var(--space-3);
+}
+
+main ul,
+main ol {
+  padding-left: var(--space-5);
+}
+
+main li + li {
+  margin-top: var(--space-1);
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-code);
+  font-size: 0.9375em;
+}
+
+pre {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+img,
+video,
+iframe {
+  max-width: 100%;
+}
+
+/* Money and counts line up in columns. */
+td,
+th,
+.receipt-item,
+input[type="number"],
+.input-prefix input,
+.token-balance {
+  font-family: var(--font-figures);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* WCAG 2.1 AA: Skip link for keyboard navigation (2.4.1 Bypass Blocks) */
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: var(--gutter);
+  background: var(--c-focus);
+  color: var(--c-focus-ink);
+  padding: var(--space-2) var(--space-3);
+  z-index: 100;
+  text-decoration: underline;
+  font-weight: var(--weight-strong);
+}
+
+.skip-link:focus {
+  top: var(--space-2);
+}
+
+/* ============================================
+   Links
+   ============================================ */
+
+a {
+  color: var(--c-brand);
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 1px;
+}
+
+a:hover {
+  color: var(--c-brand-strong);
+  text-decoration-thickness: 2px;
+}
+
+/* WCAG 2.1 AA: links in text blocks are distinguishable by more than colour
+   (axe-core "link-in-text-block"). */
+p a,
+li a,
+td a,
+dd a,
+.help-text a,
+article a {
+  text-decoration: underline;
+}
+
+main p a:visited,
+main li a:visited,
+main td a:visited,
+main dd a:visited {
+  color: var(--c-visited);
+}
+
+/* Navigational links and buttons carry no underline and no visited colour. */
+nav a,
+.menu-dropdown a,
+.btn,
+button {
+  text-decoration: none;
+}
+
+/* External link icon (new tab) */
+a[target="_blank"]::after,
+a.external-link::after {
+  content: "";
+  display: inline-block;
+  width: 0.7em;
+  height: 0.7em;
+  margin-left: 0.25em;
+  vertical-align: baseline;
+  background-color: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3h7v7'/%3E%3Cpath d='M21 3l-9 9'/%3E%3Cpath d='M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3h7v7'/%3E%3Cpath d='M21 3l-9 9'/%3E%3Cpath d='M19 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5'/%3E%3C/svg%3E")
+    no-repeat center / contain;
+}
+
+/* ============================================
+   Focus (WCAG 2.4.7 Focus Visible, 2.4.13 Focus Appearance)
+
+   A yellow halo with an ink ring. The outline carries the yellow so the
+   ring also shows in forced-colours mode; the shadow adds the ink edge.
+   ============================================ */
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--c-focus);
+  outline-offset: 0;
+  box-shadow: 0 0 0 5px var(--c-focus-ink);
+}
+
+/* A focused text link reads as a yellow highlight with an ink underline. */
+main a:not(.btn):focus-visible,
+footer a:focus-visible,
+.main-nav a:focus-visible {
+  background-color: var(--c-focus);
+  color: var(--c-focus-ink);
+  box-shadow: 0 4px 0 var(--c-focus-ink);
+  text-decoration: none;
+}
+
+/* WCAG 2.2 AA: Focus Not Obscured Minimum (2.4.11)
+   The cookie-consent banner (#consent-banner, added by submit.js) is fixed
+   to the bottom of the viewport and can sit on top of whichever element
+   last received keyboard focus. scroll-padding-bottom keeps focus-driven
+   scrolling clear of it, and the generated block gives the page the room
+   below the footer that the scroll needs. body has a fixed height (100%,
+   for the sticky footer), so padding on body or footer is absorbed into
+   the overflow; a generated block is real content and extends the page.
+   flex-shrink: 0 stops the flex layout shrinking it away. */
+html:has(#consent-banner) {
+  scroll-padding-bottom: 180px;
+}
+
+body:has(#consent-banner)::after {
+  content: "";
+  display: block;
+  height: 180px;
+  flex-shrink: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ============================================
+   Typography - headings
+   ============================================ */
+
+h1,
+h2,
+h3,
+h4 {
+  line-height: var(--leading-head);
+  color: var(--c-ink);
+  font-weight: var(--weight-strong);
+  text-wrap: balance;
+}
+
+h1 {
+  font-size: var(--step-4);
+  margin-bottom: var(--space-2);
+  letter-spacing: -0.01em;
+}
+
+h2 {
+  font-size: var(--step-2);
+  margin-bottom: var(--space-3);
+}
+
+h3 {
+  font-size: var(--step-1);
+  margin-bottom: var(--space-2);
+}
+
+h4 {
+  font-size: var(--step-0);
+  margin-bottom: var(--space-2);
+}
+
+* + h2 {
+  margin-top: var(--space-5);
+}

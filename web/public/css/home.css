@@ -1,0 +1,111 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* Home: activities by area, the feedback banner and the two proof notes */
+#dynamicActivities {
+  margin: var(--space-4) 0;
+}
+
+.activity-group {
+  margin: var(--space-5) 0;
+}
+
+.activity-group h2 {
+  font-size: var(--step-1);
+  margin: 0 0 var(--space-2);
+  padding-bottom: var(--space-1);
+  border-bottom: 1px solid var(--c-rule-subtle);
+}
+
+.activity-item {
+  margin: var(--space-2) 0;
+}
+
+.btn.activity-secondary {
+  background-color: var(--c-paper);
+  color: var(--c-brand);
+  border: 1px solid var(--c-brand);
+}
+
+.btn.activity-secondary:hover {
+  background-color: var(--c-brand-tint);
+}
+
+.activity-note {
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+  margin: var(--space-1) 0 0;
+}
+
+.activity-note--warn {
+  color: var(--c-warn);
+}
+
+.activity-message--error {
+  color: var(--c-error);
+}
+
+.btn-ok,
+.btn-ok:disabled {
+  background-color: var(--c-ok);
+  border-color: var(--c-ok);
+  color: var(--c-paper);
+}
+
+.feedback-banner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  background-color: var(--c-info-tint);
+  color: var(--c-ink);
+  border: 1px solid var(--c-info);
+  border-radius: var(--radius-control);
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+.feedback-banner[hidden] {
+  display: none;
+}
+
+/* On a phone the banner is tall, so it scrolls away instead of covering the buttons under it. */
+@media (min-width: 601px) {
+  .feedback-banner {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+}
+
+.proof-note {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-4) var(--space-5);
+  margin-top: var(--space-4);
+}
+
+.proof-note > :last-child,
+.proof-note blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.proof-stars {
+  color: var(--c-warn);
+  letter-spacing: 0.05em;
+}
+
+.proof-note blockquote {
+  margin: var(--space-3) 0 0;
+}
+
+.proof-note blockquote footer {
+  color: var(--c-ink-muted);
+  font-size: var(--step--1);
+  margin-top: var(--space-1);
+}
+
+.proof-note blockquote footer::before {
+  content: "\2014\00a0";
+}

@@ -7,6 +7,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { readSubmitCss } from "./submitCss.js";
 
 const PUBLIC_DIR = path.join(process.cwd(), "web/public");
 const readPublic = (relativePath) => fs.readFileSync(path.join(PUBLIC_DIR, relativePath), "utf-8");
@@ -30,7 +31,7 @@ async function setupRoutes(page, { entry, putStatus = 200, putBody = { state: "f
     await route.fulfill({ status: 200, contentType: "application/javascript", body: readPublic("widgets/page-chrome.js") });
   });
   await page.route("**/submit.css", async (route) => {
-    await route.fulfill({ status: 200, contentType: "text/css", body: readPublic("submit.css") });
+    await route.fulfill({ status: 200, contentType: "text/css", body: readSubmitCss() });
   });
   await page.route("**/api/v1/mcp/codes-entries/*", async (route) => {
     const request = route.request();

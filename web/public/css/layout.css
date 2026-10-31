@@ -1,0 +1,102 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Layout - main content
+   ============================================ */
+
+#mainContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  /* Without this, a flex item's default min-width is its content's
+     min-content size: a wide table or long word inside #mainContent would
+     force the whole column wider than the viewport. */
+  min-width: 0;
+}
+
+/* ============================================
+   Feature status
+
+   Every page states whether its feature is production, sandbox or preview.
+   The status word is a tag in the status colour, and the line carries a
+   rule in the same colour down its left edge.
+   ============================================ */
+
+p.hint[data-feature-status],
+.feature-status-summary {
+  --status-ink: var(--c-ink-muted);
+  --status-tint: var(--c-canvas);
+  color: var(--c-ink);
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-left: 4px solid var(--status-ink);
+  border-radius: 0 var(--radius-control) var(--radius-control) 0;
+  padding: var(--space-3) var(--space-4);
+  margin-bottom: var(--space-4);
+  font-size: var(--step-0);
+  max-width: none;
+}
+
+p.hint[data-feature-status="production"],
+.status-tag[data-status="production"] {
+  --status-ink: var(--c-ok);
+  --status-tint: var(--c-ok-tint);
+}
+
+p.hint[data-feature-status="sandbox"],
+.status-tag[data-status="sandbox"] {
+  --status-ink: var(--c-warn);
+  --status-tint: var(--c-warn-tint);
+}
+
+p.hint[data-feature-status="preview"],
+.status-tag[data-status="preview"] {
+  --status-ink: var(--c-info);
+  --status-tint: var(--c-info-tint);
+}
+
+p.hint[data-feature-status] > strong:first-child,
+.status-tag {
+  display: inline-block;
+  color: var(--status-ink);
+  background: var(--status-tint);
+  border: 1px solid var(--status-ink);
+  border-radius: var(--radius-control);
+  padding: 0 var(--space-2);
+  margin-right: var(--space-1);
+  font-size: var(--step--1);
+  font-weight: var(--weight-strong);
+  line-height: 1.6;
+}
+
+.feature-status-summary {
+  border-left-color: var(--c-brand);
+}
+
+.feature-status-summary p {
+  margin-bottom: var(--space-2);
+}
+
+.feature-status-summary ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: var(--space-2);
+}
+
+.feature-status-summary li + li {
+  margin-top: 0;
+}
+
+.feature-status-summary .status-tag {
+  min-width: 6.5em;
+  text-align: center;
+}
+
+@media (max-width: 600px) {
+  .feature-status-summary .status-tag {
+    min-width: 0;
+  }
+}

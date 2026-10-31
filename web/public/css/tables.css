@@ -1,0 +1,375 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Tables
+
+   Rule-coloured lines, no zebra, the caption above, figures in tabular
+   numerals. A wide table scrolls inside its own box.
+   ============================================ */
+
+table {
+  border-collapse: collapse;
+}
+
+caption {
+  caption-side: top;
+  text-align: left;
+  font-weight: var(--weight-strong);
+  padding-bottom: var(--space-2);
+}
+
+.data-table,
+.results-table,
+.receipt-display table,
+.faq-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--space-4) 0;
+  background-color: var(--c-paper);
+}
+
+.data-table th,
+.data-table td,
+.results-table th,
+.results-table td,
+.receipt-display th,
+.receipt-display td,
+.faq-table th,
+.faq-table td {
+  padding: var(--space-2) var(--space-3);
+  text-align: left;
+  vertical-align: top;
+  border: none;
+  border-bottom: 1px solid var(--c-rule-subtle);
+}
+
+.data-table .receipt-nowrap {
+  white-space: nowrap;
+}
+
+.data-table th,
+.results-table th,
+.receipt-display th,
+.faq-table th {
+  background-color: transparent;
+  font-weight: var(--weight-strong);
+  color: var(--c-ink);
+  border-bottom: 2px solid var(--c-rule);
+}
+
+.data-table tbody th,
+.results-table tbody th,
+.receipt-display tbody th,
+.faq-table tbody th {
+  border-bottom: 1px solid var(--c-rule-subtle);
+}
+
+.data-table tr:hover,
+.results-table tbody tr:hover {
+  background-color: var(--c-canvas);
+}
+
+.results-table .date-column {
+  white-space: nowrap;
+}
+
+/* Ledger cells: money is right-aligned figures, dates and periods are plain text. */
+.results-table th.money-column,
+.results-table td.money-column {
+  text-align: right;
+  font-family: var(--font-figures);
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+.results-table td.money-column {
+  white-space: nowrap;
+}
+
+.results-table td.receipt-cell .download-icon {
+  margin-left: var(--space-3);
+}
+
+.results-table td.action-column {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--c-rule-subtle);
+}
+
+.results-table .action-button {
+  margin: 0;
+  white-space: nowrap;
+}
+
+.results-table .link-button {
+  min-height: var(--control-height);
+}
+
+/* Under 40rem a row is a block of label and value pairs, so no column sits out of sight. */
+@media (max-width: 40rem) {
+  .results-table:not(.review-table),
+  .results-table:not(.review-table) tbody {
+    display: block;
+    overflow: visible;
+    background: none;
+  }
+
+  .results-table:not(.review-table) thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .results-table:not(.review-table) tr {
+    display: block;
+    padding: var(--space-2) 0;
+    border-bottom: 2px solid var(--c-rule);
+  }
+
+  .results-table:not(.review-table) td {
+    display: grid;
+    grid-template-columns: minmax(6rem, 40%) minmax(0, 1fr);
+    gap: var(--space-3);
+    padding: var(--space-1) 0;
+    border: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .results-table:not(.review-table) td[data-label]::before {
+    content: attr(data-label);
+    font-weight: var(--weight-strong);
+    color: var(--c-ink-muted);
+  }
+
+  .results-table:not(.review-table) td.money-column {
+    white-space: normal;
+  }
+
+  .results-table:not(.review-table) td.money-column::before {
+    text-align: left;
+  }
+
+  .results-table:not(.review-table) td.action-column,
+  .results-table:not(.review-table) td.receipt-cell {
+    display: grid;
+    border: 0;
+  }
+
+  .results-table:not(.review-table) td.receipt-cell {
+    grid-template-columns: minmax(6rem, 40%) minmax(0, 1fr);
+    align-items: start;
+    gap: var(--space-3);
+  }
+
+  .results-table:not(.review-table) td.date-column {
+    white-space: normal;
+  }
+
+  .results-table:not(.review-table) td.action-column {
+    display: flex;
+    padding-top: var(--space-2);
+  }
+
+  .results-table:not(.review-table) td.action-column::before {
+    display: none;
+  }
+
+  .results-table:not(.review-table) tbody th {
+    display: block;
+    text-align: left;
+    border: 0;
+    padding: var(--space-2) 0 0;
+    color: var(--c-ink-muted);
+  }
+
+  .results-table:not(.review-table) td.receipt-cell .download-icon {
+    margin-left: 0;
+  }
+
+  .results-table:not(.review-table) td.receipt-cell .receipt-label {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}
+
+.status-open {
+  color: var(--c-error);
+  font-weight: var(--weight-strong);
+}
+
+.status-fulfilled {
+  color: var(--c-ok);
+  font-weight: var(--weight-strong);
+}
+
+.no-data {
+  text-align: center;
+  padding: var(--space-6);
+  color: var(--c-ink-muted);
+}
+
+.results-container {
+  margin-top: var(--space-6);
+  padding: var(--space-5);
+  background-color: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  overflow-x: auto;
+}
+
+/* Receipt display */
+.receipt {
+  background: var(--c-paper);
+  padding: var(--space-6);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  margin-top: var(--space-6);
+  display: none;
+}
+
+.receipt h3 {
+  color: var(--c-ok);
+  margin-bottom: var(--space-4);
+  font-size: var(--step-2);
+}
+
+.receipt h3 .icon-inline {
+  vertical-align: -0.2em;
+  margin-right: var(--space-1);
+}
+
+.receipt-details {
+  background: var(--c-canvas);
+  padding: var(--space-4);
+  border-radius: var(--radius-control);
+  margin-top: var(--space-4);
+}
+
+.receipt-item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  margin-bottom: var(--space-2);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--c-rule-subtle);
+}
+
+.receipt-item:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.receipt-label {
+  color: var(--c-brand);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.receipt-label:hover {
+  color: var(--c-brand-strong);
+}
+
+.download-icon {
+  display: inline-block;
+  margin-left: var(--space-2);
+  cursor: pointer;
+  color: var(--c-brand);
+  text-decoration: none;
+}
+
+.download-icon:hover {
+  color: var(--c-brand-strong);
+}
+
+.receipt-display {
+  background: var(--c-paper);
+  padding: var(--space-5);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+  margin-top: var(--space-6);
+  display: none;
+  overflow-x: auto;
+}
+
+.receipt-display h3 {
+  margin-bottom: var(--space-4);
+}
+
+/* A wide table scrolls inside its own box and keeps the page at the width of the screen. */
+.table-scroll {
+  overflow-x: auto;
+}
+
+.table-scroll > table {
+  width: 100%;
+}
+
+/* One receipt opened under the list, with the HMRC feedback that came with it. */
+.receipt-panel {
+  background: var(--c-paper);
+  padding: var(--space-5);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  margin-top: var(--space-6);
+}
+
+.assist-messages-section {
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  background-color: var(--c-canvas);
+  border-left: 4px solid var(--c-ink);
+}
+
+.assist-messages-section h4 {
+  margin-top: 0;
+  margin-bottom: var(--space-4);
+}
+
+.assist-messages-list {
+  list-style-position: outside;
+  padding-left: var(--space-5);
+}
+
+.assist-message {
+  margin-bottom: var(--space-5);
+  line-height: var(--leading-text);
+}
+
+.assist-message strong {
+  display: block;
+  margin-bottom: var(--space-2);
+}
+
+.assist-message-body {
+  margin: var(--space-2) 0;
+}
+
+.assist-message-links {
+  margin-top: var(--space-2);
+}
+
+.assist-message-link {
+  display: inline-block;
+  margin-right: var(--space-4);
+  color: var(--c-ink);
+  text-decoration: underline;
+}
+
+.assist-message-path {
+  margin-top: var(--space-2);
+  color: var(--c-ink-muted);
+}
+
+.export-controls {
+  margin-top: var(--space-4);
+  text-align: center;
+}

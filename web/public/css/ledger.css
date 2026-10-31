@@ -1,0 +1,140 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   The ledger: lines of accounts with a column per year
+
+   Each row is a line of the accounts and each column a year or a
+   movement. Below 600px a row stacks: the line, then each figure
+   with its column name beside it.
+   ============================================ */
+
+.ledger {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0 0 var(--space-4);
+}
+
+.ledger th,
+.ledger td {
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--c-rule-subtle);
+  vertical-align: top;
+  text-align: left;
+}
+
+.ledger thead th {
+  padding-bottom: var(--space-2);
+  border-bottom: 2px solid var(--c-rule);
+  color: var(--c-ink-muted);
+  font-size: var(--step--1);
+}
+
+.ledger thead th.ledger__figure {
+  text-align: right;
+}
+
+.ledger tbody th {
+  padding-right: var(--space-4);
+  padding-top: calc(var(--space-2) + (var(--control-height) - 1.5em) / 2);
+  font-weight: var(--weight-text);
+}
+
+/* A line that is part of the line above it reads as indented and quieter, so it is not summed twice. */
+.ledger tbody th.ledger__part {
+  padding-left: var(--space-5);
+  color: var(--c-ink-muted);
+}
+
+.ledger tbody th label {
+  display: inline;
+  margin: 0;
+  font-weight: var(--weight-text);
+}
+
+.ledger td.ledger__figure {
+  width: 12rem;
+  padding-left: var(--space-3);
+}
+
+.ledger .error-message {
+  margin-bottom: 0;
+}
+
+.ledger--one-year .ledger__prior {
+  display: none;
+}
+
+@media (max-width: 600px) {
+  .ledger thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .ledger tr {
+    display: block;
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--c-rule-subtle);
+  }
+
+  .ledger tr[hidden] {
+    display: none;
+  }
+
+  .ledger tbody th,
+  .ledger td {
+    display: block;
+    padding: 0;
+    border: 0;
+  }
+
+  .ledger tbody th {
+    margin-bottom: var(--space-2);
+    font-weight: var(--weight-strong);
+  }
+
+  .ledger tbody th label {
+    font-weight: var(--weight-strong);
+  }
+
+  .ledger td.ledger__figure {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    width: auto;
+    padding: 0;
+    margin-bottom: var(--space-2);
+  }
+
+  .ledger td.ledger__figure::before {
+    content: attr(data-column);
+    flex: 0 0 7rem;
+    color: var(--c-ink-muted);
+  }
+
+  .ledger td.ledger__figure {
+    flex-wrap: wrap;
+  }
+
+  .ledger td.ledger__figure::before {
+    order: 1;
+  }
+
+  .ledger td.ledger__figure .input-prefix {
+    flex: 1;
+    order: 2;
+  }
+
+  .ledger td.ledger__figure .error-message {
+    flex: 1 0 100%;
+    order: 3;
+    margin-top: var(--space-1);
+  }
+
+  .ledger--one-year td.ledger__figure::before {
+    content: none;
+  }
+}

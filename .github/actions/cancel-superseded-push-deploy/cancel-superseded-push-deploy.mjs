@@ -46,8 +46,16 @@ async function github(path, options = {}) {
   return response.status === 204 ? null : response.json();
 }
 
+const STACKS_CALLER_JOB_NAME = "deploy stacks";
+
+// A job name is its caller names and its own name joined by " / ". A stack job is a segment that
+// starts with "deploy ", except the caller job of the whole stack phase.
+function isStackJobName(name) {
+  return name.split(" / ").some((segment) => segment.startsWith("deploy ") && segment !== STACKS_CALLER_JOB_NAME);
+}
+
 export function hasStartedStackJob(jobs) {
-  return jobs.some((job) => job.name.startsWith("deploy ") && STARTED_STACK_JOB_STATUSES.has(job.status));
+  return jobs.some((job) => isStackJobName(job.name) && STARTED_STACK_JOB_STATUSES.has(job.status));
 }
 
 export function cancelableSupersededRuns(runs, currentId) {
