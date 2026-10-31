@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
-# @capability OPS-146 Replay the support prompts over synthetic tickets
+# @capability OPS-155 Replay the support prompts over synthetic tickets
 # - **Use when:** `prompts/support-triage.md`, `prompts/support-reader.md` or a replay fixture changes, or you need to know whether the support agents still give the right resolution and reply.
 # - **Does:** support-replay.yml runs `prompts/support-triage.md` over each triage fixture through the run-triage-agent action that support-triage.yml uses, and `prompts/support-reader.md` over each reader fixture through the Bedrock call that support-reader.yml makes. It fails a run whose resolution is wrong, whose reply holds a forbidden phrase or misses a required one, or whose reader answer has the wrong `injectionSuspected`. Every fixture is synthetic text. It runs on a pull request that changes the prompts or the fixtures, and on dispatch. app/unit-tests/scripts/supportReplay.test.js checks the fixtures in `npm test` without a model call.
 # - **Run:** `gh workflow run support-replay.yml`; `npx vitest run app/unit-tests/scripts/supportReplay.test.js`

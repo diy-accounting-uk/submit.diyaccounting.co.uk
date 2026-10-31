@@ -35,7 +35,8 @@ const labelNames = (issue) => (issue.labels ?? []).map((label) => (typeof label 
 
 export function isHandlingCandidate(issue) {
   if (!issue || issue.pull_request || issue.state !== "open") return false;
-  if (!labelNames(issue).includes("support")) return false;
+  const labels = labelNames(issue);
+  if (!labels.includes("support") || labels.includes("rejected")) return false;
   return ALLOWED_LOGINS.includes(String(issue.user?.login ?? "").toLowerCase());
 }
 

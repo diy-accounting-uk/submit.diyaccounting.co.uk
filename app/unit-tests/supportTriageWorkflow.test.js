@@ -66,6 +66,15 @@ describe("support-triage.yml", () => {
     expect(fixPr).toContain('--repo "${{ github.repository }}"');
   });
 
+  it("sweeps rejected issues in its own job, with issue write and no AWS credentials", () => {
+    const sweep = jobBlock("sweep");
+    expect(sweep).toContain("permission-issues: write");
+    expect(sweep).not.toMatch(AWS_ROLE_STEP);
+    expect(sweep).not.toContain("id-token");
+    expect(code(sweep)).toContain('support-label-sweep.mjs sweep --repo "$PRIVATE_REPO"');
+    expect(jobBlock("select")).toMatch(/needs: sweep\n\s+if: always\(\) && !cancelled\(\)/);
+  });
+
   it("runs the maintainer-review gate in select and again in post", () => {
     expect(jobBlock("select")).toContain("support-handling-input.mjs");
     expect(jobBlock("post")).toContain("maintainer-review-gate.mjs");

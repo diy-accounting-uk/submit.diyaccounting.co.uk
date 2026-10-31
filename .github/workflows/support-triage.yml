@@ -15,8 +15,10 @@ run-name: support triage
 # operator's later comments from one file, and it has Read, Grep and Glob only. It chains into
 # the same read-only role alarm-triage.yml uses (see ObservabilityStack.java's alarmTriageRole)
 # for the Bedrock model invocation and the guardrail's SSM parameters that the shared
-# publish-filter action needs. No job in this workflow edits a label on the private repository or
-# closes an issue. When the agent judges that a ticket needs a change, the fix-pr job opens a draft
+# publish-filter action needs. Only the `sweep` job edits a label on the private repository or
+# closes an issue, and only for the operator's `rejected` label: it closes a `rejected` issue with
+# no comment, and puts `maintainer-review` back when the operator removes `rejected`. The gate
+# also refuses while `injection-suspected` is on an issue. When the agent judges that a ticket needs a change, the fix-pr job opens a draft
 # pull request in this repository from the checked fields alone.
 #
 # This repository is public, so its logs, step summaries and artifacts are public. No step prints
@@ -67,10 +69,48 @@ env:
   SUPPORT_TRIAGE_BUDGET_PER_DAY: '8'
 
 jobs:
+  # Applies the operator's `rejected` label before an issue is picked. It holds a token that
+  # writes issues in the private repository and no AWS credentials. A failed sweep does not stop
+  # the pick, because the gate refuses a `rejected` issue on its own.
+  sweep:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: prod
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
+        with:
+          npm-install: scripts
+          npm-cache: 'false'
+
+      - name: Generate a token that writes issues in the private repository
+        id: private-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+          owner: diy-accounting-uk
+          repositories: private.diyaccounting.co.uk
+          permission-issues: write
+
+      - name: Close rejected issues and restore the review label
+        env:
+          GH_TOKEN: ${{ steps.private-token.outputs.token }}
+        run: node scripts/support-label-sweep.mjs sweep --repo "$PRIVATE_REPO"
+
   # Finds the oldest open support issue that the maintainer-review gate approves, that has a
   # valid reader comment and that has no handled comment. Support tickets are always prod, so
   # every job here runs in the prod environment.
   select:
+    needs: sweep
+    if: always() && !cancelled()
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     environment: prod
