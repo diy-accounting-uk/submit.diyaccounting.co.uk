@@ -281,7 +281,8 @@ jobs:
           for STACK in \
             "${ENV_NAME}-env-ObservabilityUE1Stack" \
             "${ENV_NAME}-env-EcrUE1Stack" \
-            "${ENV_NAME}-env-HoldingStack"; do
+            "${ENV_NAME}-env-HoldingStack" \
+            "${ENV_NAME}-env-DeveloperSiteStack"; do
             detect_drift "$STACK" "us-east-1"
           done
 
