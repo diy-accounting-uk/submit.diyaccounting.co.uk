@@ -4,7 +4,7 @@
 
 # @capability OPS-146 Delete a deployment's app stacks in parallel waves
 # - **Use when:** a ci or prod deployment's `{deployment}-app-*` CloudFormation stacks must be deleted in dependency order, as fast as the order allows.
-# - **Does:** delete-deployment-stacks.sh deletes the stacks in four phases and waits for each phase before the next. SelfDestruct, Ops and Publish go together in phase 1. Edge is phase 2, ApiRoutes then Api phase 3, and the nine Lambda stacks go together in phase 4. Before a parallel wave it reads the CloudFormation exports and imports, and deletes the wave one stack at a time when a stack in it imports an export of another stack in it. A stack in DELETE_FAILED is deleted again with FORCE_DELETE_STACK. Each stack writes its own log, printed when its wave ends.
+# - **Does:** delete-deployment-stacks.sh deletes the stacks in four phases. SelfDestruct, Ops and Publish go together in phase 1 and finish before anything else starts. Edge starts after phase 1 and runs in the background while phases 3 and 4 run, because a CloudFront distribution delete takes 3 to 17 minutes and nothing in phases 3 and 4 depends on it. ApiRoutes then Api is phase 3, and the nine Lambda stacks go together in phase 4. The script polls each stack every 5 seconds. Before a parallel wave it reads the CloudFormation exports and imports, and deletes the wave one stack at a time when a stack in it imports an export of another stack in it. A stack in DELETE_FAILED is deleted again with FORCE_DELETE_STACK. Each stack writes its own log, printed when its wave ends.
 # - **Run:** `scripts/delete-deployment-stacks.sh <deployment-name>`; called by `destroy-ci.yml` and `destroy-prod.yml`
 # - **Entry:** `scripts/delete-deployment-stacks.sh`
 # - **Files:** scripts/delete-deployment-stacks.sh, app/unit-tests/scripts/deleteDeploymentStacks.test.js, .github/workflows/destroy-ci.yml, .github/workflows/destroy-prod.yml
@@ -29,6 +29,34 @@ PREFIX="${DEPLOYMENT}-app-"
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
 
+POLL_SECONDS="${DELETE_POLL_SECONDS:-5}"
+MAX_POLLS=720
+
+# Prints the stack's status once it is no longer DELETE_IN_PROGRESS, DOES_NOT_EXIST when it is gone.
+# Polls every POLL_SECONDS: the AWS CLI waiter polls every 30 seconds, which added up to 30 seconds
+# to every stack on the serial path. A describe error other than "does not exist" is retried.
+wait_for_stack_delete() {
+  local STACK="$1" REGION="$2"
+  local OUTPUT STATUS POLLS=0
+  while :; do
+    if OUTPUT=$(aws cloudformation describe-stacks --stack-name "$STACK" --region "$REGION" \
+      --query "Stacks[0].StackStatus" --output text 2>&1); then
+      STATUS="$OUTPUT"
+    else
+      case "$OUTPUT" in
+        *"does not exist"*) STATUS="DOES_NOT_EXIST" ;;
+        *) STATUS="DELETE_IN_PROGRESS" ;;
+      esac
+    fi
+    if [ "$STATUS" != "DELETE_IN_PROGRESS" ] || [ "$POLLS" -ge "$MAX_POLLS" ]; then
+      echo "$STATUS"
+      return 0
+    fi
+    sleep "$POLL_SECONDS"
+    POLLS=$((POLLS + 1))
+  done
+}
+
 delete_stack_in_region() {
   local STACK="$1" REGION="$2"
   local STATUS
@@ -40,14 +68,12 @@ delete_stack_in_region() {
   fi
   echo "  Deleting $STACK in $REGION (status: $STATUS)..."
   aws cloudformation delete-stack --stack-name "$STACK" --region "$REGION" 2>/dev/null || true
-  aws cloudformation wait stack-delete-complete --stack-name "$STACK" --region "$REGION" 2>/dev/null || true
-  STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region "$REGION" \
-    --query "Stacks[0].StackStatus" --output text 2>/dev/null || echo "DOES_NOT_EXIST")
+  STATUS=$(wait_for_stack_delete "$STACK" "$REGION")
   if [ "$STATUS" = "DELETE_FAILED" ]; then
     echo "  $STACK is DELETE_FAILED, force deleting"
     aws cloudformation delete-stack --stack-name "$STACK" --region "$REGION" \
       --deletion-mode FORCE_DELETE_STACK || true
-    aws cloudformation wait stack-delete-complete --stack-name "$STACK" --region "$REGION" 2>/dev/null || true
+    wait_for_stack_delete "$STACK" "$REGION" >/dev/null
   fi
 }
 
@@ -127,8 +153,9 @@ delete_wave "Phase 1" \
   "${PREFIX}OpsStack:eu-west-2" \
   "${PREFIX}PublishStack:us-east-1"
 
-echo "=== Phase 2: EdgeStack (depends on ApiStack outputs) ==="
-delete_stack_in_region "${PREFIX}EdgeStack" us-east-1
+echo "=== Phase 2: EdgeStack in the background while phases 3 and 4 run ==="
+delete_stack_in_region "${PREFIX}EdgeStack" us-east-1 >"$WORK_DIR/edge.log" 2>&1 &
+EDGE_PID=$!
 
 echo "=== Phase 3: ApiRoutesStack, then ApiStack (depends on Lambda stacks) ==="
 delete_stack_in_region "${PREFIX}ApiRoutesStack" eu-west-2
@@ -145,5 +172,9 @@ delete_wave "Phase 4" \
   "${PREFIX}BillingStack:eu-west-2" \
   "${PREFIX}DiyaGlStack:eu-west-2" \
   "${PREFIX}McpStack:eu-west-2"
+
+echo "=== EdgeStack ==="
+wait "$EDGE_PID"
+cat "$WORK_DIR/edge.log"
 
 echo "=== Stack deletion complete ==="

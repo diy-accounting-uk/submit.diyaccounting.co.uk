@@ -28,9 +28,11 @@ const PHASE_4 = [
   "McpStack",
 ];
 
-// A stub `aws` that logs each call in arrival order. A stack exists until its delete-stack call;
-// a wait takes 0.3 s. STUB_ABSENT lists stacks that never exist, STUB_FAILED lists stacks that
-// report DELETE_FAILED after the first delete, STUB_EXPORTS and STUB_IMPORTS script the guard.
+// A stub `aws` that logs each call in arrival order. A stack exists until its delete-stack call,
+// then reports DELETE_IN_PROGRESS for 2 describes (STUB_SLOW stacks: 25) and is gone; the first
+// describe that finds it gone logs wait-return. STUB_ABSENT lists stacks that never exist,
+// STUB_FAILED lists stacks that report DELETE_FAILED after the first delete, STUB_EXPORTS and
+// STUB_IMPORTS script the guard.
 const STUB = `#!/bin/bash
 args=("$@")
 flag() { local i; for ((i = 0; i < \${#args[@]}; i++)); do [ "\${args[$i]}" = "$1" ] && { echo "\${args[$((i + 1))]}"; return; }; done; }
@@ -42,9 +44,21 @@ case "$2" in
   describe-stacks)
     stack=$(flag --stack-name)
     log describe "$stack"
-    listed "$STUB_ABSENT" "$stack" && exit 255
-    [ -e "$STUB_DIR/$stack.gone" ] && exit 255
-    if listed "$STUB_FAILED" "$stack" && [ -e "$STUB_DIR/$stack.deleted" ] && [ ! -e "$STUB_DIR/$stack.forced" ]; then echo DELETE_FAILED; else echo CREATE_COMPLETE; fi
+    gone() { echo "An error occurred (ValidationError) when calling the DescribeStacks operation: Stack [$stack] does not exist" >&2; exit 255; }
+    listed "$STUB_ABSENT" "$stack" && gone
+    [ -e "$STUB_DIR/$stack.gone" ] && gone
+    if [ -e "$STUB_DIR/$stack.deleted" ] && [ ! -e "$STUB_DIR/$stack.forced" ]; then
+      polls=$(cat "$STUB_DIR/$stack.polls" 2>/dev/null || echo 0)
+      echo $((polls + 1)) > "$STUB_DIR/$stack.polls"
+      limit=2
+      listed "$STUB_SLOW" "$stack" && limit=25
+      if [ "$polls" -lt "$limit" ]; then echo DELETE_IN_PROGRESS; exit 0; fi
+      log wait-return "$stack"
+      if listed "$STUB_FAILED" "$stack"; then echo DELETE_FAILED; exit 0; fi
+      touch "$STUB_DIR/$stack.gone"
+      gone
+    fi
+    echo CREATE_COMPLETE
     ;;
   delete-stack)
     stack=$(flag --stack-name)
@@ -54,13 +68,7 @@ case "$2" in
     else
       log delete "$stack"
       touch "$STUB_DIR/$stack.deleted"
-      listed "$STUB_FAILED" "$stack" || touch "$STUB_DIR/$stack.gone"
     fi
-    ;;
-  wait)
-    stack=$(flag --stack-name)
-    sleep 0.3
-    log wait-return "$stack"
     ;;
   list-exports)
     log list-exports - "$(flag --region)"
@@ -83,7 +91,9 @@ const runScript = (env = {}) => {
       ...process.env,
       PATH: `${join(dir, "bin")}:${process.env.PATH}`,
       STUB_DIR: dir,
+      DELETE_POLL_SECONDS: "0.05",
       STUB_ABSENT: "",
+      STUB_SLOW: "",
       STUB_FAILED: "",
       STUB_EXPORTS: "",
       STUB_IMPORTS: "",
@@ -117,17 +127,42 @@ describe("delete-deployment-stacks.sh", { timeout: 30000 }, () => {
     rmSync(dir, { recursive: true, force: true });
   });
 
-  test("no delete in phase N starts before every wait of phase N-1 has returned", () => {
+  test("phase 2, 3 and 4 deletes start only after every wait of phase 1 has returned", () => {
     const { status, calls } = runScript({ STUB_ABSENT: "SelfDestructStack" });
     expect(status).toBe(0);
-    const phases = [PHASE_1, PHASE_2, PHASE_3, PHASE_4];
-    for (let n = 1; n < phases.length; n++) {
-      const earlierWaits = indexesOf(calls, "wait-return", phases[n - 1]);
-      const laterDeletes = indexesOf(calls, "delete", phases[n]);
-      expect(earlierWaits.length).toBeGreaterThan(0);
-      expect(laterDeletes.length).toBe(phases[n].length);
-      expect(Math.min(...laterDeletes)).toBeGreaterThan(Math.max(...earlierWaits));
+    const phaseOneWaits = indexesOf(calls, "wait-return", PHASE_1);
+    expect(phaseOneWaits.length).toBeGreaterThan(0);
+    for (const later of [PHASE_2, PHASE_3, PHASE_4]) {
+      const deletes = indexesOf(calls, "delete", later);
+      expect(deletes.length).toBe(later.length);
+      expect(Math.min(...deletes)).toBeGreaterThan(Math.max(...phaseOneWaits));
     }
+  });
+
+  test("phase 4 starts only after ApiStack's wait has returned", () => {
+    const { calls } = runScript();
+    const apiWaits = indexesOf(calls, "wait-return", ["ApiStack"]);
+    const phaseFourDeletes = indexesOf(calls, "delete", PHASE_4);
+    expect(Math.min(...phaseFourDeletes)).toBeGreaterThan(Math.max(...apiWaits));
+  });
+
+  test("EdgeStack deletes in the background: phases 3 and 4 start before its wait returns", () => {
+    const { status, stdout, calls } = runScript({ STUB_SLOW: "EdgeStack" });
+    expect(status).toBe(0);
+    const edgeWait = indexesOf(calls, "wait-return", PHASE_2);
+    expect(edgeWait.length).toBe(1);
+    const phaseThreeFourDeletes = indexesOf(calls, "delete", [...PHASE_3, ...PHASE_4]);
+    expect(phaseThreeFourDeletes.length).toBe(PHASE_3.length + PHASE_4.length);
+    expect(Math.max(...phaseThreeFourDeletes)).toBeLessThan(edgeWait[0]);
+    expect(stdout).toContain(`Deleting ${PREFIX}EdgeStack in us-east-1`);
+    expect(stdout.indexOf("Deleting " + PREFIX + "EdgeStack")).toBeLessThan(stdout.indexOf("=== Stack deletion complete ==="));
+  });
+
+  test("the script ends only after EdgeStack's wait has returned", () => {
+    const { calls } = runScript({ STUB_SLOW: "EdgeStack" });
+    const edgeWait = indexesOf(calls, "wait-return", PHASE_2);
+    const lastCall = calls[calls.length - 1];
+    expect(lastCall.order).toBeGreaterThanOrEqual(edgeWait[0]);
   });
 
   test("ApiRoutesStack finishes before ApiStack starts", () => {

@@ -14,8 +14,8 @@
   ],
   "affiliates": {
     "applyUrl": "https://submit.diyaccounting.co.uk/bundles.html#affiliateApplySection",
-    "ratePercent": 30,
-    "months": 12,
+    "ratePercent": 33,
+    "months": 3,
     "creditHoldDays": 30,
     "cashHoldDays": 120,
     "capMonthPounds": 100,

@@ -1132,7 +1132,7 @@ async function fetchMyGeneratedPasses(append) {
     data.passes.forEach((pass) => {
       const typeLabel = pass.passTypeId === "digital-pass" ? "Digital" : "Physical";
       const expiryLabel = pass.validUntil
-        ? new Date(pass.validUntil).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })
+        ? `Expires ${new Date(pass.validUntil).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })}`
         : "No expiry";
       const usageLabel =
         pass.maxUses === undefined || pass.maxUses === null

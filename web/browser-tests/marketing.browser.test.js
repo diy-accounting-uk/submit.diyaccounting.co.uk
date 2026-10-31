@@ -227,7 +227,7 @@ test("the affiliates section shows its figures from the data and links to the ap
   await openPage(page, context);
   const section = page.locator("#affiliates");
   await expect(section.getByRole("heading", { name: "Become an affiliate" })).toBeVisible();
-  await expect(section).toContainText("30% of what a referred customer pays, for their first 12 months");
+  await expect(section).toContainText("33% of what a referred customer pays, for their first 3 months");
   await expect(section).toContainText("Credit goes on your own subscription after 30 days");
   await expect(section).toContainText("cash after 120 days");
   await expect(section.locator("[data-aff-apply] a")).toHaveAttribute(
