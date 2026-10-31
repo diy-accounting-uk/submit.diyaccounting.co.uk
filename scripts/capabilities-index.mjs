@@ -53,7 +53,7 @@ export function parseEntries(markdown) {
       entry = null;
       continue;
     }
-    const entryMatch = line.match(/^#### ([A-Z]+-\d+) (.+)$/);
+    const entryMatch = line.match(/^#### ([A-Z]+-\d+[a-z]?) (.+)$/);
     if (group && entryMatch) {
       entry = { id: entryMatch[1], name: entryMatch[2], heading: line.slice(5), lines: [] };
       group.entries.push(entry);

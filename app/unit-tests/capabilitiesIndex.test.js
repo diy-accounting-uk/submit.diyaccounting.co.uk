@@ -24,6 +24,11 @@ describe("REPORT_CAPABILITIES.md", () => {
     }
   });
 
+  it("gives a letter-suffixed id its own index and keyword rows", () => {
+    expect(entries.map((e) => e.id)).toContain("OPS-14a");
+    expect(markdown).toContain("[OPS-14a](#ops-14a-");
+  });
+
   it("gives every capability the fields a lookup needs", () => {
     for (const e of entries) {
       const text = e.lines.join("\n");

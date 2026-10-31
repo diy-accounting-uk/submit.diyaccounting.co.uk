@@ -200,6 +200,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users: use when a lane's test user has outlived its credential expiry window, or needs manual cleanup.
     - [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments: use when a stale or finished ci deployment must be torn down, or a live one's self-destruct timer needs resetting.
     - [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand: use when a superseded prod deployment's stacks must be torn down by hand.
+    - [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks: use when a branch deploy needs to clean up stale stacks while slots are claimed.
     - [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs: use when a new workflow job rotates a lane's durable test user, to avoid two jobs racing it.
     - [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations: use when a stored data shape must change across a deploy boundary, or a migration needs a manual re-run.
   - [Alarms, triage and probes](#alarms-triage-and-probes-ops)
@@ -572,7 +573,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** auth-url-builder.js builds the Cognito hosted-UI authorization URL. login.html and the callback pages redirect and complete the exchange. cognitoTokenPost.js exchanges the code or refresh token for tokens. auth-service.js tracks token expiry and refreshes the session. auth-status.js renders logged-in state and sends a logout beacon.
 - **Run:** `POST /api/v1/cognito/token`; `import { buildCognitoAuthUrl } from "web/public/lib/auth-url-builder.js"`
 - **Entry:** `web/public/lib/auth-url-builder.js:buildCognitoAuthUrl`; `app/functions/auth/cognitoTokenPost.js:ingestHandler`; `web/public/lib/services/auth-service.js`
-- **Files:** web/public/auth/login.html, web/public/auth/loginWithCognitoCallback.html, web/public/auth/loginWithMockCallback.html, web/public/auth/login-mock-addon.js, web/public/auth/signed-out.html, web/public/widgets/auth-status.js, web/public/lib/auth-url-builder.js, web/public/lib/services/auth-service.js, web/public/lib/utils/jwt-utils.js, app/functions/auth/cognitoTokenPost.js, app/functions/auth/preTokenGeneration/index.js, infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IdentityStackTest.java, app/system-tests/cognitoAuth.system.test.js, app/unit-tests/functions/cognitoTokenPost.test.js, app/unit-tests/functions/preTokenGeneration.test.js, behaviour-tests/auth.behaviour.test.js, behaviour-tests/helpers/hosted-ui-navigation.js, behaviour-tests/steps/behaviour-login-steps.js, web/unit-tests/hosted-ui-navigation.test.js, web/unit-tests/auth-url-generation.test.js, web/unit-tests/auth-logout-beacon.test.js
+- **Files:** web/public/auth/login.html, web/public/auth/loginWithCognitoCallback.html, web/public/auth/loginWithMockCallback.html, web/public/auth/login-mock-addon.js, web/public/auth/signed-out.html, web/public/widgets/auth-status.js, web/public/lib/auth-url-builder.js, web/public/lib/services/auth-service.js, web/public/lib/utils/jwt-utils.js, app/functions/auth/cognitoTokenPost.js, app/functions/auth/preTokenGeneration/index.js, infra/main/java/co/uk/diyaccounting/submit/stacks/IdentityStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IdentityStackTest.java, app/system-tests/cognitoAuth.system.test.js, app/unit-tests/functions/cognitoTokenPost.test.js, app/unit-tests/functions/preTokenGeneration.test.js, behaviour-tests/auth.behaviour.test.js, behaviour-tests/helpers/hosted-ui-navigation.js, behaviour-tests/steps/behaviour-login-steps.js, web/unit-tests/hosted-ui-navigation.test.js, web/unit-tests/auth-url-generation.test.js, web/unit-tests/auth-logout-sign-out.test.js
 - **Keywords:** cognito, login, logout, hosted ui, oauth, token refresh, auth-status, sign in, callback, mfa claim, user pool
 - **Related:** SITE-02
 
@@ -1467,10 +1468,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### CH-15 File a Company Tax Return with HMRC
 
 - **Use when:** a small company's CT600 return, computations and FRS 102 section 1A accounts must be previewed and sent to the HMRC Transaction Engine, or the journey needs a simulator proof.
-- **Does:** hmrcCtReturnPreviewPost.js builds the CT600 IRenvelope, the computations iXBRL and the accounts iXBRL from a book export plus the typed UTR, declarant and statements, and sends nothing. hmrcCtReturnPost.js signs the CT600 with its base32 IRmark, redacts the typed Government Gateway credentials and posts it. hmrcCtReturnGet.js polls within HMRC's poll interval and stores the receipt. fileCompanyTaxReturn.html takes the figures from a pasted or chosen book export (or from the accounts just accepted on fileSmallCompanyAccounts.html), stops on an overdrawn director's loan account, shows the CT600 and computations tables, and shows the IRmark on acceptance. The simulator acknowledges the first poll and answers the receipt after; the scenario CT600_REJECT_IRMARK returns error 2021. An accepted accounts or CT600 filing keeps its filed documents in the receipt, and companies-house/filings.html draws it as the customer copy (web/public/lib/filing-record.js), reached from the receipts list.
+- **Does:** hmrcCtReturnPreviewPost.js builds the CT600 IRenvelope, the computations iXBRL and the accounts iXBRL from a book export plus the typed UTR, declarant and statements, and sends nothing. hmrcCtReturnPost.js signs the CT600 with its base32 IRmark, redacts the typed Government Gateway credentials and posts it. hmrcCtReturnGet.js polls within HMRC's poll interval and stores the receipt. fileCompanyTaxReturn.html takes the figures from a pasted or chosen book export (or from the accounts just accepted on fileSmallCompanyAccounts.html), stops on an overdrawn director's loan account, shows the CT600 and computations tables, and shows the IRmark on acceptance. The simulator acknowledges the first poll and answers the receipt after; the scenario CT600_REJECT_IRMARK returns error 2021. An accepted accounts or CT600 filing keeps its filed documents in the receipt, and companies-house/filings.html draws it as the customer copy (web/public/lib/filing-record.js), reached from the receipts list. The `behaviour-test-simulator-company-tax-return` job in `test.yml` runs the behaviour test.
 - **Run:** `npm run test:companyTaxReturnBehaviour-simulator`
 - **Entry:** `app/functions/hmrc/hmrcCtReturnPreviewPost.js:ingestHandler`; `app/functions/hmrc/hmrcCtReturnPost.js:ingestHandler`; `app/functions/hmrc/hmrcCtReturnGet.js:ingestHandler`; `web/public/companies-house/fileCompanyTaxReturn.page.js`
-- **Files:** app/functions/hmrc/hmrcCtReturnPreviewPost.js, app/functions/hmrc/hmrcCtReturnPost.js, app/functions/hmrc/hmrcCtReturnGet.js, app/services/hmrcCtReturnRequest.js, app/services/hmrcCtSubmissionStatus.js, app/test-helpers/ctReturnFixture.js, web/public/companies-house/fileCompanyTaxReturn.html, web/public/companies-house/fileCompanyTaxReturn.page.js, web/public/lib/services/hmrc-ct-return-service.js, behaviour-tests/companyTaxReturn.behaviour.test.js, behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js, .github/workflows/test.yml (behaviour-test-simulator-company-tax-return)
+- **Files:** app/functions/hmrc/hmrcCtReturnPreviewPost.js, app/functions/hmrc/hmrcCtReturnPost.js, app/functions/hmrc/hmrcCtReturnGet.js, app/services/hmrcCtReturnRequest.js, app/services/hmrcCtSubmissionStatus.js, app/test-helpers/ctReturnFixture.js, web/public/companies-house/fileCompanyTaxReturn.html, web/public/companies-house/fileCompanyTaxReturn.page.js, web/public/lib/services/hmrc-ct-return-service.js, behaviour-tests/companyTaxReturn.behaviour.test.js, behaviour-tests/steps/behaviour-hmrc-company-tax-return-steps.js, .github/workflows/test.yml
 - **Keywords:** company tax return, CT600, corporation tax, computations, irmark, transaction engine, government gateway, UTR, hmrc, filing, simulator
 - **Related:** CH-08
 
@@ -1844,8 +1845,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Use when:** resident-tier books belonging to subscribers whose bundle lapsed past the grace period must be removed.
 - **Does:** The diyaGlLapseSweep.js handler runs daily and finds subscribers whose resident bundle lapsed past a grace period, with listLapsedBundleOwners. It then deletes their resident-tier books from S3. A sandbox-tier book is left to the bucket's own lifecycle rule.
 - **Run:** no command; see Does and Entry
-- **Entry:** `app/functions/diyaGl/diyaGlLapseSweep.js:handler`; `app/data/dynamoDbBundleRepository.js:listLapsedBundleOwners`
-- **Files:** app/functions/diyaGl/diyaGlLapseSweep.js, app/unit-tests/functions/diyaGlLapseSweep.test.js, behaviour-tests/diyaGlSubscription.behaviour.test.js, behaviour-tests/steps/behaviour-diya-gl-subscription-steps.js
+- **Entry:** `app/data/dynamoDbBundleRepository.js:listLapsedBundleOwners`
+- **Files:** behaviour-tests/diyaGlSubscription.behaviour.test.js, behaviour-tests/steps/behaviour-diya-gl-subscription-steps.js
 - **Keywords:** diya-gl, lapse sweep, scheduled lambda, grace period, listLapsedBundleOwners, resident tier
 - **Related:** BILL-18, BILL-22
 
@@ -2123,7 +2124,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area OPS -->
 - [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup · [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap) Remove unlisted pages from the published sitemap
-- [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
+- [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-142](#ops-142-read-a-support-ticket-in-quarantine) Read a support ticket in quarantine · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm) Look up the customer behind a submission-failure alarm · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
 - [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
@@ -2334,6 +2335,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users
 - [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments
 - [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand
+- [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks) Wait for a CI slot, then sweep stale stacks
 - [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs
 - [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 <!-- /generated:group ci-slot-pool-and-sweep-ops -->
@@ -3221,7 +3223,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** accessibility test, penetration test, findings report, deployed site audit, wcag
 - **Related:** OPS-36
 
-
 #### OPS-64 Runbook information-security operations
 
 - **Use when:** an information-security incident needs its runbook procedure, or all users need a cross-account logout hold.
@@ -3997,6 +3998,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/support-mail-intake.mjs, scripts/support-draft-acceptance.mjs, .github/workflows/support-mail-intake.yml, app/unit-tests/scripts/supportDraftAcceptance.test.js, app/unit-tests/scripts/supportMailIntake.test.js, app/unit-tests/fixtures/supportMailIntake/, infra/google/gcp/identity.toml
 - **Keywords:** support mail intake, gmail readonly, domain-wide delegation, support issues, maintainer-review, private repository
 - **Related:** OPS-56, DATA-42
+
 #### DATA-23 Classify visitor kind as human, bot or synthetic
 
 - **Use when:** a Lambda, RUM script or GA4 tag must agree on human, bot or synthetic.
@@ -4285,10 +4287,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-44 Assert Google OAuth client configuration
 
 - **Use when:** the sign-in or YouTube OAuth client's live configuration must be checked against oauth.toml.
-- **Does:** google-oauth-assert.js checks oauth.toml's declared OAuth clients (sign-in, YouTube upload, Drive browser) against everything a live API can confirm. It checks each client's Auth Platform brand, its id against Cognito or Secrets Manager, and token scopes. It never writes anything.
+- **Does:** google-oauth-assert.js checks oauth.toml's declared OAuth clients (sign-in, YouTube upload, Drive browser) against everything a live API can confirm. It checks each client's Auth Platform brand, its id against Cognito or Secrets Manager, and token scopes. It never writes anything. drive-client-record.js writes the downloaded Drive browser client's id into oauth.toml. google-api-keys.js plans and applies api-keys.toml, the restricted Drive Picker key.
 - **Run:** `node infra/google/gcp/google-oauth-assert.js`
 - **Entry:** `infra/google/gcp/google-oauth-assert.js:main`
-- **Files:** infra/google/gcp/google-oauth-assert.js, app/unit-tests/scripts/googleOauthAssert.test.js, infra/google/gcp/oauth.toml, scripts/drive-client-record.js (writes the downloaded Drive browser client's id into oauth.toml), infra/google/gcp/google-api-keys.js (plans and applies infra/google/gcp/api-keys.toml, the restricted Drive Picker key)
+- **Files:** infra/google/gcp/google-oauth-assert.js, app/unit-tests/scripts/googleOauthAssert.test.js, infra/google/gcp/oauth.toml, scripts/drive-client-record.js, infra/google/gcp/google-api-keys.js, infra/google/gcp/api-keys.toml
 - **Keywords:** oauth client assert, auth platform brand, cognito client id, youtube client secret, refresh token scopes, read-only, oauth.toml
 - **Related:** DATA-46
 
@@ -4383,7 +4385,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** diya-gl lines, stripe gross fee split, credit note, bank line, arrival_date, stripe reconciliation, validateLines
 - **Related:** DATA-49
 
-
 #### DATA-62 Read and forecast the Microsoft Advertising account
 
 - **Use when:** a task asks what the Microsoft Advertising (Bing) account holds, what it has spent or what its keywords and budget would buy.
@@ -4403,6 +4404,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/microsoft-ads/SKILL.md
 - **Keywords:** microsoft advertising skill, bing advisor, bing performance, bing budget
 - **Related:** DATA-62, DATA-36
+
 ## MCP and tools (MCP)
 
 <!-- generated:area MCP -->
@@ -4443,6 +4445,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Related:** MCP-01, MCP-03
 
 #### MCP-18 Serve the submission MCP over HTTP behind CloudFront
+
 - **Use when:** a chat client must reach the submission MCP at `/mcp` with OAuth, or the routes, stack, edge behaviours or rate rules behind that endpoint need tracing.
 - **Does:** mcpHttp.js answers `/mcp` through handleMcpRequest in mcp/lib/http.js, with sessions in the mcp-sessions DynamoDB table; a session item also keeps the id of the session's HMRC grant (MCP-21). mcpOauth.js serves the OAuth metadata documents under `/.well-known/oauth-*` and the authorization facade under `/mcp/oauth/*` in front of Cognito. McpStack.java creates both Lambdas, the codes entry Lambda (MCP-20) and the HMRC grant Lambda (MCP-21); deploy.yml's deploy-mcp job deploys it before deploy-api. EdgeStack.java sends `/mcp`, `/mcp/*` and `/.well-known/oauth-*` to the API Gateway origin with caching off and every viewer header forwarded, and counts those paths in a WAF rate rule keyed on the Authorization header instead of the per-IP rule.
 - **Run:** no command; see Does and Entry
@@ -5246,7 +5249,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** `scripts/exploratory-crawl.mjs` follows every same-origin link and submits up to three forms per page empty, 300 pages per role, viewport and theme, at 1280x800 and 390x844 in light and dark; it writes `target/exploratory-crawl/<lane>/<role>/<viewport>-<theme>/` with `contact-sheet.html`, one PNG per page and `findings.json`, and `summary-<lane>.md`. The `exploratory-crawl` job in `test.yml` runs it on the scheduled run on Sundays and on dispatch: prod as the visitor, ci as both roles behind the native-auth enable and disable, the counts in the job summary, the folder as an artifact, the sheets copied to the deployment's bucket under `tests/exploratory/<date>/`.
 - **Run:** `gh workflow run test.yml --ref main -f runExploratoryCrawl=true`; locally `node scripts/exploratory-crawl.mjs --lane simulator --base-url http://localhost:3000 --roles visitor --viewports desktop --themes light`
 - **Entry:** `scripts/exploratory-crawl.mjs`
-- **Files:** scripts/exploratory-crawl.mjs, app/unit-tests/scripts/exploratoryCrawl.test.js, .github/workflows/test.yml (job `exploratory-crawl`), ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_EXPLORATORY_QA.md
+- **Files:** scripts/exploratory-crawl.mjs, app/unit-tests/scripts/exploratoryCrawl.test.js, .github/workflows/test.yml, ../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_EXPLORATORY_QA.md
 - **Keywords:** exploratory crawl, blind crawl, weekly crawl, contact sheet, findings.json, console errors, failed requests, overflow, raw identifiers, Sunday job
 - **Related:** DEV-46, DEV-49, DEV-50
 
@@ -5269,7 +5272,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/paid-without-activation/SKILL.md, app/functions/analytics/analyticsMetricsPublish.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/AnalyticsDashboard.java, app/functions/billing/billingWebhookPost.js
 - **Keywords:** paid without activation, charge no activation, webhook failed, bundle not granted, stripe events resend, customer paid no bundle, reconciliation alarm
 - **Related:** DEV-42, DEV-45
-
 
 ## Spreadsheets and diya-gl (SS)
 
@@ -5556,7 +5558,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `../spreadsheets.diyaccounting.co.uk/scripts/generate-knowledge-base-toml.cjs`; `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/kb-search.js`
 - **Files:** ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/knowledge-base.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/knowledge-base.toml, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/all-articles.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/references.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/community.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/recently-updated.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/articles, ../spreadsheets.diyaccounting.co.uk/scripts/generate-knowledge-base-toml.cjs, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/kb-search.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/knowledge-base-page.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/references-page.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/community-page.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/recently-updated-page.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/docs-download.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/lightbox.js
 - **Keywords:** knowledge base, articles, kb-search, community page, references page, recently-updated, fuzzy search
-- **Related:** 
 
 #### SS-24 Compile the redirect engine
 
@@ -5737,7 +5738,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `../spreadsheets.diyaccounting.co.uk/.github/workflows/identity-guard.yml`
 - **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/identity-guard.yml, ../spreadsheets.diyaccounting.co.uk/.github/allowed-commit-identities.yml, ../spreadsheets.diyaccounting.co.uk/scripts/check-commit-identities.sh
 - **Keywords:** identity guard, commit author, allow-list, allowed-commit-identities
-- **Related:** 
 
 #### SS-40 Run CodeQL scanning
 
@@ -5955,6 +5955,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/excel/SKILL.md
 - **Keywords:** excel skill, xlsx xml, jszip, external link cache, xls roundtrip, libreoffice
 - **Related:** SS-08, SS-14
+
 ## Keywords
 
 <!-- generated:keywords -->
@@ -6326,12 +6327,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ci gates locally: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - ci monitoring: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
 - ci or prod: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
-- ci slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
-- ci-set: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex), [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
+- ci slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot), [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
+- ci-set: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex), [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot), [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
 - ci-state.json: [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server)
 - cis: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - cis benchmark: [OPS-121](#ops-121-provision-the-security-baseline-stack)
 - citation references: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
+- claim check: [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
 - claim slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - class 4 nic: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments)
 - claude -p: [OPS-18](#ops-18-run-alarm-and-support-triage)
@@ -6610,6 +6612,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - design document: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
 - destroy prod: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
 - destroy stale deployments: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments)
+- destroy stale stacks: [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
 - destroy workflow: [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
 - destroy-prod.yml: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
 - deterministic naming: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention)
@@ -8047,6 +8050,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - swagger spec: [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions)
 - swagger ui: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
 - sweep: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments)
+- sweep-min-age-hours: [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
 - synthetic bundle toggle: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - synthetic data: [CH-12](#ch-12-generate-synthetic-test-companies)
 - synthetic period key: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
@@ -8255,6 +8259,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - waf log subscription: [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
 - wait for ci deploys: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - wait for main deploy: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
+- wait for slot: [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
 - wake: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - wake skill: [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - walkthrough: [CH-17](#ch-17-review-accounts-filings-as-the-companies-house-xml-team-does), [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
