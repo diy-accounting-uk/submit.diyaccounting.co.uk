@@ -6,8 +6,15 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildEventWithToken, makeIdToken } from "@app/test-helpers/eventBuilders.js";
 
 const mockPutAffiliate = vi.fn();
+const mockGetAffiliate = vi.fn();
 vi.mock("@app/data/dynamoDbPassRepository.js", () => ({
   putAffiliate: (...args) => mockPutAffiliate(...args),
+  getAffiliate: (...args) => mockGetAffiliate(...args),
+}));
+
+const mockRefresh = vi.fn();
+vi.mock("@app/services/affiliateConnect.js", () => ({
+  refreshAffiliateAccount: (...args) => mockRefresh(...args),
 }));
 
 import { ingestHandler } from "@app/functions/account/affiliatePost.js";
@@ -21,6 +28,9 @@ const referrerHash = "abc123def456";
 describe("affiliatePost", () => {
   beforeEach(() => {
     mockPutAffiliate.mockReset();
+    mockGetAffiliate.mockReset();
+    mockRefresh.mockReset();
+    mockGetAffiliate.mockResolvedValue({ stripeAccountId: "acct_1", detailsSubmitted: true });
     mockPutAffiliate.mockResolvedValue({
       tier: "casual",
       state: "approved",
@@ -85,5 +95,42 @@ describe("affiliatePost", () => {
     mockPutAffiliate.mockRejectedValue(new Error("boom"));
     const result = await ingestHandler(buildEventWithToken(tokenFor(operatorEmail), { referrerHash, tier: "casual", state: "ended" }));
     expect(result.statusCode).toBe(500);
+  });
+
+  test("approving a Connect tier without a Connect account is a 409 and writes nothing", async () => {
+    mockGetAffiliate.mockResolvedValue(null);
+    const result = await ingestHandler(buildEventWithToken(tokenFor(operatorEmail), { referrerHash, tier: "casual", state: "approved" }));
+    expect(result.statusCode).toBe(409);
+    expect(mockPutAffiliate).not.toHaveBeenCalled();
+  });
+
+  test("approving reads the account from Stripe when the stored flag is false, and refuses if Stripe agrees", async () => {
+    const item = { stripeAccountId: "acct_1", detailsSubmitted: false };
+    mockGetAffiliate.mockResolvedValue(item);
+    mockRefresh.mockResolvedValue(item);
+    const refused = await ingestHandler(buildEventWithToken(tokenFor(operatorEmail), { referrerHash, tier: "creator", state: "approved" }));
+    expect(mockRefresh).toHaveBeenCalledWith({ referrerHash, item });
+    expect(refused.statusCode).toBe(409);
+    expect(mockPutAffiliate).not.toHaveBeenCalled();
+
+    mockRefresh.mockResolvedValue({ ...item, detailsSubmitted: true });
+    const approved = await ingestHandler(
+      buildEventWithToken(tokenFor(operatorEmail), { referrerHash, tier: "creator", state: "approved" }),
+    );
+    expect(approved.statusCode).toBe(200);
+    expect(mockPutAffiliate).toHaveBeenCalledOnce();
+  });
+
+  test("ending needs no Connect account", async () => {
+    mockGetAffiliate.mockResolvedValue(null);
+    const result = await ingestHandler(buildEventWithToken(tokenFor(operatorEmail), { referrerHash, tier: "casual", state: "ended" }));
+    expect(result.statusCode).toBe(200);
+    expect(mockGetAffiliate).not.toHaveBeenCalled();
+  });
+
+  test("approving a tier paid by another route needs no Connect account", async () => {
+    mockGetAffiliate.mockResolvedValue(null);
+    const result = await ingestHandler(buildEventWithToken(tokenFor(operatorEmail), { referrerHash, tier: "family", state: "approved" }));
+    expect(result.statusCode).toBe(200);
   });
 });

@@ -183,6 +183,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines: use when a referred customer pays an invoice, or a charge behind a commission line is refunded or disputed.
     - [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily: use when a held referral commission line has passed its release time and must become payable, or stay held for a reason.
     - [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit: use when a referrer on the credit form has payable commission lines that must reach their Stripe customer balance, or a paid line was reversed and the unused credit must come back.
+    - [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect) Start an affiliate application through Stripe Connect: use when a signed-in user applies to become an affiliate, or returns to finish a Stripe onboarding they left.
+    - [BILL-53](#bill-53-read-the-callers-affiliate-application) Read the caller's affiliate application: use when a signed-in user returns from Stripe onboarding, or opens the affiliate section, and must see where the application stands.
 - **[Operations and CI](#operations-and-ci-ops)**
   - [Deploy pipeline](#deploy-pipeline-ops)
     - [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys: use when a workflow_dispatch redeploy might race a push-triggered deploy.yml run on the same commit.
@@ -1618,7 +1620,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies · [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
 - [Tokens and catalogue](#tokens-and-catalogue-bill): [BILL-33](#bill-33-enforce-and-consume-activity-tokens) Enforce and consume activity tokens · [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh) Prefetch and retry a Cognito token refresh · [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue) Load and query the product/activity catalogue
 - [CDK infrastructure](#cdk-infrastructure-bill): [BILL-36](#bill-36-cdk-account-stack) CDK: account stack · [BILL-37](#bill-37-cdk-billing-app-stack) CDK: billing app stack · [BILL-38](#bill-38-cdk-billing-webhook-stack) CDK: billing webhook stack · [BILL-39](#bill-39-cdk-diya-gl-stack) CDK: diya-gl stack
-- [Migrations and shared utilities](#migrations-and-shared-utilities-bill): [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt · [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier · [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry · [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle · [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project · [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines · [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily · [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit
+- [Migrations and shared utilities](#migrations-and-shared-utilities-bill): [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt · [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier · [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry · [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle · [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project · [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines · [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily · [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit · [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect) Start an affiliate application through Stripe Connect · [BILL-53](#bill-53-read-the-callers-affiliate-application) Read the caller's affiliate application
 <!-- /generated:area BILL -->
 
 ### Bundle grants and entitlements (BILL)
@@ -1749,7 +1751,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-48 Set an affiliate's tier and state
 
 - **Use when:** an operator must approve a referrer as an affiliate, change the referrer's tier, or end the affiliate.
-- **Does:** The affiliatePost.js ingestHandler checks the tier against referrals.toml and the state against applied, approved or ended, for an operator only. It writes the affiliate item of the referrer hash with the tier, the state and the time. An approved state also writes approvedAt.
+- **Does:** The affiliatePost.js ingestHandler checks the tier against referrals.toml and the state against applied, approved or ended, for an operator only. It writes the affiliate item of the referrer hash with the tier, the state and the time. An approved state also writes approvedAt. Approving a tier paid through Stripe Connect needs a stored Connect account that has submitted its details, else 409; it reads the account from Stripe first when the stored flag is false. Ending needs neither.
 - **Run:** `POST /api/v1/affiliate`
 - **Entry:** `app/functions/account/affiliatePost.js:ingestHandler`
 - **Files:** app/functions/account/affiliatePost.js, app/unit-tests/functions/affiliatePost.test.js, web/public/bundles.page.js
@@ -1759,10 +1761,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-49 Read an affiliate's tier and state
 
 - **Use when:** an operator must see the tier and state of a referrer before or after changing them.
-- **Does:** The affiliateGet.js ingestHandler reads the affiliate item of the referrer hash in the query, for an operator only. It answers the tier, the state and the times, or 404 when the referrer has no affiliate item.
+- **Does:** The affiliateGet.js ingestHandler reads the affiliate item of the referrer hash in the query, for an operator only. While the state is applied and the item holds a Connect account, it reads the account from Stripe first and stores the result. It answers the tier, the state, the times and the Connect flags, or 404 when the referrer has no affiliate item.
 - **Run:** `GET /api/v1/affiliate?referrerHash=<hash>`
 - **Entry:** `app/functions/account/affiliateGet.js:ingestHandler`
-- **Files:** app/functions/account/affiliateGet.js, app/unit-tests/functions/affiliateGet.test.js, web/public/bundles.page.js
+- **Files:** app/functions/account/affiliateGet.js, app/services/affiliateConnect.js, app/unit-tests/functions/affiliateGet.test.js, web/public/bundles.page.js
 - **Keywords:** affiliate, tier, state, referrer, operator
 - **Related:** BILL-46, BILL-48
 
@@ -2140,6 +2142,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines
 - [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily
 - [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit
+- [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect) Start an affiliate application through Stripe Connect
+- [BILL-53](#bill-53-read-the-callers-affiliate-application) Read the caller's affiliate application
 <!-- /generated:group migrations-and-shared-utilities-bill -->
 
 #### BILL-40 Migrate the hashed-sub salt
@@ -2220,6 +2224,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/account/commissionCreditPayout.js, app/unit-tests/functions/commissionCreditPayout.test.js, app/data/dynamoDbCommissionRepository.js, app/lib/stripeClient.js, referrals.toml
 - **Keywords:** commission, credit, payout, customer balance, balance transaction, referral, scheduled lambda, kill switch
 - **Related:** BILL-46, BILL-47
+
+#### BILL-52 Start an affiliate application through Stripe Connect
+
+- **Use when:** a signed-in user applies to become an affiliate, or returns to finish a Stripe onboarding they left.
+- **Does:** The affiliateApplicationPost.js ingestHandler creates a UK Connect account for the caller on first use and stores its id on the affiliate item with the state applied. It answers a new Stripe-hosted onboarding link for the caller only. It refuses an approved or ended affiliate with 409. A synthetic test user gets a Stripe test-mode account.
+- **Run:** `POST /api/v1/affiliate/application`
+- **Entry:** `app/functions/account/affiliateApplicationPost.js:ingestHandler`
+- **Files:** app/functions/account/affiliateApplicationPost.js, app/services/affiliateConnect.js, app/unit-tests/functions/affiliateApplicationPost.test.js, app/test-support/stripeSimulator.js, web/public/bundles.page.js
+- **Keywords:** affiliate, apply, application, stripe connect, onboarding, account link, kyc
+- **Related:** BILL-48, BILL-49, BILL-53
+
+#### BILL-53 Read the caller's affiliate application
+
+- **Use when:** a signed-in user returns from Stripe onboarding, or opens the affiliate section, and must see where the application stands.
+- **Does:** The affiliateApplicationGet.js ingestHandler reads the caller's affiliate item. While the state is applied it reads the Connect account from Stripe and stores details_submitted and the transfers capability. It answers the state, the tier and the two flags, or state null when the caller never applied. A Stripe read failure answers the stored values.
+- **Run:** `GET /api/v1/affiliate/application`
+- **Entry:** `app/functions/account/affiliateApplicationGet.js:ingestHandler`
+- **Files:** app/functions/account/affiliateApplicationGet.js, app/services/affiliateConnect.js, app/unit-tests/functions/affiliateApplicationGet.test.js, web/public/bundles.page.js
+- **Keywords:** affiliate, application, status, stripe connect, details_submitted, onboarding return
+- **Related:** BILL-48, BILL-49, BILL-52
 
 ## Operations and CI (OPS)
 
@@ -6137,6 +6161,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - accessibility scan: [OPS-96](#ops-96-scan-pages-for-accessibility-violations), [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - accessibility statement: [SITE-10](#site-10-serve-general-site-pages)
 - accessibility test: [OPS-62](#ops-62-report-accessibility-penetration-testing)
+- account link: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
 - account migration: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - account policies: [BILL-31](#bill-31-configure-stripe-account-policies)
 - account separation: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
@@ -6175,7 +6200,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ads purchase conversion: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - ads.toml: [DATA-32](#data-32-sync-the-google-ads-account)
 - advertising standards: [SITE-20](#site-20-document-business-governance-and-positioning)
-- affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [DATA-64](#data-64-publish-per-pass-figures-nightly)
+- affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application), [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - agent authorisation: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - agent output: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - agent path: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
@@ -6230,6 +6255,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - api subscriptions: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
 - apilambda: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
 - app monitor: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
+- application: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application)
+- apply: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
 - approve: [BILL-48](#bill-48-set-an-affiliates-tier-and-state)
 - architecture rationale: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
 - architecture report: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
@@ -6790,6 +6817,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - destroy stale stacks: [OPS-14a](#ops-14a-wait-for-a-ci-slot-then-sweep-stale-stacks)
 - destroy workflow: [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
 - destroy-prod.yml: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
+- details_submitted: [BILL-53](#bill-53-read-the-callers-affiliate-application)
 - deterministic naming: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention)
 - developer hub: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - developer mode: [SITE-14](#site-14-render-page-chrome-and-widgets)
@@ -7339,6 +7367,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - kinesis firehose: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - kms keys: [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - knowledge base: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
+- kyc: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
 - lake bucket: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
 - lake relayout: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - lambda: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
@@ -7587,6 +7616,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - old logs: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - on-demand backup: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
 - on-pass-on-subscription: [BILL-10](#bill-10-redeem-a-pass)
+- onboarding: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
+- onboarding return: [BILL-53](#bill-53-read-the-callers-affiliate-application)
 - one-stop dashboard: [OPS-25](#ops-25-record-dora-and-probe-metrics), [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - one-stop objectives: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot), [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - open work: [DEV-27](#dev-27-render-the-open-work-board), [SS-46](#ss-46-render-the-spreadsheets-work-board)
@@ -8180,6 +8211,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - statement table: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - static analysis: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
 - static pages: [SITE-10](#site-10-serve-general-site-pages)
+- status: [BILL-53](#bill-53-read-the-callers-affiliate-application)
 - status clear: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return)
 - status codes: [SITE-07](#site-07-format-http-responses-and-errors)
 - status messages: [SITE-14](#site-14-render-page-chrome-and-widgets)
@@ -8197,6 +8229,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - streamable http: [MCP-18](#mcp-18-serve-the-submission-mcp-over-http-behind-cloudfront)
 - stripe: [BILL-24](#bill-24-create-a-stripe-checkout-session), [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status), [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-27](#bill-27-recover-an-abandoned-checkout), [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-31](#bill-31-configure-stripe-account-policies), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - stripe balance transactions: [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
+- stripe connect: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect), [BILL-53](#bill-53-read-the-callers-affiliate-application)
 - stripe donor: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
 - stripe events resend: [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation)
 - stripe gross fee split: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)

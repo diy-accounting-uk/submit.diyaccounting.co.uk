@@ -1257,6 +1257,56 @@ document.addEventListener("click", async (e) => {
   }
 });
 
+// Affiliates: a signed-in user applies through Stripe Connect onboarding
+const AFFILIATE_APPLY_TEXT = {
+  none: { text: "You have not applied.", button: "Apply with Stripe" },
+  started: { text: "Your application is started. Finish the Stripe steps to send it.", button: "Continue with Stripe" },
+  submitted: { text: "Stripe has your details. We review the application and tell you our decision by email.", button: null },
+  approved: { text: "You are an approved affiliate.", button: null },
+  ended: { text: "This affiliate has ended.", button: null },
+};
+
+function affiliateApplyView(application) {
+  if (application.state === "approved") return AFFILIATE_APPLY_TEXT.approved;
+  if (application.state === "ended") return AFFILIATE_APPLY_TEXT.ended;
+  if (application.state === "applied") {
+    return application.detailsSubmitted ? AFFILIATE_APPLY_TEXT.submitted : AFFILIATE_APPLY_TEXT.started;
+  }
+  return AFFILIATE_APPLY_TEXT.none;
+}
+
+async function initAffiliateApplySection() {
+  if (!getIdToken()) return;
+  const stateEl = document.getElementById("affiliateApplyState");
+  const button = document.getElementById("affiliateApplyBtn");
+  document.getElementById("affiliateApplySection").hidden = false;
+  try {
+    const res = await window.fetchWithIdToken("/api/v1/affiliate/application");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const view = affiliateApplyView(await res.json());
+    stateEl.textContent = view.text;
+    button.hidden = !view.button;
+    if (view.button) button.textContent = view.button;
+  } catch (err) {
+    stateEl.textContent = `Your application could not be read (${err.message}). Reload the page.`;
+  }
+}
+
+document.getElementById("affiliateApplyBtn")?.addEventListener("click", async () => {
+  const button = document.getElementById("affiliateApplyBtn");
+  button.disabled = true;
+  try {
+    const res = await window.fetchWithIdToken("/api/v1/affiliate/application", { method: "POST" });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(body.message || `HTTP ${res.status}`);
+    if (typeof body.url !== "string" || !body.url.startsWith("https://")) throw new Error("Stripe sent no onboarding link");
+    window.location.assign(body.url);
+  } catch (err) {
+    showStatus(`The application was not started (${err.message})`, "error");
+    button.disabled = false;
+  }
+});
+
 // Affiliates: an operator sets the tier and state of a referrer
 async function initAffiliateSection() {
   if (!getIdToken()) return;
@@ -1272,7 +1322,11 @@ function showAffiliate(affiliate) {
   document.getElementById("affiliateTier").value = affiliate.tier;
   document.getElementById("affiliateState").value = affiliate.state;
   document.getElementById("affiliateResult").textContent =
-    `Tier ${affiliate.tier}, state ${affiliate.state}` + (affiliate.approvedAt ? `, approved ${affiliate.approvedAt}` : "");
+    `Tier ${affiliate.tier}, state ${affiliate.state}` +
+    (affiliate.approvedAt ? `, approved ${affiliate.approvedAt}` : "") +
+    (affiliate.hasConnectAccount
+      ? `, Stripe details ${affiliate.detailsSubmitted ? "submitted" : "not submitted"}, transfers ${affiliate.transfersActive ? "active" : "not active"}`
+      : ", no Stripe account");
 }
 
 document.getElementById("affiliateLookupBtn")?.addEventListener("click", async () => {
@@ -1303,7 +1357,10 @@ document.getElementById("affiliateSaveBtn")?.addEventListener("click", async () 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ referrerHash, tier, state }),
     });
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.message || `HTTP ${res.status}`);
+    }
     showAffiliate(await res.json());
     showStatus("Affiliate saved", "success");
   } catch (err) {
@@ -1329,6 +1386,7 @@ function initPage() {
   initFeedbackEngagementSection();
   fetchMyGeneratedPasses(false);
   initAffiliateSection();
+  initAffiliateApplySection();
 
   // Handle checkout result from Stripe redirect
   const urlParams = new URLSearchParams(window.location.search);

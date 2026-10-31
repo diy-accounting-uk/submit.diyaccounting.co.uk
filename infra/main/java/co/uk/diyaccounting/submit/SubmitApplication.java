@@ -516,6 +516,8 @@ public class SubmitApplication {
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                         .cloudTrailEnabled(cloudTrailEnabled)
                         .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
+                        .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
+                        .baseUrl(sharedNames.publicBaseUrl)
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
