@@ -1194,9 +1194,9 @@ describe("infra/google/ads/ads.toml", () => {
     ]);
   });
 
-  it("runs the search campaign at 1 pound a day with a 2 pound click ceiling", () => {
-    expect(search.budgetMicros).toBe("1000000");
-    expect(search.bidding).toEqual({ strategy: "maximize_clicks", cpcBidCeilingMicros: "2000000" });
+  it("runs the search campaign at 2 pounds a day with a 3 pound click ceiling", () => {
+    expect(search.budgetMicros).toBe("2000000");
+    expect(search.bidding).toEqual({ strategy: "maximize_clicks", cpcBidCeilingMicros: "3000000" });
   });
 
   it("declares six ad groups of phrase-match keywords, 34 in all, each with one ad", () => {

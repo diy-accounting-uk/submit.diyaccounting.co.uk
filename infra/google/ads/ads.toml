@@ -124,7 +124,7 @@ name = "Asset Group 1"
 name = "Search: MTD VAT"
 type = "SEARCH"
 status = "ENABLED"
-budget_gbp = 1.00
+budget_gbp = 2.00
 locations = ["GB"]
 geo_target_type = "PRESENCE"
 contains_eu_political_advertising = false
@@ -137,7 +137,7 @@ content_network = false
 
 [campaign.bidding]
 strategy = "maximize_clicks"
-cpc_bid_ceiling_gbp = 2.00
+cpc_bid_ceiling_gbp = 3.00
 
 [campaign.negative_keywords]
 phrase = [

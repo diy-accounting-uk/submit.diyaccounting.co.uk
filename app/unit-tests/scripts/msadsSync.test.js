@@ -101,11 +101,18 @@ describe("ads.toml", () => {
     const google = googleToml.campaign.find((c) => c.name === "Search: MTD VAT");
     const toml = TOML.parse(adsToml).campaign[0];
     expect(toml.bidding.cpc_bid_ceiling_gbp).toBe(google.bidding.cpc_bid_ceiling_gbp);
+    expect(campaign.adGroups.every((g) => g.cpcBid === 1.5)).toBe(true);
     expect(campaign.adGroups.every((g) => g.cpcBid <= google.bidding.cpc_bid_ceiling_gbp)).toBe(true);
     expect(campaign.dailyBudget).toBe(1);
     expect(campaign.isPolitical).toBe(false);
     expect(campaign.status).toBe("Active");
     expect(campaign.finalUrlSuffix).toMatch(/^utm_source=bing&utm_medium=cpc&utm_campaign=/);
+  });
+
+  it("refuses an ad group bid above the ceiling", () => {
+    expect(() => parseDesired(adsToml.replace("ad_group_cpc_bid_gbp = 1.50", "ad_group_cpc_bid_gbp = 3.01"))).toThrow(
+      /ad_group_cpc_bid_gbp must be above 0 and at most cpc_bid_ceiling_gbp/,
+    );
   });
 
   it("declares an event goal for each Google conversion action and an offline goal for the upload", () => {
@@ -258,7 +265,7 @@ describe("apply", () => {
     expect(calls.find((c) => c.path === "/CampaignCriterions").body.CriterionType).toBe("Targets");
     const adGroup = calls.find((c) => c.path === "/AdGroups");
     expect(adGroup.body.CampaignId).toBe("900");
-    expect(adGroup.body.AdGroups[0]).toMatchObject({ Name: "Own brand", CpcBid: { Amount: 1 }, Network: "OwnedAndOperatedOnly" });
+    expect(adGroup.body.AdGroups[0]).toMatchObject({ Name: "Own brand", CpcBid: { Amount: 1.5 }, Network: "OwnedAndOperatedOnly" });
     expect(calls.at(-1)).toMatchObject({ method: "PUT", path: "/AccountProperties" });
     expect(calls.at(-1).body.AccountProperties).toEqual([{ Name: "MSCLKIDAutoTaggingEnabled", Value: "true" }]);
   });

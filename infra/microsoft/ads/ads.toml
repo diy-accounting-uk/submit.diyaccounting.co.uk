@@ -91,8 +91,8 @@ partner_syndication = false
 
 [campaign.bidding]
 strategy = "enhanced_cpc"
-ad_group_cpc_bid_gbp = 1.00
-cpc_bid_ceiling_gbp = 2.00
+ad_group_cpc_bid_gbp = 1.50
+cpc_bid_ceiling_gbp = 3.00
 
 [campaign.negative_keywords]
 phrase = [
