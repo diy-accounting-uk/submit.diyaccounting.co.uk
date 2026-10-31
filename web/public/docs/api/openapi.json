@@ -4100,6 +4100,13 @@
         } ]
       }
     },
+    "/pass/release" : {
+      "post" : {
+        "summary" : "Release a held pass",
+        "description" : "Raises, sets or removes the review limit of a pass held for review (operator only)",
+        "operationId" : "releasePass"
+      }
+    },
     "/practice/clients" : {
       "get" : {
         "summary" : "List the practice's clients",

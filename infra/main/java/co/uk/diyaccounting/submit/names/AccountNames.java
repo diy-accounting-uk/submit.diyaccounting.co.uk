@@ -182,6 +182,14 @@ public class AccountNames {
     public String passAdminPostLambdaUrlPath;
     public boolean passAdminPostLambdaJwtAuthorizer;
     public boolean passAdminPostLambdaCustomAuthorizer;
+    public String passReleasePostIngestLambdaHandler;
+    public String passReleasePostIngestLambdaFunctionName;
+    public String passReleasePostIngestLambdaArn;
+    public String passReleasePostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod passReleasePostLambdaHttpMethod;
+    public String passReleasePostLambdaUrlPath;
+    public boolean passReleasePostLambdaJwtAuthorizer;
+    public boolean passReleasePostLambdaCustomAuthorizer;
 
     // Pass Generate POST Lambda (JWT auth - user pass generation via tokens)
     public String passGeneratePostIngestLambdaHandler;
@@ -730,6 +738,29 @@ public class AccountNames {
                 "Generate a new pass",
                 "Generates a new pass code for a specified bundle type (admin only)",
                 "generatePass"));
+
+        // Pass Release POST Lambda (JWT auth; the handler admits operators only)
+        this.passReleasePostLambdaHttpMethod = HttpMethod.POST;
+        this.passReleasePostLambdaUrlPath = "/api/v1/pass/release";
+        this.passReleasePostLambdaJwtAuthorizer = true;
+        this.passReleasePostLambdaCustomAuthorizer = false;
+        var passReleasePostLambdaHandlerName = "passReleasePost.ingestHandler";
+        var passReleasePostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(passReleasePostLambdaHandlerName);
+        this.passReleasePostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, passReleasePostLambdaHandlerDashed);
+        this.passReleasePostIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, passReleasePostLambdaHandlerName);
+        this.passReleasePostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, passReleasePostLambdaHandlerDashed);
+        this.passReleasePostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.passReleasePostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.passReleasePostLambdaHttpMethod,
+                this.passReleasePostLambdaUrlPath,
+                "Release a held pass",
+                "Raises, sets or removes the review limit of a pass held for review (operator only)",
+                "releasePass"));
 
         // Pass Generate POST Lambda (JWT auth - user pass generation using tokens)
         this.passGeneratePostLambdaHttpMethod = HttpMethod.POST;

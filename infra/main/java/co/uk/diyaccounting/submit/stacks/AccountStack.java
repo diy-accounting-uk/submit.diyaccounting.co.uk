@@ -124,6 +124,9 @@ public class AccountStack extends Stack {
     public AbstractApiLambdaProps passAdminPostLambdaProps;
     public Function passAdminPostLambda;
     public ILogGroup passAdminPostLambdaLogGroup;
+    public AbstractApiLambdaProps passReleasePostLambdaProps;
+    public Function passReleasePostLambda;
+    public ILogGroup passReleasePostLambdaLogGroup;
 
     public AbstractApiLambdaProps passGeneratePostLambdaProps;
     public Function passGeneratePostLambda;
@@ -1276,6 +1279,44 @@ public class AccountStack extends Stack {
                 this.passAdminPostLambda.getNode().getId());
 
         // ============================================================================
+        // Pass Release POST Lambda (JWT auth - an operator changes a pass's review limit)
+        // ============================================================================
+        var passReleasePostLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var passReleasePostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.passReleasePostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.passReleasePostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.passReleasePostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.passReleasePostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.passReleasePostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.passReleasePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.passReleasePostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.passReleasePostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.passReleasePostLambdaCustomAuthorizer)
+                        .environment(passReleasePostLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(passReleasePostApiLambda);
+        this.passReleasePostLambdaProps = passReleasePostApiLambda.apiProps;
+        this.passReleasePostLambda = passReleasePostApiLambda.ingestLambda;
+        this.passReleasePostLambdaLogGroup = passReleasePostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.passReleasePostLambdaProps);
+        passesTable.grant(this.passReleasePostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // passReleasePost admits operators only, so it reads the operator list
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.passReleasePostLambda, region, account, props.envName());
+        infof(
+                "Created Pass Release POST Lambda %s",
+                this.passReleasePostLambda.getNode().getId());
+
+        // ============================================================================
         // Pass Generate POST Lambda (JWT auth - user pass generation using tokens)
         // ============================================================================
         var passGeneratePostLambdaEnv = new PopulatedMap<String, String>()
@@ -1578,6 +1619,7 @@ public class AccountStack extends Stack {
         cfnOutput(this, "PassGetLambdaArn", this.passGetLambda.getFunctionArn());
         cfnOutput(this, "PassPostLambdaArn", this.passPostLambda.getFunctionArn());
         cfnOutput(this, "PassAdminPostLambdaArn", this.passAdminPostLambda.getFunctionArn());
+        cfnOutput(this, "PassReleasePostLambdaArn", this.passReleasePostLambda.getFunctionArn());
         cfnOutput(this, "PassGeneratePostLambdaArn", this.passGeneratePostLambda.getFunctionArn());
         cfnOutput(this, "PassMyPassesGetLambdaArn", this.passMyPassesGetLambda.getFunctionArn());
         cfnOutput(this, "BundleCapacityReconcileLambdaArn", this.bundleCapacityReconcileLambda.getFunctionArn());

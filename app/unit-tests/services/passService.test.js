@@ -13,6 +13,7 @@ vi.mock("@app/data/dynamoDbPassRepository.js", () => ({
   getPass: vi.fn().mockResolvedValue(null),
   redeemPass: vi.fn().mockResolvedValue(null),
   revokePass: vi.fn().mockResolvedValue(null),
+  setReviewLimit: vi.fn().mockResolvedValue(null),
   putReferralClaim: vi.fn().mockResolvedValue(true),
   deleteReferralClaim: vi.fn().mockResolvedValue(undefined),
   putRedemption: vi.fn().mockResolvedValue(undefined),
@@ -25,6 +26,7 @@ const {
   putReferralClaim,
   deleteReferralClaim,
   putRedemption,
+  setReviewLimit,
 } = await import("@app/data/dynamoDbPassRepository.js");
 const {
   buildPassRecord,
@@ -36,6 +38,7 @@ const {
   claimReferral,
   releaseReferral,
   recordRedemption,
+  releasePass,
 } = await import("../../services/passService.js");
 
 describe("passService", () => {
@@ -493,6 +496,40 @@ describe("passService", () => {
         passTypeId: "digital-pass",
         redeemedAt: expect.any(String),
       });
+    });
+  });
+  describe("releasePass", () => {
+    const held = { code: "c", useCount: 1000, reviewLimit: 1000 };
+
+    it("raises a held pass's limit above its use count", async () => {
+      getPass.mockResolvedValue(held);
+      setReviewLimit.mockResolvedValue({ ...held, reviewLimit: 2000 });
+      await releasePass("c", { raiseBy: 1000 });
+      expect(setReviewLimit).toHaveBeenCalledWith("c", 2000, expect.any(String));
+    });
+
+    it("raises from the use count when the count has passed the limit", async () => {
+      getPass.mockResolvedValue({ code: "c", useCount: 1003, reviewLimit: 1000 });
+      await releasePass("c", { raiseBy: 10 });
+      expect(setReviewLimit).toHaveBeenCalledWith("c", 1013, expect.any(String));
+    });
+
+    it("sets the limit to the given value", async () => {
+      getPass.mockResolvedValue(held);
+      await releasePass("c", { reviewLimit: 5000 });
+      expect(setReviewLimit).toHaveBeenCalledWith("c", 5000, expect.any(String));
+    });
+
+    it("removes the limit", async () => {
+      getPass.mockResolvedValue(held);
+      await releasePass("c", { remove: true });
+      expect(setReviewLimit).toHaveBeenCalledWith("c", null, expect.any(String));
+    });
+
+    it("returns null and writes nothing for a missing pass", async () => {
+      getPass.mockResolvedValue(null);
+      expect(await releasePass("c", { raiseBy: 1 })).toBeNull();
+      expect(setReviewLimit).not.toHaveBeenCalled();
     });
   });
 });
