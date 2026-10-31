@@ -1176,6 +1176,16 @@ async function fetchMyGeneratedPasses(append) {
             },
             "View QR",
           ),
+          domEl(
+            "a",
+            {
+              href: marketingPostUrl(pass),
+              class: "btn btn-small btn-secondary pass-post",
+              target: "_blank",
+              rel: "noopener",
+            },
+            "Post",
+          ),
           pass.heldForReview && viewerIsOperator
             ? domEl(
                 "button",
@@ -1220,6 +1230,19 @@ async function fetchMyGeneratedPasses(append) {
   } catch (err) {
     console.warn("Failed to fetch my generated passes:", err);
   }
+}
+
+// The marketing site follows the environment of this page: prod pages link to marketing, every other host to ci-marketing.
+const PROD_SUBMIT_HOSTS = ["submit.diyaccounting.co.uk", "prod-submit.diyaccounting.co.uk"];
+
+function marketingPostUrl(pass) {
+  const marketingHost = PROD_SUBMIT_HOSTS.includes(window.location.hostname)
+    ? "marketing.diyaccounting.co.uk"
+    : "ci-marketing.diyaccounting.co.uk";
+  const url = new URL(`https://${marketingHost}/`);
+  url.searchParams.set("pass", pass.code);
+  url.hash = String(pass.bundleId || "").includes("vat") ? "submit-vat" : "submit-all";
+  return url.toString();
 }
 
 // Copy link click handler for generated passes
