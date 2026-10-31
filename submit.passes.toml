@@ -165,8 +165,8 @@ defaultValidityPeriod = "P1D"
 defaultMaxUses = 1
 requiresEmailRestriction = false
 
-# digital-pass → unlocks "day-guest" bundle
-# Grants: 3 tokens, 1 day timeout per redeemer: 3 VAT submissions within 24 hours
+# digital-pass → unlocks "week-guest" bundle
+# Grants: 3 tokens, 7 day timeout per redeemer: 7 days of free VAT submissions
 # Validity: the pass works for 90 days, a referral link with no use cap.
 # reviewLimit: at 1000 uses the pass refuses further redemptions until the operator reviews it.
 # Tokens: the issuer pays the tokenCost of the generate-pass-digital activity in submit.catalogue.toml.
@@ -175,7 +175,7 @@ requiresEmailRestriction = false
 id = "digital-pass"
 name = "Digital Pass"
 description = "Time-limited digital pass for short campaigns (social media, email, QR sharing)"
-bundleId = "day-guest"
+bundleId = "week-guest"
 defaultValidityPeriod = "P90D"
 reviewLimit = 1000
 requiresEmailRestriction = false

@@ -42,7 +42,7 @@ A bundle with `enable = "on-pass"` needs a pass:
 | `resident-vat-pass`      | `resident-vat`      | 1              | 1 day     | No             | Operator              |
 | `resident-pro-test-pass` | `resident-pro`      | 1              | 1 day     | No             | Operator, test        |
 | `resident-pro-pass`      | `resident-pro`      | 1              | 1 day     | No             | Operator              |
-| `digital-pass`           | `day-guest`         | No cap, held at 1000 | 90 days | No        | User, 10 tokens       |
+| `digital-pass`           | `week-guest`        | No cap, held at 1000 | 90 days | No        | User, 10 tokens       |
 | `physical-pass`          | `day-guest`         | 1              | Unlimited | No             | User, 10 tokens       |
 | `campaign-pass`          | `invited-guest`     | 1              | 3 days    | No             | Operator, no generate page |
 
@@ -64,6 +64,7 @@ A pass type with `test = true` (the `-test-pass` types) sets `testPass: true` on
 | ------------------- | -------- | --------------- | ------- | --------- | --------------- | ----------------------------------------- |
 | `default`           | -        | -               | -       | -         | Automatic       | All authenticated users                   |
 | `day-guest`         | Guest    | 3               | None    | 1 day     | On-request      | Self-service; capped at 100 live holders  |
+| `week-guest`        | Guest    | 3               | None    | 7 days    | On-email-match  | `digital-pass`                            |
 | `invited-guest`     | Guest    | 3               | Monthly | 1 month   | On-email-match  | `invited-guest`, `campaign-pass`          |
 | `resident-vat`      | Resident | 100             | Monthly | -         | On-subscription | Stripe, £0.99/month                       |
 | `resident`          | Resident | 100             | Monthly | -         | On-subscription | Stripe, £39/year or £3.99/month           |

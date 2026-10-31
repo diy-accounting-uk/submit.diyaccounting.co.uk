@@ -54,7 +54,7 @@ test.describe("Generate digital pass page", () => {
 
     await page.goto(`${SITE}/passes/generate-digital.html`, { waitUntil: "domcontentloaded" });
     const pageText = await page.locator("body").innerText();
-    expect(pageText).toContain("3 VAT submissions within 24 hours");
+    expect(pageText).toContain("7 days of free VAT submissions");
     expect(pageText).toContain("you earn 33% of what they pay for their first 3 months");
     await page.locator("#generatePassBtn").click();
 

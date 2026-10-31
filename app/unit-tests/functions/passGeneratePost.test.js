@@ -221,7 +221,7 @@ describe("passGeneratePost", () => {
     expect(mockCreatePass).toHaveBeenCalledWith(
       expect.objectContaining({
         passTypeId: "digital-pass",
-        bundleId: "day-guest",
+        bundleId: "week-guest",
         validityPeriod: "P90D",
         maxUses: null,
         reviewLimit: 1000,
