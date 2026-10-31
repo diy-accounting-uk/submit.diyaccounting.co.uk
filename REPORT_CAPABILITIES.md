@@ -502,6 +502,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page: use when you must compare this week's exploratory crawl with the last, or find which pages changed in look between two crawl folders.
     - [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation: use when the `prod-env-charges-without-activation` alarm fires, or the operator asks who paid and got no bundle.
     - [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report: use when a behaviour suite runs with the synthetic HMRC account, or writes and publishes its test report after the run.
+    - [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard: use when the operator asks for a review of the operator dashboard, what it says, or how the business is doing by its numbers.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -4920,7 +4921,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally · [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them) Judge screenshots as a reader sees them · [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page) Capture a screenshot of every site page · [DEV-48](#dev-48-browse-the-deployed-site-with-a-headless-browser-mcp-server) Browse the deployed site with a headless browser MCP server · [DEV-49](#dev-49-mint-the-signed-in-browser-state-for-the-mcp-server) Mint the signed-in browser state for the MCP server · [DEV-50](#dev-50-explore-the-deployed-site-role-by-role) Explore the deployed site role by role · [DEV-51](#dev-51-crawl-the-deployed-site-blind-every-sunday) Crawl the deployed site blind every Sunday · [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page · [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation · [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report · [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -5246,6 +5247,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-52](#dev-52-diff-two-weekly-crawls-page-by-page) Diff two weekly crawls page by page
 - [DEV-53](#dev-53-repair-a-paid-stripe-charge-that-has-no-activation) Repair a paid Stripe charge that has no activation
 - [DEV-54](#dev-54-run-a-behaviour-suite-with-synthetic-account-or-report) Run a behaviour suite with synthetic account or report
+- [DEV-55](#dev-55-review-the-operator-dashboard) Review the operator dashboard
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -5524,6 +5526,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/run-behaviour.mjs
 - **Keywords:** behaviour test, synthetic account, test report, lane, suite
 - **Related:** DEV-19
+
+#### DEV-55 Review the operator dashboard
+
+- **Use when:** the operator asks for a review of the operator dashboard, what it says, or how the business is doing by its numbers.
+- **Does:** The dashboard-review skill reads the prod snapshot from the analytics lake and the rendered page in the operator's own Chrome session. It judges each panel for movement, gaps and faults, writes one report to the private repository, and summarises it in the chat with a proposed NEXT.md row per fault.
+- **Run:** `/dashboard-review`
+- **Entry:** `.claude/skills/dashboard-review/SKILL.md`
+- **Files:** .claude/skills/dashboard-review/SKILL.md, app/functions/analytics/operatorSnapshotPublish.js, web/public/operator/dashboard.html, web/public/operator/dashboard.page.js
+- **Keywords:** dashboard review, operator dashboard, snapshot review, business review, objectives report, not measured, kpi review
+- **Related:** DEV-27, DEV-50
 
 ## Spreadsheets and diya-gl (SS)
 
@@ -6514,6 +6526,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - business event: [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - business metrics: [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch)
 - business picker: [HMRC-09](#hmrc-09-retrieve-itsa-business-details)
+- business review: [DEV-55](#dev-55-review-the-operator-dashboard)
 - business source adjustable summary: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
 - business views: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - cache scope: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
@@ -6814,6 +6827,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - daily cron: [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow)
 - dark mode: [DEV-47](#dev-47-capture-a-screenshot-of-every-site-page)
 - dashboard: [HMRC-09](#hmrc-09-retrieve-itsa-business-details)
+- dashboard review: [DEV-55](#dev-55-review-the-operator-dashboard)
 - dashboard snapshot: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - dashboards: [OPS-117](#ops-117-provision-the-observability-stack)
 - data export: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
@@ -7450,6 +7464,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - kinesis firehose: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - kms keys: [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - knowledge base: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
+- kpi review: [DEV-55](#dev-55-review-the-operator-dashboard)
 - kyc: [BILL-52](#bill-52-start-an-affiliate-application-through-stripe-connect)
 - lake bucket: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
 - lake relayout: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
@@ -7666,6 +7681,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - non-lambda mocks: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
 - non-main branch: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - not implemented: [BILL-27](#bill-27-recover-an-abandoned-checkout)
+- not measured: [DEV-55](#dev-55-review-the-operator-dashboard)
 - nova lite: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - nova pro: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - npm audit: [SS-45](#ss-45-run-compliance-checks)
@@ -7685,6 +7701,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - oauth state: [SITE-17](#site-17-trace-and-secure-client-requests)
 - oauth.toml: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - object expiration: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
+- objectives report: [DEV-55](#dev-55-review-the-operator-dashboard)
 - obligation formatting: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
 - obligations: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - observability: [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1)
@@ -7718,6 +7735,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - operator bundle: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - operator bundle entitlement: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - operator consent: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
+- operator dashboard: [DEV-55](#dev-55-review-the-operator-dashboard)
 - operator dashboard annotations: [SITE-21](#site-21-log-growth-experiments)
 - operator dashboard page: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - operator dashboard route: [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api)
@@ -8259,6 +8277,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - slow the flow: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
 - small company accounts: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - smoke test: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
+- snapshot review: [DEV-55](#dev-55-review-the-operator-dashboard)
 - sns: [SITE-03](#site-03-capture-feedback-interest), [OPS-72](#ops-72-forward-bedrock-budget-alerts)
 - sns findings topic: [OPS-117](#ops-117-provision-the-observability-stack)
 - sns notification: [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans), [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
