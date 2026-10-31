@@ -110,10 +110,10 @@
           "headline": "Mint the code",
           "keyWord": "code"
         },
-        { "action": "await", "until": "#passResult", "label": "Generating the pass" },
+        { "action": "await", "until": "#generatedPassesList [data-pass-code]", "label": "Generating the pass" },
         {
           "action": "point",
-          "target": "#generatedPassCode",
+          "target": "#generatedPassesList .pass-code",
           "caption": "This is the code, ready to print or engrave.",
           "headline": "Ready to print",
           "keyWord": "print",

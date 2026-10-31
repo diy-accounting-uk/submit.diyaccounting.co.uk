@@ -38,6 +38,7 @@ import {
   goToGeneratePhysicalPassPage,
   generatePass,
   verifyPassGenerated,
+  openPassQr,
   verifyMyGeneratedPasses,
   getTokenBalance,
   selectPhysicalProductType,
@@ -184,8 +185,8 @@ test("Click through: Generate digital pass and verify in My Generated Passes", a
   expect(passCode).toBeTruthy();
   console.log(`[generate-pass-test]: Generated digital pass: ${passCode}`);
 
-  // --- Step 4: Verify the result display ---
-  await verifyPassGenerated(page, screenshotPath);
+  // --- Step 4: Verify the landing in My generated passes ---
+  await verifyPassGenerated(page, passCode, screenshotPath);
 
   /* ********************************* */
   /*  VERIFY IN MY GENERATED PASSES    */
@@ -330,9 +331,10 @@ test("Click through: Generate physical pass and verify design downloads", async 
   console.log(`[generate-pass-test]: Generated physical pass: ${passCode}`);
 
   // --- Step 4: Verify pass result ---
-  await verifyPassGenerated(page, screenshotPath);
+  await verifyPassGenerated(page, passCode, screenshotPath);
 
-  // --- Step 5: Verify front/back SVG downloads are available ---
+  // --- Step 5: Open the pass QR page, then verify front/back SVG downloads are available ---
+  await openPassQr(page, passCode, screenshotPath);
   await verifyPhysicalDesignDownloads(page, screenshotPath);
 
   // --- Step 6: Verify fulfillment link ---

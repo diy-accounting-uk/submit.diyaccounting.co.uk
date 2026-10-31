@@ -79,7 +79,7 @@ async function initPage() {
     const totalRemaining = bundles.filter((b) => b.allocated).reduce((sum, b) => sum + (b.tokensRemaining || 0), 0);
 
     // Read token cost from catalogue
-    let tokenCost = 3;
+    let tokenCost;
     try {
       const catRes = await fetch("/submit.catalogue.toml");
       if (catRes.ok) {
@@ -92,11 +92,15 @@ async function initPage() {
       }
     } catch {}
 
+    const btn = document.getElementById("generatePassBtn");
+    if (tokenCost === undefined) {
+      btn.disabled = false;
+      return;
+    }
     document.getElementById("tokenCostDisplay").textContent = tokenCost;
     document.getElementById("tokensRemainingDisplay").textContent = totalRemaining;
     document.getElementById("tokenInfo").style.display = "block";
 
-    const btn = document.getElementById("generatePassBtn");
     if (totalRemaining >= tokenCost) {
       btn.disabled = false;
     } else {
@@ -138,41 +142,7 @@ document.getElementById("generatePassBtn").addEventListener("click", async () =>
       return;
     }
 
-    // Display result
-    __generatedPassCode = body.code;
-    __generatedPassUrl = `${window.location.origin}/bundles.html?pass=${encodeURIComponent(body.code)}`;
-
-    document.getElementById("generatedPassCode").textContent = body.code;
-    document.getElementById("generatedPassUrl").textContent = __generatedPassUrl;
-    document.getElementById("passCodeSmall").textContent = body.code;
-
-    // Generate QR code SVG client-side
-    try {
-      const qrSvg = await QRCode.toString(__generatedPassUrl, {
-        type: "svg",
-        width: 250,
-        margin: 2,
-        errorCorrectionLevel: "M",
-      });
-      __generatedQrSvg = qrSvg;
-      setSvgContent(document.getElementById("generatedPassQrCode"), qrSvg);
-    } catch (qrErr) {
-      console.warn("Failed to generate QR code:", qrErr);
-    }
-
-    // The "This will use" line is about the next pass, so it goes once a pass exists.
-    document.getElementById("tokenInfo").style.display = "none";
-    const tokensAfter = document.getElementById("tokensAfter");
-    tokensAfter.textContent =
-      body.tokensRemaining !== undefined
-        ? `${body.tokensConsumed} tokens consumed. ${body.tokensRemaining} tokens remaining.`
-        : `${body.tokensConsumed} tokens consumed.`;
-    window.dispatchEvent(new CustomEvent("token-balance-changed"));
-
-    document.getElementById("passResult").style.display = "block";
-    btn.textContent = "Generate another";
-    btn.disabled = false;
-    showStatus("Pass generated successfully!", "success");
+    window.location.assign(`/bundles.html?newPass=${encodeURIComponent(body.code)}#myGeneratedPasses`);
   } catch (err) {
     showStatus(`Failed to generate pass: ${err?.message || err}`, "error");
     btn.textContent = "Generate pass";
