@@ -2491,6 +2491,26 @@ jobs:
           path: |
             target/behaviour-test-results/**/*.jsonl
 
+      # The developer site links this path as the latest Playwright report for submit. The ci
+      # environment's bucket holds it, because this job only holds ci credentials. A called run
+      # sees the caller's github.ref, so a deploy.yml run on main publishes too.
+      - name: Publish the Playwright report to the developer site
+        if: ${{ success() && github.ref == 'refs/heads/main' }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          OUTPUTS=$(aws cloudformation describe-stacks --region us-east-1 \
+            --stack-name ci-env-DeveloperSiteStack \
+            --query 'Stacks[0].Outputs' --output json 2>/dev/null || echo '[]')
+          BUCKET=$(echo "${OUTPUTS}" | jq -r '.[] | select(.OutputKey == "BucketName") | .OutputValue')
+          DISTRIBUTION_ID=$(echo "${OUTPUTS}" | jq -r '.[] | select(.OutputKey == "DistributionId") | .OutputValue')
+          if [ -z "${BUCKET}" ]; then
+            echo "::notice::ci-env-DeveloperSiteStack is not deployed; the report is not published"
+            exit 0
+          fi
+          aws s3 sync target/test-reports/html-report "s3://${BUCKET}/reports/submit/" --delete --region us-east-1
+          aws cloudfront create-invalidation --distribution-id "${DISTRIBUTION_ID}" --paths '/reports/submit/*'
+
   # The weekly blind crawl (scripts/exploratory-crawl.mjs). It runs on the scheduled run only
   # when today is a Sunday (the gate step reads `date -u +%u`), and on a workflow_dispatch with
   # runExploratoryCrawl set to true. `github.workflow == 'test'` keeps deploy.yml's delegated call,
