@@ -208,6 +208,11 @@ public class AccountNames {
     public String bundleCapacityReconcileLambdaArn;
     public String bundleCapacityReconcileProvisionedConcurrencyLambdaAliasArn;
 
+    public String commissionReleaseLambdaHandler;
+    public String commissionReleaseLambdaFunctionName;
+    public String commissionReleaseLambdaArn;
+    public String commissionReleaseProvisionedConcurrencyLambdaAliasArn;
+
     // Session Beacon POST Lambda (public, no auth)
     public String sessionBeaconPostIngestLambdaHandler;
     public String sessionBeaconPostIngestLambdaFunctionName;
@@ -791,6 +796,18 @@ public class AccountNames {
                 "%s-%s".formatted(root.appLambdaArnPrefix, bundleCapacityReconcileLambdaHandlerDashed);
         this.bundleCapacityReconcileProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.bundleCapacityReconcileLambdaArn, root.provisionedConcurrencyAliasName);
+
+        var commissionReleaseLambdaHandlerName = "commissionRelease.handler";
+        var commissionReleaseLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(commissionReleaseLambdaHandlerName);
+        this.commissionReleaseLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, commissionReleaseLambdaHandlerDashed);
+        this.commissionReleaseLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, commissionReleaseLambdaHandlerName);
+        this.commissionReleaseLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, commissionReleaseLambdaHandlerDashed);
+        this.commissionReleaseProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.commissionReleaseLambdaArn, root.provisionedConcurrencyAliasName);
 
         // Session Beacon POST Lambda (public, no auth). Path carries the /api/v1 prefix, not
         // the bare /api/session/beacon the endpoint used before: CloudFront only forwards

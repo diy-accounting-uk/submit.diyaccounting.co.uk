@@ -241,15 +241,16 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                 "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        // 24 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
+        // 25 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
         // practiceClientsListGet(1), practiceClientsPost(1), practiceClientGet(1),
         // practiceClientDelete(1), practiceClientAuthorisationInvitePost(1),
         // practiceClientAuthorisationGet(1), practiceClientAuthorisationInviteDelete(1),
         // interestPost(1), passGet(1), passPost(1), passAdminPost(1),
-        // passGeneratePost(1), passMyPassesGet(1), bundleCapacityReconcile(1), sessionBeaconPost(1),
+        // passGeneratePost(1), passMyPassesGet(1), bundleCapacityReconcile(1), commissionRelease(1),
+        // sessionBeaconPost(1),
         // sessionSignOutPost(1), activityStartedPost(1), accountSettingsPut(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
-        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 24);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 25);
         assertGroupedStackHealthAlarm(
                 accountStackTemplate,
                 List.of(
@@ -257,6 +258,7 @@ class SubmitApplicationCdkResourceTest extends SubmitApplicationCdkTestEnvironme
                         "activity-started-post",
                         "bundle",
                         "bundle-capacity-reconcile",
+                        "commission-release",
                         "interest-post",
                         "operator-snapshot-get",
                         "pass",

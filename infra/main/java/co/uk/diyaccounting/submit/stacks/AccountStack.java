@@ -44,6 +44,7 @@ import software.amazon.awscdk.services.cognito.IUserPool;
 import software.amazon.awscdk.services.cognito.UserPool;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
+import software.amazon.awscdk.services.events.CronOptions;
 import software.amazon.awscdk.services.events.Rule;
 import software.amazon.awscdk.services.events.Schedule;
 import software.amazon.awscdk.services.events.targets.LambdaFunction;
@@ -136,6 +137,9 @@ public class AccountStack extends Stack {
     public Function bundleCapacityReconcileLambda;
     public ILogGroup bundleCapacityReconcileLambdaLogGroup;
     public Rule bundleCapacityReconcileSchedule;
+    public Function commissionReleaseLambda;
+    public ILogGroup commissionReleaseLambdaLogGroup;
+    public Rule commissionReleaseSchedule;
 
     public AbstractApiLambdaProps sessionBeaconPostLambdaProps;
     public Function sessionBeaconPostLambda;
@@ -268,6 +272,18 @@ public class AccountStack extends Stack {
                 this,
                 "ImportedBundlesTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().data.bundlesTableName);
+
+        // Lookup existing DynamoDB Commissions Table
+        ITable commissionsTable = Table.fromTableName(
+                this,
+                "ImportedCommissionsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().data.commissionsTableName);
+
+        // Lookup existing DynamoDB Subscriptions Table
+        ITable subscriptionsTable = Table.fromTableName(
+                this,
+                "ImportedSubscriptionsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().data.subscriptionsTableName);
 
         // Lookup existing DynamoDB Practice Clients Table
         ITable practiceClientsTable = Table.fromTableName(
@@ -1420,6 +1436,60 @@ public class AccountStack extends Stack {
         infof(
                 "Created Bundle Capacity Reconciliation Lambda %s with hourly schedule",
                 this.bundleCapacityReconcileLambda.getNode().getId());
+
+        // ============================================================================
+        // Commission Release Lambda (EventBridge scheduled, once a day)
+        // ============================================================================
+        var commissionReleaseLambdaEnv = new PopulatedMap<String, String>()
+                .with("COMMISSIONS_DYNAMODB_TABLE_NAME", commissionsTable.getTableName())
+                .with("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME", subscriptionsTable.getTableName())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var commissionReleaseLambdaConstruct = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.commissionReleaseLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.commissionReleaseLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.commissionReleaseLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.commissionReleaseLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.commissionReleaseProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .ingestLambdaTimeout(Duration.minutes(5))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .environment(commissionReleaseLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(commissionReleaseLambdaConstruct);
+        this.commissionReleaseLambda = commissionReleaseLambdaConstruct.ingestLambda;
+        this.commissionReleaseLambdaLogGroup = commissionReleaseLambdaConstruct.logGroup;
+        commissionsTable.grant(
+                this.commissionReleaseLambda,
+                "dynamodb:GetItem",
+                "dynamodb:Query",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:DeleteItem",
+                "dynamodb:ConditionCheckItem");
+        subscriptionsTable.grant(this.commissionReleaseLambda, "dynamodb:GetItem");
+        bundlesTable.grant(this.commissionReleaseLambda, "dynamodb:Query");
+        passesTable.grant(this.commissionReleaseLambda, "dynamodb:GetItem");
+
+        this.commissionReleaseSchedule = Rule.Builder.create(
+                        this, props.sharedNames().account.commissionReleaseLambdaFunctionName + "-Schedule")
+                .ruleName(props.sharedNames().account.commissionReleaseLambdaFunctionName + "-schedule")
+                .description("Release held commission lines once a day")
+                .schedule(Schedule.cron(
+                        CronOptions.builder().minute("15").hour("3").build()))
+                .targets(List.of(LambdaFunction.Builder.create(this.commissionReleaseLambda)
+                        .build()))
+                .build();
+        infof(
+                "Created Commission Release Lambda %s with daily schedule",
+                this.commissionReleaseLambda.getNode().getId());
 
         // ============================================================================
         // Session Beacon POST Lambda (public, no auth)

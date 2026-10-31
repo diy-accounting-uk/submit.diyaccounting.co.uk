@@ -517,3 +517,24 @@ export async function updateAccountSettings(userId, settings) {
     throw error;
   }
 }
+
+/** Every bundle item of one account, read by its hashed sub; the account settings item is left out. */
+export async function getBundlesByHashedSub(hashedSub) {
+  const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+  const bundles = [];
+  let startKey;
+  do {
+    const response = await executeDynamoDbCommand(
+      (module) =>
+        new module.QueryCommand({
+          TableName: tableName,
+          KeyConditionExpression: "hashedSub = :hashedSub",
+          ExpressionAttributeValues: { ":hashedSub": hashedSub },
+          ExclusiveStartKey: startKey,
+        }),
+    );
+    bundles.push(...(response.Items ?? []).filter((item) => item.bundleId !== ACCOUNT_SETTINGS_ITEM_ID));
+    startKey = response.LastEvaluatedKey;
+  } while (startKey);
+  return bundles;
+}
