@@ -18,6 +18,13 @@ The evidence links and the log groups behind this alarm are in /tmp/evidence.jso
 first. Its `credentialProof` key holds the answers three `aws` calls got moments ago with the
 same credentials you hold: `identity` (who you are), `logGroups` (the log groups behind this
 alarm, with their retention) and `alarmHistory` (the alarm's own state changes over the window).
+Each `alarmHistory` item has `at`, `summary` and `newState` (`value` and `stateReason`). Read the
+`stateReason` of the newest item first, before you look at any code. A CloudWatch threshold
+breach has a reason such as "Threshold Crossed: 1 datapoint ... was greater than the threshold".
+Any other reason text, or a state set with `aws cloudwatch set-alarm-state`, means a person set
+the state by hand: say that plainly in answer 1, quote the reason, and do not name a code cause
+for it. Then check the metric and logs for the window; if they show no breach, answer 2 with
+"not broken" and question 3 with "watch, no action".
 Those calls worked; yours will too. If one of them carries an `error` instead of an answer, quote
 that error in your answer and say which call it was. Everything else you need about this alarm is already in the list above — you have no `gh`
 command and no general shell access, so do not run `ls`, `cat`, `gh issue view`, or anything
