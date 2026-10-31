@@ -59,9 +59,6 @@ on:
       cognito-mcp-client-id:
         type: string
         required: true
-      skip-json:
-        type: string
-        required: true
       base-image-tag:
         type: string
         required: true
@@ -163,8 +160,7 @@ jobs:
   deploy-auth:
     name: 'deploy AuthStack via deploy-cdk-stack.yml'
     if: >-
-      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
-      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-auth')) }}
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success' }}
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -186,8 +182,7 @@ jobs:
   deploy-hmrc:
     name: 'deploy HmrcStack via deploy-cdk-stack.yml'
     if: >-
-      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
-      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc')) }}
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success' }}
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -209,8 +204,7 @@ jobs:
   deploy-hmrc-itsa:
     name: 'deploy HmrcItsaStack via deploy-cdk-stack.yml'
     if: >-
-      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
-      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc-itsa')) }}
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success' }}
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -232,8 +226,7 @@ jobs:
   deploy-hmrc-itsa-property:
     name: 'deploy HmrcItsaPropertyStack via deploy-cdk-stack.yml'
     if: >-
-      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
-      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc-itsa-property')) }}
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success' }}
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -255,8 +248,7 @@ jobs:
   deploy-companies-house:
     name: 'deploy CompaniesHouseStack via deploy-cdk-stack.yml'
     if: >-
-      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
-      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-companies-house')) }}
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success' }}
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -278,8 +270,7 @@ jobs:
   deploy-account:
     name: 'deploy AccountStack via deploy-cdk-stack.yml'
     if: >-
-      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
-      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-account')) }}
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success' }}
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -301,8 +292,7 @@ jobs:
   deploy-billing:
     name: 'deploy BillingStack via deploy-cdk-stack.yml'
     if: >-
-      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
-      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-billing')) }}
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success' }}
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -324,8 +314,7 @@ jobs:
   deploy-diya-gl:
     name: 'deploy DiyaGlStack via deploy-cdk-stack.yml'
     if: >-
-      ${{ !cancelled() && inputs.validate-secrets-result == 'success'
-      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-diya-gl')) }}
+      ${{ !cancelled() && inputs.validate-secrets-result == 'success' }}
     uses: ./.github/workflows/deploy-cdk-stack.yml
     permissions:
       contents: read
@@ -365,15 +354,14 @@ jobs:
     name: 'deploy api'
     if: >-
       ${{ !cancelled() && needs.deploy-mcp.result == 'success'
-      && (needs.deploy-auth.result == 'success' || (needs.deploy-auth.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-auth')))
-      && (needs.deploy-hmrc.result == 'success' || (needs.deploy-hmrc.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc')))
-      && (needs.deploy-hmrc-itsa.result == 'success' || (needs.deploy-hmrc-itsa.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc-itsa')))
-      && (needs.deploy-hmrc-itsa-property.result == 'success' || (needs.deploy-hmrc-itsa-property.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc-itsa-property')))
-      && (needs.deploy-companies-house.result == 'success' || (needs.deploy-companies-house.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-companies-house')))
-      && (needs.deploy-account.result == 'success' || (needs.deploy-account.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-account')))
-      && (needs.deploy-billing.result == 'success' || (needs.deploy-billing.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-billing')))
-      && (needs.deploy-diya-gl.result == 'success' || (needs.deploy-diya-gl.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-diya-gl')))
-      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-api')) }}
+      && needs.deploy-auth.result == 'success'
+      && needs.deploy-hmrc.result == 'success'
+      && needs.deploy-hmrc-itsa.result == 'success'
+      && needs.deploy-hmrc-itsa-property.result == 'success'
+      && needs.deploy-companies-house.result == 'success'
+      && needs.deploy-account.result == 'success'
+      && needs.deploy-billing.result == 'success'
+      && needs.deploy-diya-gl.result == 'success' }}
     needs:
       - deploy-auth
       - deploy-hmrc
@@ -522,14 +510,13 @@ jobs:
     name: 'deploy EdgeStack via deploy-cdk-stack.yml'
     if: >-
       ${{ !cancelled() && inputs.mvn-package-result == 'success'
-      && (needs.deploy-auth.result == 'success' || (needs.deploy-auth.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-auth')))
-      && (needs.deploy-hmrc.result == 'success' || (needs.deploy-hmrc.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc')))
-      && (needs.deploy-hmrc-itsa.result == 'success' || (needs.deploy-hmrc-itsa.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc-itsa')))
-      && (needs.deploy-hmrc-itsa-property.result == 'success' || (needs.deploy-hmrc-itsa-property.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-hmrc-itsa-property')))
-      && (needs.deploy-account.result == 'success' || (needs.deploy-account.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-account')))
-      && (needs.deploy-api.result == 'success' || (needs.deploy-api.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-api')))
-      && needs.wait-for-environment-edge-inputs.result == 'success'
-      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-edge')) }}
+      && needs.deploy-auth.result == 'success'
+      && needs.deploy-hmrc.result == 'success'
+      && needs.deploy-hmrc-itsa.result == 'success'
+      && needs.deploy-hmrc-itsa-property.result == 'success'
+      && needs.deploy-account.result == 'success'
+      && needs.deploy-api.result == 'success'
+      && needs.wait-for-environment-edge-inputs.result == 'success' }}
     needs:
       - wait-for-environment-edge-inputs
       - deploy-auth
@@ -560,8 +547,8 @@ jobs:
     name: 'deploy publish'
     if: >-
       ${{ !cancelled() && inputs.mvn-package-result == 'success'
-      && (needs.deploy-edge.result == 'success' || (needs.deploy-edge.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-edge')))
-      && (needs.deploy-api.result == 'success' || (needs.deploy-api.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-api'))) }}
+      && needs.deploy-edge.result == 'success'
+      && needs.deploy-api.result == 'success' }}
     needs:
       - deploy-edge
       - deploy-api
@@ -817,10 +804,9 @@ jobs:
     name: 'deploy OpsStack via deploy-cdk-stack.yml'
     if: >-
       ${{ !cancelled() && inputs.mvn-package-result == 'success'
-      && (needs.deploy-api.result == 'success' || (needs.deploy-api.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-api')))
-      && (needs.deploy-edge.result == 'success' || (needs.deploy-edge.result == 'skipped' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-edge')))
-      && needs.wait-for-environment-edge-inputs.result == 'success'
-      && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(inputs.skip-json || '[]'), 'deploy-ops')) }}
+      && needs.deploy-api.result == 'success'
+      && needs.deploy-edge.result == 'success'
+      && needs.wait-for-environment-edge-inputs.result == 'success' }}
     needs:
       - wait-for-environment-edge-inputs
       - deploy-api

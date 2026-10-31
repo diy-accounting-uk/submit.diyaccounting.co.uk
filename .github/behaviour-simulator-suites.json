@@ -2,200 +2,167 @@
   {
     "id": "behaviour-test-simulator-submit-vat",
     "suite": "submitVatBehaviour",
-    "script": "test:submitVatBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:submitVatBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-post-vat-return",
     "suite": "postVatReturnBehaviour",
-    "script": "test:postVatReturnBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:postVatReturnBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-practice-licence",
     "suite": "practiceLicenceBehaviour",
     "script": "test:practiceLicenceBehaviour-simulator",
-    "gate": "skip",
     "extraInstall": "mcp"
   },
   {
     "id": "behaviour-test-simulator-get-vat-return",
     "suite": "getVatReturnBehaviour",
-    "script": "test:getVatReturnBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:getVatReturnBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-get-vat-obligations",
     "suite": "getVatObligationsBehaviour",
-    "script": "test:getVatObligationsBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:getVatObligationsBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-get-vat-liabilities",
     "suite": "getVatLiabilitiesBehaviour",
-    "script": "test:getVatLiabilitiesBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:getVatLiabilitiesBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-get-vat-payments",
     "suite": "getVatPaymentsBehaviour",
-    "script": "test:getVatPaymentsBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:getVatPaymentsBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-get-vat-penalties",
     "suite": "getVatPenaltiesBehaviour",
-    "script": "test:getVatPenaltiesBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:getVatPenaltiesBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-fraud-prevention-headers",
     "suite": "fraudPreventionHeadersBehaviour",
-    "script": "test:postVatReturnFraudPreventionHeadersBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:postVatReturnFraudPreventionHeadersBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-compliance",
     "suite": "complianceBehaviour",
-    "script": "test:complianceBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:complianceBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-vat-validation",
     "suite": "vatValidationBehaviour",
-    "script": "test:vatValidationBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:vatValidationBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-vat-schemes",
     "suite": "vatSchemesBehaviour",
-    "script": "test:vatSchemesBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:vatSchemesBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-hmrc-assist",
     "suite": "hmrcAssistBehaviour",
-    "script": "test:hmrcAssistBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:hmrcAssistBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-auth",
     "suite": "authBehaviour",
-    "script": "test:authBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:authBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-bundle",
     "suite": "bundleBehaviour",
-    "script": "test:bundleBehaviour-simulator",
-    "gate": "advised"
+    "script": "test:bundleBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-help",
     "suite": "helpBehaviour",
-    "script": "test:helpBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:helpBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-pass-redemption",
     "suite": "passRedemptionBehaviour",
-    "script": "test:passRedemptionBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:passRedemptionBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-token-enforcement",
     "suite": "tokenEnforcementBehaviour",
-    "script": "test:tokenEnforcementBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:tokenEnforcementBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-payment",
     "suite": "paymentBehaviour",
-    "script": "test:paymentBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:paymentBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-generate-pass-activity",
     "suite": "generatePassActivityBehaviour",
-    "script": "test:generatePassActivityBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:generatePassActivityBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-file-confirmation-statement",
     "suite": "fileConfirmationStatementBehaviour",
-    "script": "test:fileConfirmationStatementBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:fileConfirmationStatementBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-file-micro-entity-accounts",
     "suite": "fileMicroEntityAccountsBehaviour",
-    "script": "test:fileMicroEntityAccountsBehaviour-simulator",
-    "gate": "advised"
+    "script": "test:fileMicroEntityAccountsBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-company-tax-return",
     "suite": "companyTaxReturnBehaviour",
-    "script": "test:companyTaxReturnBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:companyTaxReturnBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-itsa-business-details",
     "suite": "itsaBusinessDetailsBehaviour",
-    "script": "test:itsaBusinessDetailsBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:itsaBusinessDetailsBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-itsa-obligations",
     "suite": "itsaObligationsBehaviour",
-    "script": "test:itsaObligationsBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:itsaObligationsBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-itsa-self-employment-period",
     "suite": "itsaSelfEmploymentPeriodBehaviour",
-    "script": "test:itsaSelfEmploymentPeriodBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:itsaSelfEmploymentPeriodBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-itsa-annual-submission",
     "suite": "itsaAnnualSubmissionBehaviour",
-    "script": "test:itsaAnnualSubmissionBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:itsaAnnualSubmissionBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-itsa-uk-property-period",
     "suite": "itsaUkPropertyPeriodBehaviour",
-    "script": "test:itsaUkPropertyPeriodBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:itsaUkPropertyPeriodBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-itsa-uk-property-annual-submission",
     "suite": "itsaUkPropertyAnnualSubmissionBehaviour",
-    "script": "test:itsaUkPropertyAnnualSubmissionBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:itsaUkPropertyAnnualSubmissionBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-itsa-foreign-property-period",
     "suite": "itsaForeignPropertyPeriodBehaviour",
-    "script": "test:itsaForeignPropertyPeriodBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:itsaForeignPropertyPeriodBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-itsa-foreign-property-annual-submission",
     "suite": "itsaForeignPropertyAnnualSubmissionBehaviour",
-    "script": "test:itsaForeignPropertyAnnualSubmissionBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:itsaForeignPropertyAnnualSubmissionBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-itsa-losses-and-claims",
     "suite": "itsaLossesAndClaimsBehaviour",
-    "script": "test:itsaLossesAndClaimsBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:itsaLossesAndClaimsBehaviour-simulator"
   },
   {
     "id": "behaviour-test-simulator-itsa-final-declaration",
     "suite": "itsaFinalDeclarationBehaviour",
-    "script": "test:itsaFinalDeclarationBehaviour-simulator",
-    "gate": "skip"
+    "script": "test:itsaFinalDeclarationBehaviour-simulator"
   }
 ]
