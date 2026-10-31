@@ -471,6 +471,7 @@ function fullShapeSnapshot() {
   };
 }
 
+    envName: "prod",
 // The real 403 body a signed-in caller without the operator bundle gets back from
 // operatorSnapshotGet.js (app/functions/analytics/operatorSnapshotGet.js) - kept in sync with
 // that handler's message so this fixture proves what the page does with the server's own words,
