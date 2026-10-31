@@ -16,9 +16,9 @@
 // which catalogue produced it (select-jobs-decision-test-<run-id> / select-jobs-decision-deploy-
 // <run-id>) so the two decisions in one deploy.yml run never collide, and gathering test.yml's
 // catalogue reads both run sources - see runSourcesForCatalogue. Inside a deploy.yml run, GitHub
-// Actions reports the called workflow's own jobs with the caller job's id as a prefix ("test / ");
-// correlationNames applies that prefix before matching a decision's advised job ids against that
-// run's job list.
+// Actions reports the called workflow's own jobs with the caller job's display name as a prefix
+// ("delegate to test workflow / "); correlationNames applies that prefix before matching a
+// decision's advised job ids against that run's job list.
 //
 // CLI usage:
 //   node scripts/ci/select-jobs-trial.mjs --workflow test.yml|deploy.yml [--limit <n>] [--repo <owner/repo>]
@@ -41,12 +41,28 @@ export const MATRIX_SUITE_FILES = {
   "deploy.yml": [".github/behaviour-probe-suites.json"],
 };
 
+// The workflows a catalogue's workflow calls whose jobs carry catalogue job ids, with the display
+// name of the calling job that prefixes their job names in a run's job list.
+export const CALLED_WORKFLOW_FILES = {
+  "deploy.yml": [{ file: ".github/workflows/deploy-stacks.yml", prefix: "deploy stacks / " }],
+};
+
+// Reads the called workflows of one catalogue from the working tree.
+export function readCalledWorkflows(catalogue) {
+  return (CALLED_WORKFLOW_FILES[catalogue] || []).map(({ file, prefix }) => ({
+    workflowYamlText: fs.readFileSync(file, "utf8"),
+    prefix,
+  }));
+}
+
 // Pure: reads the job-id -> display-name map straight from the workflow's own YAML, so a rename
 // of a job's `name:` field can never desync this from what GitHub Actions actually reports. A
 // job with no explicit `name:` is displayed as its own YAML key. An id that is an entry of
 // `matrixEntries` takes the name template of the workflow's job whose matrix `include` is read
 // from a filter job's output, with each `${{ matrix.<field> }}` replaced by that entry's field.
-export function jobDisplayNames(workflowYamlText, jobIds, matrixEntries = []) {
+// An id with no job in the workflow takes its name from the first called workflow that defines
+// it, with that workflow's caller prefix.
+export function jobDisplayNames(workflowYamlText, jobIds, matrixEntries = [], calledWorkflows = []) {
   const doc = yaml.load(workflowYamlText);
   const jobs = (doc && doc.jobs) || {};
   const matrixJob = Object.values(jobs).find(
@@ -63,6 +79,15 @@ export function jobDisplayNames(workflowYamlText, jobIds, matrixEntries = []) {
       continue;
     }
     const job = jobs[id];
+    if (!job) {
+      const called = calledWorkflows
+        .map(({ workflowYamlText: calledText, prefix }) => ({ calledJob: (yaml.load(calledText)?.jobs || {})[id], prefix }))
+        .find(({ calledJob }) => calledJob);
+      if (called) {
+        names[id] = `${called.prefix}${called.calledJob.name || id}`;
+        continue;
+      }
+    }
     names[id] = (job && job.name) || id;
   }
   return names;
@@ -88,14 +113,14 @@ export function artifactLabelForCatalogue(catalogue) {
 // job display names with before matching them against each source's own job list. test.yml's
 // select-jobs job runs, and uploads a decision, both standalone and inside every deploy.yml run
 // (deploy.yml calls test.yml with `uses:`, job id "test") - GitHub Actions reports a called
-// workflow's jobs with the caller job's id prefixed ("test / <job name>"), so the deploy.yml
-// source carries that prefix. deploy.yml's own select-jobs job is never itself called this way,
-// so its catalogue has a single, unprefixed source.
+// workflow's jobs with the caller job's display name prefixed ("delegate to test workflow / <job
+// name>"), so the deploy.yml source carries that prefix. deploy.yml's own select-jobs job is never
+// itself called this way, so its catalogue has a single, unprefixed source.
 export function runSourcesForCatalogue(catalogue) {
   if (catalogue === "test.yml") {
     return [
       { workflowFile: "test.yml", jobNamePrefix: "" },
-      { workflowFile: "deploy.yml", jobNamePrefix: "test / " },
+      { workflowFile: "deploy.yml", jobNamePrefix: "delegate to test workflow / " },
     ];
   }
   if (catalogue === "deploy.yml") {
@@ -225,8 +250,17 @@ function fetchRunJobs(repo, runId) {
   return jobs;
 }
 
-export async function gatherRows({ repo, catalogue, limit, jobIds, workflowYamlText, matrixEntries = [], scratchDir }) {
-  const displayNames = jobDisplayNames(workflowYamlText, jobIds, matrixEntries);
+export async function gatherRows({
+  repo,
+  catalogue,
+  limit,
+  jobIds,
+  workflowYamlText,
+  matrixEntries = [],
+  calledWorkflows = [],
+  scratchDir,
+}) {
+  const displayNames = jobDisplayNames(workflowYamlText, jobIds, matrixEntries, calledWorkflows);
   const artifactLabel = artifactLabelForCatalogue(catalogue);
   const sources = runSourcesForCatalogue(catalogue);
 
@@ -296,6 +330,7 @@ async function main() {
     jobIds,
     workflowYamlText,
     matrixEntries: readMatrixEntries(opts.workflow),
+    calledWorkflows: readCalledWorkflows(opts.workflow),
     scratchDir,
   });
   fs.rmSync(scratchDir, { recursive: true, force: true });
