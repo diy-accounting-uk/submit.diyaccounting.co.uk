@@ -152,6 +152,9 @@ public class AccountStack extends Stack {
     public Function commissionReleaseLambda;
     public ILogGroup commissionReleaseLambdaLogGroup;
     public Rule commissionReleaseSchedule;
+    public Function commissionCreditPayoutLambda;
+    public ILogGroup commissionCreditPayoutLambdaLogGroup;
+    public Rule commissionCreditPayoutSchedule;
 
     public AbstractApiLambdaProps sessionBeaconPostLambdaProps;
     public Function sessionBeaconPostLambda;
@@ -237,6 +240,12 @@ public class AccountStack extends Stack {
         // The sign-out route's own CORS allow-list (DiyaGlStack's DIYA_GL_ALLOWED_ORIGINS, see
         // diyaGlCors.js): the books client calls it cross-origin from the DIYA-GL pages, so it
         // needs the same allow-list those routes use.
+        // The live Stripe secret the commission credit payout reads to write customer balances.
+        @Value.Default
+        default String stripeSecretKeyArn() {
+            return "";
+        }
+
         @Value.Default
         default String booksAllowedOrigins() {
             return "";
@@ -1661,6 +1670,64 @@ public class AccountStack extends Stack {
         infof(
                 "Created Commission Release Lambda %s with daily schedule",
                 this.commissionReleaseLambda.getNode().getId());
+
+        // ============================================================================
+        // Commission Credit Payout Lambda (EventBridge scheduled, monthly)
+        // ============================================================================
+        var commissionCreditPayoutLambdaEnv = new PopulatedMap<String, String>()
+                .with("COMMISSIONS_DYNAMODB_TABLE_NAME", commissionsTable.getTableName())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            commissionCreditPayoutLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
+        }
+        var commissionCreditPayoutLambdaConstruct = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.commissionCreditPayoutLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.commissionCreditPayoutLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.commissionCreditPayoutLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.commissionCreditPayoutLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.commissionCreditPayoutProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .ingestLambdaTimeout(Duration.minutes(5))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .environment(commissionCreditPayoutLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(commissionCreditPayoutLambdaConstruct);
+        this.commissionCreditPayoutLambda = commissionCreditPayoutLambdaConstruct.ingestLambda;
+        this.commissionCreditPayoutLambdaLogGroup = commissionCreditPayoutLambdaConstruct.logGroup;
+        commissionsTable.grant(
+                this.commissionCreditPayoutLambda, "dynamodb:GetItem", "dynamodb:Query", "dynamodb:UpdateItem");
+        bundlesTable.grant(this.commissionCreditPayoutLambda, "dynamodb:Query");
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            var stripeSecretArnWithWildcard = props.stripeSecretKeyArn().endsWith("*")
+                    ? props.stripeSecretKeyArn()
+                    : props.stripeSecretKeyArn() + "-*";
+            this.commissionCreditPayoutLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeSecretArnWithWildcard))
+                    .build());
+        }
+
+        this.commissionCreditPayoutSchedule = Rule.Builder.create(
+                        this, props.sharedNames().account.commissionCreditPayoutLambdaFunctionName + "-Schedule")
+                .ruleName(props.sharedNames().account.commissionCreditPayoutLambdaFunctionName + "-schedule")
+                .description(
+                        "Pay payable commission credit lines onto Stripe customer balances on the 1st of each month")
+                .schedule(Schedule.cron(
+                        CronOptions.builder().minute("15").hour("4").day("1").build()))
+                .targets(List.of(LambdaFunction.Builder.create(this.commissionCreditPayoutLambda)
+                        .build()))
+                .build();
+        infof(
+                "Created Commission Credit Payout Lambda %s with monthly schedule",
+                this.commissionCreditPayoutLambda.getNode().getId());
 
         // ============================================================================
         // Session Beacon POST Lambda (public, no auth)

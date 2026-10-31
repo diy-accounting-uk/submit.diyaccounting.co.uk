@@ -16,6 +16,15 @@ export const reversalSk = (invoiceId) => `line#${invoiceId}#reversal`;
 export const anchorSk = (redeemerHash) => `redeemer#${redeemerHash}`;
 export const conversionsSk = (code, day) => `conversions#${code}#${day}`;
 export const heldSk = (releaseAt, referrerHash, invoiceId) => `${releaseAt}#${referrerHash}#${invoiceId}`;
+export const payableSk = (referrerHash, lineSortKey) => `${referrerHash}#${lineSortKey}`;
+
+function payablePointerItem(tableName, line) {
+  const referrerHash = line.pk.slice("commission#".length);
+  return {
+    TableName: tableName,
+    Item: { pk: "payable", sk: payableSk(referrerHash, line.sk), linePk: line.pk, lineSk: line.sk },
+  };
+}
 
 function table() {
   return getResourceName(TABLE_ENV);
@@ -276,6 +285,7 @@ export async function releaseLine(line, { now, payableMonth, payableTaxYear, tot
     }
     items.push({ Update: update });
   }
+  if (line.form === "credit") items.push({ Put: payablePointerItem(tableName, line) });
   try {
     await executeDynamoDbCommand((module) => new module.TransactWriteCommand({ TransactItems: items }));
     return { released: true };
@@ -352,6 +362,11 @@ export async function reversePayableLine(line, { reason, now, totals }) {
       },
     })),
   ];
+  if (line.form === "credit") {
+    items.push({
+      Delete: { TableName: tableName, Key: { pk: "payable", sk: payableSk(line.pk.slice("commission#".length), line.sk) } },
+    });
+  }
   try {
     await executeDynamoDbCommand((module) => new module.TransactWriteCommand({ TransactItems: items }));
     return true;
@@ -361,20 +376,74 @@ export async function reversePayableLine(line, { reason, now, totals }) {
   }
 }
 
-/** Write the negative line that offsets a paid line. Returns false when it already exists. */
+/**
+ * Write the negative line that offsets a paid line, with its payable pointer when it is a credit
+ * line. Returns false when it already exists.
+ */
 export async function putReversalLine(reversal) {
+  const tableName = table();
+  const items = [{ Put: { TableName: tableName, Item: reversal, ConditionExpression: "attribute_not_exists(pk)" } }];
+  if (reversal.form === "credit") items.push({ Put: payablePointerItem(tableName, reversal) });
+  try {
+    await executeDynamoDbCommand((module) => new module.TransactWriteCommand({ TransactItems: items }));
+    return true;
+  } catch (error) {
+    if (isCancelled(error) && error.CancellationReasons?.[0]?.Code === "ConditionalCheckFailed") return false;
+    throw error;
+  }
+}
+
+/** The pointers of credit lines that are payable, in one Query on the payable partition. */
+export async function queryPayablePointers() {
+  return queryAll((startKey) => ({
+    KeyConditionExpression: "pk = :payable",
+    ExpressionAttributeValues: { ":payable": "payable" },
+    ExclusiveStartKey: startKey,
+  }));
+}
+
+/**
+ * Mark a payable line paid and delete its payable pointer, in one transaction. `fields` are extra
+ * attributes to record (the balance transaction id, a shortfall). Returns false when the line is
+ * no longer payable, which means another run already paid it.
+ */
+export async function markLinePaid(line, { now, fields = {} }) {
+  const tableName = table();
+  const names = { "#state": "state" };
+  const values = { ":paid": "paid", ":payable": "payable", ":now": now };
+  const sets = ["#state = :paid", "paidAt = :now", "updatedAt = :now"];
+  Object.entries(fields).forEach(([name, value], index) => {
+    names[`#f${index}`] = name;
+    values[`:f${index}`] = value;
+    sets.push(`#f${index} = :f${index}`);
+  });
   try {
     await executeDynamoDbCommand(
       (module) =>
-        new module.PutCommand({
-          TableName: table(),
-          Item: reversal,
-          ConditionExpression: "attribute_not_exists(pk)",
+        new module.TransactWriteCommand({
+          TransactItems: [
+            {
+              Update: {
+                TableName: tableName,
+                Key: { pk: line.pk, sk: line.sk },
+                UpdateExpression: `SET ${sets.join(", ")}`,
+                ConditionExpression: "#state = :payable",
+                ExpressionAttributeNames: names,
+                ExpressionAttributeValues: values,
+              },
+            },
+            {
+              Delete: {
+                TableName: tableName,
+                Key: { pk: "payable", sk: payableSk(line.pk.slice("commission#".length), line.sk) },
+              },
+            },
+          ],
         }),
     );
     return true;
   } catch (error) {
-    if (error.name === "ConditionalCheckFailedException") return false;
+    if (isCancelled(error)) return false;
     throw error;
   }
 }

@@ -125,6 +125,7 @@ describe("marketing data", () => {
     expect(new Set(anchors).size).toBe(anchors.length);
     expect(anchors).toContain("submit-vat");
     expect(anchors).toContain("submit");
+    expect(anchors).toContain("affiliates");
   });
 });
 
@@ -439,8 +440,8 @@ describe("marketing page", () => {
     expect(links.filter((link) => !resolves(link))).toEqual([]);
   });
 
-  it("holds the affiliate box and the four section anchors", () => {
-    for (const id of ["affiliate", ...SECTION_IDS, ...SECTION_IDS.map((s) => `${s}-brand`)]) {
+  it("holds the affiliate box, the affiliates section and the four section anchors", () => {
+    for (const id of ["affiliate", "affiliates", ...SECTION_IDS, ...SECTION_IDS.map((s) => `${s}-brand`)]) {
       expect(html, id).toContain(`id="${id}"`);
     }
   });
@@ -456,6 +457,39 @@ describe("marketing page", () => {
     ]) {
       expect(links, link).toContain(link);
     }
+  });
+});
+
+describe("affiliates section", () => {
+  const referrals = TOML.parse(fs.readFileSync("referrals.toml", "utf8"));
+  const cash = referrals.tiers.find((t) => t.id === "casual");
+  const customer = referrals.tiers.find((t) => t.id === "customer");
+  const terms = fs.readFileSync("web/public/terms.html", "utf8");
+
+  it("takes its figures from referrals.toml", () => {
+    expect(data.affiliates.ratePercent).toBe(cash.rateBps / 100);
+    expect(data.affiliates.months).toBe(cash.months);
+    expect(data.affiliates.creditHoldDays).toBe(customer.holdDays);
+    expect(data.affiliates.cashHoldDays).toBe(cash.holdDays);
+    expect(data.affiliates.capMonthPounds).toBe(cash.capMonthPence / 100);
+    expect(data.affiliates.capTaxYearPounds).toBe(cash.capTaxYearPence / 100);
+  });
+
+  it("keeps the application link empty until applications open, and the page says so", () => {
+    expect(typeof data.affiliates.applyUrl).toBe("string");
+    expect(fs.readFileSync(path.join(MARKETING_DIR, "index.html"), "utf8")).toContain("Applications are opening soon.");
+  });
+
+  it("states the same figures in the terms", () => {
+    const section = terms.slice(terms.indexOf('id="affiliate-and-referral-passes"'));
+    expect(section).toContain(`${data.affiliates.ratePercent}%`);
+    expect(section).toContain(`first ${data.affiliates.months} months`);
+    expect(section).toContain(`${data.affiliates.creditHoldDays} days after`);
+    expect(section).toContain(`${data.affiliates.cashHoldDays} days after`);
+    expect(section).toContain(`&pound;${data.affiliates.capMonthPounds} a`);
+    expect(section).toContain(`&pound;${data.affiliates.capTaxYearPounds.toLocaleString("en-GB")} a tax year`);
+    expect(section).toContain(`&pound;${cash.minPayoutPence / 100}`);
+    expect(section).toContain("These terms take effect when the first affiliate is approved.");
   });
 });
 

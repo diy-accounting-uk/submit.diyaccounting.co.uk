@@ -19,22 +19,28 @@ updates:
     schedule:
       interval: "monthly"
     groups:
-      actions:
-        patterns:
-          - "*"
+      actions-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: npm
-    directory: "/"
+    directories:
+      - "/"
+      - "/mcp"
+      - "/cdk-typescript"
     schedule:
       interval: "monthly"
     groups:
-      npm:
-        patterns:
-          - "*"
+      npm-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"
   - package-ecosystem: maven
     directory: "/"
     schedule:
       interval: "monthly"
     groups:
-      maven:
-        patterns:
-          - "*"
+      maven-minor-patch:
+        update-types:
+          - "minor"
+          - "patch"

@@ -182,6 +182,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project: use when researching why the pricing or bundle catalogue was changed the way it was.
     - [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines: use when a referred customer pays an invoice, or a charge behind a commission line is refunded or disputed.
     - [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily: use when a held referral commission line has passed its release time and must become payable, or stay held for a reason.
+    - [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit: use when a referrer on the credit form has payable commission lines that must reach their Stripe customer balance, or a paid line was reversed and the unused credit must come back.
 - **[Operations and CI](#operations-and-ci-ops)**
   - [Deploy pipeline](#deploy-pipeline-ops)
     - [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys: use when a workflow_dispatch redeploy might race a push-triggered deploy.yml run on the same commit.
@@ -1617,7 +1618,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies · [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
 - [Tokens and catalogue](#tokens-and-catalogue-bill): [BILL-33](#bill-33-enforce-and-consume-activity-tokens) Enforce and consume activity tokens · [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh) Prefetch and retry a Cognito token refresh · [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue) Load and query the product/activity catalogue
 - [CDK infrastructure](#cdk-infrastructure-bill): [BILL-36](#bill-36-cdk-account-stack) CDK: account stack · [BILL-37](#bill-37-cdk-billing-app-stack) CDK: billing app stack · [BILL-38](#bill-38-cdk-billing-webhook-stack) CDK: billing webhook stack · [BILL-39](#bill-39-cdk-diya-gl-stack) CDK: diya-gl stack
-- [Migrations and shared utilities](#migrations-and-shared-utilities-bill): [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt · [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier · [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry · [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle · [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project · [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines · [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily
+- [Migrations and shared utilities](#migrations-and-shared-utilities-bill): [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt · [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier · [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry · [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle · [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project · [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines · [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily · [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit
 <!-- /generated:area BILL -->
 
 ### Bundle grants and entitlements (BILL)
@@ -2138,6 +2139,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project
 - [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines
 - [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily
+- [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit) Pay referral commission as Stripe balance credit
 <!-- /generated:group migrations-and-shared-utilities-bill -->
 
 #### BILL-40 Migrate the hashed-sub salt
@@ -2208,6 +2210,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/account/commissionRelease.js, app/unit-tests/functions/commissionRelease.test.js, app/data/dynamoDbBundleRepository.js, app/unit-tests/data/dynamoDbBundleRepository.byHashedSub.test.js, referrals.toml
 - **Keywords:** commission, release, held line, payable, volume hold, card hold, cap, tax year, scheduled lambda
 - **Related:** BILL-46
+
+#### BILL-51 Pay referral commission as Stripe balance credit
+
+- **Use when:** a referrer on the credit form has payable commission lines that must reach their Stripe customer balance, or a paid line was reversed and the unused credit must come back.
+- **Does:** The commissionCreditPayout.js handler runs monthly on a schedule and does nothing while `payCredit` in referrals.toml is false. It reads the payable pointers by key, then for each live credit line finds the referrer's Stripe customer from their bundles (a bundle with a subscription and a customer id) and creates a negative customer balance transaction, keyed by the line so a retry cannot pay twice. A reversal line debits back the unused credit, capped at the credit left on the customer. The line becomes paid in one conditional update. A referrer with no customer or no live subscription keeps the line payable and is counted in the run summary.
+- **Run:** no command; see Does and Entry
+- **Entry:** `app/functions/account/commissionCreditPayout.js:handler`
+- **Files:** app/functions/account/commissionCreditPayout.js, app/unit-tests/functions/commissionCreditPayout.test.js, app/data/dynamoDbCommissionRepository.js, app/lib/stripeClient.js, referrals.toml
+- **Keywords:** commission, credit, payout, customer balance, balance transaction, referral, scheduled lambda, kill switch
+- **Related:** BILL-46, BILL-47
 
 ## Operations and CI (OPS)
 
@@ -6282,6 +6294,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - backup salt: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - backup vault: [OPS-48](#ops-48-verify-backup-health-daily), [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account), [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
 - balance sheet: [CH-07](#ch-07-render-micro-entity-accounts-for-review), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
+- balance transaction: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - balance transactions: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake), [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - bank line: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - bank statement import: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
@@ -6550,7 +6563,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cognito-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - cold start: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - collabora: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
-- commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily)
+- commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - commissions: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - commit author: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - commit identity: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
@@ -6651,6 +6664,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - creationtime: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments)
 - credential leak: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - credentials.json: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
+- credit: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - credit note: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - cross reference: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
 - cross-account backup: [OPS-50](#ops-50-drill-and-test-pitr-database-restoration), [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
@@ -6684,6 +6698,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - custom amount: [SS-22](#ss-22-take-stripe-and-paypal-donations)
 - custom error page: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
+- customer balance: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - customer copy: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
 - customer id hashing: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - customer lookup: [OPS-141](#ops-141-look-up-the-customer-behind-a-submission-failure-alarm), [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
@@ -7319,7 +7334,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - keyboard nav: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - keyword forecast: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - keyword performance: [DATA-34](#data-34-report-google-ads-campaign-performance)
-- kill switch: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
+- kill switch: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit), [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
 - kind helpers: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - kinesis firehose: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - kms keys: [OPS-107](#ops-107-list-production-secrets-manager-entries)
@@ -7648,6 +7663,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - payable: [BILL-47](#bill-47-release-held-commission-lines-daily)
 - payment history: [HMRC-05](#hmrc-05-retrieve-vat-payments)
 - payments: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
+- payout: [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - payout schedule: [BILL-31](#bill-31-configure-stripe-account-policies)
 - payouts: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - paypal: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
@@ -7860,7 +7876,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reference check: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - reference example: [CH-18](#ch-18-judge-a-companies-house-review-as-the-xml-team-would)
 - references page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
-- referral: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
+- referral: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - referral pass: [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - referrals.toml: [BILL-48](#bill-48-set-an-affiliates-tier-and-state)
 - referrer: [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state)
@@ -8014,7 +8030,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - scenes to record: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
 - scheduled alert: [OPS-37](#ops-37-check-https-certificate-expiry)
 - scheduled check: [OPS-32](#ops-32-detect-cloudformation-drift)
-- scheduled lambda: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [BILL-47](#bill-47-release-held-commission-lines-daily)
+- scheduled lambda: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [BILL-47](#bill-47-release-held-commission-lines-daily), [BILL-51](#bill-51-pay-referral-commission-as-stripe-balance-credit)
 - scheduled pr: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
 - scheduled query: [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries)
 - scheduled scan: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)

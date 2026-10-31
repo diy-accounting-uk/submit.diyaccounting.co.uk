@@ -503,3 +503,21 @@ header {
     scroll-behavior: auto !important;
   }
 }
+
+.affiliate-list {
+  margin: 0 0 1rem;
+  padding-left: 1.25rem;
+  max-width: 46rem;
+}
+
+.affiliate-list li {
+  margin: 0.4rem 0;
+}
+
+#affiliates h3 {
+  margin: 1.25rem 0 0.4rem;
+}
+
+.affiliate-apply {
+  font-weight: 700;
+}
