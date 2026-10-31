@@ -246,6 +246,9 @@ const CONSENT_DECLINED = () => {
   try {
     localStorage.setItem("consent.rum", "declined");
     localStorage.setItem("consent.analytics", "declined");
+    // diya-gl's donation prompts, which would cover the products shot
+    localStorage.setItem("diya-books-donation-seen-figures", "true");
+    localStorage.setItem("diya-books-donation-seen-save", "true");
   } catch {
     // storage is blocked: the banner shows and the capture goes on
   }
