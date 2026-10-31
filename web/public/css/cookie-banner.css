@@ -1,0 +1,91 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Cookie banner: a bottom sheet on paper, Accept as the primary action
+   and Decline as the secondary, both the same size.
+   ============================================ */
+
+.consent-banner {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3) var(--space-5);
+  padding: var(--space-3) var(--gutter);
+  background: var(--c-paper);
+  color: var(--c-ink);
+  border-top: 3px double var(--c-ink);
+  box-shadow: 0 -4px 16px rgb(11 12 12 / 0.12);
+  font-size: var(--step--1);
+}
+
+.consent-banner-text {
+  max-width: var(--content-max);
+  margin: 0;
+}
+
+.consent-banner-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.consent-banner-actions .btn {
+  width: auto;
+  min-width: 7rem;
+  font-size: var(--step-0);
+}
+
+@media (max-width: 600px) {
+  .consent-banner {
+    padding: var(--space-2) var(--gutter);
+    gap: var(--space-2);
+  }
+
+  .consent-banner-actions {
+    width: 100%;
+  }
+
+  .consent-banner-actions .btn {
+    flex: 1 1 0;
+  }
+}
+
+/* Whole-page consent dialog shown on a visit that arrived from an advert
+   (#consent-dialog, added by submit.js). Accept and Reject share one class
+   so they render at the same size and weight. */
+.consent-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: var(--c-scrim);
+}
+
+.consent-dialog-panel {
+  max-width: 34rem;
+  width: 100%;
+  padding: var(--space-5);
+  border-radius: var(--radius-card);
+  background: var(--c-paper);
+  color: var(--c-ink);
+}
+
+.consent-dialog-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+
+.consent-dialog-button {
+  flex: 1 1 0;
+  min-height: 44px;
+}

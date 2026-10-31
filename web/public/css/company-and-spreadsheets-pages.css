@@ -1,0 +1,191 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* DIY Accounting Limited */
+.company-section {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-5);
+  margin-bottom: var(--space-5);
+}
+
+.company-section h2 {
+  margin-top: 0;
+}
+
+.company-section > :last-child {
+  margin-bottom: 0;
+}
+
+.section-media {
+  display: flex;
+  gap: var(--space-5);
+  align-items: flex-start;
+  margin-bottom: var(--space-4);
+}
+
+.section-media img {
+  border-radius: var(--radius-control);
+  flex-shrink: 0;
+  height: auto;
+}
+
+.section-media .team-photo {
+  max-width: 220px;
+}
+
+.section-media .logo-img {
+  max-width: 140px;
+}
+
+.section-media .founder-photo {
+  max-width: 200px;
+}
+
+.section-media .original-logo {
+  max-width: 160px;
+  height: auto;
+}
+
+.directors-list {
+  list-style: none;
+  padding: 0;
+}
+
+.company-section details {
+  margin-top: var(--space-3);
+}
+
+.company-section summary {
+  cursor: pointer;
+  color: var(--c-brand);
+  font-weight: var(--weight-strong);
+  padding: var(--space-2) 0;
+}
+
+.company-section details[open] summary {
+  margin-bottom: var(--space-2);
+}
+
+.contact-details address {
+  font-style: normal;
+}
+
+.contact-details .company-reg {
+  color: var(--c-ink-muted);
+  margin-top: var(--space-4);
+}
+
+@media (max-width: 600px) {
+  .section-media {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .section-media img {
+    max-width: 80%;
+  }
+}
+
+/* Spreadsheets product pages */
+.spreadsheets-intro,
+.product,
+.reviews-section,
+.download-section {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-5);
+  margin-bottom: var(--space-4);
+}
+
+.spreadsheets-intro h2,
+.download-section h2 {
+  margin-top: 0;
+}
+
+.spreadsheets-intro > :last-child,
+.product > :last-child,
+.download-section > :last-child {
+  margin-bottom: 0;
+}
+
+.products {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.products .product {
+  margin-bottom: 0;
+}
+
+.product h3 {
+  margin-top: 0;
+  color: var(--c-brand);
+}
+
+.product .features-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-5);
+  margin-top: var(--space-2);
+}
+
+.product .features-list li {
+  margin-top: 0;
+}
+
+.partner-product {
+  border-left: 6px solid var(--c-brand);
+}
+
+.partner-trust {
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+}
+
+.reviews-header {
+  margin-bottom: var(--space-3);
+}
+
+.reviews-stars {
+  color: var(--c-warn);
+  font-size: var(--step-2);
+  letter-spacing: 0.05em;
+}
+
+.reviews-rating {
+  display: block;
+  font-weight: var(--weight-strong);
+}
+
+.reviews-quotes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.reviews-quotes blockquote {
+  margin: 0;
+}
+
+.reviews-quotes blockquote p {
+  margin: 0 0 var(--space-1);
+}
+
+.reviews-quotes cite {
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+  font-style: normal;
+}
+
+.reviews-quotes cite::before {
+  content: "\2014\00a0";
+}
+
+.download-section .btn {
+  width: auto;
+}

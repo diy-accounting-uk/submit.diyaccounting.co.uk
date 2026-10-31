@@ -1,0 +1,72 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* About */
+.about-intro,
+.about-features,
+.about-benefits,
+.about-start {
+  margin-bottom: var(--space-6);
+}
+
+.about-intro h2,
+.about-features h2,
+.about-benefits h2,
+.about-start h2 {
+  margin-top: 0;
+}
+
+.about-feature-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+.about-feature {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  padding: var(--space-4) var(--space-5);
+}
+
+.about-feature h3 {
+  color: var(--c-brand);
+}
+
+.about-feature p {
+  margin: 0;
+}
+
+.about-benefit-list {
+  display: block;
+}
+
+.about-benefit {
+  border-top: 1px solid var(--c-rule-subtle);
+  padding: var(--space-3) 0;
+}
+
+.about-benefit dt {
+  font-weight: var(--weight-strong);
+}
+
+.about-benefit dd {
+  margin: 0;
+  max-width: var(--measure);
+}
+
+.about-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.about-actions .btn {
+  width: auto;
+}
+
+@media (min-width: 700px) {
+  .about-feature-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

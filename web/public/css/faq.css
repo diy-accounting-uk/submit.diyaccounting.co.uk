@@ -1,0 +1,242 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   FAQ page
+   ============================================ */
+
+.help-page {
+  max-width: var(--content-max);
+  margin: 0 auto;
+}
+
+.faq-search-container {
+  margin-bottom: var(--space-5);
+}
+
+#faq-search {
+  width: 100%;
+}
+
+.search-hint {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: var(--step--1);
+  color: var(--c-ink-muted);
+}
+
+.faq-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.faq-item {
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+
+.faq-question {
+  width: 100%;
+  padding: var(--space-4);
+  border: none;
+  background: none;
+  color: var(--c-ink);
+  text-align: left;
+  font: inherit;
+  font-weight: var(--weight-strong);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.faq-question:hover {
+  background: var(--c-canvas);
+}
+
+.faq-question-text {
+  flex: 1;
+}
+
+.faq-category-badge {
+  font-size: var(--step--1);
+  font-weight: var(--weight-strong);
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-control);
+  background: var(--c-brand-tint);
+  color: var(--c-brand);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.faq-chevron {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  stroke: currentColor;
+  stroke-width: 2;
+  fill: none;
+  transition: transform 150ms;
+}
+
+.faq-question[aria-expanded="true"] .faq-chevron {
+  transform: rotate(180deg);
+}
+
+.faq-answer {
+  padding: 0 var(--space-4) var(--space-4);
+  color: var(--c-ink);
+}
+
+.faq-answer p {
+  margin: 0 0 var(--space-4);
+}
+
+.faq-answer p:last-child {
+  margin-bottom: 0;
+}
+
+.faq-answer ul,
+.faq-answer ol {
+  margin: 0 0 var(--space-4);
+  padding-left: var(--space-5);
+}
+
+.faq-answer li {
+  margin-bottom: var(--space-2);
+}
+
+.faq-answer strong {
+  color: var(--c-ink);
+}
+
+.support-section {
+  margin-top: var(--space-7);
+  padding: var(--space-6);
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+}
+
+.support-section h2 {
+  margin-bottom: var(--space-2);
+}
+
+.support-section > p {
+  color: var(--c-ink-muted);
+  margin-bottom: var(--space-5);
+}
+
+.support-options {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+/* Modal */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: var(--c-scrim);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  z-index: 1000;
+}
+
+.modal[hidden] {
+  display: none;
+}
+
+.modal-content {
+  background: var(--c-paper);
+  color: var(--c-ink);
+  border-radius: var(--radius-card);
+  padding: var(--space-6);
+  width: 100%;
+  max-width: 500px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-content h3 {
+  margin-bottom: var(--space-5);
+}
+
+.modal-content label {
+  margin-top: var(--space-4);
+}
+
+.modal-content label:first-of-type {
+  margin-top: 0;
+}
+
+.modal-content textarea {
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  gap: var(--space-3);
+  justify-content: flex-end;
+  margin-top: var(--space-5);
+}
+
+.no-results {
+  text-align: center;
+  padding: var(--space-6);
+  color: var(--c-ink-muted);
+  background: var(--c-paper);
+  border: 1px solid var(--c-rule-subtle);
+  border-radius: var(--radius-card);
+}
+
+@media (max-width: 600px) {
+  .faq-question {
+    position: relative;
+    padding: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  .faq-category-badge {
+    order: -1;
+  }
+
+  .faq-question-text {
+    width: 100%;
+    padding-right: var(--space-6);
+  }
+
+  .faq-chevron {
+    position: absolute;
+    right: var(--space-3);
+  }
+
+  .support-section {
+    padding: var(--space-5) var(--space-4);
+  }
+
+  .support-options {
+    flex-direction: column;
+  }
+
+  .support-button {
+    width: 100%;
+  }
+
+  .modal-content {
+    padding: var(--space-5);
+  }
+
+  .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-actions button {
+    width: 100%;
+  }
+}

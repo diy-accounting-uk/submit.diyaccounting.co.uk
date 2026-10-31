@@ -9,6 +9,7 @@
 import { test, expect } from "@playwright/test";
 import fs from "fs";
 import path from "path";
+import { readSubmitCss } from "./submitCss.js";
 
 const PUBLIC_DIR = path.join(process.cwd(), "web/public");
 const readPublic = (relativePath) => fs.readFileSync(path.join(PUBLIC_DIR, relativePath), "utf-8");
@@ -60,7 +61,7 @@ async function setupRoutes(page) {
     await route.fulfill({ status: 200, contentType: "application/json", body: readPublic("mcp-harness/file-accounts-for-clients.json") });
   });
   await page.route("**/submit.css", async (route) => {
-    await route.fulfill({ status: 200, contentType: "text/css", body: readPublic("submit.css") });
+    await route.fulfill({ status: 200, contentType: "text/css", body: readSubmitCss() });
   });
   await page.route("**/api/v1/dev/mcp-harness/tools", async (route) => {
     await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ tools: [] }) });

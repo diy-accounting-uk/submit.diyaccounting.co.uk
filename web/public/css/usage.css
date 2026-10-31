@@ -1,0 +1,19 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* Usage */
+#subscriptionManagement[hidden],
+#itsaYearCostSummary[hidden] {
+  display: none;
+}
+
+.storage-key {
+  font-family: var(--font-code);
+  font-size: var(--step--1);
+  white-space: nowrap;
+}
+
+.storage-cell {
+  word-break: break-word;
+  font-size: var(--step--1);
+}

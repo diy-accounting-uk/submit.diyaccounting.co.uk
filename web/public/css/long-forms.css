@@ -1,0 +1,55 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Long forms: sections, sub-heads and choices
+   ============================================ */
+
+/* A section of a long form opens with a rule and space, so the reader sees where one ends. */
+.form-section {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 1px solid var(--c-rule-subtle);
+}
+
+/* The first section under a form's heading needs no rule or extra room above it. */
+h2 + form > .form-section:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.form-section > h3 {
+  margin-top: 0;
+  margin-bottom: var(--space-4);
+  font-size: var(--step-2);
+}
+
+.form-section h4 {
+  margin: var(--space-5) 0 var(--space-3);
+  font-size: var(--step-0);
+  color: var(--c-ink-muted);
+}
+
+/* A radio or checkbox with its label beside it: the 24px control, then the text. */
+.choice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+
+.choice > input {
+  flex: none;
+  margin: 0;
+}
+
+.choice > label {
+  margin: 0;
+  font-weight: var(--weight-text);
+}
+
+/* An amount needs about twelve figures, not the full width of the form. */
+.input-prefix--amount {
+  max-width: 16rem;
+}

@@ -1,0 +1,72 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Developer controls and test scenarios
+   ============================================ */
+
+.developer-controls {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  background-color: var(--c-canvas);
+  border: 1px dashed var(--c-rule);
+  border-radius: var(--radius-control);
+  text-align: center;
+}
+
+.developer-section {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  background-color: var(--c-warn-tint);
+  border: 1px solid var(--c-warn);
+  border-radius: var(--radius-control);
+}
+
+.developer-section .form-group {
+  margin-bottom: var(--space-4);
+}
+
+.developer-section label {
+  color: var(--c-warn);
+}
+
+.developer-section .help-text {
+  color: var(--c-warn);
+}
+
+/* ============================================
+   Narrow screens
+   ============================================ */
+
+@media (max-width: 600px) {
+  body {
+    --gutter: var(--space-4);
+  }
+
+  .form-container {
+    padding: var(--space-4);
+  }
+
+  .results-container {
+    padding: var(--space-3);
+  }
+
+  /* Plain content tables (privacy.html, terms.html) have no fixed layout,
+     so a narrow-viewport table with a few sentences per cell overflows the
+     page. Scroll the table itself, and show its right edge with a shadow
+     while more columns lie beyond it. */
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    background:
+      linear-gradient(to left, var(--c-paper) 30%, transparent) right center / 2rem 100% no-repeat local,
+      radial-gradient(farthest-side at 100% 50%, rgb(11 12 12 / 0.18), transparent) right center / 0.75rem 100% no-repeat scroll;
+  }
+
+  .results-table th,
+  .results-table td {
+    padding: var(--space-2);
+  }
+}

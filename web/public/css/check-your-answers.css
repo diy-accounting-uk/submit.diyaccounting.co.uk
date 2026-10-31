@@ -1,0 +1,155 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* ============================================
+   Check-your-answers tables
+
+   One column plan for every table of a review, money in tabular
+   figures on the right. Below 600px a row stacks: the question, then
+   the answer and its Change link on one line.
+   ============================================ */
+
+.review-table {
+  table-layout: fixed;
+}
+
+.review-table .review-table__question {
+  width: 55%;
+}
+
+.review-table .review-table__answer {
+  width: 30%;
+}
+
+.review-table .review-table__box {
+  width: 4.5rem;
+}
+
+.review-table .review-table__value {
+  width: 10rem;
+}
+
+.review-table .review-table__change {
+  width: 6.5rem;
+}
+
+.review-table td {
+  overflow-wrap: anywhere;
+}
+
+.review-table td:last-child,
+.review-table th:last-child {
+  text-align: right;
+}
+
+.amount {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.results-table th.amount,
+.results-table td.amount {
+  text-align: right;
+}
+
+.amount--subtotal {
+  border-top: 1px solid currentColor;
+}
+
+.amount--total {
+  border-top: 1px solid currentColor;
+  border-bottom: 3px double currentColor;
+  font-weight: var(--weight-strong);
+}
+
+.results-table td.amount--total {
+  border-bottom: 3px double currentColor;
+}
+
+@media (max-width: 600px) {
+  .review-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+
+  .review-table,
+  .review-table tbody {
+    display: block;
+  }
+
+  .review-table tr {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: var(--space-3);
+    padding: var(--space-3) 0;
+    border-bottom: 1px solid var(--c-rule-subtle);
+  }
+
+  .review-table td,
+  .results-table.review-table td {
+    padding: 0;
+    border: 0;
+  }
+
+  .review-table td:first-child {
+    flex: 1 1 100%;
+    font-weight: var(--weight-strong);
+  }
+
+  .review-table td:nth-last-child(2) {
+    flex: 1 1 auto;
+    text-align: left;
+  }
+
+  .review-table td:last-child {
+    flex: none;
+  }
+
+  .review-table--boxes td:first-child {
+    flex: 0 0 3rem;
+  }
+
+  .review-table--boxes td:nth-child(2) {
+    flex: 1 1 calc(100% - 3rem - var(--space-3));
+    min-width: 0;
+    font-weight: var(--weight-strong);
+  }
+
+  .review-table td.amount,
+  .results-table.review-table td.amount {
+    flex: 0 0 auto;
+    min-width: 7rem;
+    margin-left: auto;
+    text-align: right;
+  }
+
+  .review-table td.amount--subtotal,
+  .review-table td.amount--total {
+    border-top: 1px solid currentColor;
+  }
+
+  .review-table td.amount--total {
+    border-bottom: 3px double currentColor;
+  }
+}
+
+/* The step that sends a filing: set apart under a rule at the end of a review. */
+.send-step {
+  margin-top: var(--space-6);
+  padding-top: var(--space-5);
+  border-top: 2px solid var(--c-rule);
+}
+
+.send-step > h3 {
+  margin-top: 0;
+  font-size: var(--step-2);
+}
+
+.send-step .form-group {
+  max-width: 28rem;
+}
