@@ -1022,7 +1022,7 @@ function figureCell(label, value, { count = true } = {}) {
   const shown = value === null || value === undefined ? (count ? FEWER_THAN_THREE : "—") : String(value);
   return domEl(
     "div",
-    { class: "pass-figure", "data-figure": label.toLowerCase().replace(/ /g, "-") },
+    { "class": "pass-figure", "data-figure": label.toLowerCase().replace(/ /g, "-") },
     domEl("dt", {}, label),
     domEl("dd", {}, shown),
   );
@@ -1181,8 +1181,18 @@ async function fetchMyGeneratedPasses(append) {
       list.appendChild(
         domEl(
           "div",
-          { "id": "generatedPassesTotals", "class": "service-item bundle-row pass-totals" },
-          domEl("div", { class: "bundle-row-line" }, domEl("span", { class: "pass-code" }, `All ${data.totals.passes} passes`)),
+          { id: "generatedPassesTotals", class: "service-item bundle-row pass-totals" },
+          domEl(
+            "div",
+            { class: "bundle-row-line" },
+            domEl(
+              "span",
+              { class: "pass-code" },
+              data.totals.countedPasses === data.totals.passes
+                ? `All ${data.totals.passes} passes`
+                : `${data.totals.countedPasses} of ${data.totals.passes} passes (the others are under 3 new accounts together)`,
+            ),
+          ),
           passFiguresEl(data.totals, "pass-figures"),
         ),
       );

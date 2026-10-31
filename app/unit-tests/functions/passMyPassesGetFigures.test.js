@@ -90,6 +90,7 @@ describe("pass figures", () => {
     ]);
     expect(toPassTotals(passes, byCode)).toEqual({
       passes: 2,
+      countedPasses: 2,
       uses: 4,
       newAccounts: 3,
       filed: 2,
@@ -97,6 +98,23 @@ describe("pass figures", () => {
       paidCharges: 2,
       fewerThanThree: false,
       lastUsed: "2026-10-30T10:00:00.000Z",
+    });
+  });
+
+  test("the totals row leaves out withheld passes that together fall under three, so no withheld count can be worked out", () => {
+    const passes = [pass("a", 6), pass("b", 1)];
+    const byCode = new Map([
+      ["a", stored("a", 5, 4, 2, 3, "2026-10-29T10:00:00.000Z")],
+      ["b", stored("b", 1, 1, 1, 1, "2026-10-30T10:00:00.000Z")],
+    ]);
+    expect(toPassTotals(passes, byCode)).toMatchObject({
+      passes: 2,
+      countedPasses: 1,
+      uses: 7,
+      newAccounts: 5,
+      filed: 4,
+      subscribers: 2,
+      paidCharges: 3,
     });
   });
 

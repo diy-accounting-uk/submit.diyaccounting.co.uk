@@ -53,16 +53,28 @@ export function toPassFigures(pass, stored) {
 }
 
 /**
- * The totals row over every returned pass. The new-account total decides whether the counts show,
- * the same rule as one pass.
+ * The totals row over the returned passes. The passes whose own counts are withheld join the sum
+ * only when together they reach the minimum; otherwise the totals cover the shown passes alone,
+ * so a total less the shown passes never reveals a withheld count.
  */
 export function toPassTotals(passes, storedByCode) {
-  const sum = (field) => passes.reduce((total, pass) => total + (storedByCode.get(pass.code)?.[field] ?? 0), 0);
+  const newAccountsOf = (pass) => storedByCode.get(pass.code)?.newAccounts ?? 0;
+  const withheld = passes.filter((pass) => newAccountsOf(pass) < FIGURES_DISCLOSURE_MINIMUM);
+  const withheldNewAccounts = withheld.reduce((total, pass) => total + newAccountsOf(pass), 0);
+  const withheldJoin = withheldNewAccounts === 0 || withheldNewAccounts >= FIGURES_DISCLOSURE_MINIMUM;
+  const counted = withheldJoin ? passes : passes.filter((pass) => newAccountsOf(pass) >= FIGURES_DISCLOSURE_MINIMUM);
+  const sum = (field) => counted.reduce((total, pass) => total + (storedByCode.get(pass.code)?.[field] ?? 0), 0);
   const newAccounts = sum("newAccounts");
   const fewerThanThree = newAccounts < FIGURES_DISCLOSURE_MINIMUM;
-  const lastUsed = passes.map((pass) => storedByCode.get(pass.code)?.lastUsed).filter(Boolean).sort().pop() ?? null;
+  const lastUsed =
+    passes
+      .map((pass) => storedByCode.get(pass.code)?.lastUsed)
+      .filter(Boolean)
+      .sort()
+      .pop() ?? null;
   return {
     passes: passes.length,
+    countedPasses: counted.length,
     uses: passes.reduce((total, pass) => total + (pass.useCount || 0), 0),
     newAccounts: fewerThanThree ? null : newAccounts,
     filed: fewerThanThree ? null : sum("filed"),

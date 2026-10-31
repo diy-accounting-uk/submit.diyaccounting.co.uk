@@ -69,6 +69,7 @@ test.describe("pass figures", () => {
   test("each card shows its figures and a pass under three new accounts shows fewer than 3", async ({ page }) => {
     await openPasses(page, {
       passes: 3,
+      countedPasses: 3,
       uses: 15,
       newAccounts: 9,
       filed: 5,
@@ -99,6 +100,7 @@ test.describe("pass figures", () => {
   test("the totals row sums the passes", async ({ page }) => {
     await openPasses(page, {
       passes: 3,
+      countedPasses: 3,
       uses: 15,
       newAccounts: 9,
       filed: 5,
@@ -118,6 +120,7 @@ test.describe("pass figures", () => {
   test("the totals row shows fewer than 3 while the new-account total is small", async ({ page }) => {
     await openPasses(page, {
       passes: 3,
+      countedPasses: 3,
       uses: 15,
       newAccounts: null,
       filed: null,
