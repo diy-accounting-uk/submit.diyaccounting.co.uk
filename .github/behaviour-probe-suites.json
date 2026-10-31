@@ -1,0 +1,168 @@
+[
+  {
+    "id": "web-test-auth",
+    "suite": "authBehaviour"
+  },
+  {
+    "id": "web-test-token-enforcement",
+    "suite": "tokenEnforcementBehaviour"
+  },
+  {
+    "id": "web-test-payment",
+    "suite": "paymentBehaviour"
+  },
+  {
+    "id": "web-test-bundle",
+    "suite": "bundleBehaviour"
+  },
+  {
+    "id": "web-test-pass-redemption",
+    "suite": "passRedemptionBehaviour"
+  },
+  {
+    "id": "web-test-post-vat-return-synthetic",
+    "suite": "postVatReturnBehaviour",
+    "scenarios": true
+  },
+  {
+    "id": "web-test-practice-licence-synthetic",
+    "suite": "practiceLicenceBehaviour",
+    "scenarios": true
+  },
+  {
+    "id": "web-test-get-vat-return-synthetic",
+    "suite": "getVatReturnBehaviour",
+    "scenarios": true
+  },
+  {
+    "id": "web-test-obligation-synthetic",
+    "suite": "getVatObligationsBehaviour",
+    "scenarios": true
+  },
+  {
+    "id": "web-test-liability-synthetic",
+    "suite": "getVatLiabilitiesBehaviour",
+    "scenarios": true,
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-vat-payment-synthetic",
+    "suite": "getVatPaymentsBehaviour",
+    "scenarios": true,
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-vat-penalty-synthetic",
+    "suite": "getVatPenaltiesBehaviour",
+    "scenarios": true,
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-diya-gl-subscription",
+    "suite": "diyaGlSubscriptionBehaviour",
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-fraud-prevention-headers-vat-synthetic",
+    "suite": "postVatReturnFraudPreventionHeadersBehaviour"
+  },
+  {
+    "id": "web-test-compliance-synthetic",
+    "suite": "complianceBehaviour"
+  },
+  {
+    "id": "web-test-help-synthetic",
+    "suite": "helpBehaviour"
+  },
+  {
+    "id": "web-test-vatValidation-synthetic",
+    "suite": "vatValidationBehaviour",
+    "scenarios": true
+  },
+  {
+    "id": "web-test-vatSchemes-synthetic",
+    "suite": "vatSchemesBehaviour",
+    "scenarios": true
+  },
+  {
+    "id": "web-test-companies-house",
+    "suite": "companiesHouseBehaviour",
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-change-registered-office",
+    "suite": "changeRegisteredOfficeBehaviour",
+    "ciOnly": true,
+    "filing": true
+  },
+  {
+    "id": "web-test-change-registered-email",
+    "suite": "changeRegisteredEmailBehaviour",
+    "ciOnly": true,
+    "filing": true
+  },
+  {
+    "id": "web-test-itsa-business-details-synthetic",
+    "suite": "itsaBusinessDetailsBehaviour",
+    "scenarios": true,
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-itsa-obligations-synthetic",
+    "suite": "itsaObligationsBehaviour",
+    "scenarios": true,
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-itsa-uk-property-period-synthetic",
+    "suite": "itsaUkPropertyPeriodBehaviour",
+    "scenarios": true,
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-itsa-uk-property-annual-synthetic",
+    "suite": "itsaUkPropertyAnnualSubmissionBehaviour",
+    "scenarios": true,
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-itsa-foreign-property-period-synthetic",
+    "suite": "itsaForeignPropertyPeriodBehaviour",
+    "scenarios": true,
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-itsa-foreign-property-annual-synthetic",
+    "suite": "itsaForeignPropertyAnnualSubmissionBehaviour",
+    "scenarios": true,
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-itsa-losses-and-claims-synthetic",
+    "suite": "itsaLossesAndClaimsBehaviour",
+    "scenarios": true,
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-itsa-self-employment-period-synthetic",
+    "suite": "itsaSelfEmploymentPeriodBehaviour",
+    "scenarios": true,
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-itsa-annual-submission-synthetic",
+    "suite": "itsaAnnualSubmissionBehaviour",
+    "scenarios": true,
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-itsa-final-declaration-synthetic",
+    "suite": "itsaFinalDeclarationBehaviour",
+    "scenarios": true,
+    "ciOnly": true
+  },
+  {
+    "id": "web-test-generate-pass-activity",
+    "suite": "generatePassActivityBehaviour"
+  }
+]

@@ -34,18 +34,44 @@ import yaml from "js-yaml";
 
 export const MIN_ADVISED_SKIPS_TO_MEET_BAR = 50;
 
+// The matrix suite lists, per catalogue. An id in a list is a matrix entry, not a job key, so its
+// display name comes from the matrix job's name template filled with that entry's fields.
+export const MATRIX_SUITE_FILES = {
+  "test.yml": [".github/behaviour-simulator-suites.json"],
+  "deploy.yml": [".github/behaviour-probe-suites.json"],
+};
+
 // Pure: reads the job-id -> display-name map straight from the workflow's own YAML, so a rename
 // of a job's `name:` field can never desync this from what GitHub Actions actually reports. A
-// job with no explicit `name:` is displayed as its own YAML key.
-export function jobDisplayNames(workflowYamlText, jobIds) {
+// job with no explicit `name:` is displayed as its own YAML key. An id that is an entry of
+// `matrixEntries` takes the name template of the workflow's job whose matrix `include` is read
+// from a filter job's output, with each `${{ matrix.<field> }}` replaced by that entry's field.
+export function jobDisplayNames(workflowYamlText, jobIds, matrixEntries = []) {
   const doc = yaml.load(workflowYamlText);
   const jobs = (doc && doc.jobs) || {};
+  const matrixJob = Object.values(jobs).find(
+    (job) => job && typeof job.name === "string" && job.name.includes("${{ matrix.") && typeof job.strategy?.matrix?.include === "string",
+  );
+  const entriesById = new Map(matrixEntries.map((entry) => [entry.id, entry]));
   const names = {};
   for (const id of jobIds) {
+    const entry = entriesById.get(id);
+    if (entry && matrixJob) {
+      names[id] = matrixJob.name.replace(/\$\{\{ matrix\.([A-Za-z0-9_]+) \}\}/g, (whole, field) =>
+        field in entry ? String(entry[field]) : whole,
+      );
+      continue;
+    }
     const job = jobs[id];
     names[id] = (job && job.name) || id;
   }
   return names;
+}
+
+// Reads the catalogue's matrix suite lists from the working tree.
+export function readMatrixEntries(catalogue) {
+  const files = MATRIX_SUITE_FILES[catalogue] || [];
+  return files.flatMap((file) => JSON.parse(fs.readFileSync(file, "utf8")));
 }
 
 // Pure: the artifact-name label each catalogue's select-jobs job uploads under. Kept as its own
@@ -199,8 +225,8 @@ function fetchRunJobs(repo, runId) {
   return jobs;
 }
 
-export async function gatherRows({ repo, catalogue, limit, jobIds, workflowYamlText, scratchDir }) {
-  const displayNames = jobDisplayNames(workflowYamlText, jobIds);
+export async function gatherRows({ repo, catalogue, limit, jobIds, workflowYamlText, matrixEntries = [], scratchDir }) {
+  const displayNames = jobDisplayNames(workflowYamlText, jobIds, matrixEntries);
   const artifactLabel = artifactLabelForCatalogue(catalogue);
   const sources = runSourcesForCatalogue(catalogue);
 
@@ -269,6 +295,7 @@ async function main() {
     limit: Number(opts.limit),
     jobIds,
     workflowYamlText,
+    matrixEntries: readMatrixEntries(opts.workflow),
     scratchDir,
   });
   fs.rmSync(scratchDir, { recursive: true, force: true });

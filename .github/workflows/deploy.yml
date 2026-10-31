@@ -152,7 +152,6 @@ permissions:
 
 env:
   JAVA_VERSION: '25'
-  NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
   GITHUB_ACTOR: ${{ github.actor }}
@@ -318,29 +317,13 @@ jobs:
           step-name: Parse the answer
           budget: ${{ env.SELECT_JOBS_BUDGET_PER_DAY }}
 
-      - name: Configure AWS role via GitHub OIDC
+      - name: Assume the AWS actions and deploy roles
         if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume the read-only alarm triage role
-        if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Stop when the agent kill switch is on
         if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
@@ -349,10 +332,11 @@ jobs:
         with:
           environment-name: ci
 
-      - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          npm-install: none
+          npm-cache: 'false'
 
       - name: Install Claude Code
         if: >-
@@ -525,32 +509,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Set up Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         with:
-          node-version: ${{ env.NODE_VERSION }}
+          npm-install: none
+          npm-cache: 'false'
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Read which advised stack jobs this deployment still holds
         id: read
@@ -784,27 +754,12 @@ jobs:
             echo "package-json-scripts-only=false" | tee -a "$GITHUB_OUTPUT"
           fi
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: "needs.params.outputs.isSkippingDeploy=[${{ needs.params.outputs.isSkippingDeploy }}]"
         run: ":"
@@ -1061,16 +1016,11 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         timeout-minutes: 6
-        env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
+        with:
+          npm-install: scripts
 
       - run: npm run test:coverage
 
@@ -1125,27 +1075,17 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Checkout the actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: CDK stacks in eu-west-2 and us-east-1
         run: |
@@ -1185,17 +1125,9 @@ jobs:
         uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         timeout-minutes: 6
-        env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
 
       - name: Build base image
         run: |
@@ -1236,27 +1168,12 @@ jobs:
         with:
           github-token: ${{ github.token }}
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Wait for any DELETE_IN_PROGRESS stacks
         run: |
@@ -1295,27 +1212,17 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Checkout the actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Validate all required secrets exist
         id: validate
@@ -1436,28 +1343,17 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
-
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Checkout the actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Login to Amazon ECR
         shell: bash
@@ -1490,19 +1386,10 @@ jobs:
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
+      - name: Set up the toolchain
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
+        uses: ./.github/actions/setup-toolchain
         timeout-minutes: 6
-        env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
 
       - name: Download image artifact
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -1539,28 +1426,17 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
-
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Checkout the actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          aws-region: us-east-1
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Login to Amazon ECR in us-east-1
         shell: bash
@@ -1593,19 +1469,10 @@ jobs:
       - name: Checkout
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
+      - name: Set up the toolchain
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        if: ${{ steps.image-exists.outputs.exists != 'true' }}
-        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
+        uses: ./.github/actions/setup-toolchain
         timeout-minutes: 6
-        env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
 
       - name: Download image artifact
         if: ${{ steps.image-exists.outputs.exists != 'true' }}
@@ -1955,45 +1822,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         timeout-minutes: 6
-        env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
-
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
+          java: 'true'
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Download Maven build artifact
         id: download-maven-api
@@ -2170,45 +2010,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         timeout-minutes: 6
-        env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
-
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
+          java: 'true'
 
-      - name: Configure AWS role via GitHub OIDC (for RUM outputs)
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles (for RUM outputs)
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role (for RUM outputs)
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Lookup API Gateway from domain convention
         id: lookup-api
@@ -2349,29 +2162,13 @@ jobs:
             echo "skipPublishStackDeployment=false" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Configure AWS role via GitHub OIDC
+      - name: Assume the AWS actions and deploy roles
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Download Maven build artifact
         if: ${{ needs.names.outputs.environment-name == 'prod' || needs.params.outputs.forceAllStackDeployment == 'true' || steps.publish-compare.outputs.skipPublishStackDeployment != 'true' }}
@@ -2523,27 +2320,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Lookup CloudFront and API Gateway from domain convention
         id: lookup-resources
@@ -2604,40 +2386,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         timeout-minutes: 6
         env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Read TEST_AUTH_PROVIDER
         id: auth-provider
@@ -2735,78 +2495,6 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-auth:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-auth')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'authBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - names
-      - params
-      - set-origins
-      - enable-native-auth
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'authBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-token-enforcement:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-token-enforcement')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'tokenEnforcementBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'tokenEnforcementBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-payment:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-payment')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'paymentBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'paymentBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
   web-test:
     if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'submitVatBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
@@ -2830,76 +2518,69 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
-  web-test-bundle:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-bundle')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'bundleBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+  # The probe suites other than web-test are listed in .github/behaviour-probe-suites.json; each
+  # entry's id is the id select-jobs knows it by. The reasoned job filter drops an entry that
+  # advised-json names, while the variable is on and the ref is not main. scenarios drops it when
+  # skipTestScenarios is set, ciOnly drops it outside ci, and filing drops it unless
+  # runCompaniesHouseSandboxFiling is set.
+  probe-suites:
+    if: ${{ !cancelled() }}
+    name: 'probe suites'
+    runs-on: ubuntu-24.04
     needs:
       - select-jobs
       - params
       - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'bundleBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+    outputs:
+      include: ${{ steps.filter.outputs.include }}
+    steps:
+      - name: Checkout the suite list
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/behaviour-probe-suites.json
+          persist-credentials: false
 
-  web-test-pass-redemption:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-pass-redemption')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'passRedemptionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'passRedemptionBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+      - name: Drop the suites that do not run in this deploy
+        id: filter
+        env:
+          ADVISED_JSON: ${{ needs.select-jobs.outputs.advised-json || '[]' }}
+          REASONED_JOB_FILTER: ${{ vars.REASONED_JOB_FILTER }}
+          SKIP_TEST_SCENARIOS: ${{ needs.params.outputs.skipTestScenarios }}
+          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
+          RUN_COMPANIES_HOUSE_FILING: ${{ needs.params.outputs.runCompaniesHouseSandboxFiling }}
+        run: |
+          ADVISED_ACTIVE=false
+          if [ "${REASONED_JOB_FILTER}" != "off" ] && [ "${GITHUB_REF}" != "refs/heads/main" ]; then
+            ADVISED_ACTIVE=true
+          fi
+          INCLUDE=$(jq -c \
+            --argjson advised "${ADVISED_JSON}" \
+            --arg active "${ADVISED_ACTIVE}" \
+            --arg skipScenarios "${SKIP_TEST_SCENARIOS}" \
+            --arg environment "${ENVIRONMENT_NAME}" \
+            --arg filing "${RUN_COMPANIES_HOUSE_FILING}" \
+            '[.[] | .id as $id | select(
+              (($active == "true" and ($advised | index($id) != null)) | not)
+              and (if .scenarios then $skipScenarios != "true" else true end)
+              and (if .ciOnly then $environment == "ci" else true end)
+              and (if .filing then $filing == "true" else true end)
+            )]' .github/behaviour-probe-suites.json)
+          echo "include=${INCLUDE}" | tee -a "$GITHUB_OUTPUT"
 
-  web-test-post-vat-return-synthetic:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-post-vat-return-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'postVatReturnBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+  web-test-suites:
+    if: ${{ !cancelled() && needs.probe-suites.result == 'success' && needs.probe-suites.outputs.include != '[]' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    name: '${{ matrix.suite }}-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
-      - select-jobs
-      - params
+      - probe-suites
       - names
+      - params
       - set-origins
       - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
       - verify-api
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.probe-suites.outputs.include) }}
     uses: ./.github/workflows/probe-test.yml
     permissions:
       contents: read
@@ -2908,758 +2589,15 @@ jobs:
     with:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'postVatReturnBehaviour'
+      behaviour-test-suite: ${{ matrix.suite }}
       generate-test-reports: 'false'
       skip-native-auth-disable: 'true'
+      runCompaniesHouseSandboxFiling: ${{ matrix.filing && needs.params.outputs.runCompaniesHouseSandboxFiling || '' }}
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-practice-licence-synthetic:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-practice-licence-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'practiceLicenceBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'practiceLicenceBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-get-vat-return-synthetic:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-get-vat-return-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'getVatReturnBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'getVatReturnBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-obligation-synthetic:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-obligation-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'getVatObligationsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'getVatObligationsBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-liability-synthetic:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-liability-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'getVatLiabilitiesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'getVatLiabilitiesBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-vat-payment-synthetic:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-vat-payment-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'getVatPaymentsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'getVatPaymentsBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-vat-penalty-synthetic:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-vat-penalty-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'getVatPenaltiesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'getVatPenaltiesBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-diya-gl-subscription:
-    # The three subscription bundles list on ci only until the operator lifts each one.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-diya-gl-subscription')) && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'diyaGlSubscriptionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'diyaGlSubscriptionBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-fraud-prevention-headers-vat-synthetic:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-fraud-prevention-headers-vat-synthetic')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'postVatReturnFraudPreventionHeadersBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'postVatReturnFraudPreventionHeadersBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-compliance-synthetic:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-compliance-synthetic')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'complianceBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'complianceBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-help-synthetic:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-help-synthetic')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'helpBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'helpBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-vatValidation-synthetic:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-vatValidation-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'vatValidationBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'vatValidationBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-vatSchemes-synthetic:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-vatSchemes-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'vatSchemesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'vatSchemesBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-companies-house:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-companies-house')) && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'companiesHouseBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'companiesHouseBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-change-registered-office:
-    # Gated to non-prod environments until examined, and off unless runCompaniesHouseSandboxFiling
-    # is turned on. Signs in to the real Companies House sandbox, so it needs
-    # COMPANIES_HOUSE_SANDBOX_API_KEY, TEST_COMPANIES_HOUSE_USER_ID, TEST_COMPANIES_HOUSE_PASSWORD
-    # and TEST_COMPANIES_HOUSE_TOTP_SECRET on the ci environment (see probe-test.yml).
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-change-registered-office')) && needs.names.outputs.environment-name == 'ci' && needs.params.outputs.runCompaniesHouseSandboxFiling == 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'changeRegisteredOfficeBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'changeRegisteredOfficeBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-      runCompaniesHouseSandboxFiling: ${{ needs.params.outputs.runCompaniesHouseSandboxFiling }}
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-      COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
-      TEST_COMPANIES_HOUSE_PASSWORD: ${{ secrets.TEST_COMPANIES_HOUSE_PASSWORD }}
-      TEST_COMPANIES_HOUSE_TOTP_SECRET: ${{ secrets.TEST_COMPANIES_HOUSE_TOTP_SECRET }}
-
-  web-test-change-registered-email:
-    # Gated to non-prod environments until examined, and off unless runCompaniesHouseSandboxFiling
-    # is turned on. Signs in to the real Companies House sandbox, so it needs
-    # COMPANIES_HOUSE_SANDBOX_API_KEY, TEST_COMPANIES_HOUSE_USER_ID, TEST_COMPANIES_HOUSE_PASSWORD
-    # and TEST_COMPANIES_HOUSE_TOTP_SECRET on the ci environment (see probe-test.yml).
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-change-registered-email')) && needs.names.outputs.environment-name == 'ci' && needs.params.outputs.runCompaniesHouseSandboxFiling == 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'changeRegisteredEmailBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'changeRegisteredEmailBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-      runCompaniesHouseSandboxFiling: ${{ needs.params.outputs.runCompaniesHouseSandboxFiling }}
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-      COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
-      TEST_COMPANIES_HOUSE_PASSWORD: ${{ secrets.TEST_COMPANIES_HOUSE_PASSWORD }}
-      TEST_COMPANIES_HOUSE_TOTP_SECRET: ${{ secrets.TEST_COMPANIES_HOUSE_TOTP_SECRET }}
-
-  web-test-itsa-business-details-synthetic:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-business-details-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'itsaBusinessDetailsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'itsaBusinessDetailsBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-itsa-obligations-synthetic:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-obligations-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'itsaObligationsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'itsaObligationsBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-itsa-uk-property-period-synthetic:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-uk-property-period-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'itsaUkPropertyPeriodBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'itsaUkPropertyPeriodBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-itsa-uk-property-annual-synthetic:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-uk-property-annual-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'itsaUkPropertyAnnualSubmissionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'itsaUkPropertyAnnualSubmissionBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-itsa-foreign-property-period-synthetic:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-foreign-property-period-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'itsaForeignPropertyPeriodBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'itsaForeignPropertyPeriodBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-itsa-foreign-property-annual-synthetic:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-foreign-property-annual-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'itsaForeignPropertyAnnualSubmissionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'itsaForeignPropertyAnnualSubmissionBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-itsa-losses-and-claims-synthetic:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-losses-and-claims-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'itsaLossesAndClaimsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'itsaLossesAndClaimsBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-itsa-self-employment-period-synthetic:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-self-employment-period-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'itsaSelfEmploymentPeriodBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'itsaSelfEmploymentPeriodBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-itsa-annual-submission-synthetic:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-annual-submission-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'itsaAnnualSubmissionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'itsaAnnualSubmissionBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-itsa-final-declaration-synthetic:
-    # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-itsa-final-declaration-synthetic')) && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'itsaFinalDeclarationBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'itsaFinalDeclarationBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
-
-  web-test-generate-pass-activity:
-    if: ${{ !cancelled() && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'web-test-generate-pass-activity')) && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
-    name: 'generatePassActivityBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
-    needs:
-      - select-jobs
-      - params
-      - names
-      - set-origins
-      - enable-native-auth
-      #- web-test-auth
-      #- web-test-token-enforcement
-      #- web-test-payment
-      #- web-test
-      - verify-api
-    uses: ./.github/workflows/probe-test.yml
-    permissions:
-      contents: read
-      packages: read
-      id-token: write
-    with:
-      environment-name: ${{ needs.names.outputs.environment-name }}
-      deployment-name: ${{ needs.names.outputs.deployment-name }}
-      behaviour-test-suite: 'generatePassActivityBehaviour'
-      generate-test-reports: 'false'
-      skip-native-auth-disable: 'true'
-    secrets:
-      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+      COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ matrix.filing && secrets.COMPANIES_HOUSE_SANDBOX_API_KEY || '' }}
+      TEST_COMPANIES_HOUSE_PASSWORD: ${{ matrix.filing && secrets.TEST_COMPANIES_HOUSE_PASSWORD || '' }}
+      TEST_COMPANIES_HOUSE_TOTP_SECRET: ${{ matrix.filing && secrets.TEST_COMPANIES_HOUSE_TOTP_SECRET || '' }}
 
   disable-native-auth:
     if: ${{ !cancelled() && needs.names.result == 'success' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
@@ -3668,78 +2606,25 @@ jobs:
       - params
       - names
       - enable-native-auth
-      - web-test-auth
-      - web-test-bundle
-      - web-test-pass-redemption
-      - web-test-token-enforcement
-      - web-test-payment
       - web-test
-      - web-test-post-vat-return-synthetic
-      - web-test-practice-licence-synthetic
-      - web-test-get-vat-return-synthetic
-      - web-test-obligation-synthetic
-      - web-test-liability-synthetic
-      - web-test-vat-payment-synthetic
-      - web-test-vat-penalty-synthetic
-      - web-test-diya-gl-subscription
-      - web-test-fraud-prevention-headers-vat-synthetic
-      - web-test-compliance-synthetic
-      - web-test-help-synthetic
-      - web-test-vatValidation-synthetic
-      - web-test-companies-house
-      - web-test-change-registered-office
-      - web-test-change-registered-email
-      - web-test-itsa-business-details-synthetic
-      - web-test-itsa-obligations-synthetic
-      - web-test-itsa-self-employment-period-synthetic
-      - web-test-itsa-uk-property-period-synthetic
-      - web-test-itsa-uk-property-annual-synthetic
-      - web-test-itsa-foreign-property-period-synthetic
-      - web-test-itsa-foreign-property-annual-synthetic
-      - web-test-itsa-losses-and-claims-synthetic
-      - web-test-itsa-annual-submission-synthetic
-      - web-test-itsa-final-declaration-synthetic
-      - web-test-vatSchemes-synthetic
-      - web-test-generate-pass-activity
+      - web-test-suites
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         timeout-minutes: 6
         env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Read TEST_AUTH_PROVIDER
         id: auth-provider
@@ -3785,27 +2670,17 @@ jobs:
       id-token: write
       issues: write
     steps:
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Checkout the actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Set last known good deployment in SSM Parameter Store
         run: |
@@ -3917,27 +2792,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Lookup CloudFront and API Gateway for the previous deployment
         id: lookup-previous
@@ -4014,27 +2874,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Build the DORA row
         id: dora-row
@@ -4178,27 +3023,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Release the ci slot this run claimed
         shell: bash
@@ -4232,27 +3062,17 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ci
     steps:
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Checkout the actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Find whether any ci set's SelfDestructStack is old enough to sweep
         id: check

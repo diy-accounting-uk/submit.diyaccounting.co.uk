@@ -69,7 +69,6 @@ permissions:
   actions: read
 
 env:
-  NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
 
@@ -143,27 +142,12 @@ jobs:
         with:
           github-token: ${{ github.token }}
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Read last known good deployment from SSM (main branch)
         if: ${{ needs.params.outputs.deployment-name == '' && github.ref == 'refs/heads/main' }}
@@ -220,11 +204,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
+          npm-install: none
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@594f3bf4285d9ea8dc53c9a0c9c4092420091003 # v4
@@ -261,27 +244,17 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Checkout the actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Login to Amazon ECR
         shell: bash
@@ -336,27 +309,17 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Checkout the actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          aws-region: us-east-1
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: us-east-1
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Login to Amazon ECR us-east-1
         shell: bash
@@ -412,27 +375,17 @@ jobs:
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Checkout the actions
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+          sparse-checkout: .github/actions
+          persist-credentials: false
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: List and update Lambda functions
         shell: bash
@@ -503,40 +456,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         timeout-minutes: 6
         env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Resolve RUM config from ObservabilityStack
         id: rum-config
@@ -695,40 +626,18 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         timeout-minutes: 6
         env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Read TEST_AUTH_PROVIDER
         id: auth-provider
@@ -779,29 +688,13 @@ jobs:
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
           TEST_AUTH_TOTP_SECRET: ${{ steps.cognito-test-user.outputs.test-auth-totp-secret }}
 
-      - name: Configure AWS role via GitHub OIDC (cleanup)
+      - name: Assume the AWS actions and deploy roles (cleanup)
         if: ${{ !cancelled() }}
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role (cleanup)
-        if: ${{ !cancelled() }}
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Read TEST_AUTH_PROVIDER (cleanup)
         id: auth-provider-cleanup
