@@ -24,6 +24,12 @@
 -- are excluded here regardless of actor; a production type id (day-guest, resident-vat,
 -- invited-guest) issued before the actor column existed still mixes real and test-lane
 -- redemptions.
+--
+-- A redemption counts only when the pass item carries an actor that is not automated. A pass
+-- written before the actor column shipped has none, and so do the "system" passes of the weeks
+-- after it: on prod every redemption of those two groups came from the automated test lanes
+-- (hundreds a day, against two passes in the same ninety days that carry the customer actor),
+-- so an item with no actor, or the system actor, is left out rather than read as a customer.
 CREATE OR REPLACE VIEW v_pass_redemptions_daily AS
 WITH issued AS (
   SELECT date(event_ts) AS day,
@@ -47,7 +53,7 @@ redeemed AS (
          count(*) AS passes_redeemed
   FROM   pass_history
   WHERE  change_type = 'MODIFY' AND previous_use_count IS NOT NULL AND use_count > previous_use_count
-    AND  coalesce(actor, 'customer') NOT IN ('test-user', 'probe', 'synthetic', 'operator')
+    AND  actor IS NOT NULL AND actor NOT IN ('system', 'test-user', 'probe', 'synthetic', 'operator')
   GROUP  BY 1, 2)
 SELECT coalesce(issued.day, redeemed.day) AS day,
        coalesce(issued.pass_type_id, redeemed.pass_type_id) AS pass_type_id,
