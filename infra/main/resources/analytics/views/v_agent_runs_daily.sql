@@ -12,16 +12,23 @@
 -- once; min(created_at) is the first of those, which is the one that answers "did this land".
 -- GitHub's timeline API carries a PR's own number in the same issue_number field an issue uses,
 -- so a run's pr_number joins straight into it with no separate PR table.
+--
+-- run_closes pairs each run with the first operator close of its issue at or after the run
+-- finished. An issue closed before the run (a reused or reopened one) is not that run's close;
+-- taking the issue's first close at all gave negative hours.
 CREATE OR REPLACE VIEW v_agent_runs_daily AS
 WITH pr_merges AS (
   SELECT issue_number AS pr_number, min(created_at) AS merged_at
   FROM   github_issue_events
   WHERE  event_type = 'merged'
   GROUP  BY 1),
-issue_closes AS (
-  SELECT issue_number, min(created_at) AS closed_at
-  FROM   github_issue_events
-  WHERE  event_type = 'closed' AND is_operator = true
+run_closes AS (
+  SELECT r.run_id, min(from_iso8601_timestamp(c.created_at)) AS closed_at
+  FROM   agent_runs r
+  JOIN   github_issue_events c
+    ON   c.issue_number = r.issue_number
+   AND   c.event_type = 'closed' AND c.is_operator = true
+   AND   from_iso8601_timestamp(c.created_at) >= from_iso8601_timestamp(r.finished_at)
   GROUP  BY 1),
 enriched AS (
   SELECT r.workflow,
@@ -29,11 +36,11 @@ enriched AS (
          r.outcome,
          r.pr_number,
          (m.merged_at IS NOT NULL)                                                      AS pr_accepted,
-         date_diff('second', from_iso8601_timestamp(r.finished_at), from_iso8601_timestamp(c.closed_at)) / 3600.0
+         date_diff('second', from_iso8601_timestamp(r.finished_at), c.closed_at) / 3600.0
                                                                                           AS hours_to_close
   FROM   agent_runs r
   LEFT JOIN pr_merges m ON r.pr_number = m.pr_number
-  LEFT JOIN issue_closes c ON r.issue_number = c.issue_number)
+  LEFT JOIN run_closes c ON r.run_id = c.run_id)
 SELECT day,
        workflow,
        count(*)                                                        AS runs,
