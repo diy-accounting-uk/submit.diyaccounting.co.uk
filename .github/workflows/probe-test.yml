@@ -161,8 +161,6 @@ permissions:
   contents: read
 
 env:
-  JAVA_VERSION: '25'
-  NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
 
 jobs:
@@ -275,27 +273,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: If main, read back last known good prod deployment from SSM Parameter Store
         if: ${{ needs.params.outputs.deployment-name == '' && github.ref == 'refs/heads/main' }}
@@ -373,39 +356,17 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: |
-          npm ci --ignore-scripts
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
-      - name: Configure AWS role via GitHub OIDC (for test user creation)
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles (for test user creation)
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role (for test user creation)
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Read TEST_AUTH_PROVIDER
         id: auth-provider
@@ -650,27 +611,12 @@ jobs:
           GA4_BIGQUERY_DATASET_ID: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'analytics_552917343' || '' }}
           GA4_BIGQUERY_LOCATION: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'europe-west2' || '' }}
 
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+      - name: Assume the AWS actions and deploy roles
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       # Releases the hold this leg's own enable step registered (same holder-id: run id plus
       # matrix leg index). Native auth turns off here only once no other hold on this
@@ -758,30 +704,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Configure AWS role via GitHub OIDC
-        if: ${{ !cancelled() }}
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
+      - name: Assume the AWS actions and deploy roles
         if: ${{ !cancelled() }}
         id: assume-deploy-role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: publish cloudwatch metric
         # Matrixed: this step runs once per suite with the same aggregate behaviour-test.result
@@ -868,17 +798,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
+      - name: Set up the toolchain
+        uses: ./.github/actions/setup-toolchain
         timeout-minutes: 6
-        env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
 
       # The producer (behaviour-test) job is matrixed by suite, so its outputs (including
       # `superseded`) collapse to one value across matrix legs rather than one per suite, and
@@ -926,29 +848,13 @@ jobs:
           echo "Test report files:"
           find target/test-reports/ -type f -exec ls -l {} \;
 
-      - name: Configure AWS role via GitHub OIDC
+      - name: Assume the AWS actions and deploy roles
         if: ${{ !cancelled() && steps.download-artifacts.outcome == 'success' }}
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        uses: ./.github/actions/aws-role
         with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          actions-role-arn: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          deploy-role-arn: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        if: ${{ !cancelled() && steps.download-artifacts.outcome == 'success' }}
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
 
       - name: Lookup origin bucket name from EdgeStack
         if: ${{ !cancelled() && steps.download-artifacts.outcome == 'success' }}
