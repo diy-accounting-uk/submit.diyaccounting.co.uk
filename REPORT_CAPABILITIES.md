@@ -177,6 +177,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle: use when unit or browser tests need the frontend bundled before they run.
     - [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project: use when researching why the pricing or bundle catalogue was changed the way it was.
     - [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines: use when a referred customer pays an invoice, or a charge behind a commission line is refunded or disputed.
+    - [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily: use when a held referral commission line has passed its release time and must become payable, or stay held for a reason.
 - **[Operations and CI](#operations-and-ci-ops)**
   - [Deploy pipeline](#deploy-pipeline-ops)
     - [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys: use when a workflow_dispatch redeploy might race a push-triggered deploy.yml run on the same commit.
@@ -1609,7 +1610,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies · [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
 - [Tokens and catalogue](#tokens-and-catalogue-bill): [BILL-33](#bill-33-enforce-and-consume-activity-tokens) Enforce and consume activity tokens · [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh) Prefetch and retry a Cognito token refresh · [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue) Load and query the product/activity catalogue
 - [CDK infrastructure](#cdk-infrastructure-bill): [BILL-36](#bill-36-cdk-account-stack) CDK: account stack · [BILL-37](#bill-37-cdk-billing-app-stack) CDK: billing app stack · [BILL-38](#bill-38-cdk-billing-webhook-stack) CDK: billing webhook stack · [BILL-39](#bill-39-cdk-diya-gl-stack) CDK: diya-gl stack
-- [Migrations and shared utilities](#migrations-and-shared-utilities-bill): [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt · [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier · [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry · [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle · [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project · [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines
+- [Migrations and shared utilities](#migrations-and-shared-utilities-bill): [BILL-40](#bill-40-migrate-the-hashed-sub-salt) Migrate the hashed-sub salt · [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier) Backfill the Stripe test-mode qualifier · [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry) Parse ISO 8601 durations for expiry · [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle · [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project · [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines · [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily
 <!-- /generated:area BILL -->
 
 ### Bundle grants and entitlements (BILL)
@@ -2085,6 +2086,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-43](#bill-43-build-the-frontend-test-bundle) Build the frontend test bundle
 - [BILL-44](#bill-44-document-the-price-update-project) Document the price-update project
 - [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines) Accrue and reverse referral commission lines
+- [BILL-47](#bill-47-release-held-commission-lines-daily) Release held commission lines daily
 <!-- /generated:group migrations-and-shared-utilities-bill -->
 
 #### BILL-40 Migrate the hashed-sub salt
@@ -2145,6 +2147,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/services/commissionLedger.js, app/services/referralConfig.js, referrals.toml, app/data/dynamoDbCommissionRepository.js, app/functions/billing/billingWebhookPost.js, app/unit-tests/services/commissionLedger.test.js, app/unit-tests/services/referralConfig.test.js
 - **Keywords:** referral, commission, affiliate, ledger, invoice.paid, refund, dispute, reversal, tier, held line
 - **Related:** BILL-28
+
+#### BILL-47 Release held commission lines daily
+
+- **Use when:** a held referral commission line has passed its release time and must become payable, or stay held for a reason.
+- **Does:** The commissionRelease.js handler runs daily on a schedule. For each held pointer that is due, it re-checks the holds on the line: conversion volume, the card of the referrer or a shared card, a customer older than the referral, an early cancel, an unapproved affiliate and a credit referrer with no live subscription. A line with a hold keeps its reasons and its pointer. A line with none becomes payable in one transaction that also adds its amount to the monthly, tax-year or credit cap totals, and a cap that refuses keeps the line held.
+- **Run:** no command; see Does and Entry
+- **Entry:** `app/functions/account/commissionRelease.js:handler`
+- **Files:** app/functions/account/commissionRelease.js, app/unit-tests/functions/commissionRelease.test.js, app/data/dynamoDbBundleRepository.js, app/unit-tests/data/dynamoDbBundleRepository.byHashedSub.test.js, referrals.toml
+- **Keywords:** commission, release, held line, payable, volume hold, card hold, cap, tax year, scheduled lambda
+- **Related:** BILL-46
 
 ## Operations and CI (OPS)
 
@@ -6316,6 +6328,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cancel run: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - cancel subscription: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-28](#bill-28-process-stripe-webhook-events)
 - canonical form: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
+- cap: [BILL-47](#bill-47-release-held-commission-lines-daily)
 - capability: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - capacity: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - capacity cap: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
@@ -6323,6 +6336,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - capped bundle: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - caption overlay: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
 - captions: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [OPS-92](#ops-92-redact-secrets-from-video-artefacts), [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
+- card hold: [BILL-47](#bill-47-release-held-commission-lines-daily)
 - cash account: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - catalogue: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - catalogue environments: [OPS-143](#ops-143-remove-unlisted-pages-from-the-published-sitemap)
@@ -6449,7 +6463,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cognito-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - cold start: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - collabora: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
-- commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
+- commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily)
 - commissions: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - commit author: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - commit identity: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
@@ -7046,7 +7060,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - headlines strip: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - health alarm: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
 - health canary: [OPS-119](#ops-119-provision-the-ops-stack)
-- held line: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
+- held line: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [BILL-47](#bill-47-release-held-commission-lines-daily)
 - help page: [SITE-10](#site-10-serve-general-site-pages)
 - help page form: [SITE-05](#site-05-submit-support-tickets)
 - hmac hash: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
@@ -7529,6 +7543,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - passes: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - passphrase: [BILL-10](#bill-10-redeem-a-pass)
 - passphrase salt: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
+- payable: [BILL-47](#bill-47-release-held-commission-lines-daily)
 - payment history: [HMRC-05](#hmrc-05-retrieve-vat-payments)
 - payments: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - payout schedule: [BILL-31](#bill-31-configure-stripe-account-policies)
@@ -7760,6 +7775,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - regulatory checklist: [OPS-42](#ops-42-guide-icogdpr-compliance)
 - reinvestment ceiling: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - relationships endpoint: [BILL-13](#bill-13-check-a-clients-authorisation-status)
+- release: [BILL-47](#bill-47-release-held-commission-lines-daily)
 - release record: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - release slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - releases: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
@@ -7891,7 +7907,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - scenes to record: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
 - scheduled alert: [OPS-37](#ops-37-check-https-certificate-expiry)
 - scheduled check: [OPS-32](#ops-32-detect-cloudformation-drift)
-- scheduled lambda: [BILL-05](#bill-05-reconcile-bundle-capacity-counters)
+- scheduled lambda: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [BILL-47](#bill-47-release-held-commission-lines-daily)
 - scheduled pr: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
 - scheduled query: [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries)
 - scheduled scan: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
@@ -8136,7 +8152,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - tax liability: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability)
 - tax liability adjustments: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
 - tax sources: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
-- tax year: [HMRC-11](#hmrc-11-retrieve-itsa-status), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations), [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
+- tax year: [HMRC-11](#hmrc-11-retrieve-itsa-status), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations), [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [BILL-47](#bill-47-release-held-commission-lines-daily)
 - tax year 2025-26: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates)
 - taxonomy schema: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
 - tear down deployment: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
@@ -8325,6 +8341,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - visual review: [DEV-46](#dev-46-judge-screenshots-as-a-reader-sees-them)
 - vitest config: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - volatile cells: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
+- volume hold: [BILL-47](#bill-47-release-held-commission-lines-daily)
 - vrn: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
 - vulnerability disclosure: [OPS-65](#ops-65-document-security-policy-and-disclosure)
 - waf: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
