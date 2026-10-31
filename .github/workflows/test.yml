@@ -466,7 +466,8 @@ jobs:
       # 'advisory' records what the model would have skipped in the decision artifact but always
       # reports skip-json=[], so every job below still runs. 'enforcing' lets skip-json turn a
       # job off. See select-jobs.mjs's module comment for what each mode does.
-      SELECT_JOBS_MODE: 'advisory'
+      # 'off' makes the ref ineligible, so no model call runs and every job runs.
+      SELECT_JOBS_MODE: 'off'
     outputs:
       skip-json: ${{ steps.decide.outputs.skip-json }}
       advised-json: ${{ steps.decide.outputs.advised-json }}
@@ -488,7 +489,7 @@ jobs:
           else
             echo "markdown-only=false" | tee -a "$GITHUB_OUTPUT"
           fi
-          if [ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ needs.changes.outputs.code }}" = "false" ]; then
+          if [ "${SELECT_JOBS_MODE}" = "off" ] || [ "${{ github.ref }}" = "refs/heads/main" ] || [ "${{ needs.changes.outputs.code }}" = "false" ]; then
             echo "eligible=false" | tee -a "$GITHUB_OUTPUT"
           else
             echo "eligible=true" | tee -a "$GITHUB_OUTPUT"

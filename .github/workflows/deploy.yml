@@ -277,7 +277,8 @@ jobs:
       MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
       OUT_DIR: '/tmp/select-jobs'
       SELECT_JOBS_BUDGET_PER_DAY: '200'
-      SELECT_JOBS_MODE: 'advisory'
+      # 'off' makes the ref ineligible, so no model call runs and every job runs.
+      SELECT_JOBS_MODE: 'off'
     outputs:
       skip-json: ${{ steps.decide.outputs.skip-json }}
       advised-json: ${{ steps.decide.outputs.advised-json }}
@@ -303,7 +304,7 @@ jobs:
             fi
           fi
           echo "markdown-only=${markdown_only}" | tee -a "$GITHUB_OUTPUT"
-          if [ "${{ github.ref }}" = "refs/heads/main" ] || [ "$markdown_only" = "true" ]; then
+          if [ "${SELECT_JOBS_MODE}" = "off" ] || [ "${{ github.ref }}" = "refs/heads/main" ] || [ "$markdown_only" = "true" ]; then
             echo "eligible=false" | tee -a "$GITHUB_OUTPUT"
           else
             echo "eligible=true" | tee -a "$GITHUB_OUTPUT"
