@@ -424,6 +424,41 @@ describe("marketing-lib", () => {
   });
 });
 
+describe("marketing page", () => {
+  const html = fs.readFileSync(path.join(MARKETING_DIR, "index.html"), "utf-8");
+  const links = [...html.matchAll(/\b(?:href|src)="([^"]+)"/g)].map((m) => m[1]);
+
+  function resolves(link) {
+    if (link.startsWith("#")) return true;
+    if (link.startsWith("https://submit.diyaccounting.co.uk/")) return submitPathExists(link);
+    if (/^https?:/.test(link)) return EXTERNAL_URLS.has(link) || link.startsWith("https://marketing.diyaccounting.co.uk/");
+    return fs.existsSync(path.join(MARKETING_DIR, link.split("#")[0]));
+  }
+
+  it("resolves every link and source", () => {
+    expect(links.filter((link) => !resolves(link))).toEqual([]);
+  });
+
+  it("holds the affiliate box and the four section anchors", () => {
+    for (const id of ["affiliate", ...SECTION_IDS, ...SECTION_IDS.map((s) => `${s}-brand`)]) {
+      expect(html, id).toContain(`id="${id}"`);
+    }
+  });
+
+  it("links its stylesheets and script", () => {
+    for (const link of [
+      "marketing.css",
+      "marketing.js",
+      "brand/submit.css",
+      "brand/spreadsheets.css",
+      "brand/diya-gl.css",
+      "brand/limited.css",
+    ]) {
+      expect(links, link).toContain(link);
+    }
+  });
+});
+
 describe("marketing.json source", () => {
   it("reads the same data from the TOML as the committed JSON holds", () => {
     expect(readMarketingData()).toEqual(data);

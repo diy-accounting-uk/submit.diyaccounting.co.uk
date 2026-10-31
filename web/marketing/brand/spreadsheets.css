@@ -1,0 +1,135 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* brand/spreadsheets.css: the DIY Accounting Spreadsheets rules the brand guide shows, from
+   spreadsheets.css, scoped to .brand-spreadsheets. Colours and spacing come from tokens.css. */
+
+.brand-spreadsheets {
+  background-color: var(--color-background);
+  background-image: linear-gradient(to right, #e8eded 1px, transparent 1px), linear-gradient(to bottom, #e8eded 1px, transparent 1px);
+  background-size: 11px 11px;
+  color: var(--color-text-primary);
+  font-family: var(--font-family-base);
+  line-height: var(--line-height-normal);
+}
+
+.brand-spreadsheets .spec-h1 {
+  font-size: 2.2em;
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-bold);
+}
+.brand-spreadsheets .spec-h2 {
+  font-size: 1.3em;
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-bold);
+}
+.brand-spreadsheets .spec-body {
+  font-size: var(--font-size-base);
+  line-height: var(--line-height-normal);
+}
+.brand-spreadsheets .spec-caption {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.brand-spreadsheets .top-nav {
+  display: flex;
+  justify-content: center;
+  gap: 0.25em;
+  flex-wrap: wrap;
+}
+.brand-spreadsheets .top-nav a {
+  color: var(--color-text-primary);
+  text-decoration: none;
+  padding: 0.5em 1em;
+  border-radius: var(--radius-md);
+  font-size: 0.95em;
+}
+.brand-spreadsheets .top-nav a:hover {
+  background: var(--color-brand-primary);
+  color: var(--color-text-inverse);
+}
+.brand-spreadsheets .top-nav a.nav-current {
+  border-bottom: 2px solid var(--color-brand-primary);
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-semibold);
+}
+
+.brand-spreadsheets .product-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
+}
+.brand-spreadsheets .product-card h2 {
+  margin-bottom: 0.5em;
+  font-size: 1.1em;
+}
+.brand-spreadsheets .product-card h2 a {
+  color: var(--color-brand-primary);
+  text-decoration: none;
+}
+.brand-spreadsheets .product-card .product-description {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--spacing-md);
+  font-size: 0.95em;
+  line-height: 1.6;
+}
+.brand-spreadsheets .product-card .feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 var(--spacing-md) 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25em 1em;
+}
+.brand-spreadsheets .product-card .feature-list li {
+  padding: 0.2em 0;
+  line-height: 1.6;
+  font-size: 0.9em;
+  color: var(--color-text-secondary);
+}
+.brand-spreadsheets .product-card .feature-list li::before {
+  content: "\2713";
+  color: var(--color-accent-green);
+  font-weight: var(--font-weight-bold);
+  margin-right: 0.5em;
+}
+
+.brand-spreadsheets .btn-download {
+  display: inline-block;
+  padding: 0.6rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-size: 0.95rem;
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  border: 2px solid var(--color-brand-primary);
+  color: var(--color-brand-primary);
+  background: var(--color-surface);
+}
+.brand-spreadsheets .btn-download:hover {
+  background: #e6f5f5;
+}
+
+.brand-spreadsheets .reviews-quotes {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+.brand-spreadsheets .reviews-quotes blockquote {
+  margin: 0;
+  padding: 0;
+}
+.brand-spreadsheets .reviews-quotes blockquote p {
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0 0 0.25em 0;
+  font-style: italic;
+}
+.brand-spreadsheets .reviews-quotes cite {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+  font-style: normal;
+}

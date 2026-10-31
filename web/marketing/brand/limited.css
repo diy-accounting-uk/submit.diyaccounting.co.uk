@@ -1,0 +1,87 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* brand/limited.css: the DIY Accounting Limited rules the brand guide shows, from gateway.css,
+   scoped to .brand-limited. Colours and spacing come from tokens.css. */
+
+.brand-limited {
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-family-base);
+  line-height: var(--line-height-normal);
+}
+
+.brand-limited .spec-h1 {
+  font-size: 2.2em;
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-bold);
+}
+.brand-limited .spec-h2 {
+  font-size: 1.3em;
+  color: var(--color-brand-primary);
+  font-weight: var(--font-weight-bold);
+}
+.brand-limited .spec-body {
+  font-size: var(--font-size-base);
+}
+.brand-limited .spec-caption {
+  font-size: 0.8rem;
+  color: var(--color-text-muted);
+}
+
+.brand-limited .gateway-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+}
+.brand-limited .gateway-btn {
+  display: block;
+  text-decoration: none;
+  background: var(--color-surface);
+  border: 2px solid var(--color-brand-primary);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg) var(--spacing-xl);
+  box-shadow: var(--shadow-sm);
+  color: var(--color-text-primary);
+}
+.brand-limited .gateway-btn:hover {
+  box-shadow: var(--shadow-md);
+  border-color: var(--color-brand-primary-dark);
+  background-color: rgba(44, 90, 160, 0.04);
+}
+.brand-limited .gateway-btn .btn-title {
+  display: block;
+  font-size: 1.3em;
+  font-weight: var(--font-weight-bold);
+  color: var(--color-brand-primary);
+  margin-bottom: 0.4em;
+}
+.brand-limited .gateway-btn .btn-subtitle {
+  display: block;
+  font-size: 0.95em;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+.brand-limited .gateway-btn-spreadsheets {
+  border-color: #158484;
+  background-color: #f7fafa;
+  background-image: linear-gradient(to right, #e8eded 1px, transparent 1px), linear-gradient(to bottom, #e8eded 1px, transparent 1px);
+  background-size: 11px 11px;
+}
+.brand-limited .gateway-btn-spreadsheets:hover {
+  border-color: #0e5f5f;
+  background-color: rgba(21, 132, 132, 0.06);
+}
+.brand-limited .gateway-btn-spreadsheets .btn-title {
+  color: #158484;
+}
+
+.brand-limited .company-summary {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--spacing-lg) var(--spacing-xl);
+}
+.brand-limited .company-summary p:last-child {
+  margin-bottom: 0;
+}
