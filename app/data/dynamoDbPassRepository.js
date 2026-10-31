@@ -306,6 +306,28 @@ export async function getAffiliate(referrerHash) {
   return result.Item || null;
 }
 
+/**
+ * Set the tier and state of a referrer's affiliate item. Other attributes on the item are kept.
+ * approvedAt is set when the state is approved. Returns the item as stored.
+ */
+export async function putAffiliate({ referrerHash, tier, state, now }) {
+  const tableName = getResourceName("PASSES_DYNAMODB_TABLE_NAME");
+  const approving = state === "approved";
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.UpdateCommand({
+        TableName: tableName,
+        Key: { pk: `affiliate#${referrerHash}` },
+        UpdateExpression: `SET tier = :tier, #state = :state, updatedAt = :now${approving ? ", approvedAt = :now" : ""}`,
+        ExpressionAttributeNames: { "#state": "state" },
+        ExpressionAttributeValues: { ":tier": tier, ":state": state, ":now": now },
+        ReturnValues: "ALL_NEW",
+      }),
+  );
+  logger.info({ message: "Affiliate item written", pk: `affiliate#${referrerHash}`, tier, state });
+  return result.Attributes;
+}
+
 const FIGURES_BATCH_SIZE = 100;
 
 function figuresKey(code) {

@@ -136,6 +136,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity: use when a pass code must be checked before login, without consuming a use.
     - [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes: use when a page must show up to 50 passes a caller has issued.
     - [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review: use when an operator must let a digital pass that reached its review limit be used again.
+    - [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state: use when an operator must approve a referrer as an affiliate, change the referrer's tier, or end the affiliate.
+    - [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state: use when an operator must see the tier and state of a referrer before or after changing them.
     - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass: use when a code must be redeemed to grant its bundle, including a pass link with a ?pass= parameter.
     - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow: use when an operator needs one or more passes with QR codes, or a scripted equivalent with no QR output.
   - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill)
@@ -1608,7 +1610,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area BILL -->
 - [Bundle grants and entitlements](#bundle-grants-and-entitlements-bill): [BILL-01](#bill-01-grant-a-bundle-to-a-user) Grant a bundle to a user · [BILL-02](#bill-02-list-a-users-bundles-and-token-balance) List a user's bundles and token balance · [BILL-03](#bill-03-delete-a-bundle) Delete a bundle · [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request) Enforce bundle entitlement on a request · [BILL-05](#bill-05-reconcile-bundle-capacity-counters) Reconcile bundle capacity counters
-- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
+- [Passes](#passes-bill): [BILL-06](#bill-06-generate-a-token-charged-pass) Generate a token-charged pass · [BILL-07](#bill-07-admin-issue-a-pass) Admin-issue a pass · [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity · [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes · [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review · [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state · [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state · [BILL-10](#bill-10-redeem-a-pass) Redeem a pass · [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 - [Practice clients and HMRC authorisation](#practice-clients-and-hmrc-authorisation-bill): [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access) Invite a client to authorise agent access · [BILL-13](#bill-13-check-a-clients-authorisation-status) Check a client's authorisation status · [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite) Cancel a pending client authorisation invite · [BILL-15](#bill-15-move-a-book-to-a-client) Move a book to a client · [BILL-16](#bill-16-manage-practice-clients) Manage practice clients
 - [diya-gl ledger books](#diya-gl-ledger-books-bill): [BILL-17](#bill-17-upload-a-diya-gl-book) Upload a diya-gl book · [BILL-18](#bill-18-delete-a-diya-gl-book) Delete a diya-gl book · [BILL-19](#bill-19-list-a-users-diya-gl-books) List a user's diya-gl books · [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book) Fetch a versioned diya-gl book · [BILL-21](#bill-21-expire-lapsed-diya-gl-books-by-s3-lifecycle) Expire lapsed diya-gl books by S3 lifecycle · [BILL-22](#bill-22-check-diya-gl-retention-entitlement) Check diya-gl retention entitlement · [BILL-23](#bill-23-store-diya-gl-books-in-s3) Store diya-gl books in S3
 - [Stripe billing](#stripe-billing-bill): [BILL-24](#bill-24-create-a-stripe-checkout-session) Create a Stripe checkout session · [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status) Retrieve a Stripe checkout session's status · [BILL-26](#bill-26-open-the-stripe-customer-billing-portal) Open the Stripe customer billing portal · [BILL-27](#bill-27-recover-an-abandoned-checkout) Recover an abandoned checkout · [BILL-28](#bill-28-process-stripe-webhook-events) Process Stripe webhook events · [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration) Assert the PayPal donate button configuration · [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue) Sync the Stripe product/price catalogue · [BILL-31](#bill-31-configure-stripe-account-policies) Configure Stripe account policies · [BILL-32](#bill-32-provision-stripe-secrets) Provision Stripe secrets
@@ -1685,6 +1687,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [BILL-08](#bill-08-check-a-passs-validity) Check a pass's validity
 - [BILL-09](#bill-09-list-a-users-issued-passes) List a user's issued passes
 - [BILL-45](#bill-45-release-a-pass-held-for-review) Release a pass held for review
+- [BILL-48](#bill-48-set-an-affiliates-tier-and-state) Set an affiliate's tier and state
+- [BILL-49](#bill-49-read-an-affiliates-tier-and-state) Read an affiliate's tier and state
 - [BILL-10](#bill-10-redeem-a-pass) Redeem a pass
 - [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow) Generate admin passes from CLI or workflow
 <!-- /generated:group passes-bill -->
@@ -1738,6 +1742,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/account/passReleasePost.js, app/unit-tests/functions/passReleasePost.test.js
 - **Keywords:** pass, release, held for review, reviewLimit, operator
 - **Related:** BILL-07, BILL-09
+
+#### BILL-48 Set an affiliate's tier and state
+
+- **Use when:** an operator must approve a referrer as an affiliate, change the referrer's tier, or end the affiliate.
+- **Does:** The affiliatePost.js ingestHandler checks the tier against referrals.toml and the state against applied, approved or ended, for an operator only. It writes the affiliate item of the referrer hash with the tier, the state and the time. An approved state also writes approvedAt.
+- **Run:** `POST /api/v1/affiliate`
+- **Entry:** `app/functions/account/affiliatePost.js:ingestHandler`
+- **Files:** app/functions/account/affiliatePost.js, app/unit-tests/functions/affiliatePost.test.js, web/public/bundles.page.js
+- **Keywords:** affiliate, approve, tier, referrer, operator, referrals.toml
+- **Related:** BILL-46, BILL-49
+
+#### BILL-49 Read an affiliate's tier and state
+
+- **Use when:** an operator must see the tier and state of a referrer before or after changing them.
+- **Does:** The affiliateGet.js ingestHandler reads the affiliate item of the referrer hash in the query, for an operator only. It answers the tier, the state and the times, or 404 when the referrer has no affiliate item.
+- **Run:** `GET /api/v1/affiliate?referrerHash=<hash>`
+- **Entry:** `app/functions/account/affiliateGet.js:ingestHandler`
+- **Files:** app/functions/account/affiliateGet.js, app/unit-tests/functions/affiliateGet.test.js, web/public/bundles.page.js
+- **Keywords:** affiliate, tier, state, referrer, operator
+- **Related:** BILL-46, BILL-48
 
 #### BILL-10 Redeem a pass
 
@@ -6127,7 +6151,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ads purchase conversion: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - ads.toml: [DATA-32](#data-32-sync-the-google-ads-account)
 - advertising standards: [SITE-20](#site-20-document-business-governance-and-positioning)
-- affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [DATA-64](#data-64-publish-per-pass-figures-nightly)
+- affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines), [DATA-64](#data-64-publish-per-pass-figures-nightly)
 - agent authorisation: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - agent output: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - agent path: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
@@ -6182,6 +6206,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - api subscriptions: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
 - apilambda: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
 - app monitor: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
+- approve: [BILL-48](#bill-48-set-an-affiliates-tier-and-state)
 - architecture rationale: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
 - architecture report: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
 - archive client: [BILL-16](#bill-16-manage-practice-clients)
@@ -7543,7 +7568,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - openid discovery: [DEV-02](#dev-02-simulate-local-app-oauth)
 - opening balances: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - openx deserializer: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
-- operator: [BILL-07](#bill-07-admin-issue-a-pass), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
+- operator: [BILL-07](#bill-07-admin-issue-a-pass), [BILL-45](#bill-45-release-a-pass-held-for-review), [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - operator bundle: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - operator bundle entitlement: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
 - operator consent: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
@@ -7823,6 +7848,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - references page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - referral: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - referral pass: [DATA-64](#data-64-publish-per-pass-figures-nightly)
+- referrals.toml: [BILL-48](#bill-48-set-an-affiliates-tier-and-state)
+- referrer: [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state)
 - refine: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - refine skill: [SS-48](#ss-48-refine-nextmd-before-a-wave)
 - refresh token: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident)
@@ -8117,6 +8144,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - standalone cdk app: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - standalone harness: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - start execution: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
+- state: [BILL-49](#bill-49-read-an-affiliates-tier-and-state)
 - state machine execution: [DATA-60](#data-60-replay-one-analytics-nightly-by-dispatch)
 - statement: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - statement table: [SITE-23](#site-23-render-a-submission-record-in-the-house-style)
@@ -8258,7 +8286,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - thresholds: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - thumbnails: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - tidy repo: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
-- tier: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
+- tier: [BILL-48](#bill-48-set-an-affiliates-tier-and-state), [BILL-49](#bill-49-read-an-affiliates-tier-and-state), [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
 - tiers: [SS-42](#ss-42-route-tests-by-blast-radius)
 - time budget: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
 - time window: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)

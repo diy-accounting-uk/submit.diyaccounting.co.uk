@@ -190,6 +190,22 @@ public class AccountNames {
     public String passReleasePostLambdaUrlPath;
     public boolean passReleasePostLambdaJwtAuthorizer;
     public boolean passReleasePostLambdaCustomAuthorizer;
+    public String affiliatePostIngestLambdaHandler;
+    public String affiliatePostIngestLambdaFunctionName;
+    public String affiliatePostIngestLambdaArn;
+    public String affiliatePostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod affiliatePostLambdaHttpMethod;
+    public String affiliatePostLambdaUrlPath;
+    public boolean affiliatePostLambdaJwtAuthorizer;
+    public boolean affiliatePostLambdaCustomAuthorizer;
+    public String affiliateGetIngestLambdaHandler;
+    public String affiliateGetIngestLambdaFunctionName;
+    public String affiliateGetIngestLambdaArn;
+    public String affiliateGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod affiliateGetLambdaHttpMethod;
+    public String affiliateGetLambdaUrlPath;
+    public boolean affiliateGetLambdaJwtAuthorizer;
+    public boolean affiliateGetLambdaCustomAuthorizer;
 
     // Pass Generate POST Lambda (JWT auth - user pass generation via tokens)
     public String passGeneratePostIngestLambdaHandler;
@@ -766,6 +782,51 @@ public class AccountNames {
                 "Release a held pass",
                 "Raises, sets or removes the review limit of a pass held for review (operator only)",
                 "releasePass"));
+
+        // Affiliate POST Lambda (JWT auth; the handler admits operators only)
+        this.affiliatePostLambdaHttpMethod = HttpMethod.POST;
+        this.affiliatePostLambdaUrlPath = "/api/v1/affiliate";
+        this.affiliatePostLambdaJwtAuthorizer = true;
+        this.affiliatePostLambdaCustomAuthorizer = false;
+        var affiliatePostLambdaHandlerName = "affiliatePost.ingestHandler";
+        var affiliatePostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(affiliatePostLambdaHandlerName);
+        this.affiliatePostIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, affiliatePostLambdaHandlerDashed);
+        this.affiliatePostIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, affiliatePostLambdaHandlerName);
+        this.affiliatePostIngestLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, affiliatePostLambdaHandlerDashed);
+        this.affiliatePostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.affiliatePostIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.affiliatePostLambdaHttpMethod,
+                this.affiliatePostLambdaUrlPath,
+                "Set an affiliate",
+                "Sets the tier and state of a referrer's affiliate record (operator only)",
+                "setAffiliate"));
+
+        // Affiliate GET Lambda (JWT auth; the handler admits operators only)
+        this.affiliateGetLambdaHttpMethod = HttpMethod.GET;
+        this.affiliateGetLambdaUrlPath = "/api/v1/affiliate";
+        this.affiliateGetLambdaJwtAuthorizer = true;
+        this.affiliateGetLambdaCustomAuthorizer = false;
+        var affiliateGetLambdaHandlerName = "affiliateGet.ingestHandler";
+        var affiliateGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(affiliateGetLambdaHandlerName);
+        this.affiliateGetIngestLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, affiliateGetLambdaHandlerDashed);
+        this.affiliateGetIngestLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, affiliateGetLambdaHandlerName);
+        this.affiliateGetIngestLambdaArn = "%s-%s".formatted(root.appLambdaArnPrefix, affiliateGetLambdaHandlerDashed);
+        this.affiliateGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.affiliateGetIngestLambdaArn, root.provisionedConcurrencyAliasName);
+        root.publishedApiLambdas.add(new PublishedLambda(
+                this.affiliateGetLambdaHttpMethod,
+                this.affiliateGetLambdaUrlPath,
+                "Read an affiliate",
+                "Reads the tier and state of a referrer's affiliate record (operator only)",
+                "getAffiliate"));
 
         // Pass Generate POST Lambda (JWT auth - user pass generation using tokens)
         this.passGeneratePostLambdaHttpMethod = HttpMethod.POST;

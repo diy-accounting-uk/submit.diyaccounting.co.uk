@@ -35,6 +35,18 @@
         "operationId" : "recordActivityStarted"
       }
     },
+    "/affiliate" : {
+      "post" : {
+        "summary" : "Set an affiliate",
+        "description" : "Sets the tier and state of a referrer's affiliate record (operator only)",
+        "operationId" : "setAffiliate"
+      },
+      "get" : {
+        "summary" : "Read an affiliate",
+        "description" : "Reads the tier and state of a referrer's affiliate record (operator only)",
+        "operationId" : "getAffiliate"
+      }
+    },
     "/billing/activity-checkout" : {
       "post" : {
         "summary" : "Create activity checkout session",

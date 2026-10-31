@@ -128,6 +128,12 @@ public class AccountStack extends Stack {
     public AbstractApiLambdaProps passReleasePostLambdaProps;
     public Function passReleasePostLambda;
     public ILogGroup passReleasePostLambdaLogGroup;
+    public AbstractApiLambdaProps affiliatePostLambdaProps;
+    public Function affiliatePostLambda;
+    public ILogGroup affiliatePostLambdaLogGroup;
+    public AbstractApiLambdaProps affiliateGetLambdaProps;
+    public Function affiliateGetLambda;
+    public ILogGroup affiliateGetLambdaLogGroup;
 
     public AbstractApiLambdaProps passGeneratePostLambdaProps;
     public Function passGeneratePostLambda;
@@ -1333,6 +1339,82 @@ public class AccountStack extends Stack {
                 this.passReleasePostLambda.getNode().getId());
 
         // ============================================================================
+        // Affiliate POST Lambda (JWT auth - an operator sets a referrer's affiliate record)
+        // ============================================================================
+        var affiliatePostLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var affiliatePostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.affiliatePostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.affiliatePostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.affiliatePostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.affiliatePostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.affiliatePostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.affiliatePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.affiliatePostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.affiliatePostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.affiliatePostLambdaCustomAuthorizer)
+                        .environment(affiliatePostLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(affiliatePostApiLambda);
+        this.affiliatePostLambdaProps = affiliatePostApiLambda.apiProps;
+        this.affiliatePostLambda = affiliatePostApiLambda.ingestLambda;
+        this.affiliatePostLambdaLogGroup = affiliatePostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.affiliatePostLambdaProps);
+        passesTable.grant(this.affiliatePostLambda, "dynamodb:UpdateItem");
+        // affiliatePost admits operators only, so it reads the operator list
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.affiliatePostLambda, region, account, props.envName());
+        infof(
+                "Created Affiliate POST Lambda %s",
+                this.affiliatePostLambda.getNode().getId());
+
+        // ============================================================================
+        // Affiliate GET Lambda (JWT auth - an operator reads a referrer's affiliate record)
+        // ============================================================================
+        var affiliateGetLambdaEnv = new PopulatedMap<String, String>()
+                .with("PASSES_DYNAMODB_TABLE_NAME", passesTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+        var affiliateGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().account.affiliateGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecr.ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecr.ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().account.affiliateGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().account.affiliateGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().account.affiliateGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().account.affiliateGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().account.affiliateGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().account.affiliateGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().account.affiliateGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().account.affiliateGetLambdaCustomAuthorizer)
+                        .environment(affiliateGetLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(affiliateGetApiLambda);
+        this.affiliateGetLambdaProps = affiliateGetApiLambda.apiProps;
+        this.affiliateGetLambda = affiliateGetApiLambda.ingestLambda;
+        this.affiliateGetLambdaLogGroup = affiliateGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.affiliateGetLambdaProps);
+        passesTable.grant(this.affiliateGetLambda, "dynamodb:GetItem");
+        // affiliateGet admits operators only, so it reads the operator list
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.affiliateGetLambda, region, account, props.envName());
+        infof(
+                "Created Affiliate GET Lambda %s",
+                this.affiliateGetLambda.getNode().getId());
+
+        // ============================================================================
         // Pass Generate POST Lambda (JWT auth - user pass generation using tokens)
         // ============================================================================
         var passGeneratePostLambdaEnv = new PopulatedMap<String, String>()
@@ -1690,6 +1772,8 @@ public class AccountStack extends Stack {
         cfnOutput(this, "PassPostLambdaArn", this.passPostLambda.getFunctionArn());
         cfnOutput(this, "PassAdminPostLambdaArn", this.passAdminPostLambda.getFunctionArn());
         cfnOutput(this, "PassReleasePostLambdaArn", this.passReleasePostLambda.getFunctionArn());
+        cfnOutput(this, "AffiliatePostLambdaArn", this.affiliatePostLambda.getFunctionArn());
+        cfnOutput(this, "AffiliateGetLambdaArn", this.affiliateGetLambda.getFunctionArn());
         cfnOutput(this, "PassGeneratePostLambdaArn", this.passGeneratePostLambda.getFunctionArn());
         cfnOutput(this, "PassMyPassesGetLambdaArn", this.passMyPassesGetLambda.getFunctionArn());
         cfnOutput(this, "BundleCapacityReconcileLambdaArn", this.bundleCapacityReconcileLambda.getFunctionArn());
