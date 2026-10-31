@@ -244,6 +244,10 @@ public class AccountNames {
     public String commissionReleaseLambdaFunctionName;
     public String commissionReleaseLambdaArn;
     public String commissionReleaseProvisionedConcurrencyLambdaAliasArn;
+    public String commissionCreditPayoutLambdaHandler;
+    public String commissionCreditPayoutLambdaFunctionName;
+    public String commissionCreditPayoutLambdaArn;
+    public String commissionCreditPayoutProvisionedConcurrencyLambdaAliasArn;
 
     // Session Beacon POST Lambda (public, no auth)
     public String sessionBeaconPostIngestLambdaHandler;
@@ -929,6 +933,18 @@ public class AccountNames {
                 "%s-%s".formatted(root.appLambdaArnPrefix, commissionReleaseLambdaHandlerDashed);
         this.commissionReleaseProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.commissionReleaseLambdaArn, root.provisionedConcurrencyAliasName);
+
+        var commissionCreditPayoutLambdaHandlerName = "commissionCreditPayout.handler";
+        var commissionCreditPayoutLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(commissionCreditPayoutLambdaHandlerName);
+        this.commissionCreditPayoutLambdaFunctionName =
+                "%s-%s".formatted(root.appResourceNamePrefix, commissionCreditPayoutLambdaHandlerDashed);
+        this.commissionCreditPayoutLambdaHandler =
+                "%s/account/%s".formatted(root.appLambdaHandlerPrefix, commissionCreditPayoutLambdaHandlerName);
+        this.commissionCreditPayoutLambdaArn =
+                "%s-%s".formatted(root.appLambdaArnPrefix, commissionCreditPayoutLambdaHandlerDashed);
+        this.commissionCreditPayoutProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.commissionCreditPayoutLambdaArn, root.provisionedConcurrencyAliasName);
 
         // Session Beacon POST Lambda (public, no auth). Path carries the /api/v1 prefix, not
         // the bare /api/session/beacon the endpoint used before: CloudFront only forwards
