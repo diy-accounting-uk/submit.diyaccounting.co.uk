@@ -10,8 +10,11 @@ import { createAssistHandlers, postHmrcAssist, hmrcBaseUriFor } from "../../lib/
 import { acknowledgeReceipt } from "../../lib/hmrcAssistReceipt.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 
+const isoUtcSeconds = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/;
+const isoUtcMillis = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{1,3}Z$/;
+
 function isValidIsoUtcDateTime(value) {
-  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,3})?Z$/.test(value) && !Number.isNaN(Date.parse(value));
+  return typeof value === "string" && (isoUtcSeconds.test(value) || isoUtcMillis.test(value)) && !Number.isNaN(Date.parse(value));
 }
 
 function validateBody(body, errorMessages) {
