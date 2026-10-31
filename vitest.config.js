@@ -30,10 +30,8 @@ export default defineConfig(({ mode }) => {
     test: {
       env,
       environment: "node",
-      // Limit workers without CLI flags
+      // One forked process per worker; the worker count is vitest's default (one fewer than the cores).
       pool: "forks",
-      maxWorkers: 1,
-      minWorkers: 1,
 
       // Disable file-level parallelism and concurrent tests
       // fileParallelism: false, // run test files sequentially

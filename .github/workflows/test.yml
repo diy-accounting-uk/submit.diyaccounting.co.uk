@@ -864,10 +864,16 @@ jobs:
 
       - run: npm run test:web-unit
 
-  npm-browser-test:
+  # The browser tests run on one worker, so three shards cut the wall time to about a third.
+  # `npm-browser-test` below keeps the job name and gathers the shards.
+  npm-browser-test-shard:
     if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-browser-test') }}
-    name: 'npm browser test'
+    name: 'npm browser test shard ${{ matrix.shard }}/3'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
     needs:
       - select-jobs
       - changes
@@ -890,7 +896,22 @@ jobs:
 
       - run: npx playwright install chromium --with-deps
 
-      - run: npm run test:browser
+      - run: npm run test:browser -- --shard=${{ matrix.shard }}/3
+
+  npm-browser-test:
+    if: ${{ always() && needs.npm-browser-test-shard.result != 'skipped' }}
+    name: 'npm browser test'
+    runs-on: ubuntu-latest
+    needs:
+      - npm-browser-test-shard
+    permissions: {}
+    steps:
+      - name: Fail unless every shard passed
+        env:
+          SHARD_RESULT: ${{ needs.npm-browser-test-shard.result }}
+        run: |
+          echo "Browser test shards: ${SHARD_RESULT}"
+          test "${SHARD_RESULT}" = "success"
 
   mvn-test:
     if: ${{ needs.changes.outputs.code == 'true' && needs.changes.outputs.build == 'true' && !(vars.REASONED_JOB_FILTER != 'off' && github.ref != 'refs/heads/main' && contains(fromJSON(needs.select-jobs.outputs.advised-json || '[]'), 'mvn-test')) }}
