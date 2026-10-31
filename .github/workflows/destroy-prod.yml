@@ -3,7 +3,7 @@
 
 # @capability OPS-14 Destroy a named prod deployment on demand
 # - **Use when:** a superseded prod deployment's stacks must be torn down by hand.
-# - **Does:** destroy-prod.yml tears down a named prod deployment's stacks once its data can be disposed of.
+# - **Does:** destroy-prod.yml tears down a named prod deployment's stacks once its data can be disposed of. deploy.yml's `dispatch destroy previous` job starts it for the set a prod deploy replaced, and the run waits for that deploy to end first.
 # - **Run:** `gh workflow run destroy-prod.yml -f deployment-name=<name>`
 # - **Entry:** `.github/workflows/destroy-prod.yml`
 # - **Files:** .github/workflows/destroy-prod.yml
@@ -26,31 +26,6 @@ on:
         type: boolean
         description: 'Whether to sweep for leftover stacks (true) or select by deployment name (false)'
         required: false
-      called-from-deploy:
-        type: boolean
-        description: 'Leave as false for a standalone run. Set only by deploy.yml itself, which passes true from its destroy-previous job.'
-        required: false
-        default: false
-  workflow_call:
-    inputs:
-      deployment-name:
-        type: string
-        description: 'Deployment name to destroy, e.g. prod-ea373de'
-        required: false
-        default: ''
-      sweep-for-stacks:
-        type: boolean
-        description: 'Whether to sweep for leftover stacks (true) or select by deployment name (false)'
-        required: false
-        default: false
-      called-from-deploy:
-        type: boolean
-        description: >-
-          True when deploy.yml calls this workflow as its own destroy-previous job. Skips the
-          'destroy' job's wait for a running prod deploy, which would otherwise wait on this
-          run's own parent forever.
-        required: false
-        default: false
   schedule:
     - cron: '04 3,5,7,9,11,13 * * *'
 
@@ -103,14 +78,8 @@ jobs:
           TRIMMED_DEPLOYMENT_NAME=$(printf '%s' "$RAW_DEPLOYMENT_NAME" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
           echo "deployment-name=$TRIMMED_DEPLOYMENT_NAME" | tee -a "$GITHUB_OUTPUT"
           X='${{ inputs.sweep-for-stacks }}' ; echo "sweep-for-stacks=${X:-false}" | tee -a "$GITHUB_OUTPUT"
-          X='${{ inputs.called-from-deploy }}' ; echo "called-from-deploy=${X:-false}" | tee -a "$GITHUB_OUTPUT"
-          # Compute isSweeping: true if sweep-for-stacks=true, or if no deployment-name was given
-          # and this run is on a schedule. A reusable workflow call inherits github.event_name from
-          # whatever triggered the caller, so deploy.yml's own daily schedule makes event_name
-          # "schedule" here too even when deploy.yml passed an explicit deployment-name to destroy.
-          # Trusting event_name alone then threw away that explicit name and swept instead, so the
-          # deployment deploy.yml had just replaced was judged by sweep-age rules, not destroyed
-          # outright. Only fall back to sweeping when no explicit deployment-name is present.
+          # isSweeping is true if sweep-for-stacks=true, or if no deployment-name was given and
+          # this run is on a schedule.
           SWEEP_FOR_STACKS='${{ inputs.sweep-for-stacks }}'
           EVENT_NAME='${{ github.event_name }}'
           DEPLOYMENT_NAME="$TRIMMED_DEPLOYMENT_NAME"
@@ -125,11 +94,9 @@ jobs:
       deployment-name: ${{ steps.normalise.outputs.deployment-name }}
       sweep-for-stacks: ${{ steps.normalise.outputs.sweep-for-stacks }}
       isSweeping: ${{ steps.normalise.outputs.isSweeping }}
-      called-from-deploy: ${{ steps.normalise.outputs.called-from-deploy }}
 
   # A scheduled run that finds a prod deploy already running ends green here and skips every job
-  # below; the next schedule tries again. A dispatch keeps waiting in 'wait-for-deploy'. Runs for
-  # deploy.yml's own call too and answers false, because called-from-deploy is true there.
+  # below; the next schedule tries again. A dispatch keeps waiting in 'wait-for-deploy'.
   prod-deploy-check:
     needs:
       - params
@@ -142,10 +109,9 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           EVENT_NAME: ${{ github.event_name }}
-          CALLED_FROM_DEPLOY: ${{ needs.params.outputs.called-from-deploy }}
         run: |
           set -euo pipefail
-          if [ "$EVENT_NAME" != "schedule" ] || [ "$CALLED_FROM_DEPLOY" = "true" ]; then
+          if [ "$EVENT_NAME" != "schedule" ]; then
             echo "deploy-running=false" | tee -a "$GITHUB_OUTPUT"
             exit 0
           fi
@@ -160,33 +126,22 @@ jobs:
     outputs:
       deploy-running: ${{ steps.check.outputs.deploy-running }}
 
-  # A standalone destroy-prod run (the schedule, or a bare workflow_dispatch) shares no ordering
-  # with a deploy.yml prod run: deploy.yml only reaches this workflow, as its own destroy-previous
-  # job, near the end of a prod deploy — well after the new deployment's stacks are already built
-  # and cut over. Without this wait, a scheduled sweep could delete a deployment deploy.yml is
-  # still in the middle of building, which the 'destroy' job's own refusal step can't catch: it
-  # only protects a deployment that is already live or already recorded as last-known-good, not
-  # one still under construction.
+  # A destroy-prod run (the schedule, or a workflow_dispatch, including the one deploy.yml
+  # dispatches after a new set is live) shares no ordering with a deploy.yml prod run. Without
+  # this wait, a scheduled sweep could delete a deployment deploy.yml is still in the middle of
+  # building, which the 'destroy' job's own refusal step can't catch: it only protects a
+  # deployment that is already live or already recorded as last-known-good, not one still under
+  # construction. The run deploy.yml dispatches waits here until that deploy run ends.
   #
-  # This wait carries no concurrency group of its own, and runs in its own job rather than as the
-  # 'destroy' job's first step. That split is what breaks a deadlock a shared group used to cause:
-  # deploy.yml's own prod run calls this workflow, as its 'destroy previous' job, to remove the
-  # deployment it just cut over from. When the group covered the whole workflow (or the 'destroy'
-  # job held it before this wait ran), a standalone dispatch acquired that group the moment it
-  # started, then sat here waiting on that same deploy run to finish — and the deploy run's own
-  # call into this workflow queued behind the dispatch for the same group, so each waited on the
-  # other. Waiting in an ungated job first, and asking the 'destroy' job below for its group only
-  # once this is over (or skipped, for deploy.yml's own call), means the group is never held while
-  # something is also waiting on the run that would release it.
+  # This wait carries no concurrency group of its own and runs in its own job, not as the
+  # 'destroy' job's first step. The 'destroy' job asks for its group only once this wait is over,
+  # so the group is never held while something waits on the run that would release it.
   #
-  # Skipped when this run IS deploy.yml's own 'destroy-previous' call (called-from-deploy: true):
-  # deploy.yml is the run that would be waited for, so waiting here would wait on this run's own
-  # parent, forever.
   wait-for-deploy:
     needs:
       - params
       - prod-deploy-check
-    if: ${{ !cancelled() && needs.prod-deploy-check.result == 'success' && needs.prod-deploy-check.outputs.deploy-running != 'true' && needs.params.outputs.called-from-deploy != 'true' }}
+    if: ${{ !cancelled() && needs.prod-deploy-check.result == 'success' && needs.prod-deploy-check.outputs.deploy-running != 'true' }}
     name: 'wait for a running prod deploy'
     runs-on: ubuntu-24.04
     steps:
@@ -702,12 +657,7 @@ jobs:
     # stacks to destroy' below), so which of the two ran first decides nothing that needs
     # deciding here.
     #
-    # This group is also what a called run (deploy.yml's own 'destroy-previous' job) queues on,
-    # same as a dispatched or scheduled run: deploy.yml's own job that calls this workflow holds
-    # no group of its own (it keeps a distinct 'deploy-prod' group for its own concurrency), so
-    # a called run waiting here is never waiting on its own parent — only wait-for-deploy, which
-    # this job needs and which is skipped for a called run, carries that risk, and it runs with
-    # no group at all.
+    # The run deploy.yml dispatches after a new set is live queues on this same group.
     concurrency:
       group: destroy-prod
       cancel-in-progress: false
@@ -798,9 +748,9 @@ jobs:
 
       # A destroy that matches no stacks must not always report success: that reads exactly like a
       # destroy that worked. Two things reach here with zero live stacks, and only one deserves a
-      # failure. A set this run raced and lost — most often against deploy.yml's own
-      # 'destroy-previous' job, which removes the deployment it just cut over from as soon as the
-      # new set is live, regardless of what else named the same set (run 34691690046: dispatched
+      # failure. A set this run raced and lost — most often against the run deploy.yml
+      # dispatches to remove the deployment it just cut over from, regardless of what else
+      # named the same set (run 34691690046: dispatched
       # for prod-40b194e, waited 68 minutes for the 15112f1f deploy above, which destroyed
       # prod-40b194e itself while this run waited; run 34755825044: dispatched for prod-4918a0d
       # after deploy.yml had already removed it) — already reached the requested end state and

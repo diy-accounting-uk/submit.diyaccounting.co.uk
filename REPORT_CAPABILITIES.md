@@ -2459,7 +2459,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-14 Destroy a named prod deployment on demand
 
 - **Use when:** a superseded prod deployment's stacks must be torn down by hand.
-- **Does:** destroy-prod.yml tears down a named prod deployment's stacks once its data can be disposed of.
+- **Does:** destroy-prod.yml tears down a named prod deployment's stacks once its data can be disposed of. deploy.yml's `dispatch destroy previous` job starts it for the set a prod deploy replaced, and the run waits for that deploy to end first.
 - **Run:** `gh workflow run destroy-prod.yml -f deployment-name=<name>`
 - **Entry:** `.github/workflows/destroy-prod.yml`
 - **Files:** .github/workflows/destroy-prod.yml

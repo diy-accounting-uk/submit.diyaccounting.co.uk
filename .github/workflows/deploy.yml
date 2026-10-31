@@ -650,8 +650,7 @@ jobs:
   # rather than by which run was created first: both workflows fire off the same push and can be
   # created in either order a few hundred milliseconds apart, so "older than me" isn't reliable
   # here the way it is for two runs of the same workflow. No deadlock risk: neither workflow calls
-  # the other with `uses:`, unlike deploy.yml's `destroy-previous` job calling destroy-prod.yml,
-  # which is why that pairing keeps its own distinct group instead of this polling approach.
+  # the other with `uses:`.
   #
   # `names` (below) needs this job because its own Cognito lookup is what raced IdentityStack in
   # B94; every job in this workflow that needs `names` — test, mvn-package,
@@ -3858,13 +3857,13 @@ jobs:
   # by set-last-known-good-deployment below, which itself requires web-test to succeed — so on
   # the failure path this job runs on, the parameter is never touched this run and would still
   # read back correctly. existing-deployment-name is used anyway because it needs no such
-  # ordering argument: it is the same value destroy-previous already trusts as "the deployment
+  # ordering argument: it is the same value dispatch-destroy-previous already trusts as "the deployment
   # before this one", captured once and reused rather than re-derived from a second source.
   #
-  # set-last-known-good-deployment's own success requirement means destroy-previous below
+  # set-last-known-good-deployment's own success requirement means dispatch-destroy-previous below
   # already cannot fire on this path (its `if:` requires that job's result to be 'success', and
   # it never runs here) — so the deployment this job rolls back to is never at risk from
-  # destroy-previous in the same run. No change to that guard is needed.
+  # dispatch-destroy-previous in the same run. No change to that guard is needed.
   #
   # This job does not force its own conclusion to failure: web-test's own failed conclusion
   # already makes the whole run's conclusion 'failure' regardless of what runs afterwards, so
@@ -4081,25 +4080,39 @@ jobs:
           key: ${{ steps.dora-row.outputs.key }}
           row: ${{ steps.dora-row.outputs.row }}
 
-  # Run workflow: .github/workflows/destroy-prod.yml to destroy previous prod deployments but not the holding page (`-holding`)
+  # Starts destroy-prod.yml for the set this deploy replaced, in its own run, and ends. The
+  # destroy takes about ten minutes, and a called workflow would hold this run and its
+  # deploy-prod group that long after the new set is live and recorded as last-known-good.
+  # The dispatched run waits for this run to end and for any newer prod deploy, then refuses a
+  # set that is live or last-known-good before it deletes anything. A workflow_dispatch from
+  # GITHUB_TOKEN starts a run; other events from that token do not. A failed destroy shows on
+  # destroy-prod.yml's runs on main, and the scheduled sweep removes a set it leaves.
   # Without a status function GitHub applies success() over the whole ancestor chain, and the
   # scenario web-test jobs skipped by skipTestScenarios sit in that chain, so this job would
   # never run. Gate on the direct results instead.
-  destroy-previous:
+  dispatch-destroy-previous:
     if: ${{ !cancelled() && needs.names.outputs.environment-name == 'prod' && needs.set-origins.result == 'success' && needs.set-last-known-good-deployment.result == 'success' && needs.set-origins.outputs.existing-deployment-name != '' && !contains(needs.set-origins.outputs.existing-deployment-name, '-holding') }}
-    name: 'destroy previous'
+    name: 'dispatch destroy previous'
     needs:
       - names
       - skip-deploy-check
       - set-origins
       #- upload-web-test-results
       - set-last-known-good-deployment
-    uses: './.github/workflows/destroy-prod.yml'
-    with:
-      deployment-name: ${{ needs.set-origins.outputs.existing-deployment-name }}
-      # This run IS the prod deploy destroy-prod.yml's own wait step would otherwise wait for —
-      # see that step's comment in destroy-prod.yml for why waiting here would deadlock.
-      called-from-deploy: true
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Dispatch destroy-prod for the previous deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          DEPLOYMENT_NAME: ${{ needs.set-origins.outputs.existing-deployment-name }}
+        run: |
+          set -euo pipefail
+          gh workflow run destroy-prod.yml --repo "$REPO" --ref main -f "deployment-name=${DEPLOYMENT_NAME}"
+          echo "Dispatched destroy-prod for ${DEPLOYMENT_NAME}: https://github.com/${REPO}/actions/workflows/destroy-prod.yml" | tee -a "$GITHUB_STEP_SUMMARY"
 
   # A failed or cancelled run never reaches set-last-known-good-deployment, and until now only
   # claim-ci-slot.mjs's own staleness rule (self-destruct delay plus one hour) freed its slot
@@ -4127,7 +4140,7 @@ jobs:
       - promote-ci-apex
       - rollback-origins
       - record-dora
-      - destroy-previous
+      - dispatch-destroy-previous
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
