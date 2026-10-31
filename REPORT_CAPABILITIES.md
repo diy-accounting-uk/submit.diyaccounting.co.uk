@@ -3754,11 +3754,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-04 Stream DynamoDB table changes into the lake
 
 - **Use when:** a DynamoDB table's inserts/updates/deletes must be redacted and streamed into the lake.
-- **Does:** dynamoStreamToFirehose.js serves four DynamoDB Streams event source mappings for receipts, bundles, subscriptions and passes. Its handler redacts each record through a per-table field whitelist and forwards it by Firehose PutRecordBatch. A record that fails to project or deliver returns a batchItemFailure by sequence number.
+- **Does:** dynamoStreamToFirehose.js serves five DynamoDB Streams event source mappings for receipts, bundles, subscriptions, passes and commissions. Its handler redacts each record through a per-table field whitelist and forwards it by Firehose PutRecordBatch. A record that fails to project or deliver returns a batchItemFailure by sequence number.
 - **Run:** no command; see Does and Entry
 - **Entry:** `app/functions/analytics/dynamoStreamToFirehose.js:handler`
 - **Files:** app/functions/analytics/dynamoStreamToFirehose.js, app/unit-tests/analytics/dynamoStreamToFirehose.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDelivery.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/TableChangeDeliveryTest.java
-- **Keywords:** dynamodb streams, table change, firehose putrecordbatch, redaction, field whitelist, batchitemfailure, receipts, bundles, subscriptions, passes
+- **Keywords:** dynamodb streams, table change, firehose putrecordbatch, redaction, field whitelist, batchitemfailure, receipts, bundles, subscriptions, passes, commissions
 
 #### DATA-05 Pull GA4 daily BigQuery aggregate tables
 
@@ -6450,6 +6450,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cold start: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - collabora: [OPS-140](#ops-140-record-a-real-spreadsheet-workbook-in-collabora-online)
 - commission: [BILL-46](#bill-46-accrue-and-reverse-referral-commission-lines)
+- commissions: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - commit author: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - commit identity: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
 - commit identity allowlist: [DEV-22](#dev-22-clean-and-update-local-build-state)
