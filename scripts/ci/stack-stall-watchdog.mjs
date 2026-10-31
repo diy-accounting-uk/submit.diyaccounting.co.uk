@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// @capability OPS-147 Stop a stack deploy when one resource stalls with no physical id
+// @capability OPS-148 Stop a stack deploy when one resource stalls with no physical id
 // - **Use when:** a `deploy-cdk-stack.yml` job sits in `cdk deploy` for an hour with one resource CREATE_IN_PROGRESS and the log shows nothing.
 // - **Does:** polls `aws cloudformation list-stack-resources` every 60 s while `cdk deploy` runs. When one resource has been CREATE_IN_PROGRESS or UPDATE_IN_PROGRESS with no PhysicalResourceId for 15 minutes and no resource changed state in that time, it prints the resource and its type to the log and the step summary and stops the deploy process group, so the job fails with the resource named.
 // - **Run:** `node scripts/ci/stack-stall-watchdog.mjs --stack <name> --regions "eu-west-2 us-east-1" --kill-group <pid> --marker <file>`

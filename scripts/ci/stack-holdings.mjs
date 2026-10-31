@@ -48,7 +48,7 @@ export const STACK_JOB_STACKS = {
 export const STACK_REGIONS = [...new Set(Object.values(STACK_JOB_STACKS).flatMap((stacks) => stacks.map((s) => s.region)))];
 
 const HELD_STATUSES = new Set(["CREATE_COMPLETE", "UPDATE_COMPLETE"]);
-const INNER_DEPLOY_JOB = / \/ deploy (.+)-app-[A-Za-z]+Stack$/;
+const INNER_DEPLOY_JOB = / \/ deploy ([^ /]+)-app-[A-Za-z]+Stack$/;
 
 // The one deployment name a run's successful reusable stack jobs deployed to, or "" when there
 // is none or more than one.
