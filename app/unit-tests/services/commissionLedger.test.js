@@ -154,6 +154,28 @@ describe("services/commissionLedger - amounts", () => {
     expect(computeCommission({ netPence: 1000, rateBps: 10000, months: 1, windowStart: iso(JAN_1), ...monthIndex(1) }).amountPence).toBe(0);
   });
 
+  test("the shipped customer and affiliate tiers pay about one month of net over 3 months, as the family tier does", () => {
+    const config = loadReferralConfig();
+    const family = config.tiers.find((tier) => tier.id === "family");
+    for (const id of ["customer", "casual", "creator"]) {
+      const tier = config.tiers.find((candidate) => candidate.id === id);
+      const terms = { rateBps: tier.rateBps, months: tier.months, windowStart: iso(JAN_1) };
+      const monthly = [0, 1, 2, 3].map((n) => computeCommission({ ...terms, netPence: 399, ...monthIndex(n) }).amountPence);
+      expect(monthly).toEqual([131, 131, 131, 0]);
+      const annual = computeCommission({ ...terms, netPence: 3900, periodStart: iso(JAN_1), periodEnd: iso(JAN_1_NEXT_YEAR) });
+      expect(annual).toEqual({ lineMonths: 12, eligibleMonths: 3, amountPence: 321 });
+    }
+    const familyAnnual = computeCommission({
+      netPence: 3900,
+      rateBps: family.rateBps,
+      months: family.months,
+      windowStart: iso(JAN_1),
+      periodStart: iso(JAN_1),
+      periodEnd: iso(JAN_1_NEXT_YEAR),
+    });
+    expect(familyAnnual.amountPence).toBe(325);
+  });
+
   test("the amount rounds down", () => {
     expect(computeCommission({ ...base, netPence: 999, ...monthIndex(0) }).amountPence).toBe(299);
   });
@@ -243,7 +265,7 @@ describe("services/commissionLedger - accrueCommission", () => {
     expect(anchorCall.anchor).toMatchObject({
       tier: "customer",
       form: "credit",
-      months: 12,
+      months: 3,
       holdDays: 30,
       windowStart: iso(JAN_1),
       subscriptionId: "sub_test_456",
@@ -260,14 +282,14 @@ describe("services/commissionLedger - accrueCommission", () => {
       tier: "customer",
       form: "credit",
       payout: "customer-balance",
-      rateBps: 3000,
+      rateBps: 3300,
       grossPence: 1200,
       feePence: 200,
       netPence: 1000,
       currency: "gbp",
       eligibleMonths: 1,
       lineMonths: 1,
-      amountPence: 300,
+      amountPence: 330,
       state: "held",
       holdReasons: [],
       releaseAt: new Date(Date.parse(iso(JAN_1 + 3600)) + 30 * 86400000).toISOString(),

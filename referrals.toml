@@ -14,8 +14,8 @@ id = "customer"
 name = "Customer"
 form = "credit"               # credit | cash
 payout = "customer-balance"   # customer-balance | connect | bank-transfer
-rateBps = 3000                # basis points of net
-months = 12
+rateBps = 3300                # basis points of net
+months = 3
 holdDays = 30
 capCreditMonths = 12
 
@@ -24,24 +24,24 @@ id = "casual"
 name = "Casual affiliate"
 form = "cash"
 payout = "connect"
-rateBps = 3000
-months = 12
+rateBps = 3300
+months = 3
 holdDays = 120
 capMonthPence = 10000
 capTaxYearPence = 100000
-minPayoutPence = 2000
+minPayoutPence = 500
 
 [[tiers]]
 id = "creator"
 name = "Creator affiliate"
 form = "cash"
 payout = "connect"
-rateBps = 3000
-months = 12
+rateBps = 3300
+months = 3
 holdDays = 120
 capMonthPence = 10000
 capTaxYearPence = 100000
-minPayoutPence = 2000
+minPayoutPence = 500
 
 [[tiers]]
 id = "family"
